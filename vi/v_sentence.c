@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.3 1993/06/28 14:22:11 bostic Exp $ (Berkeley) $Date: 1993/06/28 14:22:11 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.4 1993/07/09 15:30:36 bostic Exp $ (Berkeley) $Date: 1993/07/09 15:30:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,14 +167,18 @@ v_sentenceb(sp, ep, vp, fm, tm, rp)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
-	 * If on an empty line, skip to the first non-white-space
-	 * character.
+	 * If on an empty line, skip to the next previous
+	 * non-white-space character.
 	 */
 	if (cs.cs_flags == CS_EMP) {
 		if (cs_bblank(sp, ep, &cs))
 			return (1);
-		if (cs_next(sp, ep, &cs))
-			return (1);
+		for (;;) {
+			if (cs_next(sp, ep, &cs))
+				return (1);
+			if (cs.cs_flags != CS_EOL)
+				break;
+		}
 	}
 
 	for (last1 = last2 = 0;;) {
@@ -206,7 +210,7 @@ ret:			slno = cs.cs_lno;
 			scno = cs.cs_cno;
 
 			/* Move to the start of the sentence. */
-			if (cs_bblank(sp, ep, &cs))
+			if (cs_fblank(sp, ep, &cs))
 				return (1);
 			/*
 			 * If it was ".  xyz", with the cursor on the 'x', or
