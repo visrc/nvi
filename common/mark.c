@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 9.8 1995/01/11 15:58:12 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:12 $";
+static char sccsid[] = "$Id: mark.c,v 9.9 1995/01/30 09:53:56 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:53:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,6 @@ mark_get(sp, key, mp, mtype)
 	enum msgtype mtype;
 {
 	LMARK *lmp;
-	size_t len;
 
 	if (key == ABSMARK2)
 		key = ABSMARK1;
@@ -138,7 +137,7 @@ mark_get(sp, key, mp, mtype)
 	 * you could use it in an empty file.  Make such a mark always work.
 	 */
 	if ((lmp->lno != 1 || lmp->cno != 0) &&
-	    file_gline(sp, lmp->lno, &len) == NULL) {
+	    file_eline(sp, lmp->lno) == NULL) {
 		msgq(sp, mtype,
 		    "051|Mark %s: cursor position no longer exists",
 		    KEY_NAME(sp, key));
