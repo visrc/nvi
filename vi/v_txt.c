@@ -6,27 +6,26 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.3 1993/04/12 14:51:44 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:51:44 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.4 1993/04/13 16:24:35 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:24:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
 #include "vcmd.h"
-#include "text.h"
 
 static int	 txt_auto __P((SCR *, EXF *, recno_t, TEXT *));
-static TEXT	*txt_backup __P((SCR *, EXF *, TEXT *, u_int));
-static void	 txt_err __P((SCR *, EXF *));
+static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
+static void	 txt_err __P((SCR *, EXF *, HDR *));
 static int	 txt_indent __P((SCR *, TEXT *));
-static TEXT	*txt_new __P((SCR *, size_t, char *, size_t));
 static int	 txt_outdent __P((SCR *, TEXT *));
-static int	 txt_resolve __P((SCR *, EXF *));
+static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 
 /* Cursor character (space is hard to track on the screen). */
 #ifdef DEBUG
@@ -38,7 +37,7 @@ static int	 txt_resolve __P((SCR *, EXF *));
 /* Error jump. */
 #define	ERR {								\
 	eval = 1;							\
-	txt_err(sp, ep);						\
+	txt_err(sp, ep, hp);						\
 	goto ret;							\
 }
 
@@ -58,15 +57,17 @@ static int	 txt_resolve __P((SCR *, EXF *));
  *	Read in text from the user.
  */
 int
-v_ntext(sp, ep, tm, p, len, rp, ai_line, flags)
+v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	SCR *sp;
 	EXF *ep;
+	HDR *hp;
 	MARK *tm;		/* To MARK. */
 	char *p;		/* Input line. */
 	size_t len;		/* Input line length. */
 	MARK *rp;		/* Return MARK. */
+	int prompt;		/* Prompt to display. */
 	recno_t ai_line;	/* Line number to use for autoindent count. */
-	u_int flags;		/* N_ flags. */
+	u_int flags;		/* TXT_ flags. */
 {
 				/* State of the "[^0]^D" sequences. */
 	enum { C_CARATSET, C_NOCHANGE, C_NOTSET, C_ZEROSET } carat_st;
@@ -80,21 +81,26 @@ v_ntext(sp, ep, tm, p, len, rp, ai_line, flags)
 	int replay;		/* If replaying a set of input. */
 	int max, tmp;
 
-	/* Set input flag. */
-	F_SET(sp, S_INPUT);
+	/* Set the input flag. */
+	if (LF_ISSET(TXT_RESOLVE))
+		F_SET(sp, S_INPUT);
+
+	/* Set text buffer in-use flag. */
+	F_SET(hp, HDR_INUSE);
 
 	/* Set return value. */
 	eval = 0;
 
 	/* Initialize the text header structure. */
-	HDR_INIT(sp->txthdr, next, prev, TEXT);
+	if (hp->next != hp)
+		text_free(hp);
 
 	/*
 	 * Get a TEXT structure with some initial buffer space.  (All
 	 * TEXT bookkeeping fields default to 0, and txt_new() takes care
 	 * of this.  If changing a line, copy it into the TEXT buffer.
 	 */
-	if ((tp = txt_new(sp, len + 32, p, len)) == NULL)
+	if ((tp = txt_new(sp, hp, p, len, len + 32)) == NULL)
 		return (1);
 
 	/* Set the starting line number. */
@@ -107,13 +113,13 @@ v_ntext(sp, ep, tm, p, len, rp, ai_line, flags)
 	 * END_CH.
 	 */
 	if (len) {
-		if (LF_ISSET(N_OVERWRITE)) {
+		if (LF_ISSET(TXT_OVERWRITE)) {
 			tp->overwrite = tm->cno - sp->cno;
 			tp->insert = len - tm->cno;
 		} else
 			tp->insert = len - sp->cno;
 
-		if (LF_ISSET(N_EMARK))
+		if (LF_ISSET(TXT_EMARK))
 			tp->lb[tm->cno - 1] = END_CH;
 	}
 
@@ -130,12 +136,19 @@ v_ntext(sp, ep, tm, p, len, rp, ai_line, flags)
 	 * much indentation we need, and fill it in.  Update input column and
 	 * screen cursor as necessary.
 	 */
-	if (LF_ISSET(N_AUTOINDENT)) {
+	if (LF_ISSET(TXT_AUTOINDENT)) {
 		if (txt_auto(sp, ep, ai_line, tp))
 			return (1);
 		sp->cno = tp->ai;
 	} else
 		tp->offset = sp->cno;
+
+	/* If getting a command buffer from the user, there may be a prompt. */
+	if (LF_ISSET(TXT_PROMPT)) {
+		tp->lb[sp->cno++] = prompt;
+		++tp->len;
+		++tp->offset;
+	}
 
 	/*
 	 * If appending after the end-of-line, add a space into the buffer
@@ -147,7 +160,7 @@ v_ntext(sp, ep, tm, p, len, rp, ai_line, flags)
 	 * side is that we may wrap lines or scroll the screen before it's
 	 * strictly necessary.  Not a big deal.
 	 */
-	if (LF_ISSET(N_APPENDEOL)) {
+	if (LF_ISSET(TXT_APPENDEOL)) {
 		tp->lb[sp->cno] = CURSOR_CHAR;
 		++tp->len;
 		++tp->insert;
@@ -164,7 +177,7 @@ v_ntext(sp, ep, tm, p, len, rp, ai_line, flags)
 	 * without replay.
 	 */
 	rcol = 0;
-	replay = LF_ISSET(N_REPLAY);
+	replay = LF_ISSET(TXT_REPLAY);
 
 	for (carat_st = C_NOTSET, quoted = Q_NOTSET;;) {
 
@@ -175,7 +188,7 @@ next_ch:	if (replay)
 			ch = sp->rep[rcol];
 		else {
 			/* Get the character. */
-			ch = getkey(sp, GB_BEAUTIFY | GB_MAPINPUT);
+			ch = getkey(sp, flags & TXT_GETKEY_MASK);
 
 			/*
 			 * Check if the character fits into the input and
@@ -185,10 +198,12 @@ next_ch:	if (replay)
 			 * it's not worth fixing it.
 			 */
 			TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
-			TBINC(sp, sp->rep, sp->rep_len, rcol + 1);
 
-			/* Store the character into the replay buffer. */
-			sp->rep[rcol++] = ch;
+			if (LF_ISSET(TXT_RECORD)) {
+				/* Store the character into replay buffer. */
+				TBINC(sp, sp->rep, sp->rep_len, rcol + 1);
+				sp->rep[rcol++] = ch;
+			}
 		}
 
 		/*
@@ -203,14 +218,15 @@ next_ch:	if (replay)
 		}
 
 		switch (sp->special[ch]) {
-		case K_ESCAPE:				/* Escape. */
+		case K_CR:
+		case K_NL:				/* New line. */
 #define	LINE_RESOLVE {							\
 			/*						\
 			 * The "R" command doesn't delete characters	\
 			 * that it could have overwritten.  Other input	\
 			 * modes do.					\
 			 */						\
-			if (LF_ISSET(N_REPLACE)) {			\
+			if (LF_ISSET(TXT_REPLACE)) {			\
 				tp->insert += tp->overwrite;		\
 				tp->overwrite = 0;			\
 			}						\
@@ -222,14 +238,14 @@ next_ch:	if (replay)
 			 * tp->ai will be 0), and therefore the test	\
 			 * (sp->cno <= tp->ai) will fail.		\
 			 */						\
-			if (LF_ISSET(N_AUTOINDENT) &&			\
+			if (LF_ISSET(TXT_AUTOINDENT) &&			\
 			    sp->cno <= tp->ai) {			\
 				tp->overwrite += sp->cno;		\
 				sp->cno = 0;				\
 				F_SET(sp, S_CHARDELETED);		\
 			}						\
 			/* Delete any appended cursor character. */	\
-			if (LF_ISSET(N_APPENDEOL)) {			\
+			if (LF_ISSET(TXT_APPENDEOL)) {			\
 				if (sp->cno > 0)			\
 					--sp->cno;			\
 				--tp->len;				\
@@ -237,7 +253,70 @@ next_ch:	if (replay)
 				F_SET(sp, S_CHARDELETED);		\
 			}						\
 }
+			if (LF_ISSET(TXT_CR))
+				goto k_escape;
+
 			LINE_RESOLVE;
+
+			/*
+			 * Move remaining insert characters in the line into
+			 * a new TEXT structure.
+			 */
+			if ((ntp = txt_new(sp, hp,
+			    tp->lb + sp->cno + tp->overwrite, tp->insert,
+			    tp->insert + 32)) == NULL)
+				ERR;
+
+			/* Reset bookkeeping for the old line. */
+			tp->len = sp->cno + 1 + tp->insert;
+			tp->insert = tp->overwrite = 0;
+
+			/* Set bookkeeping for the new line. */
+			ntp->lno = tp->lno + 1;
+
+			/* New lines are always TXT_AUTOINDENT. */
+			if (!LF_ISSET(TXT_AUTOINDENT))
+				ai_line = tp->lno;
+
+			/* 0^D stops the ai line from changing. */
+			if (carat_st == C_NOCHANGE)
+				ai_line = tp->lno;
+			carat_st = C_NOTSET;
+			if (txt_auto(sp, ep, ai_line, ntp))
+				ERR;
+			sp->cno = ntp->ai;
+			
+			/*
+			 * New lines are always TXT_APPENDEOL.  If no insert
+			 * characters, add in the cursor character.
+			 */
+			if (ntp->insert == 0) {
+				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
+				LF_SET(TXT_APPENDEOL);
+				ntp->lb[sp->cno] = CURSOR_CHAR;
+				++ntp->insert;
+				++ntp->len;
+			}
+
+			/* Update the old line. */
+			if (sp->change(sp, ep, tp->lno, LINE_RESET))
+				ERR;
+
+			/* Swap old and new TEXT's. */
+			tp = ntp;
+
+			/* Reset the cursor. */
+			sp->lno = tp->lno;
+
+			/* Update the new line. */
+			SCREEN_UPDATE(sp, ep, tp->lno, LINE_INSERT);
+
+			goto next_ch;
+		case K_ESCAPE:				/* Escape. */
+			if (!LF_ISSET(TXT_ESCAPE))
+				goto ins_ch;
+
+k_escape:		LINE_RESOLVE;
 
 			/* If there are insert characters, copy them down. */
 			if (tp->insert && tp->overwrite)
@@ -258,91 +337,42 @@ next_ch:	if (replay)
 			 * Delete any lines that were inserted into the text
 			 * structure and then erased.
 			 */
-			while (tp->next != (TEXT *)&sp->txthdr) {
+			while (tp->next != (TEXT *)hp) {
 				free(tp->next->lb);
 				HDR_DELETE(tp->next, next, prev, TEXT);
 			}
 
-			/* Resolve the input lines into the file. */
-			if (txt_resolve(sp, ep))
-				ERR;
+			/*
+			 * If not resolving the lines into the file, end
+			 * it with a nul.
+			 */
+			if (LF_ISSET(TXT_RESOLVE)) {
+				if (txt_resolve(sp, ep, hp))
+					ERR;
+			} else {
+				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
+				tp->lb[tp->len] = '\0';
+			}
 
 			/*
 			 * Set the return cursor position to rest on the last
 			 * inserted character.
 			 */
-			rp->lno = tp->lno;
-			rp->cno = sp->cno;
-
-			goto ret;
-		case K_CR:
-		case K_NL:				/* New line. */
-			LINE_RESOLVE;
-
-			/*
-			 * Move remaining insert characters in the line into
-			 * a new TEXT structure.
-			 */
-			if ((ntp = txt_new(sp,
-			    tp->insert + 32, tp->lb + sp->cno + tp->overwrite,
-			    tp->insert)) == NULL)
-				ERR;
-
-			/* Reset bookkeeping for the old line. */
-			tp->len = sp->cno + 1 + tp->insert;
-			tp->insert = tp->overwrite = 0;
-
-			/* Set bookkeeping for the new line. */
-			ntp->lno = tp->lno + 1;
-
-			/* New lines are always N_AUTOINDENT. */
-			if (!LF_ISSET(N_AUTOINDENT))
-				ai_line = tp->lno;
-
-			/* 0^D stops the ai line from changing. */
-			if (carat_st == C_NOCHANGE)
-				ai_line = tp->lno;
-			carat_st = C_NOTSET;
-			if (txt_auto(sp, ep, ai_line, ntp))
-				ERR;
-			sp->cno = ntp->ai;
-			
-			/*
-			 * New lines are always N_APPENDEOL.  If no insert
-			 * characters, add in the cursor character.
-			 */
-			if (ntp->insert == 0) {
-				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
-				LF_SET(N_APPENDEOL);
-				ntp->lb[sp->cno] = CURSOR_CHAR;
-				++ntp->insert;
-				++ntp->len;
+			if (rp != NULL) {
+				rp->lno = tp->lno;
+				rp->cno = sp->cno;
 			}
-
-			/* Update the old line. */
-			if (sp->change(sp, ep, tp->lno, LINE_RESET))
-				ERR;
-
-			/* Swap old and new TEXT's. */
-			tp = ntp;
-
-			/* Reset the cursor. */
-			sp->lno = tp->lno;
-
-			/* Update the new line. */
-			SCREEN_UPDATE(sp, ep, tp->lno, LINE_INSERT);
-
-			goto next_ch;
+			goto ret;
 		case K_CARAT:			/* Delete autoindent chars. */
-			if (LF_ISSET(N_AUTOINDENT) && sp->cno <= tp->ai)
+			if (LF_ISSET(TXT_AUTOINDENT) && sp->cno <= tp->ai)
 				carat_st = C_CARATSET;
 			goto ins_ch;
 		case K_ZERO:			/* Delete autoindent chars. */
-			if (LF_ISSET(N_AUTOINDENT) && sp->cno <= tp->ai)
+			if (LF_ISSET(TXT_AUTOINDENT) && sp->cno <= tp->ai)
 				carat_st = C_ZEROSET;
 			goto ins_ch;
 		case K_CNTRLD:			/* Delete autoindent char. */
-			if (!LF_ISSET(N_AUTOINDENT) || sp->cno > tp->ai)
+			if (!LF_ISSET(TXT_AUTOINDENT) || sp->cno > tp->ai)
 				goto ins_ch;
 			if (sp->cno == 0) {
 				msgq(sp, M_BERR,
@@ -369,19 +399,25 @@ next_ch:	if (replay)
 			}
 			break;
 		case K_CNTRLT:			/* Add autoindent char. */
-			if (sp->cno > tp->ai)
+			if (!LF_ISSET(TXT_CNTRLT) || sp->cno > tp->ai)
 				goto ins_ch;
 			if (txt_indent(sp, tp))
 				break;
 			break;
 		case K_VERASE:			/* Erase the last character. */
+			/* If can erase over the prompt, return. */
+			if (LF_ISSET(TXT_BS) && sp->cno <= tp->offset) {
+				tp->len = tp->offset;
+				goto ret;
+			}
+
 			/*
 			 * If at the beginning of the line, try and drop back
 			 * to a previously inserted line.
 			 */
 			if (sp->cno == 0) {
 				if ((ntp =
-				    txt_backup(sp, ep, tp, flags)) == NULL)
+				    txt_backup(sp, ep, hp, tp, flags)) == NULL)
 					ERR;
 				tp = ntp;
 				break;
@@ -409,7 +445,7 @@ next_ch:	if (replay)
 			 */
 			if (sp->cno == 0) {
 				if ((ntp =
-				    txt_backup(sp, ep, tp, flags)) == NULL)
+				    txt_backup(sp, ep, hp, tp, flags)) == NULL)
 					ERR;
 				tp = ntp;
 			}
@@ -449,7 +485,7 @@ next_ch:	if (replay)
 			 */
 			if (sp->cno == 0) {
 				if ((ntp =
-				    txt_backup(sp, ep, tp, flags)) == NULL)
+				    txt_backup(sp, ep, hp, tp, flags)) == NULL)
 					ERR;
 				tp = ntp;
 			}
@@ -473,6 +509,11 @@ next_ch:	if (replay)
 				tp->overwrite = tp->len - (tp->ai + tp->insert);
 			}
 			break;
+		case K_CNTRLZ:
+			if (kill(0, SIGTSTP))
+				msgq(sp, M_ERR,
+				    "Error: SIGTSTP: %s", strerror(errno));
+			/* FALLTHROUGH */
 		case K_FORMFEED:
 			F_SET(sp, S_REFRESH);
 			break;
@@ -502,7 +543,7 @@ ins_ch:			if (tp->overwrite) {	/* Overwrite a character. */
 			 */
 			if (sp->cno >= tp->len) {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
-				LF_SET(N_APPENDEOL);
+				LF_SET(TXT_APPENDEOL);
 				tp->lb[sp->cno] = CURSOR_CHAR;
 				++tp->insert;
 				++tp->len;
@@ -522,11 +563,9 @@ ins_ch:			if (tp->overwrite) {	/* Overwrite a character. */
 		tp->len = sp->cno + tp->insert + tp->overwrite;
 	}
 
-	/* Free up text buffer. */
-ret:	text_free(&sp->txthdr);
-
-	/* Clear input flag. */
-	F_CLR(sp, S_INPUT);
+	/* Clear input, text buffer in-use flags. */
+ret:	F_CLR(sp, S_INPUT);
+	F_CLR(hp, HDR_INUSE);
 
 	return (eval);
 }
@@ -582,16 +621,17 @@ txt_auto(sp, ep, lno, tp)
  *	Back up to the previously edited line.
  */
 static TEXT *
-txt_backup(sp, ep, tp, flags)
+txt_backup(sp, ep, hp, tp, flags)
 	SCR *sp;
 	EXF *ep;
+	HDR *hp;
 	TEXT *tp;
 	u_int flags;
 {
 	TEXT *ntp;
 	size_t col;
 
-	if (tp->prev == (TEXT *)&sp->txthdr) {
+	if (tp->prev == (TEXT *)hp) {
 		msgq(sp, M_BERR, "Already at the beginning of the insert");
 		return (tp);
 	}
@@ -604,7 +644,7 @@ txt_backup(sp, ep, tp, flags)
 	ntp = tp->prev;
 
 	/* Make sure that we can get enough space. */
-	if (LF_ISSET(N_APPENDEOL) && ntp->len + 1 > ntp->lb_len &&
+	if (LF_ISSET(TXT_APPENDEOL) && ntp->len + 1 > ntp->lb_len &&
 	    binc(sp, &ntp->lb, &ntp->lb_len, ntp->len + 1))
 		return (NULL);
 
@@ -620,7 +660,7 @@ txt_backup(sp, ep, tp, flags)
 
 	/* Set bookkeeping information. */
 	col = tp->len;
-	if (LF_ISSET(N_APPENDEOL)) {
+	if (LF_ISSET(TXT_APPENDEOL)) {
 		tp->lb[col] = CURSOR_CHAR;
 		++tp->insert;
 		++tp->len;
@@ -635,9 +675,10 @@ txt_backup(sp, ep, tp, flags)
  *	Handle an error during input processing.
  */
 static void
-txt_err(sp, ep)
+txt_err(sp, ep, hp)
 	SCR *sp;
 	EXF *ep;
+	HDR *hp;
 {
 	recno_t lno;
 	size_t len;
@@ -651,7 +692,7 @@ txt_err(sp, ep)
 	 * We depend on at least one line number being set in the text
 	 * chain.
 	 */
-	for (lno = ((TEXT *)sp->txthdr.next)->lno;
+	for (lno = ((TEXT *)(hp->next))->lno;
 	    file_gline(sp, ep, lno, &len) == NULL && lno > 0; --lno);
 
 	sp->lno = lno == 0 ? 1 : lno;
@@ -725,38 +766,6 @@ txt_indent(sp, tp)
 }
 
 /*
- * txt_new --
- *	Allocate a new TEXT structure, and append it into the input
- *	text chain.
- */
-static TEXT *
-txt_new(sp, total_len, p, len)
-	SCR *sp;
-	size_t total_len, len;
-	char *p;
-{
-	TEXT *tp;
-
-	if ((tp = malloc(sizeof(TEXT))) == NULL)
-		goto mem;
-	if ((tp->lb = malloc(tp->lb_len = total_len)) == NULL) {
-		free(tp);
-mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (NULL);
-	}
-#ifdef DEBUG
-	memset(tp->lb, 0, total_len - 1);
-#endif
-
-	if (tp->len = len)
-		memmove(tp->lb, p, len);
-	tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
-
-	HDR_INSERT(tp, &sp->txthdr, next, prev, TEXT);
-	return (tp);
-}
-
-/*
  * txt_outdent --
  *	Handle ^D outdents.
  *
@@ -823,14 +832,15 @@ txt_outdent(sp, tp)
  *	Resolve the input text chain into the file.
  */
 static int
-txt_resolve(sp, ep)
+txt_resolve(sp, ep, hp)
 	SCR *sp;
 	EXF *ep;
+	HDR *hp;
 {
 	TEXT *tp;
 	recno_t lno;
 
-	tp = sp->txthdr.next;
+	tp = hp->next;
 
 	/* The first line replaces a current line. */
 	if (file_sline(sp, ep, tp->lno, tp->lb, tp->len))
