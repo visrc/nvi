@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.53 1996/12/18 15:57:37 bostic Exp $ (Berkeley) $Date: 1996/12/18 15:57:37 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.54 1996/12/18 16:59:31 bostic Exp $ (Berkeley) $Date: 1996/12/18 16:59:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -600,10 +600,14 @@ cl_rename(sp, name, on)
 
 		/*
 		 * XXX
-		 * Try and figure out the current name of this window.
+		 * Try and figure out the current name of this window.  There
+		 * are two forms of the xwininfo output I've seen:
+		 *
+		 * Window id: 0x400000d "name"
+		 * Window id: 0x140000d (name)
 		 */
-#define	COMMAND	\
-	"expr \"`xwininfo -id $WINDOWID | grep id:`\" : '.* \"\\(.*\\)\"'"
+#define	COMMAND \
+	"expr \"`xwininfo -id $WINDOWID | grep id:`\" : '.* [\"(]\\(.*\\)[\")]'"
 
 		if (clp->oname == NULL &&
 		    (pfp = popen(COMMAND, "r")) != NULL &&
