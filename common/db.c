@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.15 1995/11/07 10:45:15 bostic Exp $ (Berkeley) $Date: 1995/11/07 10:45:15 $";
+static char sccsid[] = "$Id: db.c,v 10.16 1995/11/22 10:36:14 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:36:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,15 +90,19 @@ db_get(sp, lno, flags, pp, lenp)
 	TEXT *tp;
 	recno_t l1, l2;
 
-	ep = sp->ep;
-
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
 	 * have to have an OOB condition for the look-aside into the input
 	 * buffer anyway.
 	 */
 	if (lno == 0)
-		goto err;
+		goto err1;
+
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		goto err3;
+	}
 
 	if (LF_ISSET(DBG_NOCACHE))
 		goto nocache;
@@ -149,11 +153,11 @@ nocache:
 	key.size = sizeof(lno);
 	switch (ep->db->get(ep->db, &key, &data, 0)) {
         case -1:
-		goto fatal;
+		goto err2;
 	case 1:
-err:		if (LF_ISSET(DBG_FATAL))
-fatal:			db_err(sp, lno);
-		if (lenp != NULL)
+err1:		if (LF_ISSET(DBG_FATAL))
+err2:			db_err(sp, lno);
+err3:		if (lenp != NULL)
 			*lenp = 0;
 		if (pp != NULL)
 			*pp = NULL;
@@ -192,6 +196,12 @@ db_delete(sp, lno)
 #if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", (u_long)lno);
 #endif
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		return (1);
+	}
+		
 	/* Update marks, @ and global commands. */
 	if (mark_insdel(sp, LINE_DELETE, lno))
 		return (1);
@@ -202,7 +212,6 @@ db_delete(sp, lno)
 	log_line(sp, lno, LOG_LINE_DELETE);
 
 	/* Update file. */
-	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	SIGBLOCK;
@@ -249,8 +258,13 @@ db_append(sp, update, lno, p, len)
 #if defined(DEBUG) && 0
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		return (1);
+	}
+		
 	/* Update file. */
-	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
@@ -318,9 +332,13 @@ db_insert(sp, lno, p, len)
 	TRACE(sp, "insert before %lu: len %lu {%.*s}\n",
 	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
-
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		return (1);
+	}
+		
 	/* Update file. */
-	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
@@ -378,11 +396,17 @@ db_set(sp, lno, p, len)
 	TRACE(sp, "replace line %lu: len %lu {%.*s}\n",
 	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
+
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		return (1);
+	}
+		
 	/* Log before change. */
 	log_line(sp, lno, LOG_LINE_RESET_B);
 
 	/* Update file. */
-	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
@@ -424,8 +448,13 @@ db_exist(sp, lno)
 {
 	EXF *ep;
 
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		return (1);
+	}
+		
 	/* Check the last-line number cache. */
-	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO)
 		return (lno > OOBLNO && (lno <= (F_ISSET(sp, S_INPUT) &&
 		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
@@ -450,8 +479,13 @@ db_last(sp, lnop)
 	EXF *ep;
 	recno_t lno;
 
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		return (1);
+	}
+		
 	/* Check the last-line number cache. */
-	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO) {
 		*lnop = (F_ISSET(sp, S_INPUT) &&
 		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
