@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.19 1994/08/02 10:12:46 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:12:46 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.20 1994/08/03 10:54:09 bostic Exp $ (Berkeley) $Date: 1994/08/03 10:54:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,8 +158,8 @@ aci(sp, ep, cmdp, cmd)
 			sp->lno = 1;
 		break;
 	case CHANGE:
-	case INSERT:
-		--sp->lno;
+		if (sp->lno != 1)
+			--sp->lno;
 		break;
 	}
 
