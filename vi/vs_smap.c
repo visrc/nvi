@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.41 1994/05/21 09:46:58 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:46:58 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.42 1994/07/17 12:27:29 bostic Exp $ (Berkeley) $Date: 1994/07/17 12:27:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -545,7 +545,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 	recno_t count;
 	SMAP *smp;
 {
-	int cursor_set, echanged;
+	int cursor_set, echanged, zset;
 	SMAP s1, s2;
 
 	/*
@@ -562,7 +562,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 	if (svi_sm_next(sp, ep, TMAP, &s1))
 		return (1);
 	if (s1.lno > TMAP->lno && !file_gline(sp, ep, s1.lno, NULL)) {
-		if (scmd == CNTRL_Y || smp == TMAP) {
+		if (scmd == CNTRL_Y || scmd == Z_PLUS || smp == TMAP) {
 			v_eof(sp, ep, NULL);
 			return (1);
 		}
@@ -625,7 +625,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 			return (0);
 	}
 
-	for (echanged = 0; count; --count) {
+	for (echanged = zset = 0; count; --count) {
 		/* Decide what would show up on the screen. */
 		if (svi_sm_next(sp, ep, TMAP, &s1))
 			return (1);
@@ -637,11 +637,23 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 		/* Scroll the screen cursor up one logical line. */
 		if (svi_sm_1up(sp, ep))
 			return (1);
-		if (scmd == CNTRL_E)
+		switch (scmd) {
+		case CNTRL_E:
 			if (smp > HMAP)
 				--smp;
 			else
 				echanged = 1;
+			break;
+		case Z_PLUS:
+			if (zset) {
+				if (smp > HMAP)
+					--smp;
+			} else {
+				smp = TMAP;
+				zset = 1;
+			}
+			break;
+		}
 	}
 
 	if (cursor_set)
@@ -684,11 +696,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 				break;
 		break;
 	case Z_PLUS:
-		 /*
-		  * The z+ commands always move the cursor to the first
-		  * line of the screen.
-		  */
-		smp = HMAP;
+		 /* The z+ command moves the cursor to the first new line. */
 		break;
 	default:
 		abort();
@@ -769,11 +777,11 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 	enum sctype scmd;
 {
 	SMAP s1, s2;
-	int cursor_set, ychanged;
+	int cursor_set, ychanged, zset;
 
 	/* Check to see if movement is possible. */
 	if (HMAP->lno == 1 && HMAP->off == 1 &&
-	    (scmd == CNTRL_Y || smp == HMAP)) {
+	    (scmd == CNTRL_Y || scmd == Z_CARAT || smp == HMAP)) {
 		v_sof(sp, NULL);
 		return (1);
 	}
@@ -823,7 +831,7 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 			return (0);
 	}
 
-	for (ychanged = 0; count; --count) {
+	for (ychanged = zset = 0; count; --count) {
 		/* If the line doesn't exist, we're done. */
 		if (HMAP->lno == 1 && HMAP->off == 1)
 			break;
@@ -831,11 +839,23 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 		/* Scroll the screen and cursor down one logical line. */
 		if (svi_sm_1down(sp, ep))
 			return (1);
-		if (scmd == CNTRL_Y)
+		switch (scmd) {
+		case CNTRL_Y:
 			if (smp < TMAP)
 				++smp;
 			else
 				ychanged = 1;
+			break;
+		case Z_CARAT:
+			if (zset) {
+				if (smp < TMAP)
+					++smp;
+			} else {
+				smp = HMAP;
+				zset = 1;
+			}
+			break;
+		}
 	}
 
 	if (scmd != CNTRL_Y && cursor_set)
@@ -876,11 +896,7 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 		}
 		return (0);
 	case Z_CARAT:
-		 /*
-		  * The z^ commands always move the cursor to the last
-		  * line of the screen.
-		  */
-		smp = TMAP;
+		 /* The z^ command moves the cursor to the first new line. */
 		break;
 	default:
 		abort();
