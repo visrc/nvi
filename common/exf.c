@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.52 1993/11/23 15:52:47 bostic Exp $ (Berkeley) $Date: 1993/11/23 15:52:47 $";
+static char sccsid[] = "$Id: exf.c,v 8.53 1993/11/26 16:16:54 bostic Exp $ (Berkeley) $Date: 1993/11/26 16:16:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,17 +50,20 @@ file_add(sp, frp_append, name, ignore)
 	int ignore;
 {
 	FREF *frp;
+	char *p;
 
 	/*
-	 * Just return it if it already exists.  Note that we do the
-	 * test against the user's original name, and not any changed
-	 * or temporary name.
+	 * Return it if it already exists.  Note that we test against the
+	 * user's current name, whatever that happens to be, including if
+	 * it's a temporary file.
 	 */
 	if (name != NULL)
 		for (frp = sp->frefq.tqh_first;
-		    frp != NULL; frp = frp->q.tqe_next)
-			if (frp->name != NULL && !strcmp(frp->name, name))
+		    frp != NULL; frp = frp->q.tqe_next) {
+			p = FILENAME(frp);
+			if (p != NULL && !strcmp(p, name))
 				return (frp);
+		}
 
 	/* Allocate and initialize the FREF structure. */
 	if ((frp = malloc(sizeof(FREF))) == NULL)
@@ -320,10 +323,15 @@ file_init(sp, frp, rcv_name, force)
 
 	/*
 	 * Set the previous file pointer and the alternate file name to be
-	 * the current file.  Note that if the current file was a temporary
-	 * file, the previous call to file_end() unliked it and free'd the
-	 * name.  So, there is no previous file, and there is no alternate
-	 * file name.  This matches historical practice.
+	 * the file we're about to discard.
+	 *
+	 * !!!
+	 * If the current file was a temporary file, the call to file_end()
+	 * unlinked it and free'd the name.  So, there is no previous file,
+	 * and there is no alternate file name.  This matches historical
+	 * practice, although in historical vi it could only happen as the
+	 * result of the initial command, i.e. if vi was execute without a
+	 * file name.
 	 */
 	if (sp->frp != NULL) {
 		p = FILENAME(sp->frp);
