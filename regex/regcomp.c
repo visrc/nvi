@@ -971,7 +971,7 @@ register int ch;
 	if ((p->g->cflags&REG_ICASE) && isalpha(ch) && othercase(ch) != ch)
 		bothcases(p, ch);
 	else {
-		EMIT(OCHAR, (unsigned char)ch);
+		EMIT(OCHAR, (UCHAR_T)ch);
 /*
 		if (cap[ch] == 0)
 			cap[ch] = p->g->ncategories++;
