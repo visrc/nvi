@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.26 1993/10/07 12:15:25 bostic Exp $ (Berkeley) $Date: 1993/10/07 12:15:25 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.27 1993/10/07 15:25:07 bostic Exp $ (Berkeley) $Date: 1993/10/07 15:25:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1222,7 +1222,7 @@ txt_margin(sp, tp, didbreak, pushc)
 		return (1);
 
 	sp->cno -= tlen;
-	tp->len -= tlen;
+	tp->overwrite += tlen;
 	*didbreak = 1;
 	return (0);
 }
