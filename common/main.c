@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.7 1995/06/14 11:39:27 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:39:27 $";
+static char sccsid[] = "$Id: main.c,v 10.8 1995/06/23 19:14:08 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:14:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,54 +38,65 @@ static char sccsid[] = "$Id: main.c,v 10.7 1995/06/14 11:39:27 bostic Exp $ (Ber
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
-#include <pathnames.h>
 
 #include "common.h"
 #include "../ex/tag.h"
 
 static void	 v_estr __P((char *, int, char *));
-static GS	*v_gs_init __P((char *));
 static int	 v_obsolete __P((char *, char *[]));
-
-static char *myname;			/* Program name. */
 
 /*
  * v_init --
  *	Main editor initialization routine.
  *
- * PUBLIC: init_t v_init __P((int, char *[], recno_t, size_t, GS **));
+ * PUBLIC: init_t v_init __P((GS *, int, char *[], recno_t, size_t));
  */
 init_t
-v_init(argc, argv, rows, cols, gpp)
+v_init(gp, argc, argv, rows, cols)
+	GS *gp;
 	int argc;
 	char *argv[];
 	recno_t rows;
 	size_t cols;
-	GS **gpp;
 {
 	extern int optind;
 	extern char *optarg;
 	FREF *frp;
-	GS *gp;
 	SCR *sp;
 	init_t rval;
 	u_int flags;
-	int ch, flagchk, lflag, readonly, silent, snapshot;
-	char *excmdarg, *tag_f, *trace_f, *wsizearg;
-	char path[MAXPATHLEN];
+	int ch, flagchk, lflag, readonly, silent;
+	char *tag_f, *wsizearg;
+	char path[256];
 
-	/* Set screen type and mode based on the program name. */
+	/*
+	 * Common global structure initialization.
+	 *
+	 * !!!
+	 * Signals not on, no need to block them for queue manipulation.
+	 */
+	CIRCLEQ_INIT(&gp->dq);
+	CIRCLEQ_INIT(&gp->hq);
+	LIST_INIT(&gp->ecq);
+	LIST_INSERT_HEAD(&gp->ecq, &gp->excmd, q);
+	LIST_INIT(&gp->msgq);
+	gp->noprint = DEFAULT_NOPRINT;
+
+	/* Structures shared by screens so stored in the GS structure. */
+	CIRCLEQ_INIT(&gp->frefq);
+	CIRCLEQ_INIT(&gp->dcb_store.textq);
+	LIST_INIT(&gp->cutq);
+	LIST_INIT(&gp->seqq);
+
+	/* Set initial screen type and mode based on the program name. */
 	readonly = 0;
-	if ((myname = strrchr(*argv, '/')) == NULL)
-		myname = *argv;
-	else
-		++myname;
-	if (!strcmp(myname, "ex") || !strcmp(myname, "nex"))
+	if (!strcmp(gp->progname, "ex") || !strcmp(gp->progname, "nex"))
 		LF_INIT(S_EX);
 	else {
 		/* Nview, view, xview are readonly. */
-		if (!strcmp(myname, "nview") ||
-		    !strcmp(myname, "view") || !strcmp(myname, "xview"))
+		if (!strcmp(gp->progname, "nview") ||
+		    !strcmp(gp->progname, "view") ||
+		    !strcmp(gp->progname, "xview"))
 			readonly = 1;
 		
 		/* Vi is the default. */
@@ -93,14 +104,17 @@ v_init(argc, argv, rows, cols, gpp)
 	}
 
 	/* Convert old-style arguments into new-style ones. */
-	if (v_obsolete(myname, argv))
+	if (v_obsolete(gp->progname, argv))
 		return (INIT_ERR);
 
 	/* Parse the arguments. */
 	flagchk = '\0';
-	excmdarg = tag_f = trace_f = wsizearg = NULL;
+	tag_f = wsizearg = NULL;
 	lflag = silent = 0;
-	snapshot = 1;
+
+	/* Set the file snapshot flag. */
+	F_SET(gp, G_SNAPSHOT);
+
 #ifdef DEBUG
 	while ((ch = getopt(argc, argv, "c:DeFlRrsT:t:vw:")) != EOF)
 #else
@@ -108,7 +122,11 @@ v_init(argc, argv, rows, cols, gpp)
 #endif
 		switch (ch) {
 		case 'c':		/* Run the command. */
-			excmdarg = optarg;
+			/*
+			 * XXX
+			 * We should support multiple -c options.
+			 */
+			gp->icommand = optarg;
 			break;
 #ifdef DEBUG
 		case 'D':
@@ -121,7 +139,7 @@ v_init(argc, argv, rows, cols, gpp)
 			LF_SET(S_EX);
 			break;
 		case 'F':		/* No snapshot. */
-			snapshot = 0;
+			F_CLR(gp, G_SNAPSHOT);
 			break;
 		case 'l':		/* Set lisp, showmatch options. */
 			lflag = 1;
@@ -131,7 +149,7 @@ v_init(argc, argv, rows, cols, gpp)
 			break;
 		case 'r':		/* Recover. */
 			if (flagchk == 't') {
-				v_estr(myname, 0,
+				v_estr(gp->progname, 0,
 				    "only one of -r and -t may be specified.");
 				return (INIT_ERR);
 			}
@@ -142,17 +160,22 @@ v_init(argc, argv, rows, cols, gpp)
 			break;
 #ifdef DEBUG
 		case 'T':		/* Trace. */
-			trace_f = optarg;
+			if ((gp->tracefp = fopen(optarg, "w")) == NULL) {
+				v_estr(gp->progname, errno, optarg);
+				goto err;
+			}
+			(void)fprintf(gp->tracefp,
+			    "\n===\ntrace: open %s\n", optarg);
 			break;
 #endif
 		case 't':		/* Tag. */
 			if (flagchk == 'r') {
-				v_estr(myname, 0,
+				v_estr(gp->progname, 0,
 				    "only one of -r and -t may be specified.");
 				return (INIT_ERR);
 			}
 			if (flagchk == 't') {
-				v_estr(myname, 0,
+				v_estr(gp->progname, 0,
 				    "only one tag file may be specified.");
 				return (INIT_ERR);
 			}
@@ -173,47 +196,17 @@ v_init(argc, argv, rows, cols, gpp)
 	argc -= optind;
 	argv += optind;
 
-	if ((gp = v_gs_init(myname)) == NULL)
-		return (INIT_ERR);
-
-	/* Set initial command string. */
-	gp->icommand = excmdarg;
-
-	/* Set the file snapshot flag. */
-	if (snapshot)
-		F_SET(gp, G_SNAPSHOT);
-
-	/* Silent is only applicable to ex. */
-	if (silent && !LF_ISSET(S_EX)) {
-		v_estr(myname, 0, "-s option is only applicable to ex.");
-		goto err;
-	}
-
 	/*
-	 * If not reading from a terminal, it's like -s was specified to
-	 * ex.  Vi always reads from (and writes to) a terminal unless
-	 * we're just listing recover files, so fail if it's not a terminal.
+	 * -s option is only meaningful to ex.
+	 *
+	 * If not reading from a terminal, it's like -s was specified.
 	 */
-	if (LF_ISSET(S_EX)) {
-		if (!F_ISSET(gp, G_STDIN_TTY))
-			silent = 1;
-	} else if (flagchk != 'r' &&
-	    (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO))) {
-		msgq(NULL, M_ERR,
-		    "016|Vi's standard input and output must be a terminal");
+	if (silent && !LF_ISSET(S_EX)) {
+		v_estr(gp->progname, 0, "-s option is only applicable to ex.");
 		goto err;
 	}
-
-#ifdef DEBUG
-	/* Trace file initialization. */
-	if (trace_f != NULL) {
-		if ((gp->tracefp = fopen(trace_f, "w")) == NULL) {
-			v_estr(gp->progname, errno, trace_f);
-			goto err;
-		}
-		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", trace_f);
-	}
-#endif
+	if (LF_ISSET(S_EX) && !F_ISSET(gp, G_STDIN_TTY))
+		silent = 1;
 
 	/*
 	 * Build and initialize the first/current screen.  This is a bit
@@ -352,73 +345,7 @@ err:			rval = INIT_ERR;
 		v_end(gp);
 		return (rval);
 	}
-
-	*gpp = gp;
 	return (INIT_OK);
-}
-
-/*
- * v_gs_init --
- *	Build and initialize the GS structure.
- */
-static GS *
-v_gs_init(name)
-	char *name;
-{
-	GS *gp;
-	int fd;
-
-	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
-	if (gp == NULL) {
-		v_estr(name, errno, NULL);
-		return (NULL);
-	}
-	gp->progname = name;
-
-	/*
-	 * !!!
-	 * Signals not on, no need to block them for queue manipulation.
-	 */
-	CIRCLEQ_INIT(&gp->dq);
-	CIRCLEQ_INIT(&gp->hq);
-	LIST_INIT(&gp->ecq);
-	LIST_INSERT_HEAD(&gp->ecq, &gp->excmd, q);
-	LIST_INIT(&gp->msgq);
-	gp->noprint = DEFAULT_NOPRINT;
-
-	/* Structures shared by screens so stored in the GS structure. */
-	CIRCLEQ_INIT(&gp->frefq);
-	CIRCLEQ_INIT(&gp->dcb_store.textq);
-	LIST_INIT(&gp->cutq);
-	LIST_INIT(&gp->seqq);
-
-	/* Set a flag if we're reading from the tty. */
-	if (isatty(STDIN_FILENO))
-		F_SET(gp, G_STDIN_TTY);
-
-	/*
-	 * Set the G_STDIN_TTY flag.  It's purpose is to avoid setting and
-	 * resetting the tty if the input isn't from there.
-	 *
-	 * Set the G_TERMIOS_SET flag.  It's purpose is to avoid using the
-	 * original_termios information (mostly special character values)
-	 * if it's not valid.  We expect that if we've lost our controlling
-	 * terminal that the open() (but not the tcgetattr()) will fail.
-	 */
-	if (F_ISSET(gp, G_STDIN_TTY)) {
-		if (tcgetattr(STDIN_FILENO, &gp->original_termios) == -1)
-			goto tcfail;
-		F_SET(gp, G_TERMIOS_SET);
-	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {
-		if (tcgetattr(fd, &gp->original_termios) == -1) {
-tcfail:			v_estr(name, errno, "tcgetattr");
-			free(gp);
-			return (NULL);
-		}
-		F_SET(gp, G_TERMIOS_SET);
-		(void)close(fd);
-	}
-	return (gp);
 }
 
 /*
@@ -486,7 +413,7 @@ v_end(gp)
 	 */
 	while ((mp = gp->msgq.lh_first) != NULL) {
 		(void)fprintf(stderr,
-		    "%s: %.*s.\n", myname, (int)mp->len, mp->buf);
+		    "%s: %.*s.\n", gp->progname, (int)mp->len, mp->buf);
 		LIST_REMOVE(mp, q);
 #if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 		free(mp->buf);
