@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.6 1994/04/07 11:35:47 bostic Exp $ (Berkeley) $Date: 1994/04/07 11:35:47 $
+.\"     $Id: set.opt.roff,v 8.7 1994/04/07 13:06:06 bostic Exp $ (Berkeley) $Date: 1994/04/07 13:06:06 $
 .\"
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
@@ -331,15 +331,14 @@ suffices as well.
 .Nm \&Ex
 only.
 #ifdef MANUAL
-Precede error messages with a bell.
+Announce error messages with a bell.
 #endif
 #ifdef REFERENCE
-Causes
-.Nm \&ex
-error messages to be preceded by a bell.
+.Nm \&Ex
+error messages are normally presented in inverse video.
+If that is not possible for the terminal, setting this option causes
+error messages to be announced by ringing the terminal bell.
 #endif
-.br
-.Em "This option is not yet implemented."
 .It Li "exrc, ex [off]"
 #ifdef MANUAL
 Never read startup files in the local directory.
