@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.71 1994/08/07 13:25:31 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:25:31 $
+ *	$Id: ex.h,v 8.72 1994/08/08 10:11:24 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:11:24 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -152,15 +152,15 @@ int	argv_free __P((SCR *));
 
 /* Ex function prototypes. */
 int	ex __P((SCR *, EXF *));
-int	ex_cfile __P((SCR *, EXF *, char *));
-int	ex_cmd __P((SCR *, EXF *, char *, size_t));
+int	ex_cfile __P((SCR *, EXF *, char *, int));
+int	ex_cmd __P((SCR *, EXF *, char *, size_t, int));
 int	ex_cdalloc __P((SCR *, char *));
 int	ex_cdfree __P((SCR *));
 int	ex_end __P((SCR *));
 int	ex_exec_proc __P((SCR *, char *, char *, char *));
 int	ex_gb __P((SCR *, EXF *, TEXTH *, int, u_int));
 int	ex_getline __P((SCR *, FILE *, size_t *));
-int	ex_icmd __P((SCR *, EXF *, char *, size_t));
+int	ex_icmd __P((SCR *, EXF *, char *, size_t, int));
 int	ex_init __P((SCR *, EXF *));
 int	ex_is_abbrev __P((char *, size_t));
 int	ex_is_unmap __P((char *, size_t));
