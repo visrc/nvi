@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.21 1996/12/10 17:07:21 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:21 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.22 1996/12/10 21:05:08 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:05:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,41 +33,24 @@ static const char sccsid[] = "$Id: m_main.c,v 8.21 1996/12/10 17:07:21 bostic Ex
 #include "../ip_vi/ip.h"
 #include "ipc_motif.h"
 #include "ipc_mutil.h"
-#include "ipc_extern.h"
 #include "ipc_mextern.h"
 #include "pathnames.h"
 
-#if XtSpecificationRelease == 4
-#define	ArgcType	Cardinal *
-#else
-#define	ArgcType	int *
-#endif
+#include "nvi.xbm"		/* Icon bitmap. */
 
-int	i_fd, o_fd;				/* Input/output fd's. */
+int vi_ofd;			/* GLOBAL: known to vi_pipe_input_func(). */
 
-void	ip_siginit __P((void));
-void	onchld __P((int));
-void	onintr __P((int));
-
-
-/*
- * Globals and costants
- */
-
-/* our icon bitmap */
-#include "nvi.xbm"
-
-static	Pixmap		icon_pm;
+static	pid_t		pid;
 static	Pixel		icon_fg,
 			icon_bg;
-
+static	Pixmap		icon_pm;
 static	Widget		top_level;
 static	XtAppContext	ctx;
 
+static void onchld __P((int));
 
 
 /* resources for the vi widgets unless the user overrides them */
-
 String	fallback_rsrcs[] = {
 
     "*font:			-*-*-*-r-*--14-*-*-*-m-*-*-*",
@@ -100,7 +83,7 @@ String	fallback_rsrcs[] = {
     "?highlightColor:		red"
 };
 
-static  XutResource resource[] = {
+static XutResource resource[] = {
     { "iconForeground",	XutRKpixel,	&icon_fg	},
     { "iconBackground",	XutRKpixel,	&icon_bg	},
 };
@@ -118,7 +101,7 @@ static	String	*get_fallback_rsrcs( name )
 
     /* connect to server and see if the CDE atoms are present */
     d = XOpenDisplay(0);
-    running_cde = _vi_is_cde( d );
+    running_cde = __vi_is_cde( d );
     XCloseDisplay(d);
 
     for ( i=0; i<XtNumber(fallback_rsrcs); i++ ) {
@@ -126,8 +109,7 @@ static	String	*get_fallback_rsrcs( name )
 	/* stop here if running CDE */
 	if ( fallback_rsrcs[i][0] == '?' ) {
 	    if ( running_cde ) break;
-	    if ((fallback_rsrcs[i] = strdup(fallback_rsrcs[i])) == NULL)
-		NULL;
+	    (void)fallback_rsrcs[i] = strdup(fallback_rsrcs[i]);
 	    fallback_rsrcs[i][0] = '*';
 	}
 
@@ -152,7 +134,7 @@ static	void	create_top_level_shell( argc, argv )
 #endif
 {
     char	*ptr;
-    Widget	main_w, menu_b, pane_w;
+    Widget	main_w, menu_b;
     Display	*display;
 
     /* X gets quite upset if the program name is not simple */
@@ -213,6 +195,8 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
+	int i_fd;
+
 	/*
 	 * Initialize the X widgetry.  We must do this before picking off
 	 * arguments as well-behaved X programs have common argument lists
@@ -220,70 +204,32 @@ main(argc, argv)
 	 */
 	create_top_level_shell(&argc, argv);
 
-	/* Run vi: the child returns. */
-	(void)run_vi(argc, argv, &i_fd, &o_fd);
+	/* We need to know if the child process dies horribly. */
+	(void)signal(SIGCHLD, onchld);
 
-	/* Initialize signals. */
-	ip_siginit();
+	/* Run vi: the parent returns, the child is the vi process. */
+	(void)vi_run(argc, argv, &i_fd, &vi_ofd, &pid);
 
-	/* tell X that we are interested in input on the pipe */
-	XtAppAddInput( ctx, i_fd, XtInputReadMask, vi_pipe_input_func, NULL );
+	/* Tell X that we are interested in input on the pipe. */
+	XtAppAddInput(ctx, i_fd,
+	    (XtPointer)XtInputReadMask, vi_pipe_input_func, NULL);
 
 	/* Main loop. */
-	XtAppMainLoop( ctx );
+	XtAppMainLoop(ctx);
 
 	/* NOTREACHED */
 	abort();
 }
 
 /*
- * ip_siginit --
- *	Initialize the signals.
- */
-void
-ip_siginit()
-{
-	/* We need to know if vi dies horribly. */
-	(void)signal(SIGCHLD, onchld);
-
-	/* We want to allow interruption at least for now. */
-	(void)signal(SIGINT, onintr);
-}
-
-/*
  * onchld --
  *	Handle SIGCHLD.
  */
-void
+static void
 onchld(signo)
 	int signo;
 {
-    /* not sure at the moment, but it's likely the case that
-     * if the vi process goes away, we should too
-     */
-    vi_fatal_message( top_level, "The VI process died.  Exiting" );
-}
-
-/*
- * onintr --
- *	Handle SIGINT.
- */
-void
-onintr(signo)
-	int signo;
-{
-	(void)signal(SIGINT, SIG_DFL);
-	kill(getpid(), SIGINT);
-}
-
-/*
- * usage --
- *	Usage message.
- */
-void
-usage()
-{
-	(void)fprintf(stderr,
-	    "usage: vi_curses [-D] [-P vi_program] [vi arguments]\n");
-	exit(1);
+	/* If the vi process goes away, we exit as well. */
+	if (kill(pid, 0))
+		vi_fatal_message(top_level, "The vi process died.  Exiting.");
 }
