@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.18 1993/11/30 10:29:21 bostic Exp $ (Berkeley) $Date: 1993/11/30 10:29:21 $";
+static char sccsid[] = "$Id: seq.c,v 8.19 1993/12/02 10:36:50 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:36:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,52 +25,52 @@ static char sccsid[] = "$Id: seq.c,v 8.18 1993/11/30 10:29:21 bostic Exp $ (Berk
  *	Internal version to enter a sequence.
  */
 int
-seq_set(sp, name, input, output, stype, userdef)
+seq_set(sp, name, nlen, input, ilen, output, olen, stype, userdef)
 	SCR *sp;
 	char *name, *input, *output;
+	size_t nlen, ilen, olen;
 	enum seqtype stype;
 	int userdef;
 {
 	SEQ *lastqp, *qp;
-	int ilen;
-	char *p;
+	CHAR_T *p;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "seq_set: name {%s} input {%s} output {%s}\n",
 	    name ? name : "", input, output);
 #endif
 	/* Just replace the output field in any previous occurrence. */
-	ilen = strlen(input);
 	if ((qp = seq_find(sp, &lastqp, input, ilen, stype, NULL)) != NULL) {
-		if ((p = strdup(output)) == NULL)
+		if ((p = v_strdup(sp, output, olen)) == NULL)
 			goto mem1;
 		FREE(qp->output, qp->olen);
-		qp->olen = strlen(output);
+		qp->olen = olen;
 		qp->output = p;
 		return (0);
 	}
 
 	/* Allocate and initialize space. */
-	if ((qp = malloc(sizeof(SEQ))) == NULL) 
+	if ((qp = calloc(1, sizeof(SEQ))) == NULL) 
 		goto mem1;
 	if (name == NULL)
 		qp->name = NULL;
-	else if ((qp->name = strdup(name)) == NULL)
+	else if ((qp->name = v_strdup(sp, name, nlen)) == NULL)
 		goto mem2;
-	if ((qp->input = strdup(input)) == NULL)
+	if ((qp->input = v_strdup(sp, input, ilen)) == NULL)
 		goto mem3;
-	if ((qp->output = strdup(output)) == NULL) {
+	if ((qp->output = v_strdup(sp, output, olen)) == NULL) {
 		FREE(qp->input, ilen);
 mem3:		if (qp->name != NULL)
-			FREE(qp->name, strlen(qp->name) + 1);
+			FREE(qp->name, nlen);
 mem2:		FREE(qp, sizeof(SEQ));
 mem1:		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 
 	qp->stype = stype;
+	qp->nlen = nlen;
 	qp->ilen = ilen;
-	qp->olen = strlen(output);
+	qp->olen = olen;
 	qp->flags = userdef ? S_USERDEF : 0;
 
 	/* Link into the chain. */
@@ -91,20 +91,20 @@ mem1:		msgq(sp, M_SYSERR, NULL);
  *	Delete a sequence.
  */
 int
-seq_delete(sp, input, stype)
+seq_delete(sp, input, ilen, stype)
 	SCR *sp;
 	char *input;
+	size_t ilen;
 	enum seqtype stype;
 {
 	SEQ *qp;
 
-	if ((qp =
-	    seq_find(sp, NULL, input, strlen(input), stype, NULL)) == NULL)
+	if ((qp = seq_find(sp, NULL, input, ilen, stype, NULL)) == NULL)
 		return (1);
 
 	LIST_REMOVE(qp, q);
 	if (qp->name != NULL)
-		FREE(qp->name, strlen(qp->name) + 1);
+		FREE(qp->name, qp->nlen);
 	FREE(qp->input, qp->ilen);
 	FREE(qp->output, qp->olen);
 	FREE(qp, sizeof(SEQ));
@@ -194,7 +194,7 @@ seq_dump(sp, stype, isname)
 {
 	CHNAME const *cname;
 	SEQ *qp;
-	int ch, cnt, len, tablen;
+	int cnt, len, olen, tablen;
 	char *p;
 
 	cnt = 0;
@@ -204,19 +204,21 @@ seq_dump(sp, stype, isname)
 		if (stype != qp->stype)
 			continue;
 		++cnt;
-		for (p = qp->input, len = 0; (ch = *p); ++p, ++len)
-			(void)ex_printf(EXCOOKIE, "%s", cname[ch].name);
+		for (p = qp->input,
+		    olen = qp->ilen, len = 0; olen > 0; --olen, ++len)
+			(void)ex_printf(EXCOOKIE, "%s", cname[*p++].name);
 		for (len = tablen - len % tablen; len; --len)
 			(void)ex_printf(EXCOOKIE, " ");
 
-		for (p = qp->output; (ch = *p); ++p)
-			(void)ex_printf(EXCOOKIE, "%s", cname[ch].name);
+		for (p = qp->output, olen = qp->olen; olen > 0; --olen)
+			(void)ex_printf(EXCOOKIE, "%s", cname[*p++].name);
 
-		if (isname && qp->name) {
+		if (isname && qp->name != NULL) {
 			for (len = tablen - len % tablen; len; --len)
 				(void)ex_printf(EXCOOKIE, " ");
-			for (p = qp->name, len = 0; (ch = *p); ++p, ++len)
-				(void)ex_printf(EXCOOKIE, "%s", cname[ch].name);
+			for (p = qp->name, olen = qp->nlen; olen > 0; --olen)
+				(void)ex_printf(EXCOOKIE,
+				    "%s", cname[*p++].name);
 		}
 		(void)ex_printf(EXCOOKIE, "\n");
 	}
@@ -235,12 +237,12 @@ seq_save(sp, fp, prefix, stype)
 	enum seqtype stype;
 {
 	SEQ *qp;
+	size_t olen;
 	int ch, esc;
 	char *p;
 
-	(void)term_key_ch(sp, K_VLNEXT, &esc);
-
 	/* Write a sequence command for all keys the user defined. */
+	(void)term_key_ch(sp, K_VLNEXT, &esc);
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (!F_ISSET(qp, S_USERDEF))
 			continue;
@@ -248,14 +250,16 @@ seq_save(sp, fp, prefix, stype)
 			continue;
 		if (prefix)
 			(void)fprintf(fp, "%s", prefix);
-		for (p = qp->input; (ch = *p) != '\0'; ++p) {
+		for (p = qp->input, olen = qp->ilen; olen > 0; --olen) {
+			ch = *p++;
 			if (ch == esc || ch == '|' ||
 			    isblank(ch) || term_key_val(sp, ch) == K_NL)
 				(void)putc(esc, fp);
 			(void)putc(ch, fp);
 		}
 		(void)putc(' ', fp);
-		for (p = qp->output; (ch = *p) != '\0'; ++p) {
+		for (p = qp->output, olen = qp->olen; olen > 0; --olen) {
+			ch = *p++;
 			if (ch == esc || ch == '|' ||
 			    term_key_val(sp, ch) == K_NL)
 				(void)putc(esc, fp);
