@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.20 1993/04/05 07:10:32 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:32 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.21 1993/04/13 16:26:37 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:26:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,7 +78,7 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 			p = np;
 		}
 
-		ch = *p;
+		ch = *(u_char *)p;
 		if (islower(ch)) {
 			*p++ = toupper(ch);
 			change = 1;
