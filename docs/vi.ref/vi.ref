@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.4 1994/01/21 15:09:19 bostic Exp $ (Berkeley) $Date: 1994/01/21 15:09:19 $
+.\"     $Id: vi.ref,v 8.5 1994/01/22 20:47:16 bostic Exp $ (Berkeley) $Date: 1994/01/22 20:47:16 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -290,7 +290,7 @@ using the
 .Fl t
 flag of sendmail (or a similar mechanism in other mailers).
 A simple way to do this is to insert the following script into your
-rc.local file:
+rc.local (or other startup) file:
 .sp
 .ne 7v
 .Bd -literal -offset indent -compact
@@ -301,6 +301,7 @@ if [ "$virecovery" != "/var/tmp/vi.recover/recover.*" ]; then
 	for i in $virecovery; do
 		sendmail -t < $i
 	done
+fi
 .Ed
 .Pp
 If
