@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.23 1993/10/09 12:39:42 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:42 $
+ *	$Id: ex.h,v 8.24 1993/10/11 09:24:05 bostic Exp $ (Berkeley) $Date: 1993/10/11 09:24:05 $
  */
 
 struct _excmdarg;
@@ -42,7 +42,9 @@ typedef struct _excmdlist {
 	u_int	 flags;
 	char	*syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
+	char	*help;			/* Help line. */
 } EXCMDLIST;
+#define	MAXCMDNAMELEN	12		/* Longest command name. */
 extern EXCMDLIST const cmds[];		/* List of ex commands. */
 
 /* Structure passed around to functions implementing ex commands. */
@@ -147,6 +149,7 @@ EXPROTO(int, ex_edit);
 EXPROTO(int, ex_equal);
 EXPROTO(int, ex_file);
 EXPROTO(int, ex_global);
+EXPROTO(int, ex_help);
 EXPROTO(int, ex_join);
 EXPROTO(int, ex_list);
 EXPROTO(int, ex_map);
