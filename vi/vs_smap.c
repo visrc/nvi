@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.7 1993/08/31 16:35:32 bostic Exp $ (Berkeley) $Date: 1993/08/31 16:35:32 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.8 1993/08/31 16:43:01 bostic Exp $ (Berkeley) $Date: 1993/08/31 16:43:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,6 +53,9 @@ svi_change(sp, ep, lno, op)
 	 */
 	if (lno < HMAP->lno) {
 		switch (op) {
+		case LINE_APPEND:
+			abort();
+			/* NOTREACHED */
 		case LINE_DELETE:
 			for (p = HMAP; p <= TMAP; ++p)
 				--p->lno;
@@ -60,6 +63,8 @@ svi_change(sp, ep, lno, op)
 		case LINE_INSERT:
 			for (p = HMAP; p <= TMAP; ++p)
 				++p->lno;
+			break;
+		case LINE_RESET:
 			break;
 		}
 		return (0);
