@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.46 1994/04/07 12:18:13 bostic Exp $ (Berkeley) $Date: 1994/04/07 12:18:13 $";
+static char sccsid[] = "$Id: util.c,v 8.47 1994/04/13 09:13:59 bostic Exp $ (Berkeley) $Date: 1994/04/13 09:13:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,12 +64,20 @@ msgq(sp, mt, fmt, va_alist)
 #endif
 	/*
 	 * It's possible to enter msg when there's no screen to hold
-	 * the message.  Always check sp before using it, and, if it's
-	 * NULL, use __global_list.
+	 * the message.  If sp is NULL, ignore the special cases and
+	 * just build the message, using __global_list.
 	 */
+	if (sp == NULL) {
+		len = 0;
+		if (mt == M_SYSERR)
+			goto nullsp1;
+		else
+			goto nullsp2;
+	}
+
 	switch (mt) {
 	case M_BERR:
-		if (sp != NULL && !F_ISSET(sp, S_EXSILENT) &&
+		if (!F_ISSET(sp, S_EXSILENT) &&
 		    F_ISSET(sp->gp, G_STDIN_TTY) && !O_ISSET(sp, O_VERBOSE)) {
 			F_SET(sp, S_BELLSCHED);
 			return;
@@ -77,7 +85,7 @@ msgq(sp, mt, fmt, va_alist)
 		mt = M_ERR;
 		break;
 	case M_VINFO:
-		if (sp == NULL || !O_ISSET(sp, O_VERBOSE))
+		if (!O_ISSET(sp, O_VERBOSE))
 			return;
 		mt = M_INFO;
 		/* FALLTHROUGH */
@@ -100,14 +108,14 @@ msgq(sp, mt, fmt, va_alist)
 			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
 			    strerror(errno));
 		else
-			len = snprintf(msgbuf, sizeof(msgbuf),
+nullsp1:		len = snprintf(msgbuf, sizeof(msgbuf),
 			    "Error: %s%s%s.",
 			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
 			    strerror(errno));
 	else {
-		len = sp->if_name == NULL ? 0 : snprintf(msgbuf, sizeof(msgbuf),
-		        "%s, %d: ", sp->if_name, sp->if_lno);
-		len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
+		len = sp->if_name == NULL ? 0 : snprintf(msgbuf,
+		    sizeof(msgbuf), "%s, %d: ", sp->if_name, sp->if_lno);
+nullsp2:	len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
 	}
 
 	/*
@@ -146,7 +154,7 @@ msg_app(gp, sp, inv_video, p, len)
 
 	/*
 	 * Find an empty structure, or allocate a new one.  Use the
-	 * screen structure if possible, otherwise the global one.
+	 * screen structure if it exists, otherwise the global one.
 	 */
 	if (sp != NULL) {
 		if ((mp = sp->msgq.lh_first) == NULL) {
