@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.8 1992/10/10 13:58:11 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:11 $
+ *	$Id: key.h,v 5.9 1992/10/24 14:20:05 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:20:05 $
  */
 
 #define	K_CR		1
@@ -14,13 +14,15 @@
 #define	K_VKILL		5
 #define	K_VLNEXT	6
 #define	K_VWERASE	7
-extern u_char special[];			/* Special characters. */
+extern u_char special[];		/* Special characters. */
 
-#define	GB_BS		0x01		/* Backspace erases past command. */
-#define	GB_ESC		0x02		/* Escape executes command. */
-#define	GB_NL		0x04		/* Leave the newline on. */
-#define	GB_NLECHO	0x08		/* Echo the newline. */
-#define	GB_OFF		0x10		/* Leave first buffer char empty. */
+#define	GB_BS		0x001		/* Backspace erases past command. */
+#define	GB_ESC		0x002		/* Escape executes command. */
+#define	GB_MAPCOMMAND	0x004		/* Use the command map. */
+#define	GB_MAPINPUT	0x008		/* Use the input map. */
+#define	GB_NL		0x010		/* Leave the newline on. */
+#define	GB_NLECHO	0x020		/* Echo the newline. */
+#define	GB_OFF		0x040		/* Leave first buffer char empty. */
 
 #define	ISQ(off)	qb[(off)]
 #define	QINIT		bzero(qb, cblen);
@@ -36,6 +38,7 @@ extern u_long atkeybuflen;		/* Remaining keys in shared @ buffer. */
 int	gb __P((int, u_char **, size_t *, u_int));
 int	gb_inc __P((void));
 void	gb_init __P((void));
+int	getkey __P((u_int));
 
 /*
  * Vi makes the screen ready for ex to print, but there are special ways that

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.27 1992/10/17 15:21:39 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:21:39 $";
+static char sccsid[] = "$Id: key.c,v 5.29 1992/10/24 14:20:03 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:20:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,7 +134,7 @@ gb(prompt, storep, lenp, flags)
 		if (len >= cblen && gb_inc())
 			return (1);
 			
-		ch = getkey(quoted ? 0 : WHEN_EX);
+		ch = getkey(quoted ? 0 : flags & (GB_MAPCOMMAND | GB_MAPINPUT));
 
 #ifndef NO_DIGRAPH
 		if (ISSET(O_DIGRAPH) && erased != 0 && ch != '\b') {
@@ -236,8 +236,8 @@ insch:			if (quoted) {
 				wb[len] = 1;
 				++col;
 			} else if (ch & 0x80) {
-				wb[len] =
-				    snprintf(oct, sizeof(oct), "\\%03o", ch);
+				(void)snprintf(oct, sizeof(oct), "\\%03o", ch);
+				wb[len] = strlen(oct);
 				for (cnt = 0; cnt < wb[len]; ++cnt, ++col)
 					WCHECK(oct[cnt]);
 			} else if (ch > 0 && ch < ' ') {
@@ -265,8 +265,8 @@ done:	*p = '\0';
  *	and executed cut buffers.
  */
 int
-getkey(when)
-	int when;			/* Which bits must be ON? */
+getkey(flags)
+	u_int flags;			/* GB_MAPCOMMAND, GB_MAPINPUT */
 {
 	static int nkeybuf;		/* # of keys in the buffer. */
 	static int nextkey;		/* Index of next key in the buffer. */
@@ -275,23 +275,6 @@ getkey(when)
 	int ch;
 	SEQ *sp;
 	int inuse, ispartial, nr;
-
-	/*
-	 * If this key is needed for delay between multiple error messages,
-	 * then reset the msgwait flag and drop any mapped key sequence.
-	 * XXX
-	 * Why drop mapped key??
-	 */
-#ifdef notdef
-	if (msgwaiting && endmsg() &&
-	    (when == WHEN_MSG || when == WHEN_VIINP || when == WHEN_VIREP)) {
-		if (when == WHEN_MSG) {
-			addstr("[More...]");
-			mapoutput = NULL;
-		}
-		refresh();
-	}
-#endif
 
 	/* If in the middle of an @ macro, return the next char. */
 	if (atkeybuflen) {
@@ -321,9 +304,10 @@ getkey(when)
 		 */
 		if (nkeybuf == 0) {
 			file_stop(curf, 0);
-			move(LINES - 1, 0);
-			clrtoeol();
-			refresh();
+			if (move(LINES - 1, 0) != ERR) {
+				clrtoeol();
+				refresh();
+			}
 			endwin();
 			exit(1);
 		}
@@ -335,9 +319,10 @@ getkey(when)
 	 * to read more keys to complete the map.  Max map is sizeof(keybuf)
 	 * and probably not worth fixing.
 	 */
-	if (seqstart(keybuf[nextkey])) {
+	if (flags & (GB_MAPINPUT | GB_MAPCOMMAND) &&
+	    seqstart(keybuf[nextkey])) {
 retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
-		    when & WHEN_VICMD ? COMMAND : INPUT, &ispartial);
+		    flags & GB_MAPCOMMAND ? COMMAND : INPUT, &ispartial);
 		if (ispartial) {
 			if (sizeof(keybuf) == nkeybuf)
 				msg("Partial map is too long.");
@@ -363,12 +348,11 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 	--nkeybuf;
 	ch = keybuf[nextkey++];
 
-	/* Translate weird erase key to '\b'. */
-	if (ch == erasechar() && when != 0)
-		return('\b');
-	else if (ch == '\0')
-		return ('A' & 0x1f);
-	return (ch);
+	/*
+	 * XXX
+	 * No NULL's for now.
+	 */
+	return (ch == '\0' ? 'A' & 0x1f : ch);
 }
 
 static int
