@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.14 1992/04/25 11:35:41 bostic Exp $ (Berkeley) $Date: 1992/04/25 11:35:41 $";
+static char sccsid[] = "$Id: key.c,v 5.15 1992/04/28 13:41:17 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:41:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,10 +26,7 @@ static char sccsid[] = "$Id: key.c,v 5.14 1992/04/25 11:35:41 bostic Exp $ (Berk
 #include "tty.h"
 #include "extern.h"
 
-u_long cblen;				/* Buffer lengths. */
-u_char *qb;				/* Quote buffer. */
-static u_char *cb;			/* Return buffer. */
-static u_char *wb;			/* Widths buffer. */
+#define	ESCAPE		'\033'		/* Escape character. */
 
 #define	K_CR		1
 #define	K_ESCAPE	2
@@ -39,6 +36,11 @@ static u_char *wb;			/* Widths buffer. */
 #define	K_VLNEXT	6
 #define	K_VWERASE	7
 static char special[UCHAR_MAX];		/* Special characters. */
+
+u_long cblen;				/* Buffer lengths. */
+char *qb;				/* Quote buffer. */
+static char *cb;			/* Return buffer. */
+static char *wb;			/* Widths buffer. */
 
 static int	key_inc __P((void));
 static void	modeline __P((int));
@@ -57,7 +59,7 @@ gb_init()
 
 	bzero(special, sizeof(special));
 
-	if (tcgetattr(STDERR_FILENO, &t))
+	if (tcgetattr(STDIN_FILENO, &t))
 		return;
 
 	/* User-defined keys. */
@@ -101,29 +103,26 @@ gb_inc()
  * gb --
  *	Fill a buffer from the terminal.
  */
-u_char *
+char *
 gb(prompt, flags)
 	int prompt;
 	u_int flags;
 {
-	extern char AM;
 	register int ch, cnt, col, len, quoted;
 #ifndef NO_DIGRAPH
 	int erased;			/* 0, or first char of a digraph. */
 #endif
-	register u_char *p;
+	register char *p;
 	char oct[5];
 
 	col = 0;
-	move(LINES - 1, 0);
 
 	/* Display any prompt. */
 	if (prompt) {
-		addch(prompt);
+		(void)putchar(prompt);
+		(void)fflush(stdout);
 		++col;
 	}
-	clrtoeol();
-	refresh();
 
 	/* Read in a line. */
 #ifndef NO_DIGRAPH
@@ -157,12 +156,10 @@ gb(prompt, flags)
 				if (len >= cblen && gb_inc())
 					return (NULL);
 			}
-			if (flags & GB_NLECHO)
-				if (mode == MODE_EX)
-					(void)putchar('\n');
-				else
-					addch('\n');
-			clrtoeol();
+			if (flags & GB_NLECHO) {
+				(void)putchar('\n');
+				(void)fflush(stdout);
+			}
 			goto done;
 		case K_VERASE:
 			if (!len) {
@@ -176,21 +173,22 @@ gb(prompt, flags)
 			erased = *p;
 #endif
 			for (cnt = wb[len]; cnt > 0; --cnt, --col)
-				addch('\b');
-			clrtoeol();
+				(void)printf("\b \b");
+			(void)fflush(stdout);
 			break;
 		case K_VKILL:
 			if (!len)
 				break;
 			while (len)
 				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					addch('\b');
+					(void)printf("\b \b");
+			(void)fflush(stdout);
 			p = cb;
-			clrtoeol();
 			break;
 		case K_VLNEXT:
-			addch('^');
-			addch('\b');
+			(void)putchar('^');
+			(void)putchar('\b');
+			(void)fflush(stdout);
 			quoted = 1;
 			break;
 		case K_VWERASE:
@@ -198,13 +196,13 @@ gb(prompt, flags)
 				break;
 			while (len && isspace(*--p))
 				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					addch('\b');
+					(void)printf("\b \b");
 			for (; len && !isspace(*p); --p)
 				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					addch('\b');
+					(void)printf("\b \b");
+			(void)fflush(stdout);
 			if (len)
 				++p;
-			clrtoeol();
 			break;
 		case 0:
 insch:			if (quoted) {
@@ -216,12 +214,11 @@ insch:			if (quoted) {
  * If cross boundary, should probably change repaint flags?
  */
 #define	WCHECK(ch) { \
-	if (!AM && col == COLS) { \
-		addch('\n'); \
-		addch('\r'); \
+	if (col == COLS) { \
+		(void)putchar('\n'); \
 		col = 0; \
 	} \
-	addch(ch); \
+	(void)putchar(ch); \
 	++col; \
 }
 			/* Add & echo the char. */
@@ -244,22 +241,21 @@ insch:			if (quoted) {
 				WCHECK(ch + 0x40);
 				col += wb[len] = 2;
 			}
+			(void)fflush(stdout);
 			*p++ = ch;
 			++len;
 			break;
 		}
-		refresh();
 	}
 
-done:	refresh();
-	*p = '\0';
+done:	*p = '\0';
 	return (cb);
 }
 
 /*
  * getkey --
- *	This function reads in a keystroke for VI mode, as well as handling
- *	mapped keys and executed cut buffers.
+ *	This function reads in a keystroke, as well as handling mapped keys
+ *	and executed cut buffers.
  */
 int
 getkey(when)
@@ -321,7 +317,7 @@ getkey(when)
 		 * This should return to somewhere else.
 		 */
 		if (nkeybuf == 0) {
-			tmpabort(TRUE);
+			tmpabort(1);
 			move(LINES - 1, 0);
 			clrtoeol();
 			refresh();
