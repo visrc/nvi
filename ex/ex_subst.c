@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.29 1993/12/23 16:10:22 bostic Exp $ (Berkeley) $Date: 1993/12/23 16:10:22 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.30 1993/12/29 09:50:56 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -749,7 +749,7 @@ endmatch:	if (!linechanged)
 		if (!F_ISSET(sp, S_GLOBAL))
 			msgq(sp, M_INFO, "No match found.");
 	} else if (!lflag && !nflag && !pflag)
-		F_SET(sp, S_AUTOPRINT);
+		F_SET(EXP(sp), EX_AUTOPRINT);
 
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);

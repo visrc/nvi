@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 8.3 1993/11/04 16:16:54 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:54 $";
+static char sccsid[] = "$Id: ex_delete.c,v 8.4 1993/12/29 09:50:49 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,11 @@ static char sccsid[] = "$Id: ex_delete.c,v 8.3 1993/11/04 16:16:54 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
+/*
+ * ex_delete: [line [,line]] d[elete] [buffer] [count] [flags]
+ *
+ *	Delete lines from the file.
+ */
 int
 ex_delete(sp, ep, cmdp)
 	SCR *sp;
@@ -40,9 +45,5 @@ ex_delete(sp, ep, cmdp)
 		return (1);
 	if (sp->lno > lno)
 		sp->lno = lno;
-
-	/* Set autoprint. */
-	F_SET(sp, S_AUTOPRINT);
-
 	return (0);
 }

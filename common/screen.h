@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.80 1993/12/22 16:14:30 bostic Exp $ (Berkeley) $Date: 1993/12/22 16:14:30 $
+ *	$Id: screen.h,v 8.81 1993/12/29 09:51:24 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:51:24 $
  */
 
 /*
@@ -246,24 +246,23 @@ struct _scr {
 #define	S_MAJOR_CHANGE			/* Screen or file changes. */	\
 	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)
 
-#define	S_AUTOPRINT	0x0000080	/* Autoprint flag. */
-#define	S_BELLSCHED	0x0000100	/* Bell scheduled. */
-#define	S_CONTINUE	0x0000200	/* Need to ask the user to continue. */
-#define	S_EXSILENT	0x0000400	/* Ex batch script. */
-#define	S_GLOBAL	0x0000800	/* Doing a global command. */
-#define	S_INPUT		0x0001000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0002000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0004000	/* If can be interrupted. */
-#define	S_REDRAW	0x0008000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0010000	/* Reformat the screen. */
-#define	S_REFRESH	0x0020000	/* Refresh the screen. */
-#define	S_RENUMBER	0x0040000	/* Renumber the screen. */
-#define	S_RESIZE	0x0080000	/* Resize the screen. */
-#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0200000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0400000	/* The substitute RE has been set. */
-#define	S_TIMER_SET	0x0800000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
+#define	S_BELLSCHED	0x0000080	/* Bell scheduled. */
+#define	S_CONTINUE	0x0000100	/* Need to ask the user to continue. */
+#define	S_EXSILENT	0x0000200	/* Ex batch script. */
+#define	S_GLOBAL	0x0000400	/* Doing a global command. */
+#define	S_INPUT		0x0000800	/* Doing text input. */
+#define	S_INTERRUPTED	0x0001000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0002000	/* If can be interrupted. */
+#define	S_REDRAW	0x0004000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0008000	/* Reformat the screen. */
+#define	S_REFRESH	0x0010000	/* Refresh the screen. */
+#define	S_RENUMBER	0x0020000	/* Renumber the screen. */
+#define	S_RESIZE	0x0040000	/* Resize the screen. */
+#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0100000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
+#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
 	u_int flags;
 };
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.21 1993/12/09 19:42:38 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:38 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.22 1993/12/29 09:50:48 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,7 @@ ex_bang(sp, ep, cmdp)
 		    &cmdp->addr1, &cmdp->addr2, &rm, ap->bp, ftype))
 			return (1);
 		sp->lno = rm.lno;
-		F_SET(sp, S_AUTOPRINT);
+		F_SET(exp, EX_AUTOPRINT);
 		return (0);
 	}
 

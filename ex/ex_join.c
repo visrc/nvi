@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.7 1993/12/09 19:42:42 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:42 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.8 1993/12/29 09:50:50 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,7 +159,5 @@ err:		FREE_SPACE(sp, bp, blen);
 	FREE_SPACE(sp, bp, blen);
 
 	sp->rptlines[L_JOINED] += (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
-
-	F_SET(sp, S_AUTOPRINT);
 	return (0);
 }

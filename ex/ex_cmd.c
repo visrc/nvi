@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.34 1993/12/22 18:38:40 bostic Exp $ (Berkeley) $Date: 1993/12/22 18:38:40 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.35 1993/12/29 09:50:59 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ EXCMDLIST const cmds[] = {
 	    "* [buffer]",
 	    "execute a buffer"},
 /* C_SHIFTL */
-	{"<",		ex_shiftl,	E_ADDR2|E_NORC,
+	{"<",		ex_shiftl,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "ca1",
 	    "[line [,line]] <[<...] [count] [flags]",
 	    "shift lines left"},
@@ -72,7 +72,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] = [flags]",
 	    "display line number"},
 /* C_SHIFTR */
-	{">",		ex_shiftr,	E_ADDR2|E_NORC,
+	{">",		ex_shiftr,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "ca1",
 	    "[line [,line]] >[>...] [count] [flags]",
 	    "shift lines right"},
@@ -117,12 +117,12 @@ EXCMDLIST const cmds[] = {
 	    "chd[ir][!] [directory]",
 	    "change the current directory"},
 /* C_COPY */
-	{"copy",	ex_copy,	E_ADDR2|E_NORC,
+	{"copy",	ex_copy,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "l1",
 	    "[line [,line]] co[py] line [flags]",
 	    "copy lines elsewhere in the file"},
 /* C_DELETE */
-	{"delete",	ex_delete,	E_ADDR2|E_NORC,
+	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "bca1",
 	    "[line [,line]] d[elete] [buffer] [count] [flags]",
 	    "delete lines from the file"},
@@ -177,7 +177,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] i[nsert][!]",
 	    "insert input before a line"},
 /* C_JOIN */
-	{"join",	ex_join,	E_ADDR2|E_NORC,
+	{"join",	ex_join,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "!ca1",
 	    "[line [,line]] j[oin][!] [count] [flags]",
 	    "join lines into a single line"},
@@ -192,7 +192,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] l[ist] [count] [#]",
 	    "display lines in an unambiguous form"},
 /* C_MOVE */
-	{"move",	ex_move,	E_ADDR2|E_NORC,
+	{"move",	ex_move,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "l",
 	    "[line [,line]] m[ove] line",
 	    "move lines elsewhere in the file"},
@@ -242,7 +242,7 @@ EXCMDLIST const cmds[] = {
 	    "prev[ious][!]",
 	    "edit the previous file in the file argument list"},
 /* C_PUT */
-	{"put",		ex_put,		E_ADDR1|E_NORC|E_ZERO,
+	{"put",		ex_put,		E_ADDR1|E_AUTOPRINT|E_NORC|E_ZERO,
 	    "b",
 	    "[line] pu[t] [buffer]",
 	    "append a cut buffer to the line"},
@@ -307,7 +307,7 @@ EXCMDLIST const cmds[] = {
 	    "su[spend][!]",
 	    "suspend the edit session"},
 /* C_T */
-	{"t",		ex_copy,	E_ADDR2|E_NORC,
+	{"t",		ex_copy,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "l1", 
 	    "[line [,line]] t line [flags]",
 	    "move lines elsewhere in the file"},
@@ -327,12 +327,12 @@ EXCMDLIST const cmds[] = {
 	    "tagt[op][!]",
 	    "return to the first tag"},
 /* C_UNDOL */
-	{"Undo",	ex_undol,	E_NOGLOBAL|E_NORC,
+	{"Undo",	ex_undol,	E_AUTOPRINT|E_NOGLOBAL|E_NORC,
 	    "", 
 	    "U[ndo]",
 	    "undo all the changes to this line"},
 /* C_UNDO */
-	{"undo",	ex_undo,	E_NOGLOBAL|E_NORC,
+	{"undo",	ex_undo,	E_AUTOPRINT|E_NOGLOBAL|E_NORC,
 	    "", 
 	    "u[ndo]",
 	    "undo the most recent change"},

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.87 1993/12/27 17:34:05 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:34:05 $";
+static char sccsid[] = "$Id: ex.c,v 8.88 1993/12/29 09:50:44 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1022,8 +1022,8 @@ addr2:	switch (exc.addrcnt) {
 		TRACE(sp, "\n");
 	}
 #endif
-	/* Clear autoprint. */
-	F_CLR(sp, S_AUTOPRINT);
+	/* Clear autoprint flag. */
+	F_CLR(exp, EX_AUTOPRINT);
 
 	/* Increment the command count if not called from vi. */
 	if (!IN_VI_MODE(sp))
@@ -1128,7 +1128,8 @@ addr2:	switch (exc.addrcnt) {
 			sp->lno += flagoff;
 		}
 
-		if (F_ISSET(sp, S_AUTOPRINT) && O_ISSET(sp, O_AUTOPRINT))
+		if (O_ISSET(sp, O_AUTOPRINT) &&
+		    (F_ISSET(exp, EX_AUTOPRINT) || F_ISSET(cp, E_AUTOPRINT)))
 			LF_INIT(E_F_PRINT);
 		else
 			LF_INIT(F_ISSET(&exc, E_F_HASH | E_F_LIST | E_F_PRINT));
