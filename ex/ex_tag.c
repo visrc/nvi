@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.31 1994/01/22 12:54:55 bostic Exp $ (Berkeley) $Date: 1994/01/22 12:54:55 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.32 1994/02/28 17:13:25 bostic Exp $ (Berkeley) $Date: 1994/02/28 17:13:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -279,9 +279,8 @@ ex_tagpop(sp, ep, cmdp)
 {
 	EX_PRIVATE *exp;
 	TAG *ntp, *tp;
-	recno_t lno;
 	long off, saved_off;
-	size_t arglen, cno;
+	size_t arglen;
 	char *arg, *p, *t;
 
 	/* Check for an empty stack. */
