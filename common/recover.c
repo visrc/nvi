@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.68 1994/07/18 14:53:46 bostic Exp $ (Berkeley) $Date: 1994/07/18 14:53:46 $";
+static char sccsid[] = "$Id: recover.c,v 8.69 1994/07/19 12:26:46 bostic Exp $ (Berkeley) $Date: 1994/07/19 12:26:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -15,9 +15,9 @@ static char sccsid[] = "$Id: recover.c,v 8.68 1994/07/18 14:53:46 bostic Exp $ (
 #include <sys/time.h>
 
 /*
- * We include <sys/file.h>, because the flock(2) #defines were
- * found there on historical systems.  We also include <fcntl.h>
- * because the open(2) #defines are found there on newer systems.
+ * We include <sys/file.h>, because the open #defines were found there
+ * on historical systems.  We also include <fcntl.h> because the open(2)
+ * #defines are found there on newer systems.
  */
 #include <sys/file.h>
 
@@ -57,9 +57,9 @@ static char sccsid[] = "$Id: recover.c,v 8.68 1994/07/18 14:53:46 bostic Exp $ (
  *		file doesn't exist.
  *	+ after the file has been modified:
  *		the b+tree file exists and is mode 600, the mail recovery
- *		file exists, and is flock(2)'d with LOCK_EX.
+ *		file exists, and is exclusively locked.
  *
- * In the EXF structure we maintain a file descriptor that is the flock'd
+ * In the EXF structure we maintain a file descriptor that is the locked
  * file descriptor for the mail recovery file.  NOTE: we sometimes have to
  * do locking with fcntl(2).  This is a problem because if you close(2) any
  * file descriptor associated with the file, ALL of the locks go away.  Be
@@ -113,6 +113,7 @@ static char sccsid[] = "$Id: recover.c,v 8.68 1994/07/18 14:53:46 bostic Exp $ (
 #define	VI_PHEADER	"Vi-recover-path: "
 
 static int	 rcv_copy __P((SCR *, int, char *));
+static void	 rcv_email __P((SCR *, char *));
 static char	*rcv_gets __P((char *, size_t, int));
 static int	 rcv_mailfile __P((SCR *, EXF *, int, char *));
 static int	 rcv_mktemp __P((SCR *, char *, char *, int));
@@ -268,20 +269,9 @@ rcv_sync(sp, ep, flags)
 		if (LF_ISSET(RCV_PRESERVE))
 			F_SET(ep, F_RCV_NORM);
 
-		/*
-		 * REQUEST: send email.
-		 *
-		 * !!!
-		 * If you need to port this to a system that doesn't have
-		 * sendmail, the -t flag causes sendmail to read the message
-		 * for the recipients instead of specifying them some other
-		 * way.
-		 */
-		if (LF_ISSET(RCV_EMAIL)) {
-			(void)snprintf(buf, sizeof(buf),
-			    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
-			(void)system(buf);
-		}
+		/* REQUEST: send email. */
+		if (LF_ISSET(RCV_EMAIL))
+			rcv_email(sp, ep->rcv_mpath);
 	}
 
 	/*
@@ -356,7 +346,7 @@ rcv_mailfile(sp, ep, issync, cp_path)
 	 * be recovered.  There's an obvious window between the mkstemp call
 	 * and the lock, but it's pretty small.
 	 */
-	if (flock(fd, LOCK_EX | LOCK_NB))
+	if (file_lock(NULL, NULL, fd, 1) != LOCK_SUCCESS)
 		msgq(sp, M_SYSERR, "Unable to lock recovery file");
 	if (!issync) {
 		/* Save the recover file descriptor, and mail path. */
@@ -370,11 +360,10 @@ rcv_mailfile(sp, ep, issync, cp_path)
 
 	/*
 	 * XXX
-	 * We can't use stdio(3) here.  The problem is that we may be faking
-	 * the rational flock(2) semantics using the brain-dead fcntl(2) ones,
-	 * and, fcntl requires that if ANY file descriptor is closed, the lock
-	 * is lost.  So, we could never close the FILE *, even if we dup'd the
-	 * fd first.
+	 * We can't use stdio(3) here.  The problem is that we may be using
+	 * fcntl(2), so if ANY file descriptor into the file is closed, the
+	 * lock is lost.  So, we could never close the FILE *, even if we
+	 * dup'd the fd first.
 	 */
 	t = sp->frp->name;
 	if ((p = strrchr(t, '/')) == NULL)
@@ -419,11 +408,8 @@ werr:		msgq(sp, M_SYSERR, "recovery file");
 		goto err;
 	}
 
-	if (issync) {
-		(void)snprintf(buf, sizeof(buf),
-		    "%s -t < %s", _PATH_SENDMAIL, mpath);
-		(void)system(buf);
-	}
+	if (issync)
+		rcv_email(sp, mpath);
 
 	return (0);
 
@@ -472,26 +458,28 @@ rcv_list(sp)
 		 *
 		 * XXX
 		 * Should be "r", we don't want to write the file.  However,
-		 * if we're using fcntl(2) to fake flock(2) semantics (System
-		 * V style), there's no way to lock a file descriptor that's
-		 * not open for writing.
+		 * if we're using fcntl(2), there's no way to lock a file
+		 * descriptor that's not open for writing.
 		 */
 		if ((fp = fopen(dp->d_name, "r+")) == NULL)
 			continue;
 
-		/* If it's locked, it's live. */
-		if (flock(fileno(fp), LOCK_EX | LOCK_NB)) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				(void)fclose(fp);
-				continue;
-			}
+		switch (file_lock(NULL, NULL, fileno(fp), 1)) {
+		case LOCK_FAILED:
 			/*
 			 * XXX
-			 * Assume that a lock can't be acquired, but that
-			 * we should permit recovery anyway.  If this is
-			 * wrong, and someone else is using the file, we're
-			 * going to die horribly.
+			 * Assume that a lock can't be acquired, but that we
+			 * should permit recovery anyway.  If this is wrong,
+			 * and someone else is using the file, we're going to
+			 * die horribly.
 			 */
+			break;
+		case LOCK_SUCCESS:
+			break;
+		case LOCK_UNAVAIL:
+			/* If it's locked, it's live. */
+			(void)fclose(fp);
+			continue;
 		}
 
 		/* Check the headers. */
@@ -580,29 +568,31 @@ rcv_read(sp, frp)
 		 *
 		 * XXX
 		 * Should be O_RDONLY, we don't want to write it.  However,
-		 * if we're using fcntl(2) to fake flock(2) semantics (System
-		 * V style), there's no way to lock a file descriptor that's
-		 * not open for writing.
+		 * if we're using fcntl(2), there's no way to lock a file
+		 * descriptor that's not open for writing.
 		 */
 		if ((fd = open(recpath, O_RDWR, 0)) == -1)
 			continue;
 
-		/* If it's locked, it's live. */
-		if (flock(fd, LOCK_EX | LOCK_NB)) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				(void)close(fd);
-				continue;
-			}
+		switch (file_lock(NULL, NULL, fd, 1)) {
+		case LOCK_FAILED:
 			/*
 			 * XXX
-			 * Assume that a lock can't be acquired, but that
-			 * we should permit recovery anyway.  If this is
-			 * wrong, and someone else is using the file, we're
-			 * going to die horribly.
+			 * Assume that a lock can't be acquired, but that we
+			 * should permit recovery anyway.  If this is wrong,
+			 * and someone else is using the file, we're going to
+			 * die horribly.
 			 */
 			locked = 0;
-		} else
+			break;
+		case LOCK_SUCCESS:
 			locked = 1;
+			break;
+		case LOCK_UNAVAIL:
+			/* If it's locked, it's live. */
+			(void)close(fd);
+			continue;
+		}
 
 		/* Check the headers. */
 		if (rcv_gets(file, sizeof(file), fd) == NULL ||
@@ -795,4 +785,32 @@ rcv_mktemp(sp, path, dname, perms)
 	else
 		(void)chmod(path, perms);
 	return (fd);
+}
+
+/*
+ * rcv_email --
+ *	Send email.
+ */
+static void
+rcv_email(sp, fname)
+	SCR *sp;
+	char *fname;
+{
+	struct stat sb;
+	char buf[MAXPATHLEN * 2 + 20];
+
+	if (stat(_PATH_SENDMAIL, &sb))
+		msgq(sp, M_SYSERR, "not sending email: %s", _PATH_SENDMAIL);
+	else {
+		/*
+		 * !!!
+		 * If you need to port this to a system that doesn't have
+		 * sendmail, the -t flag causes sendmail to read the message
+		 * for the recipients instead of specifying them some other
+		 * way.
+		 */
+		(void)snprintf(buf, sizeof(buf),
+		    "%s -t < %s", _PATH_SENDMAIL, fname);
+		(void)system(buf);
+	}
 }
