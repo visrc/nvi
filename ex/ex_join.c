@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.11 1992/10/10 13:57:53 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:53 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.12 1992/10/29 14:39:03 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:39:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,8 +118,8 @@ err:		if (buf != NULL)
 	if (buf != NULL)
 		free(buf);
 
-	rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
-	rptlabel = "joined";
+	curf->rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
+	curf->rptlabel = "joined";
 
 	autoprint = 1;
 	return (0);

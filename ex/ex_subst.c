@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.14 1992/10/18 13:07:47 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:47 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.15 1992/10/29 14:40:21 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:40:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ substitute(cmdp, cmd)
 	extra = cmdp->argv[0];
 
 	/* for now, assume this will fail */
-	rptlines = -1L;
+	curf->rptlines = -1L;
 
 	if (cmd == AGAIN) {
 		if (ISSET(O_MAGIC))
@@ -258,8 +258,8 @@ Continue:
 	/* if done from within a ":g" command, then finish silently */
 	if (doingglobal)
 	{
-		rptlines = chline;
-		rptlabel = "changed";
+		curf->rptlines = chline;
+		curf->rptlabel = "changed";
 		return;
 	}
 
@@ -272,7 +272,7 @@ Continue:
 	{
 		msg("%ld substitutions on %ld lines", chsub, chline);
 	}
-	rptlines = 0L;
+	curf->rptlines = 0L;
 
 	autoprint = 1;
 }
