@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.71 1993/05/16 12:23:06 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:23:06 $";
+static char sccsid[] = "$Id: main.c,v 5.72 1993/05/21 11:05:15 bostic Exp $ (Berkeley) $Date: 1993/05/21 11:05:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -123,8 +123,9 @@ main(argc, argv)
 
 	/* Parse the arguments. */
 	flagchk = 0;
+	F_SET(gp, G_SNAPSHOT);
 	excmdarg = errf = rfname = tag = NULL;
-	while ((ch = getopt(argc, argv, "c:elmRr:T:t:v")) != EOF)
+	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:v")) != EOF)
 		switch(ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -146,6 +147,9 @@ main(argc, argv)
 		case 'r':		/* Recover. */
 			++flagchk;
 			rfname = optarg;
+			break;
+		case 's':		/* No snapshot. */
+			F_CLR(gp, G_SNAPSHOT);
 			break;
 #ifdef DEBUG
 		case 'T':		/* Trace. */
@@ -359,6 +363,6 @@ static void
 usage()
 {
 	(void)fprintf(stderr,
-	    "usage: vi [-eRrv] [-c command] [-m file] [-t tag]\n");
+	    "usage: vi [-eRrsv] [-c command] [-m file] [-t tag]\n");
 	exit(1);
 }
