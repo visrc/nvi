@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.33 1994/04/13 11:19:18 bostic Exp $ (Berkeley) $Date: 1994/04/13 11:19:18 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.34 1994/04/27 14:44:03 bostic Exp $ (Berkeley) $Date: 1994/04/27 14:44:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,9 +117,6 @@ v_iA(sp, ep, vp)
 		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
-
-		if (F_ISSET(sp, S_INTERRUPTED))
-			break;
 	}
 	return (0);
 }
@@ -173,9 +170,6 @@ v_ia(sp, ep, vp)
 		flags = set_txt_std(sp, vp, TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
-
-		if (F_ISSET(sp, S_INTERRUPTED))
-			break;
 	}
 	return (0);
 }
@@ -231,9 +225,6 @@ v_iI(sp, ep, vp)
 		flags = set_txt_std(sp, vp, TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
-
-		if (F_ISSET(sp, S_INTERRUPTED))
-			break;
 	}
 	return (0);
 }
@@ -283,9 +274,6 @@ v_ii(sp, ep, vp)
 		sp->lno = lno = vp->m_final.lno;
 		if ((sp->cno = vp->m_final.cno) != 0)
 			++sp->cno;
-
-		if (F_ISSET(sp, S_INTERRUPTED))
-			break;
 	}
 	return (0);
 }
@@ -340,9 +328,6 @@ insert:			p = "";
 		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
-
-		if (F_ISSET(sp, S_INTERRUPTED))
-			break;
 	}
 	return (0);
 }
@@ -399,9 +384,6 @@ insert:			p = "";
 		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
-
-		if (F_ISSET(sp, S_INTERRUPTED))
-			break;
 	}
 	return (0);
 }
@@ -717,9 +699,6 @@ v_Replace(sp, ep, vp)
 	    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 		return (1);
 
-	if (F_ISSET(sp, S_INTERRUPTED))
-		return (0);
-
 	/*
 	 * Special case.  The historic vi handled [count]R badly, in that R
 	 * would replace some number of characters, and then the count would
@@ -753,9 +732,6 @@ v_Replace(sp, ep, vp)
 		if (v_ntext(sp, ep, sp->tiqp,
 		    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
-
-		if (F_ISSET(sp, S_INTERRUPTED))
-			break;
 	}
 	return (0);
 }
