@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.6 1993/08/16 11:36:50 bostic Exp $ (Berkeley) $Date: 1993/08/16 11:36:50 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.7 1993/08/16 16:21:33 bostic Exp $ (Berkeley) $Date: 1993/08/16 16:21:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -380,7 +380,7 @@ search(fname, tname, tag)
 	 * large.
 	 */
 	if (fstat(fd, &sb) || (front = mmap(NULL, (size_t)sb.st_size,
-	    PROT_READ, 0, fd, (off_t)0)) == (caddr_t)-1) {
+	    PROT_READ, MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
 		(void)close(fd);
 		return (1);
 	}
