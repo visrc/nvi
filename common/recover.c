@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.16 1993/09/10 14:45:07 bostic Exp $ (Berkeley) $Date: 1993/09/10 14:45:07 $";
+static char sccsid[] = "$Id: recover.c,v 8.17 1993/09/10 15:09:34 bostic Exp $ (Berkeley) $Date: 1993/09/10 15:09:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -150,8 +150,10 @@ rcv_init(sp, ep)
 	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 		msgq(sp, M_ERR, "Preservation failed: %s: %s",
 		    ep->rcv_path, strerror(errno));
+		busy_off(sp);
 		goto err2;
 	}
+	busy_off(sp);
 
 	if (!F_ISSET(sp->gp, G_RECOVER_SET)) {
 		/* Start the recovery timer. */
@@ -166,13 +168,11 @@ rcv_init(sp, ep)
 	}
 
 	F_SET(ep, F_RCV_ON);
-	busy_off(sp);
 	return (0);
 
 err2:	FREE(ep->rcv_mpath, strlen(ep->rcv_path));
 	ep->rcv_mpath = NULL;
 err1:	msgq(sp, M_ERR, "Recovery after system crash not possible.");
-	busy_off(sp);
 	return (1);
 }
 
