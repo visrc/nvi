@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.74 1993/05/24 10:35:49 bostic Exp $ (Berkeley) $Date: 1993/05/24 10:35:49 $";
+static char sccsid[] = "$Id: exf.c,v 5.75 1993/05/28 00:07:06 bostic Exp $ (Berkeley) $Date: 1993/05/28 00:07:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -276,6 +276,15 @@ file_start(sp, ep, rcv_fname)
 			msgq(sp, M_VINFO, "%s cannot be locked", oname);
 	}
 
+	/*
+	 * The -R flag, or doing a "set readonly" during a session causes all
+	 * files edited during the session (using an edit command, or even
+	 * using tags) to be marked read-only.  Note that changing the file
+	 * name (see ex/ex_file.c) however, clears this flag.
+	 */
+	if (O_ISSET(sp, O_READONLY))
+		F_SET(ep, F_RDONLY);
+
 	/* Flush the line caches. */
 	ep->c_lno = ep->c_nlines = OOBLNO;
 
@@ -363,8 +372,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	}
 
 	/* Can't write read-only files, unless forced. */
-	if (!LF_ISSET(FS_FORCE) &&
-	    (O_ISSET(sp, O_READONLY) || F_ISSET(ep, F_RDONLY))) {
+	if (!LF_ISSET(FS_FORCE) && F_ISSET(ep, F_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
 			    "Read-only file, not written; use ! to override.");

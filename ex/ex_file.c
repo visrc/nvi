@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.26 1993/05/20 20:31:48 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:31:48 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.27 1993/05/28 00:08:01 bostic Exp $ (Berkeley) $Date: 1993/05/28 00:08:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,6 +46,9 @@ ex_file(sp, ep, cmdp)
 		}
 		ep->name = p;
 		F_SET(ep, F_NAMECHANGED);
+
+		/* The read-only bit follows the file name; clear it. */
+		F_CLR(ep, F_RDONLY);
 		break;
 	default:
 		abort();
