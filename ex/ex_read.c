@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.34 1994/07/28 10:57:18 bostic Exp $ (Berkeley) $Date: 1994/07/28 10:57:18 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.35 1994/07/28 12:55:23 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:55:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,7 @@ ex_read(sp, ep, cmdp)
 {
 	struct stat sb;
 	CHAR_T *arg;
+	EX_PRIVATE *exp;
 	FILE *fp;
 	MARK rm;
 	recno_t nlines;
@@ -93,6 +94,15 @@ ex_read(sp, ep, cmdp)
 		/* If argc unchanged, there wasn't anything to expand. */
 		if (cmdp->argc == farg)
 			goto usage;
+
+		/* Set the last bang command. */
+		exp = EXP(sp);
+		if (exp->lastbcomm != NULL)
+			free(exp->lastbcomm);
+		if ((exp->lastbcomm = strdup(cmdp->argv[farg]->bp)) == NULL) {
+			msgq(sp, M_SYSERR, NULL);
+			return (1);
+		}
 
 		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
