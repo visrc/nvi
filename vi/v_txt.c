@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.83 1996/09/15 16:03:22 bostic Exp $ (Berkeley) $Date: 1996/09/15 16:03:22 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.84 1996/09/16 07:59:46 bostic Exp $ (Berkeley) $Date: 1996/09/16 07:59:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -535,14 +535,14 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 	/*
 	 * !!!
 	 * If the first character of the input is a nul, replay the previous
-	 * input.  Note, it was okay to replay non-existent input.  This was
-	 * not documented as far as I know, and is a great test of vi clones.
+	 * input.  (Historically, it's okay to replay non-existent input.)
+	 * This was not documented as far as I know, and is a great test of vi
+	 * clones.
 	 */
-	if (!LF_ISSET(TXT_REPLAY) && evp->e_c == '\0') {
+	if (rcol == 0 && !LF_ISSET(TXT_REPLAY) && evp->e_c == '\0') {
 		if (vip->rep == NULL)
 			goto done;
 
-		rcol = 0;
 		abb = AB_NOTSET;
 		LF_CLR(TXT_RECORD);
 		LF_SET(TXT_REPLAY);
