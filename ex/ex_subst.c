@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.60 1994/08/31 17:17:25 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:25 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.61 1994/09/02 12:40:44 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,7 +86,7 @@ ex_substitute(sp, ep, cmdp)
 	 * state of the 'c' and 'g' suffices.
 	 */
 	sp->c_suffix = sp->g_suffix = 0;
-	
+
 	/*
 	 * Get the pattern string, toss escaped characters.
 	 *

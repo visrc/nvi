@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.159 1994/08/31 17:39:06 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:39:06 $";
+static char sccsid[] = "$Id: ex.c,v 8.160 1994/09/02 12:40:32 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,7 +241,7 @@ static EXCMDLIST const cmd_subagain =
 	    "repeat the last subsitution"};
 
 /* Special command structure for :d[flags]. */
-static EXCMDLIST const cmd_del2 = 
+static EXCMDLIST const cmd_del2 =
 	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "1bca1",
 	    "[line [,line]] d[elete][flags] [buffer] [count] [flags]",
@@ -349,7 +349,7 @@ loop:	if (nl) {
 	 */
 	if (cmdlen == 0 && (!IN_EX_MODE(sp) || ep == NULL || !blank))
 		return (0);
-		
+
 	/* Initialize the structure passed to underlying functions. */
 	memset(&exc, 0, sizeof(EXCMDARG));
 	exp = EXP(sp);
@@ -1774,7 +1774,7 @@ search:		F_SET(exp, EX_ABSMARK);
 	}
 	return (0);
 }
-				
+
 /*
  * ex_unknown --
  *	Display an unknown command name.

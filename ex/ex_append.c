@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.24 1994/08/17 14:30:32 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:32 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.25 1994/09/02 12:40:39 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,7 +132,7 @@ aci(sp, ep, cmdp, cmd)
 
 	if (sex_get(sp, ep, sp->tiqp, 0, flags) != INP_OK)
 		goto err;
-	
+
 	/*
 	 * If doing a change, replace lines for as long as possible.  Then,
 	 * append more lines or delete remaining lines.  Changes to an empty

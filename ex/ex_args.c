@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.30 1994/08/31 17:16:59 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:16:59 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.31 1994/09/02 12:40:40 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,7 +184,7 @@ ex_rew(sp, ep, cmdp)
 	for (frp = sp->frefq.cqh_first;
 	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
 		F_CLR(frp, FR_CURSORSET | FR_FNONBLANK);
-	
+
 	/* Switch to the first one. */
 	sp->cargv = sp->argv;
 	if ((frp = file_add(sp, *sp->cargv)) == NULL)
@@ -213,7 +213,7 @@ ex_args(sp, ep, cmdp)
 		(void)ex_printf(EXCOOKIE, "No file list to display.\n");
 		return (0);
 	}
-		
+
 	col = len = sep = 0;
 	for (cnt = 1, ap = sp->argv; *ap != NULL; ++ap) {
 		col += len = strlen(*ap) + sep + (ap == sp->cargv ? 2 : 0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.40 1994/08/31 17:39:12 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:39:12 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.41 1994/09/02 12:40:42 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,7 +120,7 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 		goto ret;
 
 	(void)argv_exp0(sp, ep, excp, bp, len);
-		
+
 ret:	FREE_SPACE(sp, bp, blen);
 	return (0);
 }

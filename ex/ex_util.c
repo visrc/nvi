@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.15 1994/08/31 17:17:31 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:31 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.16 1994/09/02 12:40:46 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,7 +87,7 @@ ex_sleave(sp)
 	/* Ignore sessions not using tty's. */
 	if (!F_ISSET(sp->gp, G_STDIN_TTY))
 		return (1);
-	
+
 	exp = EXP(sp);
 	if (tcgetattr(STDIN_FILENO, &exp->leave_term)) {
 		msgq(sp, M_SYSERR, "tcgetattr");
