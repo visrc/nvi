@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.8 1993/10/31 13:23:49 bostic Exp $ (Berkeley) $Date: 1993/10/31 13:23:49 $";
+static char sccsid[] = "$Id: seq.c,v 8.9 1993/11/01 13:19:26 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:19:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,7 @@ seq_set(sp, name, input, output, stype, userdef)
 	enum seqtype stype;
 	int userdef;
 {
-	HDR *hp;
-	SEQ *ip, *qp;
+	SEQ *lastqp, *qp;
 	int ilen;
 	char *p;
 
@@ -39,17 +38,19 @@ seq_set(sp, name, input, output, stype, userdef)
 	TRACE(sp, "seq_set: name {%s} input {%s} output {%s}\n",
 	    name ? name : "", input, output);
 #endif
-	/* Find any previous occurrence, and replace the output field. */
+	/*
+	 * Find any previous occurrence, and replace the output field.
+	 * Q's are sorted by character and length within that character.
+	 */
 	ilen = strlen(input);
-
-	ip = NULL;
-	hp = &sp->seq[*input];
-	if (hp->forw == NULL) {
-		HDR_INIT(sp->seq[*input], forw, back);
-	} else for (qp = hp->forw;
-	    qp != (SEQ *)hp && qp->ilen <= ilen; ip = qp, qp = qp->forw)
-		if (qp->ilen == ilen && stype == qp->stype &&
-		    !strcmp(qp->input, input)) {
+	for (lastqp = NULL, qp = sp->seqq.le_next;
+	    qp != NULL; lastqp = qp, qp = qp->q.qe_next) {
+		if (qp->input[0] < input[0])
+			continue;
+		if (qp->input[0] > input[0] || qp->ilen > ilen)
+			break;
+		if (qp->ilen == ilen &&
+		    stype == qp->stype && !strcmp(qp->input, input)) {
 			if ((p = strdup(output)) == NULL)
 				goto mem1;
 			FREE(qp->output, qp->olen);
@@ -57,6 +58,7 @@ seq_set(sp, name, input, output, stype, userdef)
 			qp->output = p;
 			return (0);
 		}
+	}
 
 	/* Allocate and initialize space. */
 	if ((qp = malloc(sizeof(SEQ))) == NULL) 
@@ -68,25 +70,35 @@ seq_set(sp, name, input, output, stype, userdef)
 	if ((qp->input = strdup(input)) == NULL)
 		goto mem3;
 	if ((qp->output = strdup(output)) == NULL) {
-		free(qp->input);
-mem3:		if (qp->name)
-			free(qp->name);
-mem2:		free(qp);
+		FREE(qp->input, ilen);
+mem3:		if (qp->name != NULL)
+			FREE(qp->name, strlen(qp->name) + 1);
+mem2:		FREE(qp, sizeof(SEQ));
 mem1:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
 	qp->stype = stype;
 	qp->ilen = ilen;
-	qp->olen = strlen(output);;
+	qp->olen = strlen(output);
 	qp->flags = userdef ? S_USERDEF : 0;
 
-	/* Link into the chains. */
-	HDR_INSERT(qp, &sp->seqhdr, next, prev, SEQ);
-	if (ip == NULL) {
-		HDR_APPEND(qp, hp, forw, back, SEQ);
-	} else
-		HDR_INSERT(qp, ip, forw, back, SEQ);
+	/* Link into the chain. */
+	if (lastqp == NULL) {
+		list_enter_head(&sp->seqq, qp, SEQ *, q);
+	} else {
+		list_insert_after(&lastqp->q, qp, SEQ *, q);
+	}
+
+	/*
+	 * Set the fast lookup bit.
+	 *
+	 * XXX
+	 * These bits are never turned off -- people don't usually unmap
+	 * things, though, so it's not a big deal.
+	 */
+	bit_set(sp->seqb, qp->input[0]);
+
 	return (0);
 }
 
@@ -105,12 +117,9 @@ seq_delete(sp, input, stype)
 	if ((qp = seq_find(sp, input, strlen(input), stype, NULL)) == NULL)
 		return (1);
 
-	HDR_DELETE(qp, next, prev, SEQ);
-	HDR_DELETE(qp, forw, back, SEQ);
-
-	/* Free up the space. */
-	if (qp->name)
-		FREE(qp->name, strlen(qp->name));
+	list_remove(qp, SEQ *, q);
+	if (qp->name != NULL)
+		FREE(qp->name, strlen(qp->name) + 1);
 	FREE(qp->input, qp->ilen);
 	FREE(qp->output, qp->olen);
 	FREE(qp, sizeof(SEQ));
@@ -130,18 +139,17 @@ seq_find(sp, input, ilen, stype, ispartialp)
 	enum seqtype stype;
 	int *ispartialp;
 {
-	HDR *hp;
 	SEQ *qp;
 
 	if (ispartialp)
 		*ispartialp = 0;
 
-	hp = &sp->seq[*input];
-	if (hp->forw == NULL)
-		return (NULL);
-
-	if (ispartialp) {
-		for (qp = hp->forw; qp != (SEQ *)hp; qp = qp->forw) {
+	if (ispartialp)
+		for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
+			if (qp->input[0] < input[0])
+				continue;
+			if (qp->input[0] > input[0])
+				break;
 			if (stype != qp->stype)
 				continue;
 			/*
@@ -157,11 +165,16 @@ seq_find(sp, input, ilen, stype, ispartialp)
 					*ispartialp = 1;
 			}
 		}
-	} else
-		for (qp = hp->forw; qp != (SEQ *)hp; qp = qp->forw)
+	else
+		for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
+			if (qp->input[0] < input[0])
+				continue;
+			if (qp->input[0] > input[0] || qp->ilen > ilen)
+				break;
 			if (stype == qp->stype && qp->ilen == ilen &&
 			    !strncmp(qp->input, input, ilen))
 				return (qp);
+		}
 	return (NULL);
 }
 
@@ -180,13 +193,10 @@ seq_dump(sp, stype, isname)
 	int ch, cnt, len, tablen;
 	char *p;
 
-	if (sp->seqhdr.next == (SEQ *)&sp->seqhdr)
-		return (0);
-
 	cnt = 0;
 	cname = sp->cname;
 	tablen = O_VAL(sp, O_TABSTOP);
-	for (qp = sp->seqhdr.next; qp != (SEQ *)&sp->seqhdr; qp = qp->next) {
+	for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
 		if (stype != qp->stype)
 			continue;
 		++cnt;
@@ -227,7 +237,7 @@ seq_save(sp, fp, prefix, stype)
 	esc = sp->gp->original_termios.c_cc[VLNEXT];
 
 	/* Write a sequence command for all keys the user defined. */
-	for (qp = sp->seqhdr.next; qp != (SEQ *)&sp->seqhdr; qp = qp->next) {
+	for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
 		if (!F_ISSET(qp, S_USERDEF))
 			continue;
 		if (stype != qp->stype)

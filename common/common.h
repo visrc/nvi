@@ -4,13 +4,14 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.18 1993/10/28 10:39:21 bostic Exp $ (Berkeley) $Date: 1993/10/28 10:39:21 $
+ *	$Id: common.h,v 8.19 1993/11/01 13:19:17 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:19:17 $
  */
 
 /* System includes. */
 #include <sys/queue.h>		/* Required by screen.h. */
 #include <sys/time.h>		/* Required by screen.h. */
 
+#include <bitstring.h>		/* Required by screen.h. */
 #include <limits.h>		/* Required by screen.h. */
 #include <signal.h>		/* Required by screen.h. */
 #include <stdio.h>		/* Required by screen.h. */
