@@ -1,7 +1,7 @@
-dnl	$Id: configure.in,v 8.73 1996/03/21 19:38:38 bostic Exp $ (Berkeley) $Date: 1996/03/21 19:38:38 $
+dnl	$Id: configure.in,v 8.74 1996/03/21 21:25:51 bostic Exp $ (Berkeley) $Date: 1996/03/21 21:25:51 $
 
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(configure)
+AC_INIT(../common/main.c)
 AC_CONFIG_HEADER(config.h)
 
 dnl Configure setup.
@@ -249,7 +249,7 @@ AC_ARG_ENABLE(curses,
 AC_MSG_RESULT($vi_cv_curses)
 case "$vi_cv_curses" in
 "bundled curses")
-	CPPFLAGS="$CPPFLAGS -I../curses"
+	CPPFLAGS="$CPPFLAGS -I\$(srcdir)/../curses"
 	cobjs="\$(COBJS)";;
 "other curses")
 	LIBS="-lcurses $LIBS";;
@@ -521,7 +521,7 @@ AC_ARG_ENABLE(db,
 AC_MSG_RESULT($vi_cv_db_lib)
 case "$vi_cv_db_lib" in
 "bundled DB")
-	CPPFLAGS="$CPPFLAGS -I../db/include"
+	CPPFLAGS="$CPPFLAGS -I\$(srcdir)/../db/include"
 	LIBOBJS="\$(DBOBJS) $LIBOBJS";;
 "other DB")
 	;;
@@ -536,7 +536,7 @@ AC_ARG_ENABLE(re,
 AC_MSG_RESULT($vi_cv_re_lib)
 case "$vi_cv_re_lib" in
 "bundled RE")
-	CPPFLAGS="$CPPFLAGS -I../regex"
+	CPPFLAGS="$CPPFLAGS -I\$(srcdir)/../regex"
 	LIBOBJS="\$(REOBJS) $LIBOBJS";;
 "other RE")
 	;;
