@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.64 1994/01/02 21:07:57 bostic Exp $ (Berkeley) $Date: 1994/01/02 21:07:57 $";
+static char sccsid[] = "$Id: exf.c,v 8.65 1994/01/11 22:59:54 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:59:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -231,6 +231,10 @@ file_init(sp, frp, rcv_name, force)
 			psize = 64 * 1024;
 
 		frp->mtime = sb.st_mtime;
+
+		if (!S_ISREG(sb.st_mode))
+			msgq(sp, M_ERR,
+			    "Warning: %s is not a regular file.", oname);
 	}
 	
 	/* Set up recovery. */
