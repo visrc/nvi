@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.20 1993/02/14 18:31:02 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:31:02 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.21 1993/02/16 20:10:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,20 +27,21 @@ static char sccsid[] = "$Id: ex_print.c,v 5.20 1993/02/14 18:31:02 bostic Exp $ 
  *	The only valid flag is '#'.
  */
 int
-ex_list(cmdp)
+ex_list(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int flags;
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~E_F_HASH) {
-		msg("Usage: %s.", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(curf, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
+	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
 		return (1);
-	curf->lno = cmdp->addr2.lno;
-	curf->cno = cmdp->addr2.cno;
+	ep->lno = cmdp->addr2.lno;
+	ep->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -50,20 +51,21 @@ ex_list(cmdp)
  *	The only valid flag is 'l'.
  */
 int
-ex_number(cmdp)
+ex_number(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int flags;
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~E_F_LIST) {
-		msg("Usage: %s.", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(curf, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
+	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
 		return (1);
-	curf->lno = cmdp->addr2.lno;
-	curf->cno = cmdp->addr2.cno;
+	ep->lno = cmdp->addr2.lno;
+	ep->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -73,20 +75,21 @@ ex_number(cmdp)
  *	The only valid flags are '#' and 'l'.
  */
 int
-ex_pr(cmdp)
+ex_pr(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int flags;
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~(E_F_HASH | E_F_LIST)) {
-		msg("Usage: %s.", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(curf, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
+	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
 		return (1);
-	curf->lno = cmdp->addr2.lno;
-	curf->cno = cmdp->addr2.cno;
+	ep->lno = cmdp->addr2.lno;
+	ep->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -120,7 +123,7 @@ ex_print(ep, fp, tp, flags)
 		 * backward compatible.
 		 */
 		if ((p = file_gline(ep, from, &len)) == NULL) {
-			GETLINE_ERR(from);
+			GETLINE_ERR(ep, from);
 			return (1);
 		}
 

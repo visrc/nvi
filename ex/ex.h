@@ -4,10 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.28 1993/02/12 10:02:40 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:02:40 $
+ *	$Id: ex.h,v 5.29 1993/02/16 20:10:35 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:35 $
  */
-
-#include "exf.h"
 
 struct excmdarg;
 
@@ -15,7 +13,7 @@ struct excmdarg;
 typedef struct {
 	char *name;			/* Command name. */
 					/* Underlying function. */
-	int (*fn) __P((struct excmdarg *));
+	int (*fn) __P((EXF *, struct excmdarg *));
 
 #define	E_ADDR1		0x00001		/* One address. */
 #define	E_ADDR2		0x00002		/* Two address. */
@@ -80,74 +78,74 @@ extern u_char *defcmdarg[2];	/* Default array. */
 /* Control character. */
 #define	ctrl(ch)	((ch) & 0x1f)
 
-int	buildargv __P((u_char *, int, EXCMDARG *));
-int	esystem __P((const u_char *, const u_char *));
+int	 buildargv __P((EXF *, u_char *, int, EXCMDARG *));
+int	 esystem __P((const u_char *, const u_char *));
 
-int	 ex_abbr __P((EXCMDARG *));
-int	 ex_append __P((EXCMDARG *));
-int	 ex_args __P((EXCMDARG *));
-int	 ex_at __P((EXCMDARG *));
-int	 ex_bang __P((EXCMDARG *));
-int	 ex_bdisplay __P((EXCMDARG *));
-int	 ex_cc __P((EXCMDARG *));
-int	 ex_cd __P((EXCMDARG *));
-int	 ex_cfile __P((char *, int));
-int	 ex_change __P((EXCMDARG *));
-int	 ex_cmd __P((u_char *));
-int	 ex_color __P((EXCMDARG *));
+int	 ex_abbr __P((EXF *, EXCMDARG *));
+int	 ex_append __P((EXF *, EXCMDARG *));
+int	 ex_args __P((EXF *, EXCMDARG *));
+int	 ex_at __P((EXF *, EXCMDARG *));
+int	 ex_bang __P((EXF *, EXCMDARG *));
+int	 ex_bdisplay __P((EXF *, EXCMDARG *));
+int	 ex_cc __P((EXF *, EXCMDARG *));
+int	 ex_cd __P((EXF *, EXCMDARG *));
+int	 ex_cfile __P((EXF *, char *, int));
+int	 ex_change __P((EXF *, EXCMDARG *));
+int	 ex_cmd __P((EXF *, u_char *));
+int	 ex_color __P((EXF *, EXCMDARG *));
 enum confirmation ex_confirm __P((EXF *, MARK *, MARK *));
-int	 ex_copy __P((EXCMDARG *));
-int	 ex_cstring __P((u_char *, int, int));
-int	 ex_debug __P((EXCMDARG *));
-int	 ex_delete __P((EXCMDARG *));
-int	 ex_digraph __P((EXCMDARG *));
-int	 ex_edit __P((EXCMDARG *));
+int	 ex_copy __P((EXF *, EXCMDARG *));
+int	 ex_cstring __P((EXF *, u_char *, int, int));
+int	 ex_debug __P((EXF *, EXCMDARG *));
+int	 ex_delete __P((EXF *, EXCMDARG *));
+int	 ex_digraph __P((EXF *, EXCMDARG *));
+int	 ex_edit __P((EXF *, EXCMDARG *));
 int	 ex_end __P((EXF *));
-int	 ex_equal __P((EXCMDARG *));
-int	 ex_errlist __P((EXCMDARG *));
-int	 ex_file __P((EXCMDARG *));
-u_char	*ex_getline __P((FILE *, size_t *));
-int	 ex_global __P((EXCMDARG *));
+int	 ex_equal __P((EXF *, EXCMDARG *));
+int	 ex_errlist __P((EXF *, EXCMDARG *));
+int	 ex_file __P((EXF *, EXCMDARG *));
+u_char	*ex_getline __P((EXF *, FILE *, size_t *));
+int	 ex_global __P((EXF *, EXCMDARG *));
 int	 ex_init __P((EXF *));
-int	 ex_join __P((EXCMDARG *));
-int	 ex_list __P((EXCMDARG *));
-int	 ex_make __P((EXCMDARG *));
-int	 ex_map __P((EXCMDARG *));
-int	 ex_mark __P((EXCMDARG *));
-int	 ex_mkexrc __P((EXCMDARG *));
-int	 ex_move __P((EXCMDARG *));
-int	 ex_next __P((EXCMDARG *));
-int	 ex_number __P((EXCMDARG *));
-int	 ex_prev __P((EXCMDARG *));
-int	 ex_pr __P((EXCMDARG *));
+int	 ex_join __P((EXF *, EXCMDARG *));
+int	 ex_list __P((EXF *, EXCMDARG *));
+int	 ex_make __P((EXF *, EXCMDARG *));
+int	 ex_map __P((EXF *, EXCMDARG *));
+int	 ex_mark __P((EXF *, EXCMDARG *));
+int	 ex_mkexrc __P((EXF *, EXCMDARG *));
+int	 ex_move __P((EXF *, EXCMDARG *));
+int	 ex_next __P((EXF *, EXCMDARG *));
+int	 ex_number __P((EXF *, EXCMDARG *));
+int	 ex_prev __P((EXF *, EXCMDARG *));
+int	 ex_pr __P((EXF *, EXCMDARG *));
 int	 ex_print __P((EXF *, MARK *, MARK *, int));
-int	 ex_put __P((EXCMDARG *));
-int	 ex_quit __P((EXCMDARG *));
-int	 ex_read __P((EXCMDARG *));
-int	 ex_readfp __P((char *, FILE *, MARK *, recno_t *));
-void	 ex_refresh __P((void));
-int	 ex_rew __P((EXCMDARG *));
-int	 ex_set __P((EXCMDARG *));
-int	 ex_shell __P((EXCMDARG *));
-int	 ex_shiftl __P((EXCMDARG *));
-int	 ex_shiftr __P((EXCMDARG *));
-int	 ex_source __P((EXCMDARG *));
-int	 ex_subagain __P((EXCMDARG *));
-int	 ex_substitute __P((EXCMDARG *));
-int	 ex_tagpop __P((EXCMDARG *));
-int	 ex_tagpush __P((EXCMDARG *));
-int	 ex_tagtop __P((EXCMDARG *));
-int	 ex_unabbr __P((EXCMDARG *));
-int	 ex_undo __P((EXCMDARG *));
-int	 ex_unmap __P((EXCMDARG *));
-int	 ex_usage __P((EXCMDARG *));
-int	 ex_validate __P((EXCMDARG *));
-int	 ex_version __P((EXCMDARG *));
-int	 ex_vglobal __P((EXCMDARG *));
-int	 ex_visual __P((EXCMDARG *));
-int	 ex_viusage __P((EXCMDARG *));
-int	 ex_wq __P((EXCMDARG *));
-int	 ex_write __P((EXCMDARG *));
-int	 ex_writefp __P((char *, FILE *, MARK *, MARK *, int));
-int	 ex_xit __P((EXCMDARG *));
-int	 ex_yank __P((EXCMDARG *));
+int	 ex_put __P((EXF *, EXCMDARG *));
+int	 ex_quit __P((EXF *, EXCMDARG *));
+int	 ex_read __P((EXF *, EXCMDARG *));
+int	 ex_readfp __P((EXF *, char *, FILE *, MARK *, recno_t *));
+void	 ex_refresh __P((EXF *));
+int	 ex_rew __P((EXF *, EXCMDARG *));
+int	 ex_set __P((EXF *, EXCMDARG *));
+int	 ex_shell __P((EXF *, EXCMDARG *));
+int	 ex_shiftl __P((EXF *, EXCMDARG *));
+int	 ex_shiftr __P((EXF *, EXCMDARG *));
+int	 ex_source __P((EXF *, EXCMDARG *));
+int	 ex_subagain __P((EXF *, EXCMDARG *));
+int	 ex_substitute __P((EXF *, EXCMDARG *));
+int	 ex_tagpop __P((EXF *, EXCMDARG *));
+int	 ex_tagpush __P((EXF *, EXCMDARG *));
+int	 ex_tagtop __P((EXF *, EXCMDARG *));
+int	 ex_unabbr __P((EXF *, EXCMDARG *));
+int	 ex_undo __P((EXF *, EXCMDARG *));
+int	 ex_unmap __P((EXF *, EXCMDARG *));
+int	 ex_usage __P((EXF *, EXCMDARG *));
+int	 ex_validate __P((EXF *, EXCMDARG *));
+int	 ex_version __P((EXF *, EXCMDARG *));
+int	 ex_vglobal __P((EXF *, EXCMDARG *));
+int	 ex_visual __P((EXF *, EXCMDARG *));
+int	 ex_viusage __P((EXF *, EXCMDARG *));
+int	 ex_wq __P((EXF *, EXCMDARG *));
+int	 ex_write __P((EXF *, EXCMDARG *));
+int	 ex_writefp __P((EXF *, char *, FILE *, MARK *, MARK *, int));
+int	 ex_xit __P((EXF *, EXCMDARG *));
+int	 ex_yank __P((EXF *, EXCMDARG *));

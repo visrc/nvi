@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.29 1993/02/14 18:10:47 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:10:47 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.30 1993/02/16 20:10:01 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,30 +27,31 @@ static char sccsid[] = "$Id: ex_args.c,v 5.29 1993/02/14 18:10:47 bostic Exp $ (
  *	Edit the next file.
  */
 int
-ex_next(cmdp)
+ex_next(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *ep;
+	EXF *new_ep;
 
-	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
 
 	if (cmdp->argc) {
-		if (file_stop(curf, cmdp->flags & E_FORCE))
+		if (file_stop(ep, cmdp->flags & E_FORCE))
 			return (1);
 		if (file_set(cmdp->argc, (char **)cmdp->argv))
 			PANIC;
-		if ((ep = file_first(1)) == NULL)
+		if ((new_ep = file_first(1)) == NULL)
 			PANIC;
 	} else {
-		if ((ep = file_next(curf, 0)) == NULL) {
-			msg("No more files to edit.");
+		if ((new_ep = file_next(ep, 0)) == NULL) {
+			msg(ep, M_ERROR, "No more files to edit.");
 			return (1);
 		}
-		if (file_stop(curf, cmdp->flags & E_FORCE))
+		if (file_stop(ep, cmdp->flags & E_FORCE))
 			return (1);
 	}
 
-	if (file_start(ep))
+	if (file_start(new_ep))
 		PANIC;
 	return (0);
 }
@@ -60,22 +61,23 @@ ex_next(cmdp)
  *	Edit the previous file.
  */
 int
-ex_prev(cmdp)
+ex_prev(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *ep;
+	EXF *prev_ep;
 
-	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
 
-	if ((ep = file_prev(curf, 0)) == NULL) {
-		msg("No previous files to edit.");
+	if ((prev_ep = file_prev(ep, 0)) == NULL) {
+		msg(ep, M_ERROR, "No previous files to edit.");
 		return (1);
 	}
 
-	if (file_stop(curf, cmdp->flags & E_FORCE))
+	if (file_stop(ep, cmdp->flags & E_FORCE))
 		return (1);
 
-	if (file_start(ep))
+	if (file_start(prev_ep))
 		PANIC;
 	return (0);
 }
@@ -85,26 +87,27 @@ ex_prev(cmdp)
  *	Edit the first file.
  */
 int
-ex_rew(cmdp)
+ex_rew(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *ep;
+	EXF *rew_ep;
 
-	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
 
-	if (file_prev(curf, 0) == NULL) {
-		msg("No previous files to rewind.");
+	if (file_prev(ep, 0) == NULL) {
+		msg(ep, M_ERROR, "No previous files to rewind.");
 		return (1);
 	}
-	if ((ep = file_first(0)) == NULL) {
-		msg("No previous files to rewind.");
+	if ((rew_ep = file_first(0)) == NULL) {
+		msg(ep, M_ERROR, "No previous files to rewind.");
 		return (1);
 	}
 	
-	if (file_stop(curf, 0))
+	if (file_stop(ep, 0))
 		return (1);
 
-	if (file_start(ep))
+	if (file_start(rew_ep))
 		PANIC;
 	return (0);
 }
@@ -114,15 +117,17 @@ ex_rew(cmdp)
  *	Display the list of files.
  */
 int
-ex_args(cmdp)
+ex_args(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	register EXF *ep;
+	register EXF *list_ep;
 	register int cnt, col, sep;
 	int len;
 
 	col = len = sep = 0;
-	for (cnt = 1, ep = file_first(1); ep; ep = file_next(ep, 1)) {
+	for (cnt = 1, list_ep = file_first(1);
+	    list_ep; list_ep = file_next(list_ep, 1)) {
 		/*
 		 * Ignore files that aren't in the "argument" list unless
 		 * they are the one we're currently editing.  I'm not sure
@@ -130,26 +135,27 @@ ex_args(cmdp)
 		 * showing the current file if it was the result of a ":e"
 		 * command seems wrong.
 		 */
-		if (FF_ISSET(ep, F_IGNORE) && curf != ep)
+		if (FF_ISSET(list_ep, F_IGNORE) && ep != list_ep)
 			continue;
-		col += len = strlen(ep->name) + sep + (curf == ep ? 2 : 0);
-		if (col >= curf->cols - 1) {
+		col += len =
+		    strlen(list_ep->name) + sep + (ep == list_ep ? 2 : 0);
+		if (col >= ep->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)fprintf(curf->stdfp, "\n");
+			(void)fprintf(ep->stdfp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)fprintf(curf->stdfp, " ");
+			(void)fprintf(ep->stdfp, " ");
 		}
-		if (curf == ep)
-			(void)fprintf(curf->stdfp, "[%s]", ep->name);
+		if (ep == list_ep)
+			(void)fprintf(ep->stdfp, "[%s]", list_ep->name);
 		else
-			(void)fprintf(curf->stdfp, "%s", ep->name);
+			(void)fprintf(ep->stdfp, "%s", list_ep->name);
 		++cnt;
 	}
 	if (cnt == 1)
-		(void)fprintf(curf->stdfp, "No files.\n");
+		(void)fprintf(ep->stdfp, "No files.\n");
 	else
-		(void)fprintf(curf->stdfp, "\n");
+		(void)fprintf(ep->stdfp, "\n");
 	return (0);
 }

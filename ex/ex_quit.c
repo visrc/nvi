@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.10 1992/12/05 11:08:34 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:34 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.11 1993/02/16 20:10:12 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,59 +19,64 @@ static char sccsid[] = "$Id: ex_quit.c,v 5.10 1992/12/05 11:08:34 bostic Exp $ (
 #include "options.h"
 
 int
-ex_quit(cmdp)
+ex_quit(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int force;
 
 	force = cmdp->flags & E_FORCE;
 
-	MODIFY_CHECK(curf, force);
+	MODIFY_CHECK(ep, force);
 
-	if (!force && file_next(curf, 0)) {
-msg("More files; use \":n\" to go to the next file, \":q!\" to quit.");
+	if (!force && file_next(ep, 0)) {
+		msg(ep, M_ERROR,
+"More files; use \":n\" to go to the next file, \":q!\" to quit.");
 		return (1);
 	}
 
-	if (file_stop(curf, force))
+	if (file_stop(ep, force))
 		return (1);
 	mode = MODE_QUIT;
 	return (0);
 }
 
 int
-ex_wq(cmdp)
+ex_wq(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int force;
 
 	force = cmdp->flags & E_FORCE;
 
-	if (file_sync(curf, force))
+	if (file_sync(ep, force))
 		return (1);
 
-	if (!force && file_next(curf, 0)) {
-		msg("More files to edit; use \":n\" to go to the next file");
+	if (!force && file_next(ep, 0)) {
+		msg(ep, M_ERROR,
+		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
 	}
 
-	if (file_stop(curf, force))
+	if (file_stop(ep, force))
 		return (1);
 	mode = MODE_QUIT;
 	return (0);
 }
 
 int
-ex_xit(cmdp)
+ex_xit(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int force;
 
 	force = cmdp->flags & E_FORCE;
 
-	MODIFY_CHECK(curf, force);
+	MODIFY_CHECK(ep, force);
 
-	if (file_stop(curf, force))
+	if (file_stop(ep, force))
 		return (1);
 	mode = MODE_QUIT;
 	return (0);

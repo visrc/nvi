@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.19 1993/02/13 15:36:11 bostic Exp $ (Berkeley) $Date: 1993/02/13 15:36:11 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.20 1993/02/16 20:08:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,19 +16,9 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.19 1993/02/13 15:36:11 bostic Exp $ 
 #include <stdio.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "options.h"
 #include "vcmd.h"
 #include "screen.h"
-
-#define	DOWN(lno) {							\
-	if (file_gline(curf, lno, &len) == NULL) {			\
-		v_eof(fm);						\
-		return (1);						\
-	}								\
-	rp->lno = lno;							\
-	rp->cno = len ? fm->cno > len - 1 ? len - 1 : fm->cno : 0;	\
-}
 
 /*
  * v_lgoto -- [count]G
@@ -36,16 +26,17 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.19 1993/02/13 15:36:11 bostic Exp $ 
  *	of the file by default.
  */
 int
-v_lgoto(vp, fm, tm, rp)
+v_lgoto(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	recno_t last;
 
-	last = file_lline(curf);
+	last = file_lline(ep);
 	if (vp->flags & VC_C1SET) {
 		if (last < vp->count) {
-			v_eof(fm);
+			v_eof(ep, fm);
 			return (1);
 		}
 		rp->lno = vp->count;
@@ -54,10 +45,8 @@ v_lgoto(vp, fm, tm, rp)
 	return (0);
 }
 
-#define	NO_SUCH_LINE {							\
-	bell();								\
-	if (ISSET(O_VERBOSE))						\
-		msg("No such line on the screen.");			\
+#define	NO_SUCH_LINE(ep) {						\
+	msg(ep, M_ERROR, "No such line on the screen.");		\
 	return (1);							\
 }
 
@@ -67,12 +56,13 @@ v_lgoto(vp, fm, tm, rp)
  *	the top of the screen, 1 by default.
  */
 int
-v_home(vp, fm, tm, rp)
+v_home(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (scr_smtop(curf, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1))
-		NO_SUCH_LINE;
+	if (scr_smtop(ep, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1))
+		NO_SUCH_LINE(ep);
 	return (0);
 }
 
@@ -82,12 +72,13 @@ v_home(vp, fm, tm, rp)
  *	of the screen.
  */
 int
-v_middle(vp, fm, tm, rp)
+v_middle(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (scr_smmid(curf, &rp->lno))
-		NO_SUCH_LINE;
+	if (scr_smmid(ep, &rp->lno))
+		NO_SUCH_LINE(ep);
 	return (0);
 }
 
@@ -97,12 +88,13 @@ v_middle(vp, fm, tm, rp)
  *	the bottom of the screen, 1 by default.
  */
 int
-v_bottom(vp, fm, tm, rp)
+v_bottom(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (scr_smbot(curf, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1))
-		NO_SUCH_LINE;
+	if (scr_smbot(ep, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1))
+		NO_SUCH_LINE(ep);
 	return (0);
 }
 
@@ -111,7 +103,8 @@ v_bottom(vp, fm, tm, rp)
  *	Move down by lines.
  */
 int
-v_down(vp, fm, tm, rp)
+v_down(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -120,7 +113,12 @@ v_down(vp, fm, tm, rp)
 
 	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
 
-	DOWN(lno);
+	if (file_gline(ep, lno, &len) == NULL) {
+		v_eof(ep, fm);
+		return (1);
+	}
+	rp->lno = lno;
+	rp->cno = len ? fm->cno > len - 1 ? len - 1 : fm->cno : 0;
 	return (0);
 }
 
@@ -129,7 +127,8 @@ v_down(vp, fm, tm, rp)
  *	Page down half screens.
  */
 int
-v_hpagedown(vp, fm, tm, rp)
+v_hpagedown(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -146,9 +145,9 @@ v_hpagedown(vp, fm, tm, rp)
 		vp->count = LVAL(O_SCROLL);
 
 	/* Check for EOF. */
-	last = file_lline(curf);
+	last = file_lline(ep);
 	if (fm->lno > last) {
-		v_eof(NULL);
+		v_eof(ep, NULL);
 		return (1);
 	}
 
@@ -158,15 +157,15 @@ v_hpagedown(vp, fm, tm, rp)
 	 * change if the top line would be decremented (may be on a partial
 	 * screen).
 	 */
-	top = curf->top + vp->count;
-	if (last < BOTLINE(curf, top)) {
-		if (last > SCREENSIZE(curf)) {
-			top = last - SCREENSIZE(curf) + 1;
-			if (top > curf->top)
-				curf->top = top;
+	top = ep->top + vp->count;
+	if (last < BOTLINE(ep, top)) {
+		if (last > SCREENSIZE(ep)) {
+			top = last - SCREENSIZE(ep) + 1;
+			if (top > ep->top)
+				ep->top = top;
 		}
 	} else
-		curf->top = top;
+		ep->top = top;
 
 	/*
 	 * Figure out the new cursor line.  Increment by the suggested amount.
@@ -182,16 +181,17 @@ v_hpagedown(vp, fm, tm, rp)
  *	Page down by screens.
  */
 int
-v_pagedown(vp, fm, tm, rp)
+v_pagedown(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	recno_t cnt, last, lno, top;
 
 	/* Check for EOF. */
-	last = file_lline(curf);
+	last = file_lline(ep);
 	if (fm->lno > last) {
-		v_eof(NULL);
+		v_eof(ep, NULL);
 		return (1);
 	}
 
@@ -202,16 +202,16 @@ v_pagedown(vp, fm, tm, rp)
 	 * screen).
 	 * Calculation from POSIX 1003.2/D8.
 	 */
-	cnt = (vp->flags & VC_C1SET ? vp->count : 1) * (curf->lines - 3);
-	top = curf->top + cnt;
-	if (last < BOTLINE(curf, top)) {
-		if (last > SCREENSIZE(curf)) {
-			top = last - SCREENSIZE(curf) + 1;
-			if (top > curf->top)
-				curf->top = top;
+	cnt = (vp->flags & VC_C1SET ? vp->count : 1) * (ep->lines - 3);
+	top = ep->top + cnt;
+	if (last < BOTLINE(ep, top)) {
+		if (last > SCREENSIZE(ep)) {
+			top = last - SCREENSIZE(ep) + 1;
+			if (top > ep->top)
+				ep->top = top;
 		}
 	} else
-		curf->top = top;
+		ep->top = top;
 
 	/*
 	 * Figure out the new cursor line.  Increment by the suggested amount.
@@ -227,7 +227,8 @@ v_pagedown(vp, fm, tm, rp)
  *	Page up by lines.
  */
 int
-v_linedown(vp, fm, tm, rp)
+v_linedown(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -236,13 +237,13 @@ v_linedown(vp, fm, tm, rp)
 	off = vp->flags & VC_C1SET ? vp->count : 1;
 
 	/* Can't go past the end of the file. */
-	if (file_gline(curf, BOTLINE(curf, curf->otop) + off, NULL) == NULL) {
-		v_eof(fm);
+	if (file_gline(ep, BOTLINE(ep, ep->otop) + off, NULL) == NULL) {
+		v_eof(ep, fm);
 		return (1);
 	}
 
 	/* Set the new top line. */
-	curf->top += off;
+	ep->top += off;
 
 	/*
 	 * The cursor moves up, staying with its original line, unless it
@@ -251,8 +252,8 @@ v_linedown(vp, fm, tm, rp)
          * otherwise, we set the relative movement (as if V_RCM_SET was set).
          * It's enough to make you cry.
 	 */
-	if (fm->lno <= curf->top) {
-		rp->lno = curf->top;
+	if (fm->lno <= ep->top) {
+		rp->lno = ep->top;
 		vp->kp->flags |= V_RCM;
 	} else {
 		rp->lno = fm->lno;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.25 1993/02/16 11:43:24 bostic Exp $ (Berkeley) $Date: 1993/02/16 11:43:24 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.26 1993/02/16 20:10:27 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,9 +28,11 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.25 1993/02/16 11:43:24 bostic Exp $ 
 
 enum which {AGAIN, MUSTSETR, FIRST};
 
-static int	checkmatchsize __P((regex_t *));
-static inline int	regsub __P((u_char *));
-static int	substitute __P((EXCMDARG *, u_char *, regex_t *, enum which));
+static int	checkmatchsize __P((EXF *, regex_t *));
+static inline int
+		regsub __P((EXF *, u_char *));
+static int	substitute __P((EXF *,
+		    EXCMDARG *, u_char *, regex_t *, enum which));
 
 static regmatch_t *match;		/* Match array. */
 static size_t matchsize;		/* Match array size. */
@@ -38,12 +40,13 @@ static u_char *repl;			/* Replacement string. */
 static size_t lrepl;			/* Replacement string length. */
 
 int
-ex_substitute(cmdp)
+ex_substitute(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	regex_t *re, lre;
 	int eval, reflags;
-	u_char *ep, *sub;
+	u_char *endp, *sub;
 	char delim[2];
 
 	/*
@@ -58,29 +61,30 @@ ex_substitute(cmdp)
 		delim[1] = '\0';
 
 		/* Get the substitute string. */
-		ep = cmdp->string + 1;
-		sub = USTRSEP(&ep, delim);
+		endp = cmdp->string + 1;
+		sub = USTRSEP(&endp, delim);
 
 		/* Get the replacement string, save it off. */
-		if (*ep == NULL) {
-			msg("No replacement string specified.");
+		if (*endp == NULL) {
+			msg(ep, M_ERROR, "No replacement string specified.");
 			return (1);
 		}
 		if (repl != NULL)
 			free(repl);
-		repl = USTRSEP(&ep, delim);	/* XXX Not 8-bit clean. */
+		repl = USTRSEP(&endp, delim);	/* XXX Not 8-bit clean. */
 		repl = USTRDUP(repl);
 		lrepl = USTRLEN(repl);
 
 		/* If the substitute string is empty, use the last one. */
 		if (*sub == NULL) {
-			if (!FF_ISSET(curf, F_RE_SET)) {
-				msg("No previous regular expression.");
+			if (!FF_ISSET(ep, F_RE_SET)) {
+				msg(ep, M_ERROR,
+				    "No previous regular expression.");
 				return (1);
 			}
-			if (checkmatchsize(&curf->sre))
+			if (checkmatchsize(ep, &ep->sre))
 				return (1);
-			return (substitute(cmdp, ep, &curf->sre, AGAIN));
+			return (substitute(ep, cmdp, endp, &ep->sre, AGAIN));
 		}
 
 		/* Set RE flags. */
@@ -93,30 +97,31 @@ ex_substitute(cmdp)
 		/* Compile the RE. */
 		re = &lre;
 		if (eval = regcomp(re, (char *)sub, reflags)) {
-			re_error(eval, re);
+			re_error(ep, eval, re);
 			return (1);
 		}
 
 		/* Set saved RE. */
-		curf->sre = lre;
-		FF_SET(curf, F_RE_SET);
+		ep->sre = lre;
+		FF_SET(ep, F_RE_SET);
 
-		if (checkmatchsize(&curf->sre))
+		if (checkmatchsize(ep, &ep->sre))
 			return (1);
-		return (substitute(cmdp, ep, re, FIRST));
+		return (substitute(ep, cmdp, endp, re, FIRST));
 	}
-	return (substitute(cmdp, cmdp->string, &curf->sre, MUSTSETR));
+	return (substitute(ep, cmdp, cmdp->string, &ep->sre, MUSTSETR));
 }
 
 int
-ex_subagain(cmdp)
+ex_subagain(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (FF_ISSET(curf, F_RE_SET)) {
-		msg("No previous regular expression.");
+	if (FF_ISSET(ep, F_RE_SET)) {
+		msg(ep, M_ERROR, "No previous regular expression.");
 		return (1);
 	}
-	return (substitute(cmdp, cmdp->string, &curf->sre, AGAIN));
+	return (substitute(ep, cmdp, cmdp->string, &ep->sre, AGAIN));
 }
 
 static u_char *lb;			/* Build buffer. */
@@ -134,11 +139,12 @@ static size_t *newl;			/* Newline array. */
 static size_t newlsize;			/* Newline array size. */
 static size_t newlcnt;			/* Newlines in replacement. */
 
-#define	BUILD(l, len) {							\
+#define	BUILD(ep, l, len) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msg("Error: %s", strerror(errno));		\
+			msg(ep, M_ERROR,				\
+			    "Error: %s", strerror(errno));		\
 			lbclen = 0;					\
 			return (1);					\
 		}							\
@@ -147,23 +153,25 @@ static size_t newlcnt;			/* Newlines in replacement. */
 	lbclen += len;							\
 }
 
-#define	NEEDNEWLINE {							\
+#define	NEEDNEWLINE(ep) {						\
 	if (newlsize == newlcnt) {					\
 		newlsize += 25;						\
 		if ((newl = realloc(newl,				\
 		    newlsize * sizeof(size_t))) == NULL) {		\
-			msg("Error: %s", strerror(errno));		\
+			msg(ep, M_ERROR,				\
+			    "Error: %s", strerror(errno));		\
 			newlsize = 0;					\
 			return (1);					\
 		}							\
 	}								\
 }
 
-#define	NEEDSP(len, pnt) {						\
+#define	NEEDSP(ep, len, pnt) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msg("Error: %s", strerror(errno));		\
+			msg(ep, M_ERROR,				\
+			    "Error: %s", strerror(errno));		\
 			lbclen = 0;					\
 			return (1);					\
 		}							\
@@ -172,7 +180,8 @@ static size_t newlcnt;			/* Newlines in replacement. */
 }
 
 static int
-substitute(cmdp, s, re, cmd)
+substitute(ep, cmdp, s, re, cmd)
+	EXF *ep;
 	EXCMDARG *cmdp;
 	u_char *s;
 	regex_t *re;
@@ -200,7 +209,8 @@ substitute(cmdp, s, re, cmd)
 			break;
 		case '#':
 			if (mode == MODE_VI) {
-				msg("'#' flag not supported in vi mode.");
+				msg(ep, M_ERROR,
+				    "'#' flag not supported in vi mode.");
 				return (1);
 			}
 			nflag = 1;
@@ -213,25 +223,29 @@ substitute(cmdp, s, re, cmd)
 			break;
 		case 'l':
 			if (mode == MODE_VI) {
-				msg("'l' flag not supported in vi mode.");
+				msg(ep, M_ERROR,
+				    "'l' flag not supported in vi mode.");
 				return (1);
 			}
 			lflag = 1;
 			break;
 		case 'p':
 			if (mode == MODE_VI) {
-				msg("'p' flag not supported in vi mode.");
+				msg(ep, M_ERROR,
+				    "'p' flag not supported in vi mode.");
 				return (1);
 			}
 			pflag = 1;
 			break;
 		case 'r':
 			if (cmd == FIRST) {
-		msg("Regular expression specified; r flag meaningless.");
+		msg(ep, M_ERROR,
+		    "Regular expression specified; r flag meaningless.");
 				return (1);
 			}
-			if (!FF_ISSET(curf, F_RE_SET)) {
-				msg("No previous regular expression.");
+			if (!FF_ISSET(ep, F_RE_SET)) {
+				msg(ep, M_ERROR,
+				    "No previous regular expression.");
 				return (1);
 			}
 			rflag = 1;
@@ -241,20 +255,20 @@ substitute(cmdp, s, re, cmd)
 		}
 
 	if (rflag == 0 && cmd == MUSTSETR) {
-usage:		msg("Usage: %s", cmdp->cmd->usage);
+usage:		msg(ep, M_ERROR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* For each line... */
 	lastline = OOBLNO;
-	curf->rptlines = 0;
-	curf->rptlabel = "changed";
+	ep->rptlines = 0;
+	ep->rptlabel = "changed";
 	for (lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
 
 		/* Get the line. */
-		if ((s = file_gline(curf, lno, &len)) == NULL) {
-			GETLINE_ERR(lno);
+		if ((s = file_gline(ep, lno, &len)) == NULL) {
+			GETLINE_ERR(ep, lno);
 			return (1);
 		}
 
@@ -272,7 +286,7 @@ skipmatch:	eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
 			continue;
 		}
 		if (eval != 0) {
-			re_error(eval, re);
+			re_error(ep, eval, re);
 			return (1);
 		}
 
@@ -283,12 +297,12 @@ skipmatch:	eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
 			to.lno = lno;
 			to.cno = match[0].rm_eo;
 
-			switch(curf->s_confirm(curf, &from, &to)) {
+			switch(ep->s_confirm(ep, &from, &to)) {
 			case YES:
 				break;
 			case NO:
 				/* Copy prefix, matching bytes. */
-				BUILD(s, match[0].rm_eo);
+				BUILD(ep, s, match[0].rm_eo);
 				goto skip;
 			case QUIT:
 				elno = lno;
@@ -297,10 +311,10 @@ skipmatch:	eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
 		}
 
 		/* Copy prefix. */
-		BUILD(s, match[0].rm_so);
+		BUILD(ep, s, match[0].rm_so);
 
 		/* Copy matching bytes. */
-		if (regsub(s))
+		if (regsub(ep, s))
 			return (1);
 
 skip:		s += match[0].rm_eo;
@@ -317,14 +331,14 @@ skip:		s += match[0].rm_eo;
 			
 			/* Copy suffix. */
 			if (len)
-				BUILD(s, len)
+				BUILD(ep, s, len)
 
 			/* Store any inserted lines. */
 			last = 0;
 			if (newlcnt) {
 				for (cnt = 0;
 				    cnt < newlcnt; ++cnt, ++lno, ++elno) {
-					if (file_iline(curf,
+					if (file_iline(ep,
 					    lno, lb + last, newl[cnt] - last))
 						return (1);
 					last = newl[cnt] + 1;
@@ -336,12 +350,12 @@ skip:		s += match[0].rm_eo;
 
 			/* Store the line. */
 			if (lbclen)
-				if (file_sline(curf, lno, lb + last, lbclen))
+				if (file_sline(ep, lno, lb + last, lbclen))
 					return (1);
 
 			/* Get a new copy of the line. */
-			if ((s = file_gline(curf, lno, &len)) == NULL) {
-				GETLINE_ERR(lno);
+			if ((s = file_gline(ep, lno, &len)) == NULL) {
+				GETLINE_ERR(ep, lno);
 				return (1);
 			}
 
@@ -350,7 +364,7 @@ skip:		s += match[0].rm_eo;
 
 			/* Update counters. */
 			if (lastline != lno) {
-				++curf->rptlines;
+				++ep->rptlines;
 				lastline = lno;
 			}
 
@@ -368,11 +382,11 @@ skip:		s += match[0].rm_eo;
 
 		/* Copy suffix. */
 nomatch:	if (len)
-			BUILD(s, len)
+			BUILD(ep, s, len)
 
 		/* Update counters. */
 		if (lastline != lno) {
-			++curf->rptlines;
+			++ep->rptlines;
 			lastline = lno;
 		}
 
@@ -380,7 +394,7 @@ nomatch:	if (len)
 		last = 0;
 		if (newlcnt) {
 			for (cnt = 0; cnt < newlcnt; ++cnt, ++lno, ++elno) {
-				if (file_iline(curf,
+				if (file_iline(ep,
 				    lno, lb + last, newl[cnt] - last))
 					return (1);
 				last = newl[cnt] + 1;
@@ -391,28 +405,28 @@ nomatch:	if (len)
 
 		/* Store the line. */
 		if (lbclen)
-			if (file_sline(curf, lno, lb + last, lbclen))
+			if (file_sline(ep, lno, lb + last, lbclen))
 				return (1);
 
 		/* Display as necessary. */
 		if (!lflag && !nflag && !pflag)
 			continue;
 		if (lflag)
-			ex_print(curf, &from, &to, E_F_LIST);
+			ex_print(ep, &from, &to, E_F_LIST);
 		if (nflag)
-			ex_print(curf, &from, &to, E_F_HASH);
+			ex_print(ep, &from, &to, E_F_HASH);
 		if (pflag)
-			ex_print(curf, &from, &to, E_F_PRINT);
+			ex_print(ep, &from, &to, E_F_PRINT);
 	}
 
 	/*
 	 * Note if nothing found.  Else, if nothing displayed to the
 	 * screen, put something up.
 	 */
-	if (curf->rptlines == 0 && !FF_ISSET(curf, F_IN_GLOBAL))
-		msg("No match found.");
+	if (ep->rptlines == 0 && !FF_ISSET(ep, F_IN_GLOBAL))
+		msg(ep, M_DISPLAY, "No match found.");
 	else if (!lflag && !nflag && !pflag)
-		FF_SET(curf, F_AUTOPRINT);
+		FF_SET(ep, F_AUTOPRINT);
 
 	return (0);
 }
@@ -422,7 +436,8 @@ nomatch:	if (len)
  * 	Do the substitution for a regular expression.
  */
 static inline int
-regsub(ip)
+regsub(ep, ip)
+	EXF *ep;
 	u_char *ip;			/* Input line. */
 {
 	size_t mlen;			/* Match length. */
@@ -444,18 +459,18 @@ regsub(ip)
 			no = *rp++ - '0';
 sub:			if (match[no].rm_so != -1 && match[no].rm_eo != -1) {
 				mlen = match[no].rm_eo - match[no].rm_so;
-				NEEDSP(mlen, lbp);
+				NEEDSP(ep, mlen, lbp);
 				memmove(lbp, ip + match[no].rm_so, mlen);
 				lbp += mlen;
 				lbclen += mlen;
 			}
 		} else {		/* Newline, ordinary characters. */
 			if (special[ch] == K_CR || special[ch] == K_NL) {
-				NEEDNEWLINE;
+				NEEDNEWLINE(ep);
 				newl[newlcnt++] = lbclen;
 			} else if (ch == '\\' && (*rp == '\\' || *rp == '&'))
  				ch = *rp++;
-			NEEDSP(1, lbp);
+			NEEDSP(ep, 1, lbp);
  			*lbp++ = ch;
 			++lbclen;
 		}
@@ -464,7 +479,8 @@ sub:			if (match[no].rm_so != -1 && match[no].rm_eo != -1) {
 }
 
 static int
-checkmatchsize(re)
+checkmatchsize(ep, re)
+	EXF *ep;
 	regex_t *re;
 {
 	/* Build nsub array as necessary. */
@@ -472,7 +488,7 @@ checkmatchsize(re)
 		matchsize = re->re_nsub + 1;
 		if ((match =
 		    realloc(match, matchsize * sizeof(regmatch_t))) == NULL) {
-			msg("Error: %s", strerror(errno));
+			msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			matchsize = 0;
 			return (1);
 		}

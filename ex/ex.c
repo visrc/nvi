@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.61 1993/02/14 14:34:05 bostic Exp $ (Berkeley) $Date: 1993/02/14 14:34:05 $";
+static char sccsid[] = "$Id: ex.c,v 5.62 1993/02/16 20:09:57 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -34,8 +34,8 @@ static char sccsid[] = "$Id: ex.c,v 5.61 1993/02/14 14:34:05 bostic Exp $ (Berke
 
 u_char *defcmdarg[2];
 
-static int	 fileexpand __P((glob_t *, u_char *, int));
-static u_char	*linespec __P((u_char *, EXCMDARG *));
+static int	 fileexpand __P((EXF *, glob_t *, u_char *, int));
+static u_char	*linespec __P((EXF *, u_char *, EXCMDARG *));
 
 #define	DEFCOM	".+1"
 
@@ -44,7 +44,8 @@ static u_char	*linespec __P((u_char *, EXCMDARG *));
  *	Read an ex command and execute it.
  */
 int
-ex()
+ex(ep)
+	EXF *ep;
 {
 	size_t len;
 	int first;
@@ -52,27 +53,32 @@ ex()
 
 	first = 1;
 	do {
-		if (first || FF_ISSET(curf, F_NEWSESSION)) {
-			if (ex_init(curf))
+		if (first || FF_ISSET(ep, F_NEWSESSION)) {
+			if (ex_init(ep))
 				return (1);
-			FF_CLR(curf, F_NEWSESSION);
+			FF_CLR(ep, F_NEWSESSION);
 			first = 0;
 		}
 
-		if (ex_gb(curf, ISSET(O_PROMPT) ? ':' : 0,
+		if (ex_gb(ep, ISSET(O_PROMPT) ? ':' : 0,
 		    &p, &len, GB_MAPCOMMAND) || !p)
 			continue;
 		if (*p) {
-			(void)fputc('\n', curf->stdfp);
-			ex_cstring(p, len, 0);
+			(void)fputc('\n', ep->stdfp);
+			ex_cstring(ep, p, len, 0);
 		} else {
-			(void)fputc('\r', curf->stdfp);
-			(void)fflush(curf->stdfp);
+			(void)fputc('\r', ep->stdfp);
+			(void)fflush(ep->stdfp);
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
-			ex_cstring(defcom, sizeof(DEFCOM) - 1, 0);
+			ex_cstring(ep, defcom, sizeof(DEFCOM) - 1, 0);
 		}
+		/*
+		 * XXX
+		 * THE UNDERLYING EXF MAY HAVE CHANGED.
+		 */
+		ep = curf;
 	} while (mode == MODE_EX);
-	return (ex_end(curf));
+	return (ex_end(ep));
 }
 
 /*
@@ -80,7 +86,8 @@ ex()
  *	Execute ex commands from a file.
  */
 int
-ex_cfile(filename, noexisterr)
+ex_cfile(ep, filename, noexisterr)
+	EXF *ep;
 	char *filename;
 	int noexisterr;
 {
@@ -112,14 +119,18 @@ ex_cfile(filename, noexisterr)
 	}
 	bp[sb.st_size] = '\0';
 
-	rval = ex_cstring(bp, len, 1);
+	rval = ex_cstring(ep, bp, len, 1);
+	/*
+	 * XXX
+	 * THE UNDERLYING EXF MAY HAVE CHANGED (but we don't care).
+	 */
 	free(bp);
 	(void)close(fd);
 	return (rval);
 
 e3:	free(bp);
 e2:	(void)close(fd);
-e1:	msg("%s: %s.", filename, strerror(errno));
+e1:	msg(ep, M_ERROR, "%s: %s.", filename, strerror(errno));
 	return (1);
 }
 
@@ -129,7 +140,8 @@ e1:	msg("%s: %s.", filename, strerror(errno));
  *	by newlines or by | characters, and may be quoted.
  */
 int
-ex_cstring(cmd, len, doquoting)
+ex_cstring(ep, cmd, len, doquoting)
+	EXF *ep;
 	u_char *cmd;
 	register int len, doquoting;
 {
@@ -146,7 +158,7 @@ ex_cstring(cmd, len, doquoting)
 		if (len == 0)
 			goto cend;
 		if (doquoting && cnt == gb_blen)
-			gb_inc();
+			gb_inc(ep);
 		switch(*t) {
 		case '|':
 		case '\n':
@@ -156,7 +168,7 @@ cend:			if (p > cmd) {
 				 * Errors are ignored, although error messages
 				 * will be displayed later.
 				 */
-				(void)ex_cmd(cmd);
+				(void)ex_cmd(ep, cmd);
 				p = cmd;
 			}
 			if (len == 0)
@@ -187,7 +199,8 @@ static EXCMDLIST *lastcmd = &cmds[C_PRINT];
  *	Parse and execute an ex command.  
  */
 int
-ex_cmd(exc)
+ex_cmd(ep, exc)
+	EXF *ep;
 	register u_char *exc;
 {
 	register int cmdlen;
@@ -197,7 +210,7 @@ ex_cmd(exc)
 	recno_t lcount, num;
 	long flagoff;
 	int flags, uselastcmd;
-	u_char *ep;
+	u_char *endp;
 
 #if DEBUG && 0
 	TRACE("ex: {%s}\n", exc);
@@ -224,7 +237,7 @@ ex_cmd(exc)
 	 * Parse line specifiers if the command uses addresses.  New command
 	 * line position is returned, or NULL on error.  
 	 */
-	if ((exc = linespec(exc, &cmd)) == NULL)
+	if ((exc = linespec(ep, exc, &cmd)) == NULL)
 		return (1);
 
 	/* Skip whitespace. */
@@ -247,23 +260,25 @@ ex_cmd(exc)
 		}
 		for (cp = cmds; cp->name && memcmp(p, cp->name, cmdlen); ++cp);
 		if (cp->name == NULL) {
-			msg("The %.*s command is unknown.", cmdlen, p);
+			msg(ep, M_ERROR,
+			    "The %.*s command is unknown.", cmdlen, p);
 			return (1);
 		}
 		uselastcmd = 0;
 
 		/* Some commands are turned off. */
 		if (cp->flags & E_NOPERM) {
-			msg("The %.*s command is not currently supported.",
+			msg(ep, M_ERROR,
+			    "The %.*s command is not currently supported.",
 			    cmdlen, p);
 			return (1);
 		}
 
 		/* Some commands aren't okay in globals. */
-		if (curf != NULL &&
-		    FF_ISSET(curf, F_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
-msg("The %.*s command can't be used as part of a global command.",
-			    cmdlen, p);
+		if (ep != NULL &&
+		    FF_ISSET(ep, F_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
+			msg(ep, M_ERROR,
+"The %.*s command can't be used as part of a global command.", cmdlen, p);
 			return (1);
 		}
 	} else {
@@ -280,9 +295,10 @@ msg("The %.*s command can't be used as part of a global command.",
 	 * first, we can't allow any command that requires file state.
 	 * Historic vi generally took the easy way out, by dropping core.
  	 */
-	if (curf == NULL &&
+	if (ep == NULL &&
 	    flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
-	msg("The %s command requires a file to already have been read in.",
+		msg(ep, M_ERROR,
+	"The %s command requires a file to already have been read in.",
 		    cp->name);
 		return (1);
 	}
@@ -307,12 +323,12 @@ msg("The %.*s command can't be used as part of a global command.",
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 1;
-			if (flags & E_ZERODEF && file_lline(curf) == 0) {
+			if (flags & E_ZERODEF && file_lline(ep) == 0) {
 				cmd.addr1.lno = 0;
 				flags |= E_ZERO;
 			} else
-				cmd.addr1.lno = curf->lno;
-			cmd.addr1.cno = curf->cno;
+				cmd.addr1.lno = ep->lno;
+			cmd.addr1.cno = ep->cno;
 			break;
 		case 1:
 			break;
@@ -328,7 +344,7 @@ msg("The %.*s command can't be used as part of a global command.",
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
 		if (cmd.addrcnt == 0) {		/* Default to entire file. */
 			cmd.addrcnt = 2;
-			cmd.addr2.lno = file_lline(curf);
+			cmd.addr2.lno = file_lline(ep);
 			if (flags & E_ZERODEF && cmd.addr2.lno == 0) {
 				cmd.addr1.lno = 0;
 				flags |= E_ZERO;
@@ -343,8 +359,8 @@ msg("The %.*s command can't be used as part of a global command.",
 two:		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 2;
-			cmd.addr1.lno = cmd.addr2.lno = curf->lno;
-			cmd.addr1.cno = cmd.addr2.cno = curf->cno;
+			cmd.addr1.lno = cmd.addr2.lno = ep->lno;
+			cmd.addr1.cno = cmd.addr2.cno = ep->cno;
 			break;
 		case 1:				/* Default to first address. */
 			cmd.addrcnt = 2;
@@ -453,12 +469,13 @@ end2:			break;
 			break;
 		case 'c':				/* count */
 			if (isdigit(*exc)) {
-				lcount = USTRTOL(exc, &ep, 10);
+				lcount = USTRTOL(exc, &endp, 10);
 				if (lcount == 0) {
-					msg("Count may not be zero.");
+					msg(ep, M_ERROR,
+					    "Count may not be zero.");
 					return (1);
 				}
-				exc = ep;
+				exc = endp;
 				/*
 				 * Fix up the addresses.  Count's only occur
 				 * with commands taking two addresses.  Replace
@@ -471,19 +488,19 @@ end2:			break;
 			break;
 		case 'l':				/* line */
 			if (isdigit(*exc)) {
-				cmd.lineno = USTRTOL(exc, &ep, 10);
-				exc = ep;
+				cmd.lineno = USTRTOL(exc, &endp, 10);
+				exc = endp;
 			}
 			break;
 		case 'f':				/* file */
-			if (buildargv(exc, 1, &cmd))
+			if (buildargv(ep, exc, 1, &cmd))
 				return (1);
 			goto countchk;
 		case 's':				/* string */
 			cmd.string = exc;
 			goto addr2;
 		case 'w':				/* word */
-			if (buildargv(exc, 0, &cmd))
+			if (buildargv(ep, exc, 0, &cmd))
 				return (1);
 countchk:		if (*++p != 'N') {		/* N */
 				/*
@@ -498,7 +515,8 @@ countchk:		if (*++p != 'N') {		/* N */
 			}
 			goto addr2;
 		default:
-			msg("Internal syntax table error (%s).", cp->name);
+			msg(ep, M_ERROR,
+			    "Internal syntax table error (%s).", cp->name);
 		}
 	}
 
@@ -508,7 +526,7 @@ countchk:		if (*++p != 'N') {		/* N */
 	 */
 	for (; *exc && isspace(*exc); ++exc);
 	if (*exc || USTRPBRK(p, "lr")) {
-usage:		msg("Usage: %s.", cp->usage);
+usage:		msg(ep, M_ERROR, "Usage: %s.", cp->usage);
 		return (1);
 	}
 
@@ -517,31 +535,34 @@ addr2:	switch(cmd.addrcnt) {
 	case 2:
 		num = cmd.addr2.lno;
 		if (num < 0) {
-			msg("%lu is an invalid address.", num);
+			msg(ep, M_ERROR, "%lu is an invalid address.", num);
 			return (1);
 		}
-		lcount = file_lline(curf);
+		lcount = file_lline(ep);
 		if (num > lcount) {
 			if (lcount == 0)
-				msg("The file is empty.");
+				msg(ep, M_ERROR, "The file is empty.");
 			else
-				msg("Only %lu lines in the file.", lcount);
+				msg(ep, M_ERROR,
+				    "Only %lu lines in the file.", lcount);
 			return (1);
 		}
 		/* FALLTHROUGH */
 	case 1:
 		num = cmd.addr1.lno;
 		if (num == 0 && !(flags & E_ZERO)) {
-			msg("The %s command doesn't permit an address of 0.",
+			msg(ep, M_ERROR,
+			    "The %s command doesn't permit an address of 0.",
 			    cp->name);
 			return (1);
 		}
 		if (num < 0) {
-			msg("%lu is an invalid address.", num);
+			msg(ep, M_ERROR, "%lu is an invalid address.", num);
 			return (1);
 		}
-		if (num > file_lline(curf)) {
-			msg("Only %lu lines in the file.", file_lline(curf));
+		if (num > file_lline(ep)) {
+			msg(ep, M_ERROR,
+			    "Only %lu lines in the file.", file_lline(ep));
 			return (1);
 		}
 		break;
@@ -549,8 +570,8 @@ addr2:	switch(cmd.addrcnt) {
 
 	/* If doing a default command, vi just moves to the line. */
 	if (mode == MODE_VI && uselastcmd) {
-		curf->lno = cmd.addr1.lno;
-		curf->cno = cmd.addr1.cno;
+		ep->lno = cmd.addr1.lno;
+		ep->cno = cmd.addr1.cno;
 		return (0);
 	}
 
@@ -589,25 +610,31 @@ addr2:	switch(cmd.addrcnt) {
 }
 #endif
 	/* Clear autoprint. */
-	if (curf != NULL)
-		FF_CLR(curf, F_AUTOPRINT);
+	if (ep != NULL)
+		FF_CLR(ep, F_AUTOPRINT);
 
 	/*
 	 * If file state, set rptlines.  If file state and not doing a global
 	 * command, log the start of an action.
 	 */
-	if (curf != NULL) {
-		curf->rptlines = 0;
-		if (!FF_ISSET(curf, F_IN_GLOBAL))
-			(void)log_cursor(curf);
+	if (ep != NULL) {
+		ep->rptlines = 0;
+		if (!FF_ISSET(ep, F_IN_GLOBAL))
+			(void)log_cursor(ep);
 	}
 
 	/* Do the command. */
-	if ((cp->fn)(&cmd))
+	if ((cp->fn)(ep, &cmd))
 		return (1);
 
+	/*
+	 * XXX
+	 * THE UNDERLYING EXF MAY HAVE CHANGED.
+	 */
+	ep = curf;
+
 	/* If no file state, the rest of this isn't all that useful. */
-	if (curf == NULL)
+	if (ep == NULL)
 		return (0);
 
 	/*
@@ -617,37 +644,38 @@ addr2:	switch(cmd.addrcnt) {
 	 */
 	if (flagoff) {
 		if (flagoff < 0) {
-			if ((recno_t)flagoff > curf->lno) {
-				msg("Flag offset before line 1.");
+			if ((recno_t)flagoff > ep->lno) {
+				msg(ep, M_ERROR,
+				    "Flag offset before line 1.");
 				return (1);
 			}
-		} else if (curf->lno + flagoff > file_lline(curf)) {
-			msg("Flag offset past end-of-file.");
+		} else if (ep->lno + flagoff > file_lline(ep)) {
+			msg(ep, M_ERROR, "Flag offset past end-of-file.");
 			return (1);
 		}
-		curf->lno += flagoff;
+		ep->lno += flagoff;
 	}
 
 	if (mode == MODE_EX &&
-	    ISSET(O_AUTOPRINT) && FF_ISSET(curf, F_AUTOPRINT))
+	    ISSET(O_AUTOPRINT) && FF_ISSET(ep, F_AUTOPRINT))
 		flags = E_F_PRINT;
 	else
 		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);
-	parg.addr1.lno = parg.addr2.lno = curf->lno;
-	parg.addr1.cno = parg.addr2.cno = curf->cno;
+	parg.addr1.lno = parg.addr2.lno = ep->lno;
+	parg.addr1.cno = parg.addr2.cno = ep->cno;
 	if (flags) {
 		switch (flags) {
 		case E_F_HASH:
 			parg.cmd = &cmds[C_HASH];
-			ex_number(&parg);
+			ex_number(ep, &parg);
 			break;
 		case E_F_LIST:
 			parg.cmd = &cmds[C_LIST];
-			ex_list(&parg);
+			ex_list(ep, &parg);
 			break;
 		case E_F_PRINT:
 			parg.cmd = &cmds[C_PRINT];
-			ex_pr(&parg);
+			ex_pr(ep, &parg);
 			break;
 		}
 	}
@@ -659,20 +687,21 @@ addr2:	switch(cmd.addrcnt) {
  *	Parse a line specifier for ex commands.
  */
 static u_char *
-linespec(cmd, cp)
+linespec(ep, cmd, cp)
+	EXF *ep;
 	u_char *cmd;
 	EXCMDARG *cp;
 {
 	MARK cur, savecursor, sm, *mp;
 	long num, total;
 	int savecursor_set;
-	u_char *ep;
+	u_char *endp;
 
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
 		cp->addr1.lno = 1;
 		cp->addr1.cno = 0;
-		cp->addr2.lno = file_lline(curf);
+		cp->addr2.lno = file_lline(ep);
 		cp->addr2.cno = 0;
 		cp->addrcnt = 2;
 		return (++cmd);
@@ -692,10 +721,10 @@ linespec(cmd, cp)
 			if (cp->addrcnt == 0)
 				goto done;
 			if (!savecursor_set) {
-				savecursor.lno = curf->lno;
-				savecursor.cno = curf->cno;
-				curf->lno = cp->addr1.lno;
-				curf->cno = cp->addr1.cno;
+				savecursor.lno = ep->lno;
+				savecursor.cno = ep->cno;
+				ep->lno = cp->addr1.lno;
+				ep->cno = cp->addr1.cno;
 			}
 			savecursor_set = 1;
 			/* FALLTHROUGH */
@@ -703,56 +732,57 @@ linespec(cmd, cp)
 			++cmd;
 			break;
 		case '.':		/* Current position. */
-			cur.lno = curf->lno;
-			cur.cno = curf->cno;
+			cur.lno = ep->lno;
+			cur.cno = ep->cno;
 			++cmd;
 			break;
 		case '$':		/* Last line. */
-			cur.lno = file_lline(curf);
+			cur.lno = file_lline(ep);
 			cur.cno = 0;
 			++cmd;
 			break;
 					/* Absolute line number. */
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
-			cur.lno = USTRTOL(cmd, &ep, 10);
+			cur.lno = USTRTOL(cmd, &endp, 10);
 			cur.cno = 0;
-			cmd = ep;
+			cmd = endp;
 			break;
 		case '\'':		/* Set mark. */
 			if (cmd[1] == '\0') {
-				msg("No mark name; use 'a' to 'z'.");
+				msg(ep, M_ERROR,
+				    "No mark name; use 'a' to 'z'.");
 				return (NULL);
 			}
-			if ((mp = mark_get(cmd[1])) == NULL)
+			if ((mp = mark_get(ep, cmd[1])) == NULL)
 				return (NULL);
 			cur = *mp;
 			cmd += 2;
 			break;
 		case '/':		/* Search forward. */
-			sm.lno = curf->lno;
-			sm.cno = curf->cno;
-			if ((mp = f_search(curf,
-			    &sm, cmd, &ep, SEARCH_MSG | SEARCH_PARSE)) == NULL)
+			sm.lno = ep->lno;
+			sm.cno = ep->cno;
+			if ((mp = f_search(ep, &sm, cmd,
+			    &endp, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
-			cur.lno = curf->lno = mp->lno;
-			cur.cno = curf->cno = mp->cno;
-			cmd = ep;
+			cur.lno = ep->lno = mp->lno;
+			cur.cno = ep->cno = mp->cno;
+			cmd = endp;
 			break;
 		case '?':		/* Search backward. */
-			sm.lno = curf->lno;
-			sm.cno = curf->cno;
-			if ((mp = b_search(curf,
-			    &sm, cmd, &ep, SEARCH_MSG | SEARCH_PARSE)) == NULL)
+			sm.lno = ep->lno;
+			sm.cno = ep->cno;
+			if ((mp = b_search(ep, &sm, cmd,
+			    &endp, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
-			cur.lno = curf->lno = mp->lno;
-			cur.cno = curf->cno = mp->cno;
-			cmd = ep;
+			cur.lno = ep->lno = mp->lno;
+			cur.cno = ep->cno = mp->cno;
+			cmd = endp;
 			break;
 		case '+':
 		case '-':
-			cur.lno = curf->lno;
-			cur.cno = curf->cno;
+			cur.lno = ep->lno;
+			cur.cno = ep->cno;
 			break;
 		default:
 			goto done;
@@ -765,13 +795,13 @@ linespec(cmd, cp)
 		for (total = 0; *cmd == '-' || *cmd == '+'; total += num) {
 			num = *cmd == '-' ? -1 : 1;
 			if (isdigit(*++cmd)) {
-				num *= USTRTOL(cmd, &ep, 10);
-				cmd = ep;
+				num *= USTRTOL(cmd, &endp, 10);
+				cmd = endp;
 			}
 		}
 		if (total < 0 && -total > cur.lno) {
-			bell();
-			msg("Reference to a line number less than 0.");
+			msg(ep, M_ERROR,
+			    "Reference to a line number less than 0.");
 			return (NULL);
 		}
 		cur.lno += total;
@@ -799,8 +829,8 @@ linespec(cmd, cp)
 	 * out what the historical ex did for ";,;,;5p" or similar stupidity.
 	 */
 done:	if (savecursor_set) {
-		curf->lno = savecursor.lno;
-		curf->cno = savecursor.cno;
+		ep->lno = savecursor.lno;
+		ep->cno = savecursor.cno;
 	}
 
 	return (cmd);
@@ -818,7 +848,8 @@ typedef struct {
  *	Build an argv from the rest of the command line.
  */
 int
-buildargv(exc, expand, cp)
+buildargv(ep, exc, expand, cp)
+	EXF *ep;
 	u_char *exc;
 	int expand;
 	EXCMDARG *cp;
@@ -855,7 +886,7 @@ buildargv(exc, expand, cp)
 		len = exc - ap +1;
 
 		if (expand) {
-			if (fileexpand(&g, ap, len))
+			if (fileexpand(ep, &g, ap, len))
 				return (1);
 			needslots = g.gl_pathc - globoff + 1;
 		} else
@@ -879,7 +910,8 @@ buildargv(exc, expand, cp)
 mem1:				argscnt = 0;
 				args = NULL;
 				argv = NULL;
-				msg("Error: %s.", strerror(errno));
+				msg(ep, M_ERROR,
+				    "Error: %s.", strerror(errno));
 				return (1);
 			}
 			memset(&args[off], 0, cnt * sizeof(ARGS));
@@ -904,7 +936,8 @@ mem1:				argscnt = 0;
 			    realloc(args[off].bp, len)) == NULL) {
 				args[off].bp = NULL;
 				args[off].len = 0;
-				msg("Error: %s.", strerror(errno));
+				msg(ep, M_ERROR,
+				    "Error: %s.", strerror(errno));
 				return (1);
 			}
 			argv[off] = args[off].bp;
@@ -933,14 +966,15 @@ mem1:				argscnt = 0;
 }
 
 static int
-fileexpand(gp, word, wordlen)
+fileexpand(ep, gp, word, wordlen)
+	EXF *ep;
 	glob_t *gp;
 	u_char *word;
 	int wordlen;
 {
 	static int tpathlen;
 	static u_char *tpath;
-	EXF *ep;
+	EXF *prev_ep;
 	int len, olen, plen;
 	u_char ch, *p;
 
@@ -949,25 +983,27 @@ fileexpand(gp, word, wordlen)
 	 * XXX
 	 */
 	/* Figure out how much space we need for this argument. */
-	ep = NULL;
+	prev_ep = NULL;
 	len = wordlen;
 	for (p = word, olen = plen = 0; p = USTRPBRK(p, "%#\\"); ++p)
 		switch (*p) {
 		case '%':
-			if (FF_ISSET(curf, F_NONAME)) {
-				msg("No filename to substitute for %%.");
-				return (1);
-			}
-			len += curf->nlen;
-			break;
-		case '#':
-			if (ep == NULL)
-				ep = file_prev(curf, 0);
-			if (ep == NULL || FF_ISSET(ep, F_NONAME)) {
-				msg("No filename to substitute for #.");
+			if (FF_ISSET(ep, F_NONAME)) {
+				msg(ep, M_ERROR,
+				    "No filename to substitute for %%.");
 				return (1);
 			}
 			len += ep->nlen;
+			break;
+		case '#':
+			if (prev_ep == NULL)
+				prev_ep = file_prev(ep, 0);
+			if (prev_ep == NULL || FF_ISSET(prev_ep, F_NONAME)) {
+				msg(ep, M_ERROR,
+				    "No filename to substitute for #.");
+				return (1);
+			}
+			len += prev_ep->nlen;
 			break;
 		case '\\':
 			if (p[1] != '\0')
@@ -985,7 +1021,8 @@ fileexpand(gp, word, wordlen)
 			if ((tpath = realloc(tpath, len)) == NULL) {
 				tpathlen = 0;
 				tpath = NULL;
-				msg("Error: %s.", strerror(errno));
+				msg(ep, M_ERROR,
+				    "Error: %s.", strerror(errno));
 				return (1);
 			}
 			tpathlen = len;
@@ -994,12 +1031,12 @@ fileexpand(gp, word, wordlen)
 		for (p = tpath; ch = *word; ++word)
 			switch(ch) {
 			case '%':
-				memmove(p, curf->name, curf->nlen);
-				p += curf->nlen;
-				break;
-			case '#':
 				memmove(p, ep->name, ep->nlen);
 				p += ep->nlen;
+				break;
+			case '#':
+				memmove(p, prev_ep->name, prev_ep->nlen);
+				p += prev_ep->nlen;
 				break;
 			case '\\':
 				if (p[1] != '\0')

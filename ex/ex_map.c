@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.16 1993/02/11 20:39:16 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:39:16 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.17 1993/02/16 20:10:16 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,8 @@ static char sccsid[] = "$Id: ex_map.c,v 5.16 1993/02/11 20:39:16 bostic Exp $ (B
  *	Map a key or display mapped keys.
  */
 int
-ex_map(cmdp)
+ex_map(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	register int ch;
@@ -40,8 +41,8 @@ ex_map(cmdp)
 	stype = cmdp->flags & E_FORCE ? INPUT : COMMAND;
 
 	if (cmdp->string == NULL) {
-		if (seq_dump(stype, 1) == 0)
-			msg("No map entries.");
+		if (seq_dump(ep, stype, 1) == 0)
+			msg(ep, M_ERROR, "No map entries.");
 		return (0);
 	}
 
@@ -55,7 +56,7 @@ ex_map(cmdp)
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
 	if (*output == '\0') {
-		msg("Usage: %s.", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 	
@@ -71,7 +72,7 @@ ex_map(cmdp)
 			input = FKEY[key];
 			name = (u_char *)buf;
 		} else {
-			msg("This terminal has no %s key.", buf);
+			msg(ep, M_ERROR, "This terminal has no %s key.", buf);
 			return (1);
 		}
 #else
@@ -94,11 +95,12 @@ ex_map(cmdp)
 				goto noremap;
 			case ':':
 				s = ":";
-noremap:			msg("The %s character may not be remapped.", s);
+noremap:			msg(ep, M_ERROR,
+				    "The %s character may not be remapped.", s);
 				return (1);
 			}
 	}
-	return (seq_set(name, input, output, stype, 1));
+	return (seq_set(ep, name, input, output, stype, 1));
 }
 
 /*
@@ -106,14 +108,15 @@ noremap:			msg("The %s character may not be remapped.", s);
  *	Unmap a key.
  */
 int
-ex_unmap(cmdp)
+ex_unmap(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	u_char *input;
 
 	input = cmdp->argv[0];
 	if (seq_delete(input, cmdp->flags & E_FORCE ? INPUT : COMMAND)) {
-		msg("\"%s\" isn't mapped.", input);
+		msg(ep, M_ERROR, "\"%s\" isn't mapped.", input);
 		return (1);
 	}
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.9 1993/02/11 19:54:55 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:54:55 $";
+static char sccsid[] = "$Id: v_match.c,v 5.10 1993/02/16 20:08:37 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,8 @@ static int	findmatchc __P((MARK *, u_char *, size_t, MARK *));
  *	Search to matching character.
  */
 int
-v_match(vp, fm, tm, rp)
+v_match(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -38,10 +39,10 @@ v_match(vp, fm, tm, rp)
 	int ch;
 	u_char *p;
 
-	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
-		if (file_lline(curf) == 0)
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+		if (file_lline(ep) == 0)
 			goto nomatch;
-		GETLINE_ERR(fm->lno);
+		GETLINE_ERR(ep, fm->lno);
 		return (1);
 	}
 
@@ -75,20 +76,18 @@ v_match(vp, fm, tm, rp)
 		break;
 	default:
 		if (findmatchc(fm, p, len, rp)) {
-nomatch:		bell();
-			if (ISSET(O_VERBOSE))
-				msg("No match character on this line.");
+nomatch:		msg(ep, M_BELL, "No match character on this line.");
 			return (1);
 		}
 		return (0);
 	}
 
-	if (getc_init(fm, &ch))
+	if (getc_init(ep, fm, &ch))
 		return (1);
-	for (cnt = 1; getc_next(dir, &ch);)
+	for (cnt = 1; getc_next(ep, dir, &ch);)
 		if (ch == matchc) {
 			if (--cnt == 0) {
-				getc_set(rp);
+				getc_set(ep, rp);
 				return (0);
 			}
 		} else if (ch == startc) {
@@ -96,9 +95,7 @@ nomatch:		bell();
 			continue;
 		}
 
-	bell();
-	if (ISSET(O_VERBOSE))
-		msg("Matching character not found.");
+	msg(ep, M_BELL, "Matching character not found.");
 	return (1);
 }
 

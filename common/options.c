@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.44 1993/02/16 11:44:42 bostic Exp $ (Berkeley) $Date: 1993/02/16 11:44:42 $";
+static char sccsid[] = "$Id: options.c,v 5.45 1993/02/16 20:10:36 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: options.c,v 5.44 1993/02/16 11:44:42 bostic Exp $ (
 #include <sys/ioctl.h>
 
 #include <ctype.h>
+#include <curses.h>
 #include <errno.h>
 #include <limits.h>
 #include <paths.h>
@@ -46,8 +47,7 @@ static int	f_wrapmargin __P((EXF *, void *));
 static int	 opts_abbcmp __P((const void *, const void *));
 static int	 opts_cmp __P((const void *, const void *));
 static OPTIONS	*opts_prefix __P((char *));
-static int	 opts_print __P((struct _option *));
-static int	 opts_print __P((struct _option *));
+static int	 opts_print __P((EXF *, OPTIONS *));
 
 static long	s_columns	= 80;
 static long	s_keytime	=  2;
@@ -228,7 +228,8 @@ static ABBREV abbrev[] = {
  *	"setting" these variables, we don't set their OPT_SET bits.
  */
 int
-opts_init()
+opts_init(ep)
+	EXF *ep;
 {
 	struct winsize win;
 	size_t row, col;
@@ -262,15 +263,15 @@ opts_init()
 		col = strtol(s, NULL, 10);
 
 	(void)snprintf(b1, sizeof(b1), "ls=%u", row);	/* O_LINES */
-	(void)opts_set(argv);
+	(void)opts_set(ep, argv);
 	(void)snprintf(b1, sizeof(b1), "co=%u", col);	/* O_COLUMNS */
-	(void)opts_set(argv);				/* O_SCROLL */
+	(void)opts_set(ep, argv);			/* O_SCROLL */
 	(void)snprintf(b1, sizeof(b1), "sc=%u", row / 2 - 1);
-	(void)opts_set(argv);
+	(void)opts_set(ep, argv);
 
 	if (s = getenv("SHELL")) {			/* O_SHELL */
 		(void)snprintf(b1, sizeof(b1), "shell=%s", s);
-		(void)opts_set(argv);
+		(void)opts_set(ep, argv);
 	}
 
 	(void)f_flash(NULL, NULL);			/* O_FLASH */
@@ -283,15 +284,16 @@ opts_init()
  *	Reset anything that the options changed.
  */
 void
-opts_end()
+opts_end(ep)
+	EXF *ep;
 {
 	char *tty;
 
 	if (set_orig_mode) {			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			msg("ttyname: %s", strerror(errno));
+			msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
 		else if (chmod(tty, orig_mode) < 0)
-			msg("%s: %s", strerror(errno));
+			msg(ep, M_ERROR, "%s: %s", strerror(errno));
 	}
 }
 
@@ -300,7 +302,8 @@ opts_end()
  *	Change the values of one or more options.
  */
 int
-opts_set(argv)
+opts_set(ep, argv)
+	EXF *ep;
 	char **argv;
 {
 	register char *p;
@@ -308,7 +311,7 @@ opts_set(argv)
 	OPTIONS otmp, *op;
 	long value;
 	int all, ch, off, rval;
-	char *ep, *equals, *name;
+	char *endp, *equals, *name;
 	
 	for (all = rval = 0; *argv; ++argv) {
 		/*
@@ -382,14 +385,15 @@ opts_set(argv)
 prefix:		op = opts_prefix(name);
 
 found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
-			msg("no option %s: 'set all' gives all option values",
+			msg(ep, M_ERROR,
+			    "no option %s: 'set all' gives all option values",
 			    name);
 			continue;
 		}
 
 		/* Set name, value. */
 		if (ISFSETP(op, OPT_NOSET)) {
-			msg("%s: may not be set", name);
+			msg(ep, M_ERROR, "%s: may not be set", name);
 			continue;
 		}
 
@@ -397,28 +401,31 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
 			if (equals) {
-				msg("set: option [no]%s is a boolean", name);
+				msg(ep, M_ERROR,
+				    "set: option [no]%s is a boolean", name);
 				break;
 			}
 			FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
 			FSETP(op, (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
-			if (op->func && op->func(curf, &off)) {
+			if (op->func && op->func(ep, &off)) {
 				rval = 1;
 				break;
 			}
 			goto draw;
 		case OPT_NUM:
 			if (!equals) {
-				msg("set: option [no]%s requires a value",
+				msg(ep, M_ERROR,
+				    "set: option [no]%s requires a value",
 				    name);
 				break;
 			}
-			value = strtol(equals, &ep, 10);
-			if (*ep && !isspace(*ep)) {
-				msg("set %s: illegal number %s", name, equals);
+			value = strtol(equals, &endp, 10);
+			if (*endp && !isspace(*endp)) {
+				msg(ep, M_ERROR,
+				    "set %s: illegal number %s", name, equals);
 				break;
 			}
-			if (op->func && op->func(curf, &value)) {
+			if (op->func && op->func(ep, &value)) {
 				rval = 1;
 				break;
 			}
@@ -427,11 +434,12 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			goto draw;
 		case OPT_STR:
 			if (!equals) {
-				msg("set: option [no]%s requires a value",
+				msg(ep, M_ERROR,
+				    "set: option [no]%s requires a value",
 				    name);
 				break;
 			}
-			if (op->func && op->func(curf, &value)) {
+			if (op->func && op->func(ep, &value)) {
 				rval = 1;
 				break;
 			}
@@ -439,15 +447,15 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				free(op->value);
 			op->value = strdup(equals);
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
-draw:			if (curf != NULL && ISFSETP(op, OPT_REDRAW))
-				FF_SET(curf, F_REDRAW);
+draw:			if (ep != NULL && ISFSETP(op, OPT_REDRAW))
+				FF_SET(ep, F_REDRAW);
 			break;
 		default:
 			abort();
 		}
 	}
 	if (all)
-		opts_dump(1);
+		opts_dump(ep, 1);
 	return (rval);
 }
 
@@ -463,27 +471,33 @@ f_columns(ep, valp)
 
 #define	MINCOLUMNS	10
 	if (val < MINCOLUMNS) {
-		msg("Screen columns too small, less than %d.", MINCOLUMNS);
+		msg(ep, M_ERROR,
+		    "Screen columns too small, less than %d.", MINCOLUMNS);
 		return (1);
 	}
 	if (val < LVAL(O_SHIFTWIDTH)) {
-		msg("Screen columns too small, less than shiftwidth.");
+		msg(ep, M_ERROR,
+		    "Screen columns too small, less than shiftwidth.");
 		return (1);
 	}
 	if (val < LVAL(O_SIDESCROLL)) {
-		msg("Screen columns too small, less than sidescroll.");
+		msg(ep, M_ERROR,
+		    "Screen columns too small, less than sidescroll.");
 		return (1);
 	}
 	if (val < LVAL(O_TABSTOP)) {
-		msg("Screen columns too small, less than tabstop.");
+		msg(ep, M_ERROR,
+		    "Screen columns too small, less than tabstop.");
 		return (1);
 	}
 	if (val < LVAL(O_WRAPMARGIN)) {
-		msg("Screen columns too small, less than wrapmargin.");
+		msg(ep, M_ERROR,
+		    "Screen columns too small, less than wrapmargin.");
 		return (1);
 	}
 	if (val < O_NUMBER_LENGTH) {
-		msg("Screen columns too small, less than number option.");
+		msg(ep, M_ERROR,
+		    "Screen columns too small, less than number option.");
 		return (1);
 	}
 	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
@@ -509,13 +523,14 @@ f_flash(NO_ep, NO_valp)
 	 */
 
 	if ((s = getenv("TERM")) == NULL) {
-		msg("No \"TERM\" value set in the environment.");
+		msg(NO_ep, M_ERROR,
+		    "No \"TERM\" value set in the environment.");
 		return (1);
 	}
 
 	/* Get the termcap information. */
 	if (tgetent(b1, s) != 1) {
-		msg("No termcap entry for %s.", s);
+		msg(NO_ep, M_ERROR, "No termcap entry for %s.", s);
 		return (1);
 	}
 
@@ -531,7 +546,7 @@ f_flash(NO_ep, NO_valp)
 
 	len = s - b2;
 	if ((VB = malloc(len)) == NULL) {
-		msg("Error: %s", strerror(errno));
+		msg(NO_ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
@@ -553,11 +568,11 @@ f_mesg(ep, valp)
 	char *tty;
 
 	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
-		msg("ttyname: %s", strerror(errno));
+		msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
 		return (1);
 	}
 	if (stat(tty, &sb) < 0) {
-		msg("%s: %s", strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", strerror(errno));
 		return (1);
 	}
 
@@ -566,12 +581,12 @@ f_mesg(ep, valp)
 
 	if (ISSET(O_MESG)) {
 		if (chmod(tty, sb.st_mode | S_IWGRP) < 0) {
-			msg("%s: %s", strerror(errno));
+			msg(ep, M_ERROR, "%s: %s", strerror(errno));
 			return (1);
 		}
 	} else
 		if (chmod(tty, sb.st_mode & ~S_IWGRP) < 0) {
-			msg("%s: %s", strerror(errno));
+			msg(ep, M_ERROR, "%s: %s", strerror(errno));
 			return (1);
 		}
 	return (0);
@@ -588,7 +603,8 @@ f_keytime(ep, valp)
 
 #define	MAXKEYTIME	20
 	if (val > MAXKEYTIME) {
-		msg("Keytime too large, more than %d.", MAXKEYTIME);
+		msg(ep, M_ERROR,
+		    "Keytime too large, more than %d.", MAXKEYTIME);
 		return (1);
 	}
 	return (0);
@@ -614,7 +630,8 @@ f_lines(ep, valp)
 
 #define	MINLINES	4
 	if (val < MINLINES) {
-		msg("Screen lines too small, less than %d.", MINLINES);
+		msg(ep, M_ERROR,
+		    "Screen lines too small, less than %d.", MINLINES);
 		return (1);
 	}
 	(void)snprintf(buf, sizeof(buf), "ROWS=%lu", val);
@@ -632,7 +649,7 @@ f_modelines(ep, valp)
 	void *valp;
 {
 	if (ISSET(O_MODELINES)) {
-		msg("The modelines option may not be set.");
+		msg(ep, M_ERROR, "The modelines option may not be set.");
 		UNSET(O_MODELINES);
 	}
 	return (0);
@@ -643,8 +660,8 @@ f_ruler(ep, valp)
 	EXF *ep; 
 	void *valp;
 {
-	if (curf != NULL)
-		scr_modeline(curf, 0);
+	if (ep != NULL)
+		scr_modeline(ep, 0);
 	return (0);
 }
 
@@ -658,7 +675,8 @@ f_shiftwidth(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Shiftwidth can't be larger than screen size.");
+		msg(ep, M_ERROR,
+		    "Shiftwidth can't be larger than screen size.");
 		return (1);
 	}
 	return (0);
@@ -674,7 +692,8 @@ f_sidescroll(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Sidescroll can't be larger than screen size.");
+		msg(ep, M_ERROR,
+		    "Sidescroll can't be larger than screen size.");
 		return (1);
 	}
 	return (0);
@@ -690,16 +709,18 @@ f_tabstop(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val == 0) {
-		msg("Tab stops can't be set to 0.");
+		msg(ep, M_ERROR, "Tab stops can't be set to 0.");
 		return (1);
 	}
 #define	MAXTABSTOP	20
 	if (val > MAXTABSTOP) {
-		msg("Tab stops can't be larger than %d.", MAXTABSTOP);
+		msg(ep, M_ERROR,
+		    "Tab stops can't be larger than %d.", MAXTABSTOP);
 		return (1);
 	}
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Tab stops can't be larger than screen size.",
+		msg(ep, M_ERROR,
+		    "Tab stops can't be larger than screen size.",
 		    MAXTABSTOP);
 		return (1);
 	}
@@ -724,7 +745,8 @@ f_wrapmargin(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Wrapmargin value can't be larger than screen size.");
+		msg(ep, M_ERROR,
+		    "Wrapmargin value can't be larger than screen size.");
 		return (1);
 	}
 	return (0);
@@ -735,7 +757,8 @@ f_wrapmargin(ep, valp)
  *	List the current values of selected options.
  */
 void
-opts_dump(all)
+opts_dump(ep, all)
+	EXF *ep;
 	int all;
 {
 	OPTIONS *op;
@@ -755,7 +778,7 @@ opts_dump(all)
 	 */
 	colwidth = -1;
 	tablen = LVAL(O_TABSTOP);
-	termwidth = (curf->cols - 1) / 2 & ~(tablen - 1);
+	termwidth = (ep->cols - 1) / 2 & ~(tablen - 1);
 	for (b_num = s_num = 0, op = opts; op->name; ++op) {
 		if (!all && !ISFSETP(op, OPT_SET))
 			continue;
@@ -784,7 +807,7 @@ opts_dump(all)
 	}
 
 	colwidth = (colwidth + tablen) & ~(tablen - 1);
-	termwidth = curf->cols - 1;
+	termwidth = ep->cols - 1;
 	numcols = termwidth / colwidth;
 	if (s_num > numcols) {
 		numrows = s_num / numcols;
@@ -796,26 +819,26 @@ opts_dump(all)
 	for (row = 0; row < numrows;) {
 		endcol = colwidth;
 		for (base = row, chcnt = col = 0; col < numcols; ++col) {
-			chcnt += opts_print(&opts[s_op[base]]);
+			chcnt += opts_print(ep, &opts[s_op[base]]);
 			if ((base += numrows) >= s_num)
 				break;
 			while ((cnt =
 			    (chcnt + tablen & ~(tablen - 1))) <= endcol) {
-				(void)putc('\t', curf->stdfp);
+				(void)putc('\t', ep->stdfp);
 				chcnt = cnt;
 			}
 			endcol += colwidth;
 		}
 		if (++row < numrows || b_num)
-			(void)putc('\n', curf->stdfp);
+			(void)putc('\n', ep->stdfp);
 	}
 
 	for (row = 0; row < b_num;) {
-		(void)opts_print(&opts[b_op[row]]);
+		(void)opts_print(ep, &opts[b_op[row]]);
 		if (++row < b_num)
-			(void)putc('\n', curf->stdfp);
+			(void)putc('\n', ep->stdfp);
 	}
-	(void)putc('\n', curf->stdfp);
+	(void)putc('\n', ep->stdfp);
 }
 
 /*
@@ -855,7 +878,8 @@ opts_save(fp)
  *	Print out an option.
  */
 static int
-opts_print(op)
+opts_print(ep, op)
+	EXF *ep;
 	OPTIONS *op;
 {
 	int curlen;
@@ -864,27 +888,27 @@ opts_print(op)
 	switch (op->flags & OPT_TYPE) {
 	case OPT_0BOOL:
 		curlen += 2;
-		(void)putc('n', curf->stdfp);
-		(void)putc('o', curf->stdfp);
+		(void)putc('n', ep->stdfp);
+		(void)putc('o', ep->stdfp);
 		/* FALLTHROUGH */
 	case OPT_1BOOL:
-		curlen += fprintf(curf->stdfp, "%s", op->name);
+		curlen += fprintf(ep->stdfp, "%s", op->name);
 		break;
 	case OPT_NUM:
-		curlen += fprintf(curf->stdfp, "%s", op->name);
+		curlen += fprintf(ep->stdfp, "%s", op->name);
 		curlen += 1;
-		(void)putc('=', curf->stdfp);
-		curlen += fprintf(curf->stdfp, "%ld", LVALP(op));
+		(void)putc('=', ep->stdfp);
+		curlen += fprintf(ep->stdfp, "%ld", LVALP(op));
 		break;
 	case OPT_STR:
-		curlen += fprintf(curf->stdfp, "%s", op->name);
+		curlen += fprintf(ep->stdfp, "%s", op->name);
 		curlen += 1;
-		(void)putc('=', curf->stdfp);
+		(void)putc('=', ep->stdfp);
 		curlen += 1;
-		(void)putc('"', curf->stdfp);
-		curlen += fprintf(curf->stdfp, "%s", op->value);
+		(void)putc('"', ep->stdfp);
+		curlen += fprintf(ep->stdfp, "%s", op->value);
 		curlen += 1;
-		(void)putc('"', curf->stdfp);
+		(void)putc('"', ep->stdfp);
 		break;
 	}
 	return (curlen);

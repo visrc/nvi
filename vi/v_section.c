@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.7 1993/02/11 14:41:10 bostic Exp $ (Berkeley) $Date: 1993/02/11 14:41:10 $";
+static char sccsid[] = "$Id: v_section.c,v 5.8 1993/02/16 20:08:50 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,8 @@ static char sccsid[] = "$Id: v_section.c,v 5.7 1993/02/11 14:41:10 bostic Exp $ 
  *	Move forward count sections/functions.
  */
 int
-v_sectionf(vp, fm, tm, rp)
+v_sectionf(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -47,13 +48,14 @@ v_sectionf(vp, fm, tm, rp)
 	if ((list = PVAL(O_SECTIONS)) == NULL)
 		return (1);
 	if (USTRLEN(list) & 1) {
-		msg("Section options must be in groups of two characters.");
+		msg(ep, M_ERROR,
+		    "Section options must be in groups of two characters.");
 		return (1);
 	}
 
 	rp->cno = 0;
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(curf, ++lno, &len);)
+	for (lno = fm->lno; p = file_gline(ep, ++lno, &len);)
 		switch(len) {
 		case 0:
 			break;;
@@ -82,7 +84,7 @@ v_sectionf(vp, fm, tm, rp)
 		rp->cno = len ? len - 1 : 0;
 		return (0);
 	}
-	v_eof(NULL);
+	v_eof(ep, NULL);
 	return (1);
 }
 
@@ -91,7 +93,8 @@ v_sectionf(vp, fm, tm, rp)
  *	Move backward count sections/functions.
  */
 int
-v_sectionb(vp, fm, tm, rp)
+v_sectionb(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -101,20 +104,21 @@ v_sectionb(vp, fm, tm, rp)
 
 	/* Check for SOF. */
 	if (fm->lno <= 1) {
-		v_sof(NULL);
+		v_sof(ep, NULL);
 		return (1);
 	}
 
 	if ((list = PVAL(O_SECTIONS)) == NULL)
 		return (1);
 	if (USTRLEN(list) & 1) {
-		msg("Section options must be in groups of two characters.");
+		msg(ep, M_ERROR,
+		    "Section options must be in groups of two characters.");
 		return (1);
 	}
 
 	rp->cno = 0;
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(curf, --lno, &len);)
+	for (lno = fm->lno; p = file_gline(ep, --lno, &len);)
 		switch(len) {
 		case 0:
 			break;

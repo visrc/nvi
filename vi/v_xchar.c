@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.12 1992/12/05 11:11:10 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:10 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.13 1993/02/16 20:09:11 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,10 +18,8 @@ static char sccsid[] = "$Id: v_xchar.c,v 5.12 1992/12/05 11:11:10 bostic Exp $ (
 #include "vcmd.h"
 #include "options.h"
 
-#define	NODEL {								\
-	bell();								\
-	if (ISSET(O_VERBOSE))						\
-		msg("No characters to delete.");			\
+#define	NODEL(ep) {							\
+	msg(ep, M_BELL, "No characters to delete.");			\
 	return (1);							\
 }
 
@@ -30,7 +28,8 @@ static char sccsid[] = "$Id: v_xchar.c,v 5.12 1992/12/05 11:11:10 bostic Exp $ (
  *	Deletes the character(s) on which the cursor sits.
  */
 int
-v_xchar(vp, fm, tm, rp)
+v_xchar(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -39,15 +38,15 @@ v_xchar(vp, fm, tm, rp)
 	size_t len;
 	u_char *p;
 
-	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
-		if (file_lline(curf) == 0)
-			NODEL;
-		GETLINE_ERR(fm->lno);
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+		if (file_lline(ep) == 0)
+			NODEL(ep);
+		GETLINE_ERR(ep, fm->lno);
 		return (1);
 	}
 
 	if (len == 0)
-		NODEL;
+		NODEL(ep);
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 	fm->lno = tm->lno = fm->lno;
@@ -68,7 +67,7 @@ v_xchar(vp, fm, tm, rp)
 		m.cno = fm->cno ? fm->cno - 1 : 0;
 	}
 
-	if (cut(curf, VICB(vp), fm, tm, 0) || delete(curf, fm, tm, 0))
+	if (cut(ep, VICB(vp), fm, tm, 0) || delete(ep, fm, tm, 0))
 		return (1);
 
 	*rp = m;
@@ -81,16 +80,15 @@ v_xchar(vp, fm, tm, rp)
  *	position.
  */
 int
-v_Xchar(vp, fm, tm, rp)
+v_Xchar(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	u_long cnt;
 
 	if (fm->cno == 0) {
-		bell();
-		if (ISSET(O_VERBOSE))
-			msg("Already at the left-hand margin.");
+		msg(ep, M_BELL, "Already at the left-hand margin.");
 		return (1);
 	}
 
@@ -98,8 +96,8 @@ v_Xchar(vp, fm, tm, rp)
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 	fm->cno = cnt >= tm->cno ? 0 : tm->cno - cnt;
 
-	if (cut(curf, VICB(vp), fm, tm, 0) || delete(curf, fm, tm, 0))
-			return (1);
+	if (cut(ep, VICB(vp), fm, tm, 0) || delete(ep, fm, tm, 0))
+		return (1);
 
 	*rp = *fm;
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.25 1993/02/11 12:29:01 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:01 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.26 1993/02/16 20:10:02 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,8 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.25 1993/02/11 12:29:01 bostic Exp $ (
  *	program named by the SHELL environment variable.
  */
 int
-ex_bang(cmdp)
+ex_bang(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	extern struct termios original_termios;
@@ -43,7 +44,7 @@ ex_bang(cmdp)
 
 	/* Make sure we got something. */
 	if (cmdp->string == NULL) {
-		msg("Usage: %s", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -54,26 +55,29 @@ ex_bang(cmdp)
 		switch (*p) {
 		case '!':
 			if (lastcom == NULL) {
-				msg("No previous command to replace \"!\".");
+				msg(ep, M_ERROR,
+				    "No previous command to replace \"!\".");
 				return (1);
 			}
 			len += USTRLEN(lastcom);
 			modified = 1;
 			break;
 		case '%':
-			if (FF_ISSET(curf, F_NONAME)) {
-				msg("No filename to substitute for %%.");
+			if (FF_ISSET(ep, F_NONAME)) {
+				msg(ep, M_ERROR,
+				    "No filename to substitute for %%.");
 				return (1);
 			}
-			len += curf->nlen;
+			len += ep->nlen;
 			modified = 1;
 			break;
 		case '#':
-			if (FF_ISSET(curf, F_NONAME)) {
-				msg("No filename to substitute for #.");
+			if (FF_ISSET(ep, F_NONAME)) {
+				msg(ep, M_ERROR,
+				    "No filename to substitute for #.");
 				return (1);
 			}
-			len += curf->nlen;
+			len += ep->nlen;
 			modified = 1;
 			break;
 		case '\\':
@@ -84,7 +88,7 @@ ex_bang(cmdp)
 
 	/* Allocate space. */
 	if ((com = malloc(len)) == NULL) {
-		msg("Error: %s", strerror(errno));
+		msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
@@ -98,12 +102,12 @@ ex_bang(cmdp)
 				t += len;
 				break;
 			case '%':
-				memmove(t, curf->name, curf->nlen);
-				t += curf->nlen;
+				memmove(t, ep->name, ep->nlen);
+				t += ep->nlen;
 				break;
 			case '#':
-				memmove(t, curf->name, curf->nlen);
-				t += curf->nlen;
+				memmove(t, ep->name, ep->nlen);
+				t += ep->nlen;
 				break;
 			case '\\':
 				if (*p)
@@ -122,20 +126,20 @@ ex_bang(cmdp)
 		free(lastcom);
 	lastcom = com;
 
-	MODIFY_WARN(curf);
+	MODIFY_WARN(ep);
 
 	/* If modified, echo the new command. */
 	if (modified)
-		(void)fprintf(curf->stdfp, "%s\n", com);
+		(void)fprintf(ep->stdfp, "%s\n", com);
 
 	/*
 	 * If no addresses were specified, just run the command, otherwise
 	 * pipe lines from the file through the command.
 	 */
 	if (cmdp->addrcnt != 0) {
-		if (filtercmd(&cmdp->addr1, &cmdp->addr2, com, STANDARD))
+		if (filtercmd(ep, &cmdp->addr1, &cmdp->addr2, com, STANDARD))
 			return (1);
-		FF_SET(curf, F_AUTOPRINT);
+		FF_SET(ep, F_AUTOPRINT);
 		return (0);
 	}
 
@@ -165,10 +169,10 @@ ex_bang(cmdp)
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &savet);
 
 	if (mode == MODE_VI) {
-		(void)getkey(0);
+		(void)getkey(ep, 0);
 
 		/* Repaint the screen. */
-		FF_SET(curf, F_REFRESH);
+		FF_SET(ep, F_REFRESH);
 	}
 
 	return (rval);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.12 1993/01/23 16:37:54 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:54 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.13 1993/02/16 20:08:43 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,8 @@ static char sccsid[] = "$Id: v_replace.c,v 5.12 1993/01/23 16:37:54 bostic Exp $
 #include "term.h"
 
 int
-v_replace(vp, fm, tm, rp)
+v_replace(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -31,9 +32,9 @@ v_replace(vp, fm, tm, rp)
 	u_long cnt;
 	u_char *np, *p, emptybuf[1];
 
-	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
-		if (file_lline(curf) != 0) {
-			GETLINE_ERR(fm->lno);
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+		if (file_lline(ep) != 0) {
+			GETLINE_ERR(ep, fm->lno);
 			return (1);
 		}
 		p = emptybuf;
@@ -47,7 +48,7 @@ v_replace(vp, fm, tm, rp)
 
 	rp->cno = fm->cno + cnt - 1;
 	if (rp->cno > len - 1) {
-		v_eol(fm);
+		v_eol(ep, fm);
 		return (1);
 	}
 
@@ -71,18 +72,18 @@ v_replace(vp, fm, tm, rp)
 
 		if (p != emptybuf) {
 			if ((np = malloc(len)) == NULL) {
-				msg("Error: %s", strerror(errno));
+				msg(ep, M_ERROR, "Error: %s", strerror(errno));
 				return (1);
 			}
 			memmove(np, p, len);
 			p = np;
 		}
 		for (; cnt--; ++lno, cno = 0) {
-			if (file_sline(curf, lno, p, cno))
+			if (file_sline(ep, lno, p, cno))
 				goto err;
 			p += cno + 1;
 			len -= cno + 1;
-			if (file_aline(curf, lno, p, len)) {
+			if (file_aline(ep, lno, p, len)) {
 err:				if (p != emptybuf)
 					free(np);
 				return (1);
@@ -91,12 +92,12 @@ err:				if (p != emptybuf)
 		break;
 	default:
 		if ((np = malloc(len)) == NULL) {
-			msg("Error: %s", strerror(errno));
+			msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(np, p, len);
 		memset(np + fm->cno, vp->character, cnt);
-		if (file_sline(curf, fm->lno, np, len)) {
+		if (file_sline(ep, fm->lno, np, len)) {
 			free(np);
 			return (1);
 		}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.25 1992/12/20 15:54:09 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:09 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.26 1993/02/16 20:10:09 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,17 +23,18 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.25 1992/12/20 15:54:09 bostic Exp $ (
 
 enum which {EDIT, VISUAL};
 
-static int edit __P((EXCMDARG *, enum which));
+static int edit __P((EXF *, EXCMDARG *, enum which));
 
 /*
  * ex_edit --	:e[dit][!] [+cmd] [file]
  *	Edit a new file.
  */
 int
-ex_edit(cmdp)
+ex_edit(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (edit(cmdp, EDIT));
+	return (edit(ep, cmdp, EDIT));
 }
 
 /*
@@ -41,10 +42,11 @@ ex_edit(cmdp)
  *	Switch to visual mode.
  */
 int
-ex_visual(cmdp)
+ex_visual(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (edit(cmdp, VISUAL))
+	if (edit(ep, cmdp, VISUAL))
 		return (1);
 
 	mode = MODE_VI;
@@ -52,11 +54,12 @@ ex_visual(cmdp)
 }
 
 static int
-edit(cmdp, cmd)
+edit(ep, cmdp, cmd)
+	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	EXF *ep;
+	EXF *new_ep;
 	int reset;
 
 	reset = 0;
@@ -64,14 +67,14 @@ edit(cmdp, cmd)
 	case 0:
 		if (cmd == VISUAL)
 			return (0);
-		ep = curf;
+		new_ep = ep;
 		break;
 	case 1:
-		if ((ep = file_locate((char *)cmdp->argv[0])) == NULL) {
-			if (file_ins(curf, (char *)cmdp->argv[0], 1) ||
-			    (ep = file_next(curf, 0)) == NULL)
+		if ((new_ep = file_locate((char *)cmdp->argv[0])) == NULL) {
+			if (file_ins(ep, (char *)cmdp->argv[0], 1) ||
+			    (new_ep = file_next(ep, 0)) == NULL)
 				return (1);
-			FF_SET(ep, F_IGNORE);
+			FF_SET(new_ep, F_IGNORE);
 		} else
 			reset = 1;
 		break;
@@ -80,10 +83,10 @@ edit(cmdp, cmd)
 	}
 
 	/* Switch files. */
-	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
-	if (file_stop(curf, cmdp->flags & E_FORCE))
+	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
+	if (file_stop(ep, cmdp->flags & E_FORCE))
 		return (1);
-	if (file_start(ep))
+	if (file_start(new_ep))
 		PANIC;
 
 	/*
@@ -93,13 +96,17 @@ edit(cmdp, cmd)
 	 */
 	if (!reset)
 		if (cmdp->plus || cmd == VISUAL || mode == MODE_VI)
-			curf->lno = 1;
+			new_ep->lno = 1;
 		else {
-			curf->lno = file_lline(curf);
-			if (curf->lno == 0)
-				curf->lno = 1;
+			new_ep->lno = file_lline(new_ep);
+			if (new_ep->lno == 0)
+				new_ep->lno = 1;
 		}
 	if (cmdp->plus)
-		(void)ex_cstring(cmdp->plus, USTRLEN(cmdp->plus), 1);
+		(void)ex_cstring(ep, cmdp->plus, USTRLEN(cmdp->plus), 1);
+		/*
+		 * XXX
+		 * THE UNDERLYING EXF MAY HAVE CHANGED (but we don't care).
+		 */
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.18 1993/02/12 10:02:11 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:02:11 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.19 1993/02/16 20:10:32 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,8 @@ static char sccsid[] = "$Id: ex_write.c,v 5.18 1993/02/12 10:02:11 bostic Exp $ 
  *	Write to a file.
  */
 int
-ex_write(cmdp)
+ex_write(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	register u_char *p;
@@ -40,17 +41,17 @@ ex_write(cmdp)
 
 	/* If nothing, just write the file back. */
 	if ((p = cmdp->string) == NULL) {
-		if (FF_ISSET(curf, F_NONAME)) {
-			msg("No filename to which to write.");
+		if (FF_ISSET(ep, F_NONAME)) {
+			msg(ep, M_ERROR, "No filename to which to write.");
 			return (1);
 		}
-		if (FF_ISSET(curf, F_NAMECHANGED)) {
-			fname = curf->name;
+		if (FF_ISSET(ep, F_NAMECHANGED)) {
+			fname = ep->name;
 			flags = O_TRUNC;
 			force = 0;
 			goto noargs;
 		} else
-			return (file_sync(curf, 0));
+			return (file_sync(ep, 0));
 	}
 
 	/* If "write!" it's a force to a file. */
@@ -67,10 +68,11 @@ ex_write(cmdp)
 	if (*p == '!') {
 		for (; *p && isspace(*p); ++p);
 		if (*p == '\0') {
-			msg("Usage: %s.", cmdp->cmd->usage);
+			msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filtercmd(&cmdp->addr1, &cmdp->addr2, ++p, NOOUTPUT));
+		return (filtercmd(ep,
+		    &cmdp->addr1, &cmdp->addr2, ++p, NOOUTPUT));
 	}
 
 	/* If "write >>" it's an append to a file. */
@@ -83,41 +85,42 @@ ex_write(cmdp)
 		flags = O_TRUNC;
 
 	/* Build an argv. */
-	if (buildargv(p, 1, cmdp))
+	if (buildargv(ep, p, 1, cmdp))
 		return (1);
 
 	switch(cmdp->argc) {
 	case 0:
-		fname = curf->name;
+		fname = ep->name;
 		break;
 	case 1:
 		fname = (char *)cmdp->argv[0];
 		break;
 	default:
-		msg("Usage: %s.", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* If the file exists, must either be a ! or a >> flag. */
 noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
-		msg("%s already exists -- use ! to overwrite it.", fname);
+		msg(ep, M_ERROR,
+		    "%s already exists -- use ! to overwrite it.", fname);
 		return (1);
 	}
 
 	if ((fd = open(fname, flags | O_CREAT | O_WRONLY, DEFFILEMODE)) < 0) {
-		msg("%s: %s", fname, strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-		msg("%s: %s", fname, strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
-	if (ex_writefp(fname, fp, &cmdp->addr1, &cmdp->addr2, 1))
+	if (ex_writefp(ep, fname, fp, &cmdp->addr1, &cmdp->addr2, 1))
 		return (1);
 	/* If wrote the entire file, turn off modify bit. */
 	if (cmdp->flags & E_ADDR2_ALL)
-		FF_CLR(curf, F_MODIFIED);
+		FF_CLR(ep, F_MODIFIED);
 	return (0);
 }
 
@@ -126,7 +129,8 @@ noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
  *	Write a range of lines to a FILE *.
  */
 int
-ex_writefp(fname, fp, fm, tm, success_msg)
+ex_writefp(ep, fname, fp, fm, tm, success_msg)
+	EXF *ep;
 	char *fname;
 	FILE *fp;
 	MARK *fm, *tm;
@@ -149,7 +153,7 @@ ex_writefp(fname, fp, fm, tm, success_msg)
 	 */
 	if (tline != 0)
 		for (; fline <= tline; ++fline, ccnt += len) {
-			if ((p = file_gline(curf, fline, &len)) == NULL)
+			if ((p = file_gline(ep, fline, &len)) == NULL)
 				break;
 			if (fwrite(p, 1, len, fp) != len)
 				break;
@@ -157,11 +161,11 @@ ex_writefp(fname, fp, fm, tm, success_msg)
 				break;
 		}
 	if (fclose(fp)) {
-		msg("%s: %s", fname, strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (success_msg)
-		msg("%s: %lu lines, %lu characters.",
+		msg(ep, M_DISPLAY, "%s: %lu lines, %lu characters.",
 		    fname, tm->lno == 0 ? 0 : tm->lno - fm->lno + 1, ccnt);
 	return (0);
 }

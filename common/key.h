@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.15 1993/02/14 13:17:50 bostic Exp $ (Berkeley) $Date: 1993/02/14 13:17:50 $
+ *	$Id: key.h,v 5.16 1993/02/16 20:10:44 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:44 $
  */
 
 #define	K_CARAT		1
@@ -51,6 +51,6 @@ extern u_long gb_blen;			/* Buffer lengths. */
 int	ex_gb __P((EXF *, int, u_char **, size_t *, u_int));
 int	v_gb __P((EXF *, int, u_char **, size_t *, u_int));
 
-int	gb_inc __P((void));		/* Support routines. */
-void	gb_init __P((void));
-int	getkey __P((u_int));
+int	gb_inc __P((EXF *));		/* Support routines. */
+void	gb_init __P((EXF *));
+int	getkey __P((EXF *, u_int));

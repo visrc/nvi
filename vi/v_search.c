@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.24 1993/02/14 13:18:59 bostic Exp $ (Berkeley) $Date: 1993/02/14 13:18:59 $";
+static char sccsid[] = "$Id: v_search.c,v 5.25 1993/02/16 20:08:49 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -21,14 +21,15 @@ static char sccsid[] = "$Id: v_search.c,v 5.24 1993/02/14 13:18:59 bostic Exp $ 
 #include "search.h"
 #include "term.h"
 
-static int getptrn __P((int, u_char **));
+static int getptrn __P((EXF *, int, u_char **));
 
 /*
  * v_searchn -- n
  *	Repeat last search.
  */
 int
-v_searchn(vp, fm, tm, rp)
+v_searchn(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -36,17 +37,17 @@ v_searchn(vp, fm, tm, rp)
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = b_search(curf, fm, NULL, NULL,
+		if ((m = b_search(ep, fm, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = f_search(curf, fm, NULL, NULL,
+		if ((m = f_search(ep, fm, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
 			return (1);
 		break;
 	case NOTSET:
-		msg("No previous search pattern.");
+		msg(ep, M_ERROR, "No previous search pattern.");
 		return (1);
 	default:
 		abort();
@@ -60,7 +61,8 @@ v_searchn(vp, fm, tm, rp)
  *	Reverse last search.
  */
 int
-v_searchN(vp, fm, tm, rp)
+v_searchN(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -68,17 +70,17 @@ v_searchN(vp, fm, tm, rp)
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = f_search(curf, fm, NULL, NULL,
+		if ((m = f_search(ep, fm, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = b_search(curf, fm, NULL, NULL,
+		if ((m = b_search(ep, fm, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
 			return (1);
 		break;
 	case NOTSET:
-		msg("No previous search pattern.");
+		msg(ep, M_ERROR, "No previous search pattern.");
 		return (1);
 	default:
 		abort();
@@ -92,7 +94,8 @@ v_searchN(vp, fm, tm, rp)
  *	Search for the word under the cursor.
  */
 int
-v_searchw(vp, fm, tm, rp)
+v_searchw(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -102,10 +105,10 @@ v_searchw(vp, fm, tm, rp)
 
 #define	WORDFORMAT	"[^[:alnum:]]%s[^[:alnum:]]"
 
-	BINC(wbuf, wbuflen, vp->kbuflen + sizeof(WORDFORMAT));
+	BINC(ep, wbuf, wbuflen, vp->kbuflen + sizeof(WORDFORMAT));
 	(void)snprintf((char *)wbuf, wbuflen, WORDFORMAT, vp->keyword);
 		
-	if ((mp = f_search(curf, fm,
+	if ((mp = f_search(ep, fm,
 	    (u_char *)wbuf, NULL, SEARCH_MSG | SEARCH_TERM)) == NULL)
 		return (1);
 	rp->lno = mp->lno;
@@ -118,20 +121,21 @@ v_searchw(vp, fm, tm, rp)
  *	Search backward.
  */
 int
-v_searchb(vp, fm, tm, rp)
+v_searchb(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	MARK *m;
 	u_char *ptrn;
 
-	if (getptrn('?', &ptrn))
+	if (getptrn(ep, '?', &ptrn))
 		return (1);
 	if (ptrn == NULL) {
 		*rp = *fm;
 		return (0);
 	}
-	if ((m = b_search(curf, fm, ptrn, NULL,
+	if ((m = b_search(ep, fm, ptrn, NULL,
 	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM)) == NULL)
 		return (1);
 	*rp = *m;
@@ -143,20 +147,21 @@ v_searchb(vp, fm, tm, rp)
  *	Search forward.
  */
 int
-v_searchf(vp, fm, tm, rp)
+v_searchf(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	MARK *m;
 	u_char *ptrn;
 
-	if (getptrn('/', &ptrn))
+	if (getptrn(ep, '/', &ptrn))
 		return (1);
 	if (ptrn == NULL) {
 		*rp = *fm;
 		return (0);
 	}
-	if ((m = f_search(curf, fm, ptrn, NULL,
+	if ((m = f_search(ep, fm, ptrn, NULL,
 	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM)) == NULL)
 		return (1);
 	*rp = *m;
@@ -168,11 +173,12 @@ v_searchf(vp, fm, tm, rp)
  *	Get the search pattern.
  */
 static int
-getptrn(prompt, storep)
+getptrn(ep, prompt, storep)
+	EXF *ep;
 	int prompt;
 	u_char **storep;
 {
-	if (v_gb(curf, prompt, storep, NULL, GB_BS|GB_ESC|GB_OFF))
+	if (v_gb(ep, prompt, storep, NULL, GB_BS|GB_ESC|GB_OFF))
 		return (1);
 
 	if (*storep != NULL)

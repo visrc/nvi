@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.3 1993/02/14 13:44:44 bostic Exp $ (Berkeley) $Date: 1993/02/14 13:44:44 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.4 1993/02/16 20:10:15 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:15 $";
 #endif /* not lint */
 
 #include <limits.h>
@@ -28,14 +28,18 @@ ex_init(ep)
 {
 	struct termios raw;
 
-	ep->s_confirm = ex_confirm;
-	ep->s_end = ex_end;
-
+	/* Initialize the terminal state. */
 	cfmakeraw(&raw);
 	raw.c_oflag |= OPOST|ONLCR;
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &raw))
 		return (1);
 
+	/* Set up ex functions. */
+	ep->s_confirm = ex_confirm;
+	ep->s_end = ex_end;
+	ep->stdfp = stdout;
+
+	/* Initialize the terminal size. */
 	ep->lines = LVAL(O_LINES);
 	ep->cols = LVAL(O_COLUMNS);
 
@@ -44,8 +48,8 @@ ex_init(ep)
 	 * going to ex from vi retains the current line.
 	 */
 	if (FF_ISSET(ep, F_NEWSESSION))
-		curf->lno = file_lline(curf);
-	curf->cno = 0;
+		ep->lno = file_lline(ep);
+	ep->cno = 0;
 	return (0);
 }
 
@@ -59,5 +63,9 @@ ex_end(ep)
 {
 	extern struct termios original_termios;
 
+	/* Flush any remaining output. */
+	(void)fflush(ep->stdfp);
+
+	/* Reset the terminal state. */
 	return (tcsetattr(STDIN_FILENO, TCSADRAIN, &original_termios) ? 1 : 0);
 }

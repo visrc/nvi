@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.19 1992/12/05 11:09:06 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:06 $";
+static char sccsid[] = "$Id: seq.c,v 5.20 1993/02/16 20:10:39 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:39 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -40,7 +40,8 @@ seq_init()
  *	Internal version to enter a sequence.
  */
 int
-seq_set(name, input, output, stype, userdef)
+seq_set(ep, name, input, output, stype, userdef)
+	EXF *ep;
 	u_char *name, *input, *output;
 	enum seqtype stype;
 	int userdef;
@@ -120,7 +121,7 @@ mem4:	free(sp->input);
 mem3:	if (sp->name)
 		free(sp->name);
 mem2:	free(sp);
-mem1:	msg("Error: %s", strerror(errno));
+mem1:	msg(ep, M_ERROR, "Error: %s", strerror(errno));
 	return (1);
 }
 
@@ -210,7 +211,8 @@ seq_find(input, ilen, stype, ispartialp)
  *	Display the sequence entries of a specified type.
  */
 int
-seq_dump(stype, isname)
+seq_dump(ep, stype, isname)
+	EXF *ep;
 	enum seqtype stype;
 	int isname;
 {
@@ -229,31 +231,31 @@ seq_dump(stype, isname)
 		++cnt;
 		for (p = sp->input, len = 0; (ch = *p); ++p, ++len)
 			if (iscntrl(ch)) {
-				(void)putc('^', curf->stdfp);
-				(void)putc(ch + 0x40, curf->stdfp);
+				(void)putc('^', ep->stdfp);
+				(void)putc(ch + 0x40, ep->stdfp);
 			} else
-				(void)putc(ch, curf->stdfp);
+				(void)putc(ch, ep->stdfp);
 		for (len = tablen - len % tablen; len; --len)
-			(void)putc(' ', curf->stdfp);
+			(void)putc(' ', ep->stdfp);
 
 		for (p = sp->output; (ch = *p); ++p)
 			if (iscntrl(ch)) {
-				(void)putc('^', curf->stdfp);
-				(void)putc(ch + 0x40, curf->stdfp);
+				(void)putc('^', ep->stdfp);
+				(void)putc(ch + 0x40, ep->stdfp);
 			} else
-				(void)putc(ch, curf->stdfp);
+				(void)putc(ch, ep->stdfp);
 
 		if (isname && sp->name) {
 			for (len = tablen - len % tablen; len; --len)
-				(void)putc(' ', curf->stdfp);
+				(void)putc(' ', ep->stdfp);
 			for (p = sp->name, len = 0; (ch = *p); ++p, ++len)
 				if (iscntrl(ch)) {
-					(void)putc('^', curf->stdfp);
-					(void)putc(ch + 0x40, curf->stdfp);
+					(void)putc('^', ep->stdfp);
+					(void)putc(ch + 0x40, ep->stdfp);
 				} else
-					(void)putc(ch, curf->stdfp);
+					(void)putc(ch, ep->stdfp);
 		}
-		(void)putc('\n', curf->stdfp);
+		(void)putc('\n', ep->stdfp);
 	}
 	return (cnt);
 }

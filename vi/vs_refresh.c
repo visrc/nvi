@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.26 1993/02/15 13:07:20 bostic Exp $ (Berkeley) $Date: 1993/02/15 13:07:20 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.27 1993/02/16 20:08:45 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,6 @@ static char sccsid[] = "$Id: vs_refresh.c,v 5.26 1993/02/15 13:07:20 bostic Exp 
 #include <unistd.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "options.h"
 #include "screen.h"
 #include "vcmd.h"
@@ -94,7 +93,7 @@ scr_begin(ep)
 	EXF *ep;
 {
 	if (initscr() == NULL) {
-		msg("Error: initscr failed: %s", strerror(errno));
+		msg(ep, M_ERROR, "Error: initscr failed: %s", strerror(errno));
 		return (1);
 	}
 	noecho();
@@ -211,7 +210,7 @@ scr_change(ep, lno, action)
 		abort();
 	}
 
-	MOVE(oldy, oldx);
+	MOVE(ep, oldy, oldx);
 
 	return (0);
 }
@@ -436,7 +435,7 @@ cursor:	/* If line has changed. */
 	if ((lp = p = file_gline(ep, ep->lno, &len)) == NULL) {
 		if (file_lline(ep) == 0)
 			goto paint;
-		GETLINE_ERR(ep->lno);
+		GETLINE_ERR(ep, ep->lno);
 		return (0);
 	}
 
@@ -503,7 +502,8 @@ cursor:	/* If line has changed. */
 		cnt = (ep->cno - ep->ocno) + 1;
 #ifdef DEBUG
 		if (ep->cno >= len) {
-			msg("Error: %s/%d: ep->cno (%u) >= len (%u)",
+			msg(ep, M_ERROR,
+			    "Error: %s/%d: ep->cno (%u) >= len (%u)",
 			     tail(__FILE__), __LINE__, ep->cno, len);
 			return (1);
 		}
@@ -576,7 +576,7 @@ paint:	if (FF_ISSET(ep, F_REDRAW))
 			return (1);
 	FF_CLR(ep, F_REDRAW);
 		
-update:	MOVE(y, ep->scno);
+update:	MOVE(ep, y, ep->scno);
 
 	/* If the screen has been trashed, refresh it all. */
 	if (FF_ISSET(ep, F_REFRESH)) {
@@ -615,17 +615,17 @@ scr_modeline(ep, isinput)
 	size_t oldy, oldx;
 
 	getyx(stdscr, oldy, oldx);
-	MOVE(SCREENSIZE(ep), 0);
+	MOVE(ep, SCREENSIZE(ep), 0);
 	clrtoeol();
 
 	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || ep->cols <= RULERSIZE) {
-		MOVE(oldy, oldx);
+		MOVE(ep, oldy, oldx);
 		return (0);
 	}
 
 	/* Display the ruler and mode. */
 	if (ISSET(O_RULER) && ep->cols > RULERSIZE) {
-		MOVE(SCREENSIZE(ep), ep->cols / 2 - RULERSIZE / 2);
+		MOVE(ep, SCREENSIZE(ep), ep->cols / 2 - RULERSIZE / 2);
 		memset(buf, ' ', sizeof(buf) - 1);
 		(void)snprintf(buf,
 		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
@@ -635,10 +635,10 @@ scr_modeline(ep, isinput)
 
 	/* Show the mode. */
 	if (ISSET(O_SHOWMODE) && ep->cols > MODESIZE) {
-		MOVE(SCREENSIZE(ep), ep->cols - 7);
+		MOVE(ep, SCREENSIZE(ep), ep->cols - 7);
 		addstr(isinput ? "Input" : "Command");
 	}
-	MOVE(oldy, oldx);
+	MOVE(ep, oldy, oldx);
 	return (0);
 }
 
@@ -667,7 +667,7 @@ scr_line(ep, sp, p, len, yp, xp)
 	char nbuf[10];
 
 	/* Move to the line. */
-	MOVE(sp - HMAP, 0);
+	MOVE(ep, sp - HMAP, 0);
 
 	/*
 	 * If O_NUMBER is set and this is the first screen of a folding
@@ -696,7 +696,7 @@ scr_line(ep, sp, p, len, yp, xp)
 		if (sp->lno > file_lline(ep))
 			addch(sp->lno == 1 ? ISSET(O_LIST) ? '$' : ' ' : '~');
 		else if (p == NULL) {
-			GETLINE_ERR(sp->lno);
+			GETLINE_ERR(ep, sp->lno);
 			return (1);
 		}
 		clrtoeol();
@@ -866,7 +866,7 @@ scr_smdelete(ep, lno, islogical)
 	for (cnt1 = 1, t = p + 1; t <= TMAP && t->lno == lno; ++cnt1, ++t);
 
 	/* Delete that number of lines from the screen. */
-	MOVE(p - HMAP, 0);
+	MOVE(ep, p - HMAP, 0);
 	for (cnt2 = cnt1; cnt2--;)
 		deleteln();
 
@@ -919,7 +919,7 @@ scr_sminsert(ep, lno, islogical)
 		cnt1 = cnt2;
 
 	/* Push down that many lines. */
-	MOVE(p - HMAP, 0);
+	MOVE(ep, p - HMAP, 0);
 	for (cnt2 = cnt1; cnt2--;)
 		insertln();
 
@@ -927,7 +927,7 @@ scr_sminsert(ep, lno, islogical)
 	 * Clear the last line on the screen, it's going to have been
 	 * corrupted.
 	 */
-	MOVE(SCREENSIZE(ep), 0);
+	MOVE(ep, SCREENSIZE(ep), 0);
 	clrtoeol();
 
 	/* Shift the screen map down. */
@@ -963,7 +963,7 @@ scr_smup(ep)
 	EXF *ep;
 {
 	/* Delete the top line of the screen. */
-	MOVE(0, 0);
+	MOVE(ep, 0, 0);
 	deleteln();
 
 	/* Shift the screen map up. */
@@ -992,11 +992,11 @@ scr_smdown(ep)
 	EXF *ep;
 {
 	/* Clear the bottom line of the screen. */
-	MOVE(BOTLINE(ep, 0), 0);
+	MOVE(ep, BOTLINE(ep, 0), 0);
 	clrtoeol();
 
 	/* Insert a line at the top of the screen. */
-	MOVE(0, 0);
+	MOVE(ep, 0, 0);
 	insertln();
 
 	/* Shift the screen map down. */
@@ -1278,7 +1278,7 @@ scr_relative(ep, lno)
 
 	/* First non-blank character. */
 	if (ep->rcmflags == RCM_FNB) {
-		(void)nonblank(lno, &cno);
+		(void)nonblank(ep, lno, &cno);
 		return (cno);
 	}
 

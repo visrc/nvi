@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.6 1993/01/23 16:38:05 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:38:05 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.7 1993/02/16 20:08:38 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,14 +28,15 @@ static char sccsid[] = "$Id: v_paragraph.c,v 5.6 1993/01/23 16:38:05 bostic Exp 
  * duplicates its behavior.
  */
 
-static u_char *makelist __P((void));
+static u_char *makelist __P((EXF *));
 
 /*
  * v_paragraphf -- [count]}
  *	Move forward count paragraphs.
  */
 int
-v_paragraphf(vp, fm, tm, rp)
+v_paragraphf(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -44,27 +45,27 @@ v_paragraphf(vp, fm, tm, rp)
 	u_char *p, *list, *lp;
 
 	/* Get macro list. */
-	if ((list = makelist()) == NULL)
+	if ((list = makelist(ep)) == NULL)
 		return (1);
 
 	rp->cno = 0;
 
 	/* If at an empty line, skip to text. */
 	for (lno = fm->lno + 1;; ++lno) {
-		if ((p = file_gline(curf, lno, &len)) == NULL)
+		if ((p = file_gline(ep, lno, &len)) == NULL)
 			goto eof;
 		if (len)
 			break;
 	}
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (; p = file_gline(curf, lno, &len); ++lno) {
+	for (; p = file_gline(ep, lno, &len); ++lno) {
 		if (len == 0) {
 			if (!--cnt)
 				goto found;
 			/* Skip to text. */
 			for (;;) {
-				if ((p = file_gline(curf, lno++, &len)) == NULL)
+				if ((p = file_gline(ep, lno++, &len)) == NULL)
 					goto eof;
 				if (len)
 					break;
@@ -92,14 +93,14 @@ eof:	free(list);
 		rp->cno = len ? len - 1 : 0;
 		return (0);
 	}
-	if ((p = file_gline(curf, fm->lno, &len)) == NULL)
-		GETLINE_ERR(fm->lno);
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL)
+		GETLINE_ERR(ep, fm->lno);
 	if (fm->cno != (len ? len - 1 : 0)) {
 		rp->lno = lno - 1;
 		rp->cno = len ? len - 1 : 0;
 		return (0);
 	}
-	v_eof(NULL);
+	v_eof(ep, NULL);
 	return (1);
 }
 
@@ -108,7 +109,8 @@ eof:	free(list);
  *	Move forward count paragraph.
  */
 int
-v_paragraphb(vp, fm, tm, rp)
+v_paragraphb(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -117,7 +119,7 @@ v_paragraphb(vp, fm, tm, rp)
 	u_char *p, *list, *lp;
 
 	/* Get macro list. */
-	if ((list = makelist()) == NULL)
+	if ((list = makelist(ep)) == NULL)
 		return (1);
 
 	/*
@@ -129,7 +131,7 @@ v_paragraphb(vp, fm, tm, rp)
 	/* Check for SOF. */
 	if (fm->lno <= 1) {
 		if (fm->cno == 0) {
-			v_sof(NULL);
+			v_sof(ep, NULL);
 			return (1);
 		}
 		return (0);
@@ -137,20 +139,20 @@ v_paragraphb(vp, fm, tm, rp)
 
 	/* If at an empty line, skip to text. */
 	for (lno = fm->lno - 1;; --lno) {
-		if ((p = file_gline(curf, lno, &len)) == NULL)
+		if ((p = file_gline(ep, lno, &len)) == NULL)
 			goto sof;
 		if (len)
 			break;
 	}
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (; p = file_gline(curf, lno, &len); --lno) {
+	for (; p = file_gline(ep, lno, &len); --lno) {
 		if (len == 0) {
 			if (!--cnt)
 				goto found;
 			/* Skip to text. */
 			for (;;) {
-				if ((p = file_gline(curf, lno--, &len)) == NULL)
+				if ((p = file_gline(ep, lno--, &len)) == NULL)
 					goto sof;
 				if (len)
 					break;
@@ -175,7 +177,8 @@ sof:	free(list);
 }
 
 static u_char *
-makelist()
+makelist(ep)
+	EXF *ep;
 {
 	size_t s1, s2;
 	u_char *list;
@@ -183,16 +186,18 @@ makelist()
 	/* Search for either a paragraph or section option macro. */
 	s1 = USTRLEN(PVAL(O_PARAGRAPHS));
 	if (s1 & 1) {
-		msg("Paragraph options must be in groups of two characters.");
+		msg(ep, M_ERROR,
+		    "Paragraph options must be in groups of two characters.");
 		return (NULL);
 	}
 	s2 = USTRLEN(PVAL(O_SECTIONS));
 	if (s2 & 1) {
-		msg("Section options must be in groups of two characters.");
+		msg(ep, M_ERROR,
+		    "Section options must be in groups of two characters.");
 		return (NULL);
 	}
 	if ((list = malloc(s1 + s2 + 1)) == NULL) {
-		msg("%s", strerror(errno));
+		msg(ep, M_ERROR, "%s", strerror(errno));
 		return (NULL);
 	}
 	memmove(list, PVAL(O_PARAGRAPHS), s1);

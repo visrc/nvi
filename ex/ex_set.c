@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_set.c,v 5.7 1992/12/05 11:08:51 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:51 $";
+static char sccsid[] = "$Id: ex_set.c,v 5.8 1993/02/16 20:10:22 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,15 +19,16 @@ static char sccsid[] = "$Id: ex_set.c,v 5.7 1992/12/05 11:08:51 bostic Exp $ (Be
 #include "options.h"
 
 int
-ex_set(cmdp)
+ex_set(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	switch(cmdp->argc) {
 	case 0:
-		opts_dump(0);
+		opts_dump(ep, 0);
 		break;
 	default:
-		opts_set(cmdp->argv);
+		opts_set(ep, cmdp->argv);
 		break;
 	}
 	return (0);

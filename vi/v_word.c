@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.9 1992/12/22 16:09:18 bostic Exp $ (Berkeley) $Date: 1992/12/22 16:09:18 $";
+static char sccsid[] = "$Id: v_word.c,v 5.10 1993/02/16 20:09:10 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,6 @@ static char sccsid[] = "$Id: v_word.c,v 5.9 1992/12/22 16:09:18 bostic Exp $ (Be
 #include <stdio.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "options.h"
 #include "vcmd.h"
 
@@ -40,20 +39,21 @@ static char sccsid[] = "$Id: v_word.c,v 5.9 1992/12/22 16:09:18 bostic Exp $ (Be
 #define	FW(test)	for (; len && (test); --len, ++p)
 #define	BW(test)	for (; len && (test); --len, --p)
 
-static int bword __P((VICMDARG *, MARK *, MARK *, int));
-static int eword __P((VICMDARG *, MARK *, MARK *, int));
-static int fword __P((VICMDARG *, MARK *, MARK *, int));
+static int bword __P((EXF *, VICMDARG *, MARK *, MARK *, int));
+static int eword __P((EXF *, VICMDARG *, MARK *, MARK *, int));
+static int fword __P((EXF *, VICMDARG *, MARK *, MARK *, int));
 
 /*
  * v_wordw -- [count]w
  *	Move forward a word at a time.
  */
 int
-v_wordw(vp, fm, tm, rp)
+v_wordw(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (fword(vp, fm, rp, 0));
+	return (fword(ep, vp, fm, rp, 0));
 }
 
 /*
@@ -61,11 +61,12 @@ v_wordw(vp, fm, tm, rp)
  *	Move forward a bigword at a time.
  */
 int
-v_wordW(vp, fm, tm, rp)
+v_wordW(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (fword(vp, fm, rp, 1));
+	return (fword(ep, vp, fm, rp, 1));
 }
 
 /*
@@ -73,7 +74,8 @@ v_wordW(vp, fm, tm, rp)
  *	Move forward by words.
  */
 static int
-fword(vp, fm, rp, spaceonly)
+fword(ep, vp, fm, rp, spaceonly)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *rp;
 	int spaceonly;
@@ -87,11 +89,11 @@ fword(vp, fm, rp, spaceonly)
 	lno = fm->lno;
 	cno = fm->cno;
 
-	if ((p = file_gline(curf, lno, &len)) == NULL) {
-		if (file_lline(curf) == 0)
-			v_eof(NULL);
+	if ((p = file_gline(ep, lno, &len)) == NULL) {
+		if (file_lline(ep) == 0)
+			v_eof(ep, NULL);
 		else
-			GETLINE_ERR(lno);
+			GETLINE_ERR(ep, lno);
 		return (1);
 	}
 
@@ -118,15 +120,15 @@ fword(vp, fm, rp, spaceonly)
 			}
 		if (len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
-			if ((p = file_gline(curf, ++lno, &len)) == NULL) {
+			if ((p = file_gline(ep, ++lno, &len)) == NULL) {
 				/* If already at eof, complain. */
 				if (empty && !(vp->flags & (VC_C | VC_D))) {
-					v_eof(NULL);
+					v_eof(ep, NULL);
 					return (1);
 				}
 				if ((p =
-				    file_gline(curf, --lno, &len)) == NULL) {
-					GETLINE_ERR(lno);
+				    file_gline(ep, --lno, &len)) == NULL) {
+					GETLINE_ERR(ep, lno);
 					return (1);
 				}
 				rp->lno = lno;
@@ -151,11 +153,12 @@ fword(vp, fm, rp, spaceonly)
  *	Move backward a word at a time.
  */
 int
-v_wordb(vp, fm, tm, rp)
+v_wordb(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (bword(vp, fm, rp, 0));
+	return (bword(ep, vp, fm, rp, 0));
 }
 
 /*
@@ -163,11 +166,12 @@ v_wordb(vp, fm, tm, rp)
  *	Move backward a bigword at a time.
  */
 int
-v_wordB(vp, fm, tm, rp)
+v_wordB(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (bword(vp, fm, rp, 1));
+	return (bword(ep, vp, fm, rp, 1));
 }
 
 /*
@@ -175,7 +179,8 @@ v_wordB(vp, fm, tm, rp)
  *	Move backward by words.
  */
 static int
-bword(vp, fm, rp, spaceonly)
+bword(ep, vp, fm, rp, spaceonly)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *rp;
 	int spaceonly;
@@ -190,15 +195,15 @@ bword(vp, fm, rp, spaceonly)
 
 	/* Check for start of file. */
 	if (lno == 1 && cno == 0) {
-		v_sof(NULL);
+		v_sof(ep, NULL);
 		return (1);
 	}
 
-	if ((p = file_gline(curf, lno, &len)) == NULL) {
-		if (file_lline(curf) == 0)
-			v_sof(NULL);
+	if ((p = file_gline(ep, lno, &len)) == NULL) {
+		if (file_lline(ep) == 0)
+			v_sof(ep, NULL);
 		else
-			GETLINE_ERR(lno);
+			GETLINE_ERR(ep, lno);
 		return (1);
 	}
 		
@@ -253,8 +258,8 @@ line:			if (lno == 1) {
 			 * Get the line.  If the line is empty, decrement
 			 * count and get another one.
 			 */
-			if ((p = file_gline(curf, --lno, &len)) == NULL) {
-				GETLINE_ERR(lno);
+			if ((p = file_gline(ep, --lno, &len)) == NULL) {
+				GETLINE_ERR(ep, lno);
 				return (1);
 			}
 			if (len == 0) {
@@ -297,11 +302,12 @@ line:			if (lno == 1) {
  *	Move forward to the end of the word.
  */
 int
-v_worde(vp, fm, tm, rp)
+v_worde(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (eword(vp, fm, rp, 0));
+	return (eword(ep, vp, fm, rp, 0));
 }
 
 /*
@@ -309,11 +315,12 @@ v_worde(vp, fm, tm, rp)
  *	Move forward to the end of the bigword.
  */
 int
-v_wordE(vp, fm, tm, rp)
+v_wordE(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (eword(vp, fm, rp, 1));
+	return (eword(ep, vp, fm, rp, 1));
 }
 
 /*
@@ -321,7 +328,8 @@ v_wordE(vp, fm, tm, rp)
  *	Move forward to the end of the word.
  */
 static int
-eword(vp, fm, rp, spaceonly)
+eword(ep, vp, fm, rp, spaceonly)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *rp;
 	int spaceonly;
@@ -335,11 +343,11 @@ eword(vp, fm, rp, spaceonly)
 	lno = fm->lno;
 	cno = fm->cno;
 
-	if ((p = file_gline(curf, lno, &len)) == NULL) {
-		if (file_lline(curf) == 0)
-			v_eof(NULL);
+	if ((p = file_gline(ep, lno, &len)) == NULL) {
+		if (file_lline(ep) == 0)
+			v_eof(ep, NULL);
 		else
-			GETLINE_ERR(lno);
+			GETLINE_ERR(ep, lno);
 		return (1);
 	}
 
@@ -386,15 +394,15 @@ eword(vp, fm, rp, spaceonly)
 
 		if (cnt && len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
-line:			if ((p = file_gline(curf, ++lno, &len)) == NULL) {
+line:			if ((p = file_gline(ep, ++lno, &len)) == NULL) {
 				/* If already at eof, complain. */
 				if (empty) {
-					v_eof(NULL);
+					v_eof(ep, NULL);
 					return (1);
 				}
 				if ((p =
-				    file_gline(curf, --lno, &len)) == NULL) {
-					GETLINE_ERR(lno);
+				    file_gline(ep, --lno, &len)) == NULL) {
+					GETLINE_ERR(ep, lno);
 					return (1);
 				}
 				rp->lno = lno;

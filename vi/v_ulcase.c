@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.15 1992/12/20 15:54:26 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:26 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.16 1993/02/16 20:09:04 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,8 @@ static char sccsid[] = "$Id: v_ulcase.c,v 5.15 1992/12/20 15:54:26 bostic Exp $ 
  *	associated motion, but it's too late to change it now.
  */
 int
-v_ulcase(vp, fm, tm, rp)
+v_ulcase(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -42,17 +43,17 @@ v_ulcase(vp, fm, tm, rp)
 	lno = fm->lno;
 	cno = fm->cno;
 
-	if ((p = file_gline(curf, lno, &len)) == NULL) {
-		if (file_lline(curf) == 0)
-			v_eof(NULL);
+	if ((p = file_gline(ep, lno, &len)) == NULL) {
+		if (file_lline(ep) == 0)
+			v_eof(ep, NULL);
 		else
-			GETLINE_ERR(lno);
+			GETLINE_ERR(ep, lno);
 		return (1);
 	}
 
 	np = NULL;
 	nplen = 0;
-	if (binc(&np, &nplen, len))
+	if (binc(ep, &np, &nplen, len))
 		return (1);
 	memmove(np, p, len);
 
@@ -61,18 +62,18 @@ v_ulcase(vp, fm, tm, rp)
 	for (change = 0; cnt--; ++cno) {
 		if (cno == len) {
 			if (change) {
-				if (file_sline(curf, lno, np, len)) {
+				if (file_sline(ep, lno, np, len)) {
 					rp->lno = lno;
 					rp->cno = cno;
 					return (1);
 				}
 			}
-			if ((p = file_gline(curf, ++lno, &len)) == NULL) {
+			if ((p = file_gline(ep, ++lno, &len)) == NULL) {
 				rp->lno = --lno;
 				rp->cno = len - 1;
 				return (0);
 			}
-			if (binc(&np, &nplen, len))
+			if (binc(ep, &np, &nplen, len))
 				return (1);
 			change = 0;
 			cno = 0;
@@ -92,7 +93,7 @@ v_ulcase(vp, fm, tm, rp)
 	rp->lno = lno;
 	rp->cno = cno;
 	if (change) {
-		if (file_sline(curf, lno, np, len))
+		if (file_sline(ep, lno, np, len))
 			return (1);
 	}
 	return (0);

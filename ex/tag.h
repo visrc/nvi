@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 5.2 1992/11/06 12:23:03 bostic Exp $ (Berkeley) $Date: 1992/11/06 12:23:03 $
+ *	$Id: tag.h,v 5.3 1993/02/16 20:10:42 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:42 $
  */
 
 typedef struct tag {
@@ -15,5 +15,5 @@ typedef struct tag {
 } TAG;
 
 TAG	*tag_head __P((void));
-TAG	*tag_pop __P((void));
-TAG	*tag_push __P((char *));
+TAG	*tag_pop __P((EXF *));
+TAG	*tag_push __P((EXF *, char *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.16 1993/01/23 16:37:48 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:48 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.17 1993/02/16 20:08:31 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,8 @@ static char *fmt[] = {
  *	Increment/decrement a keyword number.
  */
 int
-v_increment(vp, fm, tm, rp)
+v_increment(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -60,8 +61,7 @@ v_increment(vp, fm, tm, rp)
 		lastcnt = vp->count;
 
 	if (vp->character != '+' && vp->character != '-') {
-		bell();
-		msg("usage: %s.", vp->kp->usage);
+		msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
 	lastch = vp->character;
@@ -92,32 +92,30 @@ v_increment(vp, fm, tm, rp)
 		if (vp->character == '+') {
 			lval = strtol(vp->keyword, NULL, 0);
 			if (LONG_MAX - lval < lastcnt) {
-overflow:			bell();
-				msg("Resulting number too large.");
+overflow:			msg(ep, M_ERROR, "Resulting number too large.");
 				return (1);
 			}
 			lval += lastcnt;
 		} else {
 			lval = strtol(vp->keyword, NULL, 0);
 			if (lval < 0 && -(LONG_MIN - lval) > lastcnt) {
-underflow:			bell();
-				msg("Resulting number too small.");
+underflow:			msg(ep, M_ERROR, "Resulting number too small.");
 				return (1);
 			}
 			lval -= lastcnt;
 		}
 		ntype = *vp->keyword == '+' || *vp->keyword == '-' ?
-			fmt[SDEC] : fmt[DEC];
+		    fmt[SDEC] : fmt[DEC];
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
 	}
 
-	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(fm->lno);
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+		GETLINE_ERR(ep, fm->lno);
 		return (1);
 	}
 
 	if ((np = malloc(len + nlen)) == NULL) {
-		msg("Error: %s", strerror(errno));
+		msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	memmove(np, p, fm->cno);
@@ -127,7 +125,7 @@ underflow:			bell();
 	p = np;
 	len = len - vp->klen + nlen;
 
-	if (file_sline(curf, fm->lno, p, len))
+	if (file_sline(ep, fm->lno, p, len))
 		rval = 1;
 	else {
 		*rp = *fm;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.34 1993/02/15 13:42:29 bostic Exp $ (Berkeley) $Date: 1993/02/15 13:42:29 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.35 1993/02/16 20:08:23 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -15,6 +15,7 @@ static char sccsid[] = "$Id: v_ex.c,v 5.34 1993/02/15 13:42:29 bostic Exp $ (Ber
 #include <curses.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
@@ -36,7 +37,8 @@ static void	v_startex __P((void));
  *	Execute strings of ex commands.
  */
 int
-v_ex(vp, fm, tm, rp)
+v_ex(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -51,7 +53,7 @@ v_ex(vp, fm, tm, rp)
 		 * Get an ex command; echo the newline on any prompts after
 		 * the first.
 		 */
-		if (v_gb(curf, ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
+		if (v_gb(ep, ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
 		    p == NULL)
 			break;
 		flags |= GB_NLECHO;
@@ -59,15 +61,21 @@ v_ex(vp, fm, tm, rp)
 		if (len == 0)
 			break;
 
-		(void)ex_cstring(p, len, 0);
-		(void)fflush(curf->stdfp);
+		(void)ex_cstring(ep, p, len, 0);
+		/*
+		 * XXX
+		 * THE UNDERLYING EXF MAY HAVE CHANGED.
+		 */
+		ep = curf;
+
+		(void)fflush(ep->stdfp);
 		if (extotalcount <= 1) {
-			FF_SET(curf, F_NEEDMERASE);
+			FF_SET(ep, F_NEEDMERASE);
 			break;
 		}
 
 		/* The user may continue in ex mode by entering a ':'. */
-		(void)moveup(curf, 1, 1, &key);
+		(void)moveup(ep, 1, 1, &key);
 		if (key != ':')
                         break;
 	}
@@ -80,13 +88,13 @@ v_ex(vp, fm, tm, rp)
 	 * cursor is set to the first non-blank character by the main vi loop.
 	 * Don't trust ANYTHING.
 	 */
-	if (!FF_ISSET(curf, F_NEWSESSION)) {
-		v_leaveex(curf);
-		curf->olno = OOBLNO;
-		rp->lno = curf->lno;
-		if (file_gline(curf, curf->lno, &len) == NULL &&
-		    file_lline(curf) != 0) {
-			GETLINE_ERR(curf->lno);
+	if (!FF_ISSET(ep, F_NEWSESSION)) {
+		v_leaveex(ep);
+		ep->olno = OOBLNO;
+		rp->lno = ep->lno;
+		if (file_gline(ep, ep->lno, &len) == NULL &&
+		    file_lline(ep) != 0) {
+			GETLINE_ERR(ep, ep->lno);
 			return (1);
 		}
 	}
@@ -169,13 +177,13 @@ v_exwrite(cookie, line, llen)
 			continueline = THISLINE;
 			/* FALLTHROUGH */
 		case NOTSET:
-			MOVE(SCREENSIZE(ep), 0);
+			MOVE(ep, SCREENSIZE(ep), 0);
 			++extotalcount;
 			++exlinecount;
 			tlen = len;
 			break;
 		case THISLINE:
-			MOVE(SCREENSIZE(ep), lcont);
+			MOVE(ep, SCREENSIZE(ep), lcont);
 			tlen = len + lcont;
 			continueline = NOTSET;
 			break;
@@ -206,20 +214,20 @@ moveup(ep, mustwait, colon_ok, chp)
 	 * of the screen.
 	 */
 	if (extotalcount >= SCREENSIZE(ep)) {
-		MOVE(0, 0);
+		MOVE(ep, 0, 0);
 	} else
-		MOVE(SCREENSIZE(ep) - extotalcount, 0);
+		MOVE(ep, SCREENSIZE(ep) - extotalcount, 0);
 	deleteln();
 
 	/* If just displayed a full screen, wait. */
 	if (mustwait || exlinecount == SCREENSIZE(ep)) {
-		MOVE(SCREENSIZE(ep), 0);
+		MOVE(ep, SCREENSIZE(ep), 0);
 		addnstr(CONTMSG, sizeof(CONTMSG) - 1);
 		clrtoeol();
 		refresh();
-		while (special[ch = getkey(0)] != K_CR &&
+		while (special[ch = getkey(ep, 0)] != K_CR &&
 		    !isspace(ch) && (!colon_ok || ch != ':'))
-			bell();
+			bell(ep);
 		if (chp != NULL)
 			*chp = ch;
 		exlinecount = 0;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 5.21 1992/12/05 11:11:12 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:12 $";
+static char sccsid[] = "$Id: v_z.c,v 5.22 1993/02/16 20:09:14 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,8 @@ static char sccsid[] = "$Id: v_z.c,v 5.21 1992/12/05 11:11:12 bostic Exp $ (Berk
  *	Move the screen.
  */
 int
-v_z(vp, fm, tm, rp)
+v_z(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -32,8 +33,8 @@ v_z(vp, fm, tm, rp)
 
 	if (vp->flags & VC_C1SET) {
 		fm->lno = vp->count;
-		if (file_gline(curf, fm->lno, NULL) == NULL)
-			fm->lno = file_lline(curf);
+		if (file_gline(ep, fm->lno, NULL) == NULL)
+			fm->lno = file_lline(ep);
 	}
 	lno = fm->lno;
 
@@ -45,27 +46,27 @@ v_z(vp, fm, tm, rp)
 
 	switch(vp->character) {
 	case '.':
-		if (lno <= HALFSCREEN(curf))
+		if (lno <= HALFSCREEN(ep))
 			break;
-		lno -= HALFSCREEN(curf);
-		if (file_gline(curf, lno, NULL) == NULL)
+		lno -= HALFSCREEN(ep);
+		if (file_gline(ep, lno, NULL) == NULL)
 			break;
-		curf->top = lno;
+		ep->top = lno;
 		break;
 	case '-':
-		if (lno <= SCREENSIZE(curf))
+		if (lno <= SCREENSIZE(ep))
 			break;
-		lno -= SCREENSIZE(curf) - 1;
-		if (file_gline(curf, lno, NULL) == NULL)
+		lno -= SCREENSIZE(ep) - 1;
+		if (file_gline(ep, lno, NULL) == NULL)
 			break;
-		curf->top = lno;
+		ep->top = lno;
 		break;
 	default:
 		if (special[vp->character] == K_CR) {
-			curf->top = lno;
+			ep->top = lno;
 			break;
 		}
-		msg("usage: %s.", vp->kp->usage);
+		msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
 	*rp = *fm;

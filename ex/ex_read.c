@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.23 1993/02/12 10:08:41 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:08:41 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.24 1993/02/16 20:10:21 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,8 @@ static char sccsid[] = "$Id: ex_read.c,v 5.23 1993/02/12 10:08:41 bostic Exp $ (
  *	Read from a file or utility.
  */
 int
-ex_read(cmdp)
+ex_read(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	register u_char *p;
@@ -39,11 +40,11 @@ ex_read(cmdp)
 
 	/* If nothing, just read the file. */
 	if ((p = cmdp->string) == NULL) {
-		if (FF_ISSET(curf, F_NONAME)) {
-			msg("No filename from which to read.");
+		if (FF_ISSET(ep, F_NONAME)) {
+			msg(ep, M_ERROR, "No filename from which to read.");
 			return (1);
 		}
-		fname = curf->name;
+		fname = ep->name;
 		force = 0;
 		goto noargs;
 	}
@@ -62,52 +63,53 @@ ex_read(cmdp)
 	if (*p == '!') {
 		for (; *p && isspace(*p); ++p);
 		if (*p == '\0') {
-			msg("Usage: %s.", cmdp->cmd->usage);
+			msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filtercmd(&cmdp->addr1, NULL, ++p, NOINPUT));
+		return (filtercmd(ep, &cmdp->addr1, NULL, ++p, NOINPUT));
 	}
 
 	/* Build an argv. */
-	if (buildargv(p, 1, cmdp))
+	if (buildargv(ep, p, 1, cmdp))
 		return (1);
 
 	switch(cmdp->argc) {
 	case 0:
-		fname = curf->name;
+		fname = ep->name;
 		break;
 	case 1:
 		fname = (char *)cmdp->argv[0];
 		break;
 	default:
-		msg("Usage: %s.", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* Open the file. */
 noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		msg("%s: %s", fname, strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
 	/* If not a regular file, force must be set. */
 	if (!force && !S_ISREG(sb.st_mode)) {
-		msg("%s is not a regular file -- use ! to read it.", fname);
+		msg(ep, M_ERROR,
+		    "%s is not a regular file -- use ! to read it.", fname);
 		return (1);
 	}
 
-	if (ex_readfp(fname, fp, &cmdp->addr1, &curf->rptlines))
+	if (ex_readfp(ep, fname, fp, &cmdp->addr1, &ep->rptlines))
 		return (1);
 
 	/* Set the cursor. */
-	curf->lno = cmdp->addr1.lno + 1;
-	curf->cno = 0;
+	ep->lno = cmdp->addr1.lno + 1;
+	ep->cno = 0;
 	
 	/* Set autoprint. */
-	FF_SET(curf, F_AUTOPRINT);
+	FF_SET(ep, F_AUTOPRINT);
 
 	/* Set reporting. */
-	curf->rptlabel = "read";
+	ep->rptlabel = "read";
 	return (0);
 }
 
@@ -116,7 +118,8 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
  *	Read lines into the file.
  */
 int
-ex_readfp(fname, fp, fm, cntp)
+ex_readfp(ep, fname, fp, fm, cntp)
+	EXF *ep;
 	char *fname;
 	FILE *fp;
 	MARK *fm;
@@ -132,19 +135,19 @@ ex_readfp(fname, fp, fm, cntp)
 	 * following the address.
 	 */
 	rval = 0;
-	for (lno = fm->lno; p = ex_getline(fp, &len); ++lno)
-		if (file_aline(curf, lno, p, len)) {
+	for (lno = fm->lno; p = ex_getline(ep, fp, &len); ++lno)
+		if (file_aline(ep, lno, p, len)) {
 			rval = 1;
 			break;
 		}
 
 	if (ferror(fp)) {
-		msg("%s: %s", strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", strerror(errno));
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		msg("%s: %s", strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", strerror(errno));
 		return (1);
 	}
 

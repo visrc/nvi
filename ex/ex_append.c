@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.20 1993/02/14 13:14:49 bostic Exp $ (Berkeley) $Date: 1993/02/14 13:14:49 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.21 1993/02/16 20:10:00 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex_append.c,v 5.20 1993/02/14 13:14:49 bostic Exp $
 
 enum which {APPEND, CHANGE};
 
-static void ca __P((EXCMDARG *, enum which));
+static void ca __P((EXF *, EXCMDARG *, enum which));
 
 /*
  * ex_append -- :address append[!]
@@ -30,10 +30,11 @@ static void ca __P((EXCMDARG *, enum which));
  *	or the current line if no address is specified.
  */
 int
-ex_append(cmdp)
+ex_append(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	ca(cmdp, APPEND);
+	ca(ep, cmdp, APPEND);
 	return (0);
 }
 
@@ -42,15 +43,17 @@ ex_append(cmdp)
  *	Change one or more lines to the input text.
  */
 int
-ex_change(cmdp)
+ex_change(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	ca(cmdp, CHANGE);
+	ca(ep, cmdp, CHANGE);
 	return (0);
 }
 
 static void
-ca(cmdp, cmd)
+ca(ep, cmdp, cmd)
+	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
@@ -68,7 +71,7 @@ ca(cmdp, cmd)
 
 	/* If we're doing a change, delete the old version. */
 	if (cmd == CHANGE)
-		ex_delete(cmdp);
+		ex_delete(ep, cmdp);
 
 	/*
 	 * New lines start at the specified line for changes,
@@ -79,14 +82,14 @@ ca(cmdp, cmd)
 		++m.lno;
 
 	/* Insert lines until no more lines, or "." line. */
-	for (; !ex_gb(curf, 0, &p, &len,
+	for (; !ex_gb(ep, 0, &p, &len,
 	    GB_NL|GB_NLECHO) && p != NULL; ++m.lno) {
 		if (p[0] == '.' && p[1] == '\0')
 			break;
-		add(curf, &m, p, len);
+		add(ep, &m, p, len);
 	}
 
-	FF_SET(curf, F_AUTOPRINT);
+	FF_SET(ep, F_AUTOPRINT);
 
 	if (set)
 		SET(O_AUTOINDENT);

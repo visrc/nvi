@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.17 1993/02/11 19:54:13 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:54:13 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.18 1993/02/16 20:10:16 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,8 @@ static char sccsid[] = "$Id: ex_join.c,v 5.17 1993/02/11 19:54:13 bostic Exp $ (
  *	Join lines.
  */
 int
-ex_join(cmdp)
+ex_join(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	recno_t from, to;
@@ -37,8 +38,8 @@ ex_join(cmdp)
 	to = cmdp->addr2.lno;
 
 	/* Check for no lines to join. */
-	if ((p = file_gline(curf, from + 1, &len)) == NULL) {
-		msg("No remaining lines to join.");
+	if ((p = file_gline(ep, from + 1, &len)) == NULL) {
+		msg(ep, M_ERROR, "No remaining lines to join.");
 		return (1);
 	}
 
@@ -50,7 +51,7 @@ ex_join(cmdp)
 		 * Get next line.  Historic versions of vi allowed "10J" while
 		 * less than 10 lines from the end-of-file, so we do too.
 		 */
-		if ((p = file_gline(curf, from, &len)) == NULL)
+		if ((p = file_gline(ep, from, &len)) == NULL)
 			break;
 
 		/* Empty lines just go away. */
@@ -65,7 +66,7 @@ ex_join(cmdp)
 		tlen += len + 2;
 		if (blen < tlen) {
 			clen = bp == NULL ? 0 : bp - buf;
-			if (binc(&buf, &blen, tlen)) {
+			if (binc(ep, &buf, &blen, tlen)) {
 				if (buf != NULL)
 					free(buf);
 				return (1);
@@ -107,11 +108,11 @@ ex_join(cmdp)
 
 	/* Delete the joined lines. */
         for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; to >= from; --to)
-		if (file_dline(curf, to))
+		if (file_dline(ep, to))
 			goto err;
 		
 	/* Insert the new line into place. */
-	if (file_aline(curf, cmdp->addr1.lno - 1, buf, bp - buf)) {
+	if (file_aline(ep, cmdp->addr1.lno - 1, buf, bp - buf)) {
 err:		if (buf != NULL)
 			free(buf);
 		return (1);
@@ -119,9 +120,9 @@ err:		if (buf != NULL)
 	if (buf != NULL)
 		free(buf);
 
-	curf->rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
-	curf->rptlabel = "joined";
+	ep->rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
+	ep->rptlabel = "joined";
 
-	FF_SET(curf, F_AUTOPRINT);
+	FF_SET(ep, F_AUTOPRINT);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.14 1992/12/20 15:54:11 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:11 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.15 1993/02/16 20:10:18 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,8 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 5.14 1992/12/20 15:54:11 bostic Exp $
  *	Create (or overwrite) a .exrc file with the current info.
  */
 int
-ex_mkexrc(cmdp)
+ex_mkexrc(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	FILE *fp;
@@ -53,7 +54,7 @@ ex_mkexrc(cmdp)
 	if ((fd = open(fname,
 	    (cmdp->flags & E_FORCE ? 0 : O_EXCL)|O_CREAT|O_TRUNC|O_WRONLY,
 	    S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-		msg("%s: %s", fname, strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
@@ -61,7 +62,7 @@ ex_mkexrc(cmdp)
 	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
-		msg("%s: %s", fname, strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
@@ -73,12 +74,13 @@ ex_mkexrc(cmdp)
 	if (ferror(fp))
 		goto err;
 	if (fclose(fp)) {
-err:		msg("%s: incomplete: %s", fname, strerror(errno));
+err:		msg(ep, M_ERROR,
+		    "%s: incomplete: %s", fname, strerror(errno));
 		return (1);
 	}
 #ifndef NO_DIGRAPH
 	digraph_save(fd);
 #endif
-	msg("New .exrc file: %s. ", fname);
+	msg(ep, M_DISPLAY, "New .exrc file: %s. ", fname);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.44 1993/02/14 14:34:36 bostic Exp $ (Berkeley) $Date: 1993/02/14 14:34:36 $";
+static char sccsid[] = "$Id: vi.c,v 5.45 1993/02/16 20:09:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,9 +26,9 @@ static char sccsid[] = "$Id: vi.c,v 5.44 1993/02/14 14:34:36 bostic Exp $ (Berke
 #include "screen.h"
 #include "term.h"
 
-static int getcmd __P((VICMDARG *, VICMDARG *));
-static int getkeyword __P((VICMDARG *, u_int));
-static int getmotion __P((VICMDARG *, MARK *, MARK *));
+static int getcmd __P((EXF *, VICMDARG *, VICMDARG *));
+static int getkeyword __P((EXF *, VICMDARG *, u_int));
+static int getmotion __P((EXF *, VICMDARG *, MARK *, MARK *));
 
 static VICMDARG cmd, dot, dotmotion;
 
@@ -37,7 +37,8 @@ static VICMDARG cmd, dot, dotmotion;
  * 	Main vi command loop.
  */
 int
-vi()
+vi(ep)
+	EXF *ep;
 {
 	register VICMDARG *vp;
 	MARK fm, tm, m;
@@ -50,24 +51,24 @@ vi()
 		 * refresh the screen.  Otherwise, report any status info
 		 * from the last command.
 		 */
-		if (first || FF_ISSET(curf, F_NEWSESSION)) {
-			if (v_init(curf))
+		if (first || FF_ISSET(ep, F_NEWSESSION)) {
+			if (v_init(ep))
 				return (1);
-			if (curf->scr_update(curf)) {
+			if (ep->scr_update(ep)) {
 				rval = 1;
 				break;
 			}
-			status(curf, curf->lno);
-			FF_CLR(curf, F_NEWSESSION);
+			status(ep, ep->lno);
+			FF_CLR(ep, F_NEWSESSION);
 			first = 0;
-		} else if (curf->rptlines) {
+		} else if (ep->rptlines) {
 			if (LVAL(O_REPORT) &&
-			    curf->rptlines >= LVAL(O_REPORT)) {
-				msg("%ld line%s %s", curf->rptlines,
-				    curf->rptlines == 1 ? "" : "s",
-				    curf->rptlabel);
+			    ep->rptlines >= LVAL(O_REPORT)) {
+				msg(ep, M_DISPLAY,
+				    "%ld line%s %s", ep->rptlines,
+				    ep->rptlines == 1 ? "" : "s", ep->rptlabel);
 			}
-			curf->rptlines = 0;
+			ep->rptlines = 0;
 		}
 
 		/*
@@ -80,10 +81,10 @@ vi()
 		 * a motion component, should skip repaint.
 		 */
 err:		if (msgcnt) {
-			v_msgflush(curf);
-			FF_SET(curf, F_NEEDMERASE);
-		} else if (!FF_ISSET(curf, F_NEEDMERASE))
-			scr_modeline(curf, 0);
+			v_msgflush(ep);
+			FF_SET(ep, F_NEEDMERASE);
+		} else if (!FF_ISSET(ep, F_NEEDMERASE))
+			scr_modeline(ep, 0);
 		refresh();
 
 		/*
@@ -93,20 +94,20 @@ err:		if (msgcnt) {
 		 * command setting the cursor to the resulting mark.
 		 */
 		vp = &cmd;
-		if (getcmd(vp, NULL))
+		if (getcmd(ep, vp, NULL))
 			goto err;
 
 		flags = vp->kp->flags;
 
 		/* Get any associated keyword. */
-		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(vp, flags))
+		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(ep, vp, flags))
 			goto err;
 
 		/* If a non-relative movement, set the '' mark. */
 		if (flags & V_ABS) {
-			m.lno = curf->lno;
-			m.cno = curf->cno;
-			SETABSMARK(&m);
+			m.lno = ep->lno;
+			m.cno = ep->cno;
+			SETABSMARK(ep, &m);
 		}
 
 		/*
@@ -116,29 +117,35 @@ err:		if (msgcnt) {
 		 * set to that many lines, counting the current one.
 		 */
 		if (flags & V_MOTION) {
-			if (getmotion(vp, &fm, &tm))
+			if (getmotion(ep, vp, &fm, &tm))
 				goto err;
 		} else {
-			fm.lno = curf->lno;
-			fm.cno = curf->cno;
+			fm.lno = ep->lno;
+			fm.cno = ep->cno;
 			if (vp->kp->flags & V_LMODE && vp->flags & VC_C1SET) {
-				tm.lno = curf->lno + vp->count - 1;
-				tm.cno = curf->cno;
+				tm.lno = ep->lno + vp->count - 1;
+				tm.cno = ep->cno;
 			} else
 				tm = fm;
 		}
 
 		if (flags & V_INPUT && ISSET(O_SHOWMODE)) {
-			scr_modeline(curf, 1);
+			scr_modeline(ep, 1);
 			refresh();
 		}
 
 		/* Log the start of an action. */
-		(void)log_cursor(curf);
+		(void)log_cursor(ep);
 
 		/* Call the function, update the cursor. */
-		if ((vp->kp->func)(vp, &fm, &tm, &m))
+		if ((vp->kp->func)(ep, vp, &fm, &tm, &m))
 			goto err;
+		
+		/*
+		 * XXX
+		 * THE UNDERLYING EXF MAY HAVE CHANGED.
+		 */
+		 ep = curf;
 
 		/*
 		 * If that command took us out of vi mode, then exit
@@ -163,7 +170,7 @@ err:		if (msgcnt) {
 		 * If the underlying file has changed, don't bother with
 		 * cursor positioning.
 		 */
-		if (FF_ISSET(curf, F_NEWSESSION))
+		if (FF_ISSET(ep, F_NEWSESSION))
 			continue;
 
 		/*
@@ -180,55 +187,56 @@ err:		if (msgcnt) {
 		 */
 		flags = vp->kp->flags;
 		if (flags & V_RCM)
-			m.cno = curf->scr_relative(curf, m.lno);
+			m.cno = ep->scr_relative(ep, m.lno);
 		else if (flags & V_RCM_SETFNB) {
 			/*
 			 * Hack -- instead of calling nonblank() in all of
 			 * the command routines, we do the movement here.
 			 */
-			if (nonblank(m.lno, &m.cno))
+			if (nonblank(ep, m.lno, &m.cno))
 				goto err;
-			curf->rcmflags = RCM_FNB;
+			ep->rcmflags = RCM_FNB;
 		}
 		else if (flags & V_RCM_SETLAST)
-			curf->rcmflags = RCM_LAST;
+			ep->rcmflags = RCM_LAST;
 			
 		/* Update the cursor. */
-		curf->lno = m.lno;
-		curf->cno = m.cno;
-		curf->scr_update(curf);
+		ep->lno = m.lno;
+		ep->cno = m.cno;
+		ep->scr_update(ep);
 
 		if (flags & V_RCM_SET) {
-			curf->rcmflags = 0;
-			curf->rcm = curf->scno;
+			ep->rcmflags = 0;
+			ep->rcm = ep->scno;
 		}
 	}
-	return (v_end(curf) || rval);
+	return (v_end(ep) || rval);
 }
 
-#define	KEY(k, flags) {							\
-	(k) = getkey(flags);						\
-	if (FF_ISSET(curf, F_NEEDMERASE)) {				\
-		scr_modeline(curf, 0);					\
-		FF_CLR(curf, F_NEEDMERASE);				\
+#define	KEY(ep, k, flags) {						\
+	(k) = getkey(ep, flags);					\
+	if (FF_ISSET(ep, F_NEEDMERASE)) {				\
+		scr_modeline(ep, 0);					\
+		FF_CLR(ep, F_NEEDMERASE);				\
 		refresh();						\
 	}								\
 	if (special[(k)] == K_VLNEXT)					\
-		(k) = getkey(0);					\
+		(k) = getkey(ep, 0);					\
 	else if (special[(k)] == K_ESCAPE)				\
 		return (1);						\
 }
 
-#define	GETCOUNT(count) {						\
+#define	GETCOUNT(ep, count) {						\
 	count = 0;							\
 	do {								\
 		hold = count * 10 + key - '0';				\
 		if (count > hold) {					\
-			msg("Number larger than %lu", ULONG_MAX);	\
+			msg(ep, M_ERROR,				\
+			    "Number larger than %lu", ULONG_MAX);	\
 			return (NULL);					\
 		}							\
 		count = hold;						\
-		KEY(key, 0);						\
+		KEY(ep, key, 0);					\
 	} while (isdigit(key));						\
 }
 
@@ -246,7 +254,8 @@ err:		if (msgcnt) {
  *	[count] key [character]
  */
 static int
-getcmd(vp, ismotion)
+getcmd(ep, vp, ismotion)
+	EXF *ep;
 	VICMDARG *vp;
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
 {
@@ -258,21 +267,19 @@ getcmd(vp, ismotion)
 	memset(&vp->vpstartzero, 0,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
-	KEY(key, GB_MAPCOMMAND);
+	KEY(ep, key, GB_MAPCOMMAND);
 	if (key < 0 || key > MAXVIKEY) {
-		bell();
-		if (ISSET(O_VERBOSE))
-			msg("%s isn't a command.", CHARNAME(key));
+		msg(ep, M_BELL, "%s isn't a command.", CHARNAME(key));
 		return (1);
 	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		KEY(key, 0);
+		KEY(ep, key, 0);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(key, 0);
+		KEY(ep, key, 0);
 	} else
 		vp->buffer = OOBCB;
 
@@ -281,22 +288,21 @@ getcmd(vp, ismotion)
 	 * a count, it's a command.
 	 */
 	if (isdigit(key) && key != '0') {
-		GETCOUNT(vp->count);
+		GETCOUNT(ep, vp->count);
 		vp->flags |= VC_C1SET;
 	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
 		if (vp->buffer != OOBCB) {
-			bell();
-			msg("Only one buffer can be specified.");
+			msg(ep, M_ERROR, "Only one buffer can be specified.");
 			return (1);
 		}
-		KEY(key, 0);
+		KEY(ep, key, 0);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(key, 0);
+		KEY(ep, key, 0);
 	}
 
 	/* Find the command. */
@@ -314,10 +320,10 @@ getcmd(vp, ismotion)
 				*vp = dot;
 				return (0);
 			}
-			msg("No commands which set dot executed yet.");
+			msg(ep, M_ERROR,
+			    "No commands which set dot executed yet.");
 		} else
-			msg("%s isn't a command.", CHARNAME(key));
-		bell();
+			msg(ep, M_ERROR, "%s isn't a command.", CHARNAME(key));
 		return (1);
 	}
 
@@ -335,13 +341,12 @@ getcmd(vp, ismotion)
 
 		/* Required buffer. */
 		if (flags & V_RBUF) {
-			KEY(key, 0);
+			KEY(ep, key, 0);
 			if (key != '"')
 				goto usage;
-			KEY(key, 0);
+			KEY(ep, key, 0);
 			if (key > UCHAR_MAX) {
-ebuf:				bell();
-				msg("Invalid buffer name.");
+ebuf:				msg(ep, M_ERROR, "Invalid buffer name.");
 				return (1);
 			}
 			vp->buffer = key;
@@ -353,21 +358,21 @@ ebuf:				bell();
 		 * the *doubled* characters do just frost your shorts?
 		 */
 		if (vp->key == '[' || vp->key == ']') {
-			KEY(key, 0);
+			KEY(ep, key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'Z' command. */
 		if (vp->key == 'Z') {
-			KEY(key, 0);
+			KEY(ep, key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
-			KEY(key, 0);
+			KEY(ep, key, 0);
 			if (isdigit(key)) {
-				GETCOUNT(vp->count2);
+				GETCOUNT(ep, vp->count2);
 				vp->flags |= VC_C2SET;
 			}
 			vp->character = key;
@@ -379,15 +384,14 @@ ebuf:				bell();
 	 * imply the current line.
 	 */
 	else if (ismotion->key != key && !(flags & V_MOVE)) {
-usage:		bell();
-		msg("Usage: %s", ismotion != NULL ?
+usage:		msg(ep, M_ERROR, "Usage: %s", ismotion != NULL ?
 		    vikeys[ismotion->key].usage : kp->usage);
 		return (1);
 	}
 
 	/* Required character. */
 	if (flags & V_CHAR)
-		KEY(vp->character, 0);
+		KEY(ep, vp->character, 0);
 
 	return (0);
 }
@@ -398,7 +402,8 @@ usage:		bell();
  * Get resulting motion mark.
  */
 static int
-getmotion(vp, fm, tm)
+getmotion(ep, vp, fm, tm)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm;
 {
@@ -409,7 +414,7 @@ getmotion(vp, fm, tm)
 	/* If '.' command, use the dot motion, else get the motion command. */
 	if (vp->flags & VC_ISDOT)
 		motion = dotmotion;
-	else if (getcmd(&motion, vp))
+	else if (getcmd(ep, &motion, vp))
 		return (1);
 
 	/*
@@ -442,7 +447,7 @@ getmotion(vp, fm, tm)
 		vp->flags |= VC_LMODE;
 
 		/* Set the end of the command. */
-		tm->lno = curf->lno + motion.count - 1;
+		tm->lno = ep->lno + motion.count - 1;
 		tm->cno = 1;
 
 		/*
@@ -450,15 +455,15 @@ getmotion(vp, fm, tm)
 		 * historic vi permitted a "cc" command to change it.
 		 */
 		if (!(vp->kp->flags & VC_C) &&
-		    file_gline(curf, tm->lno, NULL) == NULL) {
-			m.lno = curf->lno;
-			m.cno = curf->cno;
-			v_eof(&m);
+		    file_gline(ep, tm->lno, NULL) == NULL) {
+			m.lno = ep->lno;
+			m.cno = ep->cno;
+			v_eof(ep, &m);
 			return (1);
 		}
 
 		/* Set the origin of the command. */
-		fm->lno = curf->lno;
+		fm->lno = ep->lno;
 		fm->cno = 0;
 	} else {
 		/*
@@ -468,9 +473,9 @@ getmotion(vp, fm, tm)
 		 */
 		motion.flags |= vp->kp->flags & VC_COMMASK;
 
-		m.lno = curf->lno;
-		m.cno = curf->cno;
-		if ((motion.kp->func)(&motion, &m, NULL, tm))
+		m.lno = ep->lno;
+		m.cno = ep->cno;
+		if ((motion.kp->func)(ep, &motion, &m, NULL, tm))
 			return (1);
 
 		/*
@@ -484,14 +489,14 @@ getmotion(vp, fm, tm)
 		 * If the motion is in a backward direction, switch the current
 		 * location so that we're always moving in the same direction.
 		 */
-		if (tm->lno < curf->lno ||
-		    tm->lno == curf->lno && tm->cno < curf->cno) {
+		if (tm->lno < ep->lno ||
+		    tm->lno == ep->lno && tm->cno < ep->cno) {
 			*fm = *tm;
-			tm->lno = curf->lno;
-			tm->cno = curf->cno;
+			tm->lno = ep->lno;
+			tm->cno = ep->cno;
 		} else {
-			fm->lno = curf->lno;
-			fm->cno = curf->cno;
+			fm->lno = ep->lno;
+			fm->cno = ep->cno;
 		}
 	}
 
@@ -509,7 +514,8 @@ getmotion(vp, fm, tm)
 #define	innum(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
 
 static int
-getkeyword(kp, flags)
+getkeyword(ep, kp, flags)
+	EXF *ep;
 	VICMDARG *kp;
 	u_int flags;
 {
@@ -517,17 +523,15 @@ getkeyword(kp, flags)
 	size_t len;
 	u_char *p;
 
-	p = file_gline(curf, curf->lno, &len);
-	beg = curf->cno;
+	p = file_gline(ep, ep->lno, &len);
+	beg = ep->cno;
 
 	/* May not be a keyword at all. */
 	if (!len ||
 	    flags & V_KEYW && !inword(p[beg]) ||
 	    flags & V_KEYNUM && !innum(p[beg])) {
-noword:		bell();
-		if (ISSET(O_VERBOSE))
-			msg("Cursor not in a %s.",
-			    flags & V_KEYW ? "word" : "number");
+noword:		msg(ep, M_BELL, "Cursor not in a %s.",
+		    flags & V_KEYW ? "word" : "number");
 		return (1);
 	}
 
@@ -565,10 +569,10 @@ noword:		bell();
 		}
 
 	if (flags & V_KEYW) {
-		for (end = curf->cno; ++end < len && inword(p[end]););
+		for (end = ep->cno; ++end < len && inword(p[end]););
 		--end;
 	} else {
-		for (end = curf->cno; ++end < len;) {
+		for (end = ep->cno; ++end < len;) {
 			if (p[end] == 'X' || p[end] == 'x') {
 				if (end != beg + 1 || p[beg] != '0')
 					break;
@@ -588,9 +592,9 @@ noword:		bell();
 	 * Getting a keyword implies moving the cursor to its beginning.
 	 * Refresh now.
 	 */
-	if (beg != curf->cno) {
-		curf->cno = beg;
-		curf->scr_update(curf);
+	if (beg != ep->cno) {
+		ep->cno = beg;
+		ep->scr_update(ep);
 		refresh();
 	}
 
@@ -602,7 +606,7 @@ noword:		bell();
 	 */
 	len = (end - beg) + 2;				/* XXX */
 	kp->klen = (end - beg) + 1;
-	BINC(kp->keyword, kp->kbuflen, len);
+	BINC(ep, kp->keyword, kp->kbuflen, len);
 	memmove(kp->keyword, p + beg, kp->klen);
 	kp->keyword[kp->klen] = '\0';			/* XXX */
 	return (0);

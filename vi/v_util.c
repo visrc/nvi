@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.13 1992/12/27 19:43:38 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:43:38 $";
+static char sccsid[] = "$Id: v_util.c,v 5.14 1993/02/16 20:09:08 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,22 +32,22 @@ static char sccsid[] = "$Id: v_util.c,v 5.13 1992/12/27 19:43:38 bostic Exp $ (B
  *	Vi end-of-file error.
  */
 void
-v_eof(mp)
+v_eof(ep, mp)
+	EXF *ep;
 	MARK *mp;
 {
 	u_long lno;
 
-	bell();
-	if (ISSET(O_VERBOSE))
-		if (mp == NULL)
-			msg("Already at end-of-file.");
-		else {
-			lno = file_lline(curf);
-			if (mp->lno >= lno)
-				msg("Already at end-of-file.");
-			else
-				msg("Movement past the end-of-file.");
-		}
+	if (mp == NULL)
+		msg(ep, M_BELL, "Already at end-of-file.");
+	else {
+		lno = file_lline(ep);
+		if (mp->lno >= lno)
+			msg(ep, M_BELL, "Already at end-of-file.");
+		else
+			msg(ep, M_BELL,
+			    "Movement past the end-of-file.");
+	}
 }
 
 /*
@@ -55,26 +55,25 @@ v_eof(mp)
  *	Vi end-of-line error.
  */
 void
-v_eol(mp)
+v_eol(ep, mp)
+	EXF *ep;
 	MARK *mp;	
 {
 	size_t len;
 	u_char *p;
 
-	bell();
-	if (ISSET(O_VERBOSE))
-		if (mp == NULL)
-			msg("Already at end-of-line.");
-		else {
-			if ((p = file_gline(curf, mp->lno, &len)) == NULL) {
-				GETLINE_ERR(mp->lno);
-				return;
-			}
-			if (mp->cno == len - 1)
-				msg("Already at end-of-line.");
-			else
-				msg("Movement past the end-of-line.");
+	if (mp == NULL)
+		msg(ep, M_BELL, "Already at end-of-line.");
+	else {
+		if ((p = file_gline(ep, mp->lno, &len)) == NULL) {
+			GETLINE_ERR(ep, mp->lno);
+			return;
 		}
+		if (mp->cno == len - 1)
+			msg(ep, M_BELL, "Already at end-of-line.");
+		else
+			msg(ep, M_BELL, "Movement past the end-of-line.");
+	}
 }
 
 /*
@@ -82,15 +81,14 @@ v_eol(mp)
  *	Vi start-of-file error.
  */
 void
-v_sof(mp)
+v_sof(ep, mp)
+	EXF *ep;
 	MARK *mp;
 {
-	bell();
-	if (ISSET(O_VERBOSE))
-		if (mp == NULL || mp->lno == 1)
-			msg("Already at the beginning of the file.");
-		else
-			msg("Movement past the beginning of the file.");
+	if (mp == NULL || mp->lno == 1)
+		msg(ep, M_BELL, "Already at the beginning of the file.");
+	else
+		msg(ep, M_BELL, "Movement past the beginning of the file.");
 }
 
 /*
@@ -108,7 +106,7 @@ v_msgflush(ep)
 		return (0);
 
 	getyx(stdscr, oldy, oldx);
-	MOVE(SCREENSIZE(ep), 0);
+	MOVE(ep, SCREENSIZE(ep), 0);
 	clrtoeol();
 	for (cnt = 0;;) {
 		standout();
@@ -123,11 +121,11 @@ v_msgflush(ep)
 			break;
 
 		refresh();
-		while (special[ch = getkey(0)] != K_CR && !isspace(ch))
-			bell();
-		MOVE(SCREENSIZE(ep), 0);
+		while (special[ch = getkey(ep, 0)] != K_CR && !isspace(ch))
+			bell(ep);
+		MOVE(ep, SCREENSIZE(ep), 0);
 	}
-	MOVE(oldy, oldx);
+	MOVE(ep, oldy, oldx);
 	refresh();
 	msgcnt = 0;
 	return (0);
@@ -136,6 +134,11 @@ v_msgflush(ep)
 /*
  * onwinch --
  *	Handle SIGWINCH.
+ *
+ * XXX
+ * Using the global `curf' here is completely unreasonable.  If the signal
+ * arrives while it's invalid, we're hosed.  This will change when we move
+ * to an event based mechanism.
  */
 void
 onwinch(signo)
@@ -159,10 +162,10 @@ onwinch(signo)
 	argv[1] = NULL;
 
 	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", win.ws_row);
-	if (opts_set(argv))
+	if (opts_set(curf, argv))
 		return;
 	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
-	if (opts_set(argv))
+	if (opts_set(curf, argv))
 		return;
 
 	/* Do the resize if waiting, otherwise just schedule it. */

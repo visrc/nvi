@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.18 1993/02/14 18:31:03 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:31:03 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.19 1993/02/16 20:10:23 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -27,7 +27,8 @@ static char sccsid[] = "$Id: ex_shell.c,v 5.18 1993/02/14 18:31:03 bostic Exp $ 
  *	the argument -i.
  */
 int
-ex_shell(cmdp)
+ex_shell(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	extern struct termios original_termios;
@@ -35,7 +36,7 @@ ex_shell(cmdp)
 	int rval;
 	char buf[MAXPATHLEN];
 
-	MODIFY_WARN(curf);
+	MODIFY_WARN(ep);
 
 	/* Save ex/vi terminal settings, and restore the original ones. */
 	(void)tcgetattr(STDIN_FILENO, &t);
@@ -51,6 +52,6 @@ ex_shell(cmdp)
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
 
 	/* Repaint the screen. */
-	FF_SET(curf, F_REFRESH);
+	FF_SET(ep, F_REFRESH);
 	return (rval);
 }

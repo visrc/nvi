@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.15 1992/12/20 15:11:25 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:11:25 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.16 1993/02/16 20:09:05 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,24 +23,18 @@ static char sccsid[] = "$Id: v_undo.c,v 5.15 1992/12/20 15:11:25 bostic Exp $ (B
 #include "options.h"
 #include "screen.h"
 
-#define	LOG_ERR {							\
-	bell();								\
-	msg("Error: %s/%d: retrieve log error: %s.",			\
-	    tail(__FILE__), __LINE__, strerror(errno));			\
-	goto err;							\
-}
-
 /*
  * v_Undo -- U
  *	Undo changes to this line, or roll forward.
  */
 int
-v_Undo(vp, fm, tm, rp)
+v_Undo(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	return (ISSET(O_NUNDO) ?
-	    log_forward(curf, rp) : log_backward(curf, rp, curf->lno));
+	    log_forward(ep, rp) : log_backward(ep, rp, ep->lno));
 }
 	
 /*
@@ -48,31 +42,32 @@ v_Undo(vp, fm, tm, rp)
  *	Undo the last change.
  */
 int
-v_undo(vp, fm, tm, rp)
+v_undo(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	static enum { BACKWARD, FORWARD } last;
 
 	if (ISSET(O_NUNDO))
-		return (log_backward(curf, rp, OOBLNO));
+		return (log_backward(ep, rp, OOBLNO));
 
-	if (!FF_ISSET(curf, F_UNDO)) {
+	if (!FF_ISSET(ep, F_UNDO)) {
 		last = FORWARD;
-		FF_SET(curf, F_UNDO);
+		FF_SET(ep, F_UNDO);
 	}
 
 	switch(last) {
 	case BACKWARD:
-		if (log_forward(curf, rp)) {
-			FF_CLR(curf, F_UNDO);
+		if (log_forward(ep, rp)) {
+			FF_CLR(ep, F_UNDO);
 			return (1);
 		}
 		last = FORWARD;
 		break;
 	case FORWARD:
-		if (log_backward(curf, rp, OOBLNO)) {
-			FF_CLR(curf, F_UNDO);
+		if (log_backward(ep, rp, OOBLNO)) {
+			FF_CLR(ep, F_UNDO);
 			return (1);
 		}
 		last = BACKWARD;

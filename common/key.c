@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.38 1993/02/11 20:06:43 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:06:43 $";
+static char sccsid[] = "$Id: key.c,v 5.39 1993/02/16 20:10:43 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ u_char *gb_qb;				/* Quote buffer. */
 u_char *gb_wb;				/* Widths buffer. */
 u_long gb_blen;				/* Buffer lengths. */
 
-static int	ttyread __P((u_char *, int, int));
+static int	ttyread __P((EXF *, u_char *, int, int));
 
 /*
  * gb_init --
@@ -45,7 +45,8 @@ static int	ttyread __P((u_char *, int, int));
  *	speeds up lookup and normal insertion tremendously.
  */
 void
-gb_init()
+gb_init(ep)
+	EXF *ep;
 {
 	struct termios t;
 
@@ -69,7 +70,7 @@ gb_init()
 	special['0'] = K_ZERO;
 
 	/* Start off with some memory. */
-	(void)gb_inc();
+	(void)gb_inc(ep);
 }
 
 /*
@@ -77,14 +78,15 @@ gb_init()
  *	Increase the size of the gb buffers.
  */
 int
-gb_inc()
+gb_inc(ep)
+	EXF *ep;
 {
 	gb_blen += 256;
 	if ((gb_cb = realloc(gb_cb, gb_blen)) == NULL ||
 	    (gb_qb = realloc(gb_qb, gb_blen)) == NULL ||
 	    (gb_wb = realloc(gb_wb, gb_blen)) == NULL) {
-			bell();
-			msg("Input too long: %s.", strerror(errno));
+			msg(ep, M_ERROR,
+			    "Input too long: %s.", strerror(errno));
 			if (gb_cb)
 				free(gb_cb);
 			if (gb_qb)
@@ -104,7 +106,8 @@ gb_inc()
  *	and executed cut buffers.
  */
 int
-getkey(flags)
+getkey(ep, flags)
+	EXF *ep;
 	u_int flags;			/* GB_MAPCOMMAND, GB_MAPINPUT */
 {
 	static int nkeybuf;		/* # of keys in the buffer. */
@@ -133,7 +136,7 @@ getkey(flags)
 	/* Read in more keys if necessary. */
 	if (nkeybuf == 0) {
 		/* Read the keystrokes. */
-		nkeybuf = ttyread(keybuf, sizeof(keybuf), 0);
+		nkeybuf = ttyread(ep, keybuf, sizeof(keybuf), 0);
 		nextkey = 0;
 		
 		/*
@@ -142,7 +145,7 @@ getkey(flags)
 		 * This should return to somewhere else.
 		 */
 		if (nkeybuf == 0) {
-			(void)file_stop(curf, 0);
+			(void)file_stop(ep, 0);
 			if (move(LINES - 1, 0) != ERR) {
 				clrtoeol();
 				refresh();
@@ -164,11 +167,11 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 		    flags & GB_MAPCOMMAND ? COMMAND : INPUT, &ispartial);
 		if (ispartial) {
 			if (sizeof(keybuf) == nkeybuf)
-				msg("Partial map is too long.");
+				msg(ep, M_ERROR, "Partial map is too long.");
 			else {
 				memmove(&keybuf[nextkey], keybuf, nkeybuf);
 				nextkey = 0;
-				nr = ttyread(keybuf + nkeybuf,
+				nr = ttyread(ep, keybuf + nkeybuf,
 				    sizeof(keybuf) - nkeybuf,
 				    (int)LVAL(O_KEYTIME));
 				if (nr) {
@@ -195,7 +198,8 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 }
 
 static int
-ttyread(buf, len, time)
+ttyread(ep, buf, len, time)
+	EXF *ep;
 	u_char *buf;		/* where to store the characters */
 	int len;		/* max characters to read */
 	int time;		/* max tenth seconds to read */
@@ -237,19 +241,20 @@ ttyread(buf, len, time)
 		 * asynchronous resizing here.  If resize is scheduled, do it
 		 * before selecting.
 		 */
-		FF_SET(curf, F_READING);
-		if (FF_ISSET(curf, F_RESIZE) && curf->scr_update != NULL) {
-			(void)curf->scr_update(curf);
+		FF_SET(ep, F_READING);
+		if (FF_ISSET(ep, F_RESIZE) && ep->scr_update != NULL) {
+			(void)ep->scr_update(ep);
 			refresh();
 		}
 		sval = select(1, &rd, NULL, NULL, tp);
-		FF_CLR(curf, F_READING);
+		FF_CLR(ep, F_READING);
 		switch (sval) {
 		case -1:			/* Error. */
 			/* It's okay to be interrupted. */
 			if (errno == EINTR)
 				break;
-			msg("Terminal read error: %s", strerror(errno));
+			msg(ep, M_ERROR,
+			    "Terminal read error: %s", strerror(errno));
 			return (0);
 		case 0:
 			return (0);		/* Timeout. */

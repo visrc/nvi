@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.19 1993/02/14 12:31:46 bostic Exp $ (Berkeley) $Date: 1993/02/14 12:31:46 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.20 1993/02/16 20:10:29 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,14 +23,15 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.19 1993/02/14 12:31:46 bostic Exp $ (B
 #include "search.h"
 #include "tag.h"
 
-static int tagchange __P((TAG *, int));
+static int tagchange __P((EXF *, TAG *, int));
 
 /*
  * ex_tagpush -- :tag [file]
  *	Display a tag.
  */
 int
-ex_tagpush(cmdp)
+ex_tagpush(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	static char *lasttag;
@@ -41,13 +42,13 @@ ex_tagpush(cmdp)
 		if (lasttag)
 			free(lasttag);
 		if ((lasttag = strdup((char *)cmdp->argv[0])) == NULL) {
-			msg("Error: %s", strerror(errno));
+			msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		break;
 	case 0:
 		if (lasttag == NULL) {
-			msg("No previous tag entered.");
+			msg(ep, M_ERROR, "No previous tag entered.");
 			return (1);
 		}
 		break;
@@ -55,10 +56,10 @@ ex_tagpush(cmdp)
 		abort();
 	}
 
-	if ((tag = tag_push(lasttag)) == NULL)
+	if ((tag = tag_push(ep, lasttag)) == NULL)
 		return (1);
-	if (tagchange(tag, cmdp->flags & E_FORCE)) {
-		(void)tag_pop();
+	if (tagchange(ep, tag, cmdp->flags & E_FORCE)) {
+		(void)tag_pop(ep);
 		return (1);
 	}
 	return (0);
@@ -69,24 +70,25 @@ ex_tagpush(cmdp)
  *	Pop the tag stack.
  */
 int
-ex_tagpop(cmdp)
+ex_tagpop(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	TAG *tag;
 	int force;
 
 	if ((tag = tag_head()) == NULL) {
-		msg("No tags on the stack.");
+		msg(ep, M_ERROR, "No tags on the stack.");
 		return (1);
 	}
 
 	force = cmdp->flags & E_FORCE;
-	if (strcmp(curf->name, tag->fname))
-		MODIFY_CHECK(curf, force);
+	if (strcmp(ep->name, tag->fname))
+		MODIFY_CHECK(ep, force);
 
-	if ((tag = tag_pop()) == NULL)
+	if ((tag = tag_pop(ep)) == NULL)
 		return (1);
-	return (tagchange(tag, force));
+	return (tagchange(ep, tag, force));
 }
 
 /*
@@ -94,22 +96,24 @@ ex_tagpop(cmdp)
  *	Clear the tag stack.
  */	
 int
-ex_tagtop(cmdp)
+ex_tagtop(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	TAG *tag;
 
 	for (tag = NULL; tag_head() != NULL;)
-		tag = tag_pop();
+		tag = tag_pop(ep);
 	if (tag == NULL) {
-		msg("No tags on the stack.");
+		msg(ep, M_ERROR, "No tags on the stack.");
 		return (1);
 	}
-	return (tagchange(tag, cmdp->flags & E_FORCE));
+	return (tagchange(ep, tag, cmdp->flags & E_FORCE));
 }
 
 static int
-tagchange(tag, force)
+tagchange(ep, tag, force)
+	EXF *ep;
 	TAG *tag;
 	int force;
 {
@@ -131,16 +135,16 @@ tagchange(tag, force)
 			return (1);
 		if (file_start(tep))
 			return (1);
-	} else if (strcmp(curf->name, tag->fname)) {
-		MODIFY_CHECK(curf, force);
+	} else if (strcmp(ep->name, tag->fname)) {
+		MODIFY_CHECK(ep, force);
 		if ((tep = file_locate(tag->fname)) == NULL) {
-			if (file_ins(curf, tag->fname, 1))
+			if (file_ins(ep, tag->fname, 1))
 				return (1);
-			if ((tep = file_next(curf, 0)) == NULL)
+			if ((tep = file_next(ep, 0)) == NULL)
 				return (1);
 			FF_SET(tep, F_IGNORE);
 		}
-		if (file_stop(curf, force))
+		if (file_stop(ep, force))
 			return (1);
 		if (file_start(tep))
 			PANIC;
@@ -148,12 +152,12 @@ tagchange(tag, force)
 
 	m.lno = 1;
 	m.cno = 0;
-	if ((mp = f_search(curf, &m,
+	if ((mp = f_search(ep, &m,
 	    (u_char *)tag->line, NULL, SEARCH_PARSE | SEARCH_TERM)) == NULL) {
-		msg("%s: search pattern not found.", tag->tag);
+		msg(ep, M_ERROR, "%s: search pattern not found.", tag->tag);
 		return (1);
 	}
-	curf->lno = mp->lno;
-	curf->cno = mp->cno;
+	ep->lno = mp->lno;
+	ep->cno = mp->cno;
 	return (0);
 }

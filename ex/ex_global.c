@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.17 1992/12/20 15:06:50 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:06:50 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.18 1993/02/16 20:10:14 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,17 +22,18 @@ static char sccsid[] = "$Id: ex_global.c,v 5.17 1992/12/20 15:06:50 bostic Exp $
 #include "search.h"
 
 enum which {GLOBAL, VGLOBAL};
-static int global __P((EXCMDARG *, enum which));
+static int global __P((EXF *, EXCMDARG *, enum which));
 
 /*
  * ex_global -- [line [,line]] g[lobal][!] /pattern/ [commands]
  *	Exec on lines matching a pattern.
  */
 int
-ex_global(cmdp)
+ex_global(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (global(cmdp, GLOBAL));
+	return (global(ep, cmdp, GLOBAL));
 }
 
 /*
@@ -40,14 +41,16 @@ ex_global(cmdp)
  *	Exec on lines not matching a pattern.
  */
 int
-ex_vglobal(cmdp)
+ex_vglobal(ep, cmdp)
+	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (global(cmdp, VGLOBAL));
+	return (global(ep, cmdp, VGLOBAL));
 }
 
 static int
-global(cmdp, cmd)
+global(ep, cmdp, cmd)
+	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
@@ -56,7 +59,7 @@ global(cmdp, cmd)
 	regex_t *re, lre;
 	size_t len;
 	int eval, reflags, rval;
-	u_char *ep, *ptrn, *s, cbuf[512];
+	u_char *endp, *ptrn, *s, cbuf[512];
 	char delim[2];
 
 	/* Skip whitespace. */
@@ -64,7 +67,7 @@ global(cmdp, cmd)
 
 	/* Get delimiter. */
 	if (*s != '/' && *s != ';') {
-		msg("Usage: %s.", cmdp->cmd->usage);
+		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -73,22 +76,22 @@ global(cmdp, cmd)
 	delim[1] = '\0';
 
 	/* Get the pattern string. */
-	ep = s + 1;
-	ptrn = USTRSEP(&ep, delim);
+	endp = s + 1;
+	ptrn = USTRSEP(&endp, delim);
 
 	/* Get the command string. */
-	if (*ep == NULL) {
-		msg("No command string specified.");
+	if (*endp == NULL) {
+		msg(ep, M_ERROR, "No command string specified.");
 		return (1);
 	}
 
 	/* If the substitute string is empty, use the last one. */
 	if (*ptrn == NULL) {
-		if (!FF_ISSET(curf, F_RE_SET)) {
-			msg("No previous regular expression.");
+		if (!FF_ISSET(ep, F_RE_SET)) {
+			msg(ep, M_ERROR, "No previous regular expression.");
 			return (1);
 		}
-		re = &curf->sre;
+		re = &ep->sre;
 	} else {
 		/* Set RE flags. */
 		reflags = 0;
@@ -100,26 +103,26 @@ global(cmdp, cmd)
 		/* Compile the RE. */
 		re = &lre;
 		if (eval = regcomp(re, (char *)ptrn, reflags)) {
-			re_error(eval, re);
+			re_error(ep, eval, re);
 			return (1);
 		}
 
 		/* Set saved RE. */
-		curf->sre = lre;
-		FF_SET(curf, F_RE_SET);
+		ep->sre = lre;
+		FF_SET(ep, F_RE_SET);
 	}
 
 	rval = 0;
 	nchanged = 0;
-	FF_SET(curf, F_IN_GLOBAL);
+	FF_SET(ep, F_IN_GLOBAL);
 
 	/* For each line... */
 	for (lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
 
 		/* Get the line. */
-		if ((s = file_gline(curf, lno, &len)) == NULL) {
-			GETLINE_ERR(lno);
+		if ((s = file_gline(ep, lno, &len)) == NULL) {
+			GETLINE_ERR(ep, lno);
 			rval = 1;
 			goto err;
 		}
@@ -137,7 +140,7 @@ global(cmdp, cmd)
 				continue;
 			break;
 		default:
-			re_error(eval, re);
+			re_error(ep, eval, re);
 			rval = 1;
 			goto err;
 		}
@@ -146,17 +149,17 @@ global(cmdp, cmd)
 		 * Execute the command, keeping track of the lines that
 		 * change, and adjusting for inserted/deleted lines.
 		 */
-		curf->rptlines = 0;
-		last1 = file_lline(curf);
+		ep->rptlines = 0;
+		last1 = file_lline(ep);
 
-		curf->lno = lno;
-		(void)snprintf((char *)cbuf, sizeof(cbuf), "%s", ep);
-		if (ex_cmd(cbuf)) {
+		ep->lno = lno;
+		(void)snprintf((char *)cbuf, sizeof(cbuf), "%s", endp);
+		if (ex_cmd(ep, cbuf)) {
 			rval = 1;
 			goto err;
 		}
 
-		last2 = file_lline(curf);
+		last2 = file_lline(ep);
 		if (last2 > last1) {
 			last2 -= last1;
 			lno += last2;
@@ -168,19 +171,19 @@ global(cmdp, cmd)
 		}
 
 		/* Cursor moves to last line sent to command. */
-		curf->lno = lno;
+		ep->lno = lno;
 
 		/* Cumulative line change count. */
-		nchanged += curf->rptlines;
-		curf->rptlines = 0;
+		nchanged += ep->rptlines;
+		ep->rptlines = 0;
 	}
 	/* Cursor is on column 0, regardless. */
-	curf->cno = 0;
+	ep->cno = 0;
 
 	/* Report statistics. */
-err:	curf->rptlines += nchanged;
-	curf->rptlabel = "changed";
+err:	ep->rptlines += nchanged;
+	ep->rptlabel = "changed";
 
-	FF_CLR(curf, F_IN_GLOBAL);
+	FF_CLR(ep, F_IN_GLOBAL);
 	return (rval);
 }
