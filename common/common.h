@@ -4,10 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.8 1993/09/10 10:39:06 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:39:06 $
+ *	$Id: common.h,v 8.9 1993/09/10 14:44:24 bostic Exp $ (Berkeley) $Date: 1993/09/10 14:44:24 $
  */
 
 /* System includes. */
+#include <sys/time.h>		/* Required by screen.h. */
+
 #include <limits.h>		/* Required by screen.h. */
 #include <stdio.h>		/* Required by screen.h. */
 #include <termios.h>		/* Required by gs.h. */
@@ -38,6 +40,14 @@ struct _seq;
 struct _tag;
 struct _tagf;
 struct _text;
+
+/*
+ * XXX
+ * Nobody's signal return value is the same as anyone else's.
+ * Don't even try.
+ */
+				/* Required by screen.h. */
+typedef void (*sig_ret_t) __P((int));
 
 /*
  * Local includes.
@@ -124,13 +134,6 @@ int	binc __P((SCR *, void *, size_t *, size_t));
 
 /*
  * XXX
- * Nobody's signal return value is the same as anyone else's.
- * Don't even try.
- */
-typedef void (*sig_ret_t) __P((int));
-
-/*
- * XXX
  * MIN/MAX have traditionally been in <sys/param.h>.  Don't
  * try to get them from there, it's just not worth the effort.
  */
@@ -143,6 +146,8 @@ typedef void (*sig_ret_t) __P((int));
 
 /* Function prototypes that don't seem to belong anywhere else. */
 char	*charname __P((SCR *, int));
+void	 busy_off __P((SCR *));
+void	 busy_on __P((SCR *, int, char const *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_fname __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int, int));
