@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.29 1993/02/19 11:17:42 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:17:42 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.30 1993/02/19 18:37:03 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:37:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,7 +187,7 @@ scr_update(ep)
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
 	int ch;
-	u_char *lp, *p;
+	u_char *p;
 
 	/*
 	 * 1: Resize the window.
@@ -365,7 +365,7 @@ cursor:	/* If line has changed. */
 	 * This isn't a performance issue because there aren't any ways
 	 * to get this to hit repeatedly.
 	 */
-	if ((lp = p = file_gline(ep, ep->lno, &len)) == NULL) {
+	if ((p = file_gline(ep, ep->lno, &len)) == NULL) {
 		if (file_lline(ep) == 0)
 			goto paint;
 		GETLINE_ERR(ep, ep->lno);
