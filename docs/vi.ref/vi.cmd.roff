@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.37 1994/10/12 10:43:51 bostic Exp $ (Berkeley) $Date: 1994/10/12 10:43:51 $
+.\"	$Id: vi.cmd.roff,v 8.38 1994/10/13 13:36:24 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:36:24 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -1340,12 +1340,19 @@ be line oriented (e.g.
 will always guarantee a line orientation).
 .sp
 The
-.CO n
-command repeats the previous search.
-.sp
-The
 .CO N
 command repeats the previous search, but in the reverse direction.
+The
+.CO n
+command repeats the previous search.
+If either the
+.CO N
+or
+.CO n
+commands are used as motion components for the 
+.CO !
+command, you will not be prompted for the text of the bang command,
+instead the previous bang command will be executed.
 .sp
 Missing RE's (e.g.
 .QT //<carriage-return> ,
