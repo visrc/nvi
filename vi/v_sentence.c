@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.4 1993/07/09 15:30:36 bostic Exp $ (Berkeley) $Date: 1993/07/09 15:30:36 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.5 1993/08/25 16:50:05 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:50:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ static char sccsid[] = "$Id: v_sentence.c,v 8.4 1993/07/09 15:30:36 bostic Exp $
  * text follow a "sentence".
  */
 #define	ISSPACE								\
-	(cs.cs_flags == CS_EOL || isspace(cs.cs_ch))
+	(cs.cs_flags == CS_EOL || isblank(cs.cs_ch))
 
 /*
  * v_sentencef -- [count])
