@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.34 2000/07/03 20:09:51 skimo Exp $ (Berkeley) $Date: 2000/07/03 20:09:51 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.35 2000/07/06 19:32:00 skimo Exp $ (Berkeley) $Date: 2000/07/06 19:32:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,6 +65,11 @@ static void msghandler __P((SCR *, mtype_t, char *, size_t));
 
 static char *errmsg = 0;
 
+typedef struct _perl_data {
+    	PerlInterpreter*	interp;
+	SV *svcurscr, *svstart, *svstop, *svid;
+} perl_data_t;
+
 /*
  * INITMESSAGE --
  *	Macros to point messages at the Perl message handler.
@@ -98,6 +103,8 @@ perl_end(gp)
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 		perl_free(gp->perl_interp);
 #endif
+		/* XXX rather make sure only one thread calls perl_end */
+		gp->perl_interp = 0;
 	}
 }
 
@@ -132,16 +139,21 @@ perl_init(scrp)
 {
 	AV * av;
 	GS *gp;
+	WIN *wp;
 	char *bootargs[] = { "VI", NULL };
 #ifndef USE_SFIO
 	SV *svcurscr;
 #endif
+	perl_data_t *pp;
 
 	static char *args[] = { "", "-e", "" };
 	STRLEN length;
 	char *file = __FILE__;
 
 	gp = scrp->gp;
+	wp = scrp->wp;
+
+	if (gp->perl_interp == NULL) {
 	gp->perl_interp = perl_alloc();
   	perl_construct(gp->perl_interp);
 	if (perl_parse(gp->perl_interp, xs_init, 3, args, 0)) {
@@ -170,6 +182,24 @@ perl_init(scrp)
 	sv_magic((SV *)gv_fetchpv("STDERR",TRUE, SVt_PVIO), svcurscr,
 		 	'q', Nullch, 0);
 #endif /* USE_SFIO */
+	}
+	}
+	MALLOC(scrp, pp, perl_data_t *, sizeof(perl_data_t));
+	wp->perl_private = pp;
+	pp->interp = perl_clone(gp->perl_interp, 0);
+        if (1) { /* hack for bug fixed in perl-current (5.6.1) */
+            dTHXa(pp->interp);
+            if (PL_scopestack_ix == 0) {
+                ENTER;
+            }
+        }
+	{
+		dTHXs
+
+		SvREADONLY_on(pp->svcurscr = perl_get_sv("curscr", TRUE));
+		SvREADONLY_on(pp->svstart = perl_get_sv("VI::StartLine", TRUE));
+		SvREADONLY_on(pp->svstop = perl_get_sv("VI::StopLine", TRUE));
+		SvREADONLY_on(pp->svid = perl_get_sv("VI::ScreenId", TRUE));
 	}
 	return (0);
 }
@@ -241,42 +271,35 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	size_t cmdlen;
 	db_recno_t f_lno, t_lno;
 {
-	static SV *svcurscr = 0, *svstart, *svstop, *svid;
-	GS *gp;
+	WIN *wp;
 	STRLEN length;
 	size_t len;
 	char *err;
 	Signal_t (*istat)();
+	perl_data_t *pp;
 
 	/* Initialize the interpreter. */
-	gp = scrp->gp;
-		if (gp->perl_interp == NULL && perl_init(scrp))
+	if (scrp->wp->perl_private == NULL && perl_init(scrp))
 			return (1);
+	pp = scrp->wp->perl_private;
     {
 	dTHXs
 	dSP;
 
-	if (!svcurscr) {
-		SvREADONLY_on(svcurscr = perl_get_sv("curscr", TRUE));
-		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
-		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
-		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
-	}
-
-	sv_setiv(svstart, f_lno);
-	sv_setiv(svstop, t_lno);
-	newVIrv(svcurscr, scrp);
+	sv_setiv(pp->svstart, f_lno);
+	sv_setiv(pp->svstop, t_lno);
+	newVIrv(pp->svcurscr, scrp);
 	/* Backwards compatibility. */
-	newVIrv(svid, scrp);
+	newVIrv(pp->svid, scrp);
 
 	istat = signal(SIGINT, my_sighandler);
 	perl_eval(cmdp);
 	signal(SIGINT, istat);
 
-	SvREFCNT_dec(SvRV(svcurscr));
-	SvROK_off(svcurscr);
-	SvREFCNT_dec(SvRV(svid));
-	SvROK_off(svid);
+	SvREFCNT_dec(SvRV(pp->svcurscr));
+	SvROK_off(pp->svcurscr);
+	SvREFCNT_dec(SvRV(pp->svid));
+	SvROK_off(pp->svid);
 
 	err = SvPV(ERRSV, length);
 	if (!length)
@@ -335,35 +358,27 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	size_t cmdlen;
 	db_recno_t f_lno, t_lno;
 {
-	static SV *svcurscr = 0, *svstart, *svstop, *svid;
 	CHAR_T *p;
-	GS *gp;
+	WIN *wp;
 	STRLEN length;
 	size_t len;
 	db_recno_t i;
 	CHAR_T *str;
 	SV* cv;
 	char *command;
+	perl_data_t *pp;
 
 	/* Initialize the interpreter. */
-	gp = scrp->gp;
-		if (gp->perl_interp == NULL && perl_init(scrp))
+	if (scrp->wp->perl_private == NULL && perl_init(scrp))
 			return (1);
+	pp = scrp->wp->perl_private;
     {
 	dTHXs
 	dSP;
 
-	if (!svcurscr) {
-		/*SPAGAIN;*/
-		SvREADONLY_on(svcurscr = perl_get_sv("curscr", TRUE));
-		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
-		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
-		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
-	}
-
-	newVIrv(svcurscr, scrp);
+	newVIrv(pp->svcurscr, scrp);
 	/* Backwards compatibility. */
-	newVIrv(svid, scrp);
+	newVIrv(pp->svid, scrp);
 
 	if (!(command = malloc(length = strlen(cmdp) + sizeof("sub {}"))))
 		return 1;
@@ -381,8 +396,8 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 
 	for (i = f_lno; i <= t_lno && !api_gline(scrp, i, &str, &len); i++) {
 		sv_setpvn(DEFSV,str,len);
-		sv_setiv(svstart, i);
-		sv_setiv(svstop, i);
+		sv_setiv(pp->svstart, i);
+		sv_setiv(pp->svstop, i);
 		PUSHMARK(sp);
                 perl_call_sv(cv, G_SCALAR | G_EVAL);
 		str = SvPV(ERRSV, length);
@@ -395,10 +410,10 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	FREETMPS;
 	LEAVE;
 
-	SvREFCNT_dec(SvRV(svcurscr));
-	SvROK_off(svcurscr);
-	SvREFCNT_dec(SvRV(svid));
-	SvROK_off(svid);
+	SvREFCNT_dec(SvRV(pp->svcurscr));
+	SvROK_off(pp->svcurscr);
+	SvREFCNT_dec(SvRV(pp->svid));
+	SvROK_off(pp->svid);
 
 	if (!length)
 		return (0);
