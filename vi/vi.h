@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.30 1993/02/16 20:09:18 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:18 $
+ *	$Id: vi.h,v 5.31 1993/02/19 11:14:29 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:14:29 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -89,6 +89,7 @@ extern VIKEYS vikeys[MAXVIKEY + 1];
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
 void	status __P((EXF *, recno_t));
+int	set_window_size __P((EXF *, u_int));
 
 int	v_again __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_at __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
@@ -138,8 +139,6 @@ int	v_marksq __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_match __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_middle __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_msgflush __P((EXF *));
-int	v_nbdown __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_nbup __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ncol __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_pagedown __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_pageup __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
