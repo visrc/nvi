@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 5.2 1993/02/24 12:48:28 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:48:28 $";
+static char sccsid[] = "$Id: ex_stop.c,v 5.3 1993/02/28 11:51:51 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:51:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,9 +16,13 @@ static char sccsid[] = "$Id: ex_stop.c,v 5.2 1993/02/24 12:48:28 bostic Exp $ (B
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "options.h"
+#include "screen.h"
 
 /*
  * ex_stop -- :stop
@@ -29,9 +33,37 @@ ex_stop(ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	if (!(cmdp->flags & E_FORCE)) {
+		AUTOWRITE(ep);
+	}
+
+	return (ex_suspend(ep));
+}
+
+/*
+ * ex_suspend --
+ *	Suspend execution.
+ */
+int
+ex_suspend(ep)
+	EXF *ep;
+{
+	extern struct termios original_termios;
+	struct termios t;
+
+	/* Save ex/vi terminal settings, and restore the original ones. */
+	(void)tcgetattr(STDIN_FILENO, &t);
+	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &original_termios);
+
 	if (kill(0, SIGTSTP)) {
 		msg(ep, M_ERROR, "Error: SIGTSTP: %s", strerror(errno));
 		return (1);
 	}
+
+	/* Restore ex/vi terminal settings. */
+	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
+
+	/* Repaint the screen. */
+	SF_SET(ep, S_REFRESH);
 	return (0);
 }
