@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.18 1992/10/26 09:08:03 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:08:03 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.19 1992/10/26 17:46:03 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:46:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,10 @@ enum which {EDIT, VISUAL};
 
 static int edit __P((EXCMDARG *, enum which));
 
+/*
+ * ex_edit --	:e[dit][!] [+cmd] [file]
+ *	Edit a new file.
+ */
 int
 ex_edit(cmdp)
 	EXCMDARG *cmdp;
@@ -30,6 +34,10 @@ ex_edit(cmdp)
 	return (edit(cmdp, EDIT));
 }
 
+/*
+ * ex_visual --	:[line] vi[sual] [type] [count] [flags]
+ *	Switch to visual mode.
+ */
 int
 ex_visual(cmdp)
 	EXCMDARG *cmdp;
@@ -37,7 +45,6 @@ ex_visual(cmdp)
 	if (edit(cmdp, VISUAL))
 		return (1);
 
-	/* Switch to visual mode. */
 	mode = MODE_VI;
 	return (0);
 }
@@ -47,44 +54,47 @@ edit(cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	long line;
 	EXF *ep;
-	int previous;
+	int reset;
 	char *fname;
 
+	reset = 0;
 	switch(cmdp->argc) {
 	case 0:
 		if (cmd == VISUAL)
 			return (0);
+		ep = curf;
 		break;
 	case 1:
-		if ((ep = file_prev(curf)) != NULL &&
-		    !strcmp(ep->name, cmdp->argv[0]))
-			previous = 1;
-		else {
-			previous = 0;
+		if ((ep = file_locate((char *)cmdp->argv[0])) == NULL) {
 			if (file_ins(curf, (char *)cmdp->argv[0], 1) ||
 			    (ep = file_next(curf)) == NULL)
-			return (1);
-		}
+				return (1);
+			ep->flags |= F_IGNORE;
+		} else
+			reset = 1;
 		break;
 	}
 
-	/*
-	 * Switch files.  Historic practice is that ex always starts at the
-	 * end of the file and vi starts at the beginning, unless a command
-	 * is specified.
-	 */
+	/* Switch files. */
 	if (file_modify(curf, cmdp->flags & E_FORCE) ||
 	    file_stop(curf, cmdp->flags & E_FORCE) || file_start(ep))
 		return (1);
 
+	/*
+	 * Historic practice is that ex always starts at the end of the file
+	 * and vi starts at the beginning, unless a command is specified or
+	 * we're going to a file we've edited before.
+	 */
+	if (!reset)
+		if (cmdp->plus || cmd == VISUAL || mode == MODE_VI)
+			curf->lno = 1;
+		else {
+			curf->lno = file_lline(curf);
+			if (curf->lno == 0)
+				curf->lno = 1;
+		}
 	if (cmdp->plus)
 		(void)ex_cstring(cmdp->plus, strlen(cmdp->plus), 1);
-	else {
-		line = mode == MODE_VI ? ep->lno : 1;
-		if (line <= file_lline(curf) && line >= 1)
-			curf->lno = line;
-	}
 	return (0);
 }
