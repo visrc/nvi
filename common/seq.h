@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 8.3 1993/11/01 13:25:39 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:25:39 $
+ *	$Id: seq.h,v 8.4 1993/11/02 18:41:41 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:41:41 $
  */
 
 /*
@@ -37,12 +37,11 @@ typedef struct _seq {
 	u_char	 flags;
 } SEQ;
 
-int	 abbr_save __P((struct _scr *, FILE *));
-int	 map_save __P((struct _scr *, FILE *));
-int	 seq_delete __P((struct _scr *, char *, enum seqtype));
-int	 seq_dump __P((struct _scr *, enum seqtype, int));
-SEQ	*seq_find __P((struct _scr *, char *, size_t, enum seqtype, int *));
-void	 seq_init __P((struct _scr *));
-int	 seq_save __P((struct _scr *, FILE *, char *, enum seqtype));
-int	 seq_set __P((struct _scr *,
-	    char *, char *, char *, enum seqtype, int));
+int	 abbr_save __P((SCR *, FILE *));
+int	 map_save __P((SCR *, FILE *));
+int	 seq_delete __P((SCR *, char *, enum seqtype));
+int	 seq_dump __P((SCR *, enum seqtype, int));
+SEQ	*seq_find __P((SCR *, char *, size_t, enum seqtype, int *));
+void	 seq_init __P((SCR *));
+int	 seq_save __P((SCR *, FILE *, char *, enum seqtype));
+int	 seq_set __P((SCR *, char *, char *, char *, enum seqtype, int));
