@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.13 1996/04/27 11:40:34 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:34 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.14 1996/09/15 15:19:30 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:19:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -268,6 +268,15 @@ v_change(sp, vp)
 	char *bp, *p;
 
 	/*
+	 * 'c' can be combined with motion commands that set the resulting
+	 * cursor position, i.e. "cG".  Clear the VM_RCM flags and make the
+	 * resulting cursor position stick, inserting text has its own rules
+	 * for cursor positioning.
+	 */
+	F_CLR(vp, VM_RCM_MASK);
+	F_SET(vp, VM_RCM_SET);
+
+	/*
 	 * Find out if the file is empty, it's easier to handle it as a
 	 * special case.
 	 */
@@ -301,15 +310,6 @@ v_change(sp, vp)
 	sp->cno = vp->m_start.cno;
 
 	LOG_CORRECT;
-
-	/*
-	 * 'c' can be combined with motion commands that set the resulting
-	 * cursor position, i.e. "cG".  Clear the VM_RCM flags and make the
-	 * resulting cursor position stick, inserting text has its own rules
-	 * for cursor positioning.
-	 */
-	F_CLR(vp, VM_RCM_MASK);
-	F_SET(vp, VM_RCM_SET);
 
 	/*
 	 * If not in line mode and changing within a single line, copy the
