@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.16 1995/01/24 09:54:07 bostic Exp $ (Berkeley) $Date: 1995/01/24 09:54:07 $";
+static char sccsid[] = "$Id: main.c,v 9.17 1995/01/27 16:11:18 bostic Exp $ (Berkeley) $Date: 1995/01/27 16:11:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -217,7 +217,7 @@ vi_main(argc, argv, e_ssize)
 	    (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO))) {
 		msgq(NULL, M_ERR,
 		    "040|Vi's standard input and output must be a terminal");
-		goto errexit;
+		goto err;
 	}
 
 	if (trace_f != NULL) {		/* Trace file initialization. */
@@ -248,7 +248,7 @@ vi_main(argc, argv, e_ssize)
 	if (screen_init(NULL, &sp)) {
 		if (sp != NULL)
 			CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
-		goto errexit;
+		goto err;
 	}
 	F_SET(sp, S_EX);
 	sp->saved_vi_mode = saved_vi_mode;
@@ -257,9 +257,9 @@ vi_main(argc, argv, e_ssize)
 	/* Set the one screen function that we have to know about. */
 	sp->e_ssize = e_ssize;
 	if (e_ssize(sp, 0))		/* Base screen initialization. */
-		goto errexit;
+		goto err;
 	if (term_init(sp))		/* Terminal initialization. */
-		goto errexit;
+		goto err;
 
 	{ int oargs[4], *oargp = oargs;
 	if (readonly)			/* Command-line options. */
@@ -270,7 +270,7 @@ vi_main(argc, argv, e_ssize)
 	}
 	*oargp = -1;
 	if (opts_init(sp, oargs))	/* Options initialization. */
-		goto errexit;
+		goto err;
 	}
 	if (wsizearg != NULL) {
 		ARGS *av[2], a, b;
@@ -293,15 +293,15 @@ vi_main(argc, argv, e_ssize)
 
 #ifdef DIGRAPHS
 	if (digraph_init(sp))		/* Digraph initialization. */
-		goto errexit;
+		goto err;
 #endif
 
 	if (sig_init(sp))		/* Signal initialization. */
-		goto errexit;
+		goto err;
 
 	if (!silent) {			/* Read EXINIT, exrc files. */
 		if (sex_screen_exrc(sp))
-			goto errexit;
+			goto err;
 		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
 			goto done;
 	}
@@ -315,7 +315,7 @@ vi_main(argc, argv, e_ssize)
 	 */
 	if (flagchk == 'r' && argv[0] == NULL) {
 		if (rcv_list(sp))
-			goto errexit;
+			goto err;
 		goto done;
 	}
 
@@ -332,7 +332,7 @@ vi_main(argc, argv, e_ssize)
 
 	/* Open a tag file if specified. */
 	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
-		goto errexit;
+		goto err;
 
 	/*
 	 * Append any remaining arguments as file names.  Files are recovery
@@ -363,11 +363,11 @@ vi_main(argc, argv, e_ssize)
 	if (sp->frp == NULL) {
 		if ((frp = file_add(sp,
 		    sp->argv == NULL ? NULL : (CHAR_T *)(sp->argv[0]))) == NULL)
-			goto errexit;
+			goto err;
 		if (F_ISSET(sp, S_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
 		if (file_init(sp, frp, NULL, 0))
-			goto errexit;
+			goto err;
 		(void)msg_status(sp, sp->lno, 0);
 	}
 
@@ -400,7 +400,7 @@ vi_main(argc, argv, e_ssize)
 
 done:	eval = 0;
 	if (0)
-errexit:	eval = 1;
+err:		eval = 1;
 
 	/*
 	 * NOTE: sp may be GONE when the screen returns, so only
