@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 9.3 1994/11/10 16:22:36 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:22:36 $";
+static char sccsid[] = "$Id: ex_util.c,v 9.4 1994/11/13 18:10:21 bostic Exp $ (Berkeley) $Date: 1994/11/13 18:10:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,6 +102,32 @@ ex_getline(sp, fp, lenp)
 		++off;
 	}
 	/* NOTREACHED */
+}
+
+/*
+ * ex_comment --
+ *	Skip the first comment.
+ */
+int
+ex_comment(sp)
+	SCR *sp;
+{
+	recno_t lno;
+	size_t len;
+	char *p;
+
+	for (lno = 1;
+	    (p = file_gline(sp, lno, &len)) != NULL && len == 0; ++lno);
+	if (p == NULL || len <= 1 || memcmp(p, "/*", 2))
+		return (0);
+	do {
+		for (; len; --len, ++p)
+			if (p[0] == '*' && len > 1 && p[1] == '/') {
+				sp->lno = lno;
+				return (0);
+			}
+	} while ((p = file_gline(sp, ++lno, &len)) != NULL);
+	return (0);
 }
 
 /*
