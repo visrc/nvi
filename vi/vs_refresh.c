@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.46 1993/04/13 16:30:46 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:30:46 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.47 1993/04/17 12:13:39 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:13:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,23 +52,16 @@ svi_refresh(sp, ep)
 	/*
 	 * 1: Resize the window.
 	 *
-	 * The actual changing of the row/column values was done by calling
-	 * the ex options code which entered them into the environment.  The
-	 * function svi_end() uses the values from the EXF structure, and
-	 * then svi_begin() uses the new values, from the curses package,
-	 * which got them from the environment.  We hope.
-	 *
-	 * Once the resize is done, we fall through.  The reason for this is
-	 * that RESIZE or REDRAW might be set along with another movement.
-	 * So, fall through until we figure out what the map should look like
-	 * and then jump to repaint.
+	 * Notice that a resize is requested, and set up everything so that
+	 * the file gets reinitialized.  Done here, instead of in the vi
+	 * loop because there may be other initialization that other screens
+	 * need to do.  The actual changing of the row/column values was done
+	 * by calling the ex options code which put them into the environment,
+	 * which is used by curses.  Stupid, but ugly.
 	 */
 	if (F_ISSET(sp, S_RESIZE)) {
-		if (svi_end(sp) || svi_init(sp, ep))
-			return (1);
-
-		F_CLR(sp, S_RESIZE);
-		F_SET(sp, S_REFORMAT | S_REDRAW);
+		F_SET(sp, S_SSWITCH | S_REFORMAT | S_REDRAW);
+		return (0);
 	}
 
 	/*
@@ -91,7 +84,34 @@ svi_refresh(sp, ep)
 	 * Line changes can cause the top line to change as well.  As
 	 * before, if the movement is large, the screen is repainted.
 	 *
-	 * 3a: Line down.
+	 * 3a: Tiny screens.
+	 *
+	 * Tiny screens cannot be permitted into the "scrolling" parts of
+	 * the smap code for two reasons.  If the screen size is 1 line,
+	 * HMAP == TMAP and the code will quickly drop core.  If the screen
+	 * size is 2, none of the divisions by 2 will work, and scrolling
+	 * won't work.  In fact, because no line change will be less than
+	 * HALFSCREEN(sp), we always ending up "filling" the map, with a
+	 * P_MIDDLE flag, which isn't what the user wanted.  Tiny screens
+	 * can go into the "fill" portions of the smap code, no problem.
+	 */
+	 if (sp->t_rows <= 2) {
+		if (LNO < HMAP->lno) {
+			if (svi_sm_fill(sp, ep, LNO, P_TOP))
+				return (1);
+		} else if (LNO > TMAP->lno)
+			if (svi_sm_fill(sp, ep, LNO, P_BOTTOM))
+				return (1);
+		if (sp->t_rows == 1) {
+			HMAP->off = svi_screens(sp, ep, LNO, &CNO);
+			goto paint;
+		}
+		F_SET(sp, S_REDRAW);
+		goto adjust;
+	}
+
+	/*
+	 * 3b: Line down.
 	 */
 	if (LNO >= HMAP->lno) {
 		if (LNO <= TMAP->lno)
@@ -99,7 +119,7 @@ svi_refresh(sp, ep)
 
 		/*
 		 * If less than half a screen away, scroll down until the
-		 * desired line is on the screen.
+		 * line is on the screen.
 		 */
 		lcnt = svi_sm_nlines(sp, ep, TMAP, LNO, HALFSCREEN(sp));
 		if (lcnt < HALFSCREEN(sp)) {
@@ -133,10 +153,10 @@ svi_refresh(sp, ep)
 	}
 
 	/*
-	 * 3b: Line up.
+	 * 3c: Line up.
 	 *
-	 * If less than half a screen away, scroll up until the desired
-	 * line is the first line on the screen.
+	 * If less than half a screen away, scroll up until the line is
+	 * the first line on the screen.
 	 */
 	lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, HALFSCREEN(sp));
 	if (lcnt < HALFSCREEN(sp)) {
@@ -167,7 +187,7 @@ middle:		(void)svi_sm_fill(sp, ep, LNO, P_MIDDLE);
 
 	/*
 	 * At this point we know that part of the line is on the screen.
-	 * Because scrolling is done using logical ines, not physical,
+	 * Because scrolling is done using logical lines, not physical,
 	 * all of the line may not be on the screen.  While that's not
 	 * necessarily bad, if the part the cursor is on isn't there,
 	 * we're going to lose.
@@ -379,7 +399,7 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		if (svi_line(sp, ep, smp, NULL, 0, &y, &SCNO))
 			return (1);
 	F_CLR(sp, S_REDRAW);
-		
+
 update:	/* Ring the bell if scheduled. */
 	if (F_ISSET(sp, S_BELLSCHED))
 		svi_bell(sp);
