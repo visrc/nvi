@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.34 1995/11/22 10:37:25 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:37:25 $";
+static char sccsid[] = "$Id: ex.c,v 10.35 1996/02/04 18:57:01 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:57:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,8 +135,11 @@ ex(spp)
 			msgq(sp, M_ERR, "170|Interrupted");
 		}
 
-		/* If the last command switched screens or into vi, return. */
-		if (F_ISSET(sp, S_SSWITCH | S_VI))
+		/*
+		 * If the last command caused a restart, or switched screens
+		 * or into vi, return.
+		 */
+		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, S_SSWITCH | S_VI))
 			break;
 
 		/* If the last command switched files, we don't care. */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.32 1995/11/17 16:37:11 bostic Exp $ (Berkeley) $Date: 1995/11/17 16:37:11 $";
+static char sccsid[] = "$Id: vi.c,v 10.33 1996/02/04 18:56:22 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:56:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -391,7 +391,8 @@ intr:			CLR_INTERRUPT(sp);
 		F_CLR(sp, S_FSWITCH);
 
 		/* If leaving vi, return to the main editor loop. */
-		if (!F_ISSET(sp, S_VI)) {
+		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, S_EX)) {
+			*spp = sp;
 			v_dtoh(sp);
 			break;
 		}
@@ -913,14 +914,20 @@ v_init(sp)
 		sp->t_maxrows = sp->rows - 1;
 	} else
 		sp->t_maxrows = 1;
+	sp->woff = 0;
 
 	/* Create a screen map. */
 	CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	TMAP = HMAP + (sp->t_rows - 1);
 	HMAP->lno = sp->lno;
 
-	/* Fill the screen map from scratch. */
-	F_SET(sp, S_SCR_REFORMAT);
+	/*
+	 * Fill the screen map from scratch -- try and center the line.  That
+	 * way if we're starting with a file we've seen before, we'll put the
+	 * line in the middle, otherwise, it won't work and we'll end up with
+	 * the line at the top.
+	 */
+	F_SET(sp, S_SCR_REFORMAT | S_SCR_CENTER);
 
 	/* Invalidate the cursor. */
 	F_SET(vip, VIP_CUR_INVALID);
@@ -1152,9 +1159,7 @@ v_key(sp, command_events, evp, ec_flags)
 				return (GC_FATAL);
 			break;
 		case E_RESIZE:
-			v_dtoh(sp);
-			if (v_init(sp) || vs_refresh(sp))
-				return (GC_FATAL);
+			return (GC_INTERRUPT);
 			break;
 		case E_QUIT:
 		case E_WRITE:

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.14 1995/10/04 16:16:28 bostic Exp $ (Berkeley) $Date: 1995/10/04 16:16:28 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.15 1996/02/04 18:56:32 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:56:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -370,7 +370,7 @@ vs_swap(csp, nsp, name)
 	/* Initialize screen information. */
 	sp->cols = csp->cols;
 	sp->rows = csp->rows;	/* XXX: Only place in vi that sets rows. */
-	sp->woff = csp->woff;	/* XXX: Only place in vi that sets woff. */
+	sp->woff = csp->woff;
 
 	/*
 	 * Small screens: see vs_refresh.c, section 6a.

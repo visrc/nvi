@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.30 1995/11/17 15:59:21 bostic Exp $ (Berkeley) $Date: 1995/11/17 15:59:21 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.31 1996/02/04 18:58:00 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:58:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,9 +45,18 @@ cl_screen(sp, flags)
 	u_int32_t flags;
 {
 	CL_PRIVATE *clp;
+	GS *gp;
 
+	gp = sp->gp;
 	clp = CLP(sp);
 
+	/* See if the current information is incorrect. */
+	if (F_ISSET(gp, G_SRESTART)) {
+		if (cl_quit(gp))
+			return (1);
+		F_CLR(gp, G_SRESTART);
+	}
+	
 	/* See if we're already in the right mode. */
 	if (LF_ISSET(S_EX) && F_ISSET(sp, S_SCR_EX) ||
 	    LF_ISSET(S_VI) && F_ISSET(sp, S_SCR_VI))
@@ -78,7 +87,7 @@ cl_screen(sp, flags)
 	if (F_ISSET(sp, S_SCR_VI)) {
 		F_CLR(sp, S_SCR_VI);
 
-		if (sp->q.cqe_next != (void *)&sp->gp->dq) {
+		if (sp->q.cqe_next != (void *)&gp->dq) {
 			(void)move(RLNO(sp, sp->rows), 0);
 			clrtobot();
 		}
@@ -219,6 +228,7 @@ cl_vi_init(sp)
 			msgq(sp, M_ERR, "%s: unknown terminal type", ttype);
 		return (1);
 	}
+
 	/*
 	 * XXX
 	 * Someone got let out alone without adult supervision -- the SunOS
