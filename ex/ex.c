@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.176 1994/11/02 17:28:57 bostic Exp $ (Berkeley) $Date: 1994/11/02 17:28:57 $";
+static char sccsid[] = "$Id: ex.c,v 9.1 1994/11/09 18:40:22 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,8 +36,8 @@ static char sccsid[] = "$Id: ex.c,v 8.176 1994/11/02 17:28:57 bostic Exp $ (Berk
 static void	badlno __P((SCR *, recno_t));
 static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
-static int	ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
-static int	ep_range __P((SCR *, EXF *, EXCMDARG *, char **, size_t *));
+static int	ep_line __P((SCR *, MARK *, char **, size_t *, int *));
+static int	ep_range __P((SCR *, EXCMDARG *, char **, size_t *));
 static void	ex_unknown __P((SCR *, char *, size_t));
 
 /*
@@ -45,19 +45,18 @@ static void	ex_unknown __P((SCR *, char *, size_t));
  *	Read an ex command and execute it.
  */
 int
-ex(sp, ep)
+ex(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	enum input irval;
 	TEXT *tp;
 	u_int flags, saved_mode;
 	int eval;
 
-	if (ex_init(sp, ep))
+	if (ex_init(sp))
 		return (1);
 
-	if (sp->s_refresh(sp, ep))
+	if (sp->s_refresh(sp))
 		return (ex_end(sp));
 
 	/* If reading from a file, messages should have line info. */
@@ -91,7 +90,7 @@ ex(sp, ep)
 		 */
 		CLR_INTERRUPT(sp);
 		F_SET(sp, S_INTERRUPTIBLE);
-		irval = sp->s_get(sp, ep, sp->tiqp, ':', flags);
+		irval = sp->s_get(sp, sp->tiqp, ':', flags);
 		if (INTERRUPTED(sp)) {
 			(void)fputc('\n', stdout);
 			(void)fflush(stdout);
@@ -119,14 +118,14 @@ ex(sp, ep)
 		}
 
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
-		if (ex_icmd(sp, ep,
-		    tp->lb, tp->len, 1) && !F_ISSET(sp->gp, G_STDIN_TTY))
+		if (ex_icmd(sp, tp->lb, tp->len, EXPAR_NEEDSEP) &&
+		    !F_ISSET(sp->gp, G_STDIN_TTY))
 			F_SET(sp, S_EXIT_FORCE);
 		(void)msg_rpt(sp, 0);
 		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
-refresh:	if (sp->s_refresh(sp, ep)) {
+refresh:	if (sp->s_refresh(sp)) {
 			eval = 1;
 			break;
 		}
@@ -143,11 +142,10 @@ ret:	if (sp->if_name != NULL) {
  *	Execute ex commands from a file.
  */
 int
-ex_cfile(sp, ep, filename, needsep)
+ex_cfile(sp, filename, flags)
 	SCR *sp;
-	EXF *ep;
 	char *filename;
-	int needsep;
+	u_int flags;
 {
 	struct stat sb;
 	int fd, len, nf, rval;
@@ -188,17 +186,11 @@ err:		rval = 1;
 		 */
 		sp->if_lno = 1;
 		sp->if_name = strdup(filename);
-		F_SET(sp, S_VLITONLY);
-		rval = ex_icmd(sp, ep, bp, len, needsep);
-		F_CLR(sp, S_VLITONLY);
+		rval = ex_icmd(sp, bp, len, flags);
 		free(sp->if_name);
 		sp->if_name = NULL;
 	}
 
-	/*
-	 * !!!
-	 * THE UNDERLYING EXF MAY HAVE CHANGED.
-	 */
 	if (bp != NULL)
 		FREE(bp, sb.st_size);
 	if (fd >= 0)
@@ -211,12 +203,11 @@ err:		rval = 1;
  *	Call ex_cmd() after turning off interruptible bits.
  */
 int
-ex_icmd(sp, ep, cmd, len, needsep)
+ex_icmd(sp, cmd, len, flags)
 	SCR *sp;
-	EXF *ep;
 	char *cmd;
 	size_t len;
-	int needsep;
+	u_int flags;
 {
 	int rval;
 
@@ -227,37 +218,52 @@ ex_icmd(sp, ep, cmd, len, needsep)
 	 * interruptible flags now.
 	 */
 	CLR_INTERRUPT(sp);
-	rval = ex_cmd(sp, ep, cmd, len, needsep);
+	rval = ex_cmd(sp, cmd, len, flags);
 	if (INTERRUPTED(sp))
 		term_flush(sp, "Interrupted", CH_MAPPED);
+
+#ifdef DEBUG
+	/* Make sure no function left the temporary space locked. */
+	if (F_ISSET(sp->gp, G_TMP_INUSE)) {
+		F_CLR(sp->gp, G_TMP_INUSE);
+		msgq(sp, M_ERR, "109|ex: temporary buffer not released");
+	}
+#endif
 	return (rval);
 }
 
 /* Special command structure for :s as a repeat substitution command. */
 static EXCMDLIST const cmd_subagain =
-	{"s",		ex_subagain,	E_ADDR2|E_NORC,
+	{"s",		ex_subagain,	E_ADDR2,
 	    "s",
 	    "[line [,line]] s [cgr] [count] [#lp]",
 	    "repeat the last subsitution"};
 
 /* Special command structure for :d[flags]. */
 static EXCMDLIST const cmd_del2 =
-	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT|E_NORC,
+	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT,
 	    "1bca1",
 	    "[line [,line]] d[elete][flags] [buffer] [count] [flags]",
 	    "delete lines from the file"};
 
 /*
  * ex_cmd --
- *	Parse and execute a string containing ex commands.
+ *	The guts of the ex parser: parse and execute a string containing
+ *	ex commands.  For the fun of it, if you want to see if a vi clone
+ *	got the ex argument parsing right, try:
+ *
+ *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
+ *	vi
+ *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
+ *
+ *	For extra credit, try it in a startup .exrc file.
  */
 int
-ex_cmd(sp, ep, cmd, cmdlen, needsep)
+ex_cmd(sp, cmd, cmdlen, pflags)
 	SCR *sp;
-	EXF *ep;
 	char *cmd;
 	size_t cmdlen;
-	int needsep;
+	u_int pflags;
 {
 	enum { NOTSET, NEEDSEP_N, NEEDSEP_NR, NONE } sep;
 	EX_PRIVATE *exp;
@@ -265,16 +271,27 @@ ex_cmd(sp, ep, cmd, cmdlen, needsep)
 	EXCMDLIST const *cp;
 	MARK cur;
 	recno_t lno, num;
-	size_t arg1_len, len, save_cmdlen;
+	size_t arg1_len, blen, len, save_cmdlen;
 	long flagoff;
-	u_int saved_mode;
 	int blank, ch, cnt, delim, flags, namelen, nf, nl;
 	int optnum, uselastcmd, tmp, vi_address;
-	char *arg1, *save_cmd, *p, *s, *t;
+	char *arg1, *bp, *p, *s, *save_cmd, *t;
 
 	/* Init. */
+	bp = NULL;
+	blen = 0;
 	nl = 0;
-	sep = needsep ? NOTSET : NONE;
+	exp = EXP(sp);
+
+	if (pflags & EXPAR_NEEDSEP)
+		sep = NOTSET;
+	else
+		sep = NONE;
+	if (pflags & EXPAR_VLITONLY)
+		F_SET(EXP(sp), EX_VLITONLY);
+	else
+		F_CLR(EXP(sp), EX_VLITONLY);
+
 loop:	if (nl) {
 		nl = 0;
 		++sp->if_lno;
@@ -283,8 +300,11 @@ loop:	if (nl) {
 	save_cmdlen = 0;
 
 	/* It's possible that we've been interrupted during a command. */
-	if (INTERRUPTED(sp))
+	if (INTERRUPTED(sp)) {
+done:		if (bp != NULL)
+			FREE_SPACE(sp, bp, blen);
 		return (0);
+	}
 
 	/* Skip <blank>s, empty lines.  */
 	for (blank = 0; cmdlen > 0; ++cmd, --cmdlen)
@@ -340,20 +360,18 @@ loop:	if (nl) {
 	 * !!!
 	 * Historically, in ex mode, lines containing only <blank> characters
 	 * were the same as a single <carriage-return>, i.e. a default command.
-	 * In vi mode, they were ignored.
-	 *
-	 * In .exrc files this was a serious annoyance, as vi kept trying to
-	 * treat them as print commands.  We ignore backward compatibility in
-	 * this case, and discard lines containing only <blank> characters from
-	 * .exrc files.
+	 * In vi mode, they were ignored.  In .exrc files this was a serious
+	 * annoyance, as vi kept trying to treat them as print commands.  We
+	 * ignore backward compatibility in this case, discarding lines that
+	 * contain only <blank> characters from .exrc files.
 	 */
-	if (cmdlen == 0 && (!IN_EX_MODE(sp) || ep == NULL || !blank))
-		return (0);
+	if (cmdlen == 0 &&
+	    (!blank || IN_VI_MODE(sp) || pflags & EXPAR_BLIGNORE))
+		goto done;
 
 	/* Initialize the structure passed to underlying functions. */
 	memset(&exc, 0, sizeof(EXCMDARG));
-	exp = EXP(sp);
-	if (argv_init(sp, ep, &exc))
+	if (argv_init(sp, &exc))
 		goto err;
 
 	/*
@@ -370,7 +388,7 @@ loop:	if (nl) {
 		    NEEDSEP_NR : NEEDSEP_N;
 
 	/* Parse command addresses. */
-	if (ep_range(sp, ep, &exc, &cmd, &cmdlen))
+	if (ep_range(sp, &exc, &cmd, &cmdlen))
 		goto err;
 
 	/* Skip whitespace. */
@@ -507,7 +525,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			for (ch = *p; cmdlen > 0; --cmdlen, ++cmd)
 				if (*cmd != ch)
 					break;
-			if (argv_exp0(sp, ep, &exc, p, cmd - p))
+			if (argv_exp0(sp, &exc, p, cmd - p))
 				goto err;
 		}
 
@@ -563,23 +581,6 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 
 	/* Initialize local flags to the command flags. */
 	LF_INIT(cp->flags);
-
-	/*
-	 * File state must be checked throughout this code, because it is
-	 * called when reading the .exrc file and similar things.  There's
-	 * this little chicken and egg problem -- if we read the file first,
-	 * we won't know how to display it.  If we read/set the exrc stuff
-	 * first, we can't allow any command that requires file state.  We
-	 * don't have a "reading an rc" bit, because we want the commands
-	 * to work when the user source's the rc file later.  Historic vi
-	 * generally took the easy way out and dropped core.
- 	 */
-	if (LF_ISSET(E_NORC) && ep == NULL) {
-		msgq(sp, M_ERR,
-	"103|The %s command requires that a file have already been read in",
-		    cp->name);
-		goto err;
-	}
 
 	/*
 	 * There are three normal termination cases for an ex command.  They
@@ -810,7 +811,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			exc.addrcnt = 1;
 			F_SET(&exc, E_ADDRDEF);
 			if (LF_ISSET(E_ZERODEF)) {
-				if (file_lline(sp, ep, &lno))
+				if (file_lline(sp, &lno))
 					goto err;
 				if (lno == 0) {
 					exc.addr1.lno = 0;
@@ -836,7 +837,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		if (exc.addrcnt == 0) {		/* Default entire/empty file. */
 			exc.addrcnt = 2;
 			F_SET(&exc, E_ADDRDEF);
-			if (file_lline(sp, ep, &exc.addr2.lno))
+			if (file_lline(sp, &exc.addr2.lno))
 				goto err;
 			if (LF_ISSET(E_ZERODEF) && exc.addr2.lno == 0) {
 				exc.addr1.lno = 0;
@@ -854,7 +855,7 @@ two:		switch (exc.addrcnt) {
 			exc.addrcnt = 2;
 			F_SET(&exc, E_ADDRDEF);
 			if (LF_ISSET(E_ZERODEF) && sp->lno == 1) {
-				if (file_lline(sp, ep, &lno))
+				if (file_lline(sp, &lno))
 					goto err;
 				if (lno == 0) {
 					exc.addr1.lno = exc.addr2.lno = 0;
@@ -889,7 +890,7 @@ two:		switch (exc.addrcnt) {
 		exc.addr1.lno = sp->lno + 1;
 		exc.addr2.lno = sp->lno + O_VAL(sp, O_SCROLL);
 		exc.addr1.cno = exc.addr2.cno = sp->cno;
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			goto err;
 		if (lno != 0 && lno > sp->lno && exc.addr2.lno > lno)
 			exc.addr2.lno = lno;
@@ -1051,11 +1052,11 @@ end2:			break;
 			F_SET(&exc, E_COUNT);
 			break;
 		case 'f':				/* file */
-			if (argv_exp2(sp, ep, &exc, cmd, cmdlen))
+			if (argv_exp2(sp, &exc, cmd, cmdlen))
 				goto err;
 			goto countchk;
 		case 'l':				/* line */
-			if (ep_line(sp, ep, &cur, &cmd, &cmdlen, &tmp))
+			if (ep_line(sp, &cur, &cmd, &cmdlen, &tmp))
 				goto err;
 			/* Line specifications are always required. */
 			if (!tmp) {
@@ -1067,7 +1068,7 @@ end2:			break;
 				goto err;
 			}
 			/* The line must exist for these commands. */
-			if (file_lline(sp, ep, &lno))
+			if (file_lline(sp, &lno))
 				goto err;
 			if (cur.lno > lno) {
 				badlno(sp, lno);
@@ -1076,12 +1077,12 @@ end2:			break;
 			exc.lineno = cur.lno;
 			break;
 		case 'S':				/* string, file exp. */
-			if (argv_exp1(sp, ep,
+			if (argv_exp1(sp,
 			    &exc, cmd, cmdlen, cp == &cmds[C_BANG]))
 				goto err;
 			goto addr2;
 		case 's':				/* string */
-			if (argv_exp0(sp, ep, &exc, cmd, cmdlen))
+			if (argv_exp0(sp, &exc, cmd, cmdlen))
 				goto err;
 			goto addr2;
 		case 'W':				/* word string */
@@ -1106,7 +1107,7 @@ end2:			break;
 				} else
 					*p++ = ch;
 			}
-			if (argv_exp0(sp, ep, &exc, t, p - t))
+			if (argv_exp0(sp, &exc, t, p - t))
 				goto err;
 
 			/* Delete intervening whitespace. */
@@ -1127,11 +1128,11 @@ end2:			break;
 				} else
 					*p = ch;
 			}
-			if (argv_exp0(sp, ep, &exc, t, p - t))
+			if (argv_exp0(sp, &exc, t, p - t))
 				goto err;
 			goto addr2;
 		case 'w':				/* word */
-			if (argv_exp3(sp, ep, &exc, cmd, cmdlen))
+			if (argv_exp3(sp, &exc, cmd, cmdlen))
 				goto err;
 countchk:		if (*++p != 'N') {		/* N */
 				/*
@@ -1171,7 +1172,7 @@ usage:		msgq(sp, M_ERR, "107|Usage: %s", cp->usage);
 	/* Verify that the addresses are legal. */
 addr2:	switch (exc.addrcnt) {
 	case 2:
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			goto err;
 		/*
 		 * Historic ex/vi permitted commands with counts to go past
@@ -1194,16 +1195,21 @@ addr2:	switch (exc.addrcnt) {
 		/*
 		 * If it's a "default vi command", zero is okay.  Historic
 		 * vi allowed this, note, it's also the hack that allows
-		 * "vi +100 nonexistent_file" to work.
+		 * "vi +100 nonexistent_file" to work.  If there's no file
+		 * at all, that's the real problem, might as well tell the
+		 * user.
 		 */
-		if (num == 0 && (IN_EX_MODE(sp) || uselastcmd != 1) &&
-		    !LF_ISSET(E_ZERO)) {
-			msgq(sp, M_ERR,
+		if (num == 0 &&
+		    (IN_EX_MODE(sp) || uselastcmd != 1) && !LF_ISSET(E_ZERO)) {
+			if (sp->ep == NULL)
+				ex_message(sp, cp, EXM_NORC);
+			else
+				msgq(sp, M_ERR,
 			    "108|The %s command doesn't permit an address of 0",
-			    cp->name);
+				    cp->name);
 			goto err;
 		}
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			goto err;
 		if (num > lno) {
 			badlno(sp, lno);
@@ -1221,7 +1227,8 @@ addr2:	switch (exc.addrcnt) {
 	 * This is done before the absolute mark gets set; historically,
 	 * "/a/,/b/" did NOT set vi's absolute mark, but "/a/,/b/d" did.
 	 */
-	if (IN_VI_MODE(sp) && uselastcmd && vi_address == 0) {
+	if ((IN_VI_MODE(sp) ||
+	    pflags & EXPAR_NOPRDEF) && uselastcmd && vi_address == 0) {
 		switch (exc.addrcnt) {
 		case 2:
 			sp->lno = exc.addr2.lno ? exc.addr2.lno : 1;
@@ -1246,7 +1253,7 @@ addr2:	switch (exc.addrcnt) {
 		cur.lno = sp->lno;
 		cur.cno = sp->cno;
 		F_CLR(exp, EX_ABSMARK);
-		if (mark_set(sp, ep, ABSMARK1, &cur, 1))
+		if (mark_set(sp, ABSMARK1, &cur, 1))
 			goto err;
 	}
 
@@ -1285,8 +1292,8 @@ addr2:	switch (exc.addrcnt) {
 	 * If file state available, and not doing a global command,
 	 * log the start of an action.
 	 */
-	if (ep != NULL && !F_ISSET(sp, S_GLOBAL))
-		(void)log_cursor(sp, ep);
+	if (sp->ep != NULL && !F_ISSET(sp, S_GLOBAL))
+		(void)log_cursor(sp);
 
 	/*
 	 * !!!
@@ -1315,7 +1322,7 @@ addr2:	switch (exc.addrcnt) {
 	 * to clean up.  For now, put out enough spaces to overwrite the prompt.
 	 */
 	if (sep != NONE) {
-		if (ep != NULL &&
+		if (sp->ep != NULL &&
 		    IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
 			if (sep == NEEDSEP_NR &&
 			    (uselastcmd || cp == &cmds[C_SCROLL])) {
@@ -1328,74 +1335,56 @@ addr2:	switch (exc.addrcnt) {
 		sep = NONE;
 	}
 
-	/* Save the current mode. */
-	saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
-
-	/* Do the command. */
-	if (cp->fn(sp, ep, &exc))
+	/* Call the underlying function for the ex command. */
+	if (cp->fn(sp, &exc))
 		goto err;
 
-#ifdef DEBUG
-	/* Make sure no function left the temporary space locked. */
-	if (F_ISSET(sp->gp, G_TMP_INUSE)) {
-		F_CLR(sp->gp, G_TMP_INUSE);
-		msgq(sp, M_ERR, "109|ex: temporary buffer not released");
-		goto err;
-	}
-#endif
-	if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE)) {
-		/*
-		 * Only here if the mode of the underlying file changed, e.g.
-		 * the user switched files or is exiting.  Two things that we
-		 * might have to save: first, any "+cmd" field set up for an
-		 * ex/edit command will have to be saved for later, also, any
-		 * part of the current ex command that hasn't been executed
-		 * yet.  For example:
-		 *
-		 *	:edit +25 file.c|s/abc/ABC/|1
-		 *
-		 * !!!
-		 * The historic vi just hung, of course; nvi handles it by
-		 * pushing the keys onto the tty queue.  Since the commands
-		 * are intended as ex commands, add additional characters
-		 * to make it all work if we're switching modes to vi.  Also,
-		 * + commands were oriented to the last line in the file,
-		 * historically, make the cursor start out there.
-		 *
-		 * For the fun of it, if you want to see if a vi clone got the
-		 * ex argument parsing right, try:
- 		 *
-		 *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
-		 *	vi
-		 *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
-		 *
-		 * !!!
-		 * NOTE: if we're exiting the file for any reason, ep is
-		 * probably no longer valid!
-		 */
-		if (arg1_len == 0 && save_cmdlen == 0)
-			return (0);
-		if (term_push(sp, "\n", 1, 0))
-			goto err;
-		if (save_cmdlen != 0)
-			if (term_push(sp, save_cmd, save_cmdlen, 0))
-				goto err;
-		if (arg1 != NULL) {
-			if (IN_VI_MODE(sp) && save_cmdlen != 0 &&
-			    term_push(sp, "|", 1, 0))
-				goto err;
-			if (term_push(sp, arg1, arg1_len, 0))
-				goto err;
-			if (sp->nextdisp != NULL) {
-				if (file_lline(sp,
-				    sp->nextdisp->ep, &sp->nextdisp->frp->lno))
-					goto err;
-				F_SET(sp->nextdisp->frp, FR_CURSORSET);
-			}
-		}
-		if (IN_VI_MODE(sp) && term_push(sp, ":", 1, 0))
-			goto err;
+	/*
+	 * XXX
+	 * If we exited or switched screens, we're done.  Don't return if
+	 * we've just switched screen presentation, continue through the
+	 * rest of the ex commands instead.  This will lose any commands
+	 * that are queued from an EXINIT variable, exrc file, or +cmd.
+	 * It's hard to fix, because we have to return to the top level,
+	 * acquire a new screen, and come back down, so I'm leaving it alone
+	 * for now.  (I think that users are unlikely to run into this one.)
+	 */
+	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH))
 		return (0);
+
+	/*
+	 * If the command had an associated "+cmd", we have to execute that
+	 * before we continue executing the rest of the ex commands.  For
+	 * example, consider a .exrc file that contains the following lines:
+	 *
+	 *	:set all
+	 *	:edit +25 file.c|s/abc/ABC/|1
+	 *	:3,5 print
+	 *
+	 * This can happen more than once -- the historic vi simply hung or
+	 * dropped core, of course.
+	 */
+	if (arg1_len != 0) {
+		if (bp == NULL) {
+			GET_SPACE_RET(sp,
+			    bp, blen, arg1_len + save_cmdlen + 10);
+		} else
+			ADD_SPACE_RET(sp,
+			    bp, blen, arg1_len + save_cmdlen + 10);
+		memmove(bp + arg1_len + 1, save_cmd, save_cmdlen);
+		bp[arg1_len] =  '\n';
+		memmove(bp, arg1, arg1_len);
+		save_cmd = bp;
+		save_cmdlen += arg1_len + 1;
+
+		/*
+		 * Any commands executed from a +cmd are executed starting
+		 * at the last line of the file.  The main code doesn't know
+		 * that a +cmd was set, however, so it may have put us at
+		 * the top of the file.  (Note, this is safe because we have
+		 * to have switched files to get here.)
+		 */
+		 file_cinit(sp);
 	}
 
 	/*
@@ -1407,9 +1396,9 @@ addr2:	switch (exc.addrcnt) {
 	 * figure it out.)  For example, the '=' command from vi mode often
 	 * got the offset wrong, and complained it was too large, but didn't
 	 * seem to have a problem with the cursor.  If anyone complains, ask
-	 * them how it's supposed to work, they probably know.
+	 * them how it's supposed to work, they might know.
 	 */
-	if (ep != NULL && (flagoff += exc.flagoff)) {
+	if (sp->ep != NULL && (flagoff += exc.flagoff)) {
 		if (flagoff < 0) {
 			if (sp->lno <= -flagoff) {
 				msgq(sp, M_ERR,
@@ -1417,7 +1406,7 @@ addr2:	switch (exc.addrcnt) {
 				goto err;
 			}
 		} else {
-			if (file_lline(sp, ep, &lno))
+			if (file_lline(sp, &lno))
 				goto err;
 			if (sp->lno + flagoff > lno) {
 				msgq(sp, M_ERR,
@@ -1429,10 +1418,10 @@ addr2:	switch (exc.addrcnt) {
 	}
 
 	/*
-	 * If the command was successful and we're in ex command mode, we
-	 * may want to display a line.  Make sure there's a line to display.
+	 * If the command was successful and we're in ex command mode, may
+	 * want to display a line.  (Make sure there's a line to display.)
 	 */
-	if (ep != NULL &&
+	if (sp->ep != NULL &&
 	    IN_EX_MODE(sp) && !F_ISSET(sp, S_GLOBAL) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
@@ -1447,13 +1436,13 @@ addr2:	switch (exc.addrcnt) {
 
 		/*
 		 * If there was an explicit flag to display the new cursor
-		 * line, or we're in ex mode, autoprint is set, and a change
+		 * line, or we're in ex mode, autoprint is set and a change
 		 * was made, display the line.  If any print flags set use
 		 * them, otherwise default to print.
 		 */
 		LF_INIT(F_ISSET(&exc, E_F_HASH | E_F_LIST | E_F_PRINT));
 		if (!LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT) &&
-		    O_ISSET(sp, O_AUTOPRINT) &&
+		    !pflags & EXPAR_NOAUTO && O_ISSET(sp, O_AUTOPRINT) &&
 		    (F_ISSET(exp, EX_AUTOPRINT) || F_ISSET(cp, E_AUTOPRINT)))
 			LF_INIT(E_F_PRINT);
 
@@ -1462,7 +1451,7 @@ addr2:	switch (exc.addrcnt) {
 			exc.addrcnt = 2;
 			exc.addr1.lno = exc.addr2.lno = sp->lno;
 			exc.addr1.cno = exc.addr2.cno = sp->cno;
-			(void)ex_print(sp, ep, &exc.addr1, &exc.addr2, flags);
+			(void)ex_print(sp, &exc.addr1, &exc.addr2, flags);
 		}
 	}
 
@@ -1475,8 +1464,8 @@ addr2:	switch (exc.addrcnt) {
 	 * If we haven't put out a separator line, do it now.  For more
 	 * detailed comments, see above.
 	 */
-err:	if (sep != NONE &&
-	    ep != NULL && IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
+err:	if (sep != NONE && sp->ep != NULL &&
+	    IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
 		(void)fputc('\n', stdout);
 	/*
 	 * On error, we discard any keys we have left, as well as any keys
@@ -1501,6 +1490,9 @@ err:	if (sep != NONE &&
 		msgq(sp, M_ERR,
 		    "112|Ex command failed: remaining command input discarded");
 	term_flush(sp, "Ex error", CH_MAPPED);
+
+	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
 	return (1);
 }
 
@@ -1509,9 +1501,8 @@ err:	if (sep != NONE &&
  *	Get a line range for ex commands.
  */
 static int
-ep_range(sp, ep, excp, cmdp, cmdlenp)
+ep_range(sp, excp, cmdp, cmdlenp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *excp;
 	char **cmdp;
 	size_t *cmdlenp;
@@ -1543,10 +1534,15 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	 * addresses.  For consistency, we make it true for leading semicolon
 	 * addresses as well.
 	 */
-	 excp->addrcnt = 0;
-	 for (addr = ADDR_NONE, cmd = *cmdp, cmdlen = *cmdlenp; cmdlen > 0;)
+	excp->addrcnt = 0;
+	addr = ADDR_NONE;
+	for (cmd = *cmdp, cmdlen = *cmdlenp; cmdlen > 0;)
 		switch (*cmd) {
 		case '%':		/* Entire file. */
+			if (sp->ep == NULL) {
+				badlno(sp, 0);
+				return (0);
+			}
 			/*
 			 * !!!
 			 * A percent character addresses all of the lines in
@@ -1559,7 +1555,7 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 			 */
 			if (addr == ADDR_FOUND)
 				goto badaddr;
-			if (file_lline(sp, ep, &excp->addr2.lno))
+			if (file_lline(sp, &excp->addr2.lno))
 				return (1);
 			excp->addr1.lno = excp->addr2.lno == 0 ? 0 : 1;
 			excp->addr1.cno = excp->addr2.cno = 0;
@@ -1570,6 +1566,10 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 			break;
 		case ',':               /* Comma delimiter. */
 		case ';':               /* Semi-colon delimiter. */
+			if (sp->ep == NULL) {
+				badlno(sp, 0);
+				return (0);
+			}
 			if (addr != ADDR_FOUND)
 				switch (excp->addrcnt) {
 				case 0:
@@ -1608,7 +1608,7 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 			--cmdlen;
 			break;
 		default:
-			if (ep_line(sp, ep, &cur, &cmd, &cmdlen, &tmp))
+			if (ep_line(sp, &cur, &cmd, &cmdlen, &tmp))
 				return (1);
 			if (!tmp)
 				goto done;
@@ -1678,9 +1678,8 @@ done:	if (addr == ADDR_NEED)
  * it's fairly close.
  */
 static int
-ep_line(sp, ep, cur, cmdp, cmdlenp, isaddrp)
+ep_line(sp, cur, cmdp, cmdlenp, isaddrp)
 	SCR *sp;
-	EXF *ep;
 	MARK *cur;
 	char **cmdp;
 	size_t *cmdlenp;
@@ -1691,21 +1690,27 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, isaddrp)
 	long total;
 	u_int flags;
 	size_t cmdlen;
-	int (*sf) __P((SCR *, EXF *, MARK *, MARK *, char *, char **, u_int *));
+	int (*sf) __P((SCR *, MARK *, MARK *, char *, char **, u_int *));
 	char *cmd, *endp, *omsg, *umsg;
 
 	exp = EXP(sp);
 	*isaddrp = 0;
-
 	cmd = *cmdp;
 	cmdlen = *cmdlenp;
+
+	/* No addresses permitted until a file has been read in. */
+	if (sp->ep == NULL && strchr("$0123456789'\\/?.+-^", *cmd)) {
+		badlno(sp, 0);
+		return (1);
+	}
+
 	switch (*cmd) {
 	case '$':				/* Last line in the file. */
 		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
 
 		cur->cno = 0;
-		if (file_lline(sp, ep, &cur->lno))
+		if (file_lline(sp, &cur->lno))
 			return (1);
 		++cmd;
 		--cmdlen;
@@ -1728,7 +1733,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, isaddrp)
 			msgq(sp, M_ERR, "114|No mark name supplied");
 			return (1);
 		}
-		if (mark_get(sp, ep, cmd[1], cur))
+		if (mark_get(sp, cmd[1], cur))
 			return (1);
 		cmd += 2;
 		cmdlen -= 2;
@@ -1754,17 +1759,11 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, isaddrp)
 	case '?':				/* Search backward. */
 		sf = b_search;
 search:		F_SET(exp, EX_ABSMARK);
-
-		if (ep == NULL) {
-			msgq(sp, M_ERR,
-	"116|A search address requires that a file have already been read in");
-			return (1);
-		}
 		*isaddrp = 1;
 		m.lno = sp->lno;
 		m.cno = sp->cno;
 		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
-		if (sf(sp, ep, &m, &m, cmd, &endp, &flags))
+		if (sf(sp, &m, &m, cmd, &endp, &flags))
 			return (1);
 		cur->lno = m.lno;
 		cur->cno = m.cno;
@@ -1777,7 +1776,7 @@ search:		F_SET(exp, EX_ABSMARK);
 
 		/* If an empty file, then '.' is 0, not 1. */
 		if (sp->lno == 1) {
-			if (file_lline(sp, ep, &cur->lno))
+			if (file_lline(sp, &cur->lno))
 				return (1);
 			if (cur->lno != 0)
 				cur->lno = 1;

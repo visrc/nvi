@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.18 1994/10/09 17:26:24 bostic Exp $ (Berkeley) $Date: 1994/10/09 17:26:24 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 9.1 1994/11/09 18:40:27 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,8 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 8.18 1994/10/09 17:26:24 bostic Exp $
  *	Create an abbreviation or display abbreviations.
  */
 int
-ex_abbr(sp, ep, cmdp)
+ex_abbr(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	CHAR_T *p;
@@ -101,9 +100,8 @@ ex_abbr(sp, ep, cmdp)
  *      Delete an abbreviation.
  */
 int
-ex_unabbr(sp, ep, cmdp)
+ex_unabbr(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
         EXCMDARG *cmdp;
 {
 	ARGS *ap;
