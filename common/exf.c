@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.17 1993/09/11 13:48:48 bostic Exp $ (Berkeley) $Date: 1993/09/11 13:48:48 $";
+static char sccsid[] = "$Id: exf.c,v 8.18 1993/09/13 19:33:03 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:33:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -427,7 +427,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	struct stat sb;
 	FILE *fp;
 	MARK from, to;
-	int fd, oflags, val;
+	int fd, oflags;
 
 	/*
 	 * Don't permit writing to temporary files.  The problem is that

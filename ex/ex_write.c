@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.8 1993/09/08 15:16:50 bostic Exp $ (Berkeley) $Date: 1993/09/08 15:16:50 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.9 1993/09/13 19:34:29 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:34:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,7 +106,7 @@ exwr(sp, ep, cmdp, cmd)
 {
 	register char *p;
 	MARK rm;
-	int flags, force;
+	int flags;
 	char *fname;
 
 	/* All write commands can have an associated '!'. */
