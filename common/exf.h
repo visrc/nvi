@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.37 1993/02/25 20:34:40 bostic Exp $ (Berkeley) $Date: 1993/02/25 20:34:40 $
+ *	$Id: exf.h,v 5.38 1993/02/28 13:58:30 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:58:30 $
  */
 
 #ifndef _EXF_H_
@@ -18,12 +18,16 @@ typedef struct exf {
 	MSG *msgp;			/* Linked list of messages. */
 
 	/*
-	 * s_confirm:	confirm an action, yes or no.
-	 * s_end:	end the file session.
+	 * confirm:	confirm an action, yes or no.
+	 * end:		end the file session.
+	 * msg:		display an error message.
+	 * s_msg:	saved msg pointer (vi swaps them, when calling ex).
 	 */
 	enum confirmation
-		(*s_confirm)	__P((struct exf *, MARK *, MARK *));
-	int	(*s_end)	__P((struct exf *));
+		(*confirm)	__P((struct exf *, MARK *, MARK *));
+	int	(*end)		__P((struct exf *));
+	void	(*msg)		__P((struct exf *, u_int, const char *, ...));
+	void	(*s_msg)	__P((struct exf *, u_int, const char *, ...));
 
 					/* Underlying database state. */
 	DB *db;				/* File db structure. */
@@ -37,6 +41,8 @@ typedef struct exf {
 	size_t l_len;			/* Log buffer length. */
 
 	FILE *stdfp;			/* Ex/vi output function. */
+	size_t exlinecount;		/* Ex/vi overwrite count. */
+	size_t extotalcount;		/* Ex/vi overwrite count. */
 
 	enum direction searchdir;	/* Search direction. */
 	regex_t sre;			/* Saved RE. */
@@ -118,7 +124,7 @@ typedef struct {
 }
 
 #define	GETLINE_ERR(ep, lno) {						\
-	msg(ep, M_ERROR,						\
+	ep->msg(ep, M_ERROR,						\
 	    "Error: %s/%d: unable to retrieve line %u.",		\
 	    tail(__FILE__), __LINE__, lno);				\
 }
@@ -135,7 +141,7 @@ typedef struct {
 			if (file_sync((ep), (force)))			\
 				return (1);				\
 		} else if (!(force)) {					\
-			msg(ep, M_ERROR,				\
+			ep->msg(ep, M_ERROR,				\
 	"Modified since last write; write or use ! to override.");	\
 			return (1);					\
 		}							\
@@ -143,6 +149,6 @@ typedef struct {
 
 #define	MODIFY_WARN(ep) {						\
 	if (FF_ISSET(ep, F_MODIFIED) && ISSET(O_WARN))			\
-		msg(ep, M_ERROR, "Modified since last write.");		\
+		ep->msg(ep, M_ERROR, "Modified since last write.");	\
 }
 #endif /* !_EXF_H_ */
