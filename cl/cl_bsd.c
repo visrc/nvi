@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.12 1995/11/11 11:03:51 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:03:51 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.13 1995/11/26 21:55:59 bostic Exp $ (Berkeley) $Date: 1995/11/26 21:55:59 $";
 #endif /* not lint */
 
 /*
@@ -66,6 +66,24 @@ flash()
 	} else
 		beep();
 }
+
+#ifdef IDLOK_MISSING
+/*
+ * Ultrix supports the BSD curses package except for the idlock function.
+ *
+ * idlok --
+ *	Turn on/off hardware line insert/delete.
+ *
+ * PUBLIC: void idlok __P((WINDOW *, int));
+ */
+void
+idlok(win, bf)
+	WINDOW *win;
+	int bf;
+{
+	return;
+}
+#endif
 
 /*
  * keypad --
