@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_replace.c,v 10.14 1996/03/14 09:34:54 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:34:54 $";
+static const char sccsid[] = "$Id: v_replace.c,v 10.15 1996/03/19 20:59:59 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:59:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ v_replace(sp, vp)
 	quote = 0;
 	if (!F_ISSET(vp, VC_ISDOT)) {
 		sp->showmode = SM_REPLACE;
-		if (vs_refresh(sp))
+		if (vs_refresh(sp, 0))
 			return (1);
 next:		if (v_event_get(sp, &ev, 0, 0))
 			return (1);

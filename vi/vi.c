@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.36 1996/03/15 20:17:27 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:17:27 $";
+static const char sccsid[] = "$Id: vi.c,v 10.37 1996/03/19 21:00:00 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:00:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ vi(spp)
 		sp->showmode = SM_COMMAND;
 		if (F_ISSET(vip, VIP_S_REFRESH))
 			F_CLR(vip, VIP_S_REFRESH);
-		else if (vs_refresh(sp))
+		else if (vs_refresh(sp, 0))
 			goto ret;
 
 		/* Set the new favorite position. */
@@ -387,7 +387,7 @@ intr:			CLR_INTERRUPT(sp);
 			F_SET(vip, VIP_CUR_INVALID);
 
 			/* Refresh so we can display messages. */
-			if (vs_refresh(sp))
+			if (vs_refresh(sp, 1))
 				return (1);
 		}
 
@@ -1019,7 +1019,7 @@ v_keyword(sp)
 	}
 	if (moved) {
 		sp->cno = beg;
-		(void)vs_refresh(sp);
+		(void)vs_refresh(sp, 0);
 	}
 
 	/* Find the end of the word. */

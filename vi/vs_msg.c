@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.49 1996/03/18 09:09:20 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:09:20 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.50 1996/03/19 21:00:02 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:00:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -667,7 +667,7 @@ vs_resolve(sp)
 	 * extra refresh screwed the pooch.
 	 */
 	if (gp->msgq.lh_first != NULL) {
-		if (!F_ISSET(sp, S_SCR_VI) && vs_refresh(sp))
+		if (!F_ISSET(sp, S_SCR_VI) && vs_refresh(sp, 1))
 			return (1);
 		while ((mp = gp->msgq.lh_first) != NULL) {
 			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);

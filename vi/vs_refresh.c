@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.22 1996/03/19 20:01:29 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:01:29 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.23 1996/03/19 21:00:02 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:00:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,11 +59,12 @@ vs_repaint(sp, evp)
  * vs_refresh --
  *	Refresh all screens.
  *
- * PUBLIC: int vs_refresh __P((SCR *));
+ * PUBLIC: int vs_refresh __P((SCR *, int));
  */
 int
-vs_refresh(sp)
+vs_refresh(sp, forcepaint)
 	SCR *sp;
+	int forcepaint;
 {
 	SCR *tsp;
 	u_int priv_paint, pub_paint;
@@ -97,7 +98,8 @@ vs_refresh(sp)
 		if (tsp != sp && !F_ISSET(tsp, S_EXIT | S_EXIT_FORCE) &&
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(VIP(tsp), priv_paint))) {
-			(void)vs_paint(tsp, 0);
+			(void)vs_paint(tsp,
+			    forcepaint ? PAINT_CURSOR | PAINT_FLUSH : 0);
 			F_SET(VIP(sp), VIP_CUR_INVALID);
 		}
 
@@ -108,8 +110,8 @@ vs_refresh(sp)
 	 * Also, always do it last -- that way, S_SCR_REDRAW can be set
 	 * in the current screen only, and the screen won't flash.
 	 */
-	if (vs_paint(sp, (F_ISSET(sp, S_SCR_VI) &&
-	    KEYS_WAITING(sp) ? 0 : PAINT_CURSOR | PAINT_FLUSH)))
+	if (vs_paint(sp, !forcepaint && F_ISSET(sp, S_SCR_VI) &&
+	    KEYS_WAITING(sp) ? 0 : PAINT_CURSOR | PAINT_FLUSH))
 		return (1);
 
 	/*

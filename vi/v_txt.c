@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.39 1996/03/19 12:53:36 bostic Exp $ (Berkeley) $Date: 1996/03/19 12:53:36 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.40 1996/03/19 20:59:59 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:59:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -413,7 +413,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	ec_flags = LF_ISSET(TXT_MAPINPUT) ? EC_MAPINPUT : 0;
 
 	/* Refresh the screen. */
-	if (vs_refresh(sp))
+	if (vs_refresh(sp, 1))
 		return (1);
 
 	/* If it's dot, just do it now. */
@@ -440,7 +440,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		fc.e_tlno = sp->rows;
 		vip->linecount = vip->lcontinue = vip->totalcount = 0;
 		(void)vs_repaint(sp, &fc);
-		(void)vs_refresh(sp);
+		(void)vs_refresh(sp, 1);
 	}
 
 	/* Deal with all non-character events. */
@@ -1238,7 +1238,7 @@ ret:	/* If replaying text, keep going. */
 			showmatch = 0;
 			if (txt_showmatch(sp))
 				return (1);
-		} else if (vs_refresh(sp))
+		} else if (vs_refresh(sp, margin != 0))
 			return (1);
 	}
 
@@ -2378,7 +2378,7 @@ txt_showmatch(sp)
 	 * Do a refresh first, in case we haven't done one in awhile,
 	 * so the user can see what we're complaining about.
 	 */
-	if (vs_refresh(sp))
+	if (vs_refresh(sp, 1))
 		return (1);
 	/*
 	 * We don't display the match if it's not on the screen.  Find
@@ -2402,7 +2402,7 @@ txt_showmatch(sp)
 			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF) {
 				msgq(sp, M_BERR,
 				    "Unmatched %s", KEY_NAME(sp, endc));
-				return (vs_refresh(sp));
+				return (vs_refresh(sp, 1));
 			}
 			continue;
 		}
@@ -2420,7 +2420,7 @@ txt_showmatch(sp)
 	m.cno = sp->cno;
 	sp->lno = cs.cs_lno;
 	sp->cno = cs.cs_cno;
-	if (vs_refresh(sp))
+	if (vs_refresh(sp, 1))
 		return (1);
 
 	/* Wait for timeout or character arrival. */
@@ -2430,7 +2430,7 @@ txt_showmatch(sp)
 	/* Return to the current location. */
 	sp->lno = m.lno;
 	sp->cno = m.cno;
-	return (vs_refresh(sp));
+	return (vs_refresh(sp, 1));
 }
 
 /*

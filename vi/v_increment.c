@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_increment.c,v 10.11 1996/03/19 15:30:31 bostic Exp $ (Berkeley) $Date: 1996/03/19 15:30:31 $";
+static const char sccsid[] = "$Id: v_increment.c,v 10.12 1996/03/19 20:59:58 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:59:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,7 @@ v_increment(sp, vp)
 		goto nonum;
 	if (beg != vp->m_start.cno) {
 		sp->cno = beg;
-		(void)vs_refresh(sp);
+		(void)vs_refresh(sp, 0);
 	}
 
 #undef	ishex
