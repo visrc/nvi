@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.8 1992/11/04 09:17:09 bostic Exp $ (Berkeley) $Date: 1992/11/04 09:17:09 $";
+static char sccsid[] = "$Id: search.c,v 5.9 1992/11/06 18:07:19 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:07:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,6 +77,7 @@ noprev:		msg("No previous search pattern.");
 				*rep = &sre;
 			}
 		}
+TRACE("ptrn is <%s>\n", ptrn);
 							/* Compile RE. */
 		eval = regcomp(*rep, (char *)ptrn, reflags);
 		if (eval != 0) {
@@ -113,7 +114,8 @@ f_search(ep, fm, ptrn, eptrn, flags)
 	u_char *l;
 
 	if ((lno = file_lline(ep)) == 0) {
-		msg(EMPTYMSG);
+		if (flags & SEARCH_MSG)
+			msg(EMPTYMSG);
 		return (NULL);
 	}
 
@@ -129,7 +131,8 @@ f_search(ep, fm, ptrn, eptrn, flags)
 	if (fm->cno == len ? len - 1 : 0) {
 		if (fm->lno == lno) {
 			if (!ISSET(O_WRAPSCAN)) {
-				msg(EOFMSG);
+				if (flags & SEARCH_MSG)
+					msg(EOFMSG);
 				return (NULL);
 			}
 			lno = 1;
@@ -142,11 +145,13 @@ f_search(ep, fm, ptrn, eptrn, flags)
 	for (coff = fm->cno ? fm->cno + 1 : 0;; ++lno, coff = 0) {
 		if ((l = file_gline(ep, lno, &len)) == NULL) {
 			if (wrapped) {
-				msg(NOTFOUND);
+				if (flags & SEARCH_MSG)
+					msg(NOTFOUND);
 				break;
 			}
 			if (!ISSET(O_WRAPSCAN)) {
-				msg(EOFMSG);
+				if (flags & SEARCH_MSG)
+					msg(EOFMSG);
 				break;
 			}
 			lno = 1;
@@ -176,7 +181,7 @@ f_search(ep, fm, ptrn, eptrn, flags)
 		}
 		
 		/* Warn if wrapped. */
-		if (wrapped && ISSET(O_WARN))
+		if (wrapped && ISSET(O_WARN) && flags & SEARCH_MSG)
 			msg(WRAPMSG);
 
 		/*
@@ -218,7 +223,8 @@ b_search(ep, fm, ptrn, eptrn, flags)
 	u_char *l;
 
 	if ((lno = file_lline(ep)) == 0) {
-		msg(EMPTYMSG);
+		if (flags & SEARCH_MSG)
+			msg(EMPTYMSG);
 		return (NULL);
 	}
 
@@ -230,7 +236,8 @@ b_search(ep, fm, ptrn, eptrn, flags)
 	if (fm->cno == 0) {
 		if (fm->lno == 1) {
 			if (!ISSET(O_WRAPSCAN)) {
-				msg(SOFMSG);
+				if (flags & SEARCH_MSG)
+					msg(SOFMSG);
 				return (NULL);
 			}
 		} else
@@ -242,17 +249,20 @@ b_search(ep, fm, ptrn, eptrn, flags)
 	for (coff = fm->cno;; --lno, coff = 0) {
 		if (lno == 0) {
 			if (!ISSET(O_WRAPSCAN)) {
-				msg(SOFMSG);
+				if (flags & SEARCH_MSG)
+					msg(SOFMSG);
 				break;
 			}
 			if ((lno = file_lline(ep)) == 0) {
-				msg(EMPTYMSG);
+				if (flags & SEARCH_MSG)
+					msg(EMPTYMSG);
 				break;
 			}
 			wrapped = 1;
 			continue;
 		} else if (lno == fm->lno && wrapped) {
-			msg(NOTFOUND);
+			if (flags & SEARCH_MSG)
+				msg(NOTFOUND);
 			break;
 		}
 
@@ -277,7 +287,7 @@ b_search(ep, fm, ptrn, eptrn, flags)
 		}
 
 		/* Warn if wrapped. */
-		if (wrapped && ISSET(O_WARN))
+		if (wrapped && ISSET(O_WARN) && flags & SEARCH_MSG)
 			msg(WRAPMSG);
 		
 		if (delta) {
