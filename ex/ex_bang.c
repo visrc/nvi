@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.43 1993/05/15 10:54:58 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:54:58 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.44 1993/05/28 02:21:30 bostic Exp $ (Berkeley) $Date: 1993/05/28 02:21:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,8 +137,7 @@ ex_bang(sp, ep, cmdp)
 	/* If no addresses were specified, run the command. */
 	AUTOWRITE(sp, ep);
 
-	if (F_ISSET(sp, S_MODE_EX))
-		MODIFY_WARN(sp, ep);
+	MODIFY_WARN(sp, ep);
 
 	/* Run the command. */
 	if (ex_run_process(sp, com, NULL, NULL, 0))
