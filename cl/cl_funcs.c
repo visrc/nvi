@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.25 1995/11/06 09:58:12 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:58:12 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.26 1995/11/06 19:30:54 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:30:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,9 +44,6 @@ cl_addstr(sp, str, len)
 	CL_PRIVATE *clp;
 	size_t oldy, oldx;
 	int iv;
-
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
 
 	/*
 	 * If it's the last line of the screen and it's a split screen,
@@ -85,9 +82,6 @@ cl_attr(sp, attribute, on)
 	int on;
 {
 	CL_PRIVATE *clp;
-
-	EX_INIT_ABORT(sp);
-	VI_INIT_ABORT(sp);
 
 	switch (attribute) {
 	case SA_INVERSE:
@@ -166,9 +160,6 @@ int
 cl_bell(sp)
 	SCR *sp;
 {
-	EX_INIT_ABORT(sp);
-	VI_INIT_ABORT(sp);
-
 	if (F_ISSET(sp, S_EX | S_EX_CANON))
 		(void)write(STDOUT_FILENO, "\07", 1);		/* \a */
 	else {
@@ -194,9 +185,6 @@ int
 cl_clrtoeol(sp)
 	SCR *sp;
 {
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
-
 	return (clrtoeol() == ERR);
 }
 
@@ -211,9 +199,6 @@ cl_cursor(sp, yp, xp)
 	SCR *sp;
 	size_t *yp, *xp;
 {
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
-
 	/*
 	 * The curses screen support splits a single underlying curses screen
 	 * into multiple screens to support split screen semantics.  For this
@@ -239,9 +224,6 @@ cl_deleteln(sp)
 	CHAR_T ch;
 	CL_PRIVATE *clp;
 	size_t col, lno, spcnt, oldy, oldx;
-
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
 
 	clp = CLP(sp);
 
@@ -295,7 +277,8 @@ cl_deleteln(sp)
 
 /* 
  * cl_ex_adjust --
- *	Adjust the screen for ex.
+ *	Adjust the screen for ex.  This routine is purely for standalone
+ *	ex programs.  All special purpose, all special case.
  *
  * PUBLIC: int cl_ex_adjust __P((SCR *, exadj_t));
  */
@@ -306,14 +289,6 @@ cl_ex_adjust(sp, action)
 {
 	CL_PRIVATE *clp;
 	int cnt;
-
-	/*
-	 * This routine is purely for standalone ex programs.  All special
-	 * purpose, all special case.  Screens not supporting a standalone
-	 * ex mode should replace it with an EX_ABORT macro.
-	 */
-	VI_ABORT(sp);
-	EX_INIT_ABORT(sp);
 
 	clp = CLP(sp);
 	switch (action) {
@@ -368,9 +343,6 @@ int
 cl_insertln(sp)
 	SCR *sp;
 {
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
-
 	/*
 	 * The current line is expected to be blank after this operation,
 	 * and the screen must support that semantic.
@@ -431,9 +403,6 @@ cl_move(sp, lno, cno)
 	SCR *sp;
 	size_t lno, cno;
 {
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
-
 	/* See the comment in cl_cursor. */
 	if (move(RLNO(sp, lno), cno) == ERR) {
 		msgq(sp, M_ERR,
@@ -454,9 +423,6 @@ cl_refresh(sp, repaint)
 	SCR *sp;
 	int repaint;
 {
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
-
 	/*
 	 * If repaint is set, the editor is telling us that we don't know
 	 * what's on the screen, so we have to repaint from scratch.
@@ -499,9 +465,6 @@ cl_suspend(sp, allowedp)
 	GS *gp;
 	size_t oldy, oldx;
 	int changed;
-
-	EX_INIT_ABORT(sp);
-	VI_INIT_ABORT(sp);
 
 	*allowedp = 1;
 

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 10.5 1995/09/21 10:54:41 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:54:41 $
+ *	$Id: cl.h,v 10.6 1995/11/06 19:31:49 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:31:49 $
  */
 
 typedef struct _cl_private {
@@ -59,28 +59,5 @@ typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 #define	EX_INIT_IGNORE(sp)						\
 	if (F_ISSET(sp, S_EX) && !F_ISSET(CLP(sp), CL_SCR_EX))		\
 		return (0);
-/* Some functions should never be called until the screen is initialized. */
-#ifdef DEBUG
-#define	VI_INIT_ABORT(sp)						\
-	if (F_ISSET(sp, S_VI) && !F_ISSET(CLP(sp), CL_SCR_VI))		\
-		abort();
-#define	EX_INIT_ABORT(sp)						\
-	if (F_ISSET(sp, S_EX) && !F_ISSET(CLP(sp), CL_SCR_EX))		\
-		abort();
-#else
-#define	VI_INIT_ABORT(sp)	VI_INIT_IGNORE(sp)
-#define	EX_INIT_ABORT(sp)	EX_INIT_IGNORE(sp)
-#endif
-/* Some functions are noop's for ex. */
-#define	EX_NOOP(sp)							\
-	if (F_ISSET(sp, S_EX))						\
-		return (0);
-/* Some functions should never be called. */
-#define	VI_ABORT(sp)							\
-	if (F_ISSET(sp, S_VI))						\
-		abort();
-#define	EX_ABORT(sp)							\
-	if (F_ISSET(sp, S_EX))						\
-		abort();
 
 #include "cl_extern.h"
