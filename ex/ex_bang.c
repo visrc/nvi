@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.18 1995/10/20 10:21:47 bostic Exp $ (Berkeley) $Date: 1995/10/20 10:21:47 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.19 1995/11/01 19:46:42 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:46:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ ex_bang(sp, cmdp)
 	EX_PRIVATE *exp;
 	MARK rm;
 	recno_t lno;
-	int rval;
+	int in_vi, rval;
 	char *msg;
 
 	ap = cmdp->argv[0];
@@ -97,6 +97,7 @@ ex_bang(sp, cmdp)
 	 * file has been modified, autowrite is not set and the warn option is
 	 * set, tell the user about the file.
 	 */
+	in_vi = F_ISSET(sp, S_VI);
 	if (cmdp->addrcnt == 0) {
 		msg = NULL;
 		if (F_ISSET(sp->ep, F_MODIFIED))
@@ -168,14 +169,18 @@ ex_bang(sp, cmdp)
 		}
 	}
 
-	if (F_ISSET(sp, S_EX)) {
+	/*
+	 * Ex terminates with a bang, even if the command fails.  Vi didn't
+	 * historically.  May have had to switch into ex mode, so we saved
+	 * the original S_VI flags value.
+	 */
+	if (!in_vi) {
 		/*
 		 * Make sure all ex messages are flushed out so they aren't
 		 * confused with any autoprint output.
 		 */
 		(void)ex_fflush(sp);
 
-		/* Ex terminates with a bang, even if the command fails. */
 		if (!F_ISSET(sp, S_EX_SILENT))
 			(void)write(STDOUT_FILENO, "!\n", 2);
 	}
