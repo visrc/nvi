@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.5 1994/11/12 13:34:59 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:34:59 $";
+static char sccsid[] = "$Id: exf.c,v 9.6 1994/11/12 14:34:16 bostic Exp $ (Berkeley) $Date: 1994/11/12 14:34:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -440,6 +440,9 @@ file_cinit(sp)
 				nb = 1;
 			else
 				sp->cno = sp->frp->cno;
+
+			/* If returning to a file in vi, center the line. */
+			 F_SET(sp, S_SCR_CENTER);
 		} else {
 			sp->lno = 1;
 			nb = 1;
