@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.29 1992/05/15 11:08:01 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:01 $";
+static char sccsid[] = "$Id: ex.c,v 5.30 1992/05/21 12:54:24 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:54:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: ex.c,v 5.29 1992/05/15 11:08:01 bostic Exp $ (Berke
 
 #include "vi.h"
 #include "excmd.h"
+#include "cut.h"
 #include "options.h"
 #include "term.h"
 #include "vcmd.h"
@@ -171,7 +172,7 @@ ex_cmd(exc)
 	int flags, uselastcmd;
 	char *ep;
 
-#ifdef DEBUG
+#if DEBUG && 0
 	TRACE("ex: {%s}\n", exc);
 #endif
 	/*
@@ -190,6 +191,7 @@ ex_cmd(exc)
 
 	/* Initialize the argument structure. */
 	bzero(&cmd, sizeof(EXCMDARG));
+	cmd.buffer = OOBCB;
 
 	/*
 	 * Parse line specifiers.  New command line position is returned,
@@ -383,8 +385,7 @@ end2:			break;
 			}
 			break;
 		case 'b':				/* buffer */
-			if (isalpha(*exc))
-				cmd.buffer = *exc++;
+			cmd.buffer = *exc++;
 			break;
 		case 'c':				/* count */
 			if (isdigit(*exc)) {
@@ -495,7 +496,7 @@ addr2:	switch(cmd.addrcnt) {
 		lastcmd = cp;
 
 	cmd.cmd = cp;
-#if defined(DEBUG) && 1
+#if DEBUG && 0
 {
 	int __cnt;
 
@@ -514,7 +515,7 @@ addr2:	switch(cmd.addrcnt) {
 		TRACE("\tcommand %s", cmd.command);
 	if (cmd.plus)
 		TRACE("\tplus %s", cmd.plus);
-	if (cmd.buffer)
+	if (cmd.buffer != OOBCB)
 		TRACE("\tbuffer %c", cmd.buffer);
 	TRACE("\n");
 	if (cmd.argc) {
@@ -581,9 +582,9 @@ linespec(cmd, cp)
 	EXCMDARG *cp;
 {
 	MARK cur, savecursor, *mp;
-	u_long num, total;
+	long num, total;
 	int delimiter, savecursor_set;
-	char ch, *ep;
+	char *ep;
 
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
@@ -661,20 +662,21 @@ linespec(cmd, cp)
 		 * number of +/- signs, or any combination thereof.
 		 */
 		else {
-			total = 0;
-			while (*cmd == '-' || *cmd == '+') {
+			for (total = 0;
+			    *cmd == '-' || *cmd == '+'; total += num) {
 				num = *cmd == '-' ? -1 : 1;
 				if (isdigit(*++cmd)) {
 					num *= strtol(cmd, &ep, 10);
 					cmd = ep;
 				}
-				total += num;
 			}
-			if (total) {
-				if ((mp = m_updnto(&cur, num, ch)) == NULL)
-					return (NULL);
-				cur = *mp;
+			if (total < 0 && -total >= cur.lno) {
+				bell();
+				if (ISSET(O_VERBOSE))
+					msg("Line number less than 1.");
+				return (NULL);
 			}
+			cur.lno += total;
 		}
 
 		/* Extra addresses are discarded, starting with the first. */
