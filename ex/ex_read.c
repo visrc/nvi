@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.10 1992/05/15 11:07:37 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:07:37 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.11 1992/06/07 13:46:58 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:46:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,7 @@ ex_readfp(fname, fp, fm, cntp)
 	 * XXX
 	 * Should probably be set by the caller.
 	 */
-	cursor.lno = lno;
+	curf->lno = lno;
 
 	/* Return the number of lines read in. */
 	if (cntp)

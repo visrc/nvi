@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.30 1992/05/21 12:54:24 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:54:24 $";
+static char sccsid[] = "$Id: ex.c,v 5.31 1992/06/07 13:48:03 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:48:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -255,7 +255,8 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 1;
-			cmd.addr1 = cursor;
+			cmd.addr1.lno = curf->lno;
+			cmd.addr1.cno = curf->cno;
 			break;
 		case 1:
 			break;
@@ -282,7 +283,8 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 two:		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 2;
-			cmd.addr1 = cmd.addr2 = cursor;
+			cmd.addr1.lno = cmd.addr2.lno = curf->lno;
+			cmd.addr1.cno = cmd.addr2.cno = curf->cno;
 			break;
 		case 1:				/* Default to first address. */
 			cmd.addrcnt = 2;
@@ -487,7 +489,8 @@ addr2:	switch(cmd.addrcnt) {
 
 	/* If doing a default command, vi just moves to the line. */
 	if (mode == MODE_VI && uselastcmd) {
-		cursor = cmd.addr1;
+		curf->lno = cmd.addr1.lno;
+		curf->cno = cmd.addr1.cno;
 		return (0);
 	}
 
@@ -537,22 +540,23 @@ addr2:	switch(cmd.addrcnt) {
 	 */
 	if (flagoff) {
 		if (flagoff < 0) {
-			if ((u_long)flagoff > cursor.lno) {
+			if ((u_long)flagoff > curf->lno) {
 				msg("Flag offset before line 1.");
 				return (1);
 			}
-		} else if (cursor.lno + flagoff > file_lline(curf)) {
+		} else if (curf->lno + flagoff > file_lline(curf)) {
 			msg("Flag offset past end-of-file.");
 			return (1);
 		}
-		cursor.lno += flagoff;
+		curf->lno += flagoff;
 	}
 
 	if (mode == MODE_EX && autoprint && ISSET(O_AUTOPRINT))
 		flags = E_F_PRINT;
 	else
 		flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
-	parg.addr1 = parg.addr2 = cursor;
+	parg.addr1.lno = parg.addr2.lno = curf->lno;
+	parg.addr1.cno = parg.addr2.cno = curf->cno;
 	if (flags) {
 		switch (flags) {
 		case E_F_HASH:
@@ -581,7 +585,7 @@ linespec(cmd, cp)
 	char *cmd;
 	EXCMDARG *cp;
 {
-	MARK cur, savecursor, *mp;
+	MARK cur, savecursor, sm, *mp;
 	long num, total;
 	int delimiter, savecursor_set;
 	char *ep;
@@ -606,7 +610,8 @@ linespec(cmd, cp)
 			delimiter = 1;
 			/* FALLTHROUGH */
 		case '.':		/* Current position. */
-			cur = cursor;
+			cur.lno = curf->lno;
+			cur.cno = curf->cno;
 			++cmd;
 			break;
 		case '$':		/* Last line. */
@@ -632,15 +637,21 @@ linespec(cmd, cp)
 			cmd += 2;
 			break;
 		case '/':		/* Search forward. */
-			if ((mp = f_search(&cursor, cmd, &ep, 0)) == NULL)
+			sm.lno = curf->lno;
+			sm.cno = curf->cno;
+			if ((mp = f_search(&sm, cmd, &ep, 0)) == NULL)
 				return (NULL);
-			cur = *mp;
+			curf->lno = mp->lno;
+			curf->cno = mp->cno;
 			cmd = ep;
 			break;
 		case '?':		/* Search backward. */
-			if ((mp = b_search(&cursor, cmd, &ep, 0)) == NULL)
+			sm.lno = curf->lno;
+			sm.cno = curf->cno;
+			if ((mp = b_search(&sm, cmd, &ep, 0)) == NULL)
 				return (NULL);
-			cur = *mp;
+			curf->lno = mp->lno;
+			curf->cno = mp->cno;
 			cmd = ep;
 			break;
 		default:
@@ -653,7 +664,8 @@ linespec(cmd, cp)
 		 * first address.  Trailing/multiple delimiters are discarded.
 		 */
 		if (delimiter && *cmd == ';') {
-			savecursor = cursor;
+			savecursor.lno = curf->lno;
+			savecursor.cno = curf->cno;
 			savecursor_set = 1;
 		}
 
@@ -701,8 +713,10 @@ linespec(cmd, cp)
 	 * This is probably not right for treatment of savecursor -- figure
 	 * out what the historical ex did for ";,;,;5p" or similar stupidity.
 	 */
-done:	if (savecursor_set)
-		cursor = savecursor;
+done:	if (savecursor_set) {
+		curf->lno = savecursor.lno;
+		curf->cno = savecursor.cno;
+	}
 
 	return (cmd);
 }
