@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.11 1992/04/28 17:43:09 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:43:09 $";
+static char sccsid[] = "$Id: options.c,v 5.12 1992/05/02 09:13:50 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:13:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,7 +41,7 @@ static long o_lines[3] = {25, 2, 66};
 static long o_report[3] = {5, 1, 127};
 static long o_scroll[3] = {12, 1, 127};
 static long o_shiftwidth[3] = {8, 1, 255};
-static long o_sidescroll[3] = {8, 1, 40};
+static long o_sidescroll[3] = {16, 1, 64};
 static long o_tabstop[3] = {8, 1, 40};
 static long o_taglength[3] = {0, 0, 30};
 static long o_window[3] = {24, 1, 24};
@@ -93,61 +93,59 @@ OPTIONS opts[] = {
 	"make",		"make",		OPT_STR,
 #define	O_MESG		21
 	"mesg",		NULL,		OPT_1BOOL,
-#define	O_MODELINE	22
-	"modeline",	NULL,		OPT_0BOOL,
-#define	O_NUMBER	23
+#define	O_NUMBER	22
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	24
+#define	O_PARAGRAPHS	23
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	25
+#define	O_PROMPT	24
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	26
+#define	O_READONLY	25
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	27
+#define	O_REPORT	26
 	"report",	&o_report,	OPT_NUM,
-#define	O_RULER		28
+#define	O_RULER		27
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	29
+#define	O_SCROLL	28
 	"scroll",	&o_scroll,	OPT_NUM,
-#define	O_SECTIONS	30
+#define	O_SECTIONS	29
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		31
+#define	O_SHELL		30
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	32
+#define	O_SHIFTWIDTH	31
 	"shiftwidth",	&o_shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	33
+#define	O_SHOWMATCH	32
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	34
+#define	O_SHOWMODE	33
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	35
+#define	O_SIDESCROLL	34
 	"sidescroll",	&o_sidescroll,	OPT_NUM,
-#define	O_SYNC		36
+#define	O_SYNC		35
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	37
+#define	O_TABSTOP	36
 	"tabstop",	&o_tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	38
+#define	O_TAGLENGTH	37
 	"taglength",	&o_taglength,	OPT_NUM,
-#define	O_TERM		39
+#define	O_TERM		38
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		40
+#define	O_TERSE		39
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	41
+#define	O_TIMEOUT	40
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		42
+#define	O_VBELL		41
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		43
+#define	O_WARN		42
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	44
+#define	O_WINDOW	43
 	"window",	&o_window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	45
+#define	O_WRAPMARGIN	44
 	"wrapmargin",	&o_wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	46
+#define	O_WRAPSCAN	45
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	47
+#define	O_WRITEANY	46
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	48
+#define	O_OPTIONCOUNT	47
 /* END_SED_INCLUDE */
 
 typedef struct abbrev {
@@ -177,8 +175,6 @@ static ABBREV abbrev[] = {
 	"ma",	O_MAGIC,
 	"me",	O_MESG,
 	"mk",	O_MAKE,
-	"ml",	O_MODELINE,
-	"ml",	O_MODELINE,
 	"nu",	O_NUMBER,
 	"pa",	O_PARAGRAPHS,
 	"pr",	O_PROMPT,
