@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.18 1993/05/13 08:16:00 bostic Exp $ (Berkeley) $Date: 1993/05/13 08:16:00 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.19 1993/05/13 14:06:25 bostic Exp $ (Berkeley) $Date: 1993/05/13 14:06:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,6 +71,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 				/* State of abbreviation checks. */
 	enum { L_NOCHECK, L_SPACE, L_NOTSPACE } lch;
 	TEXT *tp, *ntp;		/* Input text structures. */
+	TEXT *aitp;		/* Autoindent text structure. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	int ch;			/* Input character. */
 	int eval;		/* Routine return value. */
@@ -142,24 +143,25 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	 *
 	 * We assume that autoindent only happens on empty lines, so insert
 	 * and overwrite will be zero.  If doing autoindent, figure out how
-	 * much indentation we need, and fill it in.  Update input column and
+	 * much indentation we need and fill it in.  Update input column and
 	 * screen cursor as necessary.
 	 */
 	if (LF_ISSET(TXT_AUTOINDENT) && ai_line != OOBLNO) {
-		if (txt_auto(sp, ep, ai_line, tp))
+		if (txt_auto(sp, ep, ai_line, NULL, tp))
 			return (1);
 		sp->cno = tp->ai;
+	} else {
+		/*
+		 * The change command has a special "feature" -- leading space
+		 * characters are handled as autoindent characters.  Beauty!
+		 */
+		if (LF_ISSET(TXT_AICHARS)) {
+			tp->offset = 0;
+			tp->ai = sp->cno;
+		} else
+			tp->offset = sp->cno;
 	}
-
-	/*
-	 * The change command has a special "feature" -- leading space
-	 * characters are handled as autoindent characters.  Beauty!
-	 */
-	else if (LF_ISSET(TXT_AICHARS)) {
-		tp->offset = 0;
-		tp->ai = sp->cno;
-	} else
-		tp->offset = sp->cno;
+	aitp = tp;
 
 	/* If getting a command buffer from the user, there may be a prompt. */
 	if (LF_ISSET(TXT_PROMPT)) {
@@ -275,7 +277,7 @@ next_ch:	if (replay)
 			 * and there aren't any other characters in the	\
 			 * line, delete the autoindent characters.	\
 			 */						\
-			if (LF_ISSET(TXT_AUTOINDENT) && tp->ai &&	\
+			if (LF_ISSET(TXT_AUTOINDENT) &&			\
 			    !tp->insert && sp->cno <= tp->ai) {		\
 				tp->len = tp->overwrite = 0;		\
 				sp->cno = 0;				\
@@ -300,26 +302,26 @@ next_ch:	if (replay)
 			ntp->lno = tp->lno + 1;
 			ntp->insert = tp->insert;
 
-			/* Reset bookkeeping for the old line. */
-			tp->len = sp->cno;
-			tp->ai = tp->insert = tp->overwrite = 0;
-
 			/*
 			 * Reset the autoindent line.  0^D keeps the ai
-			 * line from changing.
+			 * line from changing, ^D changes the level, even
+			 * if no characters in the line.
 			 */
 			if (LF_ISSET(TXT_AUTOINDENT)) {
-				if (ai_line == OOBLNO || carat_st == C_NOCHANGE)
-					ai_line = tp->lno;
-				else if (tp->len)
-					ai_line = tp->lno;
-
-				if (txt_auto(sp, ep, ai_line, ntp))
+				if (carat_st != C_NOCHANGE)
+					aitp = tp;
+				if (txt_auto(sp, ep, OOBLNO, aitp, ntp))
 					ERR;
 				carat_st = C_NOTSET;
 			}
-			sp->cno = ntp->ai;
 			
+			/* Can now reset bookkeeping for the old line. */
+			tp->len = sp->cno;
+			tp->ai = tp->insert = tp->overwrite = 0;
+
+			/* New cursor position. */
+			sp->cno = ntp->ai;
+
 			/* New lines are TXT_APPENDEOL if nothing to insert. */
 			if (ntp->insert == 0) {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
@@ -397,25 +399,26 @@ k_escape:		if (tp->insert && tp->overwrite)
 				carat_st = C_ZEROSET;
 			goto ins_ch;
 		case K_CNTRLD:			/* Delete autoindent char. */
-			if (!LF_ISSET(TXT_AUTOINDENT) || sp->cno > tp->ai)
+			if (!LF_ISSET(TXT_AUTOINDENT))
 				goto ins_ch;
-			if (sp->cno == 0) {
-				msgq(sp, M_BERR,
-				    "Already at the beginning of the line");
-				break;
-			}
 			switch (carat_st) {
 			case C_CARATSET:	/* ^^D */
+				if (sp->cno == 0 || sp->cno > tp->ai + 1)
+					goto ins_ch;
 				carat_st = C_NOTSET;
 				tp->overwrite += sp->cno;
-				sp->cno = 0;
+				tp->ai = sp->cno = 0;
 				break;
 			case C_ZEROSET:		/* 0^D */
+				if (sp->cno == 0 || sp->cno > tp->ai + 1)
+					goto ins_ch;
 				carat_st = C_NOCHANGE;
 				tp->overwrite += sp->cno;
-				sp->cno = 0;
+				tp->ai = sp->cno = 0;
 				break;
 			case C_NOTSET:		/* ^D */
+				if (sp->cno == 0 || sp->cno > tp->ai)
+					goto ins_ch;
 				(void)txt_outdent(sp, tp);
 				break;
 			default:
@@ -654,20 +657,26 @@ txt_abbrev(sp, tp)
 
 /*
  * txt_auto --
- *	Handle autoindent.
+ *	Handle autoindent.  If aitp isn't NULL, use it, otherwise,
+ *	retrieve the line.
  */
 int
-txt_auto(sp, ep, lno, tp)
+txt_auto(sp, ep, lno, aitp, tp)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
-	TEXT *tp;
+	TEXT *aitp, *tp;
 {
 	size_t len, nlen;
 	char *p, *t;
 	
-	if ((p = t = file_gline(sp, ep, lno, &len)) == NULL)
-		return (0);
+	if (aitp == NULL) {
+		if ((p = t = file_gline(sp, ep, lno, &len)) == NULL)
+			return (0);
+	} else {
+		len = aitp->len ? aitp->len : aitp->ai;
+		p = t = aitp->lb;
+	}
 	for (nlen = 0; len; ++p) {
 		if (!isspace(*p))
 			break;
