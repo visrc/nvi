@@ -1,9 +1,9 @@
-#	$Id: Makefile.in,v 8.12 1996/02/25 13:11:30 bostic Exp $ (Berkeley) $Date: 1996/02/25 13:11:30 $
+#	$Id: Makefile.in,v 8.13 1996/02/25 13:13:06 bostic Exp $ (Berkeley) $Date: 1996/02/25 13:13:06 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
 CC=	@CC@
-CFLAGS=	$(GCCF) $(DEBUG) -I. -I../include @CFLAGS@
+CFLAGS=	-c $(GCCF) $(DEBUG) -I. -I../include @CFLAGS@
 
 # Header files.
 HDRS=	cl_extern.h common_extern.h ex_define.h ex_extern.h \
