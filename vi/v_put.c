@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 5.6 1992/05/27 10:36:49 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:36:49 $";
+static char sccsid[] = "$Id: v_put.c,v 5.7 1992/05/27 10:55:55 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:55:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,5 +39,5 @@ v_put(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, NULL, fm, rp, 1));
+	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, fm, rp, 1));
 }
