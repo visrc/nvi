@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tcl.c,v 8.2 1995/11/15 12:35:44 bostic Exp $ (Berkeley) $Date: 1995/11/15 12:35:44 $";
+static char sccsid[] = "$Id: ex_tcl.c,v 8.3 1995/11/18 13:04:54 bostic Exp $ (Berkeley) $Date: 1995/11/18 13:04:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,69 +45,31 @@ ex_tcl(sp, cmdp)
 	msgq(sp, M_ERR, "302|Vi was not loaded with a Tcl interpreter");
 	return (1);
 #else
-	Tcl_DString cmd;
-	recno_t lno;
+	CHAR_T *p;
+	GS *gp;
 	size_t len;
-	int result;
-	char *lp;
+	char buf[64];
 
-	/*
-	 * Set the current screen pointer for interpretation to the screen
-	 * pointer that we were called with.
-	 *
-	 * XXX
-	 * This is fairly awful, but I haven't thought of a better answer.
-	 */
-	sp->gp->interpScr = sp;
-
-	/*
-	 * This is the case where we have two addresses to mark out the code
-	 * to execute.  Ignore any arguments to the tcl command.
-	 */
-	if (cmdp->addrcnt != 0) {
-		Tcl_DStringInit(&cmd);
-		for (lno = cmdp->addr1.lno; lno <= cmdp->addr2.lno; lno++) {
-			if (db_get(sp, lno, DBG_FATAL, &lp, &len)) {
-				result = TCL_ERROR;
+	/* Skip leading white space. */
+	if (cmdp->argc != 0)
+		for (p = cmdp->argv[0]->bp,
+		    len = cmdp->argv[0]->len; len > 0; --len, ++p)
+			if (!isblank(*p))
 				break;
-			}
-			Tcl_DStringAppend(&cmd, lp, len);
+	if (cmdp->argc == 0 || len == 0) {
+		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
+		return (1);
+	}
 
-/* Cast the interpreter cookie to get to the Tcl result. */
-#define	RESULTP	((Tcl_Interp *)sp->gp->interp)->result
-
-			/* 
-			 * We don't get a \n from db_get so we must supply it
-			 * or multiple commands within a loop (or any block)
-			 * will be unhappy.
-			 */
-			Tcl_DStringAppend(&cmd, "\n", 1);
-			if (Tcl_CommandComplete(Tcl_DStringValue(&cmd))) {
-				result = Tcl_Eval(sp->gp->interp,
-				    Tcl_DStringValue(&cmd));
-				if (result != TCL_OK) {
-					msgq(sp, M_ERR, "Tcl: %s", RESULTP);
-					break;
-				}
-				Tcl_DStringInit(&cmd);
-			}
-		}
-		Tcl_DStringFree(&cmd);
-	} else
-		result = Tcl_Eval(sp->gp->interp, cmdp->argv[0]->bp);
-
-	/*
-	 * Unset the interpreter's screen pointer.
-	 *
-	 * XXX
-	 * This is fairly awful, but I haven't thought of a better answer.
-	 */
-	sp->gp->interpScr = NULL;
-
-	if (result == TCL_OK)
+	gp = sp->gp;
+	(void)snprintf(buf, sizeof(buf),
+	    "set viScreenId %d\nset viStartLine %lu\nset viStopLine %lu",
+	    sp->id, cmdp->addr1.lno, cmdp->addr2.lno);
+	if (Tcl_Eval(gp->interp, buf) == TCL_OK &&
+	    Tcl_Eval(gp->interp, cmdp->argv[0]->bp) == TCL_OK)
 		return (0);
 
-	msgq(sp, M_ERR, "Tcl: %s", RESULTP);
+	msgq(sp, M_ERR, "Tcl: %s", ((Tcl_Interp *)gp->interp)->result);
 	return (1);
 #endif /* TCL_INTERP */
 }
