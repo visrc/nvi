@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 8.1 1993/06/09 22:20:43 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:20:43 $";
+static char sccsid[] = "$Id: delete.c,v 8.2 1993/08/27 08:59:15 bostic Exp $ (Berkeley) $Date: 1993/08/27 08:59:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,11 +104,18 @@ delete(sp, ep, fm, tm, lmode)
 		GETLINE_ERR(sp, tm->lno);
 		return (1);
 	}
-	if (len > SIZE_T_MAX - tlen) {
-		msgq(sp, M_ERR, "Error: length overflow");
+
+	/*
+	 * XXX
+	 * We can overflow memory here, if (len + tlen) > SIZE_T_MAX.  The
+	 * only portable way I've found to test is to depend on the overflow
+	 * being less than the value.
+	 */
+	tlen += len;
+	if (len > tlen) {
+		msgq(sp, M_ERR, "Error: line length overflow");
 		return (1);
 	}
-	tlen += len;
 
 	GET_SPACE(sp, bp, blen, tlen);
 
