@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.17 1993/02/16 20:16:24 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:24 $";
+static char sccsid[] = "$Id: search.c,v 5.18 1993/02/25 17:44:17 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:44:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,6 @@ static char sccsid[] = "$Id: search.c,v 5.17 1993/02/16 20:16:24 bostic Exp $ (B
 
 #include "vi.h"
 #include "options.h"
-#include "search.h"
-
-enum direction searchdir = NOTSET;	/* Search direction. */
-
-static regex_t sre;			/* Saved RE. */
 
 static int	checkdelta __P((EXF *, recno_t, recno_t));
 static int	resetup __P((EXF *, regex_t **, enum direction,
@@ -42,7 +37,7 @@ resetup(ep, rep, dir, ptrn, epp, deltap, flags)
 	u_char *endp;
 	char delim[2];
 
-	if (ptrn == NULL && searchdir == NOTSET) {
+	if (ptrn == NULL && !FF_ISSET(ep, F_RE_SET)) {
 noprev:		msg(ep, M_DISPLAY, "No previous search pattern.");
 		return (1);
 	}
@@ -57,7 +52,7 @@ noprev:		msg(ep, M_DISPLAY, "No previous search pattern.");
 	 * did not reuse any delta supplied.
 	 */
 	if (ptrn == NULL || ptrn[1] == '\0') {
-		*rep = &sre;
+		*rep = &ep->sre;
 		return (0);
 	}
 
@@ -101,9 +96,9 @@ noprev:		msg(ep, M_DISPLAY, "No previous search pattern.");
 
 		/* If the pattern was empty, use the previous pattern. */
 		if (*ptrn == '\0') {
-			if (searchdir == NOTSET)
+			if (!FF_ISSET(ep, F_RE_SET))
 				goto noprev;
-			*rep = &sre;
+			*rep = &ep->sre;
 		}
 	}
 						/* Compile the RE. */
@@ -113,8 +108,9 @@ noprev:		msg(ep, M_DISPLAY, "No previous search pattern.");
 		return (1);
 	}
 	if (flags & SEARCH_SET) {
-		searchdir = dir;
-		sre = **rep;
+		FF_SET(ep, F_RE_SET);
+		ep->searchdir = dir;
+		ep->sre = **rep;
 	}
 	return (0);
 }
