@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.38 1994/10/13 13:36:24 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:36:24 $
+.\"	$Id: vi.cmd.roff,v 8.39 1994/11/20 13:09:10 bostic Exp $ (Berkeley) $Date: 1994/11/20 13:09:10 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -929,12 +929,8 @@ Affected by the
 option.
 .SE
 .KY #
-.IP "[count] # +|-|#"
+.IP "[count] # +|-"
 Increment or decrement the number referenced by the cursor.
-The current number begins at the first non-number character on or
-before the current cursor position, or the beginning of the line,
-and extends up to the first non-number character on or after the
-current cursor position or the end of the line.
 If the trailing character is a
 .LI \&+ ,
 the number is incremented by
@@ -943,20 +939,41 @@ If the trailing character is a
 .LI \&- ,
 the number is decremented by
 .LI count .
-If the trailing character is a
-.LI \&# ,
-the previous increment or decrement is repeated.
 .sp
-The format of the number (decimal, hexadecimal, and octal,
-and leading 0's) is retained unless the new value cannot be
-represented in the previous format.
-It is an error to use this command when the cursor is not positioned on
+A leading
+.QT \&0X
+or
+.QT \&0x
+causes the number to be interpreted as a hexadecimal number.
+Otherwise, a leading
+.QT \&0
+causes the number to be interpreted as an octal number, unless a non-octal
+digit is found as part of the number.
+Otherwise, the number is interpreted as a decimal number, and may
+have a leading
+.LI \&+
+or
+.LI \&-
+sign.
+The current number begins at the first non-blank character at or after
+the current cursor position, and extends up to the end of the line or
+the first character that isn't a possible character for the numeric type.
+The format of the number (e.g. leading 0's, signs) is retained unless
+the new value cannot be represented in the previous format.
+.sp
+Octal and hexadecimal numbers, and the result of the operation, must fit
+into an
+.QT "unsigned long" .
+Similarly, decimal numbers and their result must fit into a
+.QT "signed long" .
+It is an error to use this command when the cursor is not positioned at
 a number.
+.sp
 .SS
 .SP Line:
 Unchanged.
 .SP Column:
-Set to the first character in the cursor word.
+Set to the first character in the cursor number.
 .SP Options:
 None.
 .SE
