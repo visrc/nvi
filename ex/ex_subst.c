@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.3 1992/04/05 09:23:50 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:50 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.4 1992/04/15 09:14:20 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:14:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,7 +137,7 @@ substitute(cmdp, cmd)
 	if ((optc || optp) && mode == MODE_VI)
 	{
 		addch('\n');
-		exrefresh();
+		ex_refresh();
 	}
 
 	ChangeText
@@ -149,7 +149,7 @@ substitute(cmdp, cmd)
 		for (l = markline(cmdp->addr1); l <= markline(cmdp->addr2); l++)
 		{
 			/* fetch the line */
-			line = fetchline(l);
+			line = fetchline(l, NULL);
 
 			/* if it contains the search pattern... */
 			if (regexec(re, line, TRUE))
@@ -177,7 +177,7 @@ substitute(cmdp, cmd)
 						for (; *conf; conf++)
 							addch(*conf);
 						addch('\n');
-						exrefresh();
+						ex_refresh();
 						if (getkey(0) != 'y')
 						{
 							/* copy accross the original chars */
@@ -247,7 +247,7 @@ Continue:
 				if (optp)
 				{
 					addstr(tmpblk.c);
-					exrefresh();
+					ex_refresh();
 				}
 
 				/* move the cursor to that line */
