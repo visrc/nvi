@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.3 1994/11/10 16:50:14 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:50:14 $";
+static char sccsid[] = "$Id: main.c,v 9.4 1994/11/12 13:44:14 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:44:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -299,9 +299,9 @@ main(argc, argv)
 	if (tag_f != NULL) {
 		if (ex_tagfirst(sp, tag_f))
 			goto err;
-		need_lreset = 1;
-	} else
 		need_lreset = 0;
+	} else
+		need_lreset = 1;
 
 	/*
 	 * Append any remaining arguments as file names.  Files are recovery
