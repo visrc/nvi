@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 8.7 1993/12/09 19:42:05 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:05 $";
+static char sccsid[] = "$Id: delete.c,v 8.8 1994/02/26 17:22:17 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:22:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,10 +33,6 @@ delete(sp, ep, fm, tm, lmode)
 	char *bp, *p;
 	int eof;
 
-#if defined(DEBUG) && 0
-	TRACE(sp, "delete: from %lu/%d to %lu/%d%s\n",
-	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " (LINE MODE)" : "");
-#endif
 	bp = NULL;
 
 	/* Case 1 -- delete in line mode. */
@@ -87,9 +83,11 @@ delete(sp, ep, fm, tm, lmode)
 			return (1);
 		}
 		GET_SPACE_RET(sp, bp, blen, len);
-		memmove(bp, p, fm->cno);
-		memmove(bp + fm->cno, p + tm->cno, len - tm->cno);
-		if (file_sline(sp, ep, fm->lno, bp, len - (tm->cno - fm->cno)))
+		if (fm->cno != 0)
+			memmove(bp, p, fm->cno);
+		memmove(bp + fm->cno, p + (tm->cno + 1), len - (tm->cno + 1));
+		if (file_sline(sp, ep, fm->lno,
+		    bp, len - ((tm->cno - fm->cno) + 1)))
 			goto err;
 		goto done;
 	}
@@ -136,8 +134,8 @@ delete(sp, ep, fm, tm, lmode)
 		GETLINE_ERR(sp, tm->lno);
 		goto err;
 	}
-	memmove(bp + tlen, p + tm->cno, len - tm->cno);
-	tlen += len - tm->cno;
+	memmove(bp + tlen, p + (tm->cno + 1), len - (tm->cno + 1));
+	tlen += len - (tm->cno + 1);
 
 	/* Set the current line. */
 	if (file_sline(sp, ep, fm->lno, bp, tlen))
