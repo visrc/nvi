@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.8 1993/09/10 18:34:43 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:34:43 $";
+static char sccsid[] = "$Id: options.c,v 8.9 1993/09/30 18:39:31 bostic Exp $ (Berkeley) $Date: 1993/09/30 18:39:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -244,7 +244,7 @@ opts_init(sp)
 	(void)snprintf(b1, sizeof(b1),
 	    "term=%s", (s = getenv("TERM")) == NULL ? "unknown" : s);
 	SET_DEF(O_TERM, b1);
-	(void)snprintf(b1, sizeof(b1), "window=%ld", O_VAL(sp, O_LINES));
+	(void)snprintf(b1, sizeof(b1), "window=%ld", O_VAL(sp, O_LINES) - 1);
 	SET_DEF(O_WINDOW, b1);
 	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
 
