@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.70 1996/08/19 13:00:17 bostic Exp $ (Berkeley) $Date: 1996/08/19 13:00:17 $
+#	$Id: Makefile.in,v 8.71 1996/09/18 09:23:04 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:23:04 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -7,6 +7,7 @@ CFLAGS=	-c $(OPTFLAG) @CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 PERL=	@vi_cv_path_perl@
 PERLLIB=@vi_cv_perllib@
+SHRPENV=@shrpenv@
 
 # Objects
 COBJS=	addbytes.o addch.o box.o clear.o clrtobot.o clrtoeol.o \
@@ -46,13 +47,13 @@ all: nvi @tknvi@
 
 NVIALL=	$(CLOBJS) $(VIOBJS) @cobjs@ @LIBOBJS@
 nvi nex: $(NVIALL)
-	$(CC) $(LDFLAGS) -o $@ $(NVIALL) @LIBS@
+	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(NVIALL) @LIBS@
 	-rm -f nex
 	ln $@ nex
 
 TKALL=	$(TKOBJS) $(VIOBJS) @LIBOBJS@
 tknvi: $(TKALL)
-	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
+	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
 chmod=	@vi_cv_path_chmod@
 cp=	@vi_cv_path_cp@
@@ -217,6 +218,8 @@ perl.c: $(srcdir)/perl_api/perl.xs $(srcdir)/perl_api/typemap
 	$(PERL) $(PERLLIB)/ExtUtils/xsubpp -typemap \
 	    $(PERLLIB)/ExtUtils/typemap $(srcdir)/perl_api/perl.xs >> $@
 perl.o: perl.c
+	$(CC) $(CFLAGS) $?
+perlsfio.o: $(srcdir)/perl_api/perlsfio.c
 	$(CC) $(CFLAGS) $?
 tcl.o: $(srcdir)/tcl_api/tcl.c
 	$(CC) $(CFLAGS) $?

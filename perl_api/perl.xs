@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.19 1996/08/14 09:39:20 bostic Exp $ (Berkeley) $Date: 1996/08/14 09:39:20 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.20 1996/09/18 09:22:25 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:22:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,11 +32,12 @@ static const char sccsid[] = "$Id: perl.xs,v 8.19 1996/08/14 09:39:20 bostic Exp
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "perl_extern.h"
 
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
+
+#include "perl_extern.h"
 
 static void msghandler __P((SCR *, mtype_t, char *, size_t));
 
@@ -87,6 +88,8 @@ static int perl_eval(string)
 #ifdef HAVE_PERL_5_003_01
 	SV* sv = newSVpv(string, 0);
 
+	sv_setpv(GvSV(errgv),"");
+	hv_clear(GvHV(errgv));
 	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
 	SvREFCNT_dec(sv);
 #else
@@ -168,7 +171,7 @@ my_sighandler(i)
  * any subsequent use of any of those reference will produce
  * a warning. (see typemap)
  */
-static void
+static SV *
 newVIrv(rv, screen)
 	SV *rv;
 	SCR *screen;
@@ -181,7 +184,7 @@ newVIrv(rv, screen)
 	else SvREFCNT_inc(screen->perl_private);
 	SvRV(rv) = screen->perl_private;
 	SvROK_on(rv);
-	sv_bless(rv, gv_stashpv("VI", TRUE));
+	return sv_bless(rv, gv_stashpv("VI", TRUE));
 }
 
 
@@ -214,10 +217,15 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
 		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
 		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
+#ifdef USE_SFIO
+		sfdisc(PerlIO_stdout(), sfdcnewnvi(scrp));
+		sfdisc(PerlIO_stderr(), sfdcnewnvi(scrp));
+#else
 		sv_magic((SV *)gv_fetchpv("STDOUT",TRUE, SVt_PVIO), svcurscr,
 		 	'q', Nullch, 0);
 		sv_magic((SV *)gv_fetchpv("STDERR",TRUE, SVt_PVIO), svcurscr,
 		 	'q', Nullch, 0);
+#endif /* USE_SFIO */
 	}
 
 	sv_setiv(svstart, f_lno);
@@ -241,7 +249,6 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 
 	err[length - 1] = '\0';
 	msgq(scrp, M_ERR, "perl: %s", err);
-	sv_setpv(GvSV(errgv),"");
 	return (1);
 }
 
@@ -319,7 +326,6 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 
 err:	str[length - 1] = '\0';
 	msgq(scrp, M_ERR, "perl: %s", str);
-	sv_setpv(GvSV(errgv),"");
 	return (1);
 }
 
@@ -518,6 +524,24 @@ GetLine(screen, linenumber)
 
 	EXTEND(sp,1);
         PUSHs(sv_2mortal(newSVpv(p, len)));
+
+# bg --
+#	background screen
+#
+# Usage: $screen->bg;
+
+void
+bg(screen)
+	VI screen
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_bg(screen);
+	ENDMESSAGE;
 
 # XS_VI_sline --
 #	Set lineNumber to the text supplied.
@@ -794,7 +818,7 @@ GetOpt(screen, option)
 
 	PPCODE:
 	INITMESSAGE;
-	rval = api_opts_get(screen, option, &value);
+	rval = api_opts_get(screen, option, &value, NULL);
 	ENDMESSAGE;
 
 	EXTEND(SP,1);
@@ -840,7 +864,8 @@ Warn(warning)
 #define TIED(package) \
 	sv_magic((SV *) hv = \
 	    sv_2mortal((SV *)newHV()), \
-		sv_setref_pv(sv_newmortal(), package, (void *)screen),\
+		sv_setref_pv(sv_newmortal(), package, \
+			newVIrv(newSV(0), screen)),\
 		'P', Nullch, 0);\
 	RETVAL = newRV((SV *)hv)
 
@@ -876,6 +901,14 @@ Mark(screen)
 
 MODULE = VI	PACKAGE = VI::OPT
 
+void 
+DESTROY(screen)
+	VI::OPT screen
+
+	CODE:
+	# typemap did all the checking
+	SvREFCNT_dec((SV*)SvIV((SV*)SvRV(ST(0))));
+
 void
 FETCH(screen, key)
 	VI::OPT screen
@@ -885,19 +918,44 @@ FETCH(screen, key)
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
 	char *value;
+	int boolvalue;
 
 	PPCODE:
 	INITMESSAGE;
-	rval = api_opts_get(screen, key, &value);
+	rval = api_opts_get(screen, key, &value, &boolvalue);
 	if (!rval) {
 		EXTEND(SP,1);
-		PUSHs(sv_2mortal(newSVpv(value, 0)));
+		PUSHs(sv_2mortal((boolvalue == -1) ? newSVpv(value, 0)
+						   : newSViv(boolvalue)));
 		free(value);
 	} else ST(0) = &sv_undef;
 	rval = 0;
 	ENDMESSAGE;
 
+void
+STORE(screen, key, value)
+	VI::OPT	screen
+	char	*key
+	SV	*value
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_opts_set2(screen, key, SvPV(value, na), SvIV(value));
+	ENDMESSAGE;
+
 MODULE = VI	PACKAGE = VI::MAP
+
+void 
+DESTROY(screen)
+	VI::MAP screen
+
+	CODE:
+	# typemap did all the checking
+	SvREFCNT_dec((SV*)SvIV((SV*)SvRV(ST(0))));
 
 void
 STORE(screen, key, perlproc)
@@ -913,7 +971,6 @@ STORE(screen, key, perlproc)
 	SV *svc;
 
 	CODE:
-	rval = SvTRUE(perlproc);
 	INITMESSAGE;
 	svc = sv_2mortal(newSVpv(":perl ", 6));
 	sv_catsv(svc, perlproc);
@@ -936,6 +993,14 @@ DELETE(screen, key)
 	ENDMESSAGE;
 
 MODULE = VI	PACKAGE = VI::MARK
+
+void 
+DESTROY(screen)
+	VI::MARK screen
+
+	CODE:
+	# typemap did all the checking
+	SvREFCNT_dec((SV*)SvIV((SV*)SvRV(ST(0))));
 
 AV *
 FETCH(screen, mark)
