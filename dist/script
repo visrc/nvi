@@ -17,7 +17,7 @@ cd $S && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
 cd $S/docs && vi changelog
 
 # build the distribution
-cd $S/build && make -f Makefile.in distrib
+cd $S/build && sh ./distrib
 cd $S/catalog && make clean all check && rm dump && \
     chmod 444 vi_english* *.check
 
@@ -30,7 +30,6 @@ chmod 444 ../../TK/history/$VERSION.gz
 # cleanup
 cd $S && allout
 cd $S && mv build.local RCS/
-cd $S && chmod 444 */TODO
 find . -type d \! -perm 775
 find . \( -name '*.rej' -o -name '*.orig' \)
 find . -name RCS -prune -o -name SCCS -prune -o \
