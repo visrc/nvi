@@ -11,13 +11,14 @@
  *
  *			User should be able to enable/disable bar display
  *
+ *			<yuch!> horizontal scrollbar
+ *
  *	expose_func	optimize for redraw of clipped rectangle(s) only
  *
  *	insert/delete	move display bits manually.  calling expose_func
  *			is too expensive
  *
  *	split		Ought to be able to put a title on each pane
- *			Need to adjust sizes better
  *			Need protocol messages to shift focus
  *
  *	bell		user settable visible bell
@@ -35,6 +36,12 @@
  *
  *	arrow keys	need to define a protocol.  I can easily send
  *			the vt100 sequences (and currently do).
+ *			In general, we need to define what special keys
+ *			do (for example PageUp) and what happens when we
+ *			are in Insert mode.
+ *
+ *			Suggestion: IPO_COMMAND( string ).  vi core can
+ *			take it as a command even when in insert mode.
  */
 
 #include "config.h"
@@ -56,14 +63,12 @@
 #include "X11/Intrinsic.h"
 #include "X11/StringDefs.h"
 #include "X11/cursorfont.h"
-#include "X11/keysym.h"
 #include "Xm/PanedW.h"
 #include "Xm/DrawingA.h"
 #include "Xm/Form.h"
 #include "Xm/Frame.h"
 #include "Xm/ScrollBar.h"
 #include "Xm/MainW.h"
-#include "Xm/VirtKeys.h"
 #include "xutilities.h"
 
 #include "../common/common.h"
@@ -313,12 +318,14 @@ void	select_start();
 void	select_extend();
 void	select_paste();
 void	key_press();
+void	insert_string();
 
 static XtActionsRec	area_actions[] = {
     { "select_start",	select_start	},
     { "select_extend",	select_extend	},
     { "select_paste",	select_paste	},
     { "key_press",	key_press	},
+    { "insert_string",	insert_string	},
 };
 
 char	areaTrans[] =
@@ -327,6 +334,12 @@ char	areaTrans[] =
      <Btn1Motion>:	select_extend()		\n\
      <Btn3Motion>:	select_extend()		\n\
      <Btn2Down>:	select_paste()		\n\
+     <Key>Up:		insert_string(\033[A)	\n\
+     <Key>Down:		insert_string(\033[B)	\n\
+     <Key>Right:	insert_string(\033[C)	\n\
+     <Key>Left:		insert_string(\033[D)	\n\
+     <Key>Prior:	insert_string(\002)	\n\
+     <Key>Next:		insert_string(\006)	\n\
      <Key>:		key_press()";
 
 String	fallback_rsrcs[] = {
@@ -343,6 +356,22 @@ String	fallback_rsrcs[] = {
     "*font:			-*-*-*-r-*--14-*-*-*-m-*-*-*",
     "*pointerShape:		xterm",
     "*busyShape:		watch",
+
+    /* When *NOT* running MWM, Motif needs to be told how the
+     * virtual keys map to the physical keys.  There *ought* to
+     * system defaults, but...
+     *
+     * In any event, it shouldn't be bad to define these...
+     */
+
+    "*defaultVirtualBindings:	\
+    	osfPageUp	<Key>Prior	\n\
+    	osfPageDown	<Key>Next	\n\
+    	osfUp		<Key>Up		\n\
+    	osfLeft		<Key>Left	\n\
+    	osfRight	<Key>Right	\n\
+    	osfDown		<Key>Down",
+
     NULL
 };
 
@@ -591,6 +620,34 @@ XtPointer	call_data;
 
 /* mouse or keyboard input. */
 #if defined(__STDC__)
+void		insert_string( Widget widget, 
+			       XKeyEvent *event, 
+			       String *str, 
+			       Cardinal *cardinal
+			       )
+#else
+void		insert_string( widget, event, str, cardinal )
+Widget          widget; 
+XKeyEvent       *event; 
+String          *str;    
+Cardinal        *cardinal;
+#endif
+{
+    IP_BUF	ipb;
+
+    ipb.len = strlen( *str );
+    if ( ipb.len != 0 ) {
+	ipb.code = IPO_STRING;
+	ipb.str = *str;
+	ip_send("s", &ipb);
+    }
+
+    TRACE( ("insert_string {%.*s}\n", strlen( *str ), *str ) );
+}
+
+
+/* mouse or keyboard input. */
+#if defined(__STDC__)
 void		key_press( Widget widget, 
 			   XKeyEvent *event, 
 			   String str, 
@@ -606,54 +663,9 @@ Cardinal        *cardinal;
 {
     IP_BUF	ipb;
     char	bp[BufferSize];
+    int		i, sym;
 
-    switch ( XKeycodeToKeysym(XtDisplay(widget),event->keycode,0) ) {
-
-#if defined(osfXK_Up)
-	case osfXK_Up:
-#endif
-#if defined(XK_Up)
-	case XK_Up:
-#endif
-	    strcpy( bp, "\033[A" );
-	    ipb.len = strlen( bp );
-	    break;
-
-#if defined(osfXK_Down)
-	case osfXK_Down:
-#endif
-#if defined(XK_Down)
-	case XK_Down:
-#endif
-	    strcpy( bp, "\033[B" );
-	    ipb.len = strlen( bp );
-	    break;
-
-#if defined(osfXK_Right)
-	case osfXK_Right:
-#endif
-#if defined(XK_Right)
-	case XK_Right:
-#endif
-	    strcpy( bp, "\033[C" );
-	    ipb.len = strlen( bp );
-	    break;
-
-#if defined(osfXK_Left)
-	case osfXK_Left:
-#endif
-#if defined(XK_Left)
-	case XK_Left:
-#endif
-	    strcpy( bp, "\033[D" );
-	    ipb.len = strlen( bp );
-	    break;
-
-	default:
-	    ipb.len = XLookupString( event, bp, BufferSize, NULL, NULL );
-	    break;
-    }
-
+    ipb.len = XLookupString( event, bp, BufferSize, NULL, NULL );
     if ( ipb.len != 0 ) {
 	ipb.code = IPO_STRING;
 	ipb.str = bp;
@@ -701,6 +713,7 @@ int		rows, cols;
 	    xmFormWidgetClass,
 	    parent,
 	    XmNpaneMinimum,		2*new_screen->ch_height,
+	    XmNallowResize,		True,
 	    NULL
 	    );
 
@@ -760,12 +773,26 @@ int		rows, cols;
 
 xvi_screen	*split_screen()
 {
+    Widget	w[2];
+    int		rows = cur_screen->rows / 2;
     xvi_screen	*new_screen = create_screen( cur_screen->parent,
-					     cur_screen->rows / 2,
+					     rows,
 					     cur_screen->cols
 					     );
 
-    /* future, send resize messages to vi with the screen name */
+    /* force resize of the screens */
+    w[0] = new_screen->form;
+    w[1] = cur_screen->form;
+    XtUnmanageChildren( w, XtNumber(w) );
+    XtVaSetValues( new_screen->form,
+		   XmNheight,	new_screen->ch_height * rows,
+		   NULL
+		   );
+    XtVaSetValues( cur_screen->form,
+		   XmNheight,	cur_screen->ch_height * rows,
+		   NULL
+		   );
+    XtManageChildren( w, XtNumber(w) );
 }
 
 
