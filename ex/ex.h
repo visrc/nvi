@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.39 1993/04/06 11:37:28 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:28 $
+ *	$Id: ex.h,v 5.40 1993/04/13 16:23:35 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:23:35 $
  */
 
 struct _excmdarg;
@@ -81,27 +81,24 @@ extern char *defcmdarg[2];	/* Default array. */
 #define	ctrl(ch)	((ch) & 0x1f)
 
 /* Ex function prototypes. */
-int	 buildargv __P((struct _scr *, struct _exf *,
-	    char *, int, int *, char ***));
-int	 esystem __P((struct _scr *, const char *, const char *));
+int	buildargv __P((SCR *, EXF *, char *, int, int *, char ***));
+int	esystem __P((SCR *, const char *, const char *));
 
-int	 ex_writefp __P((struct _scr *, struct _exf *,
-	    char *, FILE *, struct _mark *, struct _mark *, int));
-int	 ex_cmd __P((struct _scr *, struct _exf *, char *));
-int	 ex_cfile __P((struct _scr *, struct _exf *, char *, int));
-int	 ex_cstring __P((struct _scr *, struct _exf *, char *, int, int));
-int	 ex_end __P((struct _scr *));
-int	 ex_init __P((struct _scr *, struct _exf *));
-int	 ex_getline __P((struct _scr *, FILE *, size_t *));
-int	 ex_print __P((struct _scr *, struct _exf *,
-	    struct _mark *, struct _mark *, int));
-int	 ex_readfp __P((struct _scr *, struct _exf *,
-	    char *, FILE *, struct _mark *, recno_t *));
-void	 ex_refresh __P((struct _scr *, struct _exf *));
-int	 ex_suspend __P((struct _scr *));
+int	ex_cfile __P((SCR *, EXF *, char *, int));
+int	ex_cmd __P((SCR *, EXF *, char *));
+int	ex_cstring __P((SCR *, EXF *, char *, int));
+int	ex_end __P((SCR *));
+int	ex_gb __P((SCR *, EXF *, HDR *, int, u_int));
+int	ex_getline __P((SCR *, FILE *, size_t *));
+int	ex_init __P((SCR *, EXF *));
+int	ex_print __P((SCR *, EXF *, MARK *, MARK *, int));
+int	ex_readfp __P((SCR *, EXF *, char *, FILE *, MARK *, recno_t *));
+int	ex_suspend __P((SCR *));
+int	ex_writefp __P((SCR *, EXF *, char *, FILE *, MARK *, MARK *, int));
+void	ex_refresh __P((SCR *, EXF *));
 
 #define	EXPROTO(type, name)						\
-	type	name __P((struct _scr *, struct _exf *, EXCMDARG *));
+	type	name __P((SCR *, EXF *, EXCMDARG *));
 
 EXPROTO(int, ex_abbr);
 EXPROTO(int, ex_append);
