@@ -29,7 +29,7 @@ static void vi_adjustment_value_changed __P((GtkAdjustment *, IPVIWIN *));
 
 static void vi_input_func __P((gpointer , gint , GdkInputCondition));
 
-static void vi_init_window (GtkViWindow *window);
+static void vi_init_window __P((GtkViWindow *window, int));
 
 static int vi_addstr __P((IPVIWIN*, const char *, u_int32_t));
 static int vi_attribute __P((IPVIWIN*,u_int32_t  ,u_int32_t   ));
@@ -117,6 +117,10 @@ gtk_vi_window_new (GtkVi *vi)
     GtkWidget *vscroll;
     GtkWidget *table;
     GtkWidget *term;
+    int	       fd;
+#ifdef HAVE_ZVT
+    int	       pty[2];
+#endif
 
     window = gtk_type_new(gtk_vi_window_get_type());
 
@@ -150,16 +154,19 @@ gtk_vi_window_new (GtkVi *vi)
     gtk_notebook_append_page(GTK_NOTEBOOK(window), table, NULL);
 
     term = 0;
+    fd = -1;
 
 #ifdef HAVE_ZVT
     term = zvt_term_new();
     zvt_term_set_blink(ZVT_TERM(term), FALSE);
+    zvt_term_get_ptys(ZVT_TERM(term), 0, pty);
+    fd = pty[1]; /* slave */
     gtk_widget_show(term);
     gtk_notebook_append_page(GTK_NOTEBOOK(window), term, NULL);
 #endif
     window->term = term;
 
-    vi_init_window(window);
+    vi_init_window(window, fd);
 
     gtk_signal_connect(GTK_OBJECT(vi_widget), "resized",
 	vi_resized, window->ipviwin);
@@ -226,6 +233,17 @@ gtk_vi_quit(vi, write)
 	vi->ipviwin->wq(vi->ipviwin);
     else
 	vi->ipviwin->quit(vi->ipviwin);
+}
+
+/*
+ * PUBLIC: void gtk_vi_show_term __P((GtkViWindow*, gint));
+ */
+void
+gtk_vi_show_term(window, show)
+    GtkViWindow *window;
+    gint show;
+{
+    gtk_notebook_set_page(GTK_NOTEBOOK(window), show ? 1 : 0);
 }
 
 /*
@@ -354,7 +372,7 @@ vi_input_func (gpointer data, gint source, GdkInputCondition condition)
 }
 
 static void
-vi_init_window (GtkViWindow *window)
+vi_init_window (GtkViWindow *window, int fd)
 {
     static struct ip_si_operations ipsi_ops_gtk = {
 	vi_addstr,
@@ -384,7 +402,7 @@ vi_init_window (GtkViWindow *window)
     };
     GtkVi *vi = window->vi;
 
-    vi->ipvi->new_window(vi->ipvi, &window->ipviwin);
+    vi->ipvi->new_window(vi->ipvi, &window->ipviwin, fd);
 
     window->ipviwin->private_data = window;
     window->ipviwin->set_ops(window->ipviwin, &ipsi_ops_gtk);
@@ -410,9 +428,14 @@ vi_attribute(ipviwin,attribute,on)
 	IPVIWIN	*ipviwin;
 	u_int32_t   attribute, on;
 {
-	GtkViWindow* vi = (GtkViWindow*)(ipviwin->private_data);
+	GtkViWindow* window = (GtkViWindow*)(ipviwin->private_data);
 
-	gtk_vi_screen_attribute(GTK_VI_SCREEN(vi->vi_screen), attribute, on);
+	if (attribute == SA_ALTERNATE) {
+		printf("on: %d\n", on);
+		gtk_vi_show_term(window, !on);
+	}
+	else
+		gtk_vi_screen_attribute(GTK_VI_SCREEN(window->vi_screen), attribute, on);
 	return (0);
 }
 

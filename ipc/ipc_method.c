@@ -42,7 +42,7 @@ static int vi_set_ops __P((IPVIWIN *, IPSIOPS *));
 static int vi_win_close __P((IPVIWIN *));
 
 static int vi_close __P((IPVI *));
-static int vi_new_window __P((IPVI *, IPVIWIN **));
+static int vi_new_window __P((IPVI *, IPVIWIN **, int));
 
 /* 
  * vi_create
@@ -74,7 +74,7 @@ alloc_err:
 }
 
 static int 
-vi_new_window (IPVI *ipvi, IPVIWIN **ipviwinp)
+vi_new_window (IPVI *ipvi, IPVIWIN **ipviwinp, int fd)
 {
 	IPVIWIN	*ipviwin;
 
@@ -108,9 +108,16 @@ vi_new_window (IPVI *ipvi, IPVIWIN **ipviwinp)
 
 	*(int *)CMSG_DATA(&ch.header) = sockets[1];
 	sendmsg(ipvi->ofd, &mh, 0);
+	dummy = (fd == -1) ? ' ' : 'F';
 	*(int *)CMSG_DATA(&ch.header) = sockets[1];
 	sendmsg(sockets[0], &mh, 0);
 	close(sockets[1]);
+
+	if (fd != -1) {
+		*(int *)CMSG_DATA(&ch.header) = fd;
+		sendmsg(sockets[0], &mh, 0);
+		close(fd);
+	}
 
 	ipviwin->ifd = sockets[0];
 	ipviwin->ofd = sockets[0];

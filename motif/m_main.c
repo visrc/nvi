@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.37 2000/07/05 11:33:18 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:18 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.38 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -270,7 +270,7 @@ main(argc, argv)
 
 	vi_create(&ipvi, 0);
 	(void)ipvi->run(ipvi, argc, argv);
-	ipvi->new_window(ipvi,&ipvi_motif);
+	ipvi->new_window(ipvi,&ipvi_motif,-1);
 	ipvi_motif->set_ops(ipvi_motif, &ipsi_ops_motif);
 	/* Run vi: the parent returns, the child is the vi process. */
 	vi_ifd = ipvi_motif->ifd;

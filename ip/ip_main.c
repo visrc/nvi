@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.18 2000/07/11 12:15:36 skimo Exp $ (Berkeley) $Date: 2000/07/11 12:15:36 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.19 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,11 +31,11 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.18 2000/07/11 12:15:36 skimo Ex
 GS *__global_list;				/* GLOBAL: List of screens. */
 
 static void	   ip_func_std __P((GS *));
-static IP_PRIVATE *ip_init __P((WIN *wp, int i_fd, int o_fd, int argc, char *argv[]));
+static IP_PRIVATE *ip_init __P((WIN *wp, int i_fd, int o_fd, int, int argc, char *argv[]));
 static void	   perr __P((char *, char *));
 static int	   get_fds __P((char *ip_arg, int *i_fd, int *o_fd));
 static int  get_connection __P((WIN *wp, int main_ifd, int main_ofd, 
-				int *i_fd, int *o_fd, int can_pass));
+				int *i_fd, int *o_fd, int *, int can_pass));
 static void run_editor __P((void * vp));
 
 /*
@@ -53,7 +53,7 @@ main(argc, argv)
 	char **p_av, **t_av;
 	GS *gp;
 	WIN *wp;
-	int i_fd, o_fd, main_ifd, main_ofd;
+	int i_fd, o_fd, t_fd, main_ifd, main_ofd;
 
 	/* Create and initialize the global structure. */
 	__global_list = gp = gs_init(argv[0]);
@@ -95,12 +95,12 @@ main(argc, argv)
 
 	wp = NULL;
 
-	while (get_connection(wp, main_ifd, main_ofd, &i_fd, &o_fd, 1) == 0) {
+	while (get_connection(wp, main_ifd, main_ofd, &i_fd, &o_fd, &t_fd, 1) == 0) {
 		/* Create new window */
 		wp = gs_new_win(gp);
 
 		/* Create and partially initialize the IP structure. */
-		if ((ipp = ip_init(wp, i_fd, o_fd, argc, argv)) == NULL)
+		if ((ipp = ip_init(wp, i_fd, o_fd, t_fd, argc, argv)) == NULL)
 			return (1);
 
 		gp->run(wp, run_editor, (void *)wp);
@@ -174,7 +174,7 @@ run_editor(void * vp)
  *	Create and partially initialize the GS structure.
  */
 static IP_PRIVATE *
-ip_init(WIN *wp, int i_fd, int o_fd, int argc, char *argv[])
+ip_init(WIN *wp, int i_fd, int o_fd, int t_fd, int argc, char *argv[])
 {
 	IP_PRIVATE *ipp;
 
@@ -186,6 +186,7 @@ ip_init(WIN *wp, int i_fd, int o_fd, int argc, char *argv[])
 
 	ipp->i_fd = i_fd;
 	ipp->o_fd = o_fd;
+	ipp->t_fd = t_fd;
  
  	ipp->argc = argc;
  	ipp->argv = argv;
@@ -222,8 +223,10 @@ usage:		ip_usage();
 
 static int
 get_connection(WIN *wp, int main_ifd, int main_ofd, 
-	int *i_fd, int *o_fd, int can_pass)
+	int *i_fd, int *o_fd, int *t_fd, int can_pass)
 {
+    *t_fd = -1;
+
     if (!can_pass) {
 	if (wp == NULL) {		    /* First call */
 	    *i_fd = main_ifd;
@@ -252,6 +255,11 @@ get_connection(WIN *wp, int main_ifd, int main_ofd,
 	if (recvmsg(*i_fd, &mh, 0) != 1)
 	    return 1;
 	*o_fd = *(int *)CMSG_DATA(&ch.header);
+	if (dummy == 'F') {
+	    if (recvmsg(*i_fd, &mh, 0) != 1)
+		return 1;
+	    *t_fd = *(int *)CMSG_DATA(&ch.header);
+	}
     }
 
     return 0;
@@ -270,6 +278,7 @@ ip_func_std(gp)
 	gp->scr_baud = ip_baud;
 	gp->scr_bell = ip_bell;
 	gp->scr_busy = ip_busy;
+	gp->scr_child = ip_child;
 	gp->scr_clrtoeol = ip_clrtoeol;
 	gp->scr_cursor = ip_cursor;
 	gp->scr_deleteln = ip_deleteln;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.38 1996/08/19 21:52:54 bostic Exp $ (Berkeley) $Date: 1996/08/19 21:52:54 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.39 2000/07/11 15:10:59 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:10:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -122,6 +122,8 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 		msgq(sp, M_SYSERR, "vfork");
 		return (1);
 	case 0:				/* Utility. */
+		if (gp->scr_child)
+			gp->scr_child(sp);
 		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
 			name = O_STR(sp, O_SHELL);
 		else

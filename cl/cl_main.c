@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.49 2000/07/07 22:29:12 skimo Exp $ (Berkeley) $Date: 2000/07/07 22:29:12 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.50 2000/07/11 15:10:58 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:10:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -401,6 +401,7 @@ cl_func_std(gp)
 	gp->scr_baud = cl_baud;
 	gp->scr_bell = cl_bell;
 	gp->scr_busy = NULL;
+	gp->scr_child = NULL;
 	gp->scr_clrtoeol = cl_clrtoeol;
 	gp->scr_cursor = cl_cursor;
 	gp->scr_deleteln = cl_deleteln;

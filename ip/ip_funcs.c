@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.17 2000/07/11 12:15:36 skimo Exp $ (Berkeley) $Date: 2000/07/11 12:15:36 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.18 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,6 +150,28 @@ ip_busy(sp, str, bval)
 		break;
 	}
 	return;
+}
+
+/*
+ * ip_child --
+ *	Prepare child.
+ *
+ * PUBLIC: int ip_child __P((SCR *));
+ */
+int
+ip_child(sp)
+	SCR *sp;
+{
+	IP_PRIVATE *ipp = IPP(sp);
+
+	puts("prepape child");
+	printf("%d\n", ipp->t_fd);
+	if (ipp->t_fd != -1) {
+	    dup2(ipp->t_fd, 0);
+	    dup2(ipp->t_fd, 1);
+	    dup2(ipp->t_fd, 2);
+	    close(ipp->t_fd);
+	}
 }
 
 /*
@@ -420,7 +442,7 @@ ip_rename(sp, name, on)
 
 	ipb.code = SI_RENAME;
 	ipb.str1 = name;
-	ipb.len1 = strlen(name);
+	ipb.len1 = name ? strlen(name) : 0;
 	return (vi_send(ipp->o_fd, "a", &ipb));
 }
 

@@ -127,20 +127,11 @@
 /* Define if you have the gethostname function.  */
 #undef HAVE_GETHOSTNAME
 
-/* Define if you have the getopt function.  */
-#undef HAVE_GETOPT
-
 /* Define if you have the getpagesize function.  */
 #undef HAVE_GETPAGESIZE
 
 /* Define if you have the memchr function.  */
 #undef HAVE_MEMCHR
-
-/* Define if you have the memcpy function.  */
-#undef HAVE_MEMCPY
-
-/* Define if you have the memmove function.  */
-#undef HAVE_MEMMOVE
 
 /* Define if you have the memset function.  */
 #undef HAVE_MEMSET
@@ -157,26 +148,14 @@
 /* Define if you have the setenv function.  */
 #undef HAVE_SETENV
 
-/* Define if you have the snprintf function.  */
-#undef HAVE_SNPRINTF
-
 /* Define if you have the strdup function.  */
 #undef HAVE_STRDUP
-
-/* Define if you have the strerror function.  */
-#undef HAVE_STRERROR
 
 /* Define if you have the strpbrk function.  */
 #undef HAVE_STRPBRK
 
 /* Define if you have the strsep function.  */
 #undef HAVE_STRSEP
-
-/* Define if you have the strtol function.  */
-#undef HAVE_STRTOL
-
-/* Define if you have the strtoul function.  */
-#undef HAVE_STRTOUL
 
 /* Define if you have the unsetenv function.  */
 #undef HAVE_UNSETENV

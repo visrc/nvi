@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.44 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $
+ *	$Id: gs.h,v 10.45 2000/07/11 15:10:59 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:10:59 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -150,6 +150,8 @@ struct _gs {
 	int	(*scr_bell) __P((SCR *));
 					/* Display a busy message. */
 	void	(*scr_busy) __P((SCR *, const char *, busy_t));
+					/* Prepare child. */
+	void	(*scr_child) __P((SCR *));
 					/* Clear to the end of the line. */
 	int	(*scr_clrtoeol) __P((SCR *));
 					/* Return the cursor location. */

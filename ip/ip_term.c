@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_term.c,v 8.6 2000/06/28 20:20:37 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:37 $";
+static const char sccsid[] = "$Id: ip_term.c,v 8.7 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,7 +107,10 @@ ip_optchange(sp, offset, str, valp)
 		F_CLR(sp, SC_SCR_EX | SC_SCR_VI);
 		break;
 	case O_TERM:
+		/* Called with "ip_curses"; previously wasn't shown
+		 * because switching to EX wasn't allowed
 		msgq(sp, M_ERR, "The screen type may not be changed");
+		*/
 		return (1);
 	}
 

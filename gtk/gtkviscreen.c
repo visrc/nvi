@@ -68,11 +68,6 @@ void
 gtk_vi_screen_attribute(GtkViScreen *vi, gint attribute, gint on)
 {
     switch (attribute) {
-    case SA_ALTERNATE:
-	/*
-	fprintf(stderr, "alternate: %d\n", on);
-	*/
-	break;
     case SA_INVERSE:
 	vi->color = on ? COLOR_STANDOUT : COLOR_STANDARD;
 	break;

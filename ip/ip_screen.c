@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_screen.c,v 8.5 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
+static const char sccsid[] = "$Id: ip_screen.c,v 8.6 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,18 +46,24 @@ ip_screen(sp, flags)
 	}
 	
 	/* See if we're already in the right mode. */
-	if (LF_ISSET(SC_VI) && F_ISSET(ipp, IP_SCR_VI_INIT))
+	if (LF_ISSET(SC_EX) && F_ISSET(sp, SC_SCR_EX) ||
+	    LF_ISSET(SC_VI) && F_ISSET(sp, SC_SCR_VI))
 		return (0);
 
-	/* Ex isn't possible. */
-	if (LF_ISSET(SC_EX))
+	/* Ex isn't possible if there is no terminal. */
+	if (LF_ISSET(SC_EX) && ipp->t_fd == -1)
 		return (1);
 
-	/* Initialize terminal based information. */
-	if (ip_term_init(sp)) 
-		return (1);
+	if (LF_ISSET(SC_EX)) {
+		F_SET(ipp, IP_IN_EX);
+	} else {
+		/* Initialize terminal based information. */
+		if (ip_term_init(sp)) 
+			return (1);
 
-	F_SET(ipp, IP_SCR_VI_INIT);
+		F_CLR(ipp, IP_IN_EX);
+		F_SET(ipp, IP_SCR_VI_INIT);
+	}
 	return (0);
 }
 

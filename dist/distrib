@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.22 2000/07/06 19:14:40 skimo Exp $ (Berkeley) $Date: 2000/07/06 19:14:40 $
+# $Id: distrib,v 8.23 2000/07/11 15:10:59 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:10:59 $
 
 echo "Building aclocal.m4"
 rm -f aclocal.m4
@@ -77,3 +77,5 @@ ctags $ctagsopt -w \
 	../ipc/*.[ch] ../motif/*.[ch] ../motif_l/*.[ch] ../perl_api/*.[ch] \
 	../tcl_api/*.[ch] ../vi/*.[ch]
 chmod 444 $f
+
+touch stamp-h.in
