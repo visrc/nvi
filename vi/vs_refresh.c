@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.53 1994/04/25 16:24:15 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:24:15 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.54 1994/05/13 19:48:35 bostic Exp $ (Berkeley) $Date: 1994/05/13 19:48:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -818,9 +818,8 @@ svi_modeline(sp, ep)
 	 * won't let you paint the last character in the screen.
 	 */
 	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
-		MOVE(sp, INFOLINE(sp), sp->cols - 8);
-		s = F_ISSET(sp, S_INPUT) ? "  Input" : "Command";
-		ADDSTR(s);
+		MOVE(sp, INFOLINE(sp), sp->cols - (MAX_MODE_NAME + 1));
+		ADDSTR(sp->showmode);
 	}
 
 	return (0);
