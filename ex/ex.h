@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.11 1995/01/31 09:51:03 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:51:03 $
+ *	$Id: ex.h,v 9.12 1995/02/02 11:26:55 bostic Exp $ (Berkeley) $Date: 1995/02/02 11:26:55 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -79,6 +79,8 @@ struct _excmdarg {
 	int	  addrcnt;	/* Number of addresses (0, 1 or 2). */
 	MARK	  addr1;	/* 1st address. */
 	MARK	  addr2;	/* 2nd address. */
+	CHAR_T	 *aci_text;	/* Append/change/insert text. */
+	size_t	  aci_len;	/* Append/change/insert text length. */
 	ARGS	**argv;		/* Array of arguments. */
 	int	  argc;		/* Count of arguments. */
 	u_int32_t flags;	/* Selected flags from EXCMDLIST. */
