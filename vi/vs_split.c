@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 5.7 1993/05/15 21:27:36 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:27:36 $";
+static char sccsid[] = "$Id: vs_split.c,v 5.8 1993/05/29 16:30:27 bostic Exp $ (Berkeley) $Date: 1993/05/29 16:30:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,6 +118,8 @@ svi_split(sp, ep)
 	clrtoeol();
 
 	/* Refresh the parent screens */
+	/* Refresh the parent screens, displaying the status line. */
+	(void)status(sp, sp->ep, sp->lno, 0);
 	(void)svi_refresh(sp, sp->ep);
 
 	/* Completely redraw the child screen. */

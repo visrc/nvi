@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 5.4 1993/05/10 11:37:35 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:37:35 $";
+static char sccsid[] = "$Id: v_screen.c,v 5.5 1993/05/29 16:30:17 bostic Exp $ (Berkeley) $Date: 1993/05/29 16:30:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,13 @@ v_window(sp, ep, vp, fm, tm, rp)
 		for (p = sp; p->parent != NULL; p = p->parent);
 		sp->snext = p;
 	}
-	
+
+	/*
+	 * Display the status line so the user can find the window
+	 * they want.
+	 */
+	(void)status(sp, ep, fm->lno, 0);
+	(void)sp->s_refresh(sp, ep);
 	F_SET(sp, S_SSWITCH);
 	return (0);
 }
