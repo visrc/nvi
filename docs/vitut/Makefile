@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 6.5 1993/06/05 17:25:16 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:25:16 $
+#	$Id: Makefile,v 6.6 1993/08/10 11:49:53 elan Exp $ (Berkeley) $Date: 1993/08/10 11:49:53 $
 
 DIR=	usd/12.vi
 SRCS=	vi.in vi.chars
@@ -12,6 +12,6 @@ summary.ps: vi.summary
 	${TBL} vi.summary | ${ROFF}  > ${.TARGET}
 
 viapwh.ps: vi.apwh.ms
-	${ROFF} vi.viapwh > ${.TARGET}
+	${ROFF} vi.apwh.ms > ${.TARGET}
 
 .include <bsd.doc.mk>
