@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.16 1993/05/04 18:09:53 bostic Exp $ (Berkeley) $Date: 1993/05/04 18:09:53 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.17 1993/05/05 22:00:45 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:00:45 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -46,7 +46,7 @@ svi_change(sp, ep, lno, op)
 
 	switch (op) {
 	case LINE_DELETE:
-		if (svi_sm_delete(sp, ep, lno))
+		if (svi_sm_delete(sp, ep, lno, NULL))
 			return (1);
 
 		/* Invalidate the cursor. */
@@ -139,14 +139,53 @@ err:	msgq(sp, M_BERR, "Movement not possible");
 }
 
 /*
+ * svi_sm_reset --
+ *	Reset a line in the SMAP.
+ */
+int
+svi_sm_reset(sp, ep, lno)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;
+{
+	SMAP *p, *t;
+	size_t cnt;
+	int isreset;
+
+	/*
+	 * See if the number of screen rows taken up by the old display
+	 * for the line is the same as the number needed for the new one.
+	 * If so, simply repaint, otherwise do it the hard way.
+	 */
+        for (p = HMAP; p->lno != lno; ++p);
+	for (cnt = 0, t = p; t->lno == lno && t <= TMAP; ++cnt, ++t);
+	if (cnt == svi_screens(sp, ep, lno, NULL)) {
+		do {
+			if (svi_line(sp, ep, p, NULL, 0, NULL, NULL))
+				return (1);
+		} while (++p < t);
+		return (0);
+	}
+
+	isreset = 0;
+	if (svi_sm_delete(sp, ep, lno, &isreset))
+		return (1);
+	if (!isreset && svi_sm_insert(sp, ep, lno))
+		return (1);
+		
+	return (0);
+}
+
+/*
  * svi_sm_delete --
  *	Delete a line out of the SMAP.
  */
 int
-svi_sm_delete(sp, ep, lno)
+svi_sm_delete(sp, ep, lno, isreset)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
+	int *isreset;
 {
 	SMAP *p, *t;
 	size_t cnt1, cnt2;
@@ -160,22 +199,31 @@ svi_sm_delete(sp, ep, lno)
 	 */
 	for (cnt1 = 1, t = p + 1; t <= TMAP && t->lno == lno; ++cnt1, ++t);
 
-	/* Delete that number of lines from the screen. */
+	/*
+	 * If the screen only contains one line, or, if the line was the
+	 * entire screen, this gets fairly exciting.  Skip the fun.  Also,
+	 * since we may be called as part of a svi_sm_reset(), let it know
+	 * not to call svi_sm_insert(), that the map has been reset.  The
+	 * fill may not be entirely accurate, i.e. we may be painting the
+	 * screen with something not even close to the cursor.  The refresh
+	 * routine will fix it for us.
+	 */
+	if (cnt1 == sp->t_rows) {
+		if (isreset != NULL)
+			*isreset = 1;
+		if (cnt1 == 1)
+			return (0);
+		if (file_gline(sp, ep, lno, NULL) == NULL)
+			lno = file_lline(sp, ep);
+		F_SET(sp, S_REDRAW);
+		return (svi_sm_fill(sp, ep, lno, P_TOP));
+	}
+
+	/* Delete that many lines from the screen. */
 	MOVE(sp, p - HMAP, 0);
 	for (cnt2 = cnt1; cnt2--;)
 		if (svi_deleteln(sp))
 			return (1);
-	/*
-	 * If the screen only contains one line, or, if the line was the
-	 * entire screen, this gets fairly exciting.  Skip the fun.
-	 */
-	if (cnt1 == sp->t_rows) {
-		if (cnt1 == 1)
-			return (0);
-		if (file_gline(sp, ep, ++lno, NULL))
-			lno = file_lline(sp, ep);
-		return (svi_sm_fill(sp, ep, lno, P_TOP));
-	}
 		
 	/* Shift the screen map up. */
 	memmove(p, p + cnt1, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
@@ -212,14 +260,24 @@ svi_sm_insert(sp, ep, lno)
 	/* Find the line in the map. */
         for (p = HMAP; p->lno != lno; ++p);
 
-	/*
-	 * Figure out how many lines needed to display the line.
-	 * The lines left on the screen overrides that number.
-	 */
+	/* Figure out how many lines needed to display the line. */
 	cnt1 = svi_screens(sp, ep, lno, NULL);
-	cnt2 = (TMAP - p) + 1;
-	if (cnt1 > cnt2)
-		cnt1 = cnt2;
+
+	/*
+	 * If the screen only contains one line, or, if the line was the
+	 * entire screen, this gets fairly exciting.  Skip the fun.  The
+	 * fill may not be entirely accurate, i.e. we may be painting the
+	 * screen with something not even close to the cursor.  The refresh
+	 * routine will fix it for us.
+	 */
+	if (cnt1 >= sp->t_rows) {
+		if (cnt1 == 1)
+			return (0);
+		if (file_gline(sp, ep, lno, NULL) == NULL)
+			lno = file_lline(sp, ep);
+		F_SET(sp, S_REDRAW);
+		return (svi_sm_fill(sp, ep, lno, P_TOP));
+	}
 
 	/* Push down that many lines. */
 	MOVE(sp, p - HMAP, 0);
@@ -251,40 +309,6 @@ svi_sm_insert(sp, ep, lno)
 	for (; cnt1--; ++p)
 		if (svi_line(sp, ep, p, NULL, 0, NULL, NULL))
 			return (1);
-	return (0);
-}
-
-/*
- * svi_sm_reset --
- *	Reset a line in the SMAP.
- */
-int
-svi_sm_reset(sp, ep, lno)
-	SCR *sp;
-	EXF *ep;
-	recno_t lno;
-{
-	SMAP *p, *t;
-	size_t cnt;
-
-	/*
-	 * See if the number of screen rows taken up by the old display
-	 * for the line is the same as the number needed for the new one.
-	 * If so, simply repaint, otherwise do it the hard way.
-	 */
-        for (p = HMAP; p->lno != lno; ++p);
-	for (cnt = 0, t = p; t->lno == lno && t <= TMAP; ++cnt, ++t);
-	if (cnt == svi_screens(sp, ep, lno, NULL)) {
-		do {
-			if (svi_line(sp, ep, p, NULL, 0, NULL, NULL))
-				return (1);
-		} while (++p < t);
-		return (0);
-	}
-	if (svi_sm_delete(sp, ep, lno))
-		return (1);
-	if (svi_sm_insert(sp, ep, lno))
-		return (1);
 	return (0);
 }
 
