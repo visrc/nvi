@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.21 1993/10/28 08:52:36 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:52:36 $";
+static char sccsid[] = "$Id: options.c,v 8.22 1993/11/02 18:44:45 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:44:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -564,21 +564,53 @@ opts_dump(sp, type)
 				break;
 			while ((cnt =
 			    (chcnt + tablen & ~(tablen - 1))) <= endcol) {
-				(void)putc('\t', sp->stdfp);
+				(void)ex_printf(EXCOOKIE, "\t");
 				chcnt = cnt;
 			}
 			endcol += colwidth;
 		}
 		if (++row < numrows || b_num)
-			(void)putc('\n', sp->stdfp);
+			(void)ex_printf(EXCOOKIE, "\n");
 	}
 
 	for (row = 0; row < b_num;) {
 		(void)opts_print(sp, &optlist[b_op[row]], &sp->opts[b_op[row]]);
 		if (++row < b_num)
-			(void)putc('\n', sp->stdfp);
+			(void)ex_printf(EXCOOKIE, "\n");
 	}
-	(void)putc('\n', sp->stdfp);
+	(void)ex_printf(EXCOOKIE, "\n");
+}
+
+/*
+ * opts_print --
+ *	Print out an option.
+ */
+static int
+opts_print(sp, op, spo)
+	SCR *sp;
+	OPTLIST const *op;
+	OPTION *spo;
+{
+	int curlen, offset;
+
+	curlen = 0;
+	offset = op - optlist;
+	switch (op->type) {
+	case OPT_0BOOL:
+	case OPT_1BOOL:
+		curlen += ex_printf(EXCOOKIE,
+		    "%s%s", O_ISSET(sp, offset) ? "" : "no", op->name);
+		break;
+	case OPT_NUM:
+		curlen += ex_printf(EXCOOKIE,
+		     "%s=%ld", op->name, O_VAL(sp, offset));
+		break;
+	case OPT_STR:
+		curlen += ex_printf(EXCOOKIE,
+		    "%s=\"%s\"", op->name, O_STR(sp, offset));
+		break;
+	}
+	return (curlen);
 }
 
 /*
@@ -635,68 +667,6 @@ opts_save(sp, fp)
 }
 
 /*
- * opts_free --
- *	Free all option strings
- */
-void
-opts_free(sp)
-	SCR *sp;
-{
-	int cnt;
-	char *p;
-
-	for (cnt = 0; cnt < O_OPTIONCOUNT; ++cnt)
-		if (F_ISSET(&sp->opts[cnt], OPT_ALLOCATED)) {
-			p = O_STR(sp, cnt);
-			FREE(p, strlen(p) + 1);
-		}
-}
-
-/*
- * opts_print --
- *	Print out an option.
- */
-static int
-opts_print(sp, op, spo)
-	SCR *sp;
-	OPTLIST const *op;
-	OPTION *spo;
-{
-	int curlen, offset;
-
-	curlen = 0;
-	offset = op - optlist;
-	switch (op->type) {
-	case OPT_0BOOL:
-	case OPT_1BOOL:
-		if (!O_ISSET(sp, offset)) {
-			curlen += 2;
-			(void)putc('n', sp->stdfp);
-			(void)putc('o', sp->stdfp);
-		}
-		curlen += fprintf(sp->stdfp, "%s", op->name);
-		break;
-	case OPT_NUM:
-		curlen += fprintf(sp->stdfp, "%s", op->name);
-		curlen += 1;
-		(void)putc('=', sp->stdfp);
-		curlen += fprintf(sp->stdfp, "%ld", O_VAL(sp, offset));
-		break;
-	case OPT_STR:
-		curlen += fprintf(sp->stdfp, "%s", op->name);
-		curlen += 1;
-		(void)putc('=', sp->stdfp);
-		curlen += 1;
-		(void)putc('"', sp->stdfp);
-		curlen += fprintf(sp->stdfp, "%s", O_STR(sp, offset));
-		curlen += 1;
-		(void)putc('"', sp->stdfp);
-		break;
-	}
-	return (curlen);
-}
-
-/*
  * opts_prefix --
  *	Check to see if the name is the prefix of one (and only one)
  *	option.  If so, return the option.
@@ -736,4 +706,22 @@ opts_cmp(a, b)
         const void *a, *b;
 {
         return(strcmp(((OPTLIST *)a)->name, ((OPTLIST *)b)->name));
+}
+
+/*
+ * opts_free --
+ *	Free all option strings
+ */
+void
+opts_free(sp)
+	SCR *sp;
+{
+	int cnt;
+	char *p;
+
+	for (cnt = 0; cnt < O_OPTIONCOUNT; ++cnt)
+		if (F_ISSET(&sp->opts[cnt], OPT_ALLOCATED)) {
+			p = O_STR(sp, cnt);
+			FREE(p, strlen(p) + 1);
+		}
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.19 1993/11/01 13:19:17 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:19:17 $
+ *	$Id: common.h,v 8.20 1993/11/02 18:44:05 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:44:05 $
  */
 
 /* System includes. */
@@ -78,6 +78,17 @@ typedef	u_int		ARG_CHAR_T;
 #include "log.h"
 #include "msg.h"
 #include "seq.h"
+
+#if FWOPEN_NOT_AVAILABLE	/* See PORT/clib/fwopen.c. */
+#define	EXCOOKIE	sp
+int	 ex_fflush __P((SCR *));
+int	 ex_printf __P((SCR *, const char *, ...));
+FILE	*fwopen __P((SCR *, void *));
+#else
+#define	EXCOOKIE	sp->stdfp
+#define	ex_fflush	fflush
+#define	ex_printf	fprintf
+#endif
 
 /* Macros to set/clear/test flags. */
 #define	F_SET(p, f)	(p)->flags |= (f)

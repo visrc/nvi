@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.10 1993/11/01 13:24:14 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:24:14 $";
+static char sccsid[] = "$Id: seq.c,v 8.11 1993/11/02 18:43:58 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:43:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,20 +195,20 @@ seq_dump(sp, stype, isname)
 			continue;
 		++cnt;
 		for (p = qp->input, len = 0; (ch = *p); ++p, ++len)
-			(void)fprintf(sp->stdfp, "%s", cname[ch].name);
+			(void)ex_printf(EXCOOKIE, "%s", cname[ch].name);
 		for (len = tablen - len % tablen; len; --len)
-			(void)putc(' ', sp->stdfp);
+			(void)ex_printf(EXCOOKIE, " ");
 
 		for (p = qp->output; (ch = *p); ++p)
-			(void)fprintf(sp->stdfp, "%s", cname[ch].name);
+			(void)ex_printf(EXCOOKIE, "%s", cname[ch].name);
 
 		if (isname && qp->name) {
 			for (len = tablen - len % tablen; len; --len)
-				(void)putc(' ', sp->stdfp);
+				(void)ex_printf(EXCOOKIE, " ");
 			for (p = qp->name, len = 0; (ch = *p); ++p, ++len)
-				(void)fprintf(sp->stdfp, "%s", cname[ch].name);
+				(void)ex_printf(EXCOOKIE, "%s", cname[ch].name);
 		}
-		(void)putc('\n', sp->stdfp);
+		(void)ex_printf(EXCOOKIE, "\n");
 	}
 	return (cnt);
 }

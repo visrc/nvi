@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.17 1993/10/09 12:39:17 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:17 $";
+static char sccsid[] = "$Id: util.c,v 8.18 1993/11/02 18:44:29 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:44:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,9 +166,9 @@ loop:		for (;
  * during a command instead of just keeping count.
  */
 int
-msg_rpt(sp, fp)
+msg_rpt(sp, is_message)
 	SCR *sp;
-	FILE *fp;
+	int is_message;
 {
 	static const char *const action[] = {
 		"added", "changed", "copied", "deleted", "joined", "moved",	
@@ -203,16 +203,16 @@ msg_rpt(sp, fp)
 	/*
 	 * If nothing to report, return.  Note that the number of lines
 	 * must be > than the user's value, not >=.  This is historic
-	 * practice and means that user's cannot report on single line
+	 * practice and means that users cannot report on single line
 	 * changes.
 	 */
 	if (total > rval) {
 		*p = '\0';
 
-		if (fp != NULL)
-			(void)fprintf(fp, "%s\n", bp);
-		else
+		if (is_message)
 			msgq(sp, M_INFO, "%s", bp);
+		else
+			ex_printf(EXCOOKIE, "%s\n", bp);
 	}
 
 	FREE_SPACE(sp, bp, blen);
