@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.17 1992/04/28 16:48:17 bostic Exp $ (Berkeley) $Date: 1992/04/28 16:48:17 $";
+static char sccsid[] = "$Id: key.c,v 5.18 1992/04/28 17:42:39 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:42:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,9 +102,11 @@ gb_inc()
  *	Fill a buffer from the terminal.
  */
 char *
-gb(prompt, flags)
+gb(prompt, lenp, flags)
 	int prompt;
+	size_t *lenp;
 	u_int flags;
+	
 {
 	register int ch, cnt, col, len, quoted;
 #ifndef NO_DIGRAPH
@@ -207,10 +209,6 @@ insch:			if (quoted) {
 				QSET(len);
 				quoted = 0;
 			}
-/*
- * XXX
- * If cross boundary, should probably change repaint flags?
- */
 #define	WCHECK(ch) { \
 	if (col == COLS) { \
 		(void)putchar('\n'); \
@@ -247,6 +245,8 @@ insch:			if (quoted) {
 	}
 
 done:	*p = '\0';
+	if (lenp)
+		*lenp = p - cb;
 	return (cb);
 }
 
