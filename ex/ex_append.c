@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.9 1994/03/14 10:36:03 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:36:03 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.10 1994/04/10 11:26:34 bostic Exp $ (Berkeley) $Date: 1994/04/10 11:26:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,12 +106,16 @@ aci(sp, ep, cmdp, cmd)
 		cmd = APPEND;
 	}
 
+	/* Set input flags. */
 	LF_INIT(TXT_CR | TXT_NLECHO);
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
 
+	/* Input is interruptible. */
+	F_SET(sp, S_INTERRUPTIBLE);
+
 	if (cmd == CHANGE)
-		for (;; ++m.lno) {
+		for (;; sp->lno = m.lno) {
 			if (m.lno > cmdp->addr2.lno) {
 				cmd = APPEND;
 				--m.lno;
@@ -139,10 +143,14 @@ aci(sp, ep, cmdp, cmd)
 				rval = 1;
 				goto done;
 			}
+			if (F_ISSET(sp, S_INTERRUPTED)) {
+				msgq(sp, M_ERR, "Interrupted.");
+				goto done;
+			}
 		}
 
 	if (cmd == APPEND)
-		for (;; ++m.lno) {
+		for (;; sp->lno = m.lno++) {
 			switch (sp->s_get(sp, ep, &sp->tiq, 0, flags)) {
 			case INP_OK:
 				break;
@@ -158,12 +166,13 @@ aci(sp, ep, cmdp, cmd)
 				rval = 1;
 				goto done;
 			}
+			if (F_ISSET(sp, S_INTERRUPTED)) {
+				msgq(sp, M_ERR, "Interrupted.");
+				goto done;
+			}
 		}
 
-done:	if (rval == 0)
-		sp->lno = m.lno;
-
-	if (aiset)
+done:	if (aiset)
 		O_SET(sp, O_AUTOINDENT);
 
 	return (rval);
