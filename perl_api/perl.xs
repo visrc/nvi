@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.39 2001/06/09 18:26:30 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:30 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.40 2001/06/23 18:39:50 skimo Exp $ (Berkeley) $Date: 2001/06/23 18:39:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -872,7 +872,7 @@ MapKey(screen, key, perlproc)
 	INITMESSAGE(screen);
 	svc = sv_2mortal(newSVpv(":perl ", 6));
 	sv_catsv(svc, perlproc);
-	svn = sv_2mortal(newSVpv("", 1));
+	svn = sv_2mortal(newSVpv("\r", 1));
 	sv_catsv(svc, svn);
 	command = SvPV(svc, length);
 	rval = api_map(screen, key, command, length);
@@ -996,7 +996,7 @@ Warn(warning)
 
 #define TIED(kind,package) \
 	sv_magic((SV *) (var = \
-	    (##kind##V *)sv_2mortal((SV *)new##kind##V())), \
+	    (kind##V *)sv_2mortal((SV *)new##kind##V())), \
 		sv_setref_pv(sv_newmortal(), package, \
 			newVIrv(newSV(0), screen)),\
 		'P', Nullch, 0);\
@@ -1148,7 +1148,7 @@ STORE(screen, key, perlproc)
 	INITMESSAGE(screen);
 	svc = sv_2mortal(newSVpv(":perl ", 6));
 	sv_catsv(svc, perlproc);
-	svn = sv_2mortal(newSVpv("", 1));
+	svn = sv_2mortal(newSVpv("\r", 1));
 	sv_catsv(svc, svn);
 	command = SvPV(svc, length);
 	rval = api_map(screen, key, command, length);
