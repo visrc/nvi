@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.15 1993/05/10 15:36:51 bostic Exp $ (Berkeley) $Date: 1993/05/10 15:36:51 $";
+static char sccsid[] = "$Id: log.c,v 5.16 1993/05/12 22:47:47 bostic Exp $ (Berkeley) $Date: 1993/05/12 22:47:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,8 +58,8 @@ static char sccsid[] = "$Id: log.c,v 5.15 1993/05/10 15:36:51 bostic Exp $ (Berk
  */
 
 static int	log_cursor1 __P((SCR *, EXF *, int));
-#if DEBUG && 1
-static void	log_trace __P((SCR *, char *, u_char *));
+#if DEBUG && 0
+static void	log_trace __P((SCR *, char *, recno_t, u_char *));
 #endif
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
@@ -173,14 +173,14 @@ log_cursor1(sp, ep, type)
 	if (ep->log->put(ep->log, &key, &data, 0) == -1)
 		LOG_ERR;
 
-	/* Reset high water mark. */
-	ep->l_high = ++ep->l_cur;
-
-#if DEBUG && 1
-	TRACE(sp, "%s: %u/%u\n",
+#if DEBUG && 0
+	TRACE(sp, "%lu: %s: %u/%u\n", ep->l_cur,
 	    type == LOG_CURSOR_INIT ? "log_cursor_init" : "log_cursor_end",
 	    sp->lno, sp->cno);
 #endif
+	/* Reset high water mark. */
+	ep->l_high = ++ep->l_cur;
+
 	return (0);
 }
 
@@ -248,28 +248,33 @@ log_line(sp, ep, lno, action)
 	if (ep->log->put(ep->log, &key, &data, 0) == -1)
 		LOG_ERR;
 
-	/* Reset high water mark. */
-	ep->l_high = ++ep->l_cur;
-
-#if DEBUG && 1
+#if DEBUG && 0
 	switch (action) {
 	case LOG_LINE_APPEND:
-		TRACE(sp, "log_line: append: %lu {%u}\n", lno, len);
+		TRACE(sp, "%u: log_line: append: %lu {%u}\n",
+		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_DELETE:
-		TRACE(sp, "log_line: delete: %lu {%u}\n", lno, len);
+		TRACE(sp, "%lu: log_line: delete: %lu {%u}\n",
+		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_INSERT:
-		TRACE(sp, "log_line: insert: %lu {%u}\n", lno, len);
+		TRACE(sp, "%lu: log_line: insert: %lu {%u}\n",
+		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_RESET_F:
-		TRACE(sp, "log_line: reset_f: %lu {%u}\n", lno, len);
+		TRACE(sp, "%lu: log_line: reset_f: %lu {%u}\n",
+		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_RESET_B:
-		TRACE(sp, "log_line: reset_b: %lu {%u}\n", lno, len);
+		TRACE(sp, "%lu: log_line: reset_b: %lu {%u}\n",
+		    ep->l_cur, lno, len);
 		break;
 	}
 #endif
+	/* Reset high water mark. */
+	ep->l_high = ++ep->l_cur;
+
 	return (0);
 }
 
@@ -346,14 +351,14 @@ log_backward(sp, ep, rp)
 
 	F_SET(ep, F_NOLOG);			/* Turn off logging. */
 
+	key.data = &ep->l_cur;
+	key.size = sizeof(recno_t);
 	for (didop = 0;;) {
 		--ep->l_cur;
-		key.data = &ep->l_cur;
-		key.size = sizeof(recno_t);
 		if (ep->log->get(ep->log, &key, &data, 0))
 			LOG_ERR;
-#if DEBUG && 1
-		log_trace(sp, "log_backward", data.data);
+#if DEBUG && 0
+		log_trace(sp, "log_backward", ep->l_cur, data.data);
 #endif
 		switch (*(p = (u_char *)data.data)) {
 		case LOG_CURSOR_INIT:
@@ -431,14 +436,14 @@ log_setline(sp, ep)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
+	key.data = &ep->l_cur;
+	key.size = sizeof(recno_t);
 	for (;;) {
 		--ep->l_cur;
-		key.data = &ep->l_cur;
-		key.size = sizeof(recno_t);
 		if (ep->log->get(ep->log, &key, &data, 0))
 			LOG_ERR;
-#if DEBUG && 1
-		log_trace(sp, "log_setline", data.data);
+#if DEBUG && 0
+		log_trace(sp, "log_setline", ep->l_cur, data.data);
 #endif
 		switch (*(p = (u_char *)data.data)) {
 		case LOG_CURSOR_INIT:
@@ -512,14 +517,14 @@ log_forward(sp, ep, rp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
+	key.data = &ep->l_cur;
+	key.size = sizeof(recno_t);
 	for (didop = 0;;) {
 		++ep->l_cur;
-		key.data = &ep->l_cur;
-		key.size = sizeof(recno_t);
 		if (ep->log->get(ep->log, &key, &data, 0))
 			LOG_ERR;
-#if DEBUG && 1
-		log_trace(sp, "log_forward", data.data);
+#if DEBUG && 0
+		log_trace(sp, "log_forward", ep->l_cur, data.data);
 #endif
 		switch (*(p = (u_char *)data.data)) {
 		case LOG_CURSOR_END:
@@ -573,11 +578,12 @@ err:	F_CLR(ep, F_NOLOG);
 	return (1);
 }
 
-#if DEBUG && 1
+#if DEBUG && 0
 static void
-log_trace(sp, msg, p)
+log_trace(sp, msg, rno, p)
 	SCR *sp;
 	char *msg;
+	recno_t rno;
 	u_char *p;
 {
 	MARK m;
@@ -586,34 +592,35 @@ log_trace(sp, msg, p)
 	switch (*p) {
 	case LOG_CURSOR_INIT:
 		memmove(&m, p + sizeof(u_char), sizeof(MARK));
-		TRACE(sp, "%s: C_INIT: %u/%u\n", msg, m.lno, m.cno);
+		TRACE(sp, "%lu: %s:  C_INIT: %u/%u\n", rno, msg, m.lno, m.cno);
 		break;
 	case LOG_CURSOR_END:
 		memmove(&m, p + sizeof(u_char), sizeof(MARK));
-		TRACE(sp, "%s: C_END: %u/%u\n", msg, m.lno, m.cno);
+		TRACE(sp, "%lu: %s:   C_END: %u/%u\n", rno, msg, m.lno, m.cno);
 		break;
 	case LOG_LINE_APPEND:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%s: APPEND: %lu\n", msg, lno);
+		TRACE(sp, "%lu: %s:  APPEND: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_INSERT:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%s: INSERT: %lu\n", msg, lno);
+		TRACE(sp, "%lu: %s:  INSERT: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_DELETE:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%s: DELETE: %lu\n", msg, lno);
+		TRACE(sp, "%lu: %s:  DELETE: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_RESET_F:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%s: RESET_F: %lu\n", msg, lno);
+		TRACE(sp, "%lu: %s: RESET_F: %lu\n", rno, msg, lno);
+		break;
 	case LOG_LINE_RESET_B:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%s: RESET_B: %lu\n", msg, lno);
+		TRACE(sp, "%lu: %s: RESET_B: %lu\n", rno, msg, lno);
 		break;
 	case LOG_MARK:
 		memmove(&m, p + sizeof(u_char), sizeof(MARK));
-		TRACE(sp, "%s: MARK: %u/%u\n", msg, m.lno, m.cno);
+		TRACE(sp, "%lu: %s:    MARK: %u/%u\n", rno, msg, m.lno, m.cno);
 		break;
 	default:
 		abort();
