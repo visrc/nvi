@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.4 1993/08/21 11:58:30 bostic Exp $ (Berkeley) $Date: 1993/08/21 11:58:30 $
+ *	$Id: common.h,v 8.5 1993/08/25 16:37:33 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:37:33 $
  */
 
 /* System includes. */
@@ -55,14 +55,13 @@ struct _text;
 
 #include "search.h"		/* Required by screen.h. */
 #include "options.h"		/* Required by screen.h. */
+#include "term.h"		/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 
-#include "char.h"
 #include "exf.h"
 #include "log.h"
 #include "msg.h"
 #include "seq.h"
-#include "term.h"
 
 /* Macros to set/clear/test flags. */
 #define	F_SET(p, f)	(p)->flags |= (f)
@@ -123,22 +122,29 @@ int	binc __P((SCR *, void *, size_t *, size_t));
 #define	FREE(p, sz)	free(p);
 #endif
 
+/*
+ * XXX
+ * Nobody's signal return value is the same as anyone else's.
+ * Don't even try.
+ */
+typedef void (*sig_ret_t) __P((int));
+
+/*
+ * XXX
+ * MIN/MAX have traditionally been in <sys/param.h>.  Don't
+ * try to get them from there, it's just not worth the effort.
+ */
+#ifndef	MAX
+#define	MAX(_a,_b)	((_a)<(_b)?(_b):(_a))
+#endif
+#ifndef	MIN
+#define	MIN(_a,_b)	((_a)<(_b)?(_a):(_b))
+#endif
+
 /* Filter type. */
 enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
 int	filtercmd __P((SCR *, EXF *, MARK *,
 	    MARK *, MARK *, char *, enum filtertype));
-
-/* Portability stuff. */
-#ifndef DEFFILEMODE			/* Default file permissions. */
-#define	DEFFILEMODE	(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#endif
-
-typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
-
-#ifndef MIN
-#define	MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define	MAX(a, b) (((a) > (b)) ? (a) : (b))
-#endif
 
 /* Function prototypes that don't seem to belong anywhere else. */
 char	*charname __P((SCR *, int));
