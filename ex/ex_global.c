@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.39 1994/08/08 10:13:46 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:13:46 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.40 1994/08/09 09:03:29 bostic Exp $ (Berkeley) $Date: 1994/08/09 09:03:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ global(sp, ep, cmdp, cmd)
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t clen, len;
-	int ap, delim, eval, reflags, replaced, rval;
+	int delim, eval, reflags, replaced, rval;
 	char *cb, *ptrn, *p, *t;
 
 	/*
@@ -233,10 +233,6 @@ global(sp, ep, cmdp, cmd)
 		CIRCLEQ_INSERT_TAIL(&exp->rangeq, rp, q);
 	}
 
-	/* Global commands turn off autoprint while they run. */
-	ap = O_ISSET(sp, O_AUTOPRINT);
-	O_CLR(sp, O_AUTOPRINT);
-
 	exp = EXP(sp);
 	exp->range_lno = OOBLNO;
 	for (;;) {
@@ -269,10 +265,6 @@ interrupted:		msgq(sp, M_INFO, "Interrupted");
 		}
 	}
 
-	/* Restore autoprint value. */
-	if (ap)
-		O_SET(sp, O_AUTOPRINT);
-
 	/* Set the cursor to the new value, making sure it exists. */
 	if (exp->range_lno != OOBLNO) {
 		if (file_lline(sp, ep, &lno))
@@ -282,12 +274,12 @@ interrupted:		msgq(sp, M_INFO, "Interrupted");
 	}
 	if (0) {
 err:		rval = 1;
-
-		/* Restore autoprint value. */
-		if (ap)
-			O_SET(sp, O_AUTOPRINT);
 	}
 
+	/* Command we ran may have set the autoprint flag, clear it. */
+	F_CLR(exp, EX_AUTOPRINT);
+
+	/* Clear the global flag. */
 	F_CLR(sp, S_GLOBAL);
 
 	/* Free any remaining ranges and the command buffer. */

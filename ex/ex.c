@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.150 1994/08/08 22:29:15 bostic Exp $ (Berkeley) $Date: 1994/08/08 22:29:15 $";
+static char sccsid[] = "$Id: ex.c,v 8.151 1994/08/09 09:03:31 bostic Exp $ (Berkeley) $Date: 1994/08/09 09:03:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1411,7 +1411,8 @@ addr2:	switch (exc.addrcnt) {
 	 * If the command was successful and we're in ex command mode, we
 	 * may want to display a line.  Make sure there's a line to display.
 	 */
-	if (ep != NULL && IN_EX_MODE(sp) && sp->lno != 0) {
+	if (ep != NULL &&
+	    IN_EX_MODE(sp) && !F_ISSET(sp, S_GLOBAL) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
 		 * If so, clear them.
