@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.40 1993/02/20 16:37:53 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:37:53 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.41 1993/02/20 16:38:33 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:38:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -246,4 +246,5 @@ moveup(ep, mustwait, colon_ok, chp)
 			*chp = ch;
 		exlinecount = 0;
 	}
+	return (0);
 }
