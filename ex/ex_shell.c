@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.20 1993/02/24 12:56:26 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:26 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.21 1993/02/25 19:41:26 bostic Exp $ (Berkeley) $Date: 1993/02/25 19:41:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,7 +47,7 @@ ex_shell(ep, cmdp)
 	(void)write(STDOUT_FILENO, "\n", 1);
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", PVAL(O_SHELL));
-	rval = esystem(PVAL(O_SHELL), (u_char *)buf);
+	rval = esystem(ep, PVAL(O_SHELL), (u_char *)buf);
 
 	/* Restore ex/vi terminal settings. */
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
