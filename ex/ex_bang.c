@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.10 1993/11/02 18:46:47 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:47 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.11 1993/11/03 11:39:14 bostic Exp $ (Berkeley) $Date: 1993/11/03 11:39:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,8 +22,19 @@ static char sccsid[] = "$Id: ex_bang.c,v 8.10 1993/11/02 18:46:47 bostic Exp $ (
 
 /*
  * ex_bang -- :[line [,line]] ! command
- *	Pass the rest of the line after the ! character to
- *	the program named by the SHELL environment variable.
+ *
+ * Pass the rest of the line after the ! character to the program named by
+ * the O_SHELL option.
+ *
+ * Historical vi did NOT do shell expansion on the arguments before passing
+ * them, only file name expansion.  This means that the O_SHELL program got
+ * "$t" as an argument if that is what the user entered.
+ *
+ * This file duplicates a fair amount of code from ex_argv.c.  There are two
+ * reasons.  The first is that we have to know if the user's string changed,
+ * so we can display it if it was.  The second is that there's an additional
+ * expansion.  Any exclamation points in the user's argument are replaced by
+ * the last, expanded ! command.
  */
 int
 ex_bang(sp, ep, cmdp)
@@ -39,7 +50,6 @@ ex_bang(sp, ep, cmdp)
 	int rval;
 	char *com;
 
-	/* Make sure we got something. */
 	if (cmdp->argv[0][0] == '\0') {
 		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
