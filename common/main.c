@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.58 1993/12/26 11:22:45 bostic Exp $ (Berkeley) $Date: 1993/12/26 11:22:45 $";
+static char sccsid[] = "$Id: main.c,v 8.59 1993/12/28 11:59:38 bostic Exp $ (Berkeley) $Date: 1993/12/28 11:59:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -419,11 +419,6 @@ err2:		eval = 1;
 	}
 
 	gs_end(gp);
-
-	/* Make absolutely sure that the modes are restored correctly. */
-	if (F_ISSET(gp, G_ISFROMTTY) &&
-	    tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
-		err(1, "tcsetattr");
 	exit(eval);
 }
 
