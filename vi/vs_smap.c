@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.19 1993/05/06 01:20:22 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:20:22 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.20 1993/05/07 13:59:36 bostic Exp $ (Berkeley) $Date: 1993/05/07 13:59:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,8 +97,9 @@ svi_sm_fill(sp, ep, lno, pos)
 		if (svi_sm_nlines(sp, ep,
 		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
 			lno = 1;
-			goto ftop;
+			goto top;
 		}
+
 		/* See if less than half a screen from the bottom. */
 		tmp.lno = file_lline(sp, ep);
 		tmp.off = svi_screens(sp, ep, tmp.lno, NULL);
@@ -106,38 +107,53 @@ svi_sm_fill(sp, ep, lno, pos)
 		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
 			TMAP->lno = tmp.lno;
 			TMAP->off = tmp.off;
-			goto fbot;
+			goto bottom;
 		}
-		goto fmid;
+		goto middle;
 	case P_TOP:
-ftop:		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
+		/* If we fail, just punt. */
+top:		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
 			if (svi_sm_next(sp, ep, p, p + 1))
 				goto err;
 		break;
 	case P_MIDDLE:
-fmid:		p = HMAP + (TMAP - HMAP) / 2;
-		for (p->lno = lno, p->off = 1; p < TMAP; ++p)
-			if (svi_sm_next(sp, ep, p, p + 1))
-				goto err;
+		/* If we fail, guess that the file is too small. */
+middle:		p = HMAP + (TMAP - HMAP) / 2;
+		for (p->lno = lno, p->off = 1; p > HMAP; --p)
+			if (svi_sm_prev(sp, ep, p, p - 1)) {
+				lno = 1;
+				goto top;
+			}
+
+		/* If we fail, just punt. */
 		p = HMAP + (TMAP - HMAP) / 2;
-		for (; p > HMAP; --p)
-			if (svi_sm_prev(sp, ep, p, p - 1))
+		for (; p < TMAP; ++p)
+			if (svi_sm_next(sp, ep, p, p + 1))
 				goto err;
 		break;
 	case P_BOTTOM:
+		/* If we fail, guess that the file is too small. */
 		TMAP->lno = lno;
 		TMAP->off = svi_screens(sp, ep, lno, NULL);
-fbot:		for (p = TMAP; p > HMAP; --p)
-			if (svi_sm_prev(sp, ep, p, p - 1))
-				goto err;
+bottom:		for (p = TMAP; p > HMAP; --p)
+			if (svi_sm_prev(sp, ep, p, p - 1)) {
+				lno = 1;
+				goto top;
+			}
 		break;
 	}
 	return (0);
 
-err:	msgq(sp, M_BERR, "Movement not possible");
+	/*
+	 * Try and put *something* on the screen.  If this fails,
+	 * we have a serious hard error.
+	 */
+err:	HMAP->lno = 1;
+	HMAP->off = 1;
 	for (p = HMAP; p < TMAP; ++p)
-		(void)svi_sm_next(sp, ep, p, p + 1);
-	return (1);
+		if (svi_sm_next(sp, ep, p, p + 1))
+			return (1);
+	return (0);
 }
 
 /*
@@ -761,9 +777,8 @@ svi_sm_position(sp, ep, lnop, cnt, pos)
 			}
 		*lnop = p->lno;
 		break;
-	case P_FILL:
+	default:
 		abort();
-		break;
 	}
 	return (0);
 }
