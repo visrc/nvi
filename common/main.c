@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.25 1993/10/27 16:09:34 bostic Exp $ (Berkeley) $Date: 1993/10/27 16:09:34 $";
+static char sccsid[] = "$Id: main.c,v 8.26 1993/10/28 11:19:39 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:19:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: main.c,v 8.25 1993/10/27 16:09:34 bostic Exp $ (Ber
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
@@ -42,7 +41,7 @@ static char sccsid[] = "$Id: main.c,v 8.25 1993/10/27 16:09:34 bostic Exp $ (Ber
 
 static void h_hup __P((int));
 static void h_term __P((int));
-static void h_winch __P((int, int, struct sigcontext *));
+static void h_winch __P((int));
 static void msgflush __P((GS *));
 static void obsolete __P((char *[]));
 static void reset __P((GS *));
@@ -312,22 +311,35 @@ main(argc, argv)
 	}
 
 	/*
-	 * Initialize the window change size handler.  Use sigaction(2),
-	 * not signal(3) so we can specify that we don't want to restart
-	 * the read(2) system calls.
+	 * Initialize the signals.  Use sigaction(2), not signal(3), because
+	 * we don't want to always restart system calls on 4BSD systems.  It
+	 * would be nice in some cases to restart system calls, but SA_RESTART
+	 * is a 4BSD extension so we can't use it.
+	 *
+	 * SIGWINCH, SIGHUP, SIGTERM:
+	 *	Catch and set a global bit.
 	 */
+	act.sa_handler = h_hup;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	(void)sigaction(SIGHUP, &act, NULL);
+	act.sa_handler = h_term;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	(void)sigaction(SIGTERM, &act, NULL);
 	act.sa_handler = h_winch;
 	sigemptyset(&act.sa_mask);
-	sigaddset(&act.sa_mask, SIGWINCH);
 	act.sa_flags = 0;
 	(void)sigaction(SIGWINCH, &act, NULL);
 
-	/* We never want to catch SIGQUIT. */
-	(void)signal(SIGQUIT, SIG_IGN);
-
-	/* Initialize the about-to-die handlers. */
-	(void)signal(SIGHUP, h_hup);
-	(void)signal(SIGTERM, h_term);
+	/*
+	 * SIGQUIT:
+	 *	Always ignore.
+	 */
+	act.sa_handler = SIG_IGN;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	(void)sigaction(SIGQUIT, &act, NULL);
 
 	/*
 	 * If there's an initial command, push it on the command stack.
@@ -482,9 +494,8 @@ h_term(signo)
  *	Handle SIGWINCH.
  */
 static void
-h_winch(signo, code, scp)
-	int signo, code;
-	struct sigcontext *scp;
+h_winch(signo)
+	int signo;
 {
 	F_SET(__global_list, G_SIGWINCH);
 }

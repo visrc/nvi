@@ -6,14 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.20 1993/10/27 14:55:27 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:55:27 $";
+static char sccsid[] = "$Id: search.c,v 8.21 1993/10/28 11:20:07 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:20:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -153,8 +152,11 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
  * installed by the screen code.
  */
 #define	SET_UP_INTERRUPTS {						\
-	if (F_ISSET(sp->gp, G_ISFROMTTY) && (saveintr =			\
-	    signal(SIGINT, search_intr)) != (sig_ret_t)-1) {		\
+	act.sa_handler = search_intr;					\
+	sigemptyset(&act.sa_mask);					\
+	act.sa_flags = 0;						\
+	if (isig = !sigaction(SIGINT, &act, &oact)) {			\
+		istate = F_ISSET(sp, S_INTERRUPTIBLE);			\
 		F_CLR(sp, S_INTERRUPTED);				\
 		F_SET(sp, S_INTERRUPTIBLE);				\
 		if (tcgetattr(STDIN_FILENO, &term)) {			\
@@ -174,14 +176,16 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 }
 
 #define	TEAR_DOWN_INTERRUPTS {						\
-	if (F_ISSET(sp->gp, G_ISFROMTTY) &&				\
-	    saveintr != (sig_ret_t)-1) {				\
-		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)		\
+	if (isig) {							\
+		if (sigaction(SIGINT, &oact, NULL))			\
 			msgq(sp, M_ERR,					\
 			    "signal: %s", strerror(errno));		\
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))	\
 			msgq(sp, M_ERR,					\
 			    "tcsetattr: %s", strerror(errno));		\
+		F_CLR(sp, S_INTERRUPTED);				\
+		if (!istate)						\
+			F_CLR(sp, S_INTERRUPTIBLE);			\
 	}								\
 }
 
@@ -200,15 +204,15 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
+	struct sigaction act, oact;
 	struct termios nterm, term;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
-	sig_ret_t saveintr;
 	size_t coff, len;
 	long delta;
-	u_int flags;
-	int eval, rval, wrapped;
+	u_int flags, istate;
+	int eval, isig, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -266,7 +270,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	if (sp->s_position != NULL)
 		busy_on(sp, 1, "Searching...");
 
-	SET_UP_INTERRUPTS;
+	if (F_ISSET(sp->gp, G_ISFROMTTY))
+		SET_UP_INTERRUPTS;
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -350,7 +355,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	if (sp->s_position != NULL)
 		busy_off(sp);
 
-	TEAR_DOWN_INTERRUPTS;
+	if (F_ISSET(sp->gp, G_ISFROMTTY))
+		TEAR_DOWN_INTERRUPTS;
 
 	return (rval);
 }
@@ -363,15 +369,15 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
+	struct sigaction act, oact;
 	struct termios nterm, term;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
-	sig_ret_t saveintr;
 	size_t coff, len, last;
 	long delta;
-	u_int flags;
-	int eval, rval, wrapped;
+	u_int flags, istate;
+	int eval, isig, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -403,7 +409,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	/* Turn on busy message, interrupts. */
 	busy_on(sp, 1, "Searching...");
 
-	SET_UP_INTERRUPTS;
+	if (F_ISSET(sp->gp, G_ISFROMTTY))
+		SET_UP_INTERRUPTS;
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -504,7 +511,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	/* Turn off busy message, interrupts. */
 err:	busy_off(sp);
 
-	TEAR_DOWN_INTERRUPTS;
+	if (F_ISSET(sp->gp, G_ISFROMTTY))
+		TEAR_DOWN_INTERRUPTS;
 
 	return (rval);
 }
