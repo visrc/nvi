@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.52 1993/05/07 14:42:34 bostic Exp $ (Berkeley) $Date: 1993/05/07 14:42:34 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.53 1993/05/07 16:21:17 bostic Exp $ (Berkeley) $Date: 1993/05/07 16:21:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,19 +24,19 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_searchw,	V_ABS|V_CNT|V_KEYW|V_RCM_SET,
 	    "search forward for cursor word: [count]^A"},
 /* 002  ^B */
-	{v_pageup,	V_CNT|V_RCM_SETFNB,
+	{v_pageup,	V_CNT,
 	    "page up by screens: [count]^B"},
 /* 003  ^C */
 	{NULL,		0,
 	    "interrupt a search: ^C"},
 /* 004  ^D */
-	{v_hpagedown,	V_CNT|V_RCM_SETFNB,
+	{v_hpagedown,	V_CNT,
 	    "page down by half screens (set count): [count]^D"},
 /* 005  ^E */
 	{v_linedown,	V_CNT,
 	    "page down by lines: [count]^E"},
 /* 006  ^F */
-	{v_pagedown,	V_CNT|V_RCM_SETFNB,
+	{v_pagedown,	V_CNT,
 	    "page down by screens: [count]^F"},
 /* 007  ^G */
 	{v_status,	0,
@@ -76,7 +76,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_tagpop,	V_RCM_SET,
 	    "tag pop: ^T"},
 /* 025  ^U */
-	{v_hpageup,	V_CNT|V_RCM_SETFNB,
+	{v_hpageup,	V_CNT,
 	    "half page up (set count): [count]^U"},
 /* 026  ^V */
 	{NULL,		0,
