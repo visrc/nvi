@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.8 1996/03/21 08:59:47 bostic Exp $ (Berkeley) $Date: 1996/03/21 08:59:47 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.9 1996/04/10 19:47:19 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:47:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -449,14 +449,19 @@ XS(XS_VI_iscreen)
 	SCR *screen;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int id, rval;
+	char *file;
 
-	if (items != 2)
+	if (items != 1 && items != 2)
 		croak("Usage: VI::NewScreen screenId [file]");
 	SP -= items;
+	if (items == 1)
+		file = NULL;
+	else
+		file = (char *)SvPV(ST(1),na);
 
 	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
 	INITMESSAGE;
-	rval = api_iscreen(screen, (char *)SvPV(ST(1),na), &id);
+	rval = api_iscreen(screen, file, &id);
 	ENDMESSAGE;
 
 	EXTEND(sp,1);
