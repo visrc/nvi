@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.55 1993/11/12 16:47:49 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:47:49 $
+ *	$Id: screen.h,v 8.56 1993/11/12 17:12:31 bostic Exp $ (Berkeley) $Date: 1993/11/12 17:12:31 $
  */
 
 /*
@@ -149,6 +149,10 @@ typedef struct _scr {
 	char	*sh_prompt;		/* Vi: script prompt. */
 	size_t	 sh_prompt_len;		/* Vi: script prompt length. */
 
+	char const *time_msg;		/* ITIMER_REAL message. */
+	struct itimerval time_value;	/* ITIMER_REAL saved value. */
+	struct sigaction time_handler;	/* ITIMER_REAL saved handler. */
+
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	struct _gs	*gp;		/* Pointer to global area. */
 
@@ -184,10 +188,6 @@ typedef struct _scr {
 
 	CHNAME	const *cname;		/* Display names of characters. */
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
-
-	char const *time_msg;		/* ITIMER_REAL message. */
-	struct itimerval time_value;	/* ITIMER_REAL saved value. */
-	struct sigaction time_handler;	/* ITIMER_REAL saved handler. */
 
 	OPTION	 opts[O_OPTIONCOUNT];	/* Ex/vi: options. */
 
