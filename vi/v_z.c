@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 5.23 1993/02/19 11:17:45 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:17:45 $";
+static char sccsid[] = "$Id: v_z.c,v 5.24 1993/02/24 13:01:45 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:01:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,9 +15,9 @@ static char sccsid[] = "$Id: v_z.c,v 5.23 1993/02/19 11:17:45 bostic Exp $ (Berk
 #include <stdio.h>
 
 #include "vi.h"
-#include "vcmd.h"
 #include "screen.h"
 #include "term.h"
+#include "vcmd.h"
 
 /*
  * v_z -- [count]z[count][.-<CR>]
@@ -67,7 +67,7 @@ v_z(ep, vp, fm, tm, rp)
 	}
 
 	/* If the map changes, have to redraw the entire screen. */
-	FF_SET(ep, F_REDRAW);
+	SF_SET(ep, S_REDRAW);
 
 	rp->lno = lno;
 	rp->cno = fm->cno;
