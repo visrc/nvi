@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.27 2001/06/25 15:19:06 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:06 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.28 2001/08/01 18:29:13 skimo Exp $ (Berkeley) $Date: 2001/08/01 18:29:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,12 +119,11 @@ read:
 		    clp->skip = n;
 		    if (wlen == 0)
 			goto read;
-		    break;
-		} else if (rc == 0) {
+		} else if (rc == 0)
 		    clp->skip = 0;
-		    break;
-		}
-		/* else fall through */
+		else
+		    msgq(sp, M_ERR, "323|Invalid input");
+		break;
 	case INP_ERR:
 		evp->e_event = E_ERR;
 		break;
