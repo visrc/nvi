@@ -2,28 +2,90 @@
  * Copyright (c) 1992 The Regents of the University of California.
  * All rights reserved.
  *
+ * This code is derived from software contributed to Berkeley by
+ * David Hitz of Auspex Systems, Inc.
+ *
  * %sccs.include.redist.c%
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.32 1993/05/03 13:24:22 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:24:22 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.33 1993/05/04 15:59:20 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:59:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
+#include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
-#include "tag.h"
 #include "excmd.h"
+#include "tag.h"
 
-static int tagchange __P((SCR *, EXF *, TAG *, int));
+static char	*binary_search __P((char *, char *, char *));
+static int	 compare __P((char *, char *, char *));
+static char	*linear_search __P((char *, char *, char *));
+static int	 search __P((char *, char *, char **));
+static int	 tag_change __P((SCR *, EXF *, char *, char *, char *, int));
+static int	 tag_get __P((SCR *, char *, char **, char **, char **));
+
+/*
+ * ex_tagfirst --
+ *	The tag code can be entered from main, i.e. "vi -t tag".
+ */
+int
+ex_tagfirst(sp, tagarg)
+	SCR *sp;
+	char *tagarg;
+{
+	EXF *tep;
+	MARK m;
+	char *tag, *fname, *search, *argv[2];
+
+	/* Get the tag information. */
+	if (tag_get(sp, tagarg, &tag, &fname, &search))
+		return (1);
+
+	/* Create the file entry. */
+	argv[0] = fname;
+	argv[1] = NULL;
+	if (file_set(sp, 1, argv) ||
+	    (tep = file_first(sp, 0)) == NULL ||
+	    (tep = file_start(sp, tep)) == NULL)
+		return (1);
+
+	/* Search for the tag. */
+	m.lno = 1;
+	m.cno = 0;
+	if (f_search(sp, tep, &m, &m, search,
+	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM)) {
+		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
+		return (1);
+	}
+
+	/* Set up the screen/file. */
+	tep->lno = m.lno;
+	tep->cno = m.cno;
+	sp->ep = tep;
+	F_CLR(tep, F_NOSETPOS);
+
+	/* Might as well make this a default tag. */
+	if ((sp->tlast = strdup(tagarg)) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
+	}
+	return (0);
+}
 
 /*
  * ex_tagpush -- :tag [file]
- *	Display a tag.
+ *	Move to a new tag.
  */
 int
 ex_tagpush(sp, ep, cmdp)
@@ -31,7 +93,8 @@ ex_tagpush(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	TAG *tag;
+	TAG *tp;
+	char *fname, *search, *tag;
 	
 	switch (cmdp->argc) {
 	case 1:
@@ -52,12 +115,28 @@ ex_tagpush(sp, ep, cmdp)
 		abort();
 	}
 
-	if ((tag = tag_push(sp, sp->tlast)) == NULL)
+	/* Get the tag information. */
+	if (tag_get(sp, sp->tlast, &tag, &fname, &search))
 		return (1);
-	if (tagchange(sp, ep, tag, cmdp->flags & E_FORCE)) {
-		(void)tag_pop(sp);
+
+	/* Save enough information that we can get back. */
+	if ((tp = malloc(sizeof(TAG))) == NULL) {
+		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 		return (1);
 	}
+	tp->ep = ep;
+	tp->lno = sp->lno;
+	tp->cno = sp->cno;
+
+	/* Try to change. */
+	if (tag_change(sp, ep, tag, fname, search, cmdp->flags & E_FORCE)) {
+		free(tag);
+		FREE(tp, sizeof(TAG));
+		return (1);
+	}
+
+	/* Push saved information. */
+	HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
 	return (0);
 }
 
@@ -71,21 +150,28 @@ ex_tagpop(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	TAG *tag;
-	int force;
+	TAG *tp;
 
-	if ((tag = tag_head(sp)) == NULL) {
-		msgq(sp, M_ERR, "No tags on the stack.");
+	/* Pop newest saved information. */
+	tp = sp->taghdr.next;
+	if (tp == (TAG *)&sp->taghdr) {
+		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
 
-	force = cmdp->flags & E_FORCE;
-	if (strcmp(ep->name, tag->fname))
-		MODIFY_CHECK(sp, ep, force);
+	/* If not switching files, it's easy; else do the work. */
+	if (tp->ep == ep) {
+		sp->lno = tp->lno;
+		sp->cno = tp->cno;
+	} else {
+		MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+		sp->enext = tp->ep;
+		F_SET(sp, S_FSWITCH);
+	}
 
-	if ((tag = tag_pop(sp)) == NULL)
-		return (1);
-	return (tagchange(sp, ep, tag, force));
+	/* Delete the saved information from the stack. */
+	HDR_DELETE(tp, next, prev, TAG);
+	return (0);
 }
 
 /*
@@ -98,80 +184,71 @@ ex_tagtop(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	TAG *tag;
+	TAG *tp;
 
-	for (tag = NULL; tag_head(sp) != NULL;)
-		tag = tag_pop(sp);
-	if (tag == NULL) {
-		msgq(sp, M_ERR, "No tags on the stack.");
+	/* Pop oldest saved information. */
+	tp = sp->taghdr.prev;
+	if (tp == (TAG *)&sp->taghdr) {
+		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
-	return (tagchange(sp, ep, tag, cmdp->flags & E_FORCE));
+
+	/* If not switching files, it's easy; else do the work. */
+	if (tp->ep == ep) {
+		sp->lno = tp->lno;
+		sp->cno = tp->cno;
+	} else {
+		MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+		sp->enext = tp->ep;
+		sp->enext->lno = tp->lno;
+		sp->enext->cno = tp->cno;
+		F_SET(sp, S_FSWITCH);
+	}
+
+	/* Delete the stack. */
+	while ((tp = sp->taghdr.next) != (TAG *)&sp->taghdr) {
+		HDR_DELETE(tp, next, prev, TAG);
+		FREE(tp, sizeof(TAG));
+	}
+	return (0);
 }
 
 static int
-tagchange(sp, ep, tag, force)
+tag_change(sp, ep, tag, fname, search, force)
 	SCR *sp;
 	EXF *ep;
-	TAG *tag;
+	char *tag, *fname, *search;
 	int force;
 {
-	enum {TC_FIRST, TC_CHANGE, TC_CURRENT} which;
+	enum {TC_CHANGE, TC_CURRENT} which;
 	EXF *tep;
 	MARK m;
-	char *argv[2];
 
-	/*
-	 * The tag code can be entered from main, i.e. "vi -t tag".
-	 * If the file list is empty, then the tag file is the file
-	 * we're editing, otherwise, it's a side trip.
-	 */
-	if (file_first(sp, 1) == NULL) {
-		argv[0] = tag->fname;
-		argv[1] = NULL;
-		if (file_set(sp, 1, argv))
-			return (1);
-		if ((tep = file_first(sp, 0)) == NULL)
-			return (1);
-		which = TC_FIRST;
-	} else {
-		if ((tep = file_get(sp, ep, tag->fname, 1)) == NULL)
-			return (1);
-		else if (ep == tep)
-			which = TC_CURRENT;
-		else {
-			MODIFY_CHECK(sp, ep, force);
-			which = TC_CHANGE;
-		}
-	}
-
-	if (which != TC_CURRENT && (tep = file_start(sp, tep)) == NULL)
+	if ((tep = file_get(sp, ep, fname, 1)) == NULL)
 		return (1);
+	if (ep == tep)
+		which = TC_CURRENT;
+	else {
+		MODIFY_CHECK(sp, ep, force);
+		if ((tep = file_start(sp, tep)) == NULL)
+			return (1);
+		which = TC_CHANGE;
+	}
 
 	m.lno = 1;
 	m.cno = 0;
-	if (f_search(sp, tep == NULL ? ep : tep, &m, &m,
-	    tag->line, NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM)) {
-		msgq(sp, M_ERR, "%s: search pattern not found.", tag->tag);
-
+	if (f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
+	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM)) {
+		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 		switch (which) {
-		case TC_FIRST:
-			sp->ep = tep;
-			return (0);
 		case TC_CHANGE:
 			sp->enext = tep;
 			F_SET(sp, S_FSWITCH);
+			return (0);
 		case TC_CURRENT:
 			return (1);
-			break;
 		}
 	} else switch (which) {
-		case TC_FIRST:
-			tep->lno = m.lno;
-			tep->cno = m.cno;
-			F_CLR(tep, F_NOSETPOS);
-			sp->ep = tep;
-			break;
 		case TC_CHANGE:
 			tep->lno = m.lno;
 			tep->cno = m.cno;
@@ -183,6 +260,213 @@ tagchange(sp, ep, tag, force)
 			sp->lno = m.lno;
 			sp->cno = m.cno;
 			break;
+		}
+	return (0);
+}
+
+/*
+ * tag_get --
+ *	Get a tag from the tags files.
+ */
+int
+tag_get(sp, tag, tagp, filep, searchp)
+	SCR *sp;
+	char *tag, **tagp, **filep, **searchp;
+{
+	char *p;
+	TAGF **tfp;
+
+	/* Find the tag, only display missing file messages once. */
+	p = NULL;
+	for (tfp = sp->tfhead; *tfp != NULL && p == NULL; ++tfp)
+		if (search((*tfp)->fname, tag, &p) &&
+		    (errno != ENOENT || !((*tfp)->flags & TAGF_ERROR))) {
+			msgq(sp, M_ERR,
+			    "%s: %s", (*tfp)->fname, strerror(errno));
+			(*tfp)->flags |= TAGF_ERROR;
+		}
+	
+	if (p == NULL) {
+		msgq(sp, M_ERR, "%s: tag not found.", tag);
+		return (1);
+	}
+
+	/*
+	 * Set the return pointers; tagp points to the tag, and, incidentally
+	 * the allocated string, filep points to the nul-terminated file name,
+	 * searchp points to the nul-terminated search string.
+	 */
+	for (*tagp = p; *p && !isspace(*p); ++p);
+	if (*p == '\0')
+		goto malformed;
+	for (*p++ = '\0'; isspace(*p); ++p);
+	for (*filep = p; *p && !isspace(*p); ++p);
+	if (*p == '\0')
+		goto malformed;
+	for (*p++ = '\0'; isspace(*p); ++p);
+	*searchp = p;
+	if (*p == '\0') {
+malformed:	free(*tagp);
+		msgq(sp, M_ERR, "%s: corrupted tag in %s.", tag, (*tfp)->fname);
+		return (1);
 	}
 	return (0);
+}
+
+#define	EQUAL		0
+#define	GREATER		1
+#define	LESS		(-1)
+
+/*
+ * search --
+ *	Search a file for a tag.
+ */
+static int
+search(fname, tname, tag)
+	char *fname, *tname, **tag;
+{
+	struct stat sb;
+	int fd, len;
+	char *endp, *back, *front, *p;
+
+	if ((fd = open(fname, O_RDONLY, 0)) < 0)
+		return (1);
+	if (fstat(fd, &sb) || (front = mmap(NULL,
+	    sb.st_size, PROT_READ, 0, fd, (off_t)0)) == (caddr_t)-1) {
+		(void)close(fd);
+		return (1);
+	}
+	back = front + sb.st_size;
+
+	front = binary_search(tname, front, back);
+	front = linear_search(tname, front, back);
+
+	if (front == NULL)
+		goto done;
+	if ((endp = strchr(front, '\n')) == NULL)
+		goto done;
+
+	len = endp - front;
+	if ((p = malloc(len + 1)) == NULL) {
+done:		(void)close(fd);
+		*tag = NULL;
+		return (0);
+	}
+
+	memmove(p, front, len);
+	p[len] = '\0';
+	(void)close(fd);
+	*tag = p;
+	return (0);
+}
+
+/*
+ * Binary search for "string" in memory between "front" and "back".
+ * 
+ * This routine is expected to return a pointer to the start of a line at
+ * *or before* the first word matching "string".  Relaxing the constraint
+ * this way simplifies the algorithm.
+ * 
+ * Invariants:
+ * 	front points to the beginning of a line at or before the first 
+ *	matching string.
+ * 
+ * 	back points to the beginning of a line at or after the first 
+ *	matching line.
+ * 
+ * Base of the Invariants.
+ * 	front = NULL; 
+ *	back = EOF;
+ * 
+ * Advancing the Invariants:
+ * 
+ * 	p = first newline after halfway point from front to back.
+ * 
+ * 	If the string at "p" is not greater than the string to match, 
+ *	p is the new front.  Otherwise it is the new back.
+ * 
+ * Termination:
+ * 
+ * 	The definition of the routine allows it return at any point, 
+ *	since front is always at or before the line to print.
+ * 
+ * 	In fact, it returns when the chosen "p" equals "back".  This 
+ *	implies that there exists a string is least half as long as 
+ *	(back - front), which in turn implies that a linear search will 
+ *	be no more expensive than the cost of simply printing a string or two.
+ * 
+ * 	Trying to continue with binary search at this point would be 
+ *	more trouble than it's worth.
+ */
+#define	SKIP_PAST_NEWLINE(p, back)	while (p < back && *p++ != '\n');
+
+static char *
+binary_search(string, front, back)
+	register char *string, *front, *back;
+{
+	register char *p;
+
+	p = front + (back - front) / 2;
+	SKIP_PAST_NEWLINE(p, back);
+
+	while (p != back) {
+		if (compare(string, p, back) == GREATER)
+			front = p;
+		else
+			back = p;
+		p = front + (back - front) / 2;
+		SKIP_PAST_NEWLINE(p, back);
+	}
+	return (front);
+}
+
+/*
+ * Find the first line that starts with string, linearly searching from front
+ * to back.
+ * 
+ * Return NULL for no such line.
+ * 
+ * This routine assumes:
+ * 
+ * 	o front points at the first character in a line. 
+ *	o front is before or at the first line to be printed.
+ */
+static char *
+linear_search(string, front, back)
+	char *string, *front, *back;
+{
+	while (front < back) {
+		switch (compare(string, front, back)) {
+		case EQUAL:		/* Found it. */
+			return (front);
+			break;
+		case LESS:		/* No such string. */
+			return (NULL);
+			break;
+		case GREATER:		/* Keep going. */
+			break;
+		}
+		SKIP_PAST_NEWLINE(front, back);
+	}
+	return (NULL);
+}
+
+/*
+ * Return LESS, GREATER, or EQUAL depending on how the string1 compares with
+ * string2 (s1 ??? s2).
+ * 
+ * 	o Matches up to len(s1) are EQUAL. 
+ *	o Matches up to len(s2) are GREATER.
+ * 
+ * The string "s1" is null terminated.  The string s2 is '\n' terminated (or
+ * "back" terminated).
+ */
+static int
+compare(s1, s2, back)
+	register char *s1, *s2, *back;
+{
+	for (; *s1 && s2 < back && *s2 != '\n'; ++s1, ++s2)
+		if (*s1 != *s2)
+			return (*s1 < *s2 ? LESS : GREATER);
+	return (*s1 ? GREATER : EQUAL);
 }

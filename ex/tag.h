@@ -4,26 +4,20 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 5.6 1993/03/26 13:39:29 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:29 $
+ *	$Id: tag.h,v 5.7 1993/05/04 15:59:22 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:59:22 $
  */
 
-typedef struct _tagf {
+typedef struct _tagf {				/* Tag file. */
 	char *fname;				/* Tag file name. */
 #define	TAGF_ERROR	0x01			/* Error reported. */
 	u_char flags;
 } TAGF;
 
-typedef struct _tag {
-	struct _tag *prev;			/* Previous tag. */
-	char *tag;				/* Tag name. */
-	char *fname;				/* File name. */
-	char *line;				/* Search string. */
+typedef struct _tag {				/* Tag stack. */
+	struct _tag *next, *prev;		/* Linked list of tags. */
+	EXF *ep;				/* Saved file structure. */
+	recno_t lno;				/* Saved line number. */
+	size_t cno;				/* Saved column number. */
 } TAG;
 
-/* Tag routines. */
-struct _tag *
-	tag_head __P((struct _scr *));
-struct _tag *
-	tag_pop __P((struct _scr *));
-struct _tag *
-	tag_push __P((struct _scr *, char *));
+int	ex_tagfirst __P((SCR *, char *));
