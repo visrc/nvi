@@ -3,218 +3,24 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.3 1994/04/23 11:45:34 bostic Exp $ (Berkeley) $Date: 1994/04/23 11:45:34 $
+.\"	$Id: ex.cmd.roff,v 8.4 1994/04/27 17:31:34 bostic Exp $ (Berkeley) $Date: 1994/04/27 17:31:34 $
 .\"
-#ifdef REFERENCE
-.Sh EX DESCRIPTION
-When
-.Nm \&ex
-is executed,
-the text of a file is read (or a temporary file is created),
-and then all editing changes happen to a copy of the file.
-No changes effect the file until the file is written out,
-either using a write command or based on the value of the
-.Sy autowrite
-option.
-.Pp
-.Nm \&Ex
-is a modeful editor, i.e. it has two modes,
-.Dq command
-and
-.Dq "text input" .
-When
-.Nm \&ex
-first starts, it is in command mode.
-There are three commands that change
-.Nm \&ex
-into text input mode
-.Sy append ,
-.Sy change
-and
-.Sy insert .
-In input mode, entering an empty line with a single period
-.Pq Dq Li .
-on it terminates input and returns to command mode.
-.Pp
-When
-.Nm \&ex
-is in command mode, it displays a colon (``:'') prompt.
-.Sh EX ADDRESSING
-Addressing in
-.Nm \&ex
-relates to the current line.
-In general, the current line is the last line affected by a command.
-The exact effect on the current line is discussed under the description
-of each command.
-When the buffer contains no lines, the current line is zero.
-.Pp
-Addresses are constructed by one or more of the following methods:
-.Bl -enum -compact
-.It
-The address
-.Dq Li .
-refers to the current line.
-.It
-The address
-.Dq Li $
-refers to the last line of the file.
-.It
-The address
-The address
-.Dq Li N ,
-where
-.Li N
-is a positive number, refers to the N-th line of the file.
-.It
-The address
-.Dq Li '<character>
-refers to the line marked with name <character>.
-(See the
-.Sy k
-or
-.Sy m
-commands for more information on how to mark lines.)
-.It
-A regular expression (RE) enclosed by slashes
-.Pq Dq Li /
-is an address,
-and it refers to the first line found by searching forwards from
-the line
-.Em after
-the current line toward the end of the file, and stopping at the
-first line containing a string matching the RE.
-(The trailing slash can be omitted at the end of the command line.)
-If the
-.Sy extended
-option is set, the RE is handled as an extended RE, not a basic RE.
-If the
-.Sy wrapscan
-option is set, the search wraps around to the beginning of the file
-and continues up to and including the current line, so that the entire
-file is searched.
-.It
-An RE enclosed in question marks
-.Pq Dq Li ?
-addresses the first line found by searching backwards from the line
-.Em preceding
-the current line, toward the beginning of the file and stopping at the
-first line containing a string matching the RE.
-(The trailing question mark can be omitted at the end of a command line.)
-If the
-.Sy extended
-option is set, the RE is handled as an extended RE, not a basic RE.
-If the
-.Sy wrapscan
-option is set, the search  wraps around from the beginning of the file to
-the end of the file and continues up to and including the current line,
-so that the entire file is searched.
-.It
-An address followed by a plus sign
-.Pq Dq Li +
-or a minus sign
-.Pq Dq Li -
-followed by a number is an offset address and refers to the
-address plus (or minus) the indicated number of lines.
-If the address is omitted, the addition or subtraction is done with
-respect to the current line.
-.It
-An address of
-.Dq Li +
-or
-.Dq Li -
-followed by a number is an offset from the current line.
-For example,
-.Dq Li -5
-is the same as
-.Dq Li .-5 .
-.It
-An address ending with
-.Dq Li +
-or
-.Dq Li -
-has 1 added to or subtracted from the address, respectively.
-As a consequence of this rule and of the previous rule,
-the address
-.Dq Li -
-refers to the line preceding the current line.
-Moreover, trailing
-.Dq Li +
-and
-.Dq Li -
-characters have a cumulative effect.
-For example,
-.Dq Li ++-++
-refers to the current line plus 3.
-.It
-A percent sign
-.Pq Dq Li %
-is equivalent to the address range
-.Dq Li 1,$ .
-.Pp
-.Nm \&Ex
-commands require zero, one, or two addresses.
-It is an error to specify an address to a command which requires zero
-addresses.
-.Pp
-The addresses in a range are separated from each other by a comma
-.Pq Dq ,
-or a semicolon
-.Pq Dq ; .
-In the latter case, the current line
-.Pq Dq .
-is set to the first address,
-and only then is the second address calculated.
-This feature can be used to determine the starting line for forwards and
-backwards searches (see rules (5) and (6) above).
-The second address of any two-address sequence corresponds to a line that
-follows, in the file, the line corresponding to the first address.
-The first address must be less than or equal to the second address.
-The first address must be greater than or equal to the first line of the
-file, and the last address must be less than or equal to the last line
-of the file.
-.Pp
-If you provide more than the expected number of addresses to any
-.Nm \&ex
-command, the first addresses specified are discarded.
-For example,
-.Dq Li "1,2,3,5 print"
-prints lines 3 through 5, because the
-.Sy print
-command only takes two addresses.
-.bp
-#endif /* REFERENCE */
 .Sh EX COMMANDS
 The following words have special meanings for
 .Nm \&ex
 commands.
 .sp
 .Bl -tag -width "XXXX" -compact
-.It Li "current pathname"
-The pathname of the file currently being edited by vi.
-When the character
-.Dq Li \&%
-appears in a pathname entered as part of an
+.It Li "<eof>"
+The end-of-file character is used to scroll the screen in the
 .Nm \&ex
-command argument, it's replaced by the current pathname.
-The
-.Dq Li \&%
-character can be escaped by preceding it with a backslash.
-.It Li "alternate pathname"
-The name of the last file mentioned in an
-.Nm \&ex
-command, or, the previous current pathname if the last file mentioned
-becomes the current file.
-When the character
-.Dq Li \&#
-appears in a pathname entered as part of an
-.Nm \&ex
-command argument, it's replaced by the alternate pathname.
-The
-.Dq Li \&#
-character can be escaped by preceding it with a backslash.
+editor.
+This character is normally <control-D>, however, whatever character
+is set for the current terminal is used.
 .It Li "line"
 A single-line address, given in any of the forms described in the
-Ex Addressing section.
+section entitled
+.Dq "Ex Addressing" .
 The default for
 .Li line
 is the current line.
@@ -225,7 +31,7 @@ The default for range shall be the current line
 i.e.
 .Dq Li .,. .
 A percent sign
-.Pq Dq Li %
+.Pq Dq Li "\&%"
 stands for the range
 .Dq Li 1,$ .
 The starting address must be less than, or equal to, the ending address.
@@ -255,15 +61,11 @@ but rather the line addressed by the offset address specified.
 The default for
 .Li flags
 is none.
-.Dq Li "buffer"
-.GG
 .It Li "file"
 A pattern used to derive a pathname; the default is the current file.
 File names are subjected to normal
 .Xr sh 1
 word expansions.
-.It Li "<literal next>"
-.HH
 .It Li "word"
 A word consists of a sequence of letters, digits, and underscores,
 delimited at both ends by characters other than letters, digits, or
@@ -300,11 +102,12 @@ Any character, including <carriage-return>,
 and
 .Dq Li #
 retain their literal value when preceded by a backslash.
+.El
 .Pp
 Each
 .Nm \&ex
-command described below notes the value of the current line after it
-is executed.
+command described below notes the new current line after it
+is executed, as well an any options that affect the command.
 .Pp
 In each entry below, the tag line is a usage synopsis for the command.
 For each of the commands, the command can be entered as the abbreviation
@@ -320,13 +123,13 @@ can be entered as
 or
 .Dq Li args .
 .sp
-#ifdef REFERENCE
-.Bl -tag -width "XXXX"
-#endif
 #ifdef MANUAL
 .Bl -tag -width "XXXX" -compact
 #endif
-.It Li "<eof>"
+#ifdef REFERENCE
+.Bl -tag -width "XXXX"
+#endif
+.It Li "<end-of-file>"
 Scroll the screen.
 #ifdef REFERENCE
 Write the next N lines, where N is the value of the
@@ -337,8 +140,9 @@ different on different terminals.
 Traditionally, it is the
 .Dq Li <control-D>
 key.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line indicator changes to the last line written.
 .It "Options:"
 None.
@@ -384,7 +188,7 @@ The special meanings of
 and
 .Dq Li !
 can be overridden by escaping them with a backslash
-.Pq Dq Li \e
+.Pq Dq Li "\&\e"
 character.
 .Pp
 In the second form of the
@@ -396,8 +200,9 @@ as described above.
 The specified lines are passed to the program as standard input, and
 the standard and standard error output of the program replace the
 original lines.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 Affected by the
@@ -409,7 +214,7 @@ options.
 #endif
 .It Li "\""
 Command lines beginning with the double-quote character
-.Pq Dq Li "
+.Pq Dq Li \&"
 are ignored.
 This permits comments in editor scripts and startup files.
 .It Li "[range] nu[mber] [count] [flags]"
@@ -420,8 +225,9 @@ Nonprintable characters, except for tab's, are expanded as specified
 by the
 .Sy print
 command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is changed to the last line displayed.
 .It "Options:"
 None.
@@ -462,8 +268,9 @@ the
 .Dq Li ~
 is equivalent to
 .Dq Li s/green/blue/ .
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -495,8 +302,9 @@ If the command character
 .Dq Li <
 is repeated more than once, the command is repeated once for each
 additional command character.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the last line modified by the command.
 .It "Options:"
 Affected by the
@@ -510,8 +318,9 @@ Display the line number.
 Display the line number of
 .Li line
 (which defaults to the last line in the file).
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -530,8 +339,9 @@ If the command character
 .Dq Li >
 is repeated more than once, the command is repeated once for each
 additional command character.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the last line modified by the command.
 .It "Options:"
 None.
@@ -540,12 +350,14 @@ None.
 .It Li "ab[brev] word rhs"
 Add the named abbreviation to the current abbreviation list.
 #ifdef REFERENCE
-In visual mode, if word is typed so that it is preceded and followed
-by characters that cannot be part of a word, it is replaced by the
-string
+In
+.Nm \&vi ,
+if word is typed so that it is preceded and followed by characters
+that cannot be part of a word, it is replaced by the string
 .Dq Li rhs .
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -566,8 +378,9 @@ Following the command name with
 causes the
 .Sy autoindent
 editor option to be toggled for the duration of the command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 Affected by the
@@ -595,8 +408,9 @@ The argument list is the list of operands specified on startup,
 which can be replaced using the
 .Sy next
 command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -606,8 +420,9 @@ None.
 Visual mode only.
 Background the current screen.
 #ifdef REFERENCE
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is the current line when the screen was last edited.
 .It "Options:"
 None.
@@ -621,8 +436,9 @@ Following the command name with
 causes the
 .Sy autoindent
 editor option to be toggled for the duration of the command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the last line input, or, if no lines were
 input, it changes to the line before the target line, or to the first
 line of the file if there are no lines preceding the target line.
@@ -664,8 +480,9 @@ write of the file.
 You can override this check by appending a
 .Dq Li !
 to the command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -675,8 +492,9 @@ None.
 .It Li "[range] t line [flags]"
 Copy the specified lines (range) after the destination line.
 Line 0 places the lines at the beginning of the file.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -685,17 +503,19 @@ None.
 .It Li "[range] d[elete] [buffer] [count] [flags]"
 Delete the lines from the file.
 #ifdef REFERENCE
-If a named buffer is specified, the deleted text shall be saved in it.
-Otherwise, the deleted text is saved in the unnamed buffer.
+The deleted text is saved in the specified buffer, or, if no buffer
+is specified, in the unnamed buffer.
 If the command name is followed by a letter that could be interpreted
 as either a buffer name or a flag value (because neither a count nor
 an additional flags value was given),
-.Nm \&ex treats the letter as a flags value if the letter immediately
-follows the command name, without any whitespace separation.
+.Nm \&ex
+treats the letter as a flags value if the letter immediately follows the
+command name, without any whitespace separation.
 If the letter is preceded by whitespace characters, it treats it as a
 buffer name.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the line following the deleted lines,
 or to the last line if the deleted lines were at the end.
 .It "Options:"
@@ -711,14 +531,15 @@ command takes one of three additional arguments, which are as follows:
 .Bl -tag -width "XXb[uffers]" -compact
 .It Dq Li b[uffers]
 Display all buffers (including named, unnamed, and numeric)
-that current contain copied text.
+that currently contain text.
 .It Dq Li s[creens]
 Display the file names of all background screens.
 .It Dq Li t[ags]
 Display the tags stack.
 .El
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -733,13 +554,16 @@ the command will fail.
 You can override this by appending a
 .Dq Li !
 to the command name.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 If you have previously edited the file, the current line will be set
 to your last position in the file.
 If that position does not exist, or you have not previously edited the
 file, the current line will be set to the first line of the file if
-you are in visual mode, and the last line of the file, otherwise.
+you are in
+.Nm \&vi ,
+and the last line of the file, otherwise.
 .Pp
 If the
 .Dq Li +cmd
@@ -769,8 +593,9 @@ is specified, a usage statement for that command is displayed.
 Otherwise, usage statements for all
 .Nm \&ex
 commands are displayed.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -783,8 +608,9 @@ If a file name is specified, the current pathname is changed to the
 specified name.
 The current pathname, the number of lines, and the current position
 in the file are displayed.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -792,12 +618,13 @@ None.
 #endif
 .It Li "fg [name]"
 Visual mode only.
-Foreground the screen.
+Foreground the specified screen.
 #ifdef REFERENCE
 Swap the current screen with the specified backgrounded screen.
 If no screen is specified, the first background screen is foregrounded.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is the current line when the screen was last edited.
 .It "Options:"
 None.
@@ -820,7 +647,7 @@ the given pattern are selected.
 Then, the specified
 .Nm \&ex
 command(s) are executed with the current line
-.Pq Dq Li .
+.Pq Dq Li "\&."
 set to each selected line.
 If no range is specified, the entire file is searched for matching,
 or not matching, lines.
@@ -845,8 +672,11 @@ command may be specified as one of the commands.
 In this mode, input shall be taken from the terminal.
 Entering a
 .Sy Q
-from visual mode shall cause the next line matching the pattern to be
-selected and visual mode to be reentered, until the list is exhausted.
+in
+.Nm \&vi
+causes the next line matching the pattern to be selected and
+.Nm \&vi
+to be reentered, until the list is exhausted.
 .Pp
 The
 .Sy global ,
@@ -865,8 +695,9 @@ are turned off for the duration of the
 and
 .Sy v
 commands.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The last line modified.
 .It "Options:"
 None.
@@ -875,8 +706,9 @@ None.
 .It Li "he[lp]"
 Display a help message.
 #ifdef REFERENCE
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -890,8 +722,9 @@ Following the command name with the character
 causes the
 .Sy autoindent
 editor option setting to be toggled for the duration of this command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line moves to last line input; if no lines were input,
 it moves to the line before the target line, or to the first line
 of the file if there are no lines preceding the target line.
@@ -923,8 +756,9 @@ Appending a
 .Dq Li !
 character to the command name causes a simpler join with no
 white-space processing.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -938,8 +772,9 @@ Tabs are displayed as
 Nonprintable characters are displayed as hexadecimal values.
 The end of the line is marked with a
 .Dq Li $ .
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is set to the last line displayed.
 .It "Options:"
 Affected by the
@@ -949,12 +784,15 @@ None.
 .El
 #endif
 .It Li "map[!] [lhs rhs]"
-Define or display maps (for visual mode only).
+Define or display maps (for
+.Nm \&vi
+only).
 #ifdef REFERENCE
 When the
 .Dq Li lhs
-character sequence is entered in visual mode, the action shall be as if
-the corresponding
+character sequence is entered in
+.Nm \&vi ,
+the action shall be as if the corresponding
 .Dq Li rhs
 had been entered.
 If the character
@@ -978,8 +816,9 @@ If a
 .Dq Li !
 character is appended to to the command, the text input mode maps are
 displayed.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -994,8 +833,9 @@ The expressions
 and
 .Dq Li `<character>
 can then be used as an address in any command requiring one.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1003,8 +843,10 @@ None.
 #endif
 .It Li "[range] m[ove] line"
 Move the specified lines (range) to be after the target line (line).
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+#ifdef REFERENCE
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is changed to the first of the moved lines.
 .It "Options:"
 None.
@@ -1027,8 +869,9 @@ command will fail.
 This check can be overridden by appending a
 .Dq Li !
 character to the command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1047,8 +890,9 @@ character to the command name.
 The argument list can optionally be replaced by specifying a new one
 as arguments to this command.
 In this case, editing starts with the first file on the new list.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is changed as described for the
 .Sy edit
 command.
@@ -1063,14 +907,19 @@ None.
 .It Li "[line] o[pen] /pattern/ [flags]"
 Enter open mode.
 #ifdef REFERENCE
-Open mode is the same as visual mode, but with a one-line window.
-All the visual mode commands are available.
+Open mode is the same as being in
+.Nm \&vi ,
+but with a one-line window.
+All the standard
+.Nm \&vi
+commands are available.
 If a match is found for the optional RE argument,
 the cursor shall be moved to the start of the matching pattern.
 .Pp
 .Em "This command is not yet implemented."
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged, unless the optional RE is specified, in which case it is
 changed to the line where the matching pattern is found.
 .It "Options:"
@@ -1086,9 +935,11 @@ Save the file in a form that can later be recovered by using
 and
 .Fl r
 options.
+#ifdef REFERENCE
 When the file is preserved, an email message is sent to the user.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1104,8 +955,9 @@ write.
 This check can be overridden by appending the
 .Dq Li !
 character to the command name.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is changed as described for the
 .Sy edit
 command.
@@ -1120,8 +972,9 @@ None.
 .It Li "[range] p[rint] [count] [flags]"
 Display the specified lines.
 #ifdef REFERENCE
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is changed to the last line displayed.
 .It "Options:"
 None.
@@ -1132,8 +985,9 @@ Append buffer contents to the current line.
 #ifdef REFERENCE
 If a buffer is specified, its contents are appended to the line,
 otherwise, the contents of the unnamed buffer are used.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is changed to the line after the current line.
 .It "Options:"
 None.
@@ -1148,8 +1002,9 @@ command will fail.
 This check may be overridden by appending a
 .Dq Li !
 character to the command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1186,12 +1041,17 @@ the file after the specified line.
 The special meaning of the
 .Dq Li !
 character can be overridden by escaping it with a backslash
-.Pq Dq Li \e
+.Pq Dq Li "\&\e"
 character.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-The current line changes to the last line read.
-In visual mode, the current line changes to the first line read. 
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
+When executed from
+.Nm \&ex ,
+the current line changes to the last line read.
+When executed from
+.Nm \&vi ,
+the current line changes to the first line read. 
 .It "Options:"
 None.
 .El
@@ -1202,8 +1062,9 @@ Recover the file.
 Attempt to recover file if it was previously saved.
 .Pp
 .Em "This command is not yet implemented."
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is set as described for the
 .Sy edit
 command.
@@ -1225,8 +1086,9 @@ If
 .Li size
 is not signed, the current screen is set to the specified
 .Li size .
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1242,8 +1104,9 @@ command will fail.
 This check may be overridden by appending the
 .Dq Li !
 character to the command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line is set as described for the
 .Sy edit
 command.
@@ -1287,8 +1150,9 @@ each with a backslash.
 More than one option can be set or listed by a single set command,
 by specifying multiple arguments, each separated from the next by
 whitespace characters.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1303,8 +1167,9 @@ environment variable is run with the
 .Fl i
 (interactive) option.
 Editing is resumed when that program exits.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1319,8 +1184,9 @@ Read and execute commands from
 .Li file .
 .Sy Source
 commands may be nested.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1340,9 +1206,9 @@ The argument list for the new screen consists of the list of files
 specified as arguments to this command, or, the current pathname if
 no files are specified.
 In the former case, editing starts with the first file on the list.
-See the section on Multiple Screens for more information.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 If
 .Li file
 is specified, set as for the
@@ -1397,8 +1263,9 @@ The
 .Sy substitute
 command may be interrupted, using the terminal interrupt character.
 All substitutions completed before the interrupt are retained.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the last line upon which a replacement was made.
 .It "Options:"
 None.
@@ -1414,8 +1281,9 @@ Appending a
 character to the command turns off the
 .Sy autowrite
 option for this command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 Affected by the
@@ -1446,8 +1314,9 @@ option.
 (See
 .Xr ctags 1
 for more information on tags files.)
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the line indicated by the tag.
 .It "Options:"
 Affected by the
@@ -1488,8 +1357,9 @@ This check may be overridden by appending a
 .Dq Li !
 character to the command name.
 #ifdef REFERENCE
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the line indicated by the tag.
 .It "Options:"
 Affected by the
@@ -1509,8 +1379,9 @@ This check may be overridden by appending a
 .Dq Li !
 character to the command name.
 #ifdef REFERENCE
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the line indicated by the tag.
 .It "Options:"
 Affected by the
@@ -1526,8 +1397,9 @@ Delete an abbreviation.
 Delete
 .Li word
 from the current list of abbreviations.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1543,8 +1415,9 @@ and map sequences are considered a single command.
 If repeated, the
 .Sy u
 command alternates between these two states, and is its own inverse.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 The current line changes to the last line modified by the command.
 .It "Options:"
 None.
@@ -1559,8 +1432,9 @@ If a
 .Dq Li !
 character is appended to the command name, delete the text input mode
 map definition instead.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1573,7 +1447,8 @@ editor.
 .It Li "[line] vi[sual] [type] [count] [flags]"
 .Nm \&Ex
 mode only.
-Enter visual mode.
+Enter
+.Nm \&vi .
 #ifdef REFERENCE
 The
 .Li type
@@ -1593,8 +1468,9 @@ A
 specifies the number of lines that will initially be displayed.
 (The default is the value of the editor option
 .Sy window .)
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged unless
 .Li line
 is specified, in which case the current line changes to that line.
@@ -1610,6 +1486,7 @@ Edit a new file.
 Identical to the
 .Dq Li "edit[!] [+cmd] [file]"
 command.
+#endif
 .It Li "viu[sage] [command]"
 Display usage for a
 .Nm \&vi
@@ -1621,8 +1498,9 @@ is specified, a usage statement for that command is displayed.
 Otherwise, usage statements for all
 .Nm \&vi
 commands are displayed.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1630,6 +1508,7 @@ None.
 #endif
 .It Li "[range] w[rite][!] [>>] [file]"
 .It Li "[range] w[rite] [!] [file]"
+.It Li "[range] wn[!] [>>] [file]"
 .It Li "[range] wq[!] [>>] [file]"
 Write the file.
 #ifdef REFERENCE
@@ -1666,10 +1545,25 @@ whitespace character.
 The special meaning of the
 .Dq Li !
 may be overridden by escaping it with a backslash
-.Pq Dq Li \e
+.Pq Dq Li "\&\e"
 character.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.Pp
+The
+.Sy wq
+version of the write command will exit the editor after writing the file,
+if there are no further files to edit.
+Appending a
+.Dq Li !
+character to the command name will override this check and the editor
+will exit, unless the write fails.
+.Pp
+The
+.Sy wn
+version of the write command will move to the next file after writing
+the file, unless the write fails.
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 Affected by the
@@ -1690,8 +1584,9 @@ If no
 .Li range
 is specified, the entire file is written.
 If the command succeeds, the editor session ends.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 Affected by the
@@ -1705,8 +1600,9 @@ options.
 Copy the specified lines to a buffer.
 #ifdef REFERENCE
 If no buffer is specified, the unnamed buffer is used.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
+.sp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
 Unchanged.
 .It "Options:"
 None.
@@ -1759,7 +1655,9 @@ on the screen with a line of hyphens displayed immediately before and
 after it.
 The number of preceding and following lines of text displayed are
 reduced to account for those lines.
-.Bl -tag -width "XXCurrent line:" -compact
+.El
+.sp
+.Bl -tag -width "XOptions:" -compact
 .It "Current line:"
 The current line changes to the last line displayed,
 with the exception of the

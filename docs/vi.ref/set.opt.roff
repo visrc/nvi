@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.9 1994/04/21 08:08:39 bostic Exp $ (Berkeley) $Date: 1994/04/21 08:08:39 $
+.\"     $Id: set.opt.roff,v 8.10 1994/04/27 17:31:24 bostic Exp $ (Berkeley) $Date: 1994/04/27 17:31:24 $
 .\"
 .Sh SET OPTIONS
 There are a large number of options that may be set (or unset) to
@@ -38,8 +38,10 @@ modes, unless otherwise specified.
 For information on modifying the options or to display the options and
 their current values, see the
 .Dq set
-command in the Ex Commands section.
+command in the section entitled
+.Dq "Ex Commands" .
 #endif
+.sp
 .Bl -tag -width "XXXX" -compact
 .It Li "altwerase [off]"
 .Nm \&Vi
@@ -52,7 +54,7 @@ Change how
 .Nm \&vi
 does word erase during text input.
 When this option is set, text is broken up into three classes:
-alphabetic, numeric and underscore characters, other non-blank
+alphabetic, numeric and underscore characters, other nonblank
 characters, and blank characters.
 Changing from one class to another marks the end of a word.
 In addition, the class of the first character erased is ignored
@@ -85,13 +87,13 @@ commands, or the
 and
 .Sy insert
 commands) the new line is automatically indented to align the cursor with
-the first non-blank character of the line from which you created it.
+the first nonblank character of the line from which you created it.
 Lines are indented using tab characters to the extent possible (based on
 the value of the
 .Sy tabstop
 option) and then using space characters as necessary.
 For commands inserting text into the middle of a line, any blank characters
-to the right of the cursor are discarded, and the first non-blank character
+to the right of the cursor are discarded, and the first nonblank character
 to the right of the cursor is aligned as described above.
 .Pp
 The indent characters are themselves somewhat special.
@@ -108,22 +110,21 @@ For example, if you have an indented line, containing only blanks, the first
 <word-erase> character you enter will erase up to end of the indent characters,
 and the second will erase back to the beginning of the line.
 (Historically, only the
-.Sy \&^D
+.Sy \&<control-D>
 key would erase the indent characters.
 Both the
-.Sy \&^D
+.Sy \&<control-D>
 key and the usual erase keys work in
 .Nm nvi .)
 In addition, if the cursor is positioned at the end of the indent
 characters, the keys
-.Dq 0^D
+.Dq 0<control-D>
 will erase all of the indent characters for the current line,
 resetting the indentation level to 0.
 Similarly, the keys
-.Dq ^^D
-(i.e. a carat followed by a <control-D>) will erase all of the indent
-characters for the current line, leaving the indentation level for
-future created lines unaffected.
+.Dq ^<control-D>
+will erase all of the indent characters for the current line,
+leaving the indentation level for future created lines unaffected.
 .Pp
 Finally, if
 .Sy autoindent
@@ -131,7 +132,7 @@ is set, the
 .Sy \&S
 and
 .Sy \&cc
-commands change from the first non-blank of the line to the end of the
+commands change from the first nonblank of the line to the end of the
 line, instead of from the beginning of the line to the end of the line.
 #endif
 .It Li "autoprint, ap [off]"
@@ -176,7 +177,7 @@ If this option is set, the
 .Sy \&^^
 .Sy \&^]
 and
-.Sy \&^Z
+.Sy \&<control-Z>
 commands, and the
 .Nm \&ex
 .Sy edit ,
@@ -244,7 +245,7 @@ affected by the
 .Sy beautify
 option.
 #endif
-.It Li "cdpath [environment variable CDPATH, or ``.'']"
+.It Li "cdpath [environment variable CDPATH, or current directory]"
 #ifdef MANUAL
 The directory paths used as path prefixes for the
 .Sy cd
@@ -269,7 +270,7 @@ unless it is explicitly specified.
 It may be so specified by entering an empty string or a
 .Dq \&.
 into the
-.Ev CDPATH 
+.Ev CDPATH
 variable or the option value.
 #endif
 .It Li "columns, co [80]"
@@ -282,7 +283,9 @@ Setting this option causes
 .Nm ex/vi
 to set (or reset) the environmental variable
 .Ev COLUMNS .
-See the SCREEN SIZING section for more information.
+See the section entitled
+.Dq "Screen Sizing"
+more information.
 #endif
 .It Li "comment [off]"
 .Nm \&Vi
@@ -350,7 +353,9 @@ the local startup files are never read (unless they are the same
 as the system or $HOME startup files).
 Turning it on has no effect, i.e. the normal checks for local startup
 files are performed, regardless.
-See the STARTUP INFORMATION section for more information.
+See the section entitled
+.Dq "Startup Information"
+for more information.
 #endif
 .It Li "extended [off]"
 #ifdef MANUAL
@@ -425,7 +430,9 @@ Setting this option causes
 .Nm ex/vi
 to set (or reset) the environmental variable
 .Ev LINES .
-See the Screen Sizing section for more information.
+See the section entitled
+.Dq "Screen Sizing"
+for more information.
 #endif
 .It Li "lisp [off]"
 .Nm \&Vi
@@ -480,8 +487,9 @@ To re-enable characters individually, when the
 option is off,
 precede them with an
 .Dq \&\e .
-See the REGULAR EXPRESSIONS AND REPLACEMENT STRINGS section for
-more information.
+See the section entitled
+.Dq "Regular Expressions and Replacement Strings"
+for more information.
 #endif
 .It Li "matchtime [7]"
 .Nm \&Vi
@@ -598,6 +606,7 @@ recognized:
 <newline>.##
 .Ed
 #endif
+.br
 .It Li "prompt [on]"
 .Nm \&Ex
 only.
@@ -632,7 +641,8 @@ Simulate an intelligent terminal on a dumb one.
 #endif
 #ifdef REFERENCE
 The editor simulates (using great amounts of output), an intelligent
-terminal on a dumb terminal (e.g. during insertions in visual mode
+terminal on a dumb terminal (e.g. during insertions in
+.Nm \&vi
 the characters to the right of the cursor are refreshed as each input
 character is typed).
 #endif
@@ -695,9 +705,9 @@ Set the number of lines scrolled.
 Set the number of lines scrolled by the
 .Nm \&vi
 commands
-.Sy \&^D
+.Sy \&<control-D>
 and
-.Sy \&^U .
+.Sy \&<control-U> .
 .Pp
 Historically, the
 .Nm ex
@@ -836,7 +846,9 @@ If this option is turned on,
 .Nm \&vi
 historically read startup files that were owned by someone other than
 the editor user.
-See the STARTUP INFORMATION section for more information.
+See the section entitled
+.Dq "Startup Information"
+for more information.
 This option is a security problem of immense proportions,
 and should not be used under any circumstances.
 #endif
@@ -903,7 +915,7 @@ This option changes how
 .Nm \&vi
 does word erase during text input.
 If this option is set, text is broken up into two classes,
-blank characters and non-blank characters.
+blank characters and nonblank characters.
 Changing from one class to another marks the end of a word.
 #endif
 .It Li "verbose [off]"
@@ -964,12 +976,14 @@ command.
 It also determines the number of lines scrolled by the
 .Nm \&vi
 commands
-.Sy \&^F
+.Sy \&<control-F>
 and
-.Sy \&^B .
+.Sy \&<control-B> .
 The value of window can be unrelated to the real screen size,
 although it starts out as the number of lines on the screen (see
-the SCREEN SIZING section).
+the section entitled
+.Dq "Screen Sizing"
+for more information).
 Setting the value of the
 .Sy window
 option is the same as using the
