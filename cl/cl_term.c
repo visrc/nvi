@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.22 1996/09/15 15:56:26 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:56:26 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.23 1996/12/16 09:38:27 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:38:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -250,14 +250,10 @@ cl_optchange(sp, opt, str, valp)
 		F_CLR(sp, SC_SCR_EX | SC_SCR_VI);
 		break;
 	case O_MESG:
-		(void)cl_omesg(sp, clp, !*valp);
+		(void)cl_omesg(sp, clp, *valp);
 		break;
 	case O_WINDOWNAME:
 		if (*valp) {
-			F_CLR(clp, CL_RENAME_OK);
-
-			(void)cl_rename(sp, NULL, 0);
-		} else {
 			F_SET(clp, CL_RENAME_OK);
 
 			/*
@@ -266,6 +262,10 @@ cl_optchange(sp, opt, str, valp)
 			 */
 			if (sp->frp != NULL && sp->frp->name != NULL)
 				(void)cl_rename(sp, sp->frp->name, 1);
+		} else {
+			F_CLR(clp, CL_RENAME_OK);
+
+			(void)cl_rename(sp, NULL, 0);
 		}
 		break;
 	}

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.25 1996/07/12 18:23:36 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:36 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.26 1996/12/16 09:39:23 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:39:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ f_altwerase(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
-	if (!*valp)
+	if (*valp)
 		O_CLR(sp, O_TTYWERASE);
 	return (0);
 }
@@ -213,9 +213,9 @@ f_readonly(sp, op, str, valp)
 	 * See the comment in exf.c.
 	 */
 	if (*valp)
-		F_CLR(sp, SC_READONLY);
-	else
 		F_SET(sp, SC_READONLY);
+	else
+		F_CLR(sp, SC_READONLY);
 	return (0);
 }
 
@@ -282,7 +282,7 @@ f_ttywerase(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
-	if (!*valp)
+	if (*valp)
 		O_CLR(sp, O_ALTWERASE);
 	return (0);
 }
