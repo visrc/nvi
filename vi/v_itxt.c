@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.20 1992/12/05 11:11:04 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:04 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.21 1992/12/20 18:34:26 bostic Exp $ (Berkeley) $Date: 1992/12/20 18:34:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -476,7 +476,7 @@ newtext(vp, tm, p, len, rp, flags)
 {
 	TEXT *tp;
 	size_t col, insert, overwrite, rcol, startcol;
-	int ch, eval, quoted, replay, state;
+	int ch, eval, flag, quoted, replay;
 	u_char *repp;
 
 	/*
@@ -600,8 +600,12 @@ newtext(vp, tm, p, len, rp, flags)
 		case K_CR:
 		case K_NL:			/* New line. */
 			/* Delete any remaining overwrite characters. */
-			if (!(flags & N_REPLACE) && overwrite)
+			if (!(flags & N_REPLACE) && overwrite) {
 				bcopy(p + overwrite, p, overwrite);
+				flag = 1;
+				overwrite = 0;
+			} else
+				flag = 0;
 
 			/* Move current line into the cut buffer. */
 			NEWTP;
@@ -611,7 +615,7 @@ newtext(vp, tm, p, len, rp, flags)
 			TEXTAPPEND(&ib, tp);
 
 			/* Repaint the current line if necessary. */
-			if (flags & N_REPLACE || insert) {
+			if (flags & N_REPLACE || insert || flag) {
 				bcopy(p, ib.ilb, insert + overwrite);
 				scr_update(curf,
 				    ib.stop.lno, tp->lp, tp->len, LINE_RESET);
@@ -621,8 +625,9 @@ newtext(vp, tm, p, len, rp, flags)
 			p = ib.ilb;
 			col = startcol = 0;
 
-			/* Increment line count. */
+			/* Increment line count, reset length. */
 			++ib.stop.lno;
+			ib.len = insert;
 
 			/* Reset the cursor. */
 			++curf->lno;
@@ -648,22 +653,16 @@ newtext(vp, tm, p, len, rp, flags)
 				--p;
 				--col;
 				--curf->cno;
-				scr_update(curf,
-				    ib.stop.lno, ib.ilb, ib.len, LINE_RESET);
-				SCREEN_UPDATE;
 			}
 			if (col == startcol)
 				break;
-			for (state = inword(p[-1]); col > startcol;) {
+			for (flag = inword(p[-1]); col > startcol;) {
 				++overwrite;
 				--p;
 				--col;
 				--curf->cno;
-				if (state != inword(p[-1]))
+				if (flag != inword(p[-1]))
 					break;
-				scr_update(curf,
-				    ib.stop.lno, ib.ilb, ib.len, LINE_RESET);
-				SCREEN_UPDATE;
 			}
 			break;
 		case K_VKILL:			/* Restart this line. */
@@ -675,7 +674,7 @@ newtext(vp, tm, p, len, rp, flags)
 			ch = '^';
 			/* FALLTHROUGH */
 		case 0:				/* Insert the character. */
-			if (overwrite)
+			if (!(flags & N_REPLACE) && overwrite)
 				--overwrite;
 			else if (insert)
 				bcopy(p, p + 1, insert);
@@ -683,11 +682,13 @@ insch:			*p++ = ch;
 			++col;
 			++curf->cno;
 			break;
+		default:
+			abort();
 		}
 		ib.len = col + insert + overwrite;
 		scr_update(curf, ib.stop.lno, ib.ilb, ib.len,
 		    !quoted && (special[ch] == K_NL || special[ch] == K_CR) ?
-		    LINE_INSERT | LINE_LOGICAL : LINE_RESET);
+		    LINE_INSERT : LINE_RESET);
 		SCREEN_UPDATE;
 		if (quoted)
 			--quoted;
