@@ -99,18 +99,9 @@ extern int	tmpfd;		/* fd used to access the tmp file */
 extern int	tmpnum;		/* counter used to generate unique filenames */
 extern long	lnum[MAXBLKS];	/* last line# of each block */
 extern long	nlines;		/* number of lines in the file */
-extern char	args[BLKSIZE];	/* file names given on the command line */
-extern int	argno;		/* the current element of args[] */
-extern int	nargs;		/* number of filenames in args */
 extern long	changes;	/* counts changes, to prohibit short-cuts */
 extern int	significant;	/* boolean: was a *REAL* change made? */
 extern BLK	tmpblk;		/* a block used to accumulate changes */
-extern long	topline;	/* file line number of top line */
-extern int	leftcol;	/* column number of left col */
-#define		botline	 (topline + LINES - 2)
-#define		rightcol (leftcol + COLS - (LVAL(O_NUMBER) ? 9 : 1))
-extern int	physcol;	/* physical column number that cursor is on */
-extern int	physrow;	/* physical row number that cursor is on */
 extern int	exwrote;	/* used to detect verbose ex commands */
 extern int	doingdot;	/* boolean: are we doing the "." command? */
 extern int	doingglobal;	/* boolean: are doing a ":g" command? */
@@ -144,10 +135,8 @@ extern MARK	m_bword();		/* b */
 extern MARK	m_eword();		/* e */
 extern MARK	m_paragraph();		/* { } [[ ]] */
 extern MARK	m_match();		/* % */
-#ifndef NO_SENTENCE
  extern MARK	m_fsentence();		/* ) */
  extern MARK	m_bsentence();		/* ( */
-#endif
 extern MARK	m_tomark();		/* 'm */
 #ifndef NO_EXTENSIONS
 extern MARK	m_wsrch();		/* ^A */
@@ -257,11 +246,9 @@ extern int	mode;
 #define WHEN_FREE	0x2000	/* free the keymap after doing it once */
 #define WHENMASK	(WHEN_VICMD|WHEN_VIINP|WHEN_VIREP|WHEN_REP1|WHEN_CUT|WHEN_MARK|WHEN_CHAR)
 
-#ifndef NO_VISIBLE
 extern MARK	V_from;
 extern int	V_linemd;
 extern MARK	v_start();
-#endif
 
 /*----------------------------------------------------------------------*/
 /* These are used to pass info about ^V quoting */

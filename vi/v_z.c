@@ -13,8 +13,9 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-#include "options.h"
 #include "vi.h"
+#include "options.h"
+#include "extern.h"
 
 /* This moves the cursor to a particular row on the screen */
 /*ARGSUSED*/
@@ -38,7 +39,7 @@ MARK m_row(m, cnt, key)
 		break;
 
 	  case 'L':
-		cnt = botline - cnt;
+		cnt = BOTLINE - cnt;
 		break;
 	}
 
@@ -183,16 +184,16 @@ MARK m_scroll(m, cnt, key)
 		}
 		tmp = MARK_AT_LINE(cnt) + markidx(m);
 		redraw(tmp, FALSE);
-		if (markline(m) > botline)
+		if (markline(m) > BOTLINE)
 		{
-			m = MARK_AT_LINE(botline);
+			m = MARK_AT_LINE(BOTLINE);
 		}
 		break;
 
 	  case ctrl('F'):
 	  case ctrl('E'):
 	  case ctrl('D'):
-		cnt = botline + cnt;
+		cnt = BOTLINE + cnt;
 		if (cnt > nlines)
 		{
 			cnt = nlines;

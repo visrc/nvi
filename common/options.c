@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.8 1992/04/15 09:06:32 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:06:32 $";
+static char sccsid[] = "$Id: options.c,v 5.9 1992/04/15 11:54:14 bostic Exp $ (Berkeley) $Date: 1992/04/15 11:54:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,99 +59,95 @@ OPTIONS opts[] = {
 	"beautify",	NULL,		OPT_0BOOL,
 #define	O_CC		5
 	"cc",		"cc -c",	OPT_STR,
-#define	O_CHARATTR	6
-	"charattr",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_COLUMNS	7
+#define	O_COLUMNS	6
 	"columns",	&columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_DIGRAPH	8
+#define	O_DIGRAPH	7
 	"digraph",	NULL,		OPT_0BOOL,
-#define	O_DIRECTORY	9
+#define	O_DIRECTORY	8
 	"directory",	_PATH_TMP,	OPT_NOSAVE|OPT_STR,
-#define	O_EDCOMPATIBLE	10
+#define	O_EDCOMPATIBLE	9
 	"edcompatible",	NULL,		OPT_0BOOL,
-#define	O_EQUALPRG	11
+#define	O_EQUALPRG	10
 	"equalprg",	"fmt",		OPT_STR,
-#define	O_ERRORBELLS	12
+#define	O_ERRORBELLS	11
 	"errorbells",	NULL,		OPT_1BOOL,
-#define	O_EXRC		13
+#define	O_EXRC		12
 	"exrc",		NULL,		OPT_0BOOL,
-#define	O_EXREFRESH	14
+#define	O_EXREFRESH	13
 	"exrefresh",	NULL,		OPT_1BOOL,
-#define	O_FLASH		15
+#define	O_FLASH		14
 	"flash",	NULL,		OPT_1BOOL,
-#define	O_HIDEFORMAT	16
-	"hideformat",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_IGNORECASE	17
+#define	O_IGNORECASE	15
 	"ignorecase",	NULL,		OPT_0BOOL,
-#define	O_KEYTIME	18
+#define	O_KEYTIME	16
 	"keytime",	&keytime,	OPT_NUM,
-#define	O_KEYWORDPRG	19
+#define	O_KEYWORDPRG	17
 	"keywordprg",	"ref",		OPT_STR,
-#define	O_LINES		20
+#define	O_LINES		18
 	"lines",	&lines,		OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_LIST		21
+#define	O_LIST		19
 	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_MAGIC		22
+#define	O_MAGIC		20
 	"magic",	NULL,		OPT_1BOOL,
-#define	O_MAKE		23
+#define	O_MAKE		21
 	"make",		"make",		OPT_STR,
-#define	O_MESG		24
+#define	O_MESG		22
 	"mesg",		NULL,		OPT_1BOOL,
-#define	O_MODELINE	25
+#define	O_MODELINE	23
 	"modeline",	NULL,		OPT_0BOOL,
-#define	O_NUMBER	26
+#define	O_NUMBER	24
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	27
+#define	O_PARAGRAPHS	25
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	28
+#define	O_PROMPT	26
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	29
+#define	O_READONLY	27
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	30
+#define	O_REPORT	28
 	"report",	&report,	OPT_NUM,
-#define	O_RULER		31
+#define	O_RULER		29
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	32
+#define	O_SCROLL	30
 	"scroll",	&scroll,	OPT_NUM,
-#define	O_SECTIONS	33
+#define	O_SECTIONS	31
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		34
+#define	O_SHELL		32
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	35
+#define	O_SHIFTWIDTH	33
 	"shiftwidth",	&shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	36
+#define	O_SHOWMATCH	34
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	37
+#define	O_SHOWMODE	35
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	38
+#define	O_SIDESCROLL	36
 	"sidescroll",	&sidescroll,	OPT_NUM,
-#define	O_SYNC		39
+#define	O_SYNC		37
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	40
+#define	O_TABSTOP	38
 	"tabstop",	&tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	41
+#define	O_TAGLENGTH	39
 	"taglength",	&taglength,	OPT_NUM,
-#define	O_TERM		42
+#define	O_TERM		40
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		43
+#define	O_TERSE		41
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	44
+#define	O_TIMEOUT	42
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		45
+#define	O_VBELL		43
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		46
+#define	O_WARN		44
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	47
+#define	O_WINDOW	45
 	"window",	&window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	48
+#define	O_WRAPMARGIN	46
 	"wrapmargin",	&wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	49
+#define	O_WRAPSCAN	47
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	50
+#define	O_WRITEANY	48
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	51
+#define	O_OPTIONCOUNT	49
 /* END_OPTION_DEF */
 
 typedef struct abbrev {
@@ -165,7 +161,6 @@ static ABBREV abbrev[] = {
 	"at",	O_AUTOTAB,
 	"aw",	O_AUTOWRITE,
 	"bf",	O_BEAUTIFY,
-	"ca",	O_CHARATTR,
 	"cc",	O_CC,
 	"co",	O_COLUMNS,
 	"dig",	O_DIGRAPH,
@@ -175,7 +170,6 @@ static ABBREV abbrev[] = {
 	"ep",	O_EQUALPRG,
 	"er",	O_EXREFRESH,
 	"fl",	O_VBELL,
-	"hf",	O_HIDEFORMAT,
 	"ic",	O_IGNORECASE,
 	"kp",	O_KEYWORDPRG,
 	"kt",	O_KEYTIME,
@@ -414,7 +408,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 		opts_dump(1);
 
 	if (needredraw)
-		redraw(MARK_UNSET, FALSE);
+		iredraw();
 
 	/*
 	 * That option may have affected the appearance of text.

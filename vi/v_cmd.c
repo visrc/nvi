@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.10 1992/04/15 10:24:45 bostic Exp $ (Berkeley) $Date: 1992/04/15 10:24:45 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.11 1992/04/15 11:54:22 bostic Exp $ (Berkeley) $Date: 1992/04/15 11:54:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,13 +107,8 @@ static struct keystru
 /*  %  move to match	*/	{m_match,	CURSOR,		MVMT|INCL|VIZ},
 /*  &  repeat subst	*/	{v_again,	CURSOR_MOVED,	SDOT|NCOL|LNMD|INCL},
 /*  '  move to a mark	*/	{m_tomark,	C_C_K_MARK,	MVMT|FRNT|NREL|LNMD|INCL|VIZ},
-#ifndef NO_SENTENCE
 /*  (  mv back sentence	*/	{m_bsentence,	CURSOR,		MVMT|VIZ},
 /*  )  mv fwd sentence	*/	{m_fsentence,	CURSOR,		MVMT|VIZ},
-#else
-/*  (  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
-/*  )  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
-#endif
 #ifndef NO_ERRLIST
 /*  *  errlist		*/	{v_errlist,	CURSOR,		FRNT|NREL},
 #else
@@ -251,8 +246,8 @@ void vi()
 	int			dotcnt;	/* last "count" of a change */
 	REG int			i;
 
-	/* tell the redraw() function to start from scratch */
-	redraw(MARK_UNSET, FALSE);
+	/* Tell the redraw() function to start from scratch. */
+	iredraw();
 
 #ifdef lint
 	/* lint says that "range" might be used before it is set.  This
@@ -530,9 +525,7 @@ void vi()
 				else
 				{
 					if (exwrote || mode == MODE_COLON)
-					{
-						redraw(MARK_UNSET, FALSE);
-					}
+						iredraw();
 					mode = MODE_VI;
 				}
 			} while (mode == MODE_COLON);
@@ -733,13 +726,6 @@ MARK adjmove(old, new, flags)
 			{
 				i += 2;
 			}
-#ifndef NO_CHARATTR
-			else if (ISSET(O_CHARATTR) &&
-			    text[0] == '\\' && text[1] == 'f' && text[2])
-			{
-				text += 2; /* plus one more in "for()" stmt */
-			}
-#endif
 			else
 			{
 				i++;
