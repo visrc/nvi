@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.6 1995/07/04 12:41:55 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:41:55 $";
+static char sccsid[] = "$Id: ex.c,v 10.7 1995/07/05 22:28:56 bostic Exp $ (Berkeley) $Date: 1995/07/05 22:28:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,6 +143,7 @@ next_state:
 	 */
 	case ES_GET_CMD:
 		/* Completed a command, tell screen to catch up on messages. */
+		ex_fflush(sp);
 		F_SET(sp, S_COMPLETE);
 
 		/* If we're exiting the screen, clean up. */
