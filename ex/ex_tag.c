@@ -11,11 +11,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.14 1996/02/20 21:14:27 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:14:27 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.15 1996/02/26 16:54:58 bostic Exp $ (Berkeley) $Date: 1996/02/26 16:54:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#ifdef HAVE_MMAP
 #include <sys/mman.h>
+#endif
 #include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/time.h>
