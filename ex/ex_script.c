@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.14 1996/02/22 19:55:30 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:30 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.15 1996/02/27 19:09:25 bostic Exp $ (Berkeley) $Date: 1996/02/27 19:09:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,9 +151,9 @@ err:		if (sc->sh_master != -1)
 		 * XXX
 		 * So that shells that do command line editing turn it off.
 		 */
-		(void)putenv("TERM=emacs");
-		(void)putenv("TERMCAP=emacs:");
-		(void)putenv("EMACS=t");
+		(void)setenv("TERM", "emacs", 1);
+		(void)setenv("TERMCAP", "emacs:", 1);
+		(void)setenv("EMACS", "t", 1);
 
 		(void)setsid();
 #ifdef TIOCSCTTY

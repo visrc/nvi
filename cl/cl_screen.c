@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.36 1996/02/26 14:20:55 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:20:55 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.37 1996/02/27 19:09:10 bostic Exp $ (Berkeley) $Date: 1996/02/27 19:09:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -524,13 +524,11 @@ cl_putenv(name, str, value)
 	u_long value;
 
 {
-	char *p, buf[128];
+	char buf[40];
 
-	if (str != NULL)
-		(void)snprintf(buf, sizeof(buf), "%s=%s", name, str);
-	else
-		(void)snprintf(buf, sizeof(buf), "%s=%lu", name, value);
-
-	/* XXX: Unfixable memory leak. */
-	return ((p = strdup(buf)) == NULL ? 1 : putenv(p));
+	if (str == NULL) {
+		(void)snprintf(buf, sizeof(buf), "%lu", value);
+		return (setenv(name, buf, 1));
+	} else
+		return (setenv(name, str, 1));
 }
