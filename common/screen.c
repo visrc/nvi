@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.9 1993/09/10 18:29:58 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:29:58 $";
+static char sccsid[] = "$Id: screen.c,v 8.10 1993/09/11 11:35:03 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:35:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,9 +170,6 @@ mem:			msgq(orig, M_ERR,
 
 		F_SET(sp, (orig->flags & S_SCREEN_RETAIN));
 	} else {
-		if (isatty(STDIN_FILENO))
-			F_SET(sp, S_ISFROMTTY);
-
 		sp->inc_lastch = '+';
 		sp->inc_lastval = 1;
 
