@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.32 1993/12/02 10:33:52 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:33:52 $";
+static char sccsid[] = "$Id: key.c,v 8.33 1993/12/04 10:20:54 bostic Exp $ (Berkeley) $Date: 1993/12/04 10:20:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -206,7 +206,8 @@ term_push(sp, s, len, cmap, flags)
 
 	/* If we have room, stuff the keys into the buffer. */
 	tty = sp->gp->tty;
-	if (len <= tty->next || tty->cnt == 0) {
+	if (len <= tty->next ||
+	    (tty->ch != NULL && tty->cnt == 0 && len <= tty->len)) {
 		if (tty->cnt != 0)
 			tty->next -= len;
 		tty->cnt += len;
@@ -219,13 +220,14 @@ term_push(sp, s, len, cmap, flags)
 	/* Get enough space plus a little extra. */
 	nlen = tty->cnt + len;
 	if (nlen > tty->len) {
+		size_t olen;
+
 		nlen += 64;
-		BINC(sp,
-		    tty->ch, tty->len, nlen * sizeof(tty->ch[0]));
-		BINC(sp,
-		    tty->chf, tty->len, nlen * sizeof(tty->chf[0]));
-		BINC(sp,
-		    tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
+		olen = tty->len;
+		BINC(sp, tty->ch, olen, nlen * sizeof(tty->ch[0]));
+		olen = tty->len;
+		BINC(sp, tty->chf, olen, nlen * sizeof(tty->chf[0]));
+		BINC(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
 	}
 
 	/*
