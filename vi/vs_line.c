@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.5 1993/10/10 13:09:19 bostic Exp $ (Berkeley) $Date: 1993/10/10 13:09:19 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.6 1993/10/28 17:04:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ svi_line(sp, ep, smp, yp, xp)
 	SMAP *smp;
 	size_t *xp, *yp;
 {
-	CHNAME *cname;
+	CHNAME const *cname;
 	SMAP *tsmp;
 	recno_t lno;
 	size_t chlen, cols_per_screen, cno_cnt, count_cols;

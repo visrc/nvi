@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.2 1993/09/01 12:23:45 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:23:45 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.3 1993/10/28 17:04:53 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ svi_lrelative(sp, ep, lno, off)
 	recno_t lno;
 	size_t off;
 {
-	CHNAME *cname;
+	CHNAME const *cname;
 	size_t len, llen, scno;
 	int ch;
 	char *lp, *p;
@@ -135,7 +135,7 @@ svi_chposition(sp, ep, lno, cno)
 	recno_t lno;
 	size_t cno;
 {
-	CHNAME *cname;
+	CHNAME const *cname;
 	size_t len, llen, scno;
 	int ch;
 	char *lp, *p;

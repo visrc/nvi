@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.22 1993/10/10 17:51:03 bostic Exp $ (Berkeley) $Date: 1993/10/10 17:51:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.23 1993/10/28 17:04:50 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ svi_refresh(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	CHNAME *cname;
+	CHNAME const *cname;
 	SMAP *smp, tmp;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
@@ -604,7 +604,7 @@ svi_msgflush(sp)
 	SCR *sp;
 {
 	CHAR_T ch;
-	CHNAME *cname;
+	CHNAME const *cname;
 	MSG *mp;
 	size_t chlen, len;
 	char *p;

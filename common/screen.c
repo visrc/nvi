@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.20 1993/10/28 16:47:09 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:47:09 $";
+static char sccsid[] = "$Id: screen.c,v 8.21 1993/10/28 17:04:13 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ int
 screen_init(orig, sp)
 	SCR *orig, *sp;
 {
-	extern CHNAME asciiname[];		/* XXX */
+	extern CHNAME const asciiname[];	/* XXX */
 	size_t len;
 	sigset_t bmask, omask;
 
