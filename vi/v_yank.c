@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 8.6 1993/08/22 10:46:46 bostic Exp $ (Berkeley) $Date: 1993/08/22 10:46:46 $";
+static char sccsid[] = "$Id: v_yank.c,v 8.7 1993/08/25 16:51:14 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:51:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ v_yank(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (F_ISSET(vp, VC_LMODE) && tm->lno != fm->lno) {
+	if (F_ISSET(vp, VC_LMODE)) {
 		if (file_gline(sp, ep, tm->lno, NULL) == NULL) {
 			v_eof(sp, ep, fm);
 			return (1);
