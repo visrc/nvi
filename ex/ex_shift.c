@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.29 1993/05/15 10:10:45 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:45 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.30 1993/05/20 18:13:16 bostic Exp $ (Berkeley) $Date: 1993/05/20 18:13:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ shift(sp, ep, cmdp, rl)
 		 * Calculate the old indent amount and the number of
 		 * characters it used.
 		 */
-		for (oldidx = 0, oldcol = 0;; ++oldidx)
+		for (oldidx = 0, oldcol = 0; oldidx < len; ++oldidx)
 			if (p[oldidx] == ' ')
 				++oldcol;
 			else if (p[oldidx] == '\t')
@@ -143,7 +143,7 @@ err:			FREE_SPACE(sp, bp, blen);
 			curset = 1;
 			if (newidx > oldidx)
 				sp->cno += newidx - oldidx;
-			else
+			else if (sp->cno > oldidx - newidx)
 				sp->cno -= oldidx - newidx;
 		}
 	}
