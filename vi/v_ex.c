@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.36 1993/02/19 11:13:35 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:13:35 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.37 1993/02/20 12:58:58 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:58:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -228,7 +228,7 @@ moveup(ep, mustwait, colon_ok, chp)
 	/* If just displayed a full screen, wait. */
 	if (mustwait || exlinecount == SCREENSIZE(ep)) {
 		MOVE(ep, SCREENSIZE(ep), 0);
-		addnstr(CONTMSG, sizeof(CONTMSG) - 1);
+		addnstr(CONTMSG, (int)sizeof(CONTMSG) - 1);
 		clrtoeol();
 		refresh();
 		while (special[ch = getkey(ep, 0)] != K_CR &&
