@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.27 1994/05/21 11:41:45 bostic Exp $ (Berkeley) $Date: 1994/05/21 11:41:45 $";
+static char sccsid[] = "$Id: db.c,v 8.28 1994/05/22 10:27:19 bostic Exp $ (Berkeley) $Date: 1994/05/22 10:27:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,14 +153,14 @@ file_dline(sp, ep, lno)
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	SIGBLOCK;
+	SIGBLOCK(sp->gp);
 	if (ep->db->del(ep->db, &key, 0) == 1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to delete line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
-	SIGUNBLOCK;
+	SIGUNBLOCK(sp->gp);
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno <= ep->c_lno)
@@ -222,14 +222,14 @@ file_aline(sp, ep, update, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	SIGBLOCK;
+	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to append to line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
-	SIGUNBLOCK;
+	SIGUNBLOCK(sp->gp);
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno < ep->c_lno)
@@ -307,14 +307,14 @@ file_iline(sp, ep, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	SIGBLOCK;
+	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to insert at line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
-	SIGUNBLOCK;
+	SIGUNBLOCK(sp->gp);
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno >= ep->c_lno)
@@ -369,14 +369,14 @@ file_sline(sp, ep, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	SIGBLOCK;
+	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to store line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
-	SIGUNBLOCK;
+	SIGUNBLOCK(sp->gp);
 
 	/* Flush the cache, before logging or screen update. */
 	if (lno == ep->c_lno)

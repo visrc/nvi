@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.3 1994/05/21 10:55:49 bostic Exp $ (Berkeley) $Date: 1994/05/21 10:55:49 $";
+static char sccsid[] = "$Id: msg.c,v 8.4 1994/05/22 10:27:21 bostic Exp $ (Berkeley) $Date: 1994/05/22 10:27:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,7 +163,7 @@ msg_app(gp, sp, inv_video, p, len)
 	 * to sync the file and failing.  This shouldn't be a hot spot,
 	 * block the signals.
 	 */
-	SIGBLOCK;
+	SIGBLOCK(gp);
 
 	/*
 	 * Find an empty structure, or allocate a new one.  Use the
@@ -204,7 +204,7 @@ store:	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
 	mp->flags = inv_video ? M_INV_VIDEO : 0;
 
 ret:	reenter = 0;
-	SIGUNBLOCK;
+	SIGUNBLOCK(gp);
 }
 
 /*
