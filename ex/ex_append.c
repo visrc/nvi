@@ -6,23 +6,23 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.22 1993/02/21 19:43:33 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:43:33 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.23 1993/02/28 11:51:00 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:51:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <limits.h>
 #include <stdio.h>
-#include <termios.h>
 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "term.h"
 
 enum which {APPEND, CHANGE};
 
-static void ca __P((EXF *, EXCMDARG *, enum which));
+static int ac __P((EXF *, EXCMDARG *, enum which));
 
 /*
  * ex_append -- :address append[!]
@@ -34,8 +34,7 @@ ex_append(ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	ca(ep, cmdp, APPEND);
-	return (0);
+	return (ac(ep, cmdp, APPEND));
 }
 
 /*
@@ -47,19 +46,19 @@ ex_change(ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	ca(ep, cmdp, CHANGE);
-	return (0);
+	return (ac(ep, cmdp, CHANGE));
 }
 
-static void
-ca(ep, cmdp, cmd)
+static int
+ac(ep, cmdp, cmd)
 	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
 	MARK m;
+	recno_t cnt;
 	size_t len;
-	int set;
+	int rval, set;
 	u_char *p;
 
 	/* The ! flag turns off autoindent for change and append. */
@@ -69,28 +68,72 @@ ca(ep, cmdp, cmd)
 	} else
 		set = 0;
 
-	/* If we're doing a change, delete the old version. */
-	if (cmd == CHANGE)
-		ex_delete(ep, cmdp);
+	rval = 0;
 
 	/*
-	 * New lines start at the specified line for changes,
-	 * after it for appends.
+	 * If doing a change, replace lines as long as possible.
+	 * Then, append more lines, or delete remaining lines.
 	 */
 	m = cmdp->addr1;
+	if (cmd == CHANGE)
+		for (;;) {
+			if (m.lno > cmdp->addr2.lno) {
+				cmd = APPEND;
+				--m.lno;
+				break;
+			}
+			if (ex_gb(ep, 0, &p, &len,
+			    GB_BEAUTIFY | GB_MAPINPUT | GB_NLECHO)) {
+				rval = 1;
+				goto done;
+			}
+			if (len == 1 && p[0] == '.') {
+				cnt = cmdp->addr2.lno - m.lno;
+				while (cnt--)
+					if (file_dline(ep, m.lno)) {
+						rval = 1;
+						goto done;
+					}
+				goto done;
+			}
+			if (file_sline(ep, m.lno, p, len)) {
+				rval = 1;
+				goto done;
+			}
+			++m.lno;
+		}
+
 	if (cmd == APPEND)
-		++m.lno;
+		for (;;) {
+			if (ex_gb(ep, 0, &p, &len,
+			    GB_BEAUTIFY | GB_MAPINPUT | GB_NLECHO)) {
+				rval = 1;
+				goto done;
+			}
 
-	/* Insert lines until no more lines, or "." line. */
-	for (; !ex_gb(ep, 0, &p, &len,
-	    GB_BEAUTIFY | GB_NL | GB_NLECHO) && p != NULL; ++m.lno) {
-		if (p[0] == '.' && p[1] == '\0')
-			break;
-		add(ep, &m, p, len);
+			if (len == 1 && p[0] == '.')
+				break;
+			if (file_aline(ep, m.lno, p, len)) {
+				rval = 1;
+				goto done;
+			}
+			++m.lno;
+		}
+
+done:	if (rval == 0) {
+		/*
+		 * XXX
+		 * Not sure historical ex set autoprint for change/append.
+		 */
+		FF_SET(ep, F_AUTOPRINT);
+
+		/* Set the cursor. */
+		SCRLNO(ep) = m.lno;
+		SCRCNO(ep) = 0;
 	}
-
-	FF_SET(ep, F_AUTOPRINT);
 
 	if (set)
 		SET(O_AUTOINDENT);
+
+	return (rval);
 }
