@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.42 1993/11/06 11:46:25 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:46:25 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.43 1993/11/06 11:50:06 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:50:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,7 +249,8 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		/*
 		 * Reset the line and update the screen.  (The txt_showmatch()
 		 * code refreshes the screen for us.)  Don't refresh unless
-		 * we're about to wait on a character.
+		 * we're about to wait on a character or we need to know where
+		 * the cursor really is.
 		 */
 		if (showmatch || margin ||
 		    gp->key->cnt == 0 && gp->tty->cnt == 0) {
