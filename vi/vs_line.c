@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.12 1993/11/22 17:32:24 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:32:24 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.13 1993/11/22 19:43:52 bostic Exp $ (Berkeley) $Date: 1993/11/22 19:43:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,10 +145,11 @@ svi_line(sp, ep, smp, yp, xp)
 		smp->c_scoff = smp->c_eclen = 0;
 
 		if (p == NULL) {
-			ADDCH(smp->lno == 1 ?
-			    listset && skip_screens == 0 ? '$' : ' ' : '~');
+			if (smp->lno != 1)
+				ADDCH(listset && skip_screens == 0 ? '$' : '~');
 		} else if (listset && skip_screens == 0)
 			ADDCH('$');
+
 		clrtoeol();
 		MOVEA(sp, oldy, oldx);
 		return (0);
