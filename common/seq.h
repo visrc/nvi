@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 5.3 1992/04/05 15:47:44 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:47:44 $
+ *	$Id: seq.h,v 5.4 1992/04/05 17:00:32 bostic Exp $ (Berkeley) $Date: 1992/04/05 17:00:32 $
  */
 
 /*
@@ -32,8 +32,8 @@
 enum seqtype { ABBREV, COMMAND, INPUT };
 
 typedef struct _seq {
-	struct _seq *next, *prev;	/* Linked list of ch sequences. */
 	struct _seq *lnext, *lprev;	/* Linked list of all sequences. */
+	struct _seq *next, *prev;	/* Linked list of ch sequences. */
 	char *name;			/* Name of the sequence, if any. */
 	char *input;			/* Input key sequence. */
 	char *output;			/* Output key sequence. */
@@ -54,6 +54,18 @@ extern SEQLIST seqhead;			/* Linked list of all sequences. */
 #define	chkabbr(ch)	(have_abbr && !inword(ch))
 #define	seqstart(ch)	(seq[(ch)])	/* If ch starts any sequences. */
 
+#define	rmseq(p) { \
+	(p)->lprev->lnext = (p)->lnext; \
+	(p)->lnext->lprev = (p)->lprev; \
+}
+
+#define inseq(p, hp) { \
+	(p)->lnext = (hp)->lnext; \
+        (p)->lprev = (SEQ *)(hp); \
+        (hp)->lnext->lprev = (p); \
+        (hp)->lnext = (p); \
+}
+
 extern int have_abbr;			/* If any abbreviations. */
 MARK	 abbr_expand __P((MARK, MARK *));
 int	 abbr_save __P((FILE *));
@@ -62,7 +74,7 @@ int	 map_init __P((void));
 int	 map_save __P((FILE *));
 
 int	 seq_delete __P((char *, enum seqtype));
-int	 seq_dump __P((enum seqtype));
+int	 seq_dump __P((enum seqtype, int));
 SEQ	*seq_find __P((char *, size_t, enum seqtype, int *));
 void	 seq_init __P((void));
 int	 seq_save __P((FILE *, char *, enum seqtype));
