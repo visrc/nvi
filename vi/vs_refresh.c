@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.63 1994/08/17 18:58:02 bostic Exp $ (Berkeley) $Date: 1994/08/17 18:58:02 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.64 1994/08/17 19:30:10 bostic Exp $ (Berkeley) $Date: 1994/08/17 19:30:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -699,6 +699,7 @@ svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
+	SMAP *smp;
 	SVI_PRIVATE *svp;
 	size_t cols, curlen, endpoint, len, midpoint, scno;
 	char *p, buf[20];
@@ -751,9 +752,25 @@ svi_modeline(sp, ep)
 	 * column on the screen.
 	 */
 	if (O_ISSET(sp, O_RULER)) {
+		/*
+		 * If it's a leftright screen or we're on the first screen of
+		 * the line, it's a calculation.  Otherwise, we have to figure
+		 * it out.
+		 */
 		svp = SVP(sp);
-		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno,
-		    (HMAP->off - 1) * SCREEN_COLS(sp) + svp->sc_col + 1);
+		if (O_ISSET(sp, O_LEFTRIGHT))
+			scno = (HMAP->off - 1) *
+			    SCREEN_COLS(sp) + svp->sc_col + 1;
+		else {
+			for (smp = HMAP; smp->lno != sp->lno; ++smp);
+			if (smp->off == 1 &&
+			    (smp == TMAP || smp[1].lno != sp->lno))
+				scno = svp->sc_col + 1;
+			else
+				scno = svi_screens(sp, ep,
+				    NULL, 0, sp->lno, &sp->cno);
+		}
+		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno, scno);
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
 			MOVE(sp, INFOLINE(sp), midpoint);
