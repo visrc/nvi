@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.27 1993/02/19 13:39:56 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:39:56 $";
+static char sccsid[] = "$Id: util.c,v 5.28 1993/02/24 12:53:33 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:53:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -18,10 +18,12 @@ static char sccsid[] = "$Id: util.c,v 5.27 1993/02/19 13:39:56 bostic Exp $ (Ber
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "options.h"
 #include "pathnames.h"
+#include "screen.h"
 
 /*
  * __putchar --
@@ -144,4 +146,62 @@ onhup(signo)
 
 	/* NOTREACHED */
 	exit (1);
+}
+
+/*
+ * set_window_size --
+ *	Set the window size, the row may be provided as an argument.
+ *	No error messages, because it's not worth making msg reentrant.
+ */
+int
+set_window_size(ep, set_row)
+	EXF *ep;
+	u_int set_row;
+{
+	struct winsize win;
+	size_t col, row;
+	char *argv[2], *s, sbuf[100];
+
+	row = 80;
+	col = 24;
+
+	/*
+	 * Get the screen rows and columns.  The idea is to duplicate what
+	 * curses will do to figure out the rows and columns.  If the values
+	 * are wrong, it's not a big deal -- as soon as the user sets them
+	 * explicitly the environment will be set and curses will use the new
+	 * values.
+	 *
+	 * Try TIOCGWINSZ.
+	 */
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1 &&
+	    win.ws_row != 0 && win.ws_col != 0) {
+		row = win.ws_row;
+		col = win.ws_col;
+	}
+
+	/* POSIX 1003.2 requires the environment to override. */
+	if ((s = getenv("ROWS")) != NULL)
+		row = strtol(s, NULL, 10);
+	if ((s = getenv("COLUMNS")) != NULL)
+		col = strtol(s, NULL, 10);
+
+	/* But, if we got an argument for the rows, use it. */
+	if (set_row)
+		row = set_row;
+
+	argv[0] = sbuf;
+	argv[1] = NULL;
+
+	/* Tell the options code that the screen size has changed. */
+	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", row ? row : win.ws_row);
+	if (opts_set(ep, argv))
+		return (1);
+	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
+	if (opts_set(ep, argv))
+		return (1);
+
+	/* Schedule a resize. */
+	SF_SET(ep, S_RESIZE);
+	return (0);
 }
