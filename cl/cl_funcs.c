@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.41 1996/06/17 10:39:31 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:39:31 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.42 1996/06/17 11:12:09 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:12:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -496,7 +496,18 @@ int
 cl_rename(sp)
 	SCR *sp;
 {
-	return (0);			/* Curses doesn't care. */
+	/*
+	 * XXX
+	 * We can only rename windows for xterm.  Since it's destructive (we
+	 * can't restore it to its original value on exit) we have to get the
+	 * user's permission.
+	 */
+	if (O_ISSET(sp, O_WINDOWNAME) &&
+	    !strcmp(OG_STR(sp->gp, GO_TERM), "xterm")) {
+		(void)printf("\033]0;%s\007", sp->frp->name);
+		(void)fflush(stdout);
+	}
+	return (0);
 }
 
 /*
