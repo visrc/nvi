@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.4 1995/06/15 14:47:58 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:47:58 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.5 1995/06/15 19:36:33 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:36:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -67,8 +67,8 @@ ex_exec_proc(sp, cmd, p1, p2)
 	char *p;
 
 	/* Flush messages and enter canonical mode. */
-	(void)vs_msgflush(sp, 1, NULL, NULL);
 	(void)ex_fflush(sp);
+	(void)vs_msgflush(sp, 1, NULL, NULL);
 	gp = sp->gp;
 	if (gp->scr_canon(sp, 1))
 		return;
@@ -100,9 +100,6 @@ ex_exec_proc(sp, cmd, p1, p2)
 		rval = proc_wait(sp, (long)pid, cmd, 0);
 		break;
 	}
-
-	/* Restore ex/vi terminal settings. */
-	(void)gp->scr_canon(sp, 0);
 
 	/*
 	 * XXX
