@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.32 1994/03/02 19:14:25 bostic Exp $ (Berkeley) $Date: 1994/03/02 19:14:25 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.33 1994/03/04 13:52:09 bostic Exp $ (Berkeley) $Date: 1994/03/04 13:52:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -545,24 +545,28 @@ toosmall:			msgq(sp, M_BERR,
 		}
 	}
 
-	/* Update the screens. */
+	/*
+	 * Update the screens; we could optimize the reformatting of the
+	 * screen, but this isn't likely to be a common enough operation
+	 * to make it worthwhile.
+	 */
 	g->rows += count;
 	g->t_rows += count;
 	if (g->t_minrows == g->t_maxrows)
 		g->t_minrows += count;
 	g->t_maxrows += count;
-	_TMAP(g) = _HMAP(g) + (g->t_rows - 1);
+	_TMAP(g) += count;
 	(void)status(g, g->ep, g->lno, 0);
-	F_SET(g, S_REDRAW);
+	F_SET(g, S_REFORMAT);
 
 	s->rows -= count;
 	s->t_rows -= count;
 	s->t_maxrows -= count;
 	if (s->t_minrows > s->t_maxrows)
 		s->t_minrows = s->t_maxrows;
-	_TMAP(s) = _HMAP(s) + (s->t_rows - 1);
+	_TMAP(s) -= count;
 	(void)status(s, s->ep, s->lno, 0);
-	F_SET(s, S_REDRAW);
+	F_SET(s, S_REFORMAT);
 
 	return (0);
 }
