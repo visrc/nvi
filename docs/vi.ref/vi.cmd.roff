@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.6 1994/04/30 10:28:59 bostic Exp $ (Berkeley) $Date: 1994/04/30 10:28:59 $
+.\"	$Id: vi.cmd.roff,v 8.7 1994/05/07 19:55:14 bostic Exp $ (Berkeley) $Date: 1994/05/07 19:55:14 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -2826,10 +2826,16 @@ option.
 #endif
 .SP
 .It Sy "[count] ~"
-Reverse the case of the
+Reverse the case of the next
 .Li count
 character(s).
 #ifdef REFERENCE
+This is the historic semantic for the
+.Sy \&~
+command; only in effect if the
+.Sy tildeop
+option is not set.
+.Pp
 Lowercase alphabetic characters are changed to uppercase,
 and uppercase characters are changed to lowercase.
 No other characters are affected.
@@ -2837,23 +2843,55 @@ No other characters are affected.
 Historically, the
 .Sy \&~
 command did not move past the end of the current line.
-As it has no associated motion, this makes it difficult to change
+As it has no associated motion, by default, it is difficult to change
 the case of large blocks of text.
 In
 .Nm \&nvi ,
-if the cursor is on the last character of a line,
-and there are more lines in the file,
-the cursor moves on to the next line.
+if the cursor is on the last character of a line, and there are
+more lines in the file, the cursor moves to the next line.
+.Pp
+It is not an error to specify a count larger than the number of
+characters between the cursor and the end of the file.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
-Unchanged, unless the cursor is on the last character of the line,
-in which case it is set to the next line.
+Set to the line of the character after
+.Li count
+characters, or, end of file.
 .It "Column:"
-The next character, unless the cursor is on the last character of the
-line, in which case it is set to the first character of the next line.
+Set to the character after
+.Li count
+characters, or, end of file.
 .It "Options:"
-None.
+Affected by the
+.Sy tildeop
+option.
+.El
+#endif
+.SP
+.It Sy "[count] ~ motion"
+Reverse the case of the characters in a text region specified by the
+.Li count
+and
+.Li motion .
+#ifdef REFERENCE
+Only in effect if the
+.Sy tildeop
+option is set.
+.Pp
+Lowercase alphabetic characters are changed to uppercase,
+and uppercase characters are changed to lowercase.
+No other characters are affected.
+.Pp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
+Set to the line of the character after the last character in the region.
+.It "Column:"
+Set to the character after the last character in the region.
+.It "Options:"
+Affected by the
+.Sy tildeop
+option.
 .El
 #endif
 .SP
