@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.43 1994/08/17 14:36:12 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:12 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.44 1994/09/16 14:17:58 bostic Exp $ (Berkeley) $Date: 1994/09/16 14:17:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,7 +115,7 @@ v_iA(sp, ep, vp)
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 
-		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
+		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 	}
@@ -169,7 +169,7 @@ v_ia(sp, ep, vp)
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 
-		flags = set_txt_std(sp, vp, TXT_REPLAY);
+		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 	}
@@ -225,7 +225,7 @@ v_iI(sp, ep, vp)
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 
-		flags = set_txt_std(sp, vp, TXT_REPLAY);
+		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 	}
@@ -270,11 +270,7 @@ v_ii(sp, ep, vp)
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 
-		/*
-		 * On replay, if the line isn't empty, advance the insert
-		 * by one (make it an append).
-		 */
-		flags = set_txt_std(sp, vp, TXT_REPLAY);
+		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		if ((sp->cno = vp->m_final.cno) != 0)
 			++sp->cno;
@@ -330,7 +326,7 @@ insert:			p = "";
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, ai_line, flags))
 			return (1);
 
-		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
+		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 	}
@@ -387,7 +383,7 @@ insert:			p = "";
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, ai_line, flags))
 			return (1);
 
-		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
+		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 	}
@@ -752,7 +748,7 @@ v_Replace(sp, ep, vp)
 	while (--cnt) {
 		if ((p = file_gline(sp, ep, vp->m_final.lno, &len)) == NULL)
 			GETLINE_ERR(sp, vp->m_final.lno);
-		flags = set_txt_std(sp, vp, TXT_REPLAY);
+		LF_SET(TXT_REPLAY);
 
 		sp->lno = vp->m_final.lno;
 
@@ -848,13 +844,40 @@ set_txt_std(sp, vp, init)
 		LF_SET(TXT_BEAUTIFY);
 	if (O_ISSET(sp, O_SHOWMATCH))
 		LF_SET(TXT_SHOWMATCH);
-	if (O_ISSET(sp, O_WRAPMARGIN))
-		LF_SET(TXT_WRAPMARGIN);
 	if (F_ISSET(sp, S_SCRIPT))
 		LF_SET(TXT_CR);
 	if (O_ISSET(sp, O_TTYWERASE))
 		LF_SET(TXT_TTYWERASE);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
+
+	/*
+	 * !!!
+	 * Mapped keys were sometimes unaffected by the wrapmargin option
+	 * in the historic 4BSD vi.  Consider the following commands, where
+	 * each is executed on an empty line, in an 80 column screen, with
+	 * the wrapmargin value set to 60.
+	 *
+	 *	aABC DEF <ESC>....
+	 *	:map K aABC DEF ^V<ESC><CR>KKKKK
+	 *	:map K 5aABC DEF ^V<ESC><CR>K
+	 * 
+	 * The first and second commands are affected by wrapmargin.  The
+	 * third is not.  (If the inserted text is itself longer than the
+	 * wrapmargin value, i.e. if the "ABC DEF " string is replaced by
+	 * something that's longer than 60 columns from the beginning of
+	 * the line, the first two commands behave as before, but the third
+	 * command gets fairly strange.)  The problem is that people wrote
+	 * macros that depended on the third command NOT being affected by
+	 * wrapmargin, as in this gem which centers lines:
+	 *
+	 *	map #c $mq81a ^V^[81^V^V|D`qld0:s/  / /g^V^M$p
+	 *
+	 * For compatibility reasons, we try and make it all work here.  I
+	 * offer no hope that this is right, but it's probably pretty close.
+	 */
+	if (O_ISSET(sp, O_WRAPMARGIN) &&
+	    (!MAPPED_KEYS_WAITING(sp) || !F_ISSET(vp, VC_C1SET)))
+		LF_SET(TXT_WRAPMARGIN);
 	return (flags);
 }

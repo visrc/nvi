@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.130 1994/09/16 13:43:31 bostic Exp $ (Berkeley) $Date: 1994/09/16 13:43:31 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.131 1994/09/16 14:17:54 bostic Exp $ (Berkeley) $Date: 1994/09/16 14:17:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,8 +224,8 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * us as a distance from the left-hand margin, i.e. the same as
 	 * the wraplen value.  The wrapmargin option is historic practice.
 	 * Nvi added the wraplen option so that it would be possible to
-	 * edit files with consistent margins without worrying about the
-	 * number of columns in the window.
+	 * edit files with consistent margins without knowing the number of
+	 * columns in the window.
 	 *
 	 * XXX
 	 * Setting margin causes a significant performance hit.  Normally
@@ -233,19 +233,17 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * have to if margin is set, otherwise the screen routines don't
 	 * know where the cursor is.
 	 *
-	 * !!!/XXX
+	 * !!!
 	 * Abbreviated keys were affected by the wrapmargin option in the
-	 * historic 4BSD vi, but mapped keys were NOT.  What's surprising
-	 * is that people depend on it, as in this gem of a macro which
-	 * centers lines:
-	 *
-	 *	map #c $mq81a ^V^[81^V|D`qld0:s/  / /g^V^M$p
+	 * historic 4BSD vi.  Mapped keys were usually, but sometimes not.
+	 * See the comment in vi/v_text():set_txt_std for more information.
 	 *
 	 * !!!
 	 * One more special case.  If an inserted <blank> character causes
 	 * wrapmargin to split the line, the next user entered character is
 	 * discarded if it's a <space> character.
 	 */
+	wmset = wmskip = 0;
 	if (LF_ISSET(TXT_WRAPMARGIN))
 		if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
 			margin = sp->cols - margin;
@@ -253,8 +251,6 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 			margin = O_VAL(sp, O_WRAPLEN);
 	else
 		margin = 0;
-		
-	wmset = wmskip = 0;
 
 	/* Initialize abbreviations checks. */
 	if (F_ISSET(sp->gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
@@ -265,15 +261,14 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 
 	/*
 	 * Set up the dot command.  Dot commands are done by saving the
-	 * actual characters and replaying the input.  We have to push
-	 * the characters onto the key stack and then handle them normally,
-	 * otherwise things like wrapmargin will fail.
+	 * actual characters and then reevaluating them so that things
+	 * like wrapmargin can change between the insert and the replay.
 	 *
 	 * XXX
 	 * It would be nice if we could swallow backspaces and such, but
-	 * it's not all that easy to do.  Another possibility would be to
-	 * recognize full line insertions, which could be performed quickly,
-	 * without replay.
+	 * it's not all that easy to do.  Another possibility would be
+	 * to recognize full line insertions, which could be performed
+	 * quickly, without replay.
 	 */
 nullreplay:
 	rcol = 0;
@@ -1024,7 +1019,7 @@ insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 			tp->lb[sp->cno++] = ch;
 
 			/* Check to see if we've crossed the margin. */
-			if (margin && !F_ISSET(ikeyp, CH_MAPPED)) {
+			if (margin) {
 				if (sp->s_column(sp, ep, &col))
 					goto err;
 				if (col >= margin) {
