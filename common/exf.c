@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.37 1996/06/12 15:16:57 bostic Exp $ (Berkeley) $Date: 1996/06/12 15:16:57 $";
+static const char sccsid[] = "$Id: exf.c,v 10.38 1996/06/14 10:05:11 bostic Exp $ (Berkeley) $Date: 1996/06/14 10:05:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -662,9 +662,10 @@ file_write(sp, fm, tm, name, flags)
 	FILE *fp;
 	FREF *frp;
 	MARK from, to;
+	size_t len;
 	u_long nlno, nch;
 	int fd, nf, noname, oflags, rval;
-	char *p;
+	char *p, *s, *t, buf[MAXPATHLEN + 64];
 
 	/*
 	 * Writing '%', or naming the current file explicitly, has the
@@ -856,14 +857,43 @@ file_write(sp, fm, tm, name, flags)
 	p = msg_print(sp, name, &nf);
 	switch (mtype) {
 	case NEWFILE:
-		msgq(sp, M_INFO, "256|%s: new file: %lu lines, %lu characters",
+		len = snprintf(buf, sizeof(buf),
+		    "256|%s: new file: %lu lines, %lu characters",
 		    p, nlno, nch);
 		break;
 	case OLDFILE:
-		msgq(sp, M_INFO, "257|%s: %s%lu lines, %lu characters",
+		len = snprintf(buf, sizeof(buf),
+		    "257|%s: %s%lu lines, %lu characters",
 		    p, LF_ISSET(FS_APPEND) ? "appended: " : "", nlno, nch);
 		break;
+	default:
+		abort();
 	}
+
+	/*
+	 * There's a nasty problem with long path names.  Cscope and tags files
+	 * can result in long paths and vi will request a continuation key from
+	 * the user.  Unfortunately, the user has typed ahead, and chaos will
+	 * result.  If we assume that the characters in the filenames only take
+	 * a single screen column each, we can trim the filename.
+	 */
+	s = buf;
+	if (len >= sp->cols) {
+		for (s = buf, t = buf + strlen(p); s < t &&
+		    (*s != '/' || len >= sp->cols - 3); ++s, --len);
+		if (s == t)
+			s = buf;
+		else {
+			*--s = '.';		/* Leading ellipses. */
+			*--s = '.';
+			*--s = '.';
+			*--s = buf[3];		/* Message catalog info. */
+			*--s = buf[2];
+			*--s = buf[1];
+			*--s = buf[0];
+		}
+	}
+	msgq(sp, M_INFO, s);
 	if (nf)
 		FREE_SPACE(sp, p, 0);
 	return (0);
