@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.11 1993/05/11 17:15:33 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:15:33 $";
+static char sccsid[] = "$Id: screen.c,v 5.12 1993/05/13 12:24:03 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:24:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,10 +183,6 @@ scr_end(sp)
 		FREE(sp->args, sp->argscnt * sizeof(ARGS *));
 		FREE(sp->argv, sp->argscnt * sizeof(char *));
 	}
-
-	/* Free globbing information. */
-	if (sp->g.gl_pathc)
-		globfree(&sp->g);
 
 	/* Free line input buffer. */
 	if (sp->ibp != NULL)
