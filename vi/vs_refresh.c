@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.23 1996/03/19 21:00:02 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:00:02 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.24 1996/03/28 15:19:55 bostic Exp $ (Berkeley) $Date: 1996/03/28 15:19:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,8 @@ static const char sccsid[] = "$Id: vs_refresh.c,v 10.23 1996/03/19 21:00:02 bost
 #include "../common/common.h"
 #include "vi.h"
 
-#define	PAINT_CURSOR	0x01			/* Update cursor. */
-#define	PAINT_FLUSH	0x02			/* Flush to screen. */
+#define	UPDATE_CURSOR	0x01			/* Update the cursor. */
+#define	UPDATE_SCREEN	0x02			/* Flush to screen. */
 
 static void	vs_modeline __P((SCR *));
 static int	vs_paint __P((SCR *, u_int));
@@ -98,8 +98,7 @@ vs_refresh(sp, forcepaint)
 		if (tsp != sp && !F_ISSET(tsp, S_EXIT | S_EXIT_FORCE) &&
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(VIP(tsp), priv_paint))) {
-			(void)vs_paint(tsp,
-			    forcepaint ? PAINT_CURSOR | PAINT_FLUSH : 0);
+			(void)vs_paint(tsp, forcepaint ? UPDATE_SCREEN : 0);
 			F_SET(VIP(sp), VIP_CUR_INVALID);
 		}
 
@@ -110,8 +109,8 @@ vs_refresh(sp, forcepaint)
 	 * Also, always do it last -- that way, S_SCR_REDRAW can be set
 	 * in the current screen only, and the screen won't flash.
 	 */
-	if (vs_paint(sp, !forcepaint && F_ISSET(sp, S_SCR_VI) &&
-	    KEYS_WAITING(sp) ? 0 : PAINT_CURSOR | PAINT_FLUSH))
+	if (vs_paint(sp, UPDATE_CURSOR | (!forcepaint &&
+	    F_ISSET(sp, S_SCR_VI) && KEYS_WAITING(sp) ? 0 : UPDATE_SCREEN)))
 		return (1);
 
 	/*
@@ -407,7 +406,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	/*
 	 * 6: Cursor movements (current screen only).
 	 */
-	if (!LF_ISSET(PAINT_CURSOR))
+	if (!LF_ISSET(UPDATE_CURSOR))
 		goto number;
 
 	/*
@@ -646,7 +645,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	/*
 	 * 9: Update the mode line, position the cursor, and flush changes.
 	 */
-	if (leftright_warp || LF_ISSET(PAINT_FLUSH)) {
+	if (leftright_warp || LF_ISSET(UPDATE_SCREEN)) {
 		if (!F_ISSET(sp, S_INPUT_INFO) &&
 		    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
 			vs_modeline(sp);
