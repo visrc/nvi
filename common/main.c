@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.38 1996/05/03 09:01:42 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:01:42 $";
+static const char sccsid[] = "$Id: main.c,v 10.39 1996/05/10 17:40:38 bostic Exp $ (Berkeley) $Date: 1996/05/10 17:40:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -368,19 +368,26 @@ editor(gp, argc, argv)
 
 	/*
 	 * Check to see if we need to wait for ex.  If SC_SCR_EX is set, ex
-	 * was forced to initialize the screen during startup.  Wait for a
-	 * single character from the user.
+	 * was forced to initialize the screen during startup.  We'd like to
+	 * wait for a single character from the user, but we can't because
+	 * we're not in raw mode.  We can't switch to raw mode because the
+	 * vi initialization will switch to xterm's alternate screen, causing
+	 * us to lose the messages we're pausing to make sure the user read.
+	 * So, wait for a complete line.  
 	 */
-	if (F_ISSET(sp, SC_SCR_EX))
-		for (p = msg_cmsg(sp, CMSG_CONT, &len);;) {
-			(void)write(STDOUT_FILENO, p, len);
+	if (F_ISSET(sp, SC_SCR_EX)) {
+		p = msg_cmsg(sp, CMSG_CONT_R, &len);
+		(void)write(STDOUT_FILENO, p, len);
+		for (;;) {
 			if (v_event_get(sp, &ev, 0, 0))
 				goto err;
-			if (ev.e_event == E_CHARACTER ||
-			    ev.e_event == E_INTERRUPT)
+			if (ev.e_event == E_INTERRUPT ||
+			    ev.e_event == E_CHARACTER &&
+			    (ev.e_value == K_CR || ev.e_value == K_NL))
 				break;
 			(void)gp->scr_bell(sp);
 		}
+	}
 
 	/* Switch into the right editor, regardless. */
 	F_CLR(sp, SC_EX | SC_VI | SC_SCR_EX | SC_SCR_VI);
