@@ -1,9 +1,9 @@
-#	$Id: Makefile,v 8.6 1994/10/09 18:55:46 bostic Exp $ (Berkeley) $Date: 1994/10/09 18:55:46 $
+#	$Id: Makefile,v 8.7 1994/10/09 19:07:10 bostic Exp $ (Berkeley) $Date: 1994/10/09 19:07:10 $
 
 CAT=	vi_english vi_german
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
 
-all: ${CAT}
+all: dump ${CAT}
 
 ${CAT}: vi_english.base
 	@for i in *.base; do						\
