@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.36 1996/04/27 11:40:33 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:33 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.37 1996/04/28 12:02:25 bostic Exp $ (Berkeley) $Date: 1996/04/28 12:02:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -379,7 +379,7 @@ v_ex(sp, vp)
 {
 	GS *gp;
 	TEXT *tp;
-	int ifcontinue;
+	int do_cedit, do_resolution, ifcontinue;
 
 	gp = sp->gp;
 
@@ -392,11 +392,11 @@ v_ex(sp, vp)
 	 * return into vi mode by entering any key, i.e. we have to be in raw
 	 * mode.
 	 */
-	for (;;) {
+	for (do_cedit = do_resolution = 0;;) {
 		/*
 		 * !!!
-		 * There may already be an ex command waiting.  If so, we
-		 * continue with it.
+		 * There may already be an ex command waiting to run.  If
+		 * so, we continue with it.
 		 */
 		if (!EXCMD_RUNNING(gp)) {
 			/* Get a command. */
@@ -413,17 +413,13 @@ v_ex(sp, vp)
 			if (tp->term == TERM_CEDIT) {
 				if (tp->len > 1 && v_ecl_log(sp, tp))
 					return (1);
-				vp->m_final.lno = sp->lno;
-				vp->m_final.cno = sp->cno;
-				return (v_ecl(sp));
+				do_cedit = 1;
+				break;
 			}
 
-			/* If the user didn't enter anything, we're done. */
-			if (tp->term == TERM_BS) {
-				vp->m_final.lno = sp->lno;
-				vp->m_final.cno = sp->cno;
-				return (0);
-			}
+			/* If the user didn't enter anything, return. */
+			if (tp->term == TERM_BS)
+				break;
 
 			/* Log the command. */
 			if (O_STR(sp, O_CEDIT) != NULL && v_ecl_log(sp, tp))
@@ -447,14 +443,38 @@ v_ex(sp, vp)
 		if (vs_ex_resolve(sp, &ifcontinue))
 			return (1);
 
-		/* Continue or return. */
+		/*
+		 * Continue or return.  If continuing, make sure that we
+		 * eventually do resolution.
+		 */
 		if (!ifcontinue)
 			break;
+		do_resolution = 1;
 
 		/* If we're continuing, it's a new command. */
 		++sp->ccnt;
 	}
-	return (v_ex_done(sp, vp));
+
+	/*
+	 * If the user previously continued an ex command, we have to do
+	 * resolution to clean up the screen.  Don't wait, we already did
+	 * that.
+	 */
+	if (do_resolution) {
+		F_SET(sp, SC_EX_DONTWAIT);
+		if (vs_ex_resolve(sp, &ifcontinue))
+			return (1);
+	}
+
+	/* Cleanup from the ex command. */
+	if (v_ex_done(sp, vp))
+		return (1);
+
+	/* The user may want to edit their colon command history. */
+	if (do_cedit)
+		return (v_ecl(sp));
+
+	return (0);
 }
 
 /*
