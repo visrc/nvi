@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.8 1992/12/05 11:06:09 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:06:09 $";
+static char sccsid[] = "$Id: mark.c,v 5.9 1993/02/11 20:05:31 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:05:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ mark_reset()
 {
 	MARK m;
 
-	bzero(marks, sizeof(marks));
+	memset(marks, 0, sizeof(marks));
 	m.lno = 1;
 	m.cno = 0;
 	SETABSMARK(&m);
