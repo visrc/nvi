@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.26 2000/07/19 20:31:59 skimo Exp $ (Berkeley) $Date: 2000/07/19 20:31:59 $
+ *	$Id: vi.h,v 10.27 2002/01/19 21:59:07 skimo Exp $ (Berkeley) $Date: 2002/01/19 21:59:07 $
  */
 
 /* Definition of a vi "word". */
@@ -197,14 +197,15 @@ int	cs_prev __P((SCR *, VCS *));
  * by the user set value O_SIDESCROLL.
  */
 typedef struct _smap {
-	db_recno_t  lno;		/* 1-N: Physical file line number. */
+	db_recno_t  lno;	/* 1-N: Physical file line number. */
 	size_t	 coff;		/* 0-N: Column offset in the line. */
 	size_t	 soff;		/* 1-N: Screen offset in the line. */
 
 				/* vs_line() cache information. */
-	size_t	 c_sboff;	/* 0-N: offset of first character byte. */
-	size_t	 c_eboff;	/* 0-N: offset of  last character byte. */
+	size_t	 c_sboff;	/* 0-N: offset of first character on screen. */
+	size_t	 c_eboff;	/* 0-N: offset of  last character on screen. */
 	u_int8_t c_scoff;	/* 0-N: offset into the first character. */
+				/* 255: no character of line visible. */
 	u_int8_t c_eclen;	/* 1-N: columns from the last character. */
 	u_int8_t c_ecsize;	/* 1-N: size of the last character. */
 } SMAP;

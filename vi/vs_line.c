@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.37 2001/08/30 13:56:07 skimo Exp $ (Berkeley) $Date: 2001/08/30 13:56:07 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.38 2002/01/19 21:59:07 skimo Exp $ (Berkeley) $Date: 2002/01/19 21:59:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -273,7 +273,10 @@ empty:					(void)gp->scr_addstr(sp,
 		cols_per_screen = sp->cols;
 
 		/* Put starting info for this line in the cache. */
-		if (scno != skip_cols) {
+		if (offset_in_line >= len) {
+			smp->c_sboff = offset_in_line;
+			smp->c_scoff = 255;
+		} else if (scno != skip_cols) {
 			smp->c_sboff = offset_in_line;
 			smp->c_scoff =
 			    offset_in_char = chlen - (scno - skip_cols);

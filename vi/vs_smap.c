@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.29 2001/06/25 15:19:38 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:38 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.30 2002/01/19 21:59:07 skimo Exp $ (Berkeley) $Date: 2002/01/19 21:59:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -727,7 +727,7 @@ vs_sm_up(SCR *sp, MARK *rp, db_recno_t count, scroll_t scmd, SMAP *smp)
 	if (!SMAP_CACHE(smp) && vs_line(sp, smp, NULL, NULL))
 		return (1);
 	rp->lno = smp->lno;
-	rp->cno = smp->c_sboff;
+	rp->cno = smp->c_scoff == 255 ? 0 : smp->c_sboff;
 	return (0);
 }
 
@@ -941,7 +941,7 @@ vs_sm_down(SCR *sp, MARK *rp, db_recno_t count, scroll_t scmd, SMAP *smp)
 	if (!SMAP_CACHE(smp) && vs_line(sp, smp, NULL, NULL))
 		return (1);
 	rp->lno = smp->lno;
-	rp->cno = smp->c_sboff;
+	rp->cno = smp->c_scoff == 255 ? 0 : smp->c_sboff;
 	return (0);
 }
 
