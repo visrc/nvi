@@ -1,205 +1,160 @@
-/* This file contains a new version of the system() function and related stuff.
+/*-
+ * Copyright (c) 1991 The Regents of the University of California.
+ * All rights reserved.
  *
- * Entry points are:
- *	filter(m,n,cmd)	- run text lines through a filter program
- *
- * This is probably the single least portable file in the program.  The code
- * shown here should work correctly if it links at all; it will work on UNIX
- * and any O.S./Compiler combination which adheres to UNIX forking conventions.
+ * %sccs.include.redist.c%
  */
 
-#include <sys/types.h>
+#ifndef lint
+static char sccsid[] = "$Id: ex_filter.c,v 5.7 1992/04/15 09:12:26 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:12:26 $";
+#endif /* not lint */
+
+#include <sys/param.h>
+#include <sys/wait.h>
 #include <signal.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
-#include "excmd.h"
 #include "options.h"
-#include "pathnames.h"
 #include "extern.h"
 
-extern char	**environ;
-
-static int rpipe __P((char *, int));
-
 /*
- * This private function opens a pipe from a filter.  It is similar to the
- * system() function, and to popen(cmd, "r").
+ * filter --
+ *	Run a range of lines through a filter program and replace the original
+ *	text with the stdout/stderr output of the filter.  One special case,
+ *	if "to" is MARK_UNSET, then it runs the filter program with stdin
+ *	coming from /dev/null, and inserts any output lines.
  */
 int
-rpipe(cmd, in)
-	char *cmd;		/* The filter command to use. */
-	int in;			/* The fd to use for stdin. */
+filter(from, to, cmd)
+	MARK from, to;
+	char *cmd;
 {
-	int	r0w1[2];/* the pipe fd's */
+	MARK new;
+	pid_t pid;
+	sig_t intsave, quitsave;
+	sigset_t omask;
+	union wait pstat;
+	int i, input[2], output[2];
+	char *name;
 
-	/* make the pipe */
-	if (pipe(r0w1) < 0)
-	{
-		return -1;	/* pipe failed */
+	if (pipe(input) < 0)
+		goto nopipe;
+	if (pipe(output) < 0) {
+		(void)close(input[0]);
+		(void)close(input[1]);
+nopipe:		msg("filter: pipe: %s", strerror(errno));
+		return (1);
 	}
 
-	/* The parent process (elvis) ignores signals while the filter runs.
-	 * The child (the filter program) will reset this, so that it can
-	 * catch the signal.
-	 */
-	signal(SIGINT, SIG_IGN);
+	omask = sigblock(sigmask(SIGCHLD));
+	switch (pid = vfork()) {
+	case -1:			/* Error. */
+		(void)sigsetmask(omask);
+		(void)close(input[0]);
+		(void)close(input[1]);
+		(void)close(output[0]);
+		(void)close(output[1]);
+		msg("filter: fork: %s", strerror(errno));
+		return (1);
+		/* NOTREACHED */
+	case 0:				/* Child. */
+		(void)sigsetmask(omask);
 
-	switch (fork())
-	{
-	  case -1:						/* error */
-		return -1;
+		/*
+		 * Redirect stdin from the read end of the input pipe,
+		 * and redirect stdout/stderr to the write end of the
+		 * output pipe.
+		 */
+		(void)dup2(input[0], STDIN_FILENO);
+		(void)dup2(output[1], STDOUT_FILENO);
+		(void)dup2(output[1], STDERR_FILENO);
 
-	  case 0:						/* child */
-		/* close the "read" end of the pipe */
-		close(r0w1[0]);
+		/* Close the child's pipe file descriptors. */
+		(void)close(input[0]);
+		(void)close(input[1]);
+		(void)close(output[0]);
+		(void)close(output[1]);
 
-		/* redirect stdout to go to the "write" end of the pipe */
-		close(1);
-		dup(r0w1[1]);
-		close(2);
-		dup(r0w1[1]);
-		close(r0w1[1]);
-
-		/* redirect stdin */
-		if (in != 0)
-		{
-			close(0);
-			dup(in);
-			close(in);
-		}
-
-		/* the filter should accept SIGINT signals */
-		signal(SIGINT, SIG_DFL);
-
-		/* exec the shell to run the command */
-		execle(PVAL(O_SHELL), PVAL(O_SHELL), "-c", cmd, NULL, environ);
-		exit(1); /* if we get here, exec failed */
-
-	  default:						/* parent */
-		/* close the "write" end of the pipe */	
-		close(r0w1[1]);
-
-		return r0w1[0];
-	}
-}
-
-/* This function closes the pipe opened by rpipe(), and returns 0 for success */
-int rpclose(fd)
-	int	fd;
-{
-	int	status;
-
-	close(fd);
-	wait(&status);
-	signal(SIGINT, trapint);
-	return status;
-}
-
-/* This function runs a range of lines through a filter program, and replaces
- * the original text with the filtered version.  As a special case, if "to"
- * is MARK_UNSET, then it runs the filter program with stdin coming from
- * /dev/null, and inserts any output lines.
- */
-int filter(from, to, cmd)
-	MARK	from, to;	/* the range of lines to filter */
-	char	*cmd;		/* the filter command */
-{
-	CMDARG cmdarg;
-	int	scratch;	/* fd of the scratch file */
-	int	fd;		/* fd of the pipe from the filter */
-	char	scrout[50];	/* name of the scratch out file */
-	MARK	new;		/* place where new text should go */
-	int	i;
-
-	/* write the lines (if specified) to a temp file */
-	if (to)
-	{
-		/* we have lines */
-		(void)sprintf(scrout, _PATH_SCRATCH, PVAL(O_DIRECTORY));
-		mktemp(scrout);
-		SETCMDARG(cmdarg, C_WRITE, 2, from, to, 0, scrout);
-		ex_write(&cmdarg);
-
-		/* use those lines as stdin */
-		scratch = open(scrout, O_RDONLY);
-		if (scratch < 0)
-		{
-			unlink(scrout);
-			return -1;
-		}
-	}
-	else
-	{
-		scratch = 0;
+		if ((name = rindex(PVAL(O_SHELL), '/')) == NULL)
+			name = PVAL(O_SHELL);
+		else
+			++name;
+		execl(PVAL(O_SHELL), name, "-c", cmd, NULL);
+		msg("exec: %s: %s", PVAL(O_SHELL), strerror(errno));
+		_exit (1);
+		/* NOTREACHED */
 	}
 
-	/* start the filter program */
-	fd = rpipe(cmd, scratch);
-	if (fd < 0)
-	{
-		if (to)
-		{
-			close(scratch);
-			unlink(scrout);
-		}
-		return -1;
-	}
+	/* Write the selected lines to the write end of the input pipe. */
+	if (to != MARK_UNSET)
+		ex_writerange("filter", input[1], from, to, 0);
 
+	/* Close all but the read end of the output pipe. */
+	(void)close(input[0]);
+	(void)close(input[1]);
+	(void)close(output[1]);
+		
 	ChangeText
 	{
-		/* adjust MARKs for whole lines, and set "new" */
+		/* Adjust MARKs for whole lines, and set "new". */
 		from &= ~(BLKSIZE - 1);
-		if (to)
-		{
+		if (to) {
 			to &= ~(BLKSIZE - 1);
 			to += BLKSIZE;
 			new = to;
-		}
-		else
-		{
+		} else
 			new = from + BLKSIZE;
-		}
 
-		/* repeatedly read in new text and add it */
-		while ((i = read(fd, tmpblk.c, BLKSIZE - 1)) > 0)
-		{
+		/* Repeatedly read in new text and add it. */
+		while ((i = read(output[0], tmpblk.c, BLKSIZE - 1)) > 0) {
 			tmpblk.c[i] = '\0';
 			add(new, tmpblk.c);
 			for (i = 0; tmpblk.c[i]; i++)
-			{
 				if (tmpblk.c[i] == '\n')
-				{
 					new = (new & ~(BLKSIZE - 1)) + BLKSIZE;
-				}
 				else
-				{
-					new++;
-				}
-			}
+					++new;
+		}
+		if (i < 0) {
+			msg("filter: read: %s.", strerror(errno));
+			(void)close(output[0]);
+			return (1);
 		}
 	}
 
-	/* delete old text, if any */
-	if (to)
-	{
-		delete(from, to);
-	}
+	/* Close the read end of the output pipe. */
+	(void)close(output[0]);
 
-	/* Reporting... */
-	rptlabel = "more";
-	if (rptlines < 0)
-	{
+	/* Wait for the child to finish. */
+	intsave = signal(SIGINT, SIG_IGN);
+	quitsave = signal(SIGQUIT, SIG_IGN);
+	(void)waitpid(pid, (int *)&pstat, 0);
+	(void)sigsetmask(omask);
+	(void)signal(SIGINT, intsave);
+	(void)signal(SIGQUIT, quitsave);
+
+	/* Delete old text, if any. */
+	if (to != MARK_UNSET)
+		delete(from, to);
+
+	/*
+	 * Reporting...
+	 * XXX
+	 * This is wrong at the moment.
+	 */
+	if (rptlines < 0) {
 		rptlines = -rptlines;
 		rptlabel = "less";
-	}
+	} else
+		rptlabel = "more";
 
-	/* cleanup */
-	rpclose(fd);
-	if (to)
-	{
-		close(scratch);
-		unlink(scrout);
-	}
-	return 0;
+	if (WIFSIGNALED(pstat))
+		msg("filter: exited with signal %d%s.", WTERMSIG(pstat),
+		    WCOREDUMP(pstat) ? "; core dumped" : "");
+	else if (WIFEXITED(pstat) && WEXITSTATUS(pstat))
+		msg("filter: exited with status %d.", WEXITSTATUS(pstat));
+	return (0);
 }
