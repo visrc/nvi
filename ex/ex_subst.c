@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.5 1995/06/20 19:36:30 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:36:30 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.6 1995/09/21 10:57:59 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,9 @@ static char sccsid[] = "$Id: ex_subst.c,v 10.5 1995/06/20 19:36:30 bostic Exp $ 
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -31,7 +29,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 10.5 1995/06/20 19:36:30 bostic Exp $ 
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
@@ -365,7 +363,7 @@ s(sp, cmdp, s, re, flags)
 	regex_t *re;
 	u_int flags;
 {
-	CHAR_T ch;
+	EVENT ev;
 	MARK from, to;
 	recno_t elno, lno;
 	regmatch_t match[10];
@@ -645,11 +643,31 @@ nextmatch:	match[0].rm_so = 0;
 				if (ex_print(sp, cmdp, &from, &to, 0) ||
 				    ex_scprint(sp, &from, &to))
 					goto quit;
-			if (v_getkey(sp, &ch))
+
+			/* Get a character. */
+next:			if (v_get_event(sp, &ev, 0))
+				goto err;
+
+			switch (ev.e_event) {
+			case E_CHARACTER:
+				break;
+			case E_EOF:
+			case E_ERR:
+				return (1);
+			case E_REPAINT:
+				goto next;
+			case E_RESIZE:
+				ex_e_resize(sp);
+				goto next;
+			case E_INTERRUPT:
 				goto quit;
-			switch (ch) {
+			default:
+				abort();
+			}
+			switch (ev.e_c) {
 			case CH_YES:
 				break;
+			default:
 			case CH_NO:
 				didsub = 0;
 				BUILD(sp, s +offset, match[0].rm_eo);
@@ -657,7 +675,7 @@ nextmatch:	match[0].rm_so = 0;
 			case CH_QUIT:
 				/* Set the quit/interrupted flags. */
 quit:				quit = 1;
-				F_SET(sp, S_INTERRUPTED);
+				F_SET(sp->gp, G_INTERRUPTED);
 
 				/*
 				 * Resolve any changes, then return to (and

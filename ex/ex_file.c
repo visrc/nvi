@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 10.4 1995/06/20 19:37:41 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:37:41 $";
+static char sccsid[] = "$Id: ex_file.c,v 10.5 1995/09/21 10:57:37 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,9 @@ static char sccsid[] = "$Id: ex_file.c,v 10.4 1995/06/20 19:37:41 bostic Exp $ (
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
@@ -74,6 +72,9 @@ ex_file(sp, cmdp)
 
 		/* Have to force a write if the file exists, next time. */
 		F_SET(frp, FR_NAMECHANGE);
+
+		/* Notify the screen. */
+		(void)sp->gp->scr_rename(sp);
 		break;
 	default:
 		abort();

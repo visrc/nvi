@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.9 1995/07/04 12:43:21 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:21 $";
+static char sccsid[] = "$Id: main.c,v 10.10 1995/09/21 10:56:06 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,11 +28,9 @@ static char sccsid[] = "$Id: main.c,v 10.9 1995/07/04 12:43:21 bostic Exp $ (Ber
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -41,18 +39,22 @@ static char sccsid[] = "$Id: main.c,v 10.9 1995/07/04 12:43:21 bostic Exp $ (Ber
 
 #include "common.h"
 #include "../ex/tag.h"
+#include "../vi/vi.h"
+#include "pathnames.h"
 
 static void	 v_estr __P((char *, int, char *));
 static int	 v_obsolete __P((char *, char *[]));
 
+SCR *xxsp;
+
 /*
- * v_init --
- *	Main editor initialization routine.
+ * editor --
+ *	Main editor routine.
  *
- * PUBLIC: init_t v_init __P((GS *, int, char *[], recno_t, size_t));
+ * PUBLIC: int editor __P((GS *, int, char *[], recno_t, size_t));
  */
-init_t
-v_init(gp, argc, argv, rows, cols)
+int
+editor(gp, argc, argv, rows, cols)
 	GS *gp;
 	int argc;
 	char *argv[];
@@ -63,23 +65,23 @@ v_init(gp, argc, argv, rows, cols)
 	extern char *optarg;
 	FREF *frp;
 	SCR *sp;
-	init_t rval;
 	u_int flags;
-	int ch, flagchk, lflag, readonly, silent;
+	int ch, fd, flagchk, lflag, readonly, rval, silent;
 	char *tag_f, *wsizearg;
 	char path[256];
 
-	/*
-	 * Common global structure initialization.
-	 *
-	 * !!!
-	 * Signals not on, no need to block them for queue manipulation.
-	 */
+	/* Initialize the busy routine, if not defined by the screen. */
+	if (gp->scr_busy == NULL)
+		gp->scr_busy = vs_busy;
+	/* Initialize the message routine, if not defined by the screen. */
+	if (gp->scr_msg == NULL)
+		gp->scr_msg = vs_msg;
+
+	/* Common global structure initialization. */
 	CIRCLEQ_INIT(&gp->dq);
 	CIRCLEQ_INIT(&gp->hq);
 	LIST_INIT(&gp->ecq);
 	LIST_INSERT_HEAD(&gp->ecq, &gp->excmd, q);
-	LIST_INIT(&gp->msgq);
 	gp->noprint = DEFAULT_NOPRINT;
 
 	/* Structures shared by screens so stored in the GS structure. */
@@ -93,10 +95,9 @@ v_init(gp, argc, argv, rows, cols)
 	if (!strcmp(gp->progname, "ex") || !strcmp(gp->progname, "nex"))
 		LF_INIT(S_EX);
 	else {
-		/* Nview, view, xview are readonly. */
+		/* Nview, view are readonly. */
 		if (!strcmp(gp->progname, "nview") ||
-		    !strcmp(gp->progname, "view") ||
-		    !strcmp(gp->progname, "xview"))
+		    !strcmp(gp->progname, "view"))
 			readonly = 1;
 		
 		/* Vi is the default. */
@@ -105,7 +106,7 @@ v_init(gp, argc, argv, rows, cols)
 
 	/* Convert old-style arguments into new-style ones. */
 	if (v_obsolete(gp->progname, argv))
-		return (INIT_ERR);
+		return (1);
 
 	/* Parse the arguments. */
 	flagchk = '\0';
@@ -126,12 +127,23 @@ v_init(gp, argc, argv, rows, cols)
 			 * XXX
 			 * We should support multiple -c options.
 			 */
+			if (gp->icommand != NULL) {
+				v_estr(gp->progname, 0,
+				    "only one -c command may be specified.");
+				return (1);
+			}
 			gp->icommand = optarg;
 			break;
 #ifdef DEBUG
 		case 'D':
-			(void)printf("%lu waiting...\n", (u_long)getpid());
-			(void)read(STDIN_FILENO, &ch, 1);
+			if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
+				v_estr(gp->progname, errno, _PATH_TTY);
+				break;
+			}
+			(void)printf("%lu waiting... ", (u_long)getpid());
+			(void)fflush(stdout);
+			(void)read(fd, &ch, 1);
+			(void)close(fd);
 			break;
 #endif
 		case 'e':		/* Ex mode. */
@@ -151,7 +163,7 @@ v_init(gp, argc, argv, rows, cols)
 			if (flagchk == 't') {
 				v_estr(gp->progname, 0,
 				    "only one of -r and -t may be specified.");
-				return (INIT_ERR);
+				return (1);
 			}
 			flagchk = 'r';
 			break;
@@ -172,12 +184,12 @@ v_init(gp, argc, argv, rows, cols)
 			if (flagchk == 'r') {
 				v_estr(gp->progname, 0,
 				    "only one of -r and -t may be specified.");
-				return (INIT_ERR);
+				return (1);
 			}
 			if (flagchk == 't') {
 				v_estr(gp->progname, 0,
 				    "only one tag file may be specified.");
-				return (INIT_ERR);
+				return (1);
 			}
 			flagchk = 't';
 			tag_f = optarg;
@@ -191,7 +203,8 @@ v_init(gp, argc, argv, rows, cols)
 			break;
 		case '?':
 		default:
-			return (INIT_USAGE);
+			gp->scr_usage();
+			return (1);
 		}
 	argc -= optind;
 	argv += optind;
@@ -215,9 +228,6 @@ v_init(gp, argc, argv, rows, cols)
 	 * display queue so that the error messages get displayed.
 	 *
 	 * !!!
-	 * Signals not yet turned on, don't block them for queue manipulation.
-	 *
-	 * !!!
 	 * Everything we do until we go interactive is done in ex mode.
 	 */
 	if (screen_init(gp, NULL, &sp)) {
@@ -227,6 +237,8 @@ v_init(gp, argc, argv, rows, cols)
 	}
 	F_SET(sp, S_EX);
 	CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
+
+xxsp = sp;
 
 	if (v_key_init(sp))		/* Special key initialization. */
 		goto err;
@@ -267,11 +279,16 @@ v_init(gp, argc, argv, rows, cols)
 	if (!silent) {			/* Read EXINIT, exrc files. */
 		if (ex_exrc(sp))
 			goto err;
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
-			goto done;
+		if (EXCMD_RUNNING(gp)) {
+			if (ex_cmd(sp))
+				goto err;
+			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
+				if (screen_end(sp))
+					goto err;
+				goto done;
+			}
+		}
 	}
-	F_CLR(sp, S_EX | S_VI);
-	F_SET(sp, LF_ISSET(S_EX | S_VI));
 
 	/*
 	 * List recovery files if -r specified without file arguments.
@@ -281,7 +298,8 @@ v_init(gp, argc, argv, rows, cols)
 	if (flagchk == 'r' && argv[0] == NULL) {
 		if (rcv_list(sp))
 			goto err;
-		F_SET(sp, S_EXIT);
+		if (screen_end(sp))
+			goto err;
 		goto done;
 	}
 
@@ -322,6 +340,15 @@ v_init(gp, argc, argv, rows, cols)
 	}
 
 	/*
+	 * If we don't have a command-line option, switch into the right
+	 * editor now, so that we position default files correctly.
+	 */
+	if (gp->icommand == NULL) {
+		F_CLR(sp, S_EX | S_VI);
+		F_SET(sp, LF_ISSET(S_EX | S_VI));
+	}
+
+	/*
 	 * If the ex startup commands and or/the tag option haven't already
 	 * created a file, create one.  If no command-line files were given,
 	 * use a temporary file.
@@ -336,24 +363,45 @@ v_init(gp, argc, argv, rows, cols)
 			if (F_ISSET(sp, S_ARGRECOVER))
 				F_SET(frp, FR_RECOVER);
 		}
+
 		if (file_init(sp, frp, NULL, 0))
 			goto err;
+		if (EXCMD_RUNNING(gp)) {
+			if (ex_cmd(sp))
+				goto err;
+			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
+				if (screen_end(sp))
+					goto err;
+				goto done;
+			}
+		}
 	}
 
-	/* Startup information may have exited. */
-	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
-done:		rval = INIT_DONE;
-		if (0)
-err:			rval = INIT_ERR;
-		v_end(gp);
-		return (rval);
-	}
-	return (INIT_OK);
+	/* Switch into the right editor now, regardless. */
+	F_CLR(sp, S_EX | S_VI);
+	F_SET(sp, LF_ISSET(S_EX | S_VI));
+
+	/*
+	 * Main edit loop.  Vi handles split screens itself, we only return
+	 * here when switching editor modes.
+	 */
+	while (sp != NULL)
+		if (F_ISSET(sp, S_EX) ? ex(&sp) : vi(&sp))
+			goto err;
+
+done:	rval = 0;
+	if (0)
+err:		rval = 1;
+
+	/* Clean out the global structure. */
+	v_end(gp);
+
+	return (rval);
 }
 
 /*
  * v_end --
- *	End the program, discarding screens and the global area.
+ *	End the program, discarding screens and most of the global area.
  *
  * PUBLIC: void v_end __P((GS *));
  */
@@ -366,14 +414,10 @@ v_end(gp)
 	char *tty;
 
 	/* If there are any remaining screens, kill them off. */
-	while ((sp = gp->dq.cqh_first) != (void *)&gp->dq) {
-		sp->refcnt = 1;
+	while ((sp = gp->dq.cqh_first) != (void *)&gp->dq)
 		(void)screen_end(sp);
-	}
-	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq) {
-		sp->refcnt = 1;
+	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)
 		(void)screen_end(sp);
-	}
 
 #if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 	{ FREF *frp;
@@ -398,7 +442,7 @@ v_end(gp)
 	/* Free map sequences. */
 	seq_close(gp);
 
-	/* Default buffer storage. */
+	/* Free default buffer storage. */
 	(void)text_lfree(&gp->dcb_store.textq);
 
 	/* Close message catalogs. */
@@ -440,12 +484,9 @@ v_end(gp)
 	if (gp->tmp_bp != NULL)
 		free(gp->tmp_bp);
 
-#ifdef DEBUG
 	/* Close debugging file descriptor. */
 	if (gp->tracefp != NULL)
 		(void)fclose(gp->tracefp);
-#endif
-	free(gp);
 #endif
 }
 

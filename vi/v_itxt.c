@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.3 1995/07/04 12:45:59 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:45:59 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.4 1995/09/21 10:58:57 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,9 @@ static char sccsid[] = "$Id: v_itxt.c,v 10.3 1995/07/04 12:45:59 bostic Exp $ (B
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
@@ -61,7 +59,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 10.3 1995/07/04 12:45:59 bostic Exp $ (B
 		(void)log_cursor(sp);					\
 }
 
-static void set_txt_std __P((SCR *, VICMD *, u_int));
+static u_int32_t set_txt_std __P((SCR *, VICMD *, u_int));
 
 /*
  * v_iA -- [count]A
@@ -96,17 +94,16 @@ v_ia(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	VI_PRIVATE *vip;
 	recno_t lno;
 	size_t len;
+	u_int32_t flags;
 	char *p;
 
-	set_txt_std(sp, vp, 0);
+	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_APPEND;
 	sp->lno = vp->m_start.lno;
 
 	/* Move the cursor one column to the right and repaint the screen. */
-	vip = VIP(sp);
 	if ((p = file_gline(sp, sp->lno, &len)) == NULL) {
 		if (file_lline(sp, &lno))
 			return (1);
@@ -115,17 +112,17 @@ v_ia(sp, vp)
 			return (1);
 		}
 		len = 0;
-		FL_SET(vip->im_flags, TXT_APPENDEOL);
+		LF_SET(TXT_APPENDEOL);
 	} else if (len) {
 		if (len == sp->cno + 1) {
 			sp->cno = len;
-			FL_SET(vip->im_flags, TXT_APPENDEOL);
+			LF_SET(TXT_APPENDEOL);
 		} else
 			++sp->cno;
 	} else
-		FL_SET(vip->im_flags, TXT_APPENDEOL);
+		LF_SET(TXT_APPENDEOL);
 
-	return (v_txt_setup(sp, vp, NULL, p, len, 0, OOBLNO));
+	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, flags));
 }
 
 /*
@@ -162,9 +159,10 @@ v_ii(sp, vp)
 {
 	recno_t lno;
 	size_t len;
+	u_int32_t flags;
 	char *p;
 
-	set_txt_std(sp, vp, 0);
+	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_INSERT;
 	sp->lno = vp->m_start.lno;
 
@@ -179,8 +177,8 @@ v_ii(sp, vp)
 	}
 
 	if (len == 0)
-		FL_SET(VIP(sp)->im_flags, TXT_APPENDEOL);
-	return (v_txt_setup(sp, vp, NULL, p, len, 0, OOBLNO));
+		LF_SET(TXT_APPENDEOL);
+	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, flags));
 }
 
 enum which { o_cmd, O_cmd };
@@ -222,9 +220,10 @@ io(sp, vp, cmd)
 {
 	recno_t ai_line, lno;
 	size_t len;
+	u_int32_t flags;
 	char *p;
 
-	set_txt_std(sp, vp, TXT_ADDNEWLINE | TXT_APPENDEOL);
+	flags = set_txt_std(sp, vp, TXT_ADDNEWLINE | TXT_APPENDEOL);
 	sp->showmode = SM_INSERT;
 
 	if (sp->lno == 1) {
@@ -258,7 +257,7 @@ insert:		p = "";
 			ai_line = sp->lno - 1;
 		}
 	}
-	return (v_txt_setup(sp, vp, NULL, p, len, 0, ai_line));
+	return (v_txt(sp, vp, NULL, p, len, 0, ai_line, flags));
 }
 
 /*
@@ -274,13 +273,11 @@ v_change(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	VI_PRIVATE *vip;
 	recno_t lno;
 	size_t blen, len;
+	u_int32_t flags;
 	int lmode, rval;
 	char *bp, *p;
-
-	vip = VIP(sp);
 
 	/*
 	 * Find out if the file is empty, it's easier to handle it as a
@@ -297,8 +294,8 @@ v_change(sp, vp)
 		return (v_ia(sp, vp));
 	}
 
+	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_CHANGE;
-	set_txt_std(sp, vp, 0);
 
 	/*
 	 * Move the cursor to the start of the change.  Note, if autoindent
@@ -313,7 +310,7 @@ v_change(sp, vp)
 		if (O_ISSET(sp, O_AUTOINDENT)) {
 			if (nonblank(sp, vp->m_start.lno, &vp->m_start.cno))
 				return (1);
-			FL_SET(vip->im_flags, TXT_AICHARS);
+			LF_SET(TXT_AICHARS);
 		}
 	}
 	sp->lno = vp->m_start.lno;
@@ -345,9 +342,9 @@ v_change(sp, vp)
 		    &vp->m_start, &vp->m_stop, lmode))
 			return (1);
 		if (len == 0)
-			FL_SET(vip->im_flags, TXT_APPENDEOL);
-		FL_SET(vip->im_flags, TXT_EMARK | TXT_OVERWRITE);
-		return (v_txt_setup(sp, vp, &vp->m_stop, p, len, 0, OOBLNO));
+			LF_SET(TXT_APPENDEOL);
+		LF_SET(TXT_EMARK | TXT_OVERWRITE);
+		return (v_txt(sp, vp, &vp->m_stop, p, len, 0, OOBLNO, flags));
 	}
 
 	/*
@@ -404,9 +401,9 @@ v_change(sp, vp)
 
 	/* Check to see if we're appending to the line. */
 	if (vp->m_start.cno >= len)
-		FL_SET(vip->im_flags, TXT_APPENDEOL);
+		LF_SET(TXT_APPENDEOL);
 
-	rval = v_txt_setup(sp, vp, NULL, p, len, 0, OOBLNO);
+	rval = v_txt(sp, vp, NULL, p, len, 0, OOBLNO, flags);
 
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
@@ -430,13 +427,12 @@ v_Replace(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	VI_PRIVATE *vip;
 	recno_t lno;
 	size_t len;
+	u_int32_t flags;
 	char *p;
 
-	vip = VIP(sp);
-	set_txt_std(sp, vp, 0);
+	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_REPLACE;
 
 	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
@@ -447,16 +443,16 @@ v_Replace(sp, vp)
 			return (1);
 		}
 		len = 0;
-		FL_SET(vip->im_flags, TXT_APPENDEOL);
+		LF_SET(TXT_APPENDEOL);
 	} else {
 		if (len == 0)
-			FL_SET(vip->im_flags, TXT_APPENDEOL);
-		FL_SET(vip->im_flags, TXT_OVERWRITE | TXT_REPLACE);
+			LF_SET(TXT_APPENDEOL);
+		LF_SET(TXT_OVERWRITE | TXT_REPLACE);
 	}
 	vp->m_stop.lno = vp->m_start.lno;
 	vp->m_stop.cno = len ? len - 1 : 0;
 
-	return (v_txt_setup(sp, vp, &vp->m_stop, p, len, 0, OOBLNO));
+	return (v_txt(sp, vp, &vp->m_stop, p, len, 0, OOBLNO, flags));
 }
 
 /*
@@ -470,14 +466,14 @@ v_subst(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	VI_PRIVATE *vip;
 	recno_t lno;
 	size_t len;
+	u_int32_t flags;
 	char *p;
 
-	vip = VIP(sp);
+	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_CHANGE;
-	set_txt_std(sp, vp, 0);
+
 	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
 		if (file_lline(sp, &lno))
 			return (1);
@@ -486,11 +482,11 @@ v_subst(sp, vp)
 			return (1);
 		}
 		len = 0;
-		FL_SET(vip->im_flags, TXT_APPENDEOL);
+		LF_SET(TXT_APPENDEOL);
 	} else {
 		if (len == 0)
-			FL_SET(vip->im_flags, TXT_APPENDEOL);
-		FL_SET(vip->im_flags, TXT_EMARK | TXT_OVERWRITE);
+			LF_SET(TXT_APPENDEOL);
+		LF_SET(TXT_EMARK | TXT_OVERWRITE);
 	}
 
 	vp->m_stop.lno = vp->m_start.lno;
@@ -504,39 +500,37 @@ v_subst(sp, vp)
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
 
-	return (v_txt_setup(sp, vp, &vp->m_stop, p, len, 0, OOBLNO));
+	return (v_txt(sp, vp, &vp->m_stop, p, len, 0, OOBLNO, flags));
 }
 
 /*
  * set_txt_std --
  *	Initialize text processing flags.
  */
-static void
-set_txt_std(sp, vp, init)
+static u_int32_t
+set_txt_std(sp, vp, flags)
 	SCR *sp;
 	VICMD *vp;
-	u_int init;
+	u_int32_t flags;
 {
-	VI_PRIVATE *vip;
+	LF_SET(TXT_CNTRLT |
+	    TXT_ESCAPE | TXT_MAPINPUT | TXT_RECORD | TXT_RESOLVE);
 
-	vip = VIP(sp);
-	FL_INIT(vip->im_flags,
-	    init | TXT_CNTRLT | TXT_ESCAPE | TXT_RECORD | TXT_RESOLVE);
+	if (F_ISSET(vp, VC_ISDOT))
+		LF_SET(TXT_REPLAY);
 
 	if (O_ISSET(sp, O_ALTWERASE))
-		FL_SET(vip->im_flags, TXT_ALTWERASE);
+		LF_SET(TXT_ALTWERASE);
 	if (O_ISSET(sp, O_AUTOINDENT))
-		FL_SET(vip->im_flags, TXT_AUTOINDENT);
+		LF_SET(TXT_AUTOINDENT);
 	if (O_ISSET(sp, O_BEAUTIFY))
-		FL_SET(vip->im_flags, TXT_BEAUTIFY);
+		LF_SET(TXT_BEAUTIFY);
 	if (O_ISSET(sp, O_SHOWMATCH))
-		FL_SET(vip->im_flags, TXT_SHOWMATCH);
+		LF_SET(TXT_SHOWMATCH);
 	if (F_ISSET(sp, S_SCRIPT))
-		FL_SET(vip->im_flags, TXT_CR);
+		LF_SET(TXT_CR);
 	if (O_ISSET(sp, O_TTYWERASE))
-		FL_SET(vip->im_flags, TXT_TTYWERASE);
-	if (F_ISSET(vp,  VC_ISDOT))
-		FL_SET(vip->im_flags, TXT_REPLAY);
+		LF_SET(TXT_TTYWERASE);
 
 	/*
 	 * !!!
@@ -562,146 +556,13 @@ set_txt_std(sp, vp, init)
 	 *
 	 * For compatibility reasons, we try and make it all work here.  I
 	 * offer no hope that this is right, but it's probably pretty close.
+	 *
+	 * XXX
+	 * Once I work my courage up, this is all gonna go away.  It's too
+	 * evil to survive.
 	 */
 	if ((O_ISSET(sp, O_WRAPLEN) || O_ISSET(sp, O_WRAPMARGIN)) &&
 	    (!MAPPED_KEYS_WAITING(sp) || !F_ISSET(vp, VC_C1SET)))
-		FL_SET(vip->im_flags, TXT_WRAPMARGIN);
-}
-
-/*
- * v_tcmd_setup --
- *	Fill a buffer from the terminal for vi.
- *
- * PUBLIC: int v_tcmd_setup __P((SCR *, VICMD *, ARG_CHAR_T, u_int));
- */
-int
-v_tcmd_setup(sp, vp, prompt, flags)
-	SCR *sp;
-	VICMD *vp;
-	ARG_CHAR_T prompt;
-	u_int flags;
-{
-	SMAP *esmp;
-	VI_PRIVATE *vip;
-
-	vip = VIP(sp);
-
-	/* Save current cursor. */
-	vip->gsv_lno = sp->lno;
-	vip->gsv_cno = sp->cno;
-
-	if (!IS_ONELINE(sp)) {
-		/*
-		 * Fake like the user is doing input on the last line of the
-		 * screen.  This makes all of the scrolling work correctly,
-		 * and allows us the use of the vi text editing routines, not
-		 * to mention practically infinite length ex commands.
-		 *
-		 * Save the current location.
-		 */
-		vip->gsv_tm_lno = TMAP->lno;
-		vip->gsv_tm_off = TMAP->off;
-		vip->gsv_t_rows = sp->t_rows;
-		vip->gsv_t_minrows = sp->t_minrows;
-		vip->gsv_t_maxrows = sp->t_maxrows;
-
-		/*
-		 * If it's a small screen, TMAP may be small for the screen.
-		 * Fix it, filling in fake lines as we go.
-		 */
-		if (IS_SMALL(sp))
-			for (esmp =
-			    HMAP + (sp->t_maxrows - 1); TMAP < esmp; ++TMAP) {
-				TMAP[1].lno = TMAP[0].lno + 1;
-				TMAP[1].off = 1;
-			}
-
-		/* Build the fake entry. */
-		TMAP[1].lno = TMAP[0].lno + 1;
-		TMAP[1].off = 1;
-		SMAP_FLUSH(&TMAP[1]);
-		++TMAP;
-
-		/* Reset the screen information. */
-		sp->t_rows = sp->t_minrows = ++sp->t_maxrows;
-	}
-
-	/* Move to the last line. */
-	sp->lno = TMAP[0].lno;
-	sp->cno = 0;
-
-	/* Don't update the modeline for now. */
-	F_SET(sp, S_INPUT_INFO);
-
-	FL_INIT(vip->im_flags,
-	    flags | TXT_APPENDEOL | TXT_CR | TXT_ESCAPE | TXT_INFOLINE);
-	if (O_ISSET(sp, O_ALTWERASE))
-		FL_SET(vip->im_flags, TXT_ALTWERASE);
-	if (O_ISSET(sp, O_TTYWERASE))
-		FL_SET(vip->im_flags, TXT_TTYWERASE);
-
-	return (v_txt_setup(sp, vp, NULL, NULL, 0, prompt, 0));
-}
-
-/*
- * v_tcmd_td --
- *	Tear down the v_tcmd_setup routine.
- *
- * PUBLIC: int v_tcmd_td __P((SCR *, VICMD *));
- */
-int
-v_tcmd_td(sp, vp)
-	SCR *sp;
-	VICMD *vp;
-{
-	VI_PRIVATE *vip;
-	size_t cnt;
-
-	F_CLR(sp, S_INPUT_INFO);
-
-	vip = VIP(sp);
-	if (!IS_ONELINE(sp)) {
-		/* Restore the screen information. */
-		sp->t_rows = vip->gsv_t_rows;
-		sp->t_minrows = vip->gsv_t_minrows;
-		sp->t_maxrows = vip->gsv_t_maxrows;
-
-		/*
-		 * If it's a small screen, TMAP may be wrong.  Clear any
-		 * lines that might have been overwritten.
-		 */
-		if (IS_SMALL(sp)) {
-			for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
-				(void)sp->gp->scr_move(sp, cnt, 0);
-				(void)sp->gp->scr_clrtoeol(sp);
-			}
-			TMAP = HMAP + (sp->t_rows - 1);
-		} else
-			--TMAP;
-
-		/*
-		 * The map may be wrong if the user entered more than one
-		 * (logical) line.  Fix it.  If the user entered a whole
-		 * screen, this will be slow, but we probably don't care.
-		 */
-		while (vip->gsv_tm_lno != TMAP->lno ||
-		    vip->gsv_tm_off != TMAP->off)
-			if (vs_sm_1down(sp))
-				return (1);
-	} else
-		F_SET(sp, S_SCR_REDRAW);
-
-	/*
-	 * Invalidate the cursor and the line size cache, the line never
-	 * really existed.  This fixes bugs where the user searches for
-	 * the last line on the screen + 1 and the refresh routine thinks
-	 * that's where we just were.
-	 */
-	VI_SCR_CFLUSH(vip);
-	F_SET(vip, VIP_CUR_INVALID);
-
-	/* Restore the original cursor. */
-	sp->lno = vip->gsv_lno;
-	sp->cno = vip->gsv_cno;
-	return (0);
+		LF_SET(TXT_WRAPMARGIN);
+	return (flags);
 }

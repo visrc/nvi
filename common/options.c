@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.7 1995/07/04 12:43:27 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:27 $";
+static char sccsid[] = "$Id: options.c,v 10.8 1995/09/21 10:56:12 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,11 +20,9 @@ static char sccsid[] = "$Id: options.c,v 10.7 1995/07/04 12:43:27 bostic Exp $ (
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -33,8 +31,7 @@ static char sccsid[] = "$Id: options.c,v 10.7 1995/07/04 12:43:27 bostic Exp $ (
 #include <pathnames.h>
 
 #include "common.h"
-#include "cl.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
@@ -49,7 +46,7 @@ static int	 	 opts_print __P((SCR *, OPTLIST const *));
  * HPUX noted options and abbreviations are from "The Ultimate Guide to the
  * VI and EX Text Editors", 1990.
  */
-static OPTLIST const optlist[] = {
+OPTLIST const optlist[] = {
 /* O_ALTWERASE	  4.4BSD */
 	{"altwerase",	f_altwerase,	OPT_0BOOL,	0},
 /* O_AUTOINDENT	    4BSD */
@@ -373,7 +370,7 @@ opts_init(sp, oargs, rows, cols)
 	 * Note, the windows option code will correct any too-large value
 	 * or when the O_LINES value is 1.
 	 */
-	v = baud_from_bval(sp);
+	v = sp->gp->scr_baud(sp);
 	if (v <= 600)
 		v = 8;
 	else if (v <= 1200)
@@ -655,7 +652,7 @@ badnum:				p = msg_print(sp, name, &nf);
 				O_D_STR(sp, offset) = O_STR(sp, offset);
 
 			/* Give underlying functions a chance. */
-change:			(void)cl_optchange(sp, offset);
+change:			(void)sp->gp->scr_optchange(sp, offset);
 			(void)ex_optchange(sp, offset);
 			(void)v_optchange(sp, offset);
 			break;

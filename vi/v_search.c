@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.5 1995/07/04 12:45:58 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:45:58 $";
+static char sccsid[] = "$Id: v_search.c,v 10.6 1995/09/21 10:59:11 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,9 @@ static char sccsid[] = "$Id: v_search.c,v 10.5 1995/07/04 12:45:58 bostic Exp $ 
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
@@ -32,8 +30,8 @@ static char sccsid[] = "$Id: v_search.c,v 10.5 1995/07/04 12:45:58 bostic Exp $ 
 #include "common.h"
 #include "vi.h"
 
-static int v_a_setup __P((SCR *, VICMD *, dir_t));
-static int v_s_setup __P((SCR *, VICMD *, char *, u_int, dir_t));
+static int v_exaddr __P((SCR *, VICMD *, dir_t));
+static int v_search __P((SCR *, VICMD *, char *, u_int, dir_t));
 
 /*
  * v_srch -- [count]?RE[? offset]
@@ -46,7 +44,7 @@ v_searchb(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	return (v_a_setup(sp, vp, BACKWARD));
+	return (v_exaddr(sp, vp, BACKWARD));
 }
 
 /*
@@ -60,56 +58,41 @@ v_searchf(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	return (v_a_setup(sp, vp, FORWARD));
+	return (v_exaddr(sp, vp, FORWARD));
 }
 
 /*
- * v_a_setup --
- *	Set up text input for an ex address search.
+ * v_exaddr --
+ *	Do a vi search (which is really an ex address).
  */
 static int
-v_a_setup(sp, vp, dir)
+v_exaddr(sp, vp, dir)
 	SCR *sp;
 	VICMD *vp;
 	dir_t dir;
 {
+	static EXCMDLIST fake = { "search" };
+	EXCMD *cmdp;
+	GS *gp;
+	TEXT *tp;
+	recno_t s_lno;
+	size_t len, s_cno, tlen;
+	int err, nb, type;
+	char *p, *t, buf[20];
+
 	/*
 	 * !!!
 	 * If using the search command as a motion, any addressing components
 	 * are lost, i.e. y/ptrn/+2, when repeated, is the same as y/ptrn/.
 	 */
 	if (F_ISSET(vp, VC_ISDOT))
-		return (v_s_setup(sp, vp,
+		return (v_search(sp, vp,
 		    NULL, SEARCH_PARSE | SEARCH_MSG | SEARCH_SET, dir));
 
 	/* Get the search pattern. */
-	if (v_tcmd_setup(sp, vp, dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH,
+	if (v_tcmd(sp, vp, dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH,
 	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
-
-	VIP(sp)->cm_next = VS_SEARCH_TEARDOWN;
-	return (0);
-}
-
-/*
- * v_a_td --
- *	Do the search.
- *
- * PUBLIC: int v_a_td __P((SCR *, VICMD *));
- */
-int
-v_a_td(sp, vp)
-	SCR *sp;
-	VICMD *vp;
-{
-	static EXCMDLIST fake = { "search" };
-	EXCMD *cmdp;
-	GS *gp;
-	TEXT *tp;
-	VI_PRIVATE *vip;
-	size_t len, tlen;
-	int err, nb, type;
-	char *p, *t, buf[20];
 
 	/*
 	 * If the user backspaced over the prompt, do nothing.  If the user
@@ -118,22 +101,18 @@ v_a_td(sp, vp)
 	 * character.
 	 */
 	tp = sp->tiq.cqh_first;
-	if (tp->term == TERM_BS) {
-		F_SET(vp, VM_CMDFAILED);
-		return (0);
-	}
+	if (tp->term == TERM_BS)
+		return (1);
 
 	/* Build a fake ex command structure. */
 	gp = sp->gp;
 	gp->excmd.cp = tp->lb;
 	gp->excmd.clen = tp->len;
-	gp->cm_state = ES_PARSE;
 	F_SET(&gp->excmd, E_VISEARCH);
 
 	/* Save the current line/column. */
-	vip = VIP(sp);
-	vip->s_lno = sp->lno;
-	vip->s_cno = sp->cno;
+	s_lno = sp->lno;
+	s_cno = sp->cno;
 
 	/*
 	 * !!!
@@ -220,17 +199,18 @@ v_a_td(sp, vp)
 		nb = 0;
 
 		/* Default to z+. */
-		if (!type && v_event_push(sp, "+", 1, CH_NOMAP | CH_QUOTED))
+		if (!type &&
+		    v_event_push(sp, NULL, "+", 1, CH_NOMAP | CH_QUOTED))
 			return (1);
 
 		/* Push the user's command. */
-		if (v_event_push(sp, p, len, CH_NOMAP | CH_QUOTED))
+		if (v_event_push(sp, NULL, p, len, CH_NOMAP | CH_QUOTED))
 			return (1);
 
 		/* Push line number so get correct z display. */
 		tlen = snprintf(buf,
 		    sizeof(buf), "%lu", (u_long)vp->m_stop.lno);
-		if (v_event_push(sp, buf, tlen, CH_NOMAP | CH_QUOTED))
+		if (v_event_push(sp, NULL, buf, tlen, CH_NOMAP | CH_QUOTED))
 			return (1);
 		 
 		/* Don't refresh until after 'z' happens. */
@@ -247,10 +227,9 @@ v_a_td(sp, vp)
 
 err1:	msgq(sp, M_ERR,
 	    "188|Characters after search string, line offset and/or z command");
-err2:	vp->m_final.lno = vip->s_lno;
-	vp->m_final.cno = vip->s_cno;
-	F_SET(vp, VM_CMDFAILED);
-	return (0);
+err2:	vp->m_final.lno = s_lno;
+	vp->m_final.cno = s_cno;
+	return (1);
 }
 
 /*
@@ -277,7 +256,7 @@ v_searchN(sp, vp)
 		dir = sp->searchdir;
 		break;
 	}
-	return (v_s_setup(sp, vp, NULL, SEARCH_PARSE, dir));
+	return (v_search(sp, vp, NULL, SEARCH_PARSE, dir));
 }
 
 /*
@@ -291,7 +270,7 @@ v_searchn(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	return (v_s_setup(sp, vp, NULL, SEARCH_PARSE, sp->searchdir));
+	return (v_search(sp, vp, NULL, SEARCH_PARSE, sp->searchdir));
 }
 
 /*
@@ -313,18 +292,18 @@ v_searchw(sp, vp)
 	GET_SPACE_RET(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, VIP(sp)->keyw, RE_WSTOP);
 
-	rval = v_s_setup(sp, vp, bp, SEARCH_SET, FORWARD);
+	rval = v_search(sp, vp, bp, SEARCH_SET, FORWARD);
 
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }
 
 /*
- * v_s_setup --
- *	Set up the search commands.
+ * v_search --
+ *	The search commands.
  */
 static int
-v_s_setup(sp, vp, ptrn, flags, dir)
+v_search(sp, vp, ptrn, flags, dir)
 	SCR *sp;
 	VICMD *vp;
 	u_int flags;

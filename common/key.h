@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.3 1995/07/04 12:43:17 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:17 $
+ *	$Id: key.h,v 10.4 1995/09/21 10:56:01 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:01 $
  */
 
 /*
@@ -37,46 +37,44 @@ typedef	u_int		ARG_CHAR_T;
  * which point the exit flags will be set and vi will exit.
  */
 typedef enum {
-	E_CHARACTER,		/* Input character: e_c set. */
-	E_EOF,			/* End of input (NOT ^D). */
-	E_ERR,			/* Input error. */
-	E_INTERRUPT,		/* Interrupt. */
-	E_REPAINT,		/* Repaint: e_flno, e_tlno set. */
-	E_RESIZE,		/* SIGWINCH arrived: e_lno, e_cno set. */
-	E_SIGCONT,		/* SIGCONT arrived. */
-	E_SIGHUP,		/* SIGHUP arrived. */
-	E_SIGTERM,		/* SIGTERM arrived. */
-	E_START,		/* Start ex/vi. */
-	E_STOP,			/* Stop ex/vi. */
-	E_STRING,		/* Input string: e_csp, e_len set. */
-	E_TIMEOUT,		/* Timeout. */
+	E_NOTUSED = 0,			/* Not set. */
+	E_CHARACTER,			/* Input character: e_c set. */
+	E_EOF,				/* End of input (NOT ^D). */
+	E_ERR,				/* Input error. */
+	E_INTERRUPT,			/* Interrupt. */
+	E_REPAINT,			/* Repaint: e_flno, e_tlno set. */
+	E_RESIZE,			/* SIGWINCH: e_lno, e_cno set. */
+	E_SIGHUP,			/* SIGHUP. */
+	E_SIGTERM,			/* SIGTERM. */
+	E_STRING,			/* Input string: e_csp, e_len set. */
+	E_TIMEOUT,			/* Timeout. */
 } e_event_t;
 
 /*
  * Character values.
  */
 typedef enum {
-	K_NOTUSED = 0,		/* Not set. */
-	K_BACKSLASH,		/*  \ */
-	K_CARAT,		/*  ^ */
-	K_CNTRLD,		/* ^D */
-	K_CNTRLR,		/* ^R */
-	K_CNTRLT,		/* ^T */
-	K_CNTRLZ,		/* ^Z */
-	K_COLON,		/*  : */
-	K_CR,			/* \r */
-	K_ESCAPE,		/* ^[ */
-	K_FORMFEED,		/* \f */
-	K_HEXCHAR,		/* ^X */
-	K_NL,			/* \n */
-	K_RIGHTBRACE,		/*  } */
-	K_RIGHTPAREN,		/*  ) */
-	K_TAB,			/* \t */
-	K_VERASE,		/* set from tty: default ^H */
-	K_VKILL,		/* set from tty: default ^U */
-	K_VLNEXT,		/* set from tty: default ^V */
-	K_VWERASE,		/* set from tty: default ^W */
-	K_ZERO,			/*  0 */
+	K_NOTUSED = 0,			/* Not set. */
+	K_BACKSLASH,			/*  \ */
+	K_CARAT,			/*  ^ */
+	K_CNTRLD,			/* ^D */
+	K_CNTRLR,			/* ^R */
+	K_CNTRLT,			/* ^T */
+	K_CNTRLZ,			/* ^Z */
+	K_COLON,			/*  : */
+	K_CR,				/* \r */
+	K_ESCAPE,			/* ^[ */
+	K_FORMFEED,			/* \f */
+	K_HEXCHAR,			/* ^X */
+	K_NL,				/* \n */
+	K_RIGHTBRACE,			/*  } */
+	K_RIGHTPAREN,			/*  ) */
+	K_TAB,				/* \t */
+	K_VERASE,			/* set from tty: default ^H */
+	K_VKILL,			/* set from tty: default ^U */
+	K_VLNEXT,			/* set from tty: default ^V */
+	K_VWERASE,			/* set from tty: default ^W */
+	K_ZERO,				/*  0 */
 } e_key_t;
 
 struct _event {
@@ -121,12 +119,12 @@ struct _event {
 };
 
 typedef struct _keylist {
-	e_key_t value;		/* Special value. */
-	CHAR_T ch;		/* Key. */
+	e_key_t value;			/* Special value. */
+	CHAR_T ch;			/* Key. */
 } KEYLIST;
 extern KEYLIST keylist[];
 
-				/* Return if more keys in queue. */
+					/* Return if more keys in queue. */
 #define	KEYS_WAITING(sp)	((sp)->gp->i_cnt != 0)
 #define	MAPPED_KEYS_WAITING(sp)						\
 	(KEYS_WAITING(sp) &&						\
@@ -149,17 +147,40 @@ extern KEYLIST keylist[];
 #define	STANDARD_TAB	6
 
 /* Various special characters, messages. */
-#define	CH_BSEARCH	'?'			/* Backward search prompt. */
-#define	CH_CURSOR	' '			/* Cursor character. */
-#define	CH_ENDMARK	'$'			/* End of a range. */
-#define	CH_EXPROMPT	':'			/* Ex prompt. */
-#define	CH_FSEARCH	'/'			/* Forward search prompt. */
-#define	CH_HEX		'\030'			/* Leading hex character. */
-#define	CH_LITERAL	'\026'			/* ASCII ^V. */
-#define	CH_NO		'n'			/* No. */
-#define	CH_NOT_DIGIT	'a'			/* A non-isdigit() character. */
-#define	CH_QUIT		'q'			/* Quit. */
-#define	CH_YES		'y'			/* Yes. */
+#define	CH_BSEARCH	'?'		/* Backward search prompt. */
+#define	CH_CURSOR	' '		/* Cursor character. */
+#define	CH_ENDMARK	'$'		/* End of a range. */
+#define	CH_EXPROMPT	':'		/* Ex prompt. */
+#define	CH_FSEARCH	'/'		/* Forward search prompt. */
+#define	CH_HEX		'\030'		/* Leading hex character. */
+#define	CH_LITERAL	'\026'		/* ASCII ^V. */
+#define	CH_NO		'n'		/* No. */
+#define	CH_NOT_DIGIT	'a'		/* A non-isdigit() character. */
+#define	CH_QUIT		'q'		/* Quit. */
+#define	CH_YES		'y'		/* Yes. */
+
+/*
+ * Checking for interrupts means that we look at the bit that gets set if the
+ * screen code supports asynchronous events, and call back into the event code
+ * so that non-asynchronous screens get a chance to post the interrupt.
+ *
+ * INTERRUPT_CHECK is the number of lines "operated" on before checking for
+ * interrupts.
+ */
+#define	INTERRUPT_CHECK	100
+#define	INTERRUPTED(sp)							\
+	(F_ISSET((sp)->gp, G_INTERRUPTED) ||				\
+	!v_get_event(sp, NULL, EC_INTERRUPT) &&				\
+	F_ISSET((sp)->gp, G_INTERRUPTED))
+#define	CLR_INTERRUPT(sp)						\
+	F_CLR((sp)->gp, G_INTERRUPTED)
+
+/* Flags describing types of characters being requested. */
+#define	EC_INTERRUPT	0x001		/* Checking for interrupts. */
+#define	EC_MAPCOMMAND	0x002		/* Apply the command map. */
+#define	EC_MAPINPUT	0x004		/* Apply the input map. */
+#define	EC_MAPNODIGIT	0x008		/* Return to a digit. */
+#define	EC_QUOTED	0x010		/* Try to quote next character */
 
 /* Flags describing text input special cases. */
 #define	TXT_ADDNEWLINE	0x00000001	/* Replay starts on a new line. */
@@ -178,14 +199,15 @@ extern KEYLIST keylist[];
 #define	TXT_EOFCHAR	0x00002000	/* ICANON set, return EOF character. */
 #define	TXT_ESCAPE	0x00004000	/* Escape returns the buffer. */
 #define	TXT_INFOLINE	0x00008000	/* Editing the info line. */
-#define	TXT_NLECHO	0x00010000	/* Echo the newline. */
-#define	TXT_NUMBER	0x00020000	/* Number the line. */
-#define	TXT_OVERWRITE	0x00040000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x00080000	/* Display a prompt. */
-#define	TXT_RECORD	0x00100000	/* Record for replay. */
-#define	TXT_REPLACE	0x00200000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x00400000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x00800000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x01000000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x02000000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x04000000	/* Option: wrapmargin. */
+#define	TXT_MAPINPUT	0x00010000	/* Apply the input map. */
+#define	TXT_NLECHO	0x00020000	/* Echo the newline. */
+#define	TXT_NUMBER	0x00040000	/* Number the line. */
+#define	TXT_OVERWRITE	0x00080000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x00100000	/* Display a prompt. */
+#define	TXT_RECORD	0x00200000	/* Record for replay. */
+#define	TXT_REPLACE	0x00400000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x00800000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x01000000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x02000000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x04000000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x08000000	/* Option: wrapmargin. */

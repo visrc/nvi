@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.4 1995/06/20 15:25:42 bostic Exp $ (Berkeley) $Date: 1995/06/20 15:25:42 $";
+static char sccsid[] = "$Id: options_f.c,v 10.5 1995/09/21 10:56:15 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,11 +20,9 @@ static char sccsid[] = "$Id: options_f.c,v 10.4 1995/06/20 15:25:42 bostic Exp $
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -512,7 +510,7 @@ DECL(f_ttywerase)
 DECL(f_w300)
 {
 	/* Historical behavior for w300 was < 1200. */
-	if (baud_from_bval(sp) >= 1200)
+	if (sp->gp->scr_baud(sp) >= 1200)
 		return (0);
 
 	if (CALL(f_window))
@@ -533,7 +531,7 @@ DECL(f_w1200)
 	u_long v;
 
 	/* Historical behavior for w1200 was == 1200. */
-	v = baud_from_bval(sp);
+	v = sp->gp->scr_baud(sp);
 	if (v < 1200 || v > 4800)
 		return (0);
 
@@ -552,10 +550,10 @@ DECL(f_w1200)
  */
 DECL(f_w9600)
 {
-	speed_t v;
+	u_long v;
 
 	/* Historical behavior for w9600 was > 1200. */
-	v = baud_from_bval(sp);
+	v = sp->gp->scr_baud(sp);
 	if (v <= 4800)
 		return (0);
 
@@ -603,41 +601,4 @@ opt_dup(sp, opt, str)
 		free(O_STR(sp, opt));
 	O_STR(sp, opt) = p;
 	return (0);
-}
-
-/*
- * baud_from_bval --
- *	Return the baud rate using the standard defines.
- *
- * PUBLIC: u_long baud_from_bval __P((SCR *));
- */
-u_long
-baud_from_bval(sp)
-	SCR *sp;
-{
-	if (!F_ISSET(sp->gp, G_TERMIOS_SET))
-		return (9600);
-
-	/*
-	 * XXX
-	 * There's no portable way to get a "baud rate" -- cfgetospeed(3)
-	 * returns the value associated with some #define, which we may
-	 * never have heard of, or which may be a purely local speed.  Vi
-	 * only cares if it's SLOW (w300), slow (w1200) or fast (w9600).
-	 * Try and detect the slow ones, and default to fast.
-	 */
-	switch (cfgetospeed(&sp->gp->original_termios)) {
-	case B50:
-	case B75:
-	case B110:
-	case B134:
-	case B150:
-	case B200:
-	case B300:
-	case B600:
-		return (600);
-	case B1200:
-		return (1200);
-	}
-	return (9600);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.7 1995/07/06 11:52:47 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:52:47 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.8 1995/09/21 10:59:38 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,9 @@ static char sccsid[] = "$Id: vs_refresh.c,v 10.7 1995/07/06 11:52:47 bostic Exp 
 #include <bitstring.h>
 #include <ctype.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
@@ -90,7 +88,7 @@ vs_refresh(sp)
 	 * have paint or dirty bits set.  Finally, if we refresh any screens
 	 * other than the current one, the cursor will be trashed.
 	 */
-	pub_paint = S_SCR_REFORMAT | S_SCR_REDRAW | S_STATUS;
+	pub_paint = S_SCR_REFORMAT | S_SCR_REDRAW;
 	priv_paint = VIP_SCR_DIRTY;
 	if (O_ISSET(sp, O_NUMBER))
 		priv_paint |= VIP_SCR_NUMBER;
@@ -111,8 +109,16 @@ vs_refresh(sp)
 	 * Also, always do it last -- that way, S_SCR_REDRAW can be set
 	 * in the current screen only, and the screen won't flash.
 	 */
-	F_CLR(sp, VIP_SCR_DIRTY);
-	return (vs_paint(sp, PAINT_CURSOR | PAINT_FLUSH));
+	F_CLR(VIP(sp), VIP_SCR_DIRTY);
+	if (vs_paint(sp, PAINT_CURSOR | PAINT_FLUSH))
+		return (1);
+
+	/*
+	 * A side-effect of refreshing the screen is that we can now display
+	 * messages in it.
+	 */
+	F_SET(sp, S_SCREEN_READY);
+	return (0);
 }
 
 /*

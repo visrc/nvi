@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 10.2 1995/05/05 18:54:30 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:30 $";
+static char sccsid[] = "$Id: v_at.c,v 10.3 1995/09/21 10:58:48 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,9 +18,7 @@ static char sccsid[] = "$Id: v_at.c,v 10.2 1995/05/05 18:54:30 bostic Exp $ (Ber
 #include <bitstring.h>
 #include <ctype.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
@@ -94,8 +92,8 @@ v_at(sp, vp)
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
 		if ((F_ISSET(cbp, CB_LMODE) ||
 		    tp->q.cqe_next != (void *)&cbp->textq) &&
-		    v_event_push(sp, "\n", 1, 0) ||
-		    v_event_push(sp, tp->lb, tp->len, 0))
+		    v_event_push(sp, NULL, "\n", 1, 0) ||
+		    v_event_push(sp, NULL, tp->lb, tp->len, 0))
 			return (1);
 
 	/*
@@ -105,7 +103,7 @@ v_at(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET)) {
 		len = snprintf(nbuf, sizeof(nbuf), "%lu", vp->count);
-		if (v_event_push(sp, nbuf, len, 0))
+		if (v_event_push(sp, NULL, nbuf, len, 0))
 			return (1);
 	}
 	return (0);

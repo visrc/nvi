@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.3 1995/07/04 12:46:06 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:06 $
+ *	$Id: vi.h,v 10.4 1995/09/21 10:59:35 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:35 $
  */
 
 /* Definition of a vi "word". */
@@ -212,32 +212,6 @@ typedef struct _smap {
 					/* Character search information. */
 typedef enum { CNOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH } cdir_t;
 
-typedef enum {				/* Vi state. */
-	VS_GET_CMD1 = 0,		/* Command (initial state). */
-	VS_EX_TEARDOWN1,		/* Ex colon command setup. */
-	VS_EX_TEARDOWN2,		/* Ex colon command running. */
-	VS_FILTER_TEARDOWN,		/* Ex filter command exit. */
-	VS_GET_BUFFER,			/* Getting a buffer. */
-	VS_GET_CHAR,			/* Getting a character. */
-	VS_GET_CMD2,			/* Command. */
-	VS_GET_CMD3,			/* Command. */
-	VS_GET_COUNT,			/* Getting a count. */
-	VS_GET_COUNT_DISCARD,		/* Discarding a count. */
-	VS_GET_DOUBLE,			/* Second command letter. */
-	VS_GET_MCHAR,			/* Getting a motion character. */
-	VS_GET_MDOUBLE,			/* Second motion command letter. */
-	VS_GET_MOTION1,			/* Motion. */
-	VS_GET_MOTION2,			/* Motion. */
-	VS_GET_RBUFFER,			/* Getting a required buffer. */
-	VS_GET_Z1,			/* 1st z command argument. */
-	VS_GET_Z2,			/* 2nd z command argument. */
-	VS_REPLACE_CHAR1,		/* Get replacement character. */
-	VS_REPLACE_CHAR2,		/* Get replacement character. */
-	VS_RUNNING,			/* Something else is running. */
-	VS_SEARCH_TEARDOWN,		/* Ex search command setup. */
-	VS_TEXT_TEARDOWN,		/* Text input mode exit. */
-} s_vi_t;
-
 typedef enum { AB_NOTSET, AB_NOTWORD, AB_INWORD } abb_t;
 typedef enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quote_t;
 
@@ -245,7 +219,6 @@ typedef enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quote_t;
 typedef struct _vi_private {
 	VICMD cmd;		/* Current command, motion. */
 	VICMD motion;
-	VICMD *vp;		/* Current VICMD (command or motion). */
 
 	/*
 	 * !!!
@@ -266,6 +239,19 @@ typedef struct _vi_private {
 	size_t	 rep_len;	/* Input replay buffer length. */
 	size_t	 rep_cnt;	/* Input replay buffer characters. */
 
+	mtype_t	 mtype;		/* Last displayed message type. */
+	size_t	 linecount;	/* 1-N: Output overwrite count. */
+	size_t	 lcontinue;	/* 1-N: Output line continue value. */
+	size_t	 totalcount;	/* 1-N: Output overwrite count. */
+
+				/* Busy state. */
+	enum { BUSY_OFF=0, BUSY_ON, BUSY_SILENT } busy_state;
+	int	 busy_ch;	/* Busy character. */
+	struct timeval
+		 busy_tv;	/* Busy timer. */
+	size_t	 busy_fx;	/* Busy character x coordinate. */
+	size_t	 busy_y, busy_x;/* Busy saved screen coordinates. */
+
 	char	*ps;		/* Paragraph plus section list. */
 
 	u_long	 u_ccnt;	/* Undo command count. */
@@ -273,43 +259,6 @@ typedef struct _vi_private {
 	CHAR_T	 lastckey;	/* Last search character. */
 	cdir_t	 csearchdir;	/* Character search direction. */
 
-				/* Running function. */
-	int	(*run_func) __P((SCR *, EVENT *, int *));
-
-				/* Vi command mode state. */
-	s_vi_t	 cm_state;	/* Current state. */
-	s_vi_t	 cm_next;	/* Next state. */
-	u_long	*cm_countp;	/* Current count location. */
-
-
-	const			/* Vi text input mode state. */
-	   char *im_lp;		/* Starting line. */
-	size_t	 im_llen;	/* Starting line length. */
-	carat_t	 im_carat;	/* State of the "[^0]^D" sequences. */
-	quote_t	 im_quote;	/* State of quotation. */
-	abb_t	 im_abb;	/* State of abbreviation checks. */
-	int	 im_abcnt;	/* Abbreviation character count. */
-	TEXT	*im_tp;		/* Input text structure. */
-	TEXT	 im_ait;	/* Autoindent text structure. */
-	TEXT	 im_wmt;	/* Wrapmargin text structure. */
-	size_t	 im_margin;	/* Wrapmargin value. */
-	size_t	 im_rcol;	/* 0-N: insert offset in the replay buffer. */
-	int	 im_hexcnt;	/* Hex character count. */
-	u_int32_t
-		 im_flags;	/* Current TXT_* flags. */
-
-	recno_t	 gsv_lno;	/* Vi colon line input mode state. */
-	recno_t	 gsv_tm_lno;
-	size_t	 gsv_cno;
-	size_t	 gsv_t_maxrows;
-	size_t	 gsv_t_minrows;
-	size_t	 gsv_t_rows;
-	size_t	 gsv_tm_off;
-
-	recno_t	 s_lno;		/* Vi ex address search saved cursor. */
-	size_t	 s_cno;
-
-				/* Vi screen state. */
 	SMAP	*h_smap;	/* First slot of the line map. */
 	SMAP	*t_smap;	/*  Last slot of the line map. */
 	/*
@@ -340,18 +289,13 @@ typedef struct _vi_private {
 	size_t	 sc_col;	/* 0-N: LOGICAL screen column. */
 	SMAP	*sc_smap;	/* SMAP entry where sc_col occurs. */
 
-#define	VIP_AB_TURNOFF	0x0001	/* If abbreviations turned off. */
-#define	VIP_CUR_INVALID	0x0002	/* Cursor position is unknown. */
-#define	VIP_MAPPED	0x0004	/* If command included mapped chars. */
-#define	VIP_PARTIAL	0x0008	/* If partial command entered. */
-#define	VIP_RCM_LAST	0x0010	/* Cursor drawn to the last column. */
-#define	VIP_REPLAY_TEST	0x0020	/* Test first character for nul replay. */
-#define	VIP_SCR_DIRTY	0x0040	/* Screen needs refreshing. */
-#define	VIP_SCR_NUMBER	0x0080	/* Screen numbering changed. */
-#define	VIP_SKIPREFRESH	0x0100	/* Skip next refresh. */
-#define	VIP_WM_SET	0x0200	/* Wrapmargin: happened. */
-#define	VIP_WM_SKIP	0x0400	/* Wrapmargin: skip follow blanks. */
-	u_int16_t flags;
+#define	VIP_CUR_INVALID	0x0001	/* Cursor position is unknown. */
+#define	VIP_DIVIDER	0x0002	/* Divider line was displayed. */
+#define	VIP_RCM_LAST	0x0004	/* Cursor drawn to the last column. */
+#define	VIP_SCR_DIRTY	0x0008	/* Screen needs refreshing. */
+#define	VIP_SCR_NUMBER	0x0010	/* Screen numbering changed. */
+#define	VIP_SKIPREFRESH	0x0020	/* Skip next refresh. */
+	u_int8_t flags;
 } VI_PRIVATE;
 
 /* Vi private area. */

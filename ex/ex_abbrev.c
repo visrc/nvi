@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 10.3 1995/06/09 12:51:29 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:29 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 10.4 1995/09/21 10:57:21 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,18 +18,16 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 10.3 1995/06/09 12:51:29 bostic Exp $
 #include <bitstring.h>
 #include <ctype.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 /*
  * ex_abbr -- :abbreviate [key replacement]

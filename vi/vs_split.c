@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.8 1995/07/08 09:51:16 bostic Exp $ (Berkeley) $Date: 1995/07/08 09:51:16 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.9 1995/09/21 10:59:44 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,9 @@ static char sccsid[] = "$Id: vs_split.c,v 10.8 1995/07/08 09:51:16 bostic Exp $ 
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
@@ -85,13 +83,11 @@ vs_split(sp, new)
 		return (1);
 
 	/* Enter the new screen into the queue. */
-	SIGBLOCK(sp->gp);
 	if (splitup) {				/* Link in before old. */
 		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
 	} else {				/* Link in after old. */
 		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
 	}
-	SIGUNBLOCK(sp->gp);
 
 	/*
 	 * If the parent is the bottom half of the screen, shift the map
@@ -157,7 +153,7 @@ vs_split(sp, new)
 		new->defscroll = 1;
 
 	/* The new screen has to be drawn from scratch. */
-	F_SET(new, S_SCR_REFORMAT | S_STATUS);
+	F_SET(new, S_SCR_REFORMAT);
 	return (0);
 }
 
@@ -172,7 +168,7 @@ int
 vs_discard(csp, spp)
 	SCR *csp, **spp;
 {
-	SCR *sp, *next, *prev;
+	SCR *sp;
 	dir_t dir;
 
 	/* Discard the underlying screen. */
@@ -268,10 +264,8 @@ vs_fg(csp, name)
 	}
 
 	/* Move the old screen to the hidden queue. */
-	SIGBLOCK(csp->gp);
 	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
 	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
-	SIGUNBLOCK(csp->gp);
 
 	return (0);
 }
@@ -298,10 +292,8 @@ vs_bg(csp)
 	}
 
 	/* Move the old screen to the hidden queue. */
-	SIGBLOCK(csp->gp);
 	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
 	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
-	SIGUNBLOCK(csp->gp);
 
 	/* Toss the screen map. */
 	FREE(_HMAP(csp), SIZE_HMAP(csp) * sizeof(SMAP));
@@ -309,7 +301,7 @@ vs_bg(csp)
 
 	/* Switch screens. */
 	csp->nextdisp = sp;
-	F_SET(csp, S_SSWITCH | S_STATUS);
+	F_SET(csp, S_SSWITCH);
 
 	return (0);
 }
@@ -399,10 +391,8 @@ vs_swap(csp, nsp, name)
 	 * the exit will delete the old one, if we're foregrounding, the fg
 	 * code will move the old one to the hidden queue.
 	 */
-	SIGBLOCK(sp->gp);
 	CIRCLEQ_REMOVE(&sp->gp->hq, sp, q);
 	CIRCLEQ_INSERT_AFTER(&csp->gp->dq, csp, sp, q);
-	SIGUNBLOCK(sp->gp);
 
 	/*
 	 * Don't change the screen's cursor information other than to

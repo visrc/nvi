@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.6 1995/06/12 19:16:57 bostic Exp $ (Berkeley) $Date: 1995/06/12 19:16:57 $";
+static char sccsid[] = "$Id: exf.c,v 10.7 1995/09/21 10:55:53 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:55:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,7 +32,6 @@ static char sccsid[] = "$Id: exf.c,v 10.6 1995/06/12 19:16:57 bostic Exp $ (Berk
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -43,6 +42,7 @@ static char sccsid[] = "$Id: exf.c,v 10.6 1995/06/12 19:16:57 bostic Exp $ (Berk
 #include "common.h"
 
 static int	file_backup __P((SCR *, char *, char *));
+static void	file_cinit __P((SCR *));
 static void	file_comment __P((SCR *));
 
 /*
@@ -372,19 +372,12 @@ file_init(sp, frp, rcv_name, flags)
 	    access(frp->name, W_OK)))
 		F_SET(frp, FR_RDONLY);
 
-	/*
-	 * Switch...
-	 *
-	 * !!!
-	 * Note, because the EXF structure is examined at interrupt time,
-	 * the underlying DB structures have to be consistent as soon as
-	 * it's assigned to an SCR structure.
-	 */
+	/* Switch... */
 	++ep->refcnt;
 	sp->ep = ep;
 	sp->frp = frp;
 
-	/* Set the initial cursor position, execute initial command. */
+	/* Set the initial cursor position, queue initial command. */
 	file_cinit(sp);
 
 	/* Redraw the screen from scratch, schedule a welcome message. */
@@ -419,17 +412,19 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 /*
  * file_cinit --
  *	Set up the initial cursor position.
- *
- * PUBLIC: void file_cinit __P((SCR *));
  */
-void
+static void
 file_cinit(sp)
 	SCR *sp;
 {
+	GS *gp;
 	MARK m;
 	size_t len;
 	int nb;
-	char *ic;
+
+	/* Set some basic defaults. */
+	sp->lno = 1;
+	sp->cno = 0;
 
 	/*
 	 * Historically, initial commands (the -c option) weren't executed
@@ -448,25 +443,24 @@ file_cinit(sp)
 	 *
 	 * This gets called by the file init code, because we may be in a
 	 * file of ex commands and we want to execute them from the right
-	 * location in the file.  A few other places that want special case
-	 * behavior also call here.
+	 * location in the file.
 	 */
 	nb = 0;
-	if (sp->gp->icommand != NULL && !F_ISSET(sp->frp, FR_NEWFILE)) {
-		/* XXX:  If this fails, we're toast. */
-		(void)file_lline(sp, &sp->lno);
+	gp = sp->gp;
+	if (gp->icommand != NULL && !F_ISSET(sp->frp, FR_NEWFILE)) {
+		if (file_lline(sp, &sp->lno))
+			return;
 		if (sp->lno == 0) {
 			sp->lno = 1;
 			sp->cno = 0;
 		}
-
-		/* We can be reentered, turn off the global pointer first. */
-		ic = sp->gp->icommand;
-		sp->gp->icommand = NULL;
-		(void)ex_icmd(sp, ic);
+		if (ex_run_str(sp,
+		    "-i option", gp->icommand, strlen(gp->icommand), 0))
+			return;
+		gp->icommand = NULL;
 	} else if (F_ISSET(sp, S_EX)) {
-		/* XXX:  If this fails, we're toast. */
-		(void)file_lline(sp, &sp->lno);
+		if (file_lline(sp, &sp->lno))
+			return;
 		if (sp->lno == 0) {
 			sp->lno = 1;
 			sp->cno = 0;
@@ -781,15 +775,16 @@ file_write(sp, fm, tm, name, flags)
 		return (1);
 
 	/* Open the file. */
-	SIGBLOCK(sp->gp);
+	SIGBLOCK;
 	if ((fd = open(name, oflags, DEFFILEMODE)) < 0) {
+		SIGUNBLOCK;
 		p = msg_print(sp, name, &nf);
 		msgq(sp, M_SYSERR, "%s", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
-	SIGUNBLOCK(sp->gp);
+	SIGUNBLOCK;
 
 	/* Try and get a lock. */
 	if (!noname && file_lock(sp, NULL, NULL, fd, 0) == LOCK_UNAVAIL)

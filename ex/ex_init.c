@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.4 1995/06/09 12:51:38 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:38 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.5 1995/09/21 10:57:41 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -17,14 +17,11 @@ static char sccsid[] = "$Id: ex_init.c,v 10.4 1995/06/09 12:51:38 bostic Exp $ (
 #include <sys/stat.h>
 
 #include <bitstring.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -37,6 +34,8 @@ static char sccsid[] = "$Id: ex_init.c,v 10.4 1995/06/09 12:51:38 bostic Exp $ (
 
 enum rc { NOEXIST, NOPERM, RCOK };
 static enum rc	exrc_isok __P((SCR *, struct stat *, char *, int, int));
+
+static int ex_run_file __P((SCR *, char *));
 
 /*
  * ex_screen_copy --
@@ -58,7 +57,6 @@ ex_screen_copy(orig, sp)
 	TAILQ_INIT(&nexp->tagq);
 	TAILQ_INIT(&nexp->tagfq);
 	TAILQ_INIT(&nexp->cdq);
-	CIRCLEQ_INIT(&nexp->im_tiq);
 
 	if (orig == NULL) {
 	} else {
@@ -108,8 +106,6 @@ ex_screen_end(sp)
 	if (ex_cdfree(sp))
 		rval = 1;
 
-	text_lfree(&exp->im_tiq);
-
 	/* Free private memory. */
 	FREE(exp, sizeof(EX_PRIVATE));
 	sp->ex_private = NULL;
@@ -134,38 +130,6 @@ ex_optchange(sp, opt)
 	case O_TAGS:
 		return (ex_tagalloc(sp, O_STR(sp, O_TAGS)));
 	}
-	return (0);
-}
-
-
-#define	RUN_EXRC(p) {							\
-	(void)ex_cfile(sp, p,						\
-	    E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY);		\
-	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))				\
-		return (0);						\
-}
-
-#define	RUN_ICMD(sp, s, len, flags) {					\
-	(sp)->gp->excmd.cp = s;						\
-	(sp)->gp->excmd.clen = len;					\
-	F_INIT(&(sp)->gp->excmd, flags);				\
-	if (ex_cmd(sp))							\
-		return (1);						\
-}
-
-/*
- * ex_icmd --
- *	Execute the command-line ex commands.
- *
- * PUBLIC: int ex_icmd __P((SCR *, char *));
- */
-int
-ex_icmd(sp, s)
-	SCR *sp;
-	char *s;
-{
-	RUN_ICMD(sp, s, strlen(s),
-	    E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY);
 	return (0);
 }
 
@@ -212,34 +176,34 @@ ex_exrc(sp)
 	case NOPERM:
 		break;
 	case RCOK:
-		RUN_EXRC(_PATH_SYSEXRC);
+		if (ex_run_file(sp, _PATH_SYSEXRC))
+			return (1);
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+			return (0);
 		break;
 	}
 
-	if ((p = getenv("NEXINIT")) != NULL || (p = getenv("EXINIT")) != NULL)
-		if ((p = strdup(p)) == NULL) {
-			msgq(sp, M_SYSERR, NULL);
+	if ((p = getenv("NEXINIT")) != NULL) {
+		if (ex_run_str(sp, "NEXINIT", p, strlen(p), 1))
 			return (1);
-		} else {
-			RUN_ICMD(sp, p, strlen(p), E_BLIGNORE |
-			    E_NOAUTO | E_NOPRDEF | E_VLITONLY);
-			free(p);
-			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
-				return (0);
-		}
-	else if ((p = getenv("HOME")) != NULL && *p) {
+	} else if ((p = getenv("EXINIT")) != NULL) {
+		if (ex_run_str(sp, "EXINIT", p, strlen(p), 1))
+			return (1);
+	} else if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/%s", p, _PATH_NEXRC);
 		switch (exrc_isok(sp, &hsb, path, 0, 1)) {
 		case NOEXIST:
 			(void)snprintf(path,
 			    sizeof(path), "%s/%s", p, _PATH_EXRC);
-			if (exrc_isok(sp, &hsb, path, 0, 1) == RCOK)
-				RUN_EXRC(path);
+			if (exrc_isok(sp,
+			    &hsb, path, 0, 1) == RCOK && ex_run_file(sp, path))
+				return (1);
 			break;
 		case NOPERM:
 			break;
 		case RCOK:
-			RUN_EXRC(path);
+			if (ex_run_file(sp, path))
+				return (1);
 			break;
 		}
 	}
@@ -249,84 +213,69 @@ ex_exrc(sp)
 		case NOEXIST:
 			if (exrc_isok(sp, &lsb, _PATH_EXRC, 0, 0) == RCOK &&
 			    (lsb.st_dev != hsb.st_dev ||
-			    lsb.st_ino != hsb.st_ino))
-				RUN_EXRC(_PATH_EXRC);
+			    lsb.st_ino != hsb.st_ino) &&
+			    ex_run_file(sp, _PATH_EXRC))
+				return (1);
 			break;
 		case NOPERM:
 			break;
 		case RCOK:
-			if (lsb.st_dev != hsb.st_dev ||
-			    lsb.st_ino != hsb.st_ino)
-				RUN_EXRC(_PATH_NEXRC);
+			if ((lsb.st_dev != hsb.st_dev ||
+			    lsb.st_ino != hsb.st_ino) &&
+			    ex_run_file(sp, _PATH_NEXRC))
+				return (1);
 			break;
 		}
 	return (0);
 }
 
 /*
- * ex_cfile --
- *	Execute ex commands from a file.
+ * ex_run_file --
+ *	Set up a file of ex commands to run.
+ */
+static int
+ex_run_file(sp, name)
+	SCR *sp;
+	char *name;
+{
+	ARGS *ap[2], a;
+	EXCMD cmd;
+
+	ex_cbuild(&cmd, C_SOURCE, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
+	return (ex_source(sp, &cmd));
+}
+
+/*
+ * ex_run_str --
+ *	Set up a string of ex commands to run.
  *
- * PUBLIC: int ex_cfile __P((SCR *, char *, u_int32_t));
+ * PUBLIC: int ex_run_str __P((SCR *, char *, char *, size_t, int));
  */
 int
-ex_cfile(sp, filename, flags)
+ex_run_str(sp, name, str, len, nocopy)
 	SCR *sp;
-	char *filename;
-	u_int32_t flags;
+	char *name, *str;
+	size_t len;
+	int nocopy;
 {
-	struct stat sb;
-	int fd, len, nf;
-	char *bp, *p;
+	EXCMD *ecp;
 
-	bp = NULL;
-	if ((fd = open(filename, O_RDONLY, 0)) < 0 || fstat(fd, &sb))
-		goto err;
+	/* Build an EXCMD structure and put it on the command queue. */
+	CALLOC_RET(sp, ecp, EXCMD *, 1, sizeof(EXCMD));
 
-	/*
-	 * XXX
-	 * We'd like to test if the file is too big to malloc.  Since we don't
-	 * know what size or type off_t's or size_t's are, what the largest
-	 * unsigned integral type is, or what random insanity the local C
-	 * compiler will perpetrate, doing the comparison in a portable way
-	 * is flatly impossible.  Hope that malloc fails if the file is too
-	 * large.
-	 */
-	MALLOC(sp, bp, char *, (size_t)sb.st_size);
-	if (bp == NULL)
+	if (nocopy)
+		ecp->cp = str;
+	else if ((ecp->cp = v_strdup(sp, str, len)) == NULL)
 		return (1);
+	ecp->clen = len;
 
-	len = read(fd, bp, (int)sb.st_size);
-	if (len == -1 || len != sb.st_size) {
-		if (len != sb.st_size)
-			errno = EIO;
-
-err:		p = msg_print(sp, filename, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-		if (bp != NULL)
-			free(bp);
-		(void)close(fd);
+	if ((ecp->if_name = v_strdup(sp, name, strlen(name))) == NULL)
 		return (1);
-	}
+	ecp->if_lno = 1;
 
-	/*
-	 * Messages include file/line information, but we don't
-	 * care if we can't get space.
-	 */
-	sp->if_lno = 1;
-	sp->if_name = strdup(filename);
+	F_INIT(ecp, E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY);
 
-	RUN_ICMD(sp, bp, sb.st_size,
-	    E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY);
-
-	if (sp->if_name != NULL) {
-		free(sp->if_name);
-		sp->if_name = NULL;
-	}
-	free(bp);
-	(void)close(fd);
+	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
 	return (0);
 }
 

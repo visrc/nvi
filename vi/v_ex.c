@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.8 1995/07/06 11:51:41 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:51:41 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.9 1995/09/21 10:58:53 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,11 +17,9 @@ static char sccsid[] = "$Id: v_ex.c,v 10.8 1995/07/06 11:51:41 bostic Exp $ (Ber
 
 #include <bitstring.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -64,7 +62,7 @@ v_exmode(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	/* Save the current line/column number. */
+	/* Save the current cursor position. */
 	sp->frp->lno = sp->lno;
 	sp->frp->cno = sp->cno;
 	F_SET(sp->frp, FR_CURSORSET);
@@ -179,7 +177,7 @@ v_switch(sp, vp)
 
 /*
  * v_tagpush -- ^[
- *	Do a tag search on a the cursor keyword.
+ *	Do a tag search on the cursor keyword.
  *
  * PUBLIC: int v_tagpush __P((SCR *, VICMD *));
  */
@@ -226,6 +224,7 @@ v_filter(sp, vp)
 {
 	ARGS *ap[2], a;
 	EXCMD cmd;
+	TEXT *tp;
 
 	/*
 	 * !!!
@@ -260,34 +259,16 @@ v_filter(sp, vp)
 	}
 
 	/* Get the command from the user. */
-	if (v_tcmd_setup(sp, vp,
+	if (v_tcmd(sp, vp,
 	    '!', TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
-	VIP(sp)->cm_next = VS_FILTER_TEARDOWN;
-	return (0);
-}
-
-/*
- * v_filter_td --
- *	Tear down the filter text input setup and run the filter command.
- *
- * PUBLIC: int v_filter_td __P((SCR *, VICMD *));
- */
-int
-v_filter_td(sp, vp)
-	SCR *sp;
-	VICMD *vp;
-{
-	ARGS *ap[2], a;
-	EXCMD cmd;
-	TEXT *tp;
 
 	/*
 	 * Check to see if the user changed their mind.
 	 *
 	 * !!!
-	 * Entering <escape> on an empty line was historically
-	 * an error, this implementation doesn't bother.
+	 * Entering <escape> on an empty line was historically an error,
+	 * this implementation doesn't bother.
 	 */
 	tp = sp->tiq.cqh_first;
 	if (tp->term != TERM_OK) {
@@ -327,15 +308,6 @@ v_ex_cmd(sp, vp, exp)
  * v_ex -- :
  *	Execute a colon command line.
  *
- * !!!
- * There's some tricky stuff going on here to handle when a user has mapped
- * a key to multiple ex commands, or, more simply, enters more than a single
- * ex command.  Historic practice was that vi ran without any special actions,
- * as if the user were entering the characters, until ex trashed the screen,
- * e.g. a '!' command.  At that point, we no longer know what the screen looks
- * like, and can't afford to overwrite anything.  The solution is to go into
- * real ex mode until we get to the end of the command strings.
- *
  * PUBLIC: int v_ex __P((SCR *, VICMD *));
  */
 int
@@ -343,121 +315,65 @@ v_ex(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	if (v_tcmd_setup(sp, vp, ':', TXT_BS | TXT_PROMPT))
-		return (1);
-	VIP(sp)->cm_next = VS_EX_TEARDOWN1;
-	return (0);
-}
-
-/*
- * v_ex_td1 --
- *	Tear down the colon text input setup and run the ex command.
- *
- * PUBLIC: int v_ex_td1 __P((SCR *, VICMD *));
- */
-int
-v_ex_td1(sp, vp)
-	SCR *sp;
-	VICMD *vp;
-{
 	GS *gp;
 	TEXT *tp;
-
-	/* If the user didn't enter anything, we're done. */
-	tp = sp->tiq.cqh_first;
-	if (tp->term == TERM_BS) {
-		vp->m_final.lno = sp->lno;
-		vp->m_final.cno = sp->cno;
-		return (0);
-	}
+	int colon;
 
 	/*
-	 * Create and push a command on the command stack.  The ex parser
-	 * will remove and discard the structure when the command finishes.
-	 *
-	 * Don't specify any of the E_* flags, we get the correct behavior
-	 * because we're in vi mode.
+	 * !!!
+	 * If we put out more than a single line of messages, or ex trashes
+	 * the screen, the user may continue entering ex commands.  We find
+	 * this out when we do the screen/message resolution.  We can't enter
+	 * completely into ex mode however, because the user can elect to
+	 * return into vi mode by entering any key, i.e. we have to be in raw
+	 * mode.
 	 */
-	gp = sp->gp;
-	gp->cm_state = ES_PARSE;
-	gp->excmd.cp = tp->lb;
-	gp->excmd.clen = tp->len;
-	F_INIT(&gp->excmd, 0);
-	return (v_ex_td2(sp, vp));
-}
-
-/*
- * v_ex_td2 --
- *	Start or continue with the ex command.
- *
- * PUBLIC: int v_ex_td2 __P((SCR *, VICMD *));
- */
-int
-v_ex_td2(sp, vp)
-	SCR *sp;
-	VICMD *vp;
-{
-	GS *gp;
-	VI_PRIVATE *vip;
-
-	gp = sp->gp;
-	vip = VIP(sp);
-
-	/*
-	 * Vi is in one of two states:
-	 *
-	 *	VS_EX_TEARDOWN1	-- haven't called the ex parser.
-	 *	VS_EX_TEARDOWN2 -- restarting the ex parser.
-	 *
-	 * If the latter, update the ex state, the running command has
-	 * finished.
-	 */
-	switch (vip->cm_state) {
-	case VS_EX_TEARDOWN1:
-		break;
-	case VS_EX_TEARDOWN2:
-		gp->cm_state = gp->cm_next;
-		break;
-	default:
-		abort();
-		/* NOTREACHED */
-	}
-
-	/*
-	 * Call the ex parser.  The ex parser will be in one of two states
-	 * when it returns:
-	 *
-	 *	ES_PARSE:	Done.
-	 *	ES_RUNNING:	Not done.
-	 *
-	 * The first one is easy, clean up and return.  The second means we
-	 * clean up and return, but also set things up so that we'll continue
-	 * the command (there's additional code in the main vi loop to make
-	 * this happen.)
-	 */
-	if (ex_cmd(sp))
-		return (1);
-
-	switch (gp->cm_state) {
-	case ES_PARSE:
+	for (;;) {
 		/*
-		 * We've just completed an ex command, catch up on messages,
-		 * and possibly leave canonical mode.  This is all done by
-		 * the screen so that it's possible to do it in a variety of
-		 * different ways.
+		 * !!!
+		 * There may already be an ex command waiting.  If so, we
+		 * continue with it.
 		 */
-		F_SET(sp, S_COMPLETE_EX);
-		return (v_ex_done(sp, vp));
-	case ES_RUNNING:
-		vip->run_func = EXP(sp)->run_func;
-		vip->cm_state = VS_RUNNING;
-		vip->cm_next = VS_EX_TEARDOWN2;
-		F_SET(vip, VIP_SKIPREFRESH);
-		break;
-	default:
-		abort();
+		if (!EXCMD_RUNNING(sp->gp)) {
+			/* Get a command. */
+			if (v_tcmd(sp, vp, ':', TXT_BS | TXT_PROMPT))
+				return (1);
+
+			/* If the user didn't enter anything, we're done. */
+			tp = sp->tiq.cqh_first;
+			if (tp->term == TERM_BS) {
+				vp->m_final.lno = sp->lno;
+				vp->m_final.cno = sp->cno;
+				return (0);
+			}
+
+			/*
+			 * Push a command on the command stack.  The ex parser
+			 * removes and discards the structure when the command
+			 * finishes.
+			 *
+			 * Don't specify any of the E_* flags, we get correct
+			 * behavior because we're in vi mode.
+			 */
+			gp = sp->gp;
+			gp->excmd.cp = tp->lb;
+			gp->excmd.clen = tp->len;
+			F_INIT(&gp->excmd, 0);
+		}
+
+		/* Call the ex parser. */
+		if (ex_cmd(sp))
+			return (1);
+
+		/* Resolve messages. */
+		if (vs_ex_resolve(sp, &colon))
+			return (1);
+
+		/* Return regardless if we left the screen .*/
+		if (!colon || F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+			break;
 	}
-	return (0);
+	return (v_ex_done(sp, vp));
 }
 
 /*
@@ -471,8 +387,6 @@ v_ex_done(sp, vp)
 {
 	recno_t lno;
 	size_t len;
-
-	ex_fflush(sp);
 
 	/*
 	 * The only cursor modifications are real, however, the underlying

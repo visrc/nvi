@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.4 1995/06/23 19:22:16 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:22:16 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.5 1995/09/21 10:58:11 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,11 +21,9 @@ static char sccsid[] = "$Id: ex_write.c,v 10.4 1995/06/23 19:22:16 bostic Exp $ 
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -233,6 +231,9 @@ exwr(sp, cmdp, cmd)
 			 */
 			F_CLR(sp->frp, FR_RDONLY | FR_TMPEXIT | FR_TMPFILE);
 			F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
+
+			/* Notify the screen. */
+			(void)sp->gp->scr_rename(sp);
 		} else
 			set_alt_name(sp, name);
 		break;

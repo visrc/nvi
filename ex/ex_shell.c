@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.9 1995/07/08 12:44:44 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:44:44 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.10 1995/09/21 10:57:56 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -18,11 +18,9 @@ static char sccsid[] = "$Id: ex_shell.c,v 10.9 1995/07/08 12:44:44 bostic Exp $ 
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -67,9 +65,12 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 	char *p;
 
 	/* Flush messages and enter canonical mode. */
-	if (sp->gp->scr_canon(sp, 1)) {
-		ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
-		return (1);
+	if (F_ISSET(sp, S_VI)) {
+		if (sp->gp->scr_screen(sp, S_EX)) {
+			ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
+			return (1);
+		}
+		F_SET(sp, S_SCREEN_READY);
 	}
 
 	/* Don't overwrite the last line of the screen. */
@@ -102,7 +103,9 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 		_exit(127);
 		/* NOTREACHED */
 	default:			/* Parent. */
-		rval = proc_wait(sp, (long)pid, cmd, 0);
+		rval = 0;
+		if (proc_wait(sp, (long)pid, cmd, 0))
+			rval = 1;
 		break;
 	}
 	return (rval);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.7 1995/07/08 12:44:15 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:44:15 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.8 1995/09/21 10:57:38 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,6 @@ static char sccsid[] = "$Id: ex_filter.c,v 10.7 1995/07/08 12:44:15 bostic Exp $
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -103,9 +102,12 @@ filtercmd(sp, cmdp, fm, tm, rp, cmd, ftype)
 	 * to restore the original terminal modes for read filters is so that
 	 * users can do things like ":r! cat /dev/tty".
 	 */
-	if (ftype == FILTER_READ && sp->gp->scr_canon(sp, 1)) {
-		ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
-		return (1);
+	if (ftype == FILTER_READ && F_ISSET(sp, S_VI)) {
+		if (sp->gp->scr_screen(sp, S_EX)) {
+			ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
+			return (1);
+		}
+		F_SET(sp, S_SCREEN_READY);
 	}
 
 	/* Fork off the utility process. */
@@ -122,8 +124,7 @@ err:		if (input[0] != -1)
 			(void)close(output[0]);
 		if (output[1] != -1)
 			(void)close(output[1]);
-		rval = 1;
-		goto uwait;
+		return (1);
 	case 0:				/* Utility. */
 		/*
 		 * Redirect stdin from the read end of the input pipe, and

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.7 1995/07/08 12:44:33 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:44:33 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.8 1995/09/21 10:58:08 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,9 @@ static char sccsid[] = "$Id: ex_util.c,v 10.7 1995/07/08 12:44:33 bostic Exp $ (
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -137,6 +135,20 @@ ex_ncheck(sp, force)
 }
 
 /*
+ * ex_e_resize --
+ *	Resize event handler for ex.
+ *
+ * PUBLIC: void ex_e_resize __P((SCR *));
+ */
+void
+ex_e_resize(sp)
+	SCR *sp;
+{
+	sp->rows = O_VAL(sp, O_LINES);
+	sp->cols = O_VAL(sp, O_COLUMNS);
+}
+
+/*
  * ex_message --
  *	Display a few common messages.
  *
@@ -159,13 +171,13 @@ ex_message(sp, p, which)
 		break;
 	case EXM_NOCANON:
 		msgq(sp, M_ERR,
-	"268|That form of the %s command requires the ex terminal interface",
+	"272|That form of the %s command requires the ex terminal interface",
 		    p);
 		break;
 	case EXM_NOFILEYET:
 		if (p == NULL)
 			msgq(sp, M_ERR,
-			    "281|Command failed, no file read in yet.");
+			    "274|Command failed, no file read in yet.");
 		else
 			msgq(sp, M_ERR,
 	"173|The %s command requires that a file have already been read in", p);

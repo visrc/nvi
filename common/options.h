@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 10.2 1995/05/18 15:36:51 bostic Exp $ (Berkeley) $Date: 1995/05/18 15:36:51 $
+ *	$Id: options.h,v 10.3 1995/09/21 10:56:14 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:14 $
  */
 
 struct _option {
@@ -54,5 +54,8 @@ struct _optlist {
 
 /* Option argument to opts_dump(). */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
+
+/* Options array. */
+extern OPTLIST const optlist[];
 
 #include "options_define.h"

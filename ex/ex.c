@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.7 1995/07/05 22:28:56 bostic Exp $ (Berkeley) $Date: 1995/07/05 22:28:56 $";
+static char sccsid[] = "$Id: ex.c,v 10.8 1995/09/21 10:57:13 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,11 +21,9 @@ static char sccsid[] = "$Id: ex.c,v 10.7 1995/07/05 22:28:56 bostic Exp $ (Berke
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -33,7 +31,7 @@ static char sccsid[] = "$Id: ex.c,v 10.7 1995/07/05 22:28:56 bostic Exp $ (Berke
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 #if defined(DEBUG) && defined(COMLOG)
 static void	ex_comlog __P((SCR *, EXCMD *));
@@ -46,203 +44,120 @@ static void	ex_unknown __P((SCR *, char *, size_t));
 
 /*
  * ex --
- *	Ex event handler.
+ *	Main ex loop.
  *
- * PUBLIC: int ex __P((SCR *, EVENT *));
+ * PUBLIC: int ex __P((SCR **));
  */
 int
-ex(sp, evp)
-	SCR *sp;
-	EVENT *evp;
+ex(spp)
+	SCR **spp;
 {
 	EX_PRIVATE *exp;
 	GS *gp;
+	MSG *mp;
+	SCR *sp;
 	TEXT *tp;
-	int complete;
+	u_int32_t flags;
 
-	/* Local variables. */
+	sp = *spp;
 	gp = sp->gp;
 	exp = EXP(sp);
 
-	switch (evp->e_event) {
-	case E_CHARACTER:
-		break;
-	case E_EOF:
-	case E_ERR:
-		F_SET(sp, S_EXIT_FORCE);
-		goto done;
-	case E_INTERRUPT:
-		/* Interrupts get passed on to other handlers. */
-		if (gp->cm_state == ES_RUNNING)
+	/* Start the ex screen. */
+	if (gp->scr_screen(sp, S_EX))
+		return (1);
+	F_SET(sp, S_SCREEN_READY);
+
+	/* Initialize the rows/columns. */
+	ex_e_resize(sp);
+
+	/* Ready for messages. */
+	F_SET(sp, S_SCREEN_READY);
+
+	/* Flush any saved messages. */
+	while ((mp = gp->msgq.lh_first) != NULL) {
+		(void)gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
+		LIST_REMOVE(mp, q);
+		free(mp->buf);
+		free(mp);
+	}
+
+	/* Display new file status line. */
+	if (F_ISSET(sp, S_STATUS)) {
+		F_CLR(sp, S_STATUS);
+		msg_status(sp, sp->lno, 0);
+	}
+
+	/* If reading from a file, errors should have name and line info. */
+	if (!F_ISSET(gp, G_STDIN_TTY)) {
+		gp->excmd.if_lno = 1;
+		gp->excmd.if_name = "input";
+	}
+
+	/*
+	 * !!!
+	 * Initialize the text flags.  The beautify edit option historically
+	 * applied to ex command input read from a file.  In addition, the
+	 * first time a ^H was discarded from the input, there was a message,
+	 * "^H discarded", that was displayed.  We don't bother.
+	 */
+	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR);
+	for (;; ++gp->excmd.if_lno) {
+		/* Set the flags the user can reset. */
+		if (O_ISSET(sp, O_BEAUTIFY))
+			LF_SET(TXT_BEAUTIFY);
+		if (O_ISSET(sp, O_PROMPT))
+			LF_SET(TXT_PROMPT);
+
+		/* Clear any current interrupts, and get a command. */
+		F_CLR(gp, G_INTERRUPTED);
+		if (ex_txt(sp, &sp->tiq, ':', flags))
+			return (1);
+		if (F_ISSET(gp, G_INTERRUPTED)) {
+			(void)ex_puts(sp, "\n");
+			(void)ex_fflush(sp);
+			continue;
+		}
+
+		/* Initialize the command structure. */
+		CLEAR_EX_PARSER(&gp->excmd);
+
+		/*
+		 * If the user entered a single carriage return, send
+		 * ex_cmd() a separator -- it discards single newlines.
+		 */
+		tp = sp->tiq.cqh_first;
+		if (tp->len == 0) {
+			gp->excmd.cp = " ";	/* __TK__ why not |? */
+			gp->excmd.clen = 1;
+		} else {
+			gp->excmd.cp = tp->lb;
+			gp->excmd.clen = tp->len;
+		}
+		F_INIT(&gp->excmd, E_NRSEP);
+
+		if (ex_cmd(sp))
+			return (1);
+
+		/* If switching screens or into vi, return. */
+		if (F_ISSET(sp, S_SSWITCH | S_VI))
 			break;
 
 		/*
-		 * Otherwise, display an interrupt message and restart in
-		 * command mode.
+		 * If we're exiting this screen, move to the next one.  By
+		 * definition, this means returning into vi, so return to the
+		 * main editor loop.  The ordering is careful, don't discard
+		 * the contents of sp until the end.
 		 */
-		gp->cm_state = ES_GET_CMD;
-		ex_message(sp, NULL, EXM_INTERRUPT);
-		break;
-	case E_REPAINT:
-		return (0);
-	case E_RESIZE:
-		sp->rows = O_VAL(sp, O_LINES);
-		sp->cols = O_VAL(sp, O_COLUMNS);
-		return (0);
-	case E_SIGCONT:
-		if (gp->cm_state != ES_RUNNING ||
-		    gp->cm_next != ES_ITEXT_TEARDOWN)
-			return (0);
-		/*
-		 * !!!
-		 * Historically, it was as if the input was interrupted.
-		 * Dummy up an interrupt event.
-		 */
-		evp->e_event = E_INTERRUPT;
-		break;
-	case E_START:
-		sp->rows = O_VAL(sp, O_LINES);
-		sp->cols = O_VAL(sp, O_COLUMNS);
-
-		/* If reading from a file, messages should have line info. */
-		if (!F_ISSET(gp, G_STDIN_TTY)) {
-			sp->if_lno = 0;
-			sp->if_name = strdup("input");
-		}
-		gp->cm_state = ES_GET_CMD;
-		break;
-	case E_STOP:
-		return (0);
-	default:
-		abort();
-		/* NOTREACHED */
-	}
-
-next_state:
-	switch (gp->cm_state) {
-	/*
-	 * ES_RUNNING:
-	 *
-	 * A command loop is running, so it gets the event.  Move to the
-	 * next state when the handler finishes if we're in ex, otherwise
-	 * return into vi.
-	 */
-	case ES_RUNNING:
-		if (exp->run_func(sp, evp, &complete))
-			return (1);
-		if (!complete)
-			return (0);
-
-		gp->cm_state = gp->cm_next;
-		goto next_state;
-
-	/*
-	 * ES_GET_CMD:
-	 *
-	 * Initial command state.
-	 */
-	case ES_GET_CMD:
-		/* Completed a command, tell screen to catch up on messages. */
-		ex_fflush(sp);
-		F_SET(sp, S_COMPLETE);
-
-		/* If we're exiting the screen, clean up. */
-done:		switch (F_ISSET(sp, S_VI | S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
-		case S_VI:
-			gp->cm_state = ES_PARSE;
-			return (0);
-		case S_EXIT_FORCE:			/* Exit the file. */
-		case S_EXIT:				/* Exit the file. */
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
 			if (file_end(sp, NULL, F_ISSET(sp, S_EXIT_FORCE)))
-				break;
-			sp->nextdisp = NULL;
-			gp->cm_state = ES_PARSE;
-			return (0);
-		case S_SSWITCH:
-			return (0);
+				return (1);
+			*spp = screen_next(sp);
+			return (screen_end(sp));
 		}
-
-		/*
-		 * !!!
-		 * Set up text flags.  The beautify edit option historically
-		 * applied to ex command input read from a file.  In addition,
-		 * the first time a ^H was discarded from the input, a message
-		 * "^H discarded" was displayed.  We don't bother.
-		 */
-		FL_INIT(exp->im_flags, TXT_BACKSLASH | TXT_CNTRLD | TXT_CR);
-		if (O_ISSET(sp, O_BEAUTIFY))
-			FL_SET(exp->im_flags, TXT_BEAUTIFY);
-		if (O_ISSET(sp, O_PROMPT))
-			FL_SET(exp->im_flags, TXT_PROMPT);
-
-		/* Increment the line count. */
-		++sp->if_lno;
-
-		if (ex_txt_setup(sp, ':'))
-			return (1);
-		return (0);
-
-	/*
-	 * ES_CTEXT_TEARDOWN:
-	 *
-	 * We have just ended command text input mode.  Tear down the setup
-	 * and execute the command.
-	 */
-	 case ES_CTEXT_TEARDOWN:
-		/*
-		 * If the user entered a single carriage return, hand ex_cmd()
-		 * a space -- it discards single newlines.
-		 */
-		tp = exp->im_tiq.cqh_first;
-		if (tp->len == 0) {
-			tp->len = 1;
-			tp->lb[0] = ' ';	/* __TK__ why not '|'? */
-		}
-
-		gp->excmd.cp = tp->lb;
-		gp->excmd.clen = tp->len;
-		F_INIT(&gp->excmd, E_NEEDSEP);
-		gp->cm_state = ES_PARSE;
-		goto next_state;
-
-	/*
-	 * ES_ITEXT_TEARDOWN:
-	 *
-	 * We have just ended text input mode.  Tear down the setup and
-	 * finish the command.
-	 */
-	case ES_ITEXT_TEARDOWN:
-		if (ex_aci_td(sp))
-			return (1);
-		gp->cm_state = ES_PARSE;
-		goto next_state;
-
-	/*
-	 * ES_PARSE:
-	 *	Start the parser.
-	 * ES_PARSE_CONT:
-	 *	An ES_RUNNING function just finished.
-	 * ES_PARSE_RESTART:
-	 *	We switched screens in the middle of a command.
-	 *
-	 * Start or continue the parser.
-	 */
-	case ES_PARSE:
-	case ES_PARSE_CONT:
-	case ES_PARSE_RESTART:
-		if (ex_cmd(sp))
-			return (1);
-		if (gp->cm_state == ES_RUNNING)
-			return (0);
-		gp->cm_state = ES_GET_CMD;
-		goto next_state;
-	default:
-		abort();
-		/* NOTREACHED */
+		(void)ex_fflush(sp);
 	}
-
-	abort();
-	/* NOTREACHED */
+	return (0);
 }
 
 /*
@@ -280,13 +195,13 @@ ex_cmd(sp)
 	GS *gp;
 	MARK cur;
 	recno_t lno;
-	size_t len;
+	size_t arg1_len, len;
 	u_int32_t flags;
 	long ltmp;
-	int at_found, gv_found, at_norange_found;
+	int at_found, gv_found;
 	int ch, cnt, delim, isaddr, namelen;
 	int newscreen, nf, notempty, tmp, vi_address;
-	char *p, *s, *t;
+	char *arg1, *p, *s, *t;
 
 	gp = sp->gp;
 	exp = EXP(sp);
@@ -296,53 +211,13 @@ ex_cmd(sp)
 	 * This means that *everything* must be resolved when we leave
 	 * this function for any reason.
 	 */
-	if ((ecp = gp->ecq.lh_first) == NULL)
-		abort();
+loop:	ecp = gp->ecq.lh_first;
 
-loop:	switch (gp->cm_state) {
-	/*
-	 * ES_ITEXT_TEARDOWN:
-	 *
-	 * We have just ended text input mode CALLED FROM VI.  Tear down
-	 * the setup and finish the command.
-	 */
-	case ES_ITEXT_TEARDOWN:
-		if (ex_aci_td(sp))
-			return (1);
-		gp->cm_state = ES_PARSE;
-		goto loop;
-
-	/*
-	 * ES_PARSE:
-	 *
-	 * Starting to parse a new command, do setup and start.
-	 */
-	case ES_PARSE:
-		ecp->sep = F_ISSET(ecp, E_NEEDSEP) ? SEP_NOTSET : SEP_NONE;
-		break;
-
-	/*
-	 * ES_PARSE_CONT:
-	 *
-	 * Continue after calling an underlying function.
-	 */
-	case ES_PARSE_CONT:
-		gp->cm_state = ES_PARSE;
-		goto func_restart;
-
-	/*
-	 * ES_PARSE_RESTART:
-	 *
-	 * Continue after switching screens or files in a command.
-	 */
-	case ES_PARSE_RESTART:
-		gp->cm_state = ES_PARSE;
-		break;
-
-	default:
-		abort();
+	/* If we're reading a command from a file, set up error information. */
+	if (ecp->if_name != NULL) {
+		gp->if_lno = ecp->if_lno;
+		gp->if_name = ecp->if_name;
 	}
-
 
 	/*
 	 * If a move to the end of the file is scheduled for this command,
@@ -350,7 +225,7 @@ loop:	switch (gp->cm_state) {
 	 */
 	if (F_ISSET(ecp, E_MOVETOEND)) {
 		if (file_lline(sp, &sp->lno))
-			return (1);
+			goto rfail;
 		if (sp->lno == 0)
 			sp->lno = 1;
 		sp->cno = 0;
@@ -359,26 +234,28 @@ loop:	switch (gp->cm_state) {
 
 	/* If we found a newline, increment the count now. */
 	if (F_ISSET(ecp, E_NEWLINE)) {
+		++gp->if_lno;
+		++ecp->if_lno;
 		F_CLR(ecp, E_NEWLINE);
-		++sp->if_lno;
 	}
 
 	/* (Re)initialize the EXCMD structure. */
-	ZERO_EXCMD(ecp);
+	CLEAR_EX_CMD(ecp);
 
 	/* Initialize the argument structures. */
 	if (argv_init(sp, ecp))
 		goto err;
 
 	/* Initialize +cmd, saved command information. */
-	ecp->arg1 = NULL;
+	arg1 = NULL;
 	ecp->save_cmdlen = 0;
 
 	/* Skip <blank>s, empty lines.  */
 	for (notempty = 0; ecp->clen > 0; ++ecp->cp, --ecp->clen)
-		if ((ch = *ecp->cp) == '\n')
-			++sp->if_lno;
-		else if (isblank(ch))
+		if ((ch = *ecp->cp) == '\n') {
+			++gp->if_lno;
+			++ecp->if_lno;
+		} else if (isblank(ch))
 			notempty = 1;
 		else
 			break;
@@ -439,12 +316,11 @@ loop:	switch (gp->cm_state) {
 	if (ecp->clen == 0 &&
 	    (!notempty || F_ISSET(sp, S_VI) || F_ISSET(ecp, E_BLIGNORE))) {
 		if (ex_load(sp))
-			return (1);
-		if ((ecp = gp->ecq.lh_first) == NULL)
-			abort();
-		if (ecp->clen != 0)
-			goto loop;
-		return (0);
+			goto rfail;
+		ecp = gp->ecq.lh_first;
+		if (ecp->clen == 0)
+			goto rsuccess;
+		goto loop;
 	}
 
 	/*
@@ -457,13 +333,13 @@ loop:	switch (gp->cm_state) {
 	 * command character, but this is the ex parser, and I've been wrong
 	 * before.
 	 */
-	if (ecp->sep == NOTSET)
-		ecp->sep = ecp->clen == 0 || ecp->clen == 1 &&
-		    ecp->cp[0] == '\004' ? SEP_NEED_NR : SEP_NEED_N;
+	if (F_ISSET(ecp, E_NRSEP) &&
+	    ecp->clen != 0 && (ecp->clen != 1 || ecp->cp[0] != '\004'))
+		F_CLR(ecp, E_NRSEP);
 
 	/* Parse command addresses. */
 	if (ex_range(sp, ecp, &tmp))
-		return (1);
+		goto rfail;
 	if (tmp)
 		goto err;
 
@@ -753,7 +629,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	 * special cases we move past their special argument(s).  Then, we
 	 * do normal command processing on whatever is left.  Barf-O-Rama.
 	 */
-	ecp->arg1_len = 0;
+	arg1_len = 0;
 	ecp->save_cmd = ecp->cp;
 	if (ecp->cmd == &cmds[C_EDIT] || ecp->cmd == &cmds[C_EX] ||
 	    ecp->cmd == &cmds[C_NEXT] || ecp->cmd == &cmds[C_VISUAL_VI]) {
@@ -786,7 +662,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		if (ecp->clen > 0 && *ecp->cp == '+') {
 			++ecp->cp;
 			--ecp->clen;
-			for (ecp->arg1 = p = ecp->cp;
+			for (arg1 = p = ecp->cp;
 			    ecp->clen > 0; --ecp->clen, ++ecp->cp) {
 				ch = *ecp->cp;
 				if (IS_ESCAPE(sp,
@@ -797,7 +673,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 					break;
 				*p++ = ch;
 			}
-			ecp->arg1_len = ecp->cp - ecp->arg1;
+			arg1_len = ecp->cp - arg1;
 
 			/* Reset, so the first argument isn't reparsed. */
 			ecp->save_cmd = ecp->cp;
@@ -877,8 +753,10 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		if (IS_ESCAPE(sp, ecp, ch) && ecp->clen > 1) {
 			tmp = ecp->cp[1];
 			if (tmp == '\n' || tmp == '|') {
-				if (tmp == '\n')
-					++sp->if_lno;
+				if (tmp == '\n') {
+					++gp->if_lno;
+					++ecp->if_lno;
+				}
 				--ecp->clen;
 				++ecp->cp;
 				++cnt;
@@ -1196,7 +1074,7 @@ end_case23:		break;
 			 * stack.
 			 */
 			if (ex_line(sp, ecp, &cur, &isaddr, &tmp))
-				return (1);
+				goto rfail;
 			if (tmp)
 				goto err;
 
@@ -1454,14 +1332,12 @@ addr_verify:
 	 * been echoed by the tty driver.  It's OK if vi calls us -- we won't
 	 * be in ex mode so we'll do nothing.
 	 */
-	if (ecp->sep != SEP_NONE) {
+	if (F_ISSET(ecp, E_NRSEP)) {
 		if (sp->ep != NULL &&
-		    F_ISSET(sp, S_EX) && F_ISSET(gp, G_STDIN_TTY))
-			if (ecp->sep == SEP_NEED_NR &&
-			    (F_ISSET(ecp, E_USELASTCMD) ||
-			    ecp->cmd == &cmds[C_SCROLL]))
-				gp->scr_ex_adjust(sp, EX_TERM_SCROLL);
-		ecp->sep = SEP_NONE;
+		    F_ISSET(sp, S_EX) && F_ISSET(gp, G_STDIN_TTY) &&
+		    (F_ISSET(ecp, E_USELASTCMD) || ecp->cmd == &cmds[C_SCROLL]))
+			gp->scr_ex_adjust(sp, EX_TERM_SCROLL);
+		F_CLR(ecp, E_NRSEP);
 	}
 
 	/* Call the underlying function for the ex command. */
@@ -1479,14 +1355,7 @@ addr_verify:
 		    ecp->cmd->name);
 	}
 #endif
-	/*
-	 * If the state has changed, return for now, and continue this
-	 * command later.
-	 */
-	if (gp->cm_state == ES_RUNNING)
-		return (0);
 
-func_restart:
 	/*
 	 * Integrate any offset parsed by the underlying command, and make
 	 * sure the referenced line exists.
@@ -1544,8 +1413,8 @@ func_restart:
 		 */
 		LF_INIT(FL_ISSET(ecp->iflags, E_C_HASH | E_C_LIST | E_C_PRINT));
 		if (!LF_ISSET(E_C_HASH | E_C_LIST | E_C_PRINT | E_NOAUTO) &&
-		    !F_ISSET(sp, S_EX_GLOBAL) && O_ISSET(sp, O_AUTOPRINT) &&
-		    F_ISSET(ecp, E_AUTOPRINT))
+		    !F_ISSET(sp, S_EX_GLOBAL) &&
+		    O_ISSET(sp, O_AUTOPRINT) && F_ISSET(ecp, E_AUTOPRINT))
 			LF_INIT(E_C_PRINT);
 
 		if (LF_ISSET(E_C_HASH | E_C_LIST | E_C_PRINT)) {
@@ -1571,24 +1440,24 @@ func_restart:
 	 * that it will still fit because we discarded at least one space
 	 * and the + character.
 	 */
-	if (ecp->arg1_len != 0) {
+	if (arg1_len != 0) {
 		/* Add in a command separator. */
 		*--ecp->save_cmd = '\n';
 		++ecp->save_cmdlen;
 
 		/*
-		 * If the last character of the + command were a <literal next>
+		 * If the last character of the + command was a <literal next>
 		 * character, it would be treated differently because of the
 		 * append.  Quote it, if necessary.
 		 */
-		if (IS_ESCAPE(sp, ecp, ecp->arg1[ecp->arg1_len - 1])) {
+		if (IS_ESCAPE(sp, ecp, arg1[arg1_len - 1])) {
 			*--ecp->save_cmd = CH_LITERAL;
 			++ecp->save_cmdlen;
 		}
 
-		ecp->save_cmd -= ecp->arg1_len;
-		ecp->save_cmdlen += ecp->arg1_len;
-		memmove(ecp->save_cmd, ecp->arg1, ecp->arg1_len);
+		ecp->save_cmd -= arg1_len;
+		ecp->save_cmdlen += arg1_len;
+		memmove(ecp->save_cmd, arg1, arg1_len);
 
 		/*
 		 * Any commands executed from a +cmd are executed starting at
@@ -1612,21 +1481,21 @@ func_restart:
 	 * However, if we switch screens (either by exiting or by an explicit
 	 * command), we have no way of knowing where to put output messages,
 	 * and, since we don't control screens here, we could screw up the
-	 * upper layers, (e.g. we could exit/reenter a screen multiple times)
-	 * and the main event driver can't handle that correctly.  So, return
-	 * and continue after we've got a new screen.
+	 * upper layers, (e.g. we could exit/reenter a screen multiple times).
+	 * So, return and continue after we've got a new screen.
 	 *
 	 * If we've changed screens or underlying files, any pending global or
-	 * v command, or @ buffer that has associated line numbers, has to be
+	 * v command, or @ buffer that has associated addresses, has to be
 	 * discarded.  This is historic practice for globals, and necessary for
-	 * @ buffers that had associated line numbers.
+	 * @ buffers that had associated addresses.
 	 */
 	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
-		at_found = at_norange_found = gv_found = 0;
+		at_found = gv_found = 0;
 		for (ecp = sp->gp->ecq.lh_first;
 		    ecp != NULL; ecp = ecp->q.le_next)
 			switch (ecp->agv_flags) {
 			case 0:
+			case AGV_AT_NORANGE:
 				break;
 			case AGV_AT:
 				if (!at_found) {
@@ -1635,9 +1504,6 @@ func_restart:
 "090|@ with range pending when file/screen changed; commands discarded");
 				}
 				break;
-			case AGV_AT_NORANGE:
-				at_norange_found = 1;
-				break;
 			case AGV_GLOBAL:
 			case AGV_V:
 				if (!gv_found) {
@@ -1645,14 +1511,13 @@ func_restart:
 					msgq(sp, M_ERR,
 "091|Global/v command pending when file/screen changed; commands discarded");
 				}
+				break;
 			default:
 				abort();
 			}
 		if (at_found || gv_found)
 			ex_discard(sp);
-		else if (at_norange_found)
-			gp->cm_state = ES_PARSE_RESTART;
-		return (0);
+		goto rsuccess;
 	}
 
 	/* The @/global commands may be infinitely looping, check interrupts. */
@@ -1663,11 +1528,12 @@ func_restart:
 	/* NOTREACHED */
 
 err:	/*
-	 * On error, we discard any keys or pending commands remaining, as well
-	 * as any keys that were mapped and waiting.  The save_cmdlen test is
-	 * not necessarily correct.  If we fail early enough we don't know if
-	 * the entire string was a single command or not.  Try and guess, as
-	 * it's useful to know if commands than the current one were discarded.
+	 * On command failure, we discard keys and pending commands remaining,
+	 * as well as any keys that were mapped and waiting.  The save_cmdlen
+	 * test is not necessarily correct.  If we fail early enough we don't
+	 * know if the entire string was a single command or not.  Guess, as
+	 * it's useful to know if commands other than the current one are being
+	 * discarded.
 	 */
 	if (ecp->save_cmdlen == 0)
 		for (; ecp->clen; --ecp->clen) {
@@ -1688,7 +1554,15 @@ err:	/*
 	}
 	if (v_event_flush(sp, CH_MAPPED))
 		msgq(sp, M_ERR, "093|Ex command failed: mapped keys discarded");
-	return (0);
+
+rfail:	tmp = 1;
+	if (0)
+rsuccess:	tmp = 0;
+
+	/* Turn off any file name error information. */
+	gp->if_name = NULL;
+
+	return (tmp);
 }
 
 /*
@@ -1703,6 +1577,7 @@ ex_range(sp, ecp, errp)
 	EXCMD *ecp;
 	int *errp;
 {
+	enum { ADDR_FOUND, ADDR_NEED, ADDR_NONE } addr;
 	GS *gp;
 	EX_PRIVATE *exp;
 	MARK m;
@@ -1733,7 +1608,7 @@ ex_range(sp, ecp, errp)
 	 */
 	gp = sp->gp;
 	exp = EXP(sp);
-	for (ecp->addr = ADDR_NONE, ecp->addrcnt = 0; ecp->clen > 0;)
+	for (addr = ADDR_NONE, ecp->addrcnt = 0; ecp->clen > 0;)
 		switch (*ecp->cp) {
 		case '%':		/* Entire file. */
 			/* Vi ex address searches didn't permit % signs. */
@@ -1756,7 +1631,7 @@ ex_range(sp, ecp, errp)
 			 *
 			 * If it's an empty file, the first line is 0, not 1.
 			 */
-			if (ecp->addr == ADDR_FOUND) {
+			if (addr == ADDR_FOUND) {
 				ex_badaddr(sp, NULL, A_COMBO, NUM_OK);
 				*errp = 1;
 				return (0);
@@ -1766,7 +1641,7 @@ ex_range(sp, ecp, errp)
 			ecp->addr1.lno = ecp->addr2.lno == 0 ? 0 : 1;
 			ecp->addr1.cno = ecp->addr2.cno = 0;
 			ecp->addrcnt = 2;
-			ecp->addr = ADDR_FOUND;
+			addr = ADDR_FOUND;
 			++ecp->cp;
 			--ecp->clen;
 			break;
@@ -1781,7 +1656,7 @@ ex_range(sp, ecp, errp)
 				*errp = 1;
 				return (0);
 			}
-			if (ecp->addr != ADDR_FOUND)
+			if (addr != ADDR_FOUND)
 				switch (ecp->addrcnt) {
 				case 0:
 					ecp->addr1.lno = sp->lno;
@@ -1811,7 +1686,7 @@ ex_range(sp, ecp, errp)
 					sp->cno = ecp->addr2.cno;
 					break;
 				}
-			ecp->addr = ADDR_NEED;
+			addr = ADDR_NEED;
 			/* FALLTHROUGH */
 		case ' ':		/* Whitespace. */
 		case '\t':		/* Whitespace. */
@@ -1826,7 +1701,7 @@ ex_range(sp, ecp, errp)
 				return (0);
 			if (!isaddr)
 				goto ret;
-			if (ecp->addr == ADDR_FOUND) {
+			if (addr == ADDR_FOUND) {
 				ex_badaddr(sp, NULL, A_COMBO, NUM_OK);
 				*errp = 1;
 				return (0);
@@ -1845,7 +1720,7 @@ ex_range(sp, ecp, errp)
 				ecp->addr2 = m;
 				break;
 			}
-			ecp->addr = ADDR_FOUND;
+			addr = ADDR_FOUND;
 			break;
 		}
 
@@ -1857,7 +1732,7 @@ ex_range(sp, ecp, errp)
 ret:	if (F_ISSET(ecp, E_VISEARCH))
 		return (0);
 
-	if (ecp->addr == ADDR_NEED)
+	if (addr == ADDR_NEED)
 		switch (ecp->addrcnt) {
 		case 0:
 			ecp->addr1.lno = sp->lno;

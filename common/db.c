@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.6 1995/07/04 12:43:19 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:19 $";
+static char sccsid[] = "$Id: db.c,v 10.7 1995/09/21 10:56:02 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,14 +21,13 @@ static char sccsid[] = "$Id: db.c,v 10.6 1995/07/04 12:43:19 bostic Exp $ (Berke
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 static __inline int scr_update __P((SCR *, recno_t, lnop_t, int));
 
@@ -166,13 +165,13 @@ file_dline(sp, lno)
 	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
-	SIGBLOCK(sp->gp);
+	SIGBLOCK;
 	if (ep->db->del(ep->db, &key, 0) == 1) {
 		msgq(sp, M_SYSERR, "003|%s/%d: unable to delete line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
-	SIGUNBLOCK(sp->gp);
+	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno <= ep->c_lno)
@@ -240,13 +239,13 @@ file_aline(sp, update, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	SIGBLOCK(sp->gp);
+	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
 		msgq(sp, M_SYSERR, "004|%s/%d: unable to append to line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
-	SIGUNBLOCK(sp->gp);
+	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno < ep->c_lno)
@@ -331,13 +330,13 @@ file_iline(sp, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	SIGBLOCK(sp->gp);
+	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
 		msgq(sp, M_SYSERR, "005|%s/%d: unable to insert at line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
-	SIGUNBLOCK(sp->gp);
+	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno >= ep->c_lno)
@@ -394,13 +393,13 @@ file_sline(sp, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	SIGBLOCK(sp->gp);
+	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
 		msgq(sp, M_SYSERR, "006|%s/%d: unable to store line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
-	SIGUNBLOCK(sp->gp);
+	SIGUNBLOCK;
 
 	/* Flush the cache, before logging or screen update. */
 	if (lno == ep->c_lno)
@@ -526,7 +525,7 @@ scr_update(sp, lno, op, current)
 	EXF *ep;
 	SCR *tsp;
 
-	if (F_ISSET(sp, S_EX | S_EX_CANON))
+	if (F_ISSET(sp, S_EX))
 		return (0);
 
 	ep = sp->ep;

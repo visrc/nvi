@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.4 1995/06/15 19:39:11 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:39:11 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.5 1995/09/21 10:57:54 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: ex_script.c,v 10.4 1995/06/15 19:39:11 bostic Exp $
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,10 +42,12 @@ int openpty __P((int *, int *, char *, struct termios *, struct winsize *));
 int openpty __P((int *, int *, char *, struct termios *, NULL));
 #endif
 
-static int sscr_getprompt __P((SCR *));
-static int sscr_init __P((SCR *));
-static int sscr_matchprompt __P((SCR *, char *, size_t, size_t *));
-static int sscr_setprompt __P((SCR *, char *, size_t));
+static void	sscr_check __P((SCR *));
+static int	sscr_getprompt __P((SCR *));
+static int	sscr_init __P((SCR *));
+static int	sscr_insert __P((SCR *));
+static int	sscr_matchprompt __P((SCR *, char *, size_t, size_t *));
+static int	sscr_setprompt __P((SCR *, char *, size_t));
 
 /*
  * ex_script -- : sc[ript][!] [file]
@@ -188,6 +189,7 @@ err:		if (sc->sh_master != -1)
 		return (1);
 
 	F_SET(sp, S_SCRIPT);
+	F_SET(sp->gp, G_SCRIPT);
 	return (0);
 }
 
@@ -368,7 +370,7 @@ err1:			rval = 1;
 
 /*
  * sscr_input --
- *	Take a line from the shell and insert it into the file.
+ *	Read any waiting shell input.
  *
  * PUBLIC: int sscr_input __P((SCR *));
  */
@@ -376,9 +378,56 @@ int
 sscr_input(sp)
 	SCR *sp;
 {
+	GS *gp;
+	struct timeval poll;
+	fd_set rdfd;
+	int maxfd;
+
+loop:	maxfd = 0;
+	FD_ZERO(&rdfd);
+	poll.tv_sec = 0;
+	poll.tv_usec = 0;
+
+	/* Set up the input mask. */
+	gp = sp->gp;
+	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+		if (F_ISSET(sp, S_SCRIPT)) {
+			FD_SET(sp->script->sh_master, &rdfd);
+			if (sp->script->sh_master > maxfd)
+				maxfd = sp->script->sh_master;
+		}
+
+	/* Check for input. */
+	switch (select(maxfd + 1, &rdfd, NULL, NULL, &poll)) {
+	case -1:
+		msgq(sp, M_SYSERR, "select");
+		return (1);
+	case 0:
+		return (0);
+	default:
+		break;
+	}
+
+	/* Read the input. */
+	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+		if (F_ISSET(sp, S_SCRIPT) &&
+		    FD_ISSET(sp->script->sh_master, &rdfd) && sscr_insert(sp))
+			return (1);
+	goto loop;
+}
+
+/*
+ * sscr_insert --
+ *	Take a line from the shell and insert it into the file.
+ */
+static int
+sscr_insert(sp)
+	SCR *sp;
+{
 	struct timeval tv;
 	CHAR_T *endp, *p, *t;
 	SCRIPT *sc;
+	fd_set rdfd;
 	recno_t lno;
 	size_t blen, len, tlen;
 	u_int value;
@@ -399,7 +448,6 @@ sscr_input(sp)
 more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 	case  0:			/* EOF; shell just exited. */
 		sscr_end(sp);
-		F_CLR(sp, S_SCRIPT);
 		rval = 0;
 		goto ret;
 	case -1:			/* Error or interrupt. */
@@ -432,10 +480,10 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 		if (!sscr_matchprompt(sp, t, len, &tlen) || tlen != 0) {
 			tv.tv_sec = 0;
 			tv.tv_usec = 100000;
-			FD_SET(sc->sh_master, &sp->rdfd);
-			FD_CLR(STDIN_FILENO, &sp->rdfd);
+			FD_ZERO(&rdfd);
+			FD_SET(sc->sh_master, &rdfd);
 			if (select(sc->sh_master + 1,
-			    &sp->rdfd, NULL, NULL, &tv) == 1) {
+			    &rdfd, NULL, NULL, &tv) == 1) {
 				memmove(bp, t, len);
 				endp = bp + len;
 				goto more;
@@ -540,8 +588,9 @@ sscr_end(sp)
 	if ((sc = sp->script) == NULL)
 		return (0);
 
-	/* Turn off the script flag. */
+	/* Turn off the script flags. */
 	F_CLR(sp, S_SCRIPT);
+	sscr_check(sp);
 
 	/* Close down the parent's file descriptors. */
 	if (sc->sh_master != -1)
@@ -558,4 +607,23 @@ sscr_end(sp)
 	sp->script = NULL;
 
 	return (rval);
+}
+
+/*
+ * sscr_check --
+ *	Set/clear the global scripting bit.
+ */
+static void
+sscr_check(sp)
+	SCR *sp;
+{
+	GS *gp;
+
+	gp = sp->gp;
+	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+		if (F_ISSET(sp, S_SCRIPT)) {
+			F_SET(gp, G_SCRIPT);
+			return;
+		}
+	F_CLR(gp, G_SCRIPT);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.6 1995/07/04 12:42:13 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:13 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.7 1995/09/21 10:57:40 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,9 @@ static char sccsid[] = "$Id: ex_global.c,v 10.6 1995/07/04 12:42:13 bostic Exp $
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -209,12 +207,6 @@ usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 	ecp->o_clen = len;
 	ecp->range_lno = OOBLNO;
 	FL_SET(ecp->agv_flags, cmd == GLOBAL ? AGV_GLOBAL : AGV_V);
-
-	/* Set up search state. */
-	ecp->start = cmdp->addr1.lno;
-	ecp->end = cmdp->addr2.lno;
-
-	/* Add to the command queue. */
 	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
 
 	/*
@@ -230,7 +222,8 @@ usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 	 * the layering much.
 	 */
 	cnt = INTERRUPT_CHECK;
-	for (start = ecp->start, end = ecp->end; start <= end; ++start) {
+	for (start = cmdp->addr1.lno,
+	    end = cmdp->addr2.lno; start <= end; ++start) {
 		if (cnt-- == 0) {
 			if (INTERRUPTED(sp)) {
 				LIST_REMOVE(ecp, q);

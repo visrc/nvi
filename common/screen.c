@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 10.2 1995/06/08 18:57:51 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:51 $";
+static char sccsid[] = "$Id: screen.c,v 10.3 1995/09/21 10:56:20 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,9 @@ static char sccsid[] = "$Id: screen.c,v 10.2 1995/06/08 18:57:51 bostic Exp $ (B
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -30,7 +28,7 @@ static char sccsid[] = "$Id: screen.c,v 10.2 1995/06/08 18:57:51 bostic Exp $ (B
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 #include "../ex/tag.h"
 
 /*
@@ -57,8 +55,6 @@ screen_init(gp, orig, spp)
 	sp->gp = gp;				/* All ref the GS structure. */
 
 	sp->ccnt = 2;				/* Anything > 1 */
-
-	FD_ZERO(&sp->rdfd);
 
 	/*
 	 * XXX
@@ -152,11 +148,11 @@ screen_end(sp)
 	 * If a created screen failed during initialization, it may not
 	 * be linked into the chain.
 	 */
-	if (sp->q.cqe_next != NULL) {
-		SIGBLOCK(sp->gp);
+	if (sp->q.cqe_next != NULL)
 		CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
-		SIGUNBLOCK(sp->gp);
-	}
+
+	/* No more messages. */
+	F_CLR(sp, S_SCREEN_READY);
 
 	rval = 0;
 	if (v_screen_end(sp))			/* End vi. */
@@ -172,10 +168,6 @@ screen_end(sp)
 			free(sp->argv);
 		}
 	}
-
-	/* Free any saved input file name. */
-	if (sp->if_name != NULL)
-		free(sp->if_name);
 
 	/* Free any text input. */
 	if (sp->tiq.cqh_first != NULL)
@@ -202,4 +194,36 @@ screen_end(sp)
 	FREE(sp, sizeof(SCR));
 
 	return (rval);
+}
+
+/*
+ * screen_next --
+ *	Return the next screen in the queue.
+ *
+ * PUBLIC: SCR *screen_next __P((SCR *));
+ */
+SCR *
+screen_next(sp)
+	SCR *sp;
+{
+	GS *gp;
+	SCR *next;
+
+	/* Try the display queue, without returning the current screen. */
+	gp = sp->gp;
+	for (next = gp->dq.cqh_first;
+	    next != (void *)&gp->dq; next = next->q.cqe_next)
+		if (next != sp)
+			break;
+	if (next != (void *)&gp->dq)
+		return (next);
+
+	/* Try the hidden queue; if found, move screen to the display queue. */
+	if (gp->hq.cqh_first != (void *)&gp->hq) {
+		next = gp->hq.cqh_first;
+		CIRCLEQ_REMOVE(&gp->hq, next, q);
+		CIRCLEQ_INSERT_HEAD(&gp->dq, next, q);
+		return (next);
+	}
+	return (NULL);
 }

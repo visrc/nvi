@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 10.4 1995/07/04 12:42:21 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:21 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.5 1995/09/21 10:58:05 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,18 +18,16 @@ static char sccsid[] = "$Id: ex_txt.c,v 10.4 1995/07/04 12:42:21 bostic Exp $ (B
 #include <bitstring.h>
 #include <ctype.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 /*
  * !!!
@@ -49,33 +47,35 @@ static char sccsid[] = "$Id: ex_txt.c,v 10.4 1995/07/04 12:42:21 bostic Exp $ (B
  */
 
 static int	txt_dent __P((SCR *, TEXT *));
-static void	txt_prompt __P((SCR *, TEXT *));
+static void	txt_prompt __P((SCR *, TEXT *, ARG_CHAR_T, u_int32_t));
 
 /*
- * ex_txt_setup --
- *	Set up for ex text input.
+ * ex_txt --
+ *	Get lines from the terminal for ex.
  *
- * PUBLIC: int ex_txt_setup __P((SCR *, ARG_CHAR_T));
+ * PUBLIC: int ex_txt __P((SCR *, TEXTH *, ARG_CHAR_T, u_int32_t));
  */
 int
-ex_txt_setup(sp, prompt)
+ex_txt(sp, tiqh, prompt, flags)
 	SCR *sp;
-	ARG_CHAR_T prompt;
-{
-	GS *gp;
-	EX_PRIVATE *exp;
-	TEXT *tp;
 	TEXTH *tiqh;
+	ARG_CHAR_T prompt;
+	u_int32_t flags;
+{
+	EVENT ev;
+	GS *gp;
+	TEXT ait, *ntp, *tp;
+	carat_t carat_st;
+	size_t cnt;
+	int rval;
 
-	gp = sp->gp;
-	exp = EXP(sp);
+	rval = 0;
 
 	/*
 	 * Get a TEXT structure with some initial buffer space, reusing the
 	 * last one if it's big enough.  (All TEXT bookkeeping fields default
 	 * to 0 -- text_init() handles this.)
 	 */
-	tiqh = &exp->im_tiq;
 	if (tiqh->cqh_first != (void *)tiqh) {
 		tp = tiqh->cqh_first;
 		if (tp->q.cqe_next != (void *)tiqh || tp->lb_len < 32) {
@@ -85,10 +85,9 @@ ex_txt_setup(sp, prompt)
 		tp->len = 0;
 	} else {
 newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
-			return (1);
+			goto err;
 		CIRCLEQ_INSERT_HEAD(tiqh, tp, q);
 	}
-	exp->im_tp = tp;
 
 	/* Set the starting line number. */
 	tp->lno = sp->lno + 1;
@@ -105,250 +104,246 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 	 * mode or not, and ex was in command mode.  This code matches historic
 	 * practice, but not 'cause it's easier.
 	 */
-	exp->im_prompt = prompt;
-	if (F_ISSET(sp->gp, G_STDIN_TTY)) {
-		if (FL_ISSET(exp->im_flags, TXT_AUTOINDENT)) {
-			FL_SET(exp->im_flags, TXT_EOFCHAR);
+	gp = sp->gp;
+	if (F_ISSET(gp, G_STDIN_TTY)) {
+		if (LF_ISSET(TXT_AUTOINDENT)) {
+			LF_SET(TXT_EOFCHAR);
 			if (v_txt_auto(sp, sp->lno, NULL, 0, tp))
-				return (1);
-		}
-		txt_prompt(sp, tp);
-	} else
-		FL_CLR(exp->im_flags, TXT_AUTOINDENT);
-
-	/* Other setup. */
-	exp->im_carat = C_NOTSET;
-
-	/* Set up default teardown state, move to text input loop. */
-	exp->run_func = ex_txt_ev;
-	gp->cm_state = ES_RUNNING;
-	gp->cm_next = ES_CTEXT_TEARDOWN;
-	return (0);
-}
-
-/*
- * ex_txt_ev --
- *	Handle text input events.
- *
- * PUBLIC: int ex_txt_ev __P((SCR *, EVENT *, int *));
- */
-int
-ex_txt_ev(sp, evp, completep)
-	SCR *sp;
-	EVENT *evp;
-	int *completep;
-{
-	EX_PRIVATE *exp;
-	TEXT *ntp, *tp;
-	size_t cnt;
-
-	exp = EXP(sp);
-	tp = exp->im_tp;
-
-	/*
-	 * Check to see if the character fits into the input buffer.  (Use
-	 * tp->len, ignore overwrite characters.)
-	 */
-	BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
-
-	/*
-	 * Handle SIGINT, SIGCONT events by discarding any partially
-	 * entered text and returning successful.
-	 */
-	if (evp->e_event != E_CHARACTER)
-		goto notlast;
-
-	switch (evp->e_value) {
-	case K_CR:
-		/*
-		 * !!!
-		 * Historically, <carriage-return>'s in the command weren't
-		 * special, so the ex parser would return an unknown command
-		 * error message.  However, if they terminated the command if
-		 * they were in a map.  I'm pretty sure this still isn't right,
-		 * but it handles what I've seen so far.
-		 */
-		if (!F_ISSET(&evp->e_ch, CH_MAPPED))
-			goto ins_ch;
-		/* FALLTHROUGH */
-	case K_NL:
-		/*
-		 * '\' can escape <carriage-return>/<newline>.  We toss the
-		 * backslash.
-		 */
-		if (FL_ISSET(exp->im_flags, TXT_BACKSLASH) &&
-		    tp->len != 0 && tp->lb[tp->len - 1] == '\\') {
-			--tp->len;
-			goto ins_ch;
-		}
-
-		/*
-		 * CR returns from the ex command line.  Terminate with a nul,
-		 * needed by filter.
-		 */
-		if (FL_ISSET(exp->im_flags, TXT_CR)) {
-			tp->lb[tp->len] = '\0';
-			goto done;
-		}
-
-		/* '.' may terminate text input mode; free the current TEXT. */
-		if (FL_ISSET(exp->im_flags, TXT_DOTTERM) &&
-		    tp->len == tp->ai + 1 && tp->lb[tp->len - 1] == '.') {
-notlast:		CIRCLEQ_REMOVE(&exp->im_tiq, tp, q);
-			text_free(tp);
-			goto done;
-		}
-
-#ifdef __TK__
-		/* Display any accumulated error messages. */
-		if (ex_fflush(sp);
-			goto err;
-#endif
-
-		/* Set up bookkeeping for the new line. */
-		if ((ntp = text_init(sp, NULL, 0, 32)) == NULL)
-			goto err;
-		ntp->lno = tp->lno + 1;
-
-		/*
-		 * Reset the autoindent line value.  0^D keeps the autoindent
-		 * line from changing, ^D changes the level, even if there were
-		 * no characters in the old line.  Note, if using the current
-		 * tp structure, use the cursor as the length, the autoindent
-		 * characters may have been erased.
-		 */
-		if (FL_ISSET(exp->im_flags, TXT_AUTOINDENT)) {
-			if (exp->im_carat == C_NOCHANGE) {
-				if (v_txt_auto(sp,
-				    OOBLNO, &exp->im_ait, exp->im_ait.ai, ntp))
-					goto err;
-				free(exp->im_ait.lb);
-			} else
-				if (v_txt_auto(sp, OOBLNO, tp, tp->len, ntp))
-					goto err;
-			exp->im_carat = C_NOTSET;
-		}
-		txt_prompt(sp, ntp);
-
-		/*
-		 * Swap old and new TEXT's, and insert the new TEXT into the
-		 * queue.
-		 */
-		exp->im_tp = tp = ntp;
-		CIRCLEQ_INSERT_TAIL(&exp->im_tiq, tp, q);
-		break;
-	case K_CARAT:			/* Delete autoindent chars. */
-		if (tp->len <= tp->ai &&
-		    FL_ISSET(exp->im_flags, TXT_AUTOINDENT))
-			exp->im_carat = C_CARATSET;
-		goto ins_ch;
-	case K_ZERO:			/* Delete autoindent chars. */
-		if (tp->len <= tp->ai &&
-		    FL_ISSET(exp->im_flags, TXT_AUTOINDENT))
-			exp->im_carat = C_ZEROSET;
-		goto ins_ch;
-	case K_CNTRLD:			/* Delete autoindent char. */
-		/*
-		 * !!!
-		 * Historically, the ^D command took (but then ignored) a
-		 * count.  For simplicity, we don't return it unless it's
-		 * the first character entered.  The check for len equal
-		 * to 0 is okay, TXT_AUTOINDENT won't be set.
-		 */
-		if (FL_ISSET(exp->im_flags, TXT_CNTRLD)) {
-			for (cnt = 0; cnt < tp->len; ++cnt)
-				if (!isblank(tp->lb[cnt]))
-					break;
-			if (cnt == tp->len) {
-				tp->len = 1;
-				tp->lb[0] = evp->e_c;
-				tp->lb[1] = '\0';
-
-				/*
-				 * Put out a line separator, in case
-				 * the command fails.
-				 */
-				(void)putchar('\n');
-				goto done;
-			}
-		}
-
-		/*
-		 * POSIX 1003.1b-1993, paragraph 7.1.1.9, states that the EOF
-		 * characters are discarded if there are other characters to
-		 * process in the line, i.e. if the EOF is not the first
-		 * character in the line.  For this reason, historic ex
-		 * discarded the EOF characters, even if they occurred in the
-		 * middle of the input line.  We match that historic practice.
-		 *
-		 * !!!
-		 * The test for discarding in the middle of the line is done
-		 * in the switch, as the CARAT forms are N + 1, not N.
-		 *
-		 * !!!
-		 * There's considerable magic to make the terminal code return
-		 * the EOF character at all.  See cl/cl_main.c.
-		 */
-		if (!FL_ISSET(exp->im_flags, TXT_AUTOINDENT) || tp->len == 0)
-			return (0);
-		switch (exp->im_carat) {
-		case C_CARATSET:		/* ^^D */
-			if (tp->len > tp->ai + 1)
-				return (0);
-
-			/* Save the ai string for later. */
-			exp->im_ait.lb = NULL;
-			exp->im_ait.lb_len = 0;
-			BINC_GOTO(sp,
-			    exp->im_ait.lb, exp->im_ait.lb_len, tp->ai);
-			memmove(exp->im_ait.lb, tp->lb, tp->ai);
-			exp->im_ait.ai = exp->im_ait.len = tp->ai;
-
-			exp->im_carat = C_NOCHANGE;
-			goto leftmargin;
-		case C_ZEROSET:			/* 0^D */
-			if (tp->len > tp->ai + 1)
-				return (0);
-
-			exp->im_carat = C_NOTSET;
-leftmargin:		sp->gp->scr_ex_adjust(sp, EX_TERM_CE);
-			tp->ai = tp->len = 0;
-			break;
-		case C_NOTSET:			/* ^D */
-			if (tp->len > tp->ai)
-				return (0);
-
-			if (txt_dent(sp, tp))
 				goto err;
+		}
+		txt_prompt(sp, tp, prompt, flags);
+	} else
+		LF_CLR(TXT_AUTOINDENT);
+
+	for (carat_st = C_NOTSET;;) {
+		if (v_get_event(sp, &ev, 0))
+			goto err;
+
+		/* Deal with all non-character events. */
+		switch (ev.e_event) {
+		case E_CHARACTER:
 			break;
+		case E_ERR:
+			goto err;
+		case E_REPAINT:
+			continue;
+		case E_RESIZE:
+			ex_e_resize(sp);
+			continue;
+		case E_EOF:
+			rval = 1;
+			/* FALLTHROUGH */
+		case E_INTERRUPT:
+			/*
+			 * Handle EOF/SIGINT events by discarding partially
+			 * entered text and returning.  EOF returns failure,
+			 * E_INTERRUPT returns success.
+			 */
+			goto notlast;
 		default:
 			abort();
 		}
 
-		/* Clear and redisplay the line. */
-		sp->gp->scr_ex_adjust(sp, EX_TERM_CE);
-		txt_prompt(sp, tp);
-		break;
-	default:
 		/*
-		 * See the TXT_BEAUTIFY comment in vi/v_txt_ev.c.
+		 * Deal with character events.
 		 *
-		 * Silently eliminate any iscntrl() character that wasn't
-		 * already handled specially, except for <tab> and <ff>.
+		 * Check to see if the character fits into the input buffer.
+		 * (Use tp->len, ignore overwrite and non-printable chars.)
 		 */
-ins_ch:		if (FL_ISSET(exp->im_flags, TXT_BEAUTIFY) &&
-		    iscntrl(evp->e_c) && evp->e_value != K_FORMFEED &&
-		    evp->e_value != K_TAB)
+		BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
+
+		switch (ev.e_value) {
+		case K_CR:
+			/*
+			 * !!!
+			 * Historically, <carriage-return>'s in the command
+			 * weren't special, so the ex parser would return an
+			 * unknown command error message.  However, if they
+			 * terminated the command if they were in a map.  I'm
+			 * pretty sure this still isn't right, but it handles
+			 * what I've seen so far.
+			 */
+			if (!F_ISSET(&ev.e_ch, CH_MAPPED))
+				goto ins_ch;
+			/* FALLTHROUGH */
+		case K_NL:
+			/*
+			 * '\' can escape <carriage-return>/<newline>.  Toss
+			 * the backslash.
+			 */
+			if (LF_ISSET(TXT_BACKSLASH) &&
+			    tp->len != 0 && tp->lb[tp->len - 1] == '\\') {
+				--tp->len;
+				goto ins_ch;
+			}
+
+			/*
+			 * CR returns from the ex command line.
+			 *
+			 * XXX
+			 * Terminate with a nul, needed by filter.
+			 */
+			if (LF_ISSET(TXT_CR)) {
+				tp->lb[tp->len] = '\0';
+				goto done;
+			}
+
+			/*
+			 * '.' may terminate text input mode; free the current
+			 * TEXT.
+			 */
+			if (LF_ISSET(TXT_DOTTERM) && tp->len == tp->ai + 1 &&
+			    tp->lb[tp->len - 1] == '.') {
+notlast:			CIRCLEQ_REMOVE(tiqh, tp, q);
+				text_free(tp);
+				goto done;
+			}
+
+			/* Set up bookkeeping for the new line. */
+			if ((ntp = text_init(sp, NULL, 0, 32)) == NULL)
+				goto err;
+			ntp->lno = tp->lno + 1;
+
+			/*
+			 * Reset the autoindent line value.  0^D keeps the ai
+			 * line from changing, ^D changes the level, even if
+			 * there were no characters in the old line.  Note, if
+			 * using the current tp structure, use the cursor as
+			 * the length, the autoindent characters may have been
+			 * erased.
+			 */
+			if (LF_ISSET(TXT_AUTOINDENT)) {
+				if (carat_st == C_NOCHANGE) {
+					if (v_txt_auto(sp,
+					    OOBLNO, &ait, ait.ai, ntp))
+						goto err;
+					free(ait.lb);
+				} else
+					if (v_txt_auto(sp,
+					    OOBLNO, tp, tp->len, ntp))
+						goto err;
+				carat_st = C_NOTSET;
+			}
+			txt_prompt(sp, ntp, prompt, flags);
+
+			/*
+			 * Swap old and new TEXT's, and insert the new TEXT
+			 * into the queue.
+			 */
+			tp = ntp;
+			CIRCLEQ_INSERT_TAIL(tiqh, tp, q);
 			break;
+		case K_CARAT:			/* Delete autoindent chars. */
+			if (tp->len <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
+				carat_st = C_CARATSET;
+			goto ins_ch;
+		case K_ZERO:			/* Delete autoindent chars. */
+			if (tp->len <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
+				carat_st = C_ZEROSET;
+			goto ins_ch;
+		case K_CNTRLD:			/* Delete autoindent char. */
+			/*
+			 * !!!
+			 * Historically, the ^D command took (but then ignored)
+			 * a count.  For simplicity, we don't return it unless
+			 * it's the first character entered.  The check for len
+			 * equal to 0 is okay, TXT_AUTOINDENT won't be set.
+			 */
+			if (LF_ISSET(TXT_CNTRLD)) {
+				for (cnt = 0; cnt < tp->len; ++cnt)
+					if (!isblank(tp->lb[cnt]))
+						break;
+				if (cnt == tp->len) {
+					tp->len = 1;
+					tp->lb[0] = ev.e_c;
+					tp->lb[1] = '\0';
 
-		tp->lb[tp->len++] = evp->e_c;
-		break;
+					/*
+					 * Put out a line separator, in case
+					 * the command fails.
+					 */
+					(void)putchar('\n');
+					goto done;
+				}
+			}
+
+			/*
+			 * POSIX 1003.1b-1993, paragraph 7.1.1.9, states that
+			 * the EOF characters are discarded if there are other
+			 * characters to process in the line, i.e. if the EOF
+			 * is not the first character in the line.  For this
+			 * reason, historic ex discarded the EOF characters,
+			 * even if occurring in the middle of the input line.
+			 * We match that historic practice.
+			 *
+			 * !!!
+			 * The test for discarding in the middle of the line is
+			 * done in the switch, because the CARAT forms are N+1,
+			 * not N.
+			 *
+			 * !!!
+			 * There's considerable magic to make the terminal code
+			 * return the EOF character at all.  See that code for
+			 * details.
+			 */
+			if (!LF_ISSET(TXT_AUTOINDENT) || tp->len == 0)
+				continue;
+			switch (carat_st) {
+			case C_CARATSET:		/* ^^D */
+				if (tp->len > tp->ai + 1)
+					continue;
+
+				/* Save the ai string for later. */
+				ait.lb = NULL;
+				ait.lb_len = 0;
+				BINC_GOTO(sp, ait.lb, ait.lb_len, tp->ai);
+				memmove(ait.lb, tp->lb, tp->ai);
+				ait.ai = ait.len = tp->ai;
+
+				carat_st = C_NOCHANGE;
+				goto leftmargin;
+			case C_ZEROSET:			/* 0^D */
+				if (tp->len > tp->ai + 1)
+					continue;
+
+				carat_st = C_NOTSET;
+leftmargin:			(void)gp->scr_ex_adjust(sp, EX_TERM_CE);
+				tp->ai = tp->len = 0;
+				break;
+			case C_NOTSET:			/* ^D */
+				if (tp->len > tp->ai)
+					continue;
+
+				if (txt_dent(sp, tp))
+					goto err;
+				break;
+			default:
+				abort();
+			}
+
+			/* Clear and redisplay the line. */
+			(void)gp->scr_ex_adjust(sp, EX_TERM_CE);
+			txt_prompt(sp, tp, prompt, flags);
+			break;
+		default:
+			/*
+			 * See the TXT_BEAUTIFY comment in vi/v_txt_ev.c.
+			 *
+			 * Silently eliminate any iscntrl() character that was
+			 * not already handled specially, except for <tab> and
+			 * <ff>.
+			 */
+ins_ch:			if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(ev.e_c) &&
+			    ev.e_value != K_FORMFEED && ev.e_value != K_TAB)
+				break;
+
+			tp->lb[tp->len++] = ev.e_c;
+			break;
+		}
 	}
+	/* NOTREACHED */
 
-	*completep = 0;
-	if (0)
-done:		*completep = 1;
-	return (0);
+done:	return (rval);
 
 err:	
 binc_err:
@@ -362,24 +357,22 @@ binc_err:
  *	not ours.
  */
 static void
-txt_prompt(sp, tp)
+txt_prompt(sp, tp, prompt, flags)
 	SCR *sp;
 	TEXT *tp;
+	ARG_CHAR_T prompt;
+	u_int32_t flags;
 {
-	EX_PRIVATE *exp;
-
-	exp = EXP(sp);
-
 	/* Display the prompt. */
-	if (exp->im_flags, FL_ISSET(exp->im_flags, TXT_PROMPT))
-		(void)printf("%c", exp->im_prompt);
+	if (LF_ISSET(TXT_PROMPT))
+		(void)printf("%c", prompt);
 
 	/* Display the line number. */
-	if (FL_ISSET(exp->im_flags, TXT_NUMBER) && O_ISSET(sp, O_NUMBER))
+	if (LF_ISSET(TXT_NUMBER) && O_ISSET(sp, O_NUMBER))
 		(void)printf("%6lu  ", (u_long)tp->lno);
 
 	/* Print out autoindent string. */
-	if (FL_ISSET(exp->im_flags, TXT_AUTOINDENT))
+	if (LF_ISSET(TXT_AUTOINDENT))
 		(void)printf("%.*s", (int)tp->ai, tp->lb);
 	(void)fflush(stdout);
 }

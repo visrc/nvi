@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 10.7 1995/07/08 12:51:27 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:51:27 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.8 1995/09/21 10:57:23 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,18 +18,16 @@ static char sccsid[] = "$Id: ex_args.c,v 10.7 1995/07/08 12:51:27 bostic Exp $ (
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 static int ex_N_next __P((SCR *, EXCMD *));
 
@@ -286,7 +284,6 @@ ex_args(sp, cmdp)
 		if (INTERRUPTED(sp))
 			break;
 	}
-	if (!INTERRUPTED(sp))
-		(void)ex_puts(sp, "\n");
+	(void)ex_puts(sp, "\n");
 	return (0);
 }

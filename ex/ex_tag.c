@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.6 1995/07/04 12:42:18 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:18 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.7 1995/09/21 10:58:02 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,12 +25,10 @@ static char sccsid[] = "$Id: ex_tag.c,v 10.6 1995/07/04 12:42:18 bostic Exp $ (B
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -38,7 +36,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 10.6 1995/07/04 12:42:18 bostic Exp $ (B
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 #include "tag.h"
 
 static char	*binary_search __P((char *, char *, char *));

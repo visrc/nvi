@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 10.3 1995/06/08 18:53:33 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:33 $";
+static char sccsid[] = "$Id: ex_at.c,v 10.4 1995/09/21 10:57:26 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,9 @@ static char sccsid[] = "$Id: ex_at.c,v 10.3 1995/06/08 18:53:33 bostic Exp $ (Be
 #include <bitstring.h>
 #include <ctype.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
@@ -120,7 +118,7 @@ ex_at(sp, cmdp)
 		p += tp->len;
 		*p++ = '\n';
 	}
-	ecp->clen = ecp->o_clen = len;
+	ecp->o_clen = len;
 
 	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
 	return (0);

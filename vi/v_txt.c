@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.5 1995/07/06 11:52:21 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:52:21 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.6 1995/09/21 10:59:17 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,9 @@ static char sccsid[] = "$Id: v_txt.c,v 10.5 1995/07/06 11:52:21 bostic Exp $ (Be
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -33,19 +31,19 @@ static char sccsid[] = "$Id: v_txt.c,v 10.5 1995/07/06 11:52:21 bostic Exp $ (Be
 #include "common.h"
 #include "vi.h"
 
-static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *));
+static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
-static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *));
+static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int32_t *));
 static void	 txt_err __P((SCR *, TEXTH *));
 static int	 txt_hex __P((SCR *, TEXT *));
-static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *));
+static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
 static int	 txt_dent __P((SCR *, TEXT *, int));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
-static int	 txt_resolve __P((SCR *, TEXTH *));
+static int	 txt_resolve __P((SCR *, TEXTH *, u_int32_t));
 static int	 txt_showmatch __P((SCR *));
-static void	 txt_unmap __P((SCR *, TEXT *));
+static void	 txt_unmap __P((SCR *, TEXT *, u_int32_t *));
 
 /* Cursor character (space is hard to track on the screen). */
 #if defined(DEBUG) && 0
@@ -54,14 +52,155 @@ static void	 txt_unmap __P((SCR *, TEXT *));
 #endif
 
 /*
- * v_txt_setup --
- *	Set up for vi text input.
+ * v_tcmd --
+ *	Fill a buffer from the terminal for vi.
  *
- * PUBLIC: int v_txt_setup __P((SCR *,
- * PUBLIC:    VICMD *, MARK *, const char *, size_t, ARG_CHAR_T, recno_t));
+ * PUBLIC: int v_tcmd __P((SCR *, VICMD *, ARG_CHAR_T, u_int));
  */
 int
-v_txt_setup(sp, vp, tm, lp, len, prompt, ai_line)
+v_tcmd(sp, vp, prompt, flags)
+	SCR *sp;
+	VICMD *vp;
+	ARG_CHAR_T prompt;
+	u_int flags;
+{
+	SMAP *esmp;
+	VI_PRIVATE *vip;
+	recno_t sv_lno, sv_tm_lno;
+	size_t cnt, sv_cno, sv_t_maxrows, sv_t_minrows, sv_t_rows, sv_tm_off;
+
+	/* Save current cursor. */
+	sv_lno = sp->lno;
+	sv_cno = sp->cno;
+
+	if (!IS_ONELINE(sp)) {
+		/*
+		 * Fake like the user is doing input on the last line of the
+		 * screen.  This makes all of the scrolling work correctly,
+		 * and allows us the use of the vi text editing routines, not
+		 * to mention practically infinite length ex commands.
+		 *
+		 * Save the current location.
+		 */
+		sv_tm_lno = TMAP->lno;
+		sv_tm_off = TMAP->off;
+		sv_t_rows = sp->t_rows;
+		sv_t_minrows = sp->t_minrows;
+		sv_t_maxrows = sp->t_maxrows;
+
+		/*
+		 * If it's a small screen, TMAP may be small for the screen.
+		 * Fix it, filling in fake lines as we go.
+		 */
+		if (IS_SMALL(sp))
+			for (esmp =
+			    HMAP + (sp->t_maxrows - 1); TMAP < esmp; ++TMAP) {
+				TMAP[1].lno = TMAP[0].lno + 1;
+				TMAP[1].off = 1;
+			}
+
+		/* Build the fake entry. */
+		TMAP[1].lno = TMAP[0].lno + 1;
+		TMAP[1].off = 1;
+		SMAP_FLUSH(&TMAP[1]);
+		++TMAP;
+
+		/* Reset the screen information. */
+		sp->t_rows = sp->t_minrows = ++sp->t_maxrows;
+	}
+
+	/* Move to the last line. */
+	sp->lno = TMAP[0].lno;
+	sp->cno = 0;
+
+	/* Don't update the modeline for now. */
+	F_SET(sp, S_INPUT_INFO);
+
+	LF_SET(TXT_APPENDEOL | TXT_CR | TXT_ESCAPE | TXT_INFOLINE);
+	if (O_ISSET(sp, O_ALTWERASE))
+		LF_SET(TXT_ALTWERASE);
+	if (O_ISSET(sp, O_TTYWERASE))
+		LF_SET(TXT_TTYWERASE);
+
+	if (v_txt(sp, vp, NULL, NULL, 0, prompt, 0, flags))
+		return (1);
+
+	/* Reenable the modeline updates. */
+	F_CLR(sp, S_INPUT_INFO);
+
+	if (!IS_ONELINE(sp)) {
+		/* Restore the screen information. */
+		sp->t_rows = sv_t_rows;
+		sp->t_minrows = sv_t_minrows;
+		sp->t_maxrows = sv_t_maxrows;
+
+		/*
+		 * If it's a small screen, TMAP may be wrong.  Clear any
+		 * lines that might have been overwritten.
+		 */
+		if (IS_SMALL(sp)) {
+			for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
+				(void)sp->gp->scr_move(sp, cnt, 0);
+				(void)sp->gp->scr_clrtoeol(sp);
+			}
+			TMAP = HMAP + (sp->t_rows - 1);
+		} else
+			--TMAP;
+
+		/*
+		 * The map may be wrong if the user entered more than one
+		 * (logical) line.  Fix it.  If the user entered a whole
+		 * screen, this will be slow, but we probably don't care.
+		 */
+		while (sv_tm_lno != TMAP->lno || sv_tm_off != TMAP->off)
+			if (vs_sm_1down(sp))
+				return (1);
+	} else
+		F_SET(sp, S_SCR_REDRAW);
+
+	/*
+	 * Invalidate the cursor and the line size cache, the line never
+	 * really existed.  This fixes bugs where the user searches for
+	 * the last line on the screen + 1 and the refresh routine thinks
+	 * that's where we just were.
+	 */
+	vip = VIP(sp);
+	VI_SCR_CFLUSH(vip);
+	F_SET(vip, VIP_CUR_INVALID);
+
+	/* Restore the original cursor. */
+	sp->lno = sv_lno;
+	sp->cno = sv_cno;
+	return (0);
+}
+
+/*
+ * If doing input mapping on the colon command line, may need to unmap
+ * based on the command.
+ */
+#define	UNMAP_TST							\
+	FL_ISSET(ec_flags, EC_MAPINPUT) && LF_ISSET(TXT_INFOLINE)
+
+/*
+ * v_txt --
+ *	Vi text input.
+ *
+ * !!!
+ * Historic vi did a special screen optimization for tab characters.  For
+ * the keystrokes "iabcd<esc>0C<tab>", the tab would overwrite the rest of
+ * the string when it was displayed.  Because this implementation redisplays
+ * the entire line on each keystroke, the "bcd" gets pushed to the right as
+ * we ignore that the user has "promised" to change the rest of the characters.
+ * Users have noticed, but this isn't worth fixing, and, the way that the
+ * historic vi did it results in an even worse bug.  Given the keystrokes
+ * "iabcd<esc>0R<tab><esc>", the "bcd" disappears, and magically reappears
+ * on the second <esc> key.
+ *
+ * PUBLIC: int v_txt __P((SCR *, VICMD *,
+ * PUBLIC:    MARK *, const char *, size_t, ARG_CHAR_T, recno_t, u_int32_t));
+ */
+int
+v_txt(sp, vp, tm, lp, len, prompt, ai_line, flags)
 	SCR *sp;
 	VICMD *vp;
 	MARK *tm;		/* To MARK. */
@@ -69,11 +208,33 @@ v_txt_setup(sp, vp, tm, lp, len, prompt, ai_line)
 	size_t len;		/* Input line length. */
 	ARG_CHAR_T prompt;	/* Prompt to display. */
 	recno_t ai_line;	/* Line number to use for autoindent count. */
+	u_int32_t flags;	/* TXT_* flags. */
 {
-	VI_PRIVATE *vip;
-	TEXT *tp;
+	EVENT ev, *evp;		/* Current event. */
+	GS *gp;
+	TEXT *ntp, *tp;		/* Input text structures. */
+	TEXT ait;		/* Autoindent text structure. */
+	TEXT wmt;		/* Wrapmargin text structure. */
 	TEXTH *tiqh;
-	int notused;
+	VI_PRIVATE *vip;
+	abb_t abb;		/* State of abbreviation checks. */
+	carat_t carat;		/* State of the "[^0]^D" sequences. */
+	quote_t quote;		/* State of quotation. */
+	size_t owrite, insert;	/* Temporary copies of TEXT fields. */
+	size_t margin;		/* Wrapmargin value. */
+	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
+	size_t tcol;		/* Temporary column. */
+	u_int32_t ec_flags;	/* Input mapping flags. */
+	int abcnt, ab_turnoff;	/* Abbreviation character count, switch. */
+	int hexcnt;		/* Hex character count. */
+	int showmatch;		/* Showmatch set on this character. */
+	int rcount;		/* Replay count. */
+	int wm_set, wm_skip;	/* Wrapmargin happened, blank skip flags. */
+	int max, tmp;
+	char *p;
+
+	gp = sp->gp;
+	vip = VIP(sp);
 
 	/*
 	 * Set the input flag, so tabs get displayed correctly
@@ -105,10 +266,6 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 			return (1);
 		CIRCLEQ_INSERT_HEAD(tiqh, tp, q);
 	}
-	vip = VIP(sp);
-	vip->im_tp = tp;
-	vip->im_lp = lp;
-	vip->im_llen = len;
 
 	/* Set default termination condition. */
 	tp->term = TERM_OK;
@@ -123,13 +280,13 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * CH_ENDMARK character.
 	 */
 	if (len) {
-		if (FL_ISSET(vip->im_flags, TXT_OVERWRITE)) {
+		if (LF_ISSET(TXT_OVERWRITE)) {
 			tp->owrite = (tm->cno - sp->cno) + 1;
 			tp->insert = (len - tm->cno) - 1;
 		} else
 			tp->insert = len - sp->cno;
 
-		if (FL_ISSET(vip->im_flags, TXT_EMARK))
+		if (LF_ISSET(TXT_EMARK))
 			tp->lb[tm->cno] = CH_ENDMARK;
 	}
 
@@ -146,7 +303,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * much indentation we need and fill it in.  Update input column and
 	 * screen cursor as necessary.
 	 */
-	if (FL_ISSET(vip->im_flags, TXT_AUTOINDENT) && ai_line != OOBLNO) {
+	if (LF_ISSET(TXT_AUTOINDENT) && ai_line != OOBLNO) {
 		if (v_txt_auto(sp, ai_line, NULL, 0, tp))
 			return (1);
 		sp->cno = tp->ai;
@@ -156,7 +313,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		 * <blank> characters are handled as autoindent characters.
 		 * Beauty!
 		 */
-		if (FL_ISSET(vip->im_flags, TXT_AICHARS)) {
+		if (LF_ISSET(TXT_AICHARS)) {
 			tp->offset = 0;
 			tp->ai = sp->cno;
 		} else
@@ -164,7 +321,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	}
 
 	/* If getting a command buffer from the user, there may be a prompt. */
-	if (FL_ISSET(vip->im_flags, TXT_PROMPT)) {
+	if (LF_ISSET(TXT_PROMPT)) {
 		tp->lb[sp->cno++] = prompt;
 		++tp->len;
 		++tp->offset;
@@ -180,7 +337,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * side is that we may wrap lines or scroll the screen before it's
 	 * strictly necessary.  Not a big deal.
 	 */
-	if (FL_ISSET(vip->im_flags, TXT_APPENDEOL)) {
+	if (LF_ISSET(TXT_APPENDEOL)) {
 		tp->lb[sp->cno] = CH_CURSOR;
 		++tp->len;
 		++tp->insert;
@@ -211,19 +368,19 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * wrapmargin to split the line, the next user entered character is
 	 * discarded if it's a <space> character.
 	 */
-	F_CLR(vip, VIP_WM_SET | VIP_WM_SKIP);
-	if (FL_ISSET(vip->im_flags, TXT_WRAPMARGIN))
-		if ((vip->im_margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
-			vip->im_margin = sp->cols - vip->im_margin;
+	wm_set = wm_skip = 0;
+	if (LF_ISSET(TXT_WRAPMARGIN))
+		if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
+			margin = sp->cols - margin;
 		else
-			vip->im_margin = O_VAL(sp, O_WRAPLEN);
+			margin = O_VAL(sp, O_WRAPLEN);
 	else
-		vip->im_margin = 0;
+		margin = 0;
 
 	/* Initialize abbreviation checks. */
-	vip->im_abb = F_ISSET(sp->gp, G_ABBREV) &&
-	    FL_ISSET(sp->gp->ec_flags, EC_MAPINPUT) ? AB_INWORD : AB_NOTSET;
-	vip->im_abcnt = 0;
+	abcnt = ab_turnoff = 0;
+	abb = F_ISSET(gp, G_ABBREV) &&
+	    LF_ISSET(TXT_MAPINPUT) ? AB_INWORD : AB_NOTSET;
 
 	/*
 	 * Set up the dot command.  Dot commands are done by saving the actual
@@ -241,100 +398,64 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * It would be nice if we could swallow backspaces and such, but it's
 	 * not all that easy to do.
 	 */
-	vip->im_rcol = 0;
-	if (FL_ISSET(vip->im_flags, TXT_REPLAY)) {
-		vip->im_abb = AB_NOTSET;
-		FL_CLR(vip->im_flags, TXT_RECORD);
+	rcol = 0;
+	if (LF_ISSET(TXT_REPLAY)) {
+		abb = AB_NOTSET;
+		LF_CLR(TXT_RECORD);
 	}
+
+	/* Other text input mode setup. */
+	hexcnt = 0;
+	quote = Q_NOTSET;
+	carat = C_NOTSET;
+
+	/* Initialize replay count, showmatch flag. */
+	rcount = showmatch = 0;
+
+	/* Initialize input flags. */
+	ec_flags = LF_ISSET(TXT_MAPINPUT) ? EC_MAPINPUT : 0;
 
 	/* Refresh the screen. */
 	if (vs_refresh(sp))
 		return (1);
 
-	/* Set event input flag. */
-	FL_CLR(sp->gp->ec_flags, EC_MAPCOMMAND);
-	FL_SET(sp->gp->ec_flags, EC_MAPINPUT);
-
-	/* Other text input mode setup. */
-	vip->im_quote = Q_NOTSET;
-	vip->im_carat = C_NOTSET;
-
 	/* If it's dot, just do it now. */
-	if (F_ISSET(vp, VC_ISDOT)) {
-		vip->cm_next = VS_GET_CMD1;
-		return (v_txt_ev(sp, NULL, &notused));
-	}
-
-	/* Set up default teardown state, move to text input loop. */
-	vip->run_func = v_txt_ev;
-	vip->cm_state = VS_RUNNING;
-	vip->cm_next = VS_TEXT_TEARDOWN;
-	return (0);
-}
-
-/*
- * If doing input mapping on the colon command line, may need to unmap
- * based on the command.
- */
-#define	UNMAP_TST							\
-	FL_ISSET(gp->ec_flags, EC_MAPINPUT) &&				\
-	    FL_ISSET(vip->im_flags, TXT_INFOLINE)
-
-/*
- * v_txt_ev --
- *	Handle text input events.
- *
- * !!!
- * Historic vi did a special screen optimization for tab characters.  For
- * the keystrokes "iabcd<esc>0C<tab>", the tab would overwrite the rest of
- * the string when it was displayed.  Because this implementation redisplays
- * the entire line on each keystroke, the "bcd" gets pushed to the right as
- * we ignore that the user has "promised" to change the rest of the characters.
- * Users have noticed, but this isn't worth fixing, and, the way that the
- * historic vi did it results in an even worse bug.  Given the keystrokes
- * "iabcd<esc>0R<tab><esc>", the "bcd" disappears, and magically reappears
- * on the second <esc> key.
- *
- * PUBLIC: int v_txt_ev __P((SCR *, EVENT *, int *));
- */
-int
-v_txt_ev(sp, evp, completep)
-	SCR *sp;
-	EVENT *evp;
-	int *completep;
-{
-	GS *gp;
-	TEXT *ntp, *tp;		/* Input text structures. */
-	VICMD *vp;
-	VI_PRIVATE *vip;
-	size_t owrite, insert;	/* Temporary copies of TEXT fields. */
-	size_t tcol;		/* Temporary column. */
-	int showmatch;		/* Showmatch set on this character. */
-	int rcount;		/* Replay count. */
-	int max, tmp;
-	char *p;
-
-	gp = sp->gp;
-	vip = VIP(sp);
-	vp = vip->vp;
-	tp = vip->im_tp;
-
-	rcount = showmatch = 0;
-
-	/* If no event, we're doing replay. */
-	if (evp == NULL)
+	if (F_ISSET(vp, VC_ISDOT))
 		goto replay;
 
-	/*
-	 * !!!
-	 * Historically, <interrupt> exited the user from text input
-	 * mode or cancelled a colon command, and returned to command
-	 * mode.  It also beeped the terminal, but that seems a bit
-	 * excessive.  We also get resize events here, which mean that
-	 * our text structures may no longer be correct.
-	 */
-	if (evp->e_event != E_CHARACTER)
+	/* Get an event. */
+	evp = &ev;
+next:	if (v_get_event(sp, evp, ec_flags))
+		return (1);
+
+	/* Deal with all non-character events. */
+	switch (evp->e_event) {
+	case E_CHARACTER:
+		break;
+	case E_ERR:
+	case E_EOF:
+		F_SET(sp, S_EXIT_FORCE);
+		return (1);
+	case E_INTERRUPT:
+		/*
+		 * !!!
+		 * Historically, <interrupt> exited the user from text input
+		 * mode or cancelled a colon command, and returned to command
+		 * mode.  It also beeped the terminal, but that seems a bit
+		 * excessive.  We also get resize events here, which mean that
+		 * our text structures may no longer be correct.
+		 */
 		goto k_escape;
+	case E_REPAINT:
+		if (vs_repaint(sp, &ev))
+			return (1);
+		goto next;
+	case E_RESIZE:
+		(void)v_event_push(sp, &ev, NULL, 1, 0);
+		goto k_escape;
+	default:
+		abort();
+	}
 
 	/*
 	 * !!!
@@ -342,16 +463,16 @@ v_txt_ev(sp, evp, completep)
 	 * input.  Note, it was okay to replay non-existent input.  This was
 	 * not documented as far as I know, and is a great test of vi clones.
 	 */
-	if (F_ISSET(vip, VIP_REPLAY_TEST)) {
-		F_CLR(vip, VIP_REPLAY_TEST);
+	if (LF_ISSET(TXT_REPLAY)) {
+		LF_CLR(TXT_REPLAY);
 		if (evp->e_c == '\0') {
 			if (vip->rep == NULL)
 				goto done;
 
-			vip->im_rcol = 0;
-			vip->im_abb = AB_NOTSET;
-			FL_CLR(vip->im_flags, TXT_RECORD);
-			FL_SET(vip->im_flags, TXT_REPLAY);
+			rcol = 0;
+			abb = AB_NOTSET;
+			LF_CLR(TXT_RECORD);
+			LF_SET(TXT_REPLAY);
 			goto replay;
 		}
 	}
@@ -359,29 +480,29 @@ v_txt_ev(sp, evp, completep)
 	/* Abbreviation check.  See comment in txt_abbrev(). */
 #define	MAX_ABBREVIATION_EXPANSION	256
 	if (F_ISSET(&evp->e_ch, CH_ABBREVIATED)) {
-		if (++vip->im_abcnt > MAX_ABBREVIATION_EXPANSION) {
+		if (++abcnt > MAX_ABBREVIATION_EXPANSION) {
 			if (v_event_flush(sp, CH_ABBREVIATED))
 				msgq(sp, M_ERR,
 "191|Abbreviation exceeded expansion limit: characters discarded");
-			vip->im_abcnt = 0;
+			abcnt = 0;
 			goto ret;
 		}
 	} else
-		vip->im_abcnt = 0;
+		abcnt = 0;
 
 	/* Check to see if the character fits into the replay buffers. */
-	if (FL_ISSET(vip->im_flags, TXT_RECORD)) {
+	if (LF_ISSET(TXT_RECORD)) {
 		BINC_GOTO(sp, vip->rep,
-		    vip->rep_len, (vip->im_rcol + 1) * sizeof(EVENT));
-		vip->rep[vip->im_rcol++] = *evp;
+		    vip->rep_len, (rcol + 1) * sizeof(EVENT));
+		vip->rep[rcol++] = *evp;
 	}
 
-replay:	if (FL_ISSET(vip->im_flags, TXT_REPLAY))
-		evp = vip->rep + vip->im_rcol++;
+replay:	if (LF_ISSET(TXT_REPLAY))
+		evp = vip->rep + rcol++;
 
 	/* Wrapmargin check for leading space. */
-	if (F_ISSET(vip, VIP_WM_SKIP)) {
-		F_CLR(vip, VIP_WM_SKIP);
+	if (wm_skip) {
+		wm_skip = 0;
 		if (evp->e_c == ' ')
 			goto ret;
 	}
@@ -404,20 +525,20 @@ replay:	if (FL_ISSET(vip->im_flags, TXT_REPLAY))
 	 */
 	if (F_ISSET(&evp->e_ch, CH_QUOTED))
 		goto insq_ch;
-	if (vip->im_quote != Q_NOTSET) {
-		if (vip->im_quote == Q_VTHIS && evp->e_value != K_NL ||
-		    vip->im_quote == Q_BTHIS &&
+	if (quote != Q_NOTSET) {
+		if (quote == Q_VTHIS && evp->e_value != K_NL ||
+		    quote == Q_BTHIS &&
 		    (evp->e_value == K_VERASE || evp->e_value == K_VKILL)) {
 			--sp->cno;
 			++tp->owrite;
-			FL_CLR(gp->ec_flags, EC_QUOTED);
-			vip->im_quote = Q_NOTSET;
+			FL_CLR(ec_flags, EC_QUOTED);
+			quote = Q_NOTSET;
 			goto insl_ch;
 		}
-		if (vip->im_quote == Q_VTHIS && evp->e_value == K_NL)
+		if (quote == Q_VTHIS && evp->e_value == K_NL)
 			--sp->cno;
-		FL_CLR(gp->ec_flags, EC_QUOTED);
-		vip->im_quote = Q_NOTSET;
+		FL_CLR(ec_flags, EC_QUOTED);
+		quote = Q_NOTSET;
 	}
 
 	/*
@@ -426,8 +547,8 @@ replay:	if (FL_ISSET(vip->im_flags, TXT_REPLAY))
 	 * this test delimits the value by any non-hex character.  Offset by
 	 * one, we use 0 to mean that we've found <CH_HEX>.
 	 */
-	if (vip->im_hexcnt > 1 && !isxdigit(evp->e_c)) {
-		vip->im_hexcnt = 0;
+	if (hexcnt > 1 && !isxdigit(evp->e_c)) {
+		hexcnt = 0;
 		if (txt_hex(sp, tp))
 			goto err;
 	}
@@ -436,7 +557,7 @@ replay:	if (FL_ISSET(vip->im_flags, TXT_REPLAY))
 	case K_CR:				/* Carriage return. */
 	case K_NL:				/* New line. */
 		/* Return in script windows and the command line. */
-k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
+k_cr:		if (LF_ISSET(TXT_CR)) {
 			/*
 			 * If this was a map, we may have not displayed
 			 * the line.  Display it, just in case.
@@ -444,11 +565,11 @@ k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
 			 * If a script window and not the colon line,
 			 * push a <cr> so it gets executed.
 			 */
-			if (FL_ISSET(vip->im_flags, TXT_INFOLINE)) {
+			if (LF_ISSET(TXT_INFOLINE)) {
 				if (vs_change(sp, tp->lno, LINE_RESET))
 					goto err;
 			} else if (F_ISSET(sp, S_SCRIPT))
-				(void)v_event_push(sp, "\r", 1, CH_NOMAP);
+				(void)v_event_push(sp, NULL, "\r", 1, CH_NOMAP);
 
 			/* If empty, set termination condition. */
 			if (sp->cno <= tp->offset)
@@ -461,26 +582,24 @@ k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
 		 * Handle abbreviations.  If there was one, discard the	\
 		 * replay characters.					\
 		 */							\
-		if (vip->im_abb == AB_INWORD &&				\
-		    !FL_ISSET(vip->im_flags, TXT_REPLAY) &&		\
-		    F_ISSET(gp, G_ABBREV)) {				\
+		if (abb == AB_INWORD &&					\
+		    !LF_ISSET(TXT_REPLAY) && F_ISSET(gp, G_ABBREV)) {	\
 			if (txt_abbrev(sp, tp, &evp->e_c,		\
-			    FL_ISSET(vip->im_flags, TXT_INFOLINE),	\
-			    &tmp))					\
+			    LF_ISSET(TXT_INFOLINE), &tmp,		\
+			    &ab_turnoff))				\
 				goto err;				\
 			if (tmp) {					\
-				if (FL_ISSET(vip->im_flags,		\
-				    TXT_RECORD))			\
-					vip->im_rcol -= tmp + 1;	\
+				if (LF_ISSET(TXT_RECORD))		\
+					rcol -= tmp + 1;		\
 				goto ret;				\
 			}						\
 		}							\
-		if (vip->im_abb != AB_NOTSET)				\
-			vip->im_abb = AB_NOTWORD;			\
+		if (abb != AB_NOTSET)					\
+			abb = AB_NOTWORD;				\
 		if (UNMAP_TST)						\
-			txt_unmap(sp, tp);				\
+			txt_unmap(sp, tp, &ec_flags);			\
 		/* Delete any appended cursor. */			\
-		if (FL_ISSET(vip->im_flags, TXT_APPENDEOL)) {		\
+		if (LF_ISSET(TXT_APPENDEOL)) {				\
 			--tp->len;					\
 			--tp->insert;					\
 		}							\
@@ -512,7 +631,7 @@ k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
 		tp->R_erase = 0;
 		owrite = tp->owrite;
 		insert = tp->insert;
-		if (FL_ISSET(vip->im_flags, TXT_REPLACE) && owrite != 0) {
+		if (LF_ISSET(TXT_REPLACE) && owrite != 0) {
 			for (p = tp->lb + sp->cno; owrite > 0 && isblank(*p);
 			    ++p, --owrite, ++tp->R_erase);
 			if (owrite == 0)
@@ -539,17 +658,15 @@ k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
 		 * tp structure, use the cursor as the length, the autoindent
 		 * characters may have been erased.
 		 */
-		if (FL_ISSET(vip->im_flags, TXT_AUTOINDENT)) {
-			if (vip->im_carat == C_NOCHANGE) {
-				if (v_txt_auto(sp,
-				    OOBLNO, &vip->im_ait, vip->im_ait.ai, ntp))
+		if (LF_ISSET(TXT_AUTOINDENT)) {
+			if (carat == C_NOCHANGE) {
+				if (v_txt_auto(sp, OOBLNO, &ait, ait.ai, ntp))
 					goto err;
-				FREE_SPACE(sp,
-				    vip->im_ait.lb, vip->im_ait.lb_len);
+				FREE_SPACE(sp, ait.lb, ait.lb_len);
 			} else
 				if (v_txt_auto(sp, OOBLNO, tp, sp->cno, ntp))
 					goto err;
-			vip->im_carat = C_NOTSET;
+			carat = C_NOTSET;
 		}
 
 		/* Reset the cursor. */
@@ -559,30 +676,27 @@ k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
 		/*
 		 * If we're here because wrapmargin was set and we've broken a
 		 * line, there may be additional information (i.e. the start of
-		 * a line) in the im_wmt structure.
+		 * a line) in the wmt structure.
 		 */
-		if (F_ISSET(vip, VIP_WM_SET)) {
-			if (vip->im_wmt.offset != 0 ||
-			    vip->im_wmt.owrite != 0 ||
-			    vip->im_wmt.insert != 0) {
-#define	WMTSPACE \
-	vip->im_wmt.offset + vip->im_wmt.owrite + vip->im_wmt.insert
+		if (wm_set) {
+			if (wmt.offset != 0 ||
+			    wmt.owrite != 0 || wmt.insert != 0) {
+#define	WMTSPACE	wmt.offset + wmt.owrite + wmt.insert
 				BINC_GOTO(sp, ntp->lb,
 				    ntp->lb_len, ntp->len + WMTSPACE + 32);
-				memmove(ntp->lb + sp->cno,
-				    vip->im_wmt.lb, WMTSPACE);
+				memmove(ntp->lb + sp->cno, wmt.lb, WMTSPACE);
 				ntp->len += WMTSPACE;
-				sp->cno += vip->im_wmt.offset;
-				ntp->owrite = vip->im_wmt.owrite;
-				ntp->insert = vip->im_wmt.insert;
+				sp->cno += wmt.offset;
+				ntp->owrite = wmt.owrite;
+				ntp->insert = wmt.insert;
 			}
-			F_CLR(vip, VIP_WM_SET);
+			wm_set = 0;
 		}
 
 		/* New lines are TXT_APPENDEOL. */
 		if (ntp->owrite == 0 && ntp->insert == 0) {
 			BINC_GOTO(sp, ntp->lb, ntp->lb_len, ntp->len + 1);
-			FL_SET(vip->im_flags, TXT_APPENDEOL);
+			LF_SET(TXT_APPENDEOL);
 			ntp->lb[sp->cno] = CH_CURSOR;
 			++ntp->insert;
 			++ntp->len;
@@ -596,7 +710,7 @@ k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
 		 * DON'T insert until the old line has been updated, or the
 		 * inserted line count in line.c:file_gline() will be wrong.
 		 */
-		vip->im_tp = tp = ntp;
+		tp = ntp;
 		CIRCLEQ_INSERT_TAIL(&sp->tiq, tp, q);
 
 		/* Update the new line. */
@@ -605,21 +719,21 @@ k_cr:		if (FL_ISSET(vip->im_flags, TXT_CR)) {
 
 		goto ret;
 	case K_ESCAPE:				/* Escape. */
-		if (!FL_ISSET(vip->im_flags, TXT_ESCAPE))
+		if (!LF_ISSET(TXT_ESCAPE))
 			goto ins_ch;
 
 		/* If we have a count, start replaying the input. */
 		if (F_ISSET(vp, VC_C1SET) && ++rcount != vp->count) {
-			vip->im_rcol = 0;
-			vip->im_abb = AB_NOTSET;
-			FL_CLR(vip->im_flags, TXT_RECORD);
-			FL_SET(vip->im_flags, TXT_REPLAY);
+			rcol = 0;
+			abb = AB_NOTSET;
+			LF_CLR(TXT_RECORD);
+			LF_SET(TXT_REPLAY);
 
 			/*
 			 * A few commands (e.g. 'o') need a <newline> for
 			 * each repetition.
 			 */
-			if (FL_ISSET(vip->im_flags, TXT_ADDNEWLINE))
+			if (LF_ISSET(TXT_ADDNEWLINE))
 				goto k_cr;
 			goto replay;
 		}
@@ -634,9 +748,8 @@ k_escape:	LINE_RESOLVE;
 		 * Clean up for the 'R' command, restoring overwrite
 		 * characters, and making them into insert characters.
 		 */
-		if (FL_ISSET(vip->im_flags, TXT_REPLACE))
-			txt_Rcleanup(sp, &sp->tiq,
-			    tp, vip->im_lp, vip->im_llen);
+		if (LF_ISSET(TXT_REPLACE))
+			txt_Rcleanup(sp, &sp->tiq, tp, lp, len);
 
 		/*
 		 * If there are any overwrite characters, copy down
@@ -658,8 +771,8 @@ k_escape:	LINE_RESOLVE;
 		 * XXX
 		 * This is wrong, should pass back a length.
 		 */
-		if (FL_ISSET(vip->im_flags, TXT_RESOLVE)) {
-			if (txt_resolve(sp, &sp->tiq))
+		if (LF_ISSET(TXT_RESOLVE)) {
+			if (txt_resolve(sp, &sp->tiq, flags))
 				goto err;
 		} else {
 			BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
@@ -679,14 +792,12 @@ k_escape:	LINE_RESOLVE;
 			return (1);
 		goto done;
 	case K_CARAT:			/* Delete autoindent chars. */
-		if (sp->cno <= tp->ai &&
-		    FL_ISSET(vip->im_flags, TXT_AUTOINDENT))
-			vip->im_carat = C_CARATSET;
+		if (sp->cno <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
+			carat = C_CARATSET;
 		goto ins_ch;
 	case K_ZERO:			/* Delete autoindent chars. */
-		if (sp->cno <= tp->ai &&
-		    FL_ISSET(vip->im_flags, TXT_AUTOINDENT))
-			vip->im_carat = C_ZEROSET;
+		if (sp->cno <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
+			carat = C_ZEROSET;
 		goto ins_ch;
 	case K_CNTRLD:			/* Delete autoindent char. */
 		/*
@@ -696,31 +807,30 @@ k_escape:	LINE_RESOLVE;
 		 * characters, it's a literal.  The latter test is done
 		 * in the switch, as the CARAT forms are N + 1, not N.
 		 */
-		if (!FL_ISSET(vip->im_flags, TXT_AUTOINDENT))
+		if (!LF_ISSET(TXT_AUTOINDENT))
 			goto ins_ch;
 		if (sp->cno == 0)
 			goto ret;
 
-		switch (vip->im_carat) {
+		switch (carat) {
 		case C_CARATSET:	/* ^^D */
 			if (sp->cno > tp->ai + tp->offset + 1)
 				goto ins_ch;
 
 			/* Save the ai string for later. */
-			vip->im_ait.lb = NULL;
-			vip->im_ait.lb_len = 0;
-			BINC_GOTO(sp,
-			    vip->im_ait.lb, vip->im_ait.lb_len, tp->ai);
-			memmove(vip->im_ait.lb, tp->lb, tp->ai);
-			vip->im_ait.ai = vip->im_ait.len = tp->ai;
+			ait.lb = NULL;
+			ait.lb_len = 0;
+			BINC_GOTO(sp, ait.lb, ait.lb_len, tp->ai);
+			memmove(ait.lb, tp->lb, tp->ai);
+			ait.ai = ait.len = tp->ai;
 
-			vip->im_carat = C_NOCHANGE;
+			carat = C_NOCHANGE;
 			goto leftmargin;
 		case C_ZEROSET:		/* 0^D */
 			if (sp->cno > tp->ai + tp->offset + 1)
 				goto ins_ch;
 
-			vip->im_carat = C_NOTSET;
+			carat = C_NOTSET;
 leftmargin:		tp->lb[sp->cno - 1] = ' ';
 			tp->owrite += sp->cno - tp->offset;
 			tp->ai = 0;
@@ -738,7 +848,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		break;
 	case K_VERASE:			/* Erase the last character. */
 		/* If can erase over the prompt, return. */
-		if (sp->cno <= tp->offset && FL_ISSET(vip->im_flags, TXT_BS)) {
+		if (sp->cno <= tp->offset && LF_ISSET(TXT_BS)) {
 			tp->term = TERM_BS;
 			goto done;
 		}
@@ -748,9 +858,10 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * previously inserted line.
 		 */
 		if (sp->cno == 0) {
-			if ((ntp = txt_backup(sp, &sp->tiq, tp)) == NULL)
+			if ((ntp =
+			    txt_backup(sp, &sp->tiq, tp, &flags)) == NULL)
 				goto err;
-			vip->im_tp = tp = ntp;
+			tp = ntp;
 			break;
 		}
 
@@ -781,9 +892,10 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * previously inserted line.
 		 */
 		if (sp->cno == 0) {
-			if ((ntp = txt_backup(sp, &sp->tiq, tp)) == NULL)
+			if ((ntp =
+			    txt_backup(sp, &sp->tiq, tp, &flags)) == NULL)
 				goto err;
-			vip->im_tp = tp = ntp;
+			tp = ntp;
 		}
 
 		/*
@@ -834,7 +946,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * respectively, and the default is the same as the historic
 		 * vi behavior.
 		 */
-		if (FL_ISSET(vip->im_flags, TXT_TTYWERASE))
+		if (LF_ISSET(TXT_TTYWERASE))
 			while (sp->cno > max) {
 				--sp->cno;
 				++tp->owrite;
@@ -842,7 +954,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 					break;
 			}
 		else {
-			if (FL_ISSET(vip->im_flags, TXT_ALTWERASE)) {
+			if (LF_ISSET(TXT_ALTWERASE)) {
 				--sp->cno;
 				++tp->owrite;
 				if (isblank(tp->lb[sp->cno - 1]))
@@ -867,9 +979,10 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * users to go back to previous lines.
 		 */
 		if (sp->cno == 0) {
-			if ((ntp = txt_backup(sp, &sp->tiq, tp)) == NULL)
+			if ((ntp =
+			    txt_backup(sp, &sp->tiq, tp, &flags)) == NULL)
 				goto err;
-			vip->im_tp = tp = ntp;
+			tp = ntp;
 		}
 
 		/* If at offset, nothing to erase so bell the user. */
@@ -896,14 +1009,14 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		sp->cno = max;
 		break;
 	case K_CNTRLT:			/* Add autoindent characters. */
-		if (!FL_ISSET(vip->im_flags, TXT_CNTRLT))
+		if (!LF_ISSET(TXT_CNTRLT))
 			goto ins_ch;
 		if (txt_dent(sp, tp, 1))
 			goto err;
 		goto ebuf_chk;
 	case K_RIGHTBRACE:
 	case K_RIGHTPAREN:
-		if (FL_ISSET(vip->im_flags, TXT_SHOWMATCH))
+		if (LF_ISSET(TXT_SHOWMATCH))
 			showmatch = 1;
 		goto ins_ch;
 	case K_BACKSLASH:		/* Quote next erase/kill. */
@@ -929,12 +1042,12 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * Do the tests for abbreviations, so ":ab xa XA",
 		 * "ixa\<K_VERASE>" performs the abbreviation.
 		 */
-		vip->im_quote = Q_BNEXT;
+		quote = Q_BNEXT;
 		goto insq_ch;
 	case K_VLNEXT:			/* Quote next character. */
 		evp->e_c = '^';
-		vip->im_quote = Q_VNEXT;
-		FL_SET(gp->ec_flags, EC_QUOTED);
+		quote = Q_VNEXT;
+		FL_SET(ec_flags, EC_QUOTED);
 
 		/*
 		 * !!!
@@ -943,7 +1056,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 */
 		goto insl_ch;
 	case K_HEXCHAR:
-		vip->im_hexcnt = 1;
+		hexcnt = 1;
 		goto insq_ch;
 	default:			/* Insert the character. */
 ins_ch:		/*
@@ -959,8 +1072,7 @@ ins_ch:		/*
 		 * wasn't a replay and wasn't handled specially, except
 		 * <tab> or <ff>.
 		 */
-		if (FL_ISSET(vip->im_flags, TXT_BEAUTIFY) &&
-		    iscntrl(evp->e_c) &&
+		if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(evp->e_c) &&
 		    evp->e_value != K_FORMFEED && evp->e_value != K_TAB) {
 			msgq(sp, M_BERR,
 			    "192|Illegal character; quote to enter");
@@ -974,24 +1086,22 @@ insq_ch:	/*
 		 * as well.
 		 */
 		if (!inword(evp->e_c)) {
-			if (vip->im_abb == AB_INWORD &&
-			    !FL_ISSET(vip->im_flags, TXT_REPLAY) &&
-			    F_ISSET(gp, G_ABBREV)) {
+			if (abb == AB_INWORD &&
+			    !LF_ISSET(TXT_REPLAY) && F_ISSET(gp, G_ABBREV)) {
 				if (txt_abbrev(sp, tp, &evp->e_c,
-				    FL_ISSET(vip->im_flags, TXT_INFOLINE),
-				    &tmp))
+				    LF_ISSET(TXT_INFOLINE), &tmp, &ab_turnoff))
 					goto err;
 				if (tmp) {
-					if (FL_ISSET(vip->im_flags, TXT_RECORD))
-						vip->im_rcol -= tmp + 1;
+					if (LF_ISSET(TXT_RECORD))
+						rcol -= tmp + 1;
 					goto ret;
 				}
 			}
 			if (isblank(evp->e_c) && UNMAP_TST)
-				txt_unmap(sp, tp);
+				txt_unmap(sp, tp, &ec_flags);
 		}
-		if (vip->im_abb != AB_NOTSET)
-			vip->im_abb = inword(evp->e_c) ? AB_INWORD : AB_NOTWORD;
+		if (abb != AB_NOTSET)
+			abb = inword(evp->e_c) ? AB_INWORD : AB_NOTWORD;
 
 insl_ch:	if (tp->owrite)			/* Overwrite a character. */
 			--tp->owrite;
@@ -1012,9 +1122,8 @@ insl_ch:	if (tp->owrite)			/* Overwrite a character. */
 		 * number of hex bytes.  Offset by one, we use 0 to mean
 		 * that we've found <CH_HEX>.
 		 */
-		if (vip->im_hexcnt != 0 &&
-		    vip->im_hexcnt++ == sizeof(CHAR_T) * 2 + 1) {
-			vip->im_hexcnt = 0;
+		if (hexcnt != 0 && hexcnt++ == sizeof(CHAR_T) * 2 + 1) {
+			hexcnt = 0;
 			if (txt_hex(sp, tp))
 				goto err;
 		}
@@ -1030,16 +1139,16 @@ insl_ch:	if (tp->owrite)			/* Overwrite a character. */
 		 * characters otherwise.  That's what the vs_column() function
 		 * gives us, so we use it.
 		 */
-		if (vip->im_margin != 0) {
+		if (margin != 0) {
 			if (vs_column(sp, &tcol))
 				goto err;
-			if (tcol >= vip->im_margin) {
-				if (txt_margin(sp, tp, &vip->im_wmt, &tmp))
+			if (tcol >= margin) {
+				if (txt_margin(sp, tp, &wmt, &tmp, flags))
 					goto err;
 				if (tmp) {
 					if (isblank(evp->e_c))
-						F_SET(vip, VIP_WM_SKIP);
-					F_SET(vip, VIP_WM_SET);
+						wm_skip = 1;
+					wm_set = 1;
 					goto k_cr;
 				}
 			}
@@ -1053,18 +1162,18 @@ insl_ch:	if (tp->owrite)			/* Overwrite a character. */
 		 */
 ebuf_chk:	if (sp->cno >= tp->len) {
 			BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
-			FL_SET(vip->im_flags, TXT_APPENDEOL);
+			LF_SET(TXT_APPENDEOL);
 
 			tp->lb[sp->cno] = CH_CURSOR;
 			++tp->insert;
 			++tp->len;
 		}
 
-		if (vip->im_quote != Q_NOTSET) {
-			if (vip->im_quote == Q_BNEXT)
-				vip->im_quote = Q_BTHIS;
-			if (vip->im_quote == Q_VNEXT)
-				vip->im_quote = Q_VTHIS;
+		if (quote != Q_NOTSET) {
+			if (quote == Q_BNEXT)
+				quote = Q_BTHIS;
+			if (quote == Q_VNEXT)
+				quote = Q_VTHIS;
 		}
 		break;
 	}
@@ -1078,7 +1187,7 @@ ebuf_chk:	if (sp->cno >= tp->len) {
 #endif
 
 ret:	/* If replaying text, keep going. */
-	if (FL_ISSET(vip->im_flags, TXT_REPLAY))
+	if (LF_ISSET(TXT_REPLAY))
 		goto replay;
 
 	/*
@@ -1087,7 +1196,7 @@ ret:	/* If replaying text, keep going. */
 	 * to wait on a character or we need to know where the cursor really
 	 * is.
 	 */
-	if (showmatch || vip->im_margin != 0 || !KEYS_WAITING(sp)) {
+	if (showmatch || margin != 0 || !KEYS_WAITING(sp)) {
 		if (vs_change(sp, tp->lno, LINE_RESET))
 			return (1);
 		if (showmatch) {
@@ -1097,23 +1206,20 @@ ret:	/* If replaying text, keep going. */
 			return (1);
 	}
 
-	*completep = 0;
+	/* Keep going. */
+	goto next;
+
 	if (0) {
 done:		/* Leave input mode. */
 		F_CLR(sp, S_INPUT);
 
 		/* If recording for playback, save it. */
-		if (FL_ISSET(vip->im_flags, TXT_RECORD))
-			vip->rep_cnt = vip->im_rcol;
+		if (LF_ISSET(TXT_RECORD))
+			vip->rep_cnt = rcol;
 
 		/* Set the final cursor position. */
 		vp->m_final.lno = sp->lno;
 		vp->m_final.cno = sp->cno;
-
-		/* Reset the state. */
-		vip->cm_state = vip->cm_next;
-
-		*completep = 1;
 	}
 	return (0);
 
@@ -1128,11 +1234,11 @@ binc_err:
  *	Handle abbreviations.
  */
 static int
-txt_abbrev(sp, tp, pushcp, isinfoline, didsubp)
+txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	SCR *sp;
 	TEXT *tp;
 	CHAR_T *pushcp;
-	int isinfoline, *didsubp;
+	int isinfoline, *didsubp, *turnoffp;
 {
 	VI_PRIVATE *vip;
 	CHAR_T ch, *p;
@@ -1226,12 +1332,12 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp)
 search:	if (isinfoline)
 		if (off == tp->ai || off == tp->offset)
 			if (ex_is_abbrev(p, len)) {
-				F_SET(vip, VIP_AB_TURNOFF);
+				*turnoffp = 1;
 				return (0);
 			} else
-				F_CLR(vip, VIP_AB_TURNOFF);
+				*turnoffp = 0;
 		else
-			if (F_ISSET(vip, VIP_AB_TURNOFF))
+			if (*turnoffp)
 				return (0);
 
 	/* Check for any abbreviations. */
@@ -1257,9 +1363,9 @@ search:	if (isinfoline)
 	 * abbreviated character was received would have to be saved.
 	 */
 	ch = *pushcp;
-	if (v_event_push(sp, &ch, 1, CH_ABBREVIATED))
+	if (v_event_push(sp, NULL, &ch, 1, CH_ABBREVIATED))
 		return (1);
-	if (v_event_push(sp, qp->output, qp->olen, CH_ABBREVIATED))
+	if (v_event_push(sp, NULL, qp->output, qp->olen, CH_ABBREVIATED))
 		return (1);
 
 	/* Move to the start of the abbreviation, adjust the length. */
@@ -1287,9 +1393,10 @@ search:	if (isinfoline)
  *	Handle the unmap command.
  */
 static void
-txt_unmap(sp, tp)
+txt_unmap(sp, tp, ec_flagsp)
 	SCR *sp;
 	TEXT *tp;
+	u_int32_t *ec_flagsp;
 {
 	size_t len, off;
 	char *p;
@@ -1319,9 +1426,9 @@ txt_unmap(sp, tp)
 	 * an turn mapping back on.
 	 */
 	if ((off == tp->ai || off == tp->offset) && ex_is_unmap(p, len))
-		FL_CLR(sp->gp->ec_flags, EC_MAPINPUT);
+		FL_CLR(*ec_flagsp, EC_MAPINPUT);
 	else
-		FL_SET(sp->gp->ec_flags, EC_MAPINPUT);
+		FL_SET(*ec_flagsp, EC_MAPINPUT);
 }
 
 /*
@@ -1475,10 +1582,11 @@ v_txt_auto(sp, lno, aitp, len, tp)
  *	Back up to the previously edited line.
  */
 static TEXT *
-txt_backup(sp, tiqh, tp)
+txt_backup(sp, tiqh, tp, flagsp)
 	SCR *sp;
 	TEXTH *tiqh;
 	TEXT *tp;
+	u_int32_t *flagsp;
 {
 	VI_PRIVATE *vip;
 	TEXT *ntp;
@@ -1500,9 +1608,9 @@ txt_backup(sp, tiqh, tp)
 		ntp->lb[ntp->len] = CH_CURSOR;
 		++ntp->insert;
 		++ntp->len;
-		FL_SET(vip->im_flags, TXT_APPENDEOL);
+		FL_SET(*flagsp, TXT_APPENDEOL);
 	} else
-		FL_CLR(vip->im_flags, TXT_APPENDEOL);
+		FL_CLR(*flagsp, TXT_APPENDEOL);
 
 	/* Release the current TEXT. */
 	CIRCLEQ_REMOVE(tiqh, tp, q);
@@ -1683,10 +1791,8 @@ txt_dent(sp, tp, isindent)
 	 * a line.
 	 */
 	for (current = cno = 0; cno < sp->cno; ++cno)
-		if (tp->lb[cno] == '\t')
-			current += COL_OFF(current, ts);
-		else
-			current += KEY_LEN(sp, tp->lb[cno]);
+		current += tp->lb[cno] == '\t' ?
+		    COL_OFF(current, ts) : KEY_LEN(sp, tp->lb[cno]);
 
 	target = current;
 	if (isindent)
@@ -1777,9 +1883,10 @@ txt_dent(sp, tp, isindent)
  *	Resolve the input text chain into the file.
  */
 static int
-txt_resolve(sp, tiqh)
+txt_resolve(sp, tiqh, flags)
 	SCR *sp;
 	TEXTH *tiqh;
+	u_int32_t flags;
 {
 	VI_PRIVATE *vip;
 	TEXT *tp;
@@ -1792,13 +1899,13 @@ txt_resolve(sp, tiqh)
 	 */
 	vip = VIP(sp);
 	tp = tiqh->cqh_first;
-	if (FL_ISSET(vip->im_flags, TXT_AUTOINDENT))
+	if (LF_ISSET(TXT_AUTOINDENT))
 		txt_ai_resolve(sp, tp);
 	if (file_sline(sp, tp->lno, tp->lb, tp->len))
 		return (1);
 
 	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno) {
-		if (FL_ISSET(vip->im_flags, TXT_AUTOINDENT))
+		if (LF_ISSET(TXT_AUTOINDENT))
 			txt_ai_resolve(sp, tp);
 		if (file_aline(sp, 0, lno, tp->lb, tp->len))
 			return (1);
@@ -1905,10 +2012,11 @@ txt_showmatch(sp)
  *	Handle margin wrap.
  */
 static int
-txt_margin(sp, tp, wmtp, didbreak)
+txt_margin(sp, tp, wmtp, didbreak, flags)
 	SCR *sp;
 	TEXT *tp, *wmtp;
 	int *didbreak;
+	u_int32_t flags;
 {
 	VI_PRIVATE *vip;
 	size_t len, off;
@@ -1949,13 +2057,12 @@ txt_margin(sp, tp, wmtp, didbreak)
 	vip = VIP(sp);
 	wmtp->lb = p + 1;
 	wmtp->offset = len;
-	wmtp->insert = FL_ISSET(vip->im_flags, TXT_APPENDEOL) ?
-	    tp->insert - 1 : tp->insert;
+	wmtp->insert = LF_ISSET(TXT_APPENDEOL) ?  tp->insert - 1 : tp->insert;
 	wmtp->owrite = tp->owrite;
 
 	/* Correct current bookkeeping information. */
 	sp->cno -= len;
-	if (FL_ISSET(vip->im_flags, TXT_APPENDEOL)) {
+	if (LF_ISSET(TXT_APPENDEOL)) {
 		tp->len -= len + tp->owrite + (tp->insert - 1);
 		tp->insert = 1;
 	} else {

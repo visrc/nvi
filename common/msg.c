@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.10 1995/07/14 14:04:07 bostic Exp $ (Berkeley) $Date: 1995/07/14 14:04:07 $";
+static char sccsid[] = "$Id: msg.c,v 10.11 1995/09/21 10:56:09 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -21,11 +21,9 @@ static char sccsid[] = "$Id: msg.c,v 10.10 1995/07/14 14:04:07 bostic Exp $ (Ber
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #ifdef __STDC__
@@ -39,7 +37,7 @@ static char sccsid[] = "$Id: msg.c,v 10.10 1995/07/14 14:04:07 bostic Exp $ (Ber
 #include <regex.h>
 
 #include "common.h"
-#include "vi.h"
+#include "../vi/vi.h"
 
 /*
  * msgq --
@@ -124,22 +122,11 @@ msgq(sp, mt, fmt, va_alist)
 	 * It's possible to reenter msg when it allocates space.  We're
 	 * probably dead anyway, but there's no reason to drop core.
 	 *
-	 * We can be entered as the result of a signal arriving, trying
-	 * to sync the file and failing.  This shouldn't be a hot spot,
-	 * block the signals.
-	 *
 	 * XXX
 	 * Yes, there's a race, but it should only be two instructions.
 	 */
-	if (gp != NULL)
-		SIGBLOCK(gp);
-	if (reenter++) {
-		if (gp != NULL)
-			SIGUNBLOCK(gp);
+	if (reenter++)
 		return;
-	}
-	if (gp != NULL)
-		SIGUNBLOCK(gp);
 
 	/* Get space for the message. */
 	nlen = 1024;
@@ -170,16 +157,19 @@ retry:		FREE_SPACE(sp, bp, blen);
 		mlen += len;
 	}
 
-	/* File name, line number prefix for errors. */
-	if (sp != NULL &&
-	    sp->if_name != NULL && (mt == M_ERR || mt == M_SYSERR)) {
-		for (p = sp->if_name; *p != '\0'; ++p) {
+	/*
+	 * If we're running an ex command that the user didn't enter, display
+	 * the file name and line number prefix.
+	 */
+	if ((mt == M_ERR || mt == M_SYSERR) &&
+	    sp != NULL && gp->if_name != NULL) {
+		for (p = gp->if_name; *p != '\0'; ++p) {
 			len = snprintf(mp, REM, "%s", KEY_NAME(sp, *p));
 			mp += len;
 			if ((mlen += len) > blen)
 				goto retry;
 		}
-		len = snprintf(mp, REM, ", %d: ", sp->if_lno);
+		len = snprintf(mp, REM, ", %d: ", gp->if_lno);
 		mp += len;
 		if ((mlen += len) > blen)
 			goto retry;
@@ -344,6 +334,11 @@ nofmt:	mp += len;
 		mt = M_ERR;
 	}
 
+	/* Add trailing newline. */
+	if ((mlen += 1) > blen)
+		goto retry;
+	*mp = '\n';
+
 	(void)ex_fflush(sp);
 	(void)gp->scr_msg(sp, mt, bp, mlen);
 
@@ -360,9 +355,9 @@ binc_err:
  * !!!
  * Historic vi documentation (USD:15-8) claimed that "The editor will also
  * always tell you when a change you make affects text which you cannot see."
- * This isn't true -- edit a large file and do "100d|1".  We don't implement
- * this semantic as it would require that we track each line that changes
- * during a command instead of just keeping count.
+ * This wasn't true -- edit a large file and do "100d|1".  We don't implement
+ * this semantic since it requires tracking each line that changes during a
+ * command instead of just keeping count.
  *
  * Line counts weren't right in historic vi, either.  For example, given the
  * file:
@@ -550,6 +545,7 @@ msg_status(sp, lno, showlast)
 	(void)sprintf(p, " (pid %lu)", (u_long)getpid());
 	p += strlen(p);
 #endif
+	*p++ = '\n';
 	(void)ex_fflush(sp);
 	(void)sp->gp->scr_msg(sp, M_INFO, bp, (size_t)(p - bp));
 
@@ -658,13 +654,16 @@ msg_cmsg(sp, which, lenp)
 	case CMSG_CONF:
 		return (msg_cat(sp, "268|confirm? [ynq]", lenp));
 	case CMSG_CONT:
-
 		return (msg_cat(sp, "269|Press any key to continue: ", lenp));
+	case CMSG_CONT_EX:
+		return (msg_cat(sp,
+	    "270|Press any key to continue [: to enter more ex commands]: ",
+		    lenp));
 	case CMSG_CONT_S:
-		return (msg_cat(sp, "279| cont?", lenp));
+		return (msg_cat(sp, "275| cont?", lenp));
 	case CMSG_CONT_Q:
 		return (msg_cat(sp,
-		    "280|Press any key to continue [q to quit]: ", lenp));
+		    "271|Press any key to continue [q to quit]: ", lenp));
 	default:
 		abort();
 	}

@@ -6,10 +6,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.5 1995/07/04 12:42:02 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:02 $
+ *	$Id: ex.h,v 10.6 1995/09/21 10:57:19 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:19 $
  */
 
-#define	PROMPTCHAR	':'		/* Prompt character. */
+#define	PROMPTCHAR	':'		/* Prompt using a colon. */
 
 typedef struct _excmdlist {		/* Ex command table structure. */
 	char *name;			/* Command name, underlying function. */
@@ -41,9 +41,9 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
  * !!!
  * QUOTING NOTE:
  *
- * Historically, .exrc files and EXINIT variables could only use ^V
- * as an escape character, neither ^Q or a user specified character
- * worked.  We enforce that here, just in case someone depends on it.
+ * Historically, .exrc files and EXINIT variables could only use ^V as an
+ * escape character, neither ^Q or a user specified character worked.  We
+ * enforce that here, just in case someone depends on it.
  */
 #define	IS_ESCAPE(sp, cmdp, ch)						\
 	(F_ISSET(cmdp, E_VLITONLY) ?					\
@@ -61,26 +61,24 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
 	}								\
 }
 
-/* Ranges for global and @ commands. */
+/* Range structures for global and @ commands. */
 typedef struct _range	RANGE;
 struct _range {				/* Global command range. */
 	CIRCLEQ_ENTRY(_range) q;	/* Linked list of ranges. */
 	recno_t start, stop;		/* Start/stop of the range. */
 };
 
-/* Ex command structure (EXCMD) and ex state. */
-typedef enum {
-	ES_PARSE=0,			/* Parser: ready (initial state). */
-	ES_PARSE_CONT,			/* Parser: continue the command. */
-	ES_PARSE_RESTART,		/* Parser: restart the command. */
-	ES_GET_CMD,			/* Command: command input. */
-	ES_CTEXT_TEARDOWN,		/* Command: after command input. */
-	ES_ITEXT_TEARDOWN,		/* Command: after text input. */
-	ES_RUNNING,			/* Something else is running. */
-} s_ex_t;
-
+/* Ex command structure. */
 struct _excmd {
 	LIST_ENTRY(_excmd) q;		/* Linked list of commands. */
+
+	char	 *if_name;		/* Associated file. */
+	recno_t	  if_lno;		/* Associated line number. */
+
+	/* Clear the structure for the ex parser. */
+#define	CLEAR_EX_PARSER(cmdp)						\
+	memset(&((cmdp)->cp), 0, ((char *)&(cmdp)->flags -		\
+	    (char *)&((cmdp)->cp)) + sizeof((cmdp)->flags))
 
 	char	 *cp;			/* Current command text. */
 	size_t	  clen;			/* Current command length. */
@@ -88,18 +86,11 @@ struct _excmd {
 	char	 *save_cmd;		/* Remaining command. */
 	size_t	  save_cmdlen;		/* Remaining command length. */
 
-	char	 *arg1;			/* + argument text. */
-	size_t	  arg1_len;		/* + argument length. */
+	EXCMDLIST const *cmd;		/* Command: entry in command table. */
+	EXCMDLIST rcmd;			/* Command: table entry/replacement. */
 
-	enum				/* Command separator state. */
-	    { SEP_NOTSET, SEP_NEED_N, SEP_NEED_NR, SEP_NONE } sep;
-	enum				/* Range address state. */
-	    { ADDR_FOUND, ADDR_FOUND_DELTA, ADDR_NEED, ADDR_NONE } addr;
-
-	CIRCLEQ_HEAD(_rh, _range) rq;	/* @/globals range: linked list. */
+	CIRCLEQ_HEAD(_rh, _range) rq;	/* @/global range: linked list. */
 	recno_t   range_lno;		/* @/global range: set line number. */
-	recno_t	  start;		/* @/global starting line number. */
-	recno_t	  end;			/* @/global end line number. */
 	char	 *o_cp;			/* Original @/global command. */
 	size_t	  o_clen;		/* Original @/global command length. */
 #define	AGV_AT		0x01		/* @ buffer execution. */
@@ -109,13 +100,13 @@ struct _excmd {
 #define	AGV_ALL		(AGV_AT | AGV_AT_NORANGE | AGV_GLOBAL | AGV_V)
 	u_int8_t  agv_flags;
 
-	EXCMDLIST const *cmd;		/* Command: entry in command table. */
-	EXCMDLIST rcmd;			/* Command: table entry/replacement. */
-
-	/* Zero out most of the structure before each ex command. */
-#define	ZERO_EXCMD(cmdp)						\
+	/* Clear the structure before each ex command. */
+#define	CLEAR_EX_CMD(cmdp) {						\
+	u_int32_t __f = F_ISSET(cmdp, E_PRESERVE);			\
 	memset(&((cmdp)->buffer), 0, ((char *)&(cmdp)->flags -		\
-	    (char *)&((cmdp)->buffer)) + sizeof((cmdp)->flags))
+	    (char *)&((cmdp)->buffer)) + sizeof((cmdp)->flags));	\
+	F_SET(cmdp, __f);						\
+}
 
 	CHAR_T	  buffer;		/* Command: named buffer. */
 	recno_t	  lineno;		/* Command: line number. */
@@ -127,36 +118,38 @@ struct _excmd {
 	ARGS	**argv;			/* Command: array of arguments. */
 	int	  argc;			/* Command: count of arguments. */
 
-#define	E_C_BUFFER	0x00000001	/* Buffer name specified. */
-#define	E_C_CARAT	0x00000002	/*  ^ flag. */
-#define	E_C_COUNT	0x00000004	/* Count specified. */
-#define	E_C_COUNT_NEG	0x00000008	/* Count was signed negative. */
-#define	E_C_COUNT_POS	0x00000010	/* Count was signed positive. */
-#define	E_C_DASH	0x00000020	/*  - flag. */
-#define	E_C_DOT		0x00000040	/*  . flag. */
-#define	E_C_EQUAL	0x00000080	/*  = flag. */
-#define	E_C_FORCE	0x00000100	/*  ! flag. */
-#define	E_C_HASH	0x00000200	/*  # flag. */
-#define	E_C_LIST	0x00000400	/*  l flag. */
-#define	E_C_PLUS	0x00000800	/*  + flag. */
-#define	E_C_PRINT	0x00001000	/*  p flag. */
+#define	E_C_BUFFER	0x00001		/* Buffer name specified. */
+#define	E_C_CARAT	0x00002		/*  ^ flag. */
+#define	E_C_COUNT	0x00004		/* Count specified. */
+#define	E_C_COUNT_NEG	0x00008		/* Count was signed negative. */
+#define	E_C_COUNT_POS	0x00010		/* Count was signed positive. */
+#define	E_C_DASH	0x00020		/*  - flag. */
+#define	E_C_DOT		0x00040		/*  . flag. */
+#define	E_C_EQUAL	0x00080		/*  = flag. */
+#define	E_C_FORCE	0x00100		/*  ! flag. */
+#define	E_C_HASH	0x00200		/*  # flag. */
+#define	E_C_LIST	0x00400		/*  l flag. */
+#define	E_C_PLUS	0x00800		/*  + flag. */
+#define	E_C_PRINT	0x01000		/*  p flag. */
 	u_int16_t iflags;		/* User input information. */
 
 #define	__INUSE2	0x000004ff	/* Same name space as EXCMDLIST. */
-#define	E_ABSMARK	0x00000800	/* Set the absolute mark. */
-#define	E_ADDR_DEF	0x00001000	/* Default addresses used. */
-#define	E_BLIGNORE	0x00002000	/* Ignore blank lines. */
-#define	E_DELTA		0x00004000	/* Search address with delta. */
-#define	E_MODIFY	0x00008000	/* File name expansion modified arg. */
-#define	E_MOVETOEND	0x00010000	/* Move to the end of the file first. */
-#define	E_NEEDSEP	0x00020000	/* Need ex output separator. */
-#define	E_NEWLINE	0x00040000	/* Found ending <newline>. */
-#define	E_NOAUTO	0x00080000	/* Don't do autoprint output. */
-#define	E_NOPRDEF	0x00100000	/* Don't print as default. */
-#define	E_OPTNUM	0x00200000	/* Number edit option affect. */
-#define	E_USELASTCMD	0x00400000	/* Use the last command. */
-#define	E_VISEARCH	0x00800000	/* It's really a vi search command. */
-#define	E_VLITONLY	0x01000000	/* Use ^V quoting only. */
+#define	E_BLIGNORE	0x00000800	/* Ignore blank lines. */
+#define	E_NOAUTO	0x00001000	/* Don't do autoprint output. */
+#define	E_NOPRDEF	0x00002000	/* Don't print as default. */
+#define	E_NRSEP		0x00004000	/* Need to line adjust ex output. */
+#define	E_OPTNUM	0x00008000	/* Number edit option affected. */
+#define	E_VLITONLY	0x00010000	/* Use ^V quoting only. */
+#define	E_PRESERVE	0x0001f800	/* Bits to preserve across commands. */
+
+#define	E_ABSMARK	0x00020000	/* Set the absolute mark. */
+#define	E_ADDR_DEF	0x00040000	/* Default addresses used. */
+#define	E_DELTA		0x00080000	/* Search address with delta. */
+#define	E_MODIFY	0x00100000	/* File name expansion modified arg. */
+#define	E_MOVETOEND	0x00200000	/* Move to the end of the file first. */
+#define	E_NEWLINE	0x00400000	/* Found ending <newline>. */
+#define	E_USELASTCMD	0x00800000	/* Use the last command. */
+#define	E_VISEARCH	0x01000000	/* It's really a vi search command. */
 	u_int32_t flags;		/* Current flags. */
 };
 
@@ -175,6 +168,8 @@ typedef struct _ex_private {
 
 	TAILQ_HEAD(_cdh, _cdpath) cdq;	/* Cd path list. */
 
+	CHAR_T	*lastbcomm;		/* Last bang command. */
+
 	ARGS   **args;			/* Command: argument list. */
 	int	 argscnt;		/* Command: argument list count. */
 	int	 argsoff;		/* Command: offset into arguments. */
@@ -183,26 +178,6 @@ typedef struct _ex_private {
 
 	char	*ibp;			/* File line input buffer. */
 	size_t	 ibp_len;		/* File line input buffer length. */
-
-	CHAR_T	*lastbcomm;		/* Last bang command. */
-
-	/* XXX: Should be struct timespec's, but time_t is more portable. */
-	time_t leave_atime;		/* ex_[sr]leave old access time. */
-	time_t leave_mtime;		/* ex_[sr]leave old mod time. */
-	struct termios leave_term;	/* ex_[sr]leave tty state. */
-
-					/* Running function. */
-	int	(*run_func) __P((SCR *, EVENT *, int *));
-
-					/* Ex text input mode state. */
-	carat_t	 im_carat;		/* State of the "[^0]^D" sequences. */
-	TEXTH	 im_tiq;		/* Text input queue. */
-	TEXT	*im_tp;			/* Input text structure. */
-	TEXT	 im_ait;		/* Autoindent text structure. */
-	CHAR_T	 im_prompt;		/* Text prompt. */
-	recno_t	 im_lno;		/* Starting input line. */
-	u_int32_t
-		 im_flags;		/* Current TXT_* flags. */
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 

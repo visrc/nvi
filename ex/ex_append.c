@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.11 1995/07/26 12:16:40 bostic Exp $ (Berkeley) $Date: 1995/07/26 12:16:40 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.12 1995/09/21 10:57:22 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,10 +17,8 @@ static char sccsid[] = "$Id: ex_append.c,v 10.11 1995/07/26 12:16:40 bostic Exp 
 
 #include <bitstring.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "compat.h"
@@ -88,12 +86,12 @@ ex_aci(sp, cmdp, cmd)
 	enum which cmd;
 {
 	CHAR_T *p, *t;
-	EX_PRIVATE *exp;
-	GS *gp;
-	recno_t lno;
+	TEXT *tp;
+	TEXTH tiq;
+	recno_t cnt, lno;
 	size_t len;
+	u_int32_t flags;
 
-	gp = sp->gp;
 	NEEDFILE(sp, cmdp);
 
 	/*
@@ -211,20 +209,21 @@ ex_aci(sp, cmdp, cmd)
 	 * However, depending on the screen that we're using, that may not
 	 * be possible.
 	 */
-	if (gp->scr_canon(sp, 1)) {
-		ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
-		return (1);
-	}
+	if (F_ISSET(sp, S_VI)) {
+		if (sp->gp->scr_screen(sp, S_EX)) {
+			ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
+			return (1);
+		}
+		F_SET(sp, S_SCREEN_READY);
 
-	/*
-	 * !!!
-	 * Users of historical versions of vi sometimes get confused when they
-	 * enter append mode, and can't seem to get out of it.  This problem
-	 * also applies to the .exrc file?  Give them an informational message.
-	 */
-	if (!F_ISSET(sp, S_EX)) {
+		/*
+		 * !!!
+		 * Users of historical versions of vi sometimes get confused
+		 * when they enter append mode, and can't seem to get out of
+		 * it.  Give them an informational message.
+		 */
 		(void)ex_puts(sp,
-		    msg_cat(sp, "280|\nEntering ex input mode.\n", NULL));
+		    msg_cat(sp, "273|\nEntering ex input mode.\n", NULL));
 		(void)ex_fflush(sp);
 	}
 
@@ -232,52 +231,29 @@ ex_aci(sp, cmdp, cmd)
 	 * Set input flags; the ! flag turns off autoindent for append,
 	 * change and insert.
 	 */
-	exp = EXP(sp);
-	FL_INIT(exp->im_flags, TXT_DOTTERM | TXT_NUMBER);
+	LF_INIT(TXT_DOTTERM | TXT_NUMBER);
 	if (!FL_ISSET(cmdp->iflags, E_C_FORCE) && O_ISSET(sp, O_AUTOINDENT))
-		FL_SET(exp->im_flags, TXT_AUTOINDENT);
+		LF_SET(TXT_AUTOINDENT);
 	if (O_ISSET(sp, O_BEAUTIFY))
-		FL_SET(exp->im_flags, TXT_BEAUTIFY);
+		LF_SET(TXT_BEAUTIFY);
 
 	/*
 	 * This code can't use the common screen TEXTH structure (sp->tiq),
 	 * as it may already be in use, e.g. ":append|s/abc/ABC/" would fail
 	 * as we are only halfway through the text when the append code fires.
-	 * Use a local structure instead.  Because we have to have a local
-	 * structure, the rest of the ex code uses it as well.  (The ex code
-	 * would have to use a local structure except that we're guaranteed
-	 * to finish any remaining characters in the common TEXTH structure
-	 * when they were inserted into the file, above.)
+	 * Use a local structure instead.  (The ex code would have to use a
+	 * local structure except that we're guaranteed to finish remaining
+	 * characters in the common TEXTH structure when they were inserted
+	 * into the file, above.)
 	 */
-	memset(&exp->im_tiq, 0, sizeof(TEXTH));
-	CIRCLEQ_INIT(&exp->im_tiq);
-	exp->im_lno = lno;
+	memset(&tiq, 0, sizeof(TEXTH));
+	CIRCLEQ_INIT(&tiq);
 
-	if (ex_txt_setup(sp, 0))
+	if (ex_txt(sp, &tiq, 0, flags))
 		return (1);
-	gp->cm_next = ES_ITEXT_TEARDOWN;
-	return (0);
-}
 
-/*
- * ex_aci_td --
- *	Teardown input text mode, and resolve input lines.
- *
- * PUBLIC: int ex_aci_td __P((SCR *));
- */
-int
-ex_aci_td(sp)
-	SCR *sp;
-{
-	EX_PRIVATE *exp;
-	TEXT *tp;
-	recno_t lno;
-	size_t cnt;
-
-	exp = EXP(sp);
-	lno = exp->im_lno;
-	for (tp = exp->im_tiq.cqh_first, cnt = 0;
-	    tp != (TEXT *)&exp->im_tiq; tp = tp->q.cqe_next, ++cnt)
+	for (cnt = 0, tp = tiq.cqh_first;
+	    tp != (TEXT *)&tiq; ++cnt, tp = tp->q.cqe_next)
 		if (file_aline(sp, 1, lno++, tp->lb, tp->len))
 			return (1);
 

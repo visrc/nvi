@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 10.3 1995/06/09 12:51:59 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:59 $";
+static char sccsid[] = "$Id: ex_visual.c,v 10.4 1995/09/21 10:58:10 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,17 +17,16 @@ static char sccsid[] = "$Id: ex_visual.c,v 10.3 1995/06/09 12:51:59 bostic Exp $
 
 #include <bitstring.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
 
 #include "common.h"
+#include "../vi/vi.h"
 
 /*
  * ex_visual -- :[line] vi[sual] [^-.+] [window_size] [flags]
@@ -40,8 +39,9 @@ ex_visual(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
+	SCR *tsp;
 	size_t len;
-	int pos, rval;
+	int pos;
 	char buf[256];
 
 	/* If open option off, disallow visual command. */
@@ -85,7 +85,7 @@ ex_visual(sp, cmdp)
 		     "%luz%c%lu", sp->lno, pos, cmdp->count);
 	else
 		len = snprintf(buf, sizeof(buf), "%luz%c", sp->lno, pos);
-	(void)v_event_push(sp, buf, len, CH_NOMAP | CH_QUOTED);
+	(void)v_event_push(sp, NULL, buf, len, CH_NOMAP | CH_QUOTED);
 
 	/*
 	 * !!!
@@ -105,7 +105,7 @@ ex_visual(sp, cmdp)
 		break;
 	}
 
-	/*
+nopush:	/*
 	 * !!!
 	 * You can call the visual part of the editor from within an ex
 	 * global command.
@@ -115,10 +115,10 @@ ex_visual(sp, cmdp)
 	 * i.e. you could undo all of the changes you made in visual mode.
 	 * We don't get this right; I'm waiting for the new logging code to
 	 * be available.
+	 *
+	 * It's explicit, don't have to wait.
 	 */
-nopush:	rval = 0;
-	F_CLR(sp, S_EX);
-	F_SET(sp, S_VI);
+	F_CLR(sp, S_EX_WROTE);
 
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		/*
@@ -130,18 +130,30 @@ nopush:	rval = 0;
 		++sp->ep->refcnt;
 
 		/*
+		 * Fake up a screen pointer -- vi doesn't get to change our
+		 * underlying file, regardless.
+		 */
+		tsp = sp;
+		if (vi(&tsp))
+			return (1);
+
+		/*
 		 * !!!
 		 * Historically, if the user exited the vi screen(s) using an
 		 * ex quit command (e.g. :wq, :q) ex/vi exited, it was only if
 		 * they exited vi using the Q command that ex continued.  We
 		 * continue in ex regardless, based on the belief that Q isn't
-		 * that intuitive for most users and the intent is clear.
+		 * that intuitive for most users and the intent was clear.
 		 */
-#ifdef __TK__
-		rval = vs_screen_edit(sp);
-#endif
-		F_CLR(sp, S_EX | S_VI);
-		F_SET(sp, S_EX);
+		F_CLR(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH);
+
+		/* Reset the screen. */
+		if (sp->gp->scr_screen(sp, S_EX))
+			return (1);
+		F_SET(sp, S_SCREEN_READY);
+	} else {
+		F_CLR(sp, S_EX);
+		F_SET(sp, S_VI);
 	}
-	return (rval);
+	return (0);
 }
