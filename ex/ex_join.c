@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 9.3 1995/01/11 16:15:35 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:35 $";
+static char sccsid[] = "$Id: ex_join.c,v 9.4 1995/01/30 10:01:14 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:01:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ ex_join(sp, cmdp)
 	to = cmdp->addr2.lno;
 
 	/* Check for no lines to join. */
-	if ((p = file_gline(sp, from + 1, &len)) == NULL) {
+	if (!file_eline(sp, from + 1)) {
 		msgq(sp, M_ERR, "135|No following lines to join");
 		return (1);
 	}
