@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.34 1993/04/06 11:36:35 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:35 $";
+static char sccsid[] = "$Id: util.c,v 5.35 1993/04/12 14:33:32 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:33:32 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/ioctl.h>
 
 #include <ctype.h>
@@ -33,16 +33,15 @@ static char sccsid[] = "$Id: util.c,v 5.34 1993/04/06 11:36:35 bostic Exp $ (Ber
  */
 void
 #ifdef __STDC__
-msgq(SCR *sp, u_int flags, const char *fmt, ...)
+msgq(SCR *sp, enum msgtype mt, const char *fmt, ...)
 #else
-msgq(sp, flags, fmt, va_alist)
+msgq(sp, mt, fmt, va_alist)
 	SCR *sp;
-	u_int flags;
+	enum msgtype mt;
         char *fmt;
         va_dcl
 #endif
 {
-	MSG *mp;
         va_list ap;
 	int len;
 	char msgbuf[1024];
@@ -60,14 +59,28 @@ msgq(sp, flags, fmt, va_alist)
 		return;
 	F_SET(sp, S_MSGREENTER);
 
-	/* Schedule a bell, if requested. */
-	if (flags & (M_BELL | M_ERROR))
-		F_SET(sp, S_BELLSCHED);
-
-	/* If extra information message, check user's wishes. */
-	if (!(flags & (M_DISPLAY | M_ERROR)) && !O_ISSET(sp, O_VERBOSE)) {
-		F_CLR(sp, S_MSGREENTER);
-		return;
+	switch (mt) {
+	case M_BERR:
+		if (!O_ISSET(sp, O_VERBOSE)) {
+			F_SET(sp, S_BELLSCHED);
+			F_CLR(sp, S_MSGREENTER);
+			return;
+		}
+		mt = M_ERR;
+		break;
+	case M_ERR:
+		break;
+	case M_INFO:
+		break;
+	case M_VINFO:
+		if (!O_ISSET(sp, O_VERBOSE)) {
+			F_CLR(sp, S_MSGREENTER);
+			return;
+		}
+		mt = M_INFO;
+		break;
+	default:
+		abort();
 	}
 
 	/* Length is the min length of the message or the buffer. */
@@ -77,7 +90,7 @@ msgq(sp, flags, fmt, va_alist)
 	else
 		++len;
 
-	msga(NULL, sp, flags, msgbuf, len);
+	msga(NULL, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
 
 	F_CLR(sp, S_MSGREENTER);
 }
@@ -88,10 +101,10 @@ msgq(sp, flags, fmt, va_alist)
  *	absolutely nothing we can do if it does.
  */
 void
-msga(gp, sp, flags, p, len)
+msga(gp, sp, inv_video, p, len)
 	GS *gp;
 	SCR *sp;
-	u_int flags;
+	int inv_video;
 	char *p;
 	size_t len;
 {
@@ -140,7 +153,7 @@ loop:		for (;
 
 	memmove(mp->mbuf, p, len);
 	mp->len = len;
-	mp->flags = flags;
+	mp->flags = inv_video ? M_INV_VIDEO : 0;
 }
 
 /*
@@ -171,7 +184,7 @@ binc(sp, argp, bsizep, min)
 		bpp = realloc(bpp, csize);
 	if (bpp == NULL) {
 		if (sp != NULL)
-			msgq(sp, M_ERROR, "Error: %s.", strerror(errno));
+			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 		*bsizep = 0;
 		return (1);
 	}
@@ -271,6 +284,7 @@ set_window_size(sp, set_row)
 {
 	struct winsize win;
 	size_t col, row;
+	int isset;
 	char *argv[2], *s, sbuf[100];
 
 	row = 80;
@@ -304,13 +318,22 @@ set_window_size(sp, set_row)
 	argv[0] = sbuf;
 	argv[1] = NULL;
 
-	/* Tell the options code that the screen size has changed. */
+	/*
+	 * Tell the options code that the screen size has changed.
+	 * Since the user didn't do the set, clear the set bits.
+	 */
+	isset = F_ISSET(&sp->opts[O_LINES], OPT_SET);
 	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", row ? row : win.ws_row);
 	if (opts_set(sp, argv))
 		return (1);
+	if (isset)
+		F_CLR(&sp->opts[O_LINES], OPT_SET);
+	isset = F_ISSET(&sp->opts[O_COLUMNS], OPT_SET);
 	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
 	if (opts_set(sp, argv))
 		return (1);
+	if (isset)
+		F_CLR(&sp->opts[O_COLUMNS], OPT_SET);
 
 	/* Schedule a resize. */
 	F_SET(sp, S_RESIZE);
