@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.1 1993/06/09 22:22:10 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:22:10 $";
+static char sccsid[] = "$Id: seq.c,v 8.2 1993/08/07 10:47:09 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:47:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,11 +130,14 @@ seq_find(sp, input, ilen, stype, ispartialp)
 	HDR *hp;
 	SEQ *qp;
 
+	if (ispartialp)
+		*ispartialp = 0;
+
 	hp = &sp->seq[*input];
 	if (hp->snext == NULL)
 		return (NULL);
+
 	if (ispartialp) {
-		*ispartialp = 0;
 		for (qp = hp->snext; qp != (SEQ *)hp; qp = qp->snext) {
 			if (stype != qp->stype)
 				continue;
