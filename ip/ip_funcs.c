@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.1 1996/09/20 19:35:56 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:35:56 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.2 1996/09/20 20:30:49 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:30:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -328,7 +328,7 @@ void
 ip_usage()
 {       
 #define USAGE "\
-usage: vi [-eFlRrv] [-c command] [-i ifd.ofd] [-t tag] [-w size] [file ...]\n"
+usage: vi [-eFlRrv] [-c command] [-I ifd.ofd] [-t tag] [-w size] [file ...]\n"
         (void)fprintf(stderr, "%s", USAGE);
 #undef  USAGE
 }
@@ -345,7 +345,7 @@ ip_send(sp, fmt, ipbp)
 	IP_BUF *ipbp;
 {
 	IP_PRIVATE *ipp;
-	size_t blen;
+	size_t blen, off;
 	u_int32_t ilen;
 	int nlen, n, nw, rval;
 	char *bp, *p;
@@ -370,25 +370,29 @@ ip_send(sp, fmt, ipbp)
 			case '2':			/* Value 2. */
 				ilen = ntohl(ipbp->val2);
 value:				nlen += IPO_INT_LEN;
+				off = p - bp;
 				ADD_SPACE_RET(sp, bp, blen, nlen);
+				p = bp + off;
 				memmove(p, &ilen, IPO_INT_LEN);
 				p += IPO_INT_LEN;
 				break;
 			case 's':			/* String. */
 				ilen = ipbp->len;	/* XXX: conversion. */
 				ilen = ntohl(ilen);
-				nlen += IPO_INT_LEN;
+				nlen += IPO_INT_LEN + ipbp->len;
+				off = p - bp;
 				ADD_SPACE_RET(sp, bp, blen, nlen);
+				p = bp + off;
 				memmove(p, &ilen, IPO_INT_LEN);
 				p += IPO_INT_LEN;
-				memmove(p, ipbp->str, ilen);
-				p += ilen;
+				memmove(p, ipbp->str, ipbp->len);
+				p += ipbp->len;
 				break;
 			}
 
 
 	rval = 0;
-	for (n = p - bp, p = bp; n > 0; n - nw, p += nw)
+	for (n = p - bp, p = bp; n > 0; n -= nw, p += nw)
 		if ((nw = write(ipp->o_fd, p, n)) < 0) {
 			rval = 1;
 			break;
