@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.1 1993/06/09 22:29:01 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:29:01 $
+ *	$Id: vi.h,v 8.2 1993/06/28 13:25:06 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:25:06 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -91,12 +91,28 @@ extern VIKEYS const vikeys[MAXVIKEY + 1];
 /* Definition of a "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
-#define	EMPTYLINE	-1
+
+/* Character stream structure, prototypes. */
+typedef struct _vcs {
+	recno_t	 cs_lno;			/* Line. */
+	size_t	 cs_cno;			/* Column. */
+	char	*cs_bp;				/* Buffer. */
+	size_t	 cs_len;			/* Length. */
+	int	 cs_ch;				/* Character. */
+#define	CS_EMP	1				/* Empty line. */
+#define	CS_EOF	2				/* End-of-file. */
+#define	CS_EOL	3				/* End-of-line. */
+#define	CS_SOF	4				/* Start-of-file. */
+	int	 cs_flags;			/* Return flags. */
+} VCS;
+
+int	cs_bblank __P((SCR *, EXF *, VCS *));
+int	cs_fblank __P((SCR *, EXF *, VCS *));
+int	cs_init __P((SCR *, EXF *, VCS *));
+int	cs_next __P((SCR *, EXF *, VCS *));
+int	cs_prev __P((SCR *, EXF *, VCS *));
 
 /* Vi function prototypes. */
-int	getc_init __P((SCR *, EXF *, MARK *, int *));
-int	getc_next __P((SCR *, EXF *, enum direction, int *));
-void	getc_set __P((SCR *, EXF *, MARK *));
 int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *, TEXT *));
 int	vi __P((struct _scr *, struct _exf *));
 int	v_comment __P((SCR *, EXF *));
@@ -105,6 +121,7 @@ void	v_eof __P((SCR *, EXF *, MARK *));
 void	v_eol __P((SCR *, EXF *, MARK *));
 int	v_exwrite __P((void *, const char *, int));
 int	v_init __P((SCR *, EXF *));
+int	v_isempty __P((char *, size_t));
 int	v_msgflush __P((SCR *));
 int	v_ntext __P((SCR *, EXF *, HDR *,
 	    MARK *, char *, size_t, MARK *, int, recno_t, u_int));
