@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.1 1992/06/16 07:25:50 bostic Exp $ (Berkeley) $Date: 1992/06/16 07:25:50 $";
+static char sccsid[] = "$Id: v_section.c,v 5.2 1992/06/16 07:27:21 bostic Exp $ (Berkeley) $Date: 1992/06/16 07:27:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,14 @@ static char sccsid[] = "$Id: v_section.c,v 5.1 1992/06/16 07:25:50 bostic Exp $ 
 #include "vcmd.h"
 #include "options.h"
 #include "extern.h"
+
+/*
+ * In historic vi, the section commands ignored empty lines, unlike the
+ * paragraph commands, which was probably okay, but also moved to the
+ * start of the last line when there where no more sections instead of
+ * the end of the last line.  This has been changed to be more like the
+ * paragraphs command.
+ */
 
 /*
  * v_sectionf -- [count]]]
