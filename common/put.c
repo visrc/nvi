@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 8.5 1994/05/05 10:00:09 bostic Exp $ (Berkeley) $Date: 1994/05/05 10:00:09 $";
+static char sccsid[] = "$Id: put.c,v 8.6 1994/05/05 10:06:33 bostic Exp $ (Berkeley) $Date: 1994/05/05 10:06:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,8 +78,8 @@ put(sp, ep, cbp, namep, cp, rp, append)
 	 * cut buffer simply becomes the file.  It's a special case so
 	 * that we can ignore it in general.
 	 *
-	 * Historical practice is that the cursor ends up on the first
-	 * non-blank character of the first line inserted.
+	 * Historical practice is that the cursor ends at the first character
+	 * in the file.
 	 */
 	if (cp->lno == 1) {
 		if (file_lline(sp, ep, &lno))
@@ -91,7 +91,6 @@ put(sp, ep, cbp, namep, cp, rp, append)
 					return (1);
 			rp->lno = 1;
 			rp->cno = 0;
-			(void)nonblank(sp, ep, rp->lno, &rp->cno);
 			return (0);
 		}
 	}
