@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.70 1993/05/15 11:26:05 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:26:05 $";
+static char sccsid[] = "$Id: exf.c,v 5.71 1993/05/16 12:24:02 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:24:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: exf.c,v 5.70 1993/05/15 11:26:05 bostic Exp $ (Berk
 #include "vi.h"
 #include "excmd.h"
 #include "pathnames.h"
+#include "recover.h"
 
 static int file_def __P((SCR *, EXF *));
 
@@ -168,10 +169,12 @@ file_prev(sp, ep, all)
  *	Start editing a file.
  */
 EXF *
-file_start(sp, ep)
+file_start(sp, ep, rcv_fname)
 	SCR *sp;
 	EXF *ep;
+	char *rcv_fname;
 {
+	RECNOINFO *oip, oinfo;
 	struct stat sb;
 	int fd, sverrno;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
@@ -214,6 +217,26 @@ file_start(sp, ep)
 	} else
 		oname = ep->name;
 	
+	/* Set up recovery. */
+	memset(&oinfo, 0, sizeof(RECNOINFO));
+	oip = &oinfo;
+	if (rcv_fname == NULL) {
+		if (rcv_tmp(sp, ep)) {
+			msgq(sp, M_ERR,
+		    "Modifications not recoverable if the system crashes.");
+			oip = NULL;
+		}
+	} else if ((ep->rcv_path = strdup(rcv_fname)) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (NULL);
+	} else
+		F_SET(ep, F_MODIFIED);
+	if (oip != NULL) {
+		F_SET(ep, F_RCV_ON);
+		oinfo.bfname = ep->rcv_path;
+		oinfo.bval = '\n';
+	}
+
 	/*
 	 * Open a db structure.
 	 *
@@ -224,11 +247,11 @@ file_start(sp, ep)
 	 * portable way to do this.
 	 */
 	ep->db = dbopen(oname,
-	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
+	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, oip);
 	if (ep->db == NULL) {
 		sverrno = errno;
 		ep->db = dbopen(oname,
-		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
+		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, oip);
 		if (ep->db == NULL) {
 			msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
 			return (NULL);
@@ -269,6 +292,12 @@ file_stop(sp, ep, force)
 		msgq(sp, M_ERR, "%s: close: %s", ep->name, strerror(errno));
 		return (1);
 	}
+
+	/* Delete the recovery file. */
+	if (!F_ISSET(ep, F_RCV_NORM))
+		(void)unlink(ep->rcv_path);
+	if (ep->rcv_path != NULL)
+		FREE(ep->rcv_path, strlen(ep->rcv_path));
 
 	/*
 	 * Committed to the close.
@@ -393,7 +422,8 @@ file_write(sp, ep, fm, tm, fname, flags)
 		from.lno = 1;
 		from.cno = 0;
 		fm = &from;
-		to.lno = file_lline(sp, ep);
+		if (file_lline(sp, ep, &to.lno))
+			return (1);
 		to.cno = 0;
 		tm = &to;
 	}
@@ -421,7 +451,7 @@ file_def(sp, ep)
 	memset(ep, 0, sizeof(EXF));
 
 	ep->c_lno = OOBLNO;
-	F_SET(ep, F_NOSETPOS);
+	F_SET(ep, F_FIRSTMODIFY | F_NOSETPOS);
 
 	return (mark_init(sp, ep));
 }
