@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.60 1993/05/10 11:38:55 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:38:55 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.61 1993/05/10 14:37:02 bostic Exp $ (Berkeley) $Date: 1993/05/10 14:37:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -274,7 +274,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 
 	/* This is just a test. */
 #ifdef DEBUG
-	if (CNO >= len) {
+	if (CNO >= len && len != 0) {
 		msgq(sp, M_ERR, "Error: %s/%d: cno (%u) >= len (%u)",
 		     tail(__FILE__), __LINE__, CNO, len);
 		return (1);
