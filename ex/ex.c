@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.45 1996/05/10 17:38:29 bostic Exp $ (Berkeley) $Date: 1996/05/10 17:38:29 $";
+static const char sccsid[] = "$Id: ex.c,v 10.46 1996/05/15 18:50:01 bostic Exp $ (Berkeley) $Date: 1996/05/15 18:50:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1519,7 +1519,7 @@ addr_verify:
 				if (!at_found) {
 					at_found = 1;
 					msgq(sp, M_ERR,
-		"090|@ with range running when file/screen changed");
+		"090|@ with range running when the file/screen changed");
 				}
 				break;
 			case AGV_GLOBAL:
@@ -1527,16 +1527,14 @@ addr_verify:
 				if (!gv_found) {
 					gv_found = 1;
 					msgq(sp, M_ERR,
-		"091|Global/v command running when file/screen changed");
+		"091|Global/v command running when the file/screen changed");
 				}
 				break;
 			default:
 				abort();
 			}
-		if (at_found || gv_found) {
-			ex_discard(sp);
-			goto err;
-		}
+		if (at_found || gv_found)
+			goto discard;
 		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_SSWITCH))
 			goto rsuccess;
 	}
@@ -1565,7 +1563,7 @@ err:	/*
 			}
 		}
 	if (ecp->save_cmdlen != 0 || gp->ecq.lh_first != &gp->excmd) {
-		msgq(sp, M_BERR,
+discard:	msgq(sp, M_BERR,
 		    "092|Ex command failed: pending commands discarded");
 		ex_discard(sp);
 	}
