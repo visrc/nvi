@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.124 1994/07/17 10:35:05 bostic Exp $ (Berkeley) $Date: 1994/07/17 10:35:05 $
+ *	$Id: screen.h,v 8.125 1994/07/23 18:29:49 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:29:49 $
  */
 
 /*
@@ -277,9 +277,11 @@ struct _scr {
 /*
  * Signals/timers have no structure, so it's all here.
  *
- * Block all signals that are being handled.  The reason is that we don't
- * want any underlying system calls in the DB package interrupted and not
- * restarted, it could theoretically cause consistency problems.
+ * Block all signals that are being handled.  Used to keep the underlying DB
+ * system calls from being interrupted and not restarted, as it could cause
+ * consistency problems.  Also used when vi forks child processes, to avoid
+ * a signal arriving after the fork and before the exec, causing both parent
+ * and child to attempt recovery processing.
  */
 #define	SIGBLOCK(gp) \
 	(void)sigprocmask(SIG_BLOCK, &(gp)->blockset, NULL);
