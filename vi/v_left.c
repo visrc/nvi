@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 8.4 1994/02/26 17:19:49 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:49 $";
+static char sccsid[] = "$Id: v_left.c,v 8.5 1994/03/03 20:04:54 bostic Exp $ (Berkeley) $Date: 1994/03/03 20:04:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,11 +90,18 @@ v_cfirst(sp, ep, vp)
 	/*
 	 * Move to the first non-blank.
 	 *
-	 * Done by RCM_SET_FNB flag -- if used as a motion component of
-	 * another command, it's line oriented, so column position is a
-	 * don't care.  For the same reason, we don't bother to do the
-	 * usual left-motion starting cursor adjustment.
+	 * Can't just use RCM_SET_FNB, in case _ is used as the motion
+	 * component of another command.
 	 */
+	vp->m_stop.cno = 0;
+	if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+		return (1);
+
+	/*
+	 * VC_D and non-motion commands move to the end of the range,
+	 * VC_Y stays at the start.  Ignore VC_C and VC_S.
+	 */
+	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
 	return (0);
 }
 
