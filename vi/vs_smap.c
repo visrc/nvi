@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.13 1995/11/07 20:27:29 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:27:29 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.14 1995/11/08 08:33:44 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:33:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,6 @@ vs_change(sp, lno, op)
 {
 	VI_PRIVATE *vip;
 	SMAP *p;
-	recno_t lline;
 	size_t cnt, oldy, oldx;
 
 	vip = VIP(sp);

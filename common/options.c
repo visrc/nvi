@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.19 1995/11/05 13:29:49 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:29:49 $";
+static char sccsid[] = "$Id: options.c,v 10.20 1995/11/08 08:33:12 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:33:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -411,7 +411,7 @@ int opts_get(sp, target, value)
 	SCR *sp;
 	CHAR_T *target, **value;
 {
-	int found = 0, offset;
+	int offset;
 	OPTLIST const *op;
 
 	if ((op = opts_search(target)) == NULL)
