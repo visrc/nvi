@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.17 1996/03/30 13:46:54 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:54 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.18 1996/04/10 11:27:48 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:27:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,6 @@ static const char sccsid[] = "$Id: options_f.c,v 10.17 1996/03/30 13:46:54 bosti
 #include <unistd.h>
 
 #include "common.h"
-#include "../ex/tag.h"
 
 /*
  * PUBLIC: int f_altwerase __P((SCR *, OPTION *, char *, u_long *));
