@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.4 1993/10/10 18:19:41 bostic Exp $ (Berkeley) $Date: 1993/10/10 18:19:41 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.5 1993/10/11 09:38:06 bostic Exp $ (Berkeley) $Date: 1993/10/11 09:38:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,29 @@ static char sccsid[] = "$Id: ex_usage.c,v 8.4 1993/10/10 18:19:41 bostic Exp $ (
 #include "vcmd.h"
 
 /*
- * ex_usage -- :usage cmd
+ * ex_help -- :help
+ *	Display help message.
+ */
+int
+ex_help(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	(void)fprintf(sp->stdfp,
+	    "To see the list of vi commands, enter \":viusage<CR>\"\n");
+	(void)fprintf(sp->stdfp,
+	    "To see the list of ex commands, enter \":exusage<CR>\"\n");
+	(void)fprintf(sp->stdfp,
+	    "For an ex command usage statement enter \":exusage [cmd]<CR>\"\n");
+	(void)fprintf(sp->stdfp,
+	    "For a vi key usage statement enter \":viusage [key]<CR>\"\n");
+	(void)fprintf(sp->stdfp, "To exit, enter \":q!\"\n");
+	return (0);
+}
+
+/*
+ * ex_usage -- :exusage [cmd]
  *	Display ex usage strings.
  */
 int
@@ -38,11 +60,13 @@ ex_usage(sp, ep, cmdp)
 			msgq(sp, M_ERR, "The %.*s command is unknown.", len, p);
 			return (1);
 		}
-		(void)fprintf(sp->stdfp, "Usage: %s\n", cp->usage);
+		(void)fprintf(sp->stdfp,
+		    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
 		break;
 	case 0:
 		for (cp = cmds; cp->name != NULL; ++cp)
-			(void)fprintf(sp->stdfp, "%s\n", cp->usage);
+			(void)fprintf(sp->stdfp,
+			    "%*s: %s\n", MAXCMDNAMELEN, cp->name, cp->help);
 		break;
 	default:
 		abort();
@@ -51,7 +75,7 @@ ex_usage(sp, ep, cmdp)
 }
 
 /*
- * ex_viusage -- :viusage key
+ * ex_viusage -- :viusage [key]
  *	Display vi usage strings.
  */
 int
@@ -79,14 +103,15 @@ nokey:			msgq(sp, M_ERR, "The %s key has no current meaning",
 			    charname(sp, key));
 			return (1);
 		}
-		(void)fprintf(sp->stdfp, "Usage: %s\n", kp->usage);
+		(void)fprintf(sp->stdfp,
+		    "  Key:%s%s\nUsage: %s\n",
+		        isblank(*kp->help) ? "" : " ", kp->help, kp->usage);
 		break;
 	case 0:
 		for (key = 0; key <= MAXVIKEY; ++key) {
 			kp = &vikeys[key];
-			if (kp->func == NULL)
-				continue;
-			(void)fprintf(sp->stdfp, "%s\n", kp->usage);
+			if (kp->help != NULL)
+				(void)fprintf(sp->stdfp, "%s\n", kp->help);
 		}
 		break;
 	default:
