@@ -19,10 +19,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <gtk/gtk.h>
+
 #include "../common/common.h"
 #include "../ipc/ip.h"
 
-#include <gtk/gtk.h>
 #if 0
 #include <zvt/zvtterm.h>
 #include <zvt/vt.h>
