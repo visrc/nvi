@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.17 1992/10/18 13:07:44 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:44 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.18 1992/10/26 09:08:03 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:08:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,9 +75,8 @@ edit(cmdp, cmd)
 	 * end of the file and vi starts at the beginning, unless a command
 	 * is specified.
 	 */
-	if (file_stop(curf, cmdp->flags & E_FORCE))
-		return (1);
-	if (file_start(ep))
+	if (file_modify(curf, cmdp->flags & E_FORCE) ||
+	    file_stop(curf, cmdp->flags & E_FORCE) || file_start(ep))
 		return (1);
 
 	if (cmdp->plus)

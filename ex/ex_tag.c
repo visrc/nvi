@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.11 1992/10/10 13:58:02 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:02 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.12 1992/10/26 09:08:37 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:08:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ ex_tag(cmdp)
 		file_ins(file_first(), tag->fname, 0);
 		file_start(file_first());
 	} else if (strcmp(curf->name, tag->fname)) {
-		if (file_stop(curf, 0))
+		if (file_modify(curf, 0) || file_stop(curf, 0))
 			return (1);
 		file_ins(curf, tag->fname, 1);
 		file_start(file_next(curf));
