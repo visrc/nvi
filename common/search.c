@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.28 1993/11/18 16:16:07 bostic Exp $ (Berkeley) $Date: 1993/11/18 16:16:07 $";
+static char sccsid[] = "$Id: search.c,v 8.29 1993/12/02 11:46:43 bostic Exp $ (Berkeley) $Date: 1993/12/02 11:46:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,9 +52,10 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 	 * did not reuse any delta supplied.
 	 */
 	flags = *flagp;
-	if (ptrn == NULL || ptrn[1] == '\0') {
-		if (!F_ISSET(sp, S_SRE_SET)) {
-noprev:			msgq(sp, M_INFO, "No previous search pattern.");
+	if (ptrn == NULL || ptrn[1] == '\0' ||
+	    ptrn[0] == ptrn[1] && ptrn[2] == '\0') {
+prev:		if (!F_ISSET(sp, S_SRE_SET)) {
+			msgq(sp, M_INFO, "No previous search pattern.");
 			return (1);
 		}
 		*rep = &sp->sre;
@@ -94,9 +95,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		/*
 		 * If characters after the terminating delimiter, it may
 		 * be an error, or may be an offset.  In either case, we
-		 * return the end of the string, whatever it may be, or
-		 * change the end pointer to reference a NULL.  Don't just
-		 * whack the string, in case it's text space.
+		 * return the end of the string, whatever it may be.
 		 */
 		if (*p) {
 			if (get_delta(sp, &p, deltap, flagp))
@@ -106,25 +105,13 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 			"Characters after search string and/or delta.");
 				return (1);
 			}
-			if (epp != NULL)
-				*epp = p;
-		} else {
-			/*
-			 * STATIC: NEVER WRITTEN.
-			 * Can't be const, because the normal case isn't.
-			 */
-			static char ebuf[1];
-			if (epp != NULL)
-				*epp = ebuf;
 		}
+		if (epp != NULL)
+			*epp = p;
 
-		/* If the pattern was empty, use the previous pattern. */
-		if (ptrn == NULL || *ptrn == '\0') {
-			if (!F_ISSET(sp, S_SRE_SET))
-				goto noprev;
-			*rep = &sp->sre;
-			return (0);
-		}
+		/* Check for "/   " or other such silliness. */
+		if (*ptrn == '\0')
+			goto prev;
 
 		if (re_conv(sp, &ptrn, &replaced))
 			return (1);
