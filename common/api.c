@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.24 1996/09/18 09:23:19 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:23:19 $";
+static const char sccsid[] = "$Id: api.c,v 8.25 1996/10/10 22:28:44 bostic Exp $ (Berkeley) $Date: 1996/10/10 22:28:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -441,7 +441,7 @@ api_opts_get(sp, name, value, boolvalue)
 		break;
 	case OPT_NUM:
 		MALLOC_RET(sp, *value, char *, 20);
-		(void)sprintf(*value, "%ld", (u_long)O_VAL(sp, offset));
+		(void)sprintf(*value, "%lu", (u_long)O_VAL(sp, offset));
 		break;
 	case OPT_STR:
 		if (O_STR(sp, offset) == NULL) {
@@ -461,19 +461,26 @@ api_opts_get(sp, name, value, boolvalue)
  * api_opts_set --
  *	Set options.
  *
- * PUBLIC: int api_opts_set __P((SCR *, char *));
+ * PUBLIC: int api_opts_set __P((SCR *, char *, char *, u_long));
  */
 int 
-api_opts_set(sp, name)
+api_opts_set(sp, name, stringvalue, numvalue)
 	SCR *sp;
-	char *name;
+	char *name, *stringvalue;
+	u_long numvalue;
 {
-	ARGS *ap[2], a;
-	EXCMD cmd;
+	ARGS *ap[2], a, b;
+	char buf[512];
 
-	ex_cinit(&cmd, C_SET, 0, OOBLNO, OOBLNO, 0, ap);
-	ex_cadd(&cmd, &a, name, strlen(name));
-	return (cmd.cmd->fn(sp, &cmd));
+	a.len = stringvalue == NULL ?
+	    snprintf(buf, sizeof(buf), "%s=%lu", name, numvalue) :
+	    snprintf(buf, sizeof(buf), "%s=%s", name, stringvalue);
+	a.bp = buf;
+	b.len = 0;
+	b.bp = NULL;
+	ap[0] = &a;
+	ap[1] = &b;
+	return (opts_set(sp, ap, NULL));
 }
 
 /*
