@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.56 1993/04/06 11:43:59 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:59 $";
+static char sccsid[] = "$Id: vi.c,v 5.57 1993/04/12 15:02:16 bostic Exp $ (Berkeley) $Date: 1993/04/12 15:02:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,12 +44,10 @@ vi(sp, ep)
 	F_SET(sp, S_REDRAW);
 	status(sp, ep, sp->lno);
 
+	if (sp->refresh(sp, ep))
+		return (v_end(sp));
+		
 	for (eval = 0;;) {
-err:		if (!F_ISSET(sp, S_UPDATE_SCREEN) && sp->refresh(sp, ep)) {
-			eval = 1;
-			break;
-		}
-
 		/*
 		 * We get a command, which may or may not have an associated
 		 * motion.  If it does, we get it too, calling its underlying
@@ -63,11 +61,12 @@ err:		if (!F_ISSET(sp, S_UPDATE_SCREEN) && sp->refresh(sp, ep)) {
 		flags = vp->kp->flags;
 
 		/* Get any associated keyword. */
-		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(sp, ep, vp, flags))
+		if (LF_ISSET(V_KEYNUM | V_KEYW) &&
+		    getkeyword(sp, ep, vp, flags))
 			goto err;
 
 		/* If a non-relative movement, set the '' mark. */
-		if (flags & V_ABS) {
+		if (LF_ISSET(V_ABS)) {
 			m.lno = sp->lno;
 			m.cno = sp->cno;
 			SETABSMARK(sp, ep, &m);
@@ -79,13 +78,14 @@ err:		if (!F_ISSET(sp, S_UPDATE_SCREEN) && sp->refresh(sp, ep)) {
 		 * by some commands.  If count specified, then the to MARK is
 		 * set to that many lines, counting the current one.
 		 */
-		if (flags & V_MOTION) {
+		if (LF_ISSET(V_MOTION)) {
 			if (getmotion(sp, ep, &dotmotion, vp, &fm, &tm))
 				goto err;
 		} else {
 			fm.lno = sp->lno;
 			fm.cno = sp->cno;
-			if (vp->kp->flags & V_LMODE && vp->flags & VC_C1SET) {
+			if (F_ISSET(vp->kp, V_LMODE) &&
+			    F_ISSET(vp, VC_C1SET)) {
 				tm.lno = sp->lno + vp->count - 1;
 				tm.cno = sp->cno;
 			} else
@@ -107,16 +107,16 @@ err:		if (!F_ISSET(sp, S_UPDATE_SCREEN) && sp->refresh(sp, ep)) {
 			break;
 
 		/* Set the dot command structure. */
-		if (flags & V_DOT) {
+		if (LF_ISSET(V_DOT)) {
 			dot = cmd;
-			dot.flags |= VC_ISDOT;
+			F_SET(&dot, VC_ISDOT);
 			/*
 			 * If a count supplied for both the motion and the
 			 * command, the count applies only to the motion.
 			 * Reset the command count in the dot structure.
 			 */
-			if (vp->flags & VC_C1RESET)
-				dot.flags |= VC_C1SET;
+			if (F_ISSET(vp, VC_C1RESET))
+				F_SET(&dot, VC_C1SET);
 		}
 
 		/*
@@ -124,43 +124,53 @@ err:		if (!F_ISSET(sp, S_UPDATE_SCREEN) && sp->refresh(sp, ep)) {
 		 * set, i.e. the V_RCM commands are moths to the V_RCM_SET
 		 * commands' candle.  It's broken into two parts.  Here we deal
 		 * with the command flags.  In sp->relative(), we deal with the
-		 * screen flags.  If the movement is to the EOL, the vi command
+		 * screen flags.  If the movement is to the EOL the vi command
 		 * handles it.  If it's to the beginning, we handle it here.
 		 *
 		 * Does this totally violate the screen and editor layering?
 		 * You betcha.  As they say, if you think you understand it,
 		 * you don't.
 		 */
-		if (flags & V_RCM)
+		if (LF_ISSET(V_RCM))
 			m.cno = sp->relative(sp, ep, m.lno);
-		else if (flags & V_RCM_SETFNB) {
+		else if (LF_ISSET(V_RCM_SETFNB)) {
 			if (nonblank(sp, ep, m.lno, &m.cno))
 				goto err;
 			sp->rcmflags = RCM_FNB;
 		}
-		else if (flags & V_RCM_SETLAST)
+		else if (LF_ISSET(V_RCM_SETLAST))
 			sp->rcmflags = RCM_LAST;
 			
 		/* Update the cursor. */
 		sp->lno = m.lno;
 		sp->cno = m.cno;
 
-		/* Report on the changes from the command. */
-		if (sp->rptlines) {
-			if (O_VAL(sp, O_REPORT) &&
-			    sp->rptlines >= O_VAL(sp, O_REPORT)) {
-				msgq(sp, M_DISPLAY,
-				    "%ld line%s %s", sp->rptlines,
-				    sp->rptlines == 1 ? "" : "s", sp->rptlabel);
+		if (!F_ISSET(sp, S_UPDATE_SCREEN)) {
+			/* Report on the changes from the command. */
+			if (sp->rptlines) {
+				if (O_VAL(sp, O_REPORT) &&
+				    sp->rptlines >= O_VAL(sp, O_REPORT)) {
+					msgq(sp, M_INFO,
+					    "%ld line%s %s", sp->rptlines,
+					    sp->rptlines == 1 ? "" : "s",
+					    sp->rptlabel);
+				}
+				sp->rptlines = 0;
 			}
-			sp->rptlines = 0;
+
+			/* Refresh the screen. */
+err:			if (sp->refresh(sp, ep)) {
+				eval = 1;
+				break;
+			}
 		}
 
 		/* Set the new favorite position. */
-		if (flags & V_RCM_SET) {
+		if (LF_ISSET(V_RCM_SET)) {
 			sp->rcmflags = 0;
 			sp->rcm = sp->sc_col;
 		}
+
 	}
 	return (v_end(sp) || eval);
 }
@@ -182,7 +192,7 @@ err:		if (!F_ISSET(sp, S_UPDATE_SCREEN) && sp->refresh(sp, ep)) {
 	do {								\
 		hold = count * 10 + key - '0';				\
 		if (count > hold) {					\
-			msgq(sp, M_ERROR,				\
+			msgq(sp, M_ERR,				\
 			    "Number larger than %lu", ULONG_MAX);	\
 			return (NULL);					\
 		}							\
@@ -221,7 +231,7 @@ getcmd(sp, ep, dp, vp, ismotion)
 
 	KEY(sp, key, GB_MAPCOMMAND);
 	if (key < 0 || key > MAXVIKEY) {
-		msgq(sp, M_BELL, "%s isn't a command", charname(sp, key));
+		msgq(sp, M_BERR, "%s isn't a command", charname(sp, key));
 		return (1);
 	}
 
@@ -241,13 +251,13 @@ getcmd(sp, ep, dp, vp, ismotion)
 	 */
 	if (isdigit(key) && key != '0') {
 		GETCOUNT(sp, vp->count);
-		vp->flags |= VC_C1SET;
+		F_SET(vp, VC_C1SET);
 	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
 		if (vp->buffer != OOBCB) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Only one buffer can be specified.");
 			return (1);
 		}
@@ -263,9 +273,9 @@ getcmd(sp, ep, dp, vp, ismotion)
 	if (kp->func == NULL) {
 		/* If dot, set new count/buffer, if any, and return. */
 		if (key == '.') {
-			if (dp->flags & VC_ISDOT) {
-				if (vp->flags & VC_C1SET) {
-					dp->flags |= VC_C1SET;
+			if (F_ISSET(dp, VC_ISDOT)) {
+				if (F_ISSET(vp, VC_C1SET)) {
+					F_SET(dp, VC_C1SET);
 					dp->count = vp->count;
 				}
 				if (vp->buffer != OOBCB)
@@ -273,10 +283,10 @@ getcmd(sp, ep, dp, vp, ismotion)
 				*vp = *dp;
 				return (0);
 			}
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "No commands which set dot executed yet.");
 		} else
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "%s isn't a command", charname(sp, key));
 		return (1);
 	}
@@ -284,23 +294,23 @@ getcmd(sp, ep, dp, vp, ismotion)
 	flags = kp->flags;
 
 	/* Check for illegal count. */
-	if (vp->flags & VC_C1SET && !flags & V_CNT)
+	if (F_ISSET(vp, VC_C1SET) && !LF_ISSET(V_CNT))
 		goto usage;
 
 	/* Illegal motion command. */
 	if (ismotion == NULL) {
 		/* Illegal buffer. */
-		if (!(flags & V_OBUF) && vp->buffer != OOBCB)
+		if (!LF_ISSET(V_OBUF) && vp->buffer != OOBCB)
 			goto usage;
 
 		/* Required buffer. */
-		if (flags & V_RBUF) {
+		if (LF_ISSET(V_RBUF)) {
 			KEY(sp, key, 0);
 			if (key != '"')
 				goto usage;
 			KEY(sp, key, 0);
 			if (key > UCHAR_MAX) {
-ebuf:				msgq(sp, M_ERROR, "Invalid buffer name.");
+ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
 				return (1);
 			}
 			vp->buffer = key;
@@ -327,7 +337,7 @@ ebuf:				msgq(sp, M_ERROR, "Invalid buffer name.");
 			KEY(sp, key, 0);
 			if (isdigit(key)) {
 				GETCOUNT(sp, vp->count2);
-				vp->flags |= VC_C2SET;
+				F_SET(vp, VC_C2SET);
 			}
 			vp->character = key;
 		}
@@ -337,14 +347,14 @@ ebuf:				msgq(sp, M_ERROR, "Invalid buffer name.");
 	 * Commands that have motion components can be doubled to
 	 * imply the current line.
 	 */
-	else if (ismotion->key != key && !(flags & V_MOVE)) {
-usage:		msgq(sp, M_ERROR, "Usage: %s", ismotion != NULL ?
+	else if (ismotion->key != key && !LF_ISSET(V_MOVE)) {
+usage:		msgq(sp, M_ERR, "Usage: %s", ismotion != NULL ?
 		    vikeys[ismotion->key].usage : kp->usage);
 		return (1);
 	}
 
 	/* Required character. */
-	if (flags & V_CHAR)
+	if (LF_ISSET(V_CHAR))
 		KEY(sp, vp->character, 0);
 
 	return (0);
@@ -367,7 +377,7 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	u_long cnt;
 
 	/* If '.' command, use the dot motion, else get the motion command. */
-	if (vp->flags & VC_ISDOT)
+	if (F_ISSET(vp, VC_ISDOT))
 		motion = *dm;
 	else if (getcmd(sp, ep, NULL, &motion, vp))
 		return (1);
@@ -378,18 +388,18 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	 * same as "12yy".  This count is provided to the motion command and
 	 * not to the regular function. 
 	 */
-	cnt = motion.count = motion.flags & VC_C1SET ? motion.count : 1;
-	if (vp->flags & VC_C1SET) {
+	cnt = motion.count = F_ISSET(&motion, VC_C1SET) ? motion.count : 1;
+	if (F_ISSET(vp, VC_C1SET)) {
 		motion.count *= vp->count;
-		motion.flags |= VC_C1SET;
+		F_SET(&motion, VC_C1SET);
 
 		/*
 		 * Set flags to restore the original values of the command
 		 * structure so dot commands can change the count values,
 		 * e.g. "2dw" "3." deletes a total of five words.
 		 */
-		vp->flags &= ~VC_C1SET;
-		vp->flags |= VC_C1RESET;
+		F_CLR(vp, VC_C1SET);
+		F_SET(vp, VC_C1RESET);
 	}
 
 	/*
@@ -399,7 +409,7 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	 * the resulting mark.
  	 */
 	if (vp->key == motion.key) {
-		vp->flags |= VC_LMODE;
+		F_SET(vp, VC_LMODE);
 
 		/* Set the end of the command. */
 		tm->lno = sp->lno + motion.count - 1;
@@ -409,7 +419,7 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		 * If the current line is missing, i.e. the file is empty,
 		 * historic vi permitted a "cc" command to change it.
 		 */
-		if (!(vp->kp->flags & VC_C) &&
+		if (!F_ISSET(vp->kp, VC_C) &&
 		    file_gline(sp, ep, tm->lno, NULL) == NULL) {
 			m.lno = sp->lno;
 			m.cno = sp->cno;
@@ -426,7 +436,7 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		 * For example, "l" is illegal at the end of a line, but "dl"
 		 * is not.  Set flags so the function knows the situation.
 		 */
-		motion.flags |= vp->kp->flags & VC_COMMASK;
+		F_SET(&motion, vp->kp->flags & VC_COMMASK);
 
 		m.lno = sp->lno;
 		m.cno = sp->cno;
@@ -437,8 +447,8 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		 * If the underlying motion was a line motion, set the flag
 		 * in the command structure.
 		 */
-		if (motion.kp->flags & V_LMODE)
-			vp->flags |= VC_LMODE;
+		if (F_ISSET(motion.kp, V_LMODE))
+			F_SET(vp, VC_LMODE);
 
 		/*
 		 * If the motion is in a backward direction, switch the current
@@ -459,7 +469,7 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	 * If a dot command save motion structure.  Note that the motion count
 	 * was changed above and needs to be reset.
 	 */
-	if (vp->kp->flags & V_DOT) {
+	if (F_ISSET(vp->kp, V_DOT)) {
 		*dm = motion;
 		dm->count = cnt;
 	}
@@ -484,16 +494,16 @@ getkeyword(sp, ep, kp, flags)
 
 	/* May not be a keyword at all. */
 	if (!len ||
-	    flags & V_KEYW && !inword(p[beg]) ||
-	    flags & V_KEYNUM && !innum(p[beg])) {
-noword:		msgq(sp, M_BELL, "Cursor not in a %s.",
-		    flags & V_KEYW ? "word" : "number");
+	    LF_ISSET(V_KEYW) && !inword(p[beg]) ||
+	    LF_ISSET(V_KEYNUM) && !innum(p[beg])) {
+noword:		msgq(sp, M_BERR, "Cursor not in a %s",
+		    LF_ISSET(V_KEYW) ? "word" : "number");
 		return (1);
 	}
 
 	/* Find the beginning/end of the keyword. */
 	if (beg != 0)
-		if (flags & V_KEYW) {
+		if (LF_ISSET(V_KEYW)) {
 			for (;;) {
 				--beg;
 				if (!inword(p[beg])) {
@@ -524,7 +534,7 @@ noword:		msgq(sp, M_BELL, "Cursor not in a %s.",
 				--beg;
 		}
 
-	if (flags & V_KEYW) {
+	if (LF_ISSET(V_KEYW)) {
 		for (end = sp->cno; ++end < len && inword(p[end]););
 		--end;
 	} else {
