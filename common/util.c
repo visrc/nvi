@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.64 1994/05/23 09:04:22 bostic Exp $ (Berkeley) $Date: 1994/05/23 09:04:22 $";
+static char sccsid[] = "$Id: util.c,v 8.65 1994/06/20 16:56:38 bostic Exp $ (Berkeley) $Date: 1994/06/20 16:56:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,16 +47,9 @@ binc(sp, argp, bsizep, min)
 	if (min && *bsizep >= min)
 		return (0);
 
-	/*
-	 * If the initial pointer is null, use calloc (for non-ANSI
-	 * C realloc implementations).
-	 */
 	bpp = *(char **)argp;
 	csize = *bsizep + MAX(min, 256);
-	if (bpp == NULL) {
-		MALLOC(sp, bpp, void *, csize);
-	} else
-		REALLOC(sp, bpp, void *, csize);
+	REALLOC(sp, bpp, void *, csize);
 
 	if (bpp == NULL) {
 		/*
