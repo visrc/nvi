@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.2 1993/06/28 20:03:39 bostic Exp $ (Berkeley) $Date: 1993/06/28 20:03:39 $";
+static char sccsid[] = "$Id: vi.c,v 8.3 1993/07/06 07:31:56 bostic Exp $ (Berkeley) $Date: 1993/07/06 07:31:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -324,9 +324,6 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 		/* Required buffer. */
 		if (LF_ISSET(V_RBUF)) {
-			KEY(sp, key);
-			if (key != '"')
-				goto usage;
 			KEY(sp, key);
 			if (key > UCHAR_MAX) {
 ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
