@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.6 1994/01/08 13:56:10 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:56:10 $";
+static char sccsid[] = "$Id: v_undo.c,v 8.7 1994/02/26 17:20:11 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,11 +23,10 @@ static char sccsid[] = "$Id: v_undo.c,v 8.6 1994/01/08 13:56:10 bostic Exp $ (Be
  *	Undo changes to this line.
  */
 int
-v_Undo(sp, ep, vp, fm, tm, rp)
+v_Undo(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	/*
 	 * Historically, U reset the cursor to the first column in the line
@@ -36,8 +35,7 @@ v_Undo(sp, ep, vp, fm, tm, rp)
 	 * else (including the cursor position stored in the logging records)
 	 * is going to appear random.
 	 */
-	rp->lno = fm->lno;
-	rp->cno = 0;
+	vp->m_final.cno = 0;
 
 	/*
 	 * !!!
@@ -60,11 +58,10 @@ v_Undo(sp, ep, vp, fm, tm, rp)
  *	Undo the last change.
  */
 int
-v_undo(sp, ep, vp, fm, tm, rp)
+v_undo(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	/* Set the command count. */
 	VIP(sp)->u_ccnt = sp->ccnt;
@@ -100,9 +97,9 @@ v_undo(sp, ep, vp, fm, tm, rp)
 
 	switch (ep->lundo) {
 	case BACKWARD:
-		return (log_backward(sp, ep, rp));
+		return (log_backward(sp, ep, &vp->m_final));
 	case FORWARD:
-		return (log_forward(sp, ep, rp));
+		return (log_forward(sp, ep, &vp->m_final));
 	default:
 		abort();
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.8 1993/12/02 15:19:30 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:19:30 $";
+static char sccsid[] = "$Id: v_z.c,v 8.9 1994/02/26 17:20:14 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,10 @@ static char sccsid[] = "$Id: v_z.c,v 8.8 1993/12/02 15:19:30 bostic Exp $ (Berke
  *	Move the screen.
  */
 int
-v_z(sp, ep, vp, fm, tm, rp)
+v_z(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	recno_t last, lno;
 	u_int value;
@@ -39,11 +38,11 @@ v_z(sp, ep, vp, fm, tm, rp)
 		if (lno > last)
 			lno = last;
 	} else
-		lno = fm->lno;
+		lno = vp->m_start.lno;
 
-	/* Set return cursor values. */
-	rp->lno = lno;
-	rp->cno = fm->cno;
+	/* Set default return cursor values. */
+	vp->m_final.lno = lno;
+	vp->m_final.cno = vp->m_start.cno;
 
 	/*
 	 * The second count is the displayed window size, i.e. the 'z'
@@ -93,9 +92,9 @@ v_z(sp, ep, vp, fm, tm, rp)
 		 */
 		if (sp->s_fill(sp, ep, lno, P_BOTTOM))
 			return (1);
-		if (sp->s_down(sp, ep, rp, sp->t_maxrows - 1, 1))
+		if (sp->s_down(sp, ep, &vp->m_final, sp->t_maxrows - 1, 1))
 			return (1);
-		if (sp->s_position(sp, ep, rp, 0, P_MIDDLE))
+		if (sp->s_position(sp, ep, &vp->m_final, 0, P_MIDDLE))
 			return (1);
 		break;
 	}

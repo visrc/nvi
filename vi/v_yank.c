@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 8.11 1994/01/09 14:21:17 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:21:17 $";
+static char sccsid[] = "$Id: v_yank.c,v 8.12 1994/02/26 17:20:13 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,74 +15,41 @@ static char sccsid[] = "$Id: v_yank.c,v 8.11 1994/01/09 14:21:17 bostic Exp $ (B
 #include "vcmd.h"
 
 /*
- * v_Yank --	[buffer][count]Y
- *	Yank lines of text into a cut buffer.
- */
-int
-v_Yank(sp, ep, vp, fm, tm, rp)
-	SCR *sp;
-	EXF *ep;
-	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
-{
-	if (file_gline(sp, ep, tm->lno, NULL) == NULL) {
-		v_eof(sp, ep, fm);
-		return (1);
-	}
-	if (cut(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-	    fm, tm, CUT_LINEMODE))
-		return (1);
-
-	sp->rptlines[L_YANKED] += (tm->lno - fm->lno) + 1;
-	return (0);
-}
-
-/*
- * v_yank --	[buffer][count]y[count][motion]
+ * v_yank -- [buffer][count]Y
+ * 	     [buffer][count]y[count][motion]
  *	Yank text (or lines of text) into a cut buffer.
+ *
+ * !!!
+ * Historic vi moved the cursor to the from MARK if it was before the current
+ * cursor and on a different line, e.g., "yj" moves the cursor but "yk" and
+ * "yh" do not.  Unfortunately, it's too late to change this now.  Matching
+ * the historic semantics isn't easy.  The line number was always changed and
+ * column movement was usually relative.  However, "y'a" moved the cursor to
+ * the first non-blank of the line marked by a, while "y`a" moved the cursor
+ * to the line and column marked by a.  Hopefully, the motion component code
+ * got it right...   Unlike delete, we make no adjustments here.
  */
 int
-v_yank(sp, ep, vp, fm, tm, rp)
+v_yank(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
-	if (F_ISSET(vp, VC_LMODE)) {
-		if (file_gline(sp, ep, tm->lno, NULL) == NULL) {
-			v_eof(sp, ep, fm);
+	int lmode;
+
+	/* The line may not exist in line mode cuts, check to be sure. */
+	if (F_ISSET(vp, VM_LMODE)) {
+		if (file_gline(sp, ep, vp->m_stop.lno, NULL) == NULL) {
+			v_eof(sp, ep, &vp->m_start);
 			return (1);
 		}
-		if (cut(sp, ep,
-		    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-		    fm, tm, CUT_LINEMODE))
-			return (1);
-	} else if (cut(sp, ep,
-	    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, fm, tm, 0))
+		lmode = CUT_LINEMODE;
+	} else
+		lmode = 0;
+	if (cut(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	    &vp->m_start, &vp->m_stop, lmode))
 		return (1);
 
-	/*
-	 * !!!
-	 * Historic vi moved the cursor to the from MARK if it was before the
-	 * current cursor.  This makes no sense.  For example, "yj" moves the
-	 * cursor but "yk" does not.  Unfortunately, it's too late to change
-	 * this now.  Matching the historic semantics isn't easy.  The line
-	 * number was always changed and column movement was usually relative.
-	 * However, "y'a" moved the cursor to the first non-blank of the line
-	 * marked by a, while "y`a" moved the cursor to the line and column
-	 * marked by a.
-	 */
-	if (F_ISSET(vp, VC_REVMOVE)) {
-		rp->lno = fm->lno;
-		if (vp->mkp == &vikeys['\'']) {
-			rp->cno = 0;
-			(void)nonblank(sp, ep, rp->lno, &rp->cno);
-		} else if (vp->mkp == &vikeys['`'])
-			rp->cno = fm->cno;
-		else
-			rp->cno = sp->s_relative(sp, ep, rp->lno);
-	}
-
-	sp->rptlines[L_YANKED] += (tm->lno - fm->lno) + 1;
+	sp->rptlines[L_YANKED] += (vp->m_stop.lno - vp->m_start.lno) + 1;
 	return (0);
 }

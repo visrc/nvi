@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.4 1993/12/09 19:43:16 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:16 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.5 1994/02/26 17:19:55 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,8 +19,8 @@ static char sccsid[] = "$Id: v_paragraph.c,v 8.4 1993/12/09 19:43:16 bostic Exp 
 #include "vcmd.h"
 
 /*
- * Paragraphs are empty lines after text or values from the paragraph or
- * section options.
+ * Paragraphs are empty lines after text or values from the paragraph
+ * or section options.
  */
 
 /*
@@ -28,25 +28,50 @@ static char sccsid[] = "$Id: v_paragraph.c,v 8.4 1993/12/09 19:43:16 bostic Exp 
  *	Move forward count paragraphs.
  */
 int
-v_paragraphf(sp, ep, vp, fm, tm, rp)
+v_paragraphf(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t lastlen, len;
 	recno_t cnt, lastlno, lno;
 	char *p, *lp;
 
+	/*
+	 * !!!
+	 * If the starting cursor position is at or before any non-blank
+	 * characters in the line, i.e. the movement is cutting all of the
+	 * line's text, the buffer is in line mode.  It's a lot easier to
+	 * check here, because we know that the end is going to be the start
+	 * or end of a line.
+	 *
+	 * This was historical practice in vi, with a single exception.  If
+	 * the paragraph movement was from the start of the last line to EOF,
+	 * then all the characters were deleted from the last line, but the
+	 * line itself remained.  If somebody complains, don't pause, don't
+	 * hesitate, just hit them.
+	 */
+	if (ISMOTION(vp))
+		if (vp->m_start.cno == 0)
+			F_SET(vp, VM_LMODE);
+		else {
+			vp->m_stop = vp->m_start;
+			vp->m_stop.cno = 0;
+			if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+				return (1);
+			if (vp->m_start.cno <= vp->m_stop.cno)
+				F_SET(vp, VM_LMODE);
+		}
+
 	/* Figure out what state we're currently in. */
-	lno = fm->lno;
+	lno = vp->m_start.lno;
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL)
 		goto eof;
 
 	/*
-	 * If we start in text, we want to switch states 2 * N - 1
-	 * times, in non-text, 2 * N times.
+	 * If we start in text, we want to switch states
+	 * (2 * N - 1) times, in non-text, (2 * N) times.
 	 */
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cnt *= 2;
@@ -84,16 +109,22 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 				break;
 			}
 			/*
-			 * Historically, a motion command was up to the end
-			 * of the previous line, whereas the movement command
-			 * was to the start of the new "paragraph".
+			 * !!!
+			 * Non-motion commands move to the end of the range,
+			 * VC_D and VC_Y stay at the start.  Ignore VC_C and
+			 * VC_S.  Adjust end of the range for motion commands;
+			 * historically, a motion component was to the end of
+			 * the previous line, whereas the movement command was
+			 * to the start of the new "paragraph".
 			 */
-found:			if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
-				rp->lno = lastlno;
-				rp->cno = lastlen ? lastlen + 1 : 0;
+found:			if (ISMOTION(vp)) {
+				vp->m_stop.lno = lastlno;
+				vp->m_stop.cno = lastlen ? lastlen - 1 : 0;
+				vp->m_final = vp->m_start;
 			} else {
-				rp->lno = lno;
-				rp->cno = 0;
+				vp->m_stop.lno = lno;
+				vp->m_stop.cno = 0;
+				vp->m_final = vp->m_stop;
 			}
 			return (0);
 		default:
@@ -102,35 +133,47 @@ found:			if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
 	}
 
 	/*
-	 * EOF is a movement sink, however, the } command historically
-	 * moved to the end of the last line if repeatedly invoked.
+	 * !!!
+	 * Adjust end of the range for motion commands; EOF is a movement
+	 * sink.  The } command historically moved to the end of the last
+	 * line, not the beginning, from any position before the end of the
+	 * last line.
 	 */
-eof:	if (fm->lno != lno - 1) {
-		rp->lno = lno - 1;
-		rp->cno = len ? len - 1 : 0;
-		return (0);
+eof:	if (vp->m_start.lno == lno - 1) {
+		if (file_gline(sp, ep, vp->m_start.lno, &len) == NULL) {
+			GETLINE_ERR(sp, vp->m_start.lno);
+			return (1);
+		}
+		if (vp->m_start.cno == (len ? len - 1 : 0)) {
+			v_eof(sp, ep, NULL);
+			return (1);
+		}
 	}
-	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL)
-		GETLINE_ERR(sp, fm->lno);
-	if (fm->cno != (len ? len - 1 : 0)) {
-		rp->lno = lno - 1;
-		rp->cno = len ? len - 1 : 0;
-		return (0);
-	}
-	v_eof(sp, ep, NULL);
-	return (1);
+	/*
+	 * !!!
+	 * Non-motion commands move to the end of the range, VC_D and
+	 * VC_Y stay at the start.  Ignore VC_C and VC_S.
+	 *
+	 * If deleting the line (which happens if deleting to EOF),
+	 * then cursor movement is to the first nonblank. 
+	 */
+	if (F_ISSET(vp, VC_D))
+		F_SET(vp, VM_RCM_SETFNB);
+	vp->m_stop.lno = lno - 1;
+	vp->m_stop.cno = len ? len - 1 : 0;
+	vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
+	return (0);
 }
 
 /*
  * v_paragraphb -- [count]{
- *	Move forward count paragraph.
+ *	Move backward count paragraphs.
  */
 int
-v_paragraphb(sp, ep, vp, fm, tm, rp)
+v_paragraphb(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t len;
@@ -138,29 +181,39 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 	char *p, *lp;
 
 	/*
+	 * !!!
+	 * If the starting cursor position is in the first column (backward
+	 * paragraph movements did NOT historically pay attention to non-blank
+	 * characters) i.e. the movement is cutting the entire line, the buffer
+	 * is in line mode.  It's a lot easier to check here, because we know
+	 * that the end is going to be at the start or end of a line.
+	 *
+	 * Also, correct for a left motion component.
+	 */
+	if (ISMOTION(vp))
+		if (vp->m_start.cno == 0)
+			F_SET(vp, VM_LMODE);
+		else
+			--vp->m_start.cno;
+	/*
 	 * The { command historically moved to the beginning of the first
 	 * line if invoked on the first line.
 	 *
-	 * Check for SOF.
+	 * !!!
+	 * Check for SOF.  The historic vi didn't complain if users hit
+	 * SOF repeatedly.  Emerson would have loved vi.
 	 */
-	if (fm->lno <= 1) {
-		if (fm->cno == 0) {
-			v_sof(sp, NULL);
-			return (1);
-		}
-		rp->lno = 1;
-		rp->cno = 0;
-		return (0);
-	}
+	if (vp->m_start.lno <= 1)
+		goto sof;
 
 	/* Figure out what state we're currently in. */
-	lno = fm->lno;
+	lno = vp->m_start.lno;
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL)
 		goto sof;
 
 	/*
-	 * If we start in text, we want to switch states 2 * N - 1
-	 * times, in non-text, 2 * N times.
+	 * If we start in text, we want to switch states
+	 * (2 * N - 1) times, in non-text, (2 * N) times.
 	 */
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cnt *= 2;
@@ -181,20 +234,17 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 					if (lp[0] == p[1] &&
 					    (lp[1] == ' ' || lp[1] == p[2]) &&
 					    !--cnt)
-						goto found;
+						goto ret;
 			if (len == 0 || v_isempty(p, len)) {
 				if (!--cnt)
-					goto found;
+					goto ret;
 				pstate = P_INBLANK;
 			}
 			break;
 		case P_INBLANK:
 			if (len != 0 && !v_isempty(p, len)) {
-				if (!--cnt) {
-found:					rp->lno = lno;
-					rp->cno = 0;
-					return (0);
-				}
+				if (!--cnt)
+					goto ret;
 				pstate = P_INTEXT;
 			}
 			break;
@@ -204,8 +254,16 @@ found:					rp->lno = lno;
 	}
 
 	/* SOF is a movement sink. */
-sof:	rp->lno = 1;
-	rp->cno = 0;
+sof:	lno = 1;
+
+ret:	vp->m_stop.lno = lno;
+	vp->m_stop.cno = 0;
+
+	/*
+	 * VC_D and non-motion commands move to the end of the range,
+	 * VC_Y stays at the start.  Ignore VC_C and VC_S.
+	 */
+	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
 	return (0);
 }
 

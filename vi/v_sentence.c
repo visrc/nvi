@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.8 1994/01/24 19:01:45 bostic Exp $ (Berkeley) $Date: 1994/01/24 19:01:45 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.9 1994/02/26 17:20:03 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,8 +32,8 @@ static char sccsid[] = "$Id: v_sentence.c,v 8.8 1994/01/24 19:01:45 bostic Exp $
  *
  * This implementation also permits a single tab to delimit sentences, and
  * treats lines containing only white-space characters as empty lines.
- * And, tabs are eaten (along with spaces) when skipping to the start of the
- * text follow a "sentence".
+ * Finally, tabs are eaten (along with spaces) when skipping to the start
+ * of the text following a "sentence".
  */
 
 /*
@@ -41,24 +41,25 @@ static char sccsid[] = "$Id: v_sentence.c,v 8.8 1994/01/24 19:01:45 bostic Exp $
  *	Move forward count sentences.
  */
 int
-v_sentencef(sp, ep, vp, fm, tm, rp)
+v_sentencef(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	enum { BLANK, NONE, PERIOD } state;
 	VCS cs;
+	size_t len;
 	u_long cnt;
 
-	cs.cs_lno = fm->lno;
-	cs.cs_cno = fm->cno;
+	cs.cs_lno = vp->m_start.lno;
+	cs.cs_cno = vp->m_start.cno;
 	if (cs_init(sp, ep, &cs)) 
 		return (1);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
+	 * !!!
 	 * If in white-space, the next start of sentence counts as one.
 	 * This may not handle "  .  " correctly, but it's real unclear
 	 * what correctly means in that case.
@@ -67,11 +68,13 @@ v_sentencef(sp, ep, vp, fm, tm, rp)
 		if (cs_fblank(sp, ep, &cs))
 			return (1);
 		if (--cnt == 0) {
-			if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno)
+			if (vp->m_start.lno != cs.cs_lno ||
+			    vp->m_start.cno != cs.cs_cno)
 				goto okret;
 			return (1);
 		}
 	}
+
 	for (state = NONE;;) {
 		if (cs_next(sp, ep, &cs))
 			return (1);
@@ -133,27 +136,42 @@ v_sentencef(sp, ep, vp, fm, tm, rp)
 		}
 	}
 
-	/* EOF is a movement sink. */
-	if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno)
-		goto okret;
-	v_eof(sp, ep, NULL);
-	return (1);
+	/* EOF is a movement sink, but it's an error not to have moved. */
+	if (vp->m_start.lno == cs.cs_lno && vp->m_start.cno == cs.cs_cno) {
+		v_eof(sp, ep, NULL);
+		return (1);
+	}
 
-okret:	rp->lno = cs.cs_lno;
-	rp->cno = cs.cs_cno;
+okret:	vp->m_stop.lno = cs.cs_lno;
+	vp->m_stop.cno = cs.cs_cno;
 
 	/*
+	 * !!!
 	 * Historic, uh, features, yeah, that's right, call 'em features.
-	 * If the sentence movement is cutting an entire line, the buffer
-	 * is in line mode.  Reach up into the caller's VICMDARG structure,
-	 * and whack the flags.
+	 * If the ending cursor position is at the first column in the
+	 * line, i.e. the movement is cutting an entire line, the buffer
+	 * is in line mode, and the ending position is the last character
+	 * of the previous line.
+	 *
+	 * Non-motion commands move to the end of the range.  VC_D and
+	 * VC_Y stay at the start.  Ignore VC_C and VC_S.  Adjust the
+	 * end of the range for motion commands.
 	 */
-	if (F_ISSET(vp, VC_C | VC_D | VC_Y) &&
-	    fm->cno == 0 && (rp->cno == 0 || cs.cs_flags != 0)) {
-		if (rp->cno == 0)
-			--rp->lno;
-		F_SET(vp, VC_LMODE);
-	}
+	if (ISMOTION(vp)) {
+		if (vp->m_start.cno == 0 &&
+		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
+			if (file_gline(sp, ep,
+			    --vp->m_stop.lno, &len) == NULL) {
+				GETLINE_ERR(sp, vp->m_stop.lno);
+				return (1);
+			}
+			vp->m_stop.cno = len ? len - 1 : 0;
+			F_SET(vp, VM_LMODE);
+		} else
+			--vp->m_stop.cno;
+		vp->m_final = vp->m_start;
+	} else
+		vp->m_final = vp->m_stop;
 	return (0);
 }
 
@@ -162,11 +180,10 @@ okret:	rp->lno = cs.cs_lno;
  *	Move backward count sentences.
  */
 int
-v_sentenceb(sp, ep, vp, fm, tm, rp)
+v_sentenceb(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	VCS cs;
 	recno_t slno;
@@ -174,32 +191,47 @@ v_sentenceb(sp, ep, vp, fm, tm, rp)
 	u_long cnt;
 	int last1, last2;
 
-	if (fm->lno == 1 && fm->cno == 0) {
-		v_sof(sp, NULL);
-		return (1);
-	}
+	/*
+	 * !!!
+	 * Historic vi permitted the user to hit SOF repeatedly.
+	 */
+	if (vp->m_start.lno == 1 && vp->m_start.cno == 0)
+		return (0);
 
-	cs.cs_lno = fm->lno;
-	cs.cs_cno = fm->cno;
+	cs.cs_lno = vp->m_start.lno;
+	cs.cs_cno = vp->m_start.cno;
 	if (cs_init(sp, ep, &cs))
 		return (1);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
-	 * If on an empty line, skip to the next previous
-	 * non-white-space character.
+	 * !!!
+	 * In empty lines, skip to the previous non-white-space character.
+	 * If in text, skip to the prevous white-space character.  Believe
+	 * it or not, in the paragraph:
+	 *	ab cd.
+	 *	AB CD.
+	 * if the cursor is on the 'A' or 'B', ( moves to the 'a'.  If it
+	 * is on the ' ', 'C' or 'D', it moves to the 'A'.  Yes, Virginia,
+	 * Berkeley was once a major center of drug activity.
 	 */
 	if (cs.cs_flags == CS_EMP) {
 		if (cs_bblank(sp, ep, &cs))
 			return (1);
 		for (;;) {
-			if (cs_next(sp, ep, &cs))
+			if (cs_prev(sp, ep, &cs))
 				return (1);
 			if (cs.cs_flags != CS_EOL)
 				break;
 		}
-	}
+	} else if (cs.cs_flags == 0 && !isblank(cs.cs_ch))
+		for (;;) {
+			if (cs_prev(sp, ep, &cs))
+				return (1);
+			if (cs.cs_flags != 0 || isblank(cs.cs_ch))
+				break;
+		}
 
 	for (last1 = last2 = 0;;) {
 		if (cs_prev(sp, ep, &cs))
@@ -251,7 +283,8 @@ ret:			slno = cs.cs_lno;
 			 * beginning of a sentence preceded by an empty line,
 			 * we can end up where we started.  Fix it.
 			 */
-			if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno)
+			if (vp->m_start.lno != cs.cs_lno ||
+			    vp->m_start.cno != cs.cs_cno)
 				goto okret;
 
 			/*
@@ -288,16 +321,32 @@ ret:			slno = cs.cs_lno;
 		}
 	}
 
-okret:	rp->lno = cs.cs_lno;
-	rp->cno = cs.cs_cno;
+okret:	vp->m_stop.lno = cs.cs_lno;
+	vp->m_stop.cno = cs.cs_cno;
 
 	/*
-	 * See comment in v_sentencef().  Ignore errors, they should
-	 * never occur, and they'll get caught later.
+	 * !!!
+	 * If the starting and stopping cursor positions are at the first
+	 * columns in the line, i.e. the movement is cutting an entire line,
+	 * the buffer is in line mode, and the starting position is the last
+	 * character of the previous line.
+	 *
+	 * VC_D and non-motion commands move to the end of the range.
+	 * VC_Y stays at the start.  Ignore VC_C and VC_S.  Adjust the
+	 * start of the range for motion commands.
 	 */
-	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && rp->cno == 0 &&
-	    file_gline(sp, ep, fm->lno, &len) != NULL && (len == 0 ||
-	    fm->cno == len - 1))
-		F_SET(vp, VC_LMODE);
+	if (ISMOTION(vp))
+		if (vp->m_start.cno == 0 &&
+		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
+			if (file_gline(sp, ep,
+			    --vp->m_start.lno, &len) == NULL) {
+				GETLINE_ERR(sp, vp->m_start.lno);
+				return (1);
+			}
+			vp->m_start.cno = len ? len - 1 : 0;
+			F_SET(vp, VM_LMODE);
+		} else
+			--vp->m_start.cno;
+	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
 	return (0);
 }

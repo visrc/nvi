@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 8.5 1993/11/15 09:15:36 bostic Exp $ (Berkeley) $Date: 1993/11/15 09:15:36 $";
+static char sccsid[] = "$Id: v_util.c,v 8.6 1994/02/26 17:20:11 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,6 +71,17 @@ v_eol(sp, ep, mp)
 }
 
 /*
+ * v_nomove --
+ *	Vi no cursor movement error.
+ */
+void
+v_nomove(sp)
+	SCR *sp;
+{
+	msgq(sp, M_BERR, "No cursor movement made.");
+}
+
+/*
  * v_sof --
  *	Vi start-of-file error.
  */
@@ -83,6 +94,17 @@ v_sof(sp, mp)
 		msgq(sp, M_BERR, "Already at the beginning of the file.");
 	else
 		msgq(sp, M_BERR, "Movement past the beginning of the file.");
+}
+
+/*
+ * v_sol --
+ *	Vi start-of-line error.
+ */
+void
+v_sol(sp)
+	SCR *sp;
+{
+	msgq(sp, M_BERR, "Already in the first column.");
 }
 
 /*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.80 1994/01/13 10:24:27 bostic Exp $ (Berkeley) $Date: 1994/01/13 10:24:27 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.81 1994/02/26 17:19:51 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,21 +160,21 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 */
 	if (len) {
 		if (LF_ISSET(TXT_OVERWRITE)) {
-			tp->owrite = tm->cno - sp->cno;
-			tp->insert = len - tm->cno;
+			tp->owrite = (tm->cno - sp->cno) + 1;
+			tp->insert = (len - tm->cno) - 1;
 		} else
 			tp->insert = len - sp->cno;
 
 		if (LF_ISSET(TXT_EMARK))
-			tp->lb[tm->cno - 1] = END_CH;
+			tp->lb[tm->cno] = END_CH;
 	}
 
 	/*
 	 * Many of the special cases in this routine are to handle autoindent
 	 * support.  Somebody decided that it would be a good idea if "^^D"
 	 * and "0^D" deleted all of the autoindented characters.  In an editor
-	 * that takes single character input from the user, this wasn't a very
-	 * good idea.  Note also that "^^D" resets the next lines' autoindent,
+	 * that takes single character input from the user, this beggars the
+	 * imagination.  Note also, "^^D" resets the next lines' autoindent,
 	 * but "0^D" doesn't.
 	 *
 	 * We assume that autoindent only happens on empty lines, so insert

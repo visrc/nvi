@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 8.8 1993/11/28 18:31:30 bostic Exp $ (Berkeley) $Date: 1993/11/28 18:31:30 $";
+static char sccsid[] = "$Id: v_screen.c,v 8.9 1994/02/26 17:19:57 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,15 +15,14 @@ static char sccsid[] = "$Id: v_screen.c,v 8.8 1993/11/28 18:31:30 bostic Exp $ (
 #include "vcmd.h"
 
 /*
- * v_screen --
+ * v_screen -- ^W
  *	Switch screens.
  */
 int
-v_screen(sp, ep, vp, fm, tm, rp)
+v_screen(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	/*
 	 * Try for the next lower screen, or, go back to the first
@@ -41,7 +40,7 @@ v_screen(sp, ep, vp, fm, tm, rp)
 	 * Display the old screen's status line so the user can
 	 * find the screen they want.
 	 */
-	(void)status(sp, ep, fm->lno, 0);
+	(void)status(sp, ep, vp->m_start.lno, 0);
 
 	/* Save the old screen's cursor information. */
 	sp->frp->lno = sp->lno;

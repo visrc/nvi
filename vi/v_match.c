@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.7 1993/12/09 17:05:51 bostic Exp $ (Berkeley) $Date: 1993/12/09 17:05:51 $";
+static char sccsid[] = "$Id: v_match.c,v 8.8 1994/02/26 17:19:50 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,25 +21,23 @@ static char sccsid[] = "$Id: v_match.c,v 8.7 1993/12/09 17:05:51 bostic Exp $ (B
  *	Search to matching character.
  */
 int
-v_match(sp, ep, vp, fm, tm, rp)
+v_match(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
-	register int cnt, matchc, startc;
 	VCS cs;
 	recno_t lno;
 	size_t len, off;
-	int (*gc)__P((SCR *, EXF *, VCS *));
+	int cnt, matchc, startc, (*gc)__P((SCR *, EXF *, VCS *));
 	char *p;
 
-	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
 			return (1);
 		if (lno == 0)
 			goto nomatch;
-		GETLINE_ERR(sp, fm->lno);
+		GETLINE_ERR(sp, vp->m_start.lno);
 		return (1);
 	}
 
@@ -47,7 +45,7 @@ v_match(sp, ep, vp, fm, tm, rp)
 	 * !!!
 	 * Historical practice was to search in the forward direction only.
 	 */
-	for (off = fm->cno;; ++off) {
+	for (off = vp->m_start.cno;; ++off) {
 		if (off >= len) {
 nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 			return (1);
@@ -83,7 +81,7 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 		break;
 	}
 
-	cs.cs_lno = fm->lno;
+	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = off;
 	if (cs_init(sp, ep, &cs))
 		return (1);
@@ -104,23 +102,27 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 		msgq(sp, M_BERR, "Matching character not found.");
 		return (1);
 	}
-	rp->lno = cs.cs_lno;
-	rp->cno = cs.cs_cno;
+
+	vp->m_stop.lno = cs.cs_lno;
+	vp->m_stop.cno = cs.cs_cno;
 
 	/*
-	 * Movement commands go one space further.  Increment the return
-	 * MARK or from MARK depending on the direction of the search.
+	 * If moving right, non-motion commands move to the end of the range.
+	 * VC_D and VC_Y stay at the start.  If moving left, non-motion and
+	 * VC_D commands move to the end of the range.  VC_Y remains at the
+	 * start.  Ignore VC_C and VC_S.
+	 *
+	 * !!!
+	 * Don't correct for leftward movement -- historic vi deleted the
+	 * starting cursor position when deleting to a match.
 	 */
-	if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
-		if (file_gline(sp, ep, rp->lno, &len) == NULL) {
-			GETLINE_ERR(sp, rp->lno);
-			return (1);
+	if (vp->m_start.cno > vp->m_stop.cno) {
+		vp->m_final = vp->m_stop;
+		if (ISMOTION(vp)) {
+			if (F_ISSET(vp, VC_Y))
+				vp->m_final = vp->m_start;
 		}
-		if (len)
-			if (gc == cs_next)
-				++rp->cno;
-			else
-				++fm->cno;
-	}
+	} else
+		vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
 	return (0);
 }

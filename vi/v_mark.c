@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 8.3 1993/10/31 14:20:09 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:20:09 $";
+static char sccsid[] = "$Id: v_mark.c,v 8.4 1994/02/26 17:19:49 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,43 +19,101 @@ static char sccsid[] = "$Id: v_mark.c,v 8.3 1993/10/31 14:20:09 bostic Exp $ (Be
  *	Set a mark.
  */
 int
-v_mark(sp, ep, vp, fm, tm, rp)
+v_mark(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
-	rp->lno = fm->lno;
-	rp->cno = fm->cno;
-	return (mark_set(sp, ep, vp->character, fm, 1));
+	return (mark_set(sp, ep, vp->character, &vp->m_start, 1));
+}
+
+static int mark __P((SCR *, EXF *, VICMDARG *, enum direction));
+
+/*
+ * v_bmark -- `['`a-z]
+ *	Move to a mark.
+ *
+ * Moves to a mark, setting both row and column.
+ *
+ * !!!
+ * Although not commonly known, the "'`" and "'`" forms are historically
+ * valid.  The behavior is determined by the first character, so "`'" is
+ * the same as "``".  Remember this fact -- you'll be amazed at how many
+ * people don't know it and will be delighted that you are able to tell
+ * them.
+ */
+int
+v_bmark(sp, ep, vp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+{
+	return (mark(sp, ep, vp, BACKWARD));
 }
 
 /*
- * v_gomark -- '['`a-z], or `['`a-z]
+ * v_fmark -- '['`a-z]
  *	Move to a mark.
  *
- *	The single quote form moves to the first nonblank character of a line
- *	containing a mark.  The back quote form moves to a mark, setting both
- *	row and column.  We use a single routine for both forms, taking care
- *	of the nonblank behavior using a flag for the command.
- *
- *	Although not commonly known, the "'`" and "'`" forms are historically
- *	valid.  The behavior is determined by the first character, so "`'" is
- *	the same as "``".  Remember this fact -- you'll be amazed at how many
- *	people don't know it and will be delighted that you are able to tell
- *	them.
+ * Move to the first nonblank character of the line containing the mark.
  */
 int
-v_gomark(sp, ep, vp, fm, tm, rp)
+v_fmark(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
-	MARK *mp;
+	return (mark(sp, ep, vp, FORWARD));
+}
 
-	if ((mp = mark_get(sp, ep, vp->character)) == NULL)
+static int
+mark(sp, ep, vp, dir)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	enum direction dir;
+{
+	if (mark_get(sp, ep, vp->character, &vp->m_stop))
 		return (1);
-	*rp = *mp;
+
+	/* Non-motion commands move to the end of the range. */
+	if (!ISMOTION(vp)) {
+		vp->m_final = vp->m_stop;
+		return (0);
+	}
+
+	if (dir == FORWARD) {
+		/* Move to the first non-blank. */
+		vp->m_stop.cno = 0;
+		if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+			return (1);
+	}
+
+	/*
+	 * !!!
+	 * If a motion component, the cursor has to move.
+	 */
+	if (vp->m_stop.lno == vp->m_start.lno &&
+	    vp->m_stop.cno == vp->m_start.cno) {
+		v_nomove(sp);
+		return (1);
+	}
+
+	/*
+	 * If moving right, VC_D and VC_Y stay at the start.  If moving left,
+	 * VC_D commands move to the end of the range and VC_Y remains at the
+	 * start.  Ignore VC_C and VC_S.  Motion left commands adjust the
+	 * starting point to the character before the current one.
+	 */
+	if (vp->m_start.lno > vp->m_stop.lno ||
+	    vp->m_start.lno == vp->m_stop.lno &&
+	    vp->m_start.cno > vp->m_stop.cno) {
+		if (F_ISSET(vp, VC_D))
+			vp->m_final = vp->m_stop;
+		else
+			vp->m_final = vp->m_start;
+		--vp->m_start.cno;
+	} else
+		vp->m_final = vp->m_start;
 	return (0);
 }
