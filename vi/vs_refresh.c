@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.44 1993/04/06 11:44:45 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:45 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.45 1993/04/12 14:44:47 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:44:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,7 +241,7 @@ adjust:	if (LNO == HMAP->lno) {
 		if (file_lline(sp, ep) == 0)
 			goto slow;
 		GETLINE_ERR(sp, LNO);
-		return (0);
+		return (1);
 	}
 
 	/*
@@ -308,7 +308,7 @@ adjust:	if (LNO == HMAP->lno) {
 		cnt = (CNO - OCNO) + 1;
 #ifdef DEBUG
 		if (CNO >= len) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Error: %s/%d: cno (%u) >= len (%u)",
 			     tail(__FILE__), __LINE__, CNO, len);
 			return (1);
@@ -387,8 +387,9 @@ update:	/* Ring the bell if scheduled. */
 	/* Display any messages or paint the mode line. */
 	if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
 		svi_msgflush(sp);
-	else if (!F_ISSET(sp, S_UPDATE_MODE))
+	else if (!F_ISSET(sp, S_UPDATE_MODE)) {
 		svi_modeline(sp, ep);
+	}
 
 	/* Place the cursor. */
 	MOVE(sp, y, SCNO);
@@ -436,7 +437,7 @@ lcont:		/* Move to the message line and clear it. */
 		 * Turn on standout mode if requested, or, if we've split
 		 * the screen and need a divider.
 		 */
-		if (F_ISSET(mp, M_BELL | M_ERROR) || sp->child != NULL)
+		if (F_ISSET(mp, M_INV_VIDEO) || sp->child != NULL)
 			standout();
 
 		/*
@@ -463,7 +464,7 @@ lcont:		/* Move to the message line and clear it. */
 		}
 
 		/* Turn off standout mode. */
-		if (F_ISSET(mp, M_BELL | M_ERROR) || sp->child != NULL)
+		if (F_ISSET(mp, M_INV_VIDEO) || sp->child != NULL)
 			standend();
 
 		if (mp->len)
@@ -475,6 +476,10 @@ lcont:		/* Move to the message line and clear it. */
 	return (0);
 }
 
+#define	DIVIDESIZE	10
+#define	RULERSIZE	15
+#define	MODESIZE	(RULERSIZE + 15)
+
 /*
  * svi_modeline --
  *	Update the mode line.
@@ -484,39 +489,36 @@ svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-#define	RULERSIZE	15
-#define	MODESIZE	(RULERSIZE + 15)
+	int dividesize;
 	char buf[RULERSIZE];
 
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
 
-	if (sp->child != NULL)
-		svi_divider(sp);
-
-	if (!O_ISSET(sp, O_RULER) &&
-	    !O_ISSET(sp, O_SHOWMODE) || sp->cols <= RULERSIZE)
-		return (0);
-
-	/* Display the ruler and mode. */
-	if (O_ISSET(sp, O_RULER) && sp->cols > RULERSIZE) {
-		MOVE(sp, INFOLINE(sp), sp->cols / 2 - RULERSIZE / 2);
-		memset(buf, ' ', sizeof(buf) - 1);
-		(void)snprintf(buf,
-		    sizeof(buf) - 1, "%lu,%lu", sp->lno, sp->cno + 1);
-		buf[strlen(buf)] = ' ';
+	/* Display the dividing line. */
+	if (sp->child != NULL) {
+		dividesize = DIVIDESIZE > sp->cols ? sp->cols : DIVIDESIZE;
+		memset(buf, ' ', dividesize);
+		buf[dividesize] = '\0';
+		standout();
 		addstr(buf);
+		standend();
 	}
 
-	/* If at the top of a split screen, display in reverse video. */
-	if (sp->child != NULL)
-		standout();
+	/* Display the ruler and mode. */
+	if (O_ISSET(sp, O_RULER) && sp->cols > RULERSIZE + 2) {
+		MOVE(sp, INFOLINE(sp), sp->cols / 2 - RULERSIZE / 2);
+		clrtoeol();
+		(void)snprintf(buf,
+		    sizeof(buf), "%lu,%lu", sp->lno, sp->cno + 1);
+		addstr(buf);
+	}
 
 	/* Show the mode. */
 	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
 		MOVE(sp, INFOLINE(sp), sp->cols - 7);
-		addstr(F_ISSET(sp, S_INPUT) ? "Input" : "Command");
+		addstr(F_ISSET(sp, S_INPUT) ? "  Input" : "Command");
 	}
-	standend();
+
 	return (0);
 }
