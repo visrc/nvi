@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.74 1993/12/10 12:20:45 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:45 $
+ *	$Id: screen.h,v 8.75 1993/12/16 14:44:37 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:44:37 $
  */
 
 /*
@@ -190,8 +190,6 @@ struct _scr {
 	int	 (*s_column) __P((SCR *, EXF *, size_t *));
 	enum confirm			/* Confirm an action with the user. */
 		 (*s_confirm) __P((SCR *, EXF *, MARK *, MARK *));
-					/* Copy to a new screen. */
-	int	 (*s_copy) __P((SCR *, SCR *));
 					/* Move down the screen. */
 	int	 (*s_down) __P((SCR *, EXF *, MARK *, recno_t, int));
 					/* Edit a file. */
