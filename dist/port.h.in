@@ -1,28 +1,67 @@
-/* $Id: port.h.in,v 8.1 1996/02/18 15:37:08 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:37:08 $ */
+/* $Id: port.h.in,v 8.2 1996/02/20 19:17:05 bostic Exp $ (Berkeley) $Date: 1996/02/20 19:17:05 $ */
 
-/* Declare the basic types, if not already declared. */
+/* Declare the basic types, if they aren't already declared. */
 @u_int8_decl@
 @int16_decl@
 @u_int16_decl@
 @int32_decl@
 @u_int32_decl@
 
-/* 
+/*
  * XXX
- * If we don't have mmap, we fake it with read and write.
+ * POSIX 1003.1 names for file descriptors.
  */
-#ifndef HAVE_MMAP
-#define	PROT_READ	0x1	/* pages can be read */
-#define	PROT_WRITE	0x2	/* pages can be written */
-#define	PROT_EXEC	0x4	/* pages can be executed */
-
-#define	MAP_SHARED	1	/* share changes */
-#define	MAP_PRIVATE	2	/* changes are private */
+#ifndef STDERR_FILENO
+#define STDIN_FILENO	0		/* ANSI C #defines */
+#define STDOUT_FILENO	1
+#define STDERR_FILENO	2
 #endif
 
 /*
  * XXX
- * Maximum path length.
+ * POSIX 1003.1 names for seek settings.
+ */
+#ifndef SEEK_END
+#define	SEEK_SET	0		/* POSIX 1003.1 seek values */
+#define	SEEK_CUR	1
+#define	SEEK_END	2
+#endif
+
+/*
+ * XXX
+ * POSIX 1003.1 tty disabling character.
+ */
+#ifndef _POSIX_VDISABLE
+#define	_POSIX_VDISABLE	0		/* Some systems used 0. */
+#endif
+
+/*
+ * XXX
+ * 4.4BSD extension to only set the software termios bits.
+ */
+#ifndef	TCSASOFT			/* 4.4BSD extension. */
+#define	TCSASOFT	0
+#endif
+
+/* 
+ * XXX
+ * If we don't have mmap, we fake it with read and write, but we'll
+ * still need the flags.
+ */
+#ifndef PROT_READ
+#define	PROT_READ	0x1		/* pages can be read */
+#define	PROT_WRITE	0x2		/* pages can be written */
+#define	PROT_EXEC	0x4		/* pages can be executed */
+#endif
+
+#ifndef MAP_SHARED
+#define	MAP_SHARED	1		/* share changes */
+#define	MAP_PRIVATE	2		/* changes are private */
+#endif
+
+/*
+ * XXX
+ * POSIX 1003.1 maximum path length.
  */
 #ifndef MAXPATHLEN
 #ifdef PATH_MAX
@@ -34,21 +73,74 @@
 
 /*
  * XXX
- * DB isn't always portable, and we want the private information.
+ * "DB" isn't always portable, and we want the private information.
  */
-#define __DBINTERFACE_PRIVATE
 #define DB      __DB
 
 /*
  * XXX
- * Handle function prototypes and the keyword "const".  This steps on name
- * space that DB doesn't control, but all of the other solutions are worse.
+ * 4.4BSD extension to provide lock values in the open(2) call.
+ */
+#ifndef O_EXLOCK
+#define	O_EXLOCK	0
+#endif
+
+#ifndef O_SHLOCK
+#define	O_SHLOCK	0
+#endif
+
+/*
+ * XXX
+ * POSIX 1003.1 bad file format errno.
+ */
+#ifndef EFTYPE
+#define	EFTYPE		EINVAL
+#endif
+
+/*
+ * XXX
+ * POSIX 1003.2 RE length limit.
+ */
+#ifndef	_POSIX2_RE_DUP_MAX
+#define	_POSIX2_RE_DUP_MAX	255
+#endif
+
+/*
+ * XXX
+ * 4.4BSD extension to determine if a program dropped core from the exit
+ * status.
+ */
+#ifndef	WCOREDUMP
+#define	WCOREDUMP(a)	0
+#endif
+
+/*
+ * XXX
+ * Endian-ness of the machine.
+ */
+#if !defined(LITTLE_ENDIAN)
+#define	LITTLE_ENDIAN	1234
+#endif
+#if !defined(BIG_ENDIAN)
+#define	BIG_ENDIAN	4321
+#endif
+#if !defined(BYTE_ORDER)
+#if WORDS_BIGENDIAN == 1
+#define	BYTE_ORDER	BIG_ENDIAN
+#else
+#define	BYTE_ORDER	LITTLE_ENDIAN
+#endif
+#endif
+
+/*
+ * XXX
+ * Handle function prototypes.  This steps on name space that vi doesn't
+ * control, but all of the other solutions are worse.
  */
 #undef	__P
 #if defined(__STDC__) || defined(__cplusplus)
 #define	__P(protos)	protos		/* ANSI C prototypes */
 #else
-#define	const
 #define	__P(protos)	()		/* K&R C preprocessor */
 #endif
 
