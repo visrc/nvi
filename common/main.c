@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.3 1995/06/09 12:47:46 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:46 $";
+static char sccsid[] = "$Id: main.c,v 10.4 1995/06/09 13:39:28 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:39:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -112,7 +112,7 @@ v_init(argc, argv, rows, cols, gpp)
 			break;
 #ifdef DEBUG
 		case 'D':
-			(void)printf("process %u waiting...\n", getpid());
+			(void)printf("%lu waiting...\n", (u_long)getpid());
 			(void)read(STDIN_FILENO, &ch, 1);
 			break;
 #endif
