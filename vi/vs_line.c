@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.12 1993/05/05 23:47:06 bostic Exp $ (Berkeley) $Date: 1993/05/05 23:47:06 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.13 1993/05/05 23:52:44 bostic Exp $ (Berkeley) $Date: 1993/05/05 23:52:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,32 +57,34 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * text for a ":" command, so we can put the code here instead of
 	 * dealing with the empty line logic below.  This is a kludge, but it's
 	 * pretty much confined to this module.
+	 *
+	 * Set the number of screens to skip until a character is displayed.
+	 * Left-right screens are special, because we don't bother building
+	 * a buffer to be skipped over.
 	 */
 	reverse_video = 0;
 	if (ISINFOLINE(sp, smp)) {
-		if ((p = file_gline(sp, ep, smp->lno, &len)) == NULL)
-			GETLINE_ERR(sp, smp->lno);
 		if (sp->child != NULL) {
 			reverse_video = 1;
 			standout();
 		}
 		listset = 0;
-		skip_screens = 0;
-		cols_per_screen = sp->cols;
-		goto iline;
+		if (O_ISSET(sp, O_LEFTRIGHT))
+			skip_screens = 0;
+		else
+			skip_screens = smp->off - 1;
+	} else {
+		listset = O_ISSET(sp, O_LIST);
+		skip_screens = smp->off - 1;
 	}
-
-	listset = O_ISSET(sp, O_LIST);
-
-	/* Set the number of screens to skip until a character is displayed. */
-	skip_screens = smp->off - 1;
 
 	/*
 	 * If O_NUMBER is set and this is the first screen of a folding
 	 * line or any left-right line, display the line number.  Set
 	 * the number of columns for this screen.
 	 */
-	if (O_ISSET(sp, O_NUMBER) && skip_screens == 0) {
+	if (!ISINFOLINE(sp, smp) &&
+	    O_ISSET(sp, O_NUMBER) && skip_screens == 0) {
 		cols_per_screen = sp->cols -
 		    snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
 		addstr(nbuf);
@@ -119,7 +121,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * called repeatedly with a valid pointer to a cursor position.
 	 * Don't fill it in unless it's the right line.
 	 */
-iline:	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
+	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
 
 	/* This is the loop that actually displays lines. */
 	for (count_cols = 0; len; --len) {
