@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.4 1993/08/23 12:31:49 bostic Exp $ (Berkeley) $Date: 1993/08/23 12:31:49 $";
+static char sccsid[] = "$Id: v_search.c,v 8.5 1993/09/02 11:33:38 bostic Exp $ (Berkeley) $Date: 1993/09/02 11:33:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,8 @@ static char sccsid[] = "$Id: v_search.c,v 8.4 1993/08/23 12:31:49 bostic Exp $ (
 #include "vcmd.h"
 
 static int getptrn __P((SCR *, EXF *, int, char **));
+static int shift_b __P((SCR *, EXF *, MARK *));
+static int shift_f __P((SCR *, EXF *, MARK *));
 
 /*
  * v_searchn -- n
@@ -40,9 +42,13 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 	case BACKWARD:
 		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
+		if (F_ISSET(vp, VC_SH) && shift_b(sp, ep, rp))
+			return (1);
 		break;
 	case FORWARD:
 		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
+			return (1);
+		if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
 			return (1);
 		break;
 	case NOTSET:
@@ -74,9 +80,13 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 	case BACKWARD:
 		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
+		if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
+			return (1);
 		break;
 	case FORWARD:
 		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
+			return (1);
+		if (F_ISSET(vp, VC_SH) && shift_b(sp, ep, rp))
 			return (1);
 		break;
 	case NOTSET:
@@ -110,7 +120,11 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	rval = f_search(sp, ep, fm, rp, bp, NULL, SEARCH_MSG | SEARCH_TERM);
 
 	FREE_SPACE(sp, bp, blen);
-	return (rval);
+	if (rval)
+		return (1);
+	if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
+		return (1);
+	return (0);
 }
 
 /*
@@ -134,6 +148,8 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
 		flags |= SEARCH_EOL;
 	if (b_search(sp, ep, fm, rp, ptrn, NULL, flags))
+		return (1);
+	if (F_ISSET(vp, VC_SH) && shift_b(sp, ep, rp))
 		return (1);
 	return (0);
 }
@@ -160,6 +176,8 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 		flags |= SEARCH_EOL;
 	if (f_search(sp, ep, fm, rp, ptrn, NULL, flags))
 		return (1);
+	if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
+		return (1);
 	return (0);
 }
 
@@ -185,5 +203,57 @@ getptrn(sp, ep, prompt, storep)
 		*storep = NULL;
 	else
 		*storep = tp->lb;
+	return (0);
+}
+
+/*
+ * shift_b --
+ *	Handle shift command with a backward search as the motion.
+ *
+ * Historically, shift commands don't shift the line searched to if the
+ * pattern matched was the start or end of the line.  It seems like this
+ * could be handled elsewhere in a general fashion, but I've so far been
+ * unable to figure out any pattern.
+ */
+static int
+shift_b(sp, ep, rp)
+	SCR *sp;
+	EXF *ep;
+	MARK *rp;
+{
+	size_t len;
+	char *p;
+
+	if ((p = file_gline(sp, ep, rp->lno + 1, &len)) == NULL) {
+		GETLINE_ERR(sp, rp->lno);
+		return (1);
+	}
+	if (len == 0 || rp->cno >= len) {
+		++rp->lno;
+		rp->cno = 0;
+	}
+	return (0);
+}
+
+/*
+ * shift_f --
+ *	Handle shift command with a forward search as the motion.
+ */
+static int
+shift_f(sp, ep, rp)
+	SCR *sp;
+	EXF *ep;
+	MARK *rp;
+{
+	size_t len;
+	char *p;
+
+	if (rp->cno != 0)
+		return (0);
+	if ((p = file_gline(sp, ep, --rp->lno, &len)) == NULL) {
+		GETLINE_ERR(sp, rp->lno);
+		return (1);
+	}
+	rp->cno = len;
 	return (0);
 }
