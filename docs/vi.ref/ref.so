@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: ref.so,v 8.1 1994/05/25 13:09:50 bostic Exp $ (Berkeley) $Date: 1994/05/25 13:09:50 $
+.\"     $Id: ref.so,v 8.2 1994/05/25 17:40:08 bostic Exp $ (Berkeley) $Date: 1994/05/25 17:40:08 $
 .\"
 .\"
 .\" indented paragraph, with spaces between the items, bold font
@@ -54,6 +54,10 @@
 .de CO
 \fB\\$1\fP\\$2
 ..
+.\" key words for index
+.de KY
+.sy echo >>index '\\$1	\\n%'
+..
 .\" option names
 .de OP
 \fB\\$1\fP\\$2
@@ -81,6 +85,13 @@
 .\" quoted (typewriter font)
 .de QT
 \*(lq\fC\\$1\fP\*(rq\\$2
+..
+.\" section macro to build TOC
+.de SH
+.(x
+\\$2
+.)x
+.sh \\$1 "\\$2"
 ..
 .\" manual section
 .de XR
