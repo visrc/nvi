@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.55 1993/05/16 12:24:46 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:24:46 $
+ *	$Id: exf.h,v 5.56 1993/05/16 15:07:51 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:07:51 $
  */
 
 					/* Undo direction. */
@@ -85,7 +85,7 @@ typedef struct _exf {
 }
 
 /* File routines. */
-int	 file_aline __P((struct _scr *, EXF *, recno_t, char *, size_t));
+int	 file_aline __P((struct _scr *, EXF *, int, recno_t, char *, size_t));
 int	 file_dline __P((struct _scr *, EXF *, recno_t));
 EXF	*file_first __P((struct _scr *, int));
 EXF	*file_get __P((struct _scr *, EXF *, char *, int));
