@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.5 1993/01/23 16:30:44 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:30:44 $";
+static char sccsid[] = "$Id: log.c,v 5.6 1993/02/11 12:10:56 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:10:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -255,7 +255,7 @@ log_backward(ep, rp, undolno)
 		switch(*(u_char *)data.data) {
 		case LOG_CURSOR:
 			if (didop != 0 || undolno != OOBLNO) {
-				memmove(rp, data.data +
+				memmove(rp, (u_char *)data.data +
 				    sizeof(u_char), sizeof(MARK));
 				if (undolno != OOBLNO && rp->lno == lno)
 					break;
@@ -268,16 +268,16 @@ log_backward(ep, rp, undolno)
 		case LOG_LINE_APPEND:
 		case LOG_LINE_INSERT:
 			didop = 1;
-			memmove(&lno, data.data +
+			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
 			if (file_dline(ep, lno))
 				goto err;
 			break;
 		case LOG_LINE_DELETE:
 			didop = 1;
-			memmove(&lno, data.data +
+			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_iline(ep, lno, data.data + sizeof(u_char) +
+			if (file_iline(ep, lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
@@ -286,16 +286,16 @@ log_backward(ep, rp, undolno)
 			didop = 1;
 			if (ep->log->seq(ep->log, &key, &data, R_PREV))
 				LOG_ERR;
-			memmove(&lno, data.data +
+			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_sline(ep, lno, data.data + sizeof(u_char) +
+			if (file_sline(ep, lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
 			break;
 		case LOG_MARK:
 			didop = 1;
-			memmove(&m, data.data +
+			memmove(&m, (u_char *)data.data +
 			    sizeof(u_char) + sizeof(u_char), sizeof(MARK));
 			if (mark_set(*(((u_char *)data.data) + 1), &m))
 				goto err;
@@ -346,7 +346,7 @@ log_forward(ep, rp)
 		switch(*(u_char *)data.data) {
 		case LOG_CURSOR:
 			if (didop != 0) {
-				memmove(rp, data.data +
+				memmove(rp, (u_char *)data.data +
 				    sizeof(u_char), sizeof(MARK));
 				nolog = 0;
 				return (0);
@@ -355,9 +355,9 @@ log_forward(ep, rp)
 		case LOG_LINE_APPEND:
 		case LOG_LINE_INSERT:
 			didop = 1;
-			memmove(&lno, data.data +
+			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_iline(ep, lno, data.data + sizeof(u_char) +
+			if (file_iline(ep, lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t))) {
 				nolog = 0;
@@ -366,7 +366,7 @@ log_forward(ep, rp)
 			break;
 		case LOG_LINE_DELETE:
 			didop = 1;
-			memmove(&lno, data.data +
+			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
 			if (file_dline(ep, lno)) {
 				nolog = 0;
@@ -377,16 +377,16 @@ log_forward(ep, rp)
 			didop = 1;
 			if (ep->log->seq(ep->log, &key, &data, R_NEXT))
 				LOG_ERR;
-			memmove(&lno, data.data +
+			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_sline(ep, lno, data.data + sizeof(u_char) +
+			if (file_sline(ep, lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				return (1);
 			break;
 		case LOG_MARK:
 			didop = 1;
-			memmove(&m, data.data +
+			memmove(&m, (u_char *)data.data +
 			    sizeof(u_char) + sizeof(u_char), sizeof(MARK));
 			if (mark_set(*(((u_char *)data.data) + 1), &m)) {
 				nolog = 0;
