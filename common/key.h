@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.18 1996/06/30 17:49:47 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:49:47 $
+ *	$Id: key.h,v 10.19 1996/12/04 09:44:28 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:44:28 $
  */
 
 /*
@@ -42,14 +42,17 @@ typedef enum {
 	E_EOF,				/* End of input (NOT ^D). */
 	E_ERR,				/* Input error. */
 	E_INTERRUPT,			/* Interrupt. */
+	E_MOVE,				/* Move, e_lno, e_cno set. */
 	E_QUIT,				/* Quit. */
 	E_REPAINT,			/* Repaint: e_flno, e_tlno set. */
 	E_SIGHUP,			/* SIGHUP. */
 	E_SIGTERM,			/* SIGTERM. */
 	E_STRING,			/* Input string: e_csp, e_len set. */
 	E_TIMEOUT,			/* Timeout. */
+	E_WQ,				/* Write and quit. */
 	E_WRESIZE,			/* Window resize. */
-	E_WRITE				/* Write. */
+	E_WRITE,			/* Write. */
+	E_WRITEAS			/* Write to a file: e_csp, e_len set. */
 } e_event_t;
 
 /*
@@ -112,11 +115,9 @@ struct _event {
 #define	e_tcno	_u_event._e_mark.cno2
 
 		struct {		/* Input string. */
-			CHAR_T	*asp;	/* Allocated string. */
 			CHAR_T	*csp;	/* String. */
 			size_t	 len;	/* String length. */
 		} _e_str;
-#define	e_asp	_u_event._e_str.asp
 #define	e_csp	_u_event._e_str.csp
 #define	e_len	_u_event._e_str.len
 	} _u_event;
