@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.6 1995/07/04 12:46:09 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:09 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.7 1995/07/06 11:52:47 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:52:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -648,7 +648,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		OCNO = CNO;
 		OLNO = LNO;
 		(void)gp->scr_move(sp, y, SCNO);
-		(void)gp->scr_refresh(sp, F_ISSET(sp, S_SCR_REFRESH));
+		(void)gp->scr_refresh(sp, 0);
 
 		/*
 		 * XXX
@@ -662,8 +662,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	}
 
 	/* 10: Clear the flags that are handled by this routine. */
-	F_CLR(sp, S_SCR_CENTER |
-	    S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_REFRESH | S_SCR_TOP);
+	F_CLR(sp, S_SCR_CENTER | S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_TOP);
 	F_CLR(vip, VIP_CUR_INVALID | VIP_SCR_NUMBER);
 
 	return (0);
