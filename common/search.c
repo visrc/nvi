@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.19 1993/02/28 13:59:20 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:20 $";
+static char sccsid[] = "$Id: search.c,v 5.20 1993/03/01 12:45:50 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:45:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,7 +78,7 @@ noprev:		ep->msg(ep, M_DISPLAY, "No previous search pattern.");
 		 * change the end pointer to reference a NULL.  Don't just
 		 * whack the string, in case it's text space.
 		 */
-		if (endp != NULL) {
+		if (endp != NULL && *endp != '\0') {
 			if (flags & SEARCH_TERM) {
 				ep->msg(ep, M_ERROR,
 				    "Characters after search string.");
