@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.115 1994/04/12 09:08:27 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:08:27 $";
+static char sccsid[] = "$Id: ex.c,v 8.116 1994/04/12 11:06:32 bostic Exp $ (Berkeley) $Date: 1994/04/12 11:06:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -505,10 +505,10 @@ loop:	if (nl) {
 			if (!isblank(ch)) {
 				if (!tmp && ch == '!') {
 					tmp = 1;
-					++cmd;
-					--cmdlen;
-					save_cmd = cmd;
 					F_SET(&exc, E_FORCE);
+
+					/* Reset, don't reparse. */
+					save_cmd = cmd + 1;
 					continue;
 				}
 				break;
