@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.9 1995/09/24 12:00:19 bostic Exp $ (Berkeley) $Date: 1995/09/24 12:00:19 $";
+static char sccsid[] = "$Id: vi.c,v 10.10 1995/09/25 10:42:10 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:42:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -750,7 +750,7 @@ v_motion(sp, dm, vp, mappedp)
 			   vp->key != 'c' && vp->key != '!') {
 				m.lno = sp->lno;
 				m.cno = sp->cno;
-				v_eof(sp, &m);
+				v_message(sp, NULL, VIM_EMPTY);
 				return (1);
 			}
 			vp->m_stop.cno = 0;
@@ -796,6 +796,16 @@ v_motion(sp, dm, vp, mappedp)
 		/* Run the function. */
 		if ((motion.kp->func)(sp, &motion))
 			return (1);
+
+		/*
+		 * If the current line is missing, i.e. the file is empty,
+		 * fail.  Most motion commands will have already failed,
+		 * but some, e.g. G, work in empty files.
+		 */
+		if (!file_eline(sp, vp->m_stop.lno)) {
+			v_message(sp, NULL, VIM_EMPTY);
+			return (1);
+		}
 
 		/*
 		 * XXX
