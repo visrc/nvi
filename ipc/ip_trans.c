@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.12 1996/12/17 10:45:15 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:45:15 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.13 1996/12/17 20:15:31 bostic Exp $ (Berkeley) $Date: 1996/12/17 20:15:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,7 @@ vi_translate(bp, lenp)
 		switch (foff = bp[0]) {
 		case SI_ADDSTR:
 		case SI_RENAME:
+		case SI_SELECT:
 			fmt = "a";
 			break;
 		case SI_ATTRIBUTE:
