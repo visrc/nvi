@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.39 1993/02/11 20:15:23 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:15:23 $";
+static char sccsid[] = "$Id: options.c,v 5.40 1993/02/12 11:06:38 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:06:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -599,7 +599,7 @@ f_leftright(ep, valp)
 	EXF *ep;
 	void *valp;
 {
-	return (scr_end(ep) || scr_init(ep));
+	return (scr_end(ep) || scr_begin(ep));
 }
 
 static int
