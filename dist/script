@@ -17,7 +17,7 @@ cd $S/docs && vi changelog
 
 # build the distribution
 cd $S/build && sh ./distrib
-cd $S/catalog && make clean all check && rm dump && \
+cd $S/catalog && make clean all check && rm dump __ck1 __ck2 && \
     chmod 444 english* *.check
 
 # build a version
