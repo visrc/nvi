@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.6 1994/11/14 10:18:59 bostic Exp $ (Berkeley) $Date: 1994/11/14 10:18:59 $";
+static char sccsid[] = "$Id: main.c,v 9.7 1994/11/16 19:00:15 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:00:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -346,36 +346,41 @@ main(argc, argv)
 	}
 
 	/*
-	 * If there's an initial command, execute it.  Historically, it
-	 * was always an ex command, not vi in vi mode or ex in ex mode.
-	 * Historically, it was always executed from the last line of the
-	 * file, too, so if we haven't already had a command that would
-	 * have resulted in an address in the file, move to the last line.
+	 * If there's an initial command, it was always executed from the
+	 * last line of the file by default.  So, if we haven't already
+	 * gotten an address in the file, move to the last line.  This
+	 * happens before the screen type gets set, so that we initialize
+	 * for ex mode and not for vi mode.
 	 */
-	if (excmdarg != NULL) {
-		if (need_lreset) {
-			file_cinit(sp);
-			need_lreset = 0;
-		}
-		if (sex_screen_icmd(sp, excmdarg))
-			goto errexit;
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
-			goto done;
+	if (excmdarg != NULL && need_lreset) {
+		file_cinit(sp);
+		need_lreset = 0;
 	}
 
 	/*
 	 * Set the initial screen type.  The user may have tried to set
 	 * it themselves in the startup information, but that's too bad
 	 * -- they called us with a specific name, and that applies now.
-	 * If the cursor position not already set for whatever reason,
-	 * reinitialize the cursor position, too.
 	 */
-	if (F_ISSET(sp, S_SCREENS) != LF_ISSET(S_SCREENS)) {
-		F_CLR(sp, S_SCREENS);
-		F_SET(sp, LF_ISSET(S_SCREENS));
-		if (need_lreset)
-			file_cinit(sp);
+	F_CLR(sp, S_SCREENS);
+	F_SET(sp, LF_ISSET(S_SCREENS));
+
+	/*
+	 * If there's an initial command, execute it.  Historically, it
+	 * was always an ex command, not vi in vi mode and ex in ex mode.
+	 * The line value has already been set.  Note: the screen type
+	 * has also been set -- any "default" commands will change the
+	 * line number, not print the line.
+	 */
+	if (excmdarg != NULL) {
+		if (sex_screen_icmd(sp, excmdarg))
+			goto errexit;
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+			goto done;
 	}
+
+	if (need_lreset)
+		file_cinit(sp);
 
 	for (;;) {
 		/* Edit, ignoring errors -- other screens may succeed. */
