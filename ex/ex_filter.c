@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.24 1993/02/16 20:16:17 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:17 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.25 1993/02/24 12:47:03 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:47:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.24 1993/02/16 20:16:17 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 
 /*
  * filtercmd --
@@ -30,9 +31,9 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.24 1993/02/16 20:16:17 bostic Exp $
  *	original text with the stdout/stderr output of the filter.
  */
 int
-filtercmd(ep, fm, tm, cmd, ftype)
+filtercmd(ep, fm, tm, rp, cmd, ftype)
 	EXF *ep;
-	MARK *fm, *tm;
+	MARK *fm, *tm, *rp;
 	u_char *cmd;
 	enum filtertype ftype;
 {
@@ -46,6 +47,9 @@ filtercmd(ep, fm, tm, cmd, ftype)
 
 	/* Input and output are named from the child's point of view. */
 	input[0] = input[1] = output[0] = output[1] = -1;
+
+	/* Set default cursor position. */
+	*rp = *fm;
 
 	/*
 	 * If child isn't supposed to want input or send output, redirect
@@ -156,7 +160,7 @@ err:		if (input[0] != -1)
 		 * the first line read in.
 		 */
 		if (ftype != NOOUTPUT) {
-			ep->lno = fm->lno;
+			rp->lno = fm->lno;
 			--fm->lno;
 			rval = ex_readfp(ep, "filter", ofp, fm, &ilines);
 		}
