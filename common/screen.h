@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.8 1995/01/11 15:58:26 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:26 $
+ *	$Id: screen.h,v 9.9 1995/01/11 17:26:07 bostic Exp $ (Berkeley) $Date: 1995/01/11 17:26:07 $
  */
 
 /*
@@ -151,18 +151,20 @@ struct _scr {
 	char	*alt_name;		/* Ex/vi: alternate file name. */
 
 					/* Ex/vi: search/substitute info. */
-	regex_t	 sre;			/* Last search RE. */
-	regex_t	 subre;			/* Last substitute RE. */
 	enum direction	searchdir;	/* File search direction. */
+	regex_t	 subre;			/* Last subst. RE (compiled form). */
+	regex_t	 sre;			/* Last search RE (compiled form). */
+	char	*re;			/* Last search RE (uncompiled form). */
+	size_t	 re_len;		/* Last search RE length. */
 	char	*repl;			/* Substitute replacement. */
 	size_t	 repl_len;		/* Substitute replacement length.*/
 	size_t	*newl;			/* Newline offset array. */
 	size_t	 newl_len;		/* Newline array size. */
 	size_t	 newl_cnt;		/* Newlines in replacement. */
-	u_char	 c_suffix;		/* Edcompatible 'c' suffix value. */
-	u_char	 g_suffix;		/* Edcompatible 'g' suffix value. */
+	u_int8_t c_suffix;		/* Edcompatible 'c' suffix value. */
+	u_int8_t g_suffix;		/* Edcompatible 'g' suffix value. */
 
-	u_int	 saved_vi_mode;		/* Saved vi display type. */
+	u_int32_t saved_vi_mode;	/* Saved vi display type. */
 
 	OPTION	 opts[O_OPTIONCOUNT];	/* Options. */
 
