@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.9 1993/09/10 18:32:21 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:32:21 $";
+static char sccsid[] = "$Id: options_f.c,v 8.10 1993/09/10 18:34:46 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:34:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,15 +83,6 @@ DECL(f_columns)
 	(void)putenv(buf);
 
 	F_SET(sp, S_RESIZE);
-	return (0);
-}
-
-DECL(f_flash)
-{
-	if (turnoff)
-		O_CLR(sp, O_FLASH);
-	else
-		O_SET(sp, O_FLASH);
 	return (0);
 }
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.1 1993/06/09 22:22:39 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:22:39 $
+ *	$Id: options.h,v 8.2 1993/09/10 18:34:45 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:34:45 $
  */
 
 typedef struct _option {
@@ -46,7 +46,6 @@ int	opts_set __P((struct _scr *, char **));
 
 /* Per-option change routines. */
 int	f_columns __P((struct _scr *, struct _option *, char *, u_long));
-int	f_flash __P((struct _scr *, struct _option *, char *, u_long));
 int	f_keytime __P((struct _scr *, struct _option *, char *, u_long));
 int	f_leftright __P((struct _scr *, struct _option *, char *, u_long));
 int	f_lines __P((struct _scr *, struct _option *, char *, u_long));
