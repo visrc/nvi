@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.15 1996/04/27 13:16:32 bostic Exp $ (Berkeley) $Date: 1996/04/27 13:16:32 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.16 1996/05/08 11:37:02 bostic Exp $ (Berkeley) $Date: 1996/05/08 11:37:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,7 +136,7 @@ v_exaddr(sp, vp, dir)
 	 * strings (separated by semi-colons) and, finally, full-blown z
 	 * commands after the / and ? search strings.  (If the search was
 	 * being used as a motion, the trailing z command was ignored.
-	 * Aslo, we do some argument checking on the z command, to be sure
+	 * Also, we do some argument checking on the z command, to be sure
 	 * that it's not some other random command.) For multiple search
 	 * strings, leading <blank>'s at the second and subsequent strings
 	 * were eaten as well.  This has some (unintended?) side-effects:
