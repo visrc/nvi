@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.9 1996/04/10 19:47:19 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:47:19 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.10 1996/04/10 19:59:34 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:59:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -647,6 +647,32 @@ XS(XS_VI_opts_get)
 	return;
 }
 
+static void xs_init __P((void));
+
+/*
+ * perl_end --
+ *	Clean up perl interpreter
+ *
+ * PUBLIC: int perl_end __P((GS *));
+ */
+int
+perl_end(gp)
+	GS *gp;
+{
+	/*
+	 * Call perl_run and perl_destuct to call END blocks and DESTROY
+	 * methods.
+	 */
+	if (gp->perl_interp) {
+		Irestartop = 0;            			/* XXX */
+		perl_run(gp->perl_interp);
+		perl_destruct(gp->perl_interp);
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
+		perl_free(gp->perl_interp);
+#endif
+	}
+}
+
 /*
  * perl_init --
  *	Create the perl commands used by nvi.
@@ -665,7 +691,7 @@ perl_init(gp)
 
 	gp->perl_interp = perl_alloc();
   	perl_construct(gp->perl_interp);
-	perl_parse(gp->perl_interp, NULL, 3, embedding, 0);
+	perl_parse(gp->perl_interp, xs_init, 3, embedding, 0);
 	newXS("VI::AppendLine", XS_VI_aline, file);
 	newXS("VI::DelLine", XS_VI_dline, file);
 	newXS("VI::EndScreen", XS_VI_escreen, file);
@@ -725,4 +751,18 @@ noscreen(id, name)
 	else
 		(void)snprintf(buf, sizeof(buf), "unknown screen: %s", name);
 	croak(buf);
+}
+
+/* Register any extra external extensions */
+
+extern void boot_DynaLoader _((CV* cv));
+
+static void
+xs_init()
+{
+  dXSUB_SYS;
+    char *file = __FILE__;
+    {
+        newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+    }
 }
