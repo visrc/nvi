@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.42 1993/02/11 20:03:39 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:03:39 $";
+static char sccsid[] = "$Id: main.c,v 5.43 1993/02/13 13:45:28 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:45:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -67,7 +67,7 @@ main(argc, argv)
 		p = *argv;
 	else
 		++p;
-	if (!strcmp(p, "ex"))
+	if (!strcmp(p, "ex") || !strcmp(p, "nex"))
 		mode = MODE_EX;
 	else if (!strcmp(p, "view")) {
 		SET(O_READONLY)
