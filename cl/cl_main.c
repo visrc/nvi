@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.25 1996/03/06 19:49:29 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:49:29 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.26 1996/03/22 19:11:11 bostic Exp $ (Berkeley) $Date: 1996/03/22 19:11:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -334,11 +334,21 @@ setsig(signo, oactp, handler)
 	 * Use sigaction(2), not signal(3), since we don't always want to
 	 * restart system calls.  The example is when waiting for a command
 	 * mode keystroke and SIGWINCH arrives.  Besides, you can't portably
-	 * restart system calls (thanks, POSIX!).
+	 * restart system calls (thanks, POSIX!).  On the other hand, you
+	 * can't portably NOT restart system calls (thanks, Sun!).  SunOS
+	 * used SA_INTERRUPT as their extension to NOT restart read calls.
+	 * We sure hope nobody else used it for anything else.  Mom told me
+	 * there'd be days like this.  She just never told me that there'd
+	 * be so many.
 	 */
 	act.sa_handler = handler;
 	sigemptyset(&act.sa_mask);
+
+#ifdef SA_INTERRUPT
+	act.sa_flags = SA_INTERRUPT;
+#else
 	act.sa_flags = 0;
+#endif
 	return (sigaction(signo, &act, oactp));
 }
 
