@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.7 1993/08/25 16:43:40 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:43:40 $";
+static char sccsid[] = "$Id: options_f.c,v 8.8 1993/08/27 11:44:05 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:44:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ DECL(f_columns)
 	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
 	(void)putenv(buf);
 
-	F_SET(sp, S_RESIZE | S_REFORMAT | S_REDRAW);
+	F_SET(sp, S_RESIZE);
 	return (0);
 }
 
@@ -169,7 +169,7 @@ DECL(f_lines)
 	(void)snprintf(buf, sizeof(buf), "ROWS=%lu", val);
 	(void)putenv(buf);
 
-	F_SET(sp, S_RESIZE | S_REFORMAT | S_REDRAW);
+	F_SET(sp, S_RESIZE);
 	return (0);
 }
 
@@ -432,7 +432,7 @@ DECL(f_term)
 		msgq(sp, M_ERR,
 		    "Term value %s; unable to set flash option.", str);
 
-	(void)set_window_size(sp, 0);
+	(void)set_window_size(sp, 0, 0);
 	return (0);
 }
 
