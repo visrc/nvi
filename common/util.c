@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.4 1992/04/16 16:33:12 bostic Exp $ (Berkeley) $Date: 1992/04/16 16:33:12 $";
+static char sccsid[] = "$Id: util.c,v 5.5 1992/04/16 18:00:48 bostic Exp $ (Berkeley) $Date: 1992/04/16 18:00:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: util.c,v 5.4 1992/04/16 16:33:12 bostic Exp $ (Berk
 #include <stdlib.h>
 
 #include "vi.h"
+#include "curses.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -66,6 +67,7 @@ parseptrn(ptrn)
  * onhup --
  *	Handle SIGHUP, restoring sanity to the terminal, preserving the file.
  */
+/* ARGSUSED */
 void
 onhup(signo)
 	int signo;
@@ -98,6 +100,7 @@ onhup(signo)
  * onwinch --
  *	Handle SIGWINCH.
  */
+/* ARGSUSED */
 void
 onwinch(signo)
 	int signo;
@@ -136,6 +139,7 @@ onwinch(signo)
  * onstop --
  *	Handle STOP signals.
  */
+/* ARGSUSED */
 void
 onstop(signo)
 	int signo;
