@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.47 2002/04/09 19:34:35 skimo Exp $ (Berkeley) $Date: 2002/04/09 19:34:35 $";
+static const char sccsid[] = "$Id: db.c,v 10.48 2002/06/08 19:32:52 skimo Exp $ (Berkeley) $Date: 2002/06/08 19:32:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -239,7 +239,7 @@ db_delete(SCR *sp, db_recno_t lno)
 		return 1;
 	}
 		
-	/* Update cache, marks, @ and global commands. */
+	/* Update marks, @ and global commands. */
 	if (line_insdel(sp, LINE_DELETE, lno))
 		return 1;
 
@@ -255,6 +255,9 @@ db_delete(SCR *sp, db_recno_t lno)
 		    (u_long)lno);
 		return (1);
 	}
+
+	/* Flush the cache, update line count, before screen update. */
+	update_cache(sp, LINE_DELETE, lno);
 
 	/* File now modified. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
@@ -350,8 +353,8 @@ err2:
 
 	(void)dbcp_put->c_close(dbcp_put);
 
-	/* Update cache, marks, @ and global commands. */
-	rval = line_insdel(sp, LINE_INSERT, lno + 1);
+	/* Flush the cache, update line count, before screen update. */
+	update_cache(sp, LINE_INSERT, lno);
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
@@ -360,6 +363,9 @@ err2:
 
 	/* Log after change. */
 	log_line(sp, lno + 1, LOG_LINE_APPEND_F);
+
+	/* Update marks, @ and global commands. */
+	rval = line_insdel(sp, LINE_INSERT, lno + 1);
 
 	/*
 	 * Update screen.
@@ -421,7 +427,6 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	EXF *ep;
 	char *fp;
 	size_t flen;
-	int rval;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "replace line %lu: len %lu {%.*s}\n",
@@ -454,19 +459,19 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 		return (1);
 	}
 
+	/* Flush the cache, update line count, before screen update. */
+	update_cache(sp, LINE_RESET, lno);
+
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
-	/* Update cache, marks, @ and global commands. */
-	rval = line_insdel(sp, LINE_RESET, lno);
-
 	/* Log after change. */
 	log_line(sp, lno, LOG_LINE_RESET_F);
 
 	/* Update screen. */
-	return (scr_update(sp, lno, LINE_RESET, 1) || rval);
+	return (scr_update(sp, lno, LINE_RESET, 1));
 }
 
 /*
@@ -625,12 +630,11 @@ scr_update(SCR *sp, db_recno_t lno, lnop_t op, int current)
 }
 
 /*
- * PUBLIC: int line_insdel __P((SCR *sp, lnop_t op, db_recno_t lno));
+ * PUBLIC: void update_cache __P((SCR *sp, lnop_t op, db_recno_t lno));
  */
-int
-line_insdel(SCR *sp, lnop_t op, db_recno_t lno)
+void
+update_cache(SCR *sp, lnop_t op, db_recno_t lno)
 {
-	int rval;
 	SCR* scrp;
 	EXF *ep;
 
@@ -664,6 +668,15 @@ line_insdel(SCR *sp, lnop_t op, db_recno_t lno)
 			--ep->c_nlines;
 			break;
 		}
+}
+
+/*
+ * PUBLIC: int line_insdel __P((SCR *sp, lnop_t op, db_recno_t lno));
+ */
+int
+line_insdel(SCR *sp, lnop_t op, db_recno_t lno)
+{
+	int rval;
 
 	/* Update marks, @ and global commands. */
 	rval = 0;
