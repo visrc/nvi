@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.12 1993/12/10 12:20:57 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:57 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.13 1993/12/20 09:35:28 bostic Exp $ (Berkeley) $Date: 1993/12/20 09:35:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -172,7 +172,9 @@ ex_args(sp, ep, cmdp)
 	 * Ignore files that aren't in the "argument" list unless they are the
 	 * one we're currently editing.  I'm not sure this is right, but the
 	 * historic vi behavior of not showing the current file if it was the
-	 * result of a ":e" command seems wrong.  This is actually tricky.
+	 * result of a ":e" command, or if the file name was changed was wrong.
+	 * This is actually pretty tricky, don't modify it without thinking it
+	 * through.  There have been a lot of problems in here.
 	 *
 	 * Also, historic practice was to display the original name of the file
 	 * even if the user had used a file command to change the file name.
@@ -191,13 +193,26 @@ ex_args(sp, ep, cmdp)
 	for (cnt = 1, frp = sp->frefq.cqh_first;
 	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next) {
 		iscur = 0;
+		/*
+		 * If the last argument FREF structure, and we're editing
+		 * it, set the current bit.  Otherwise, we'll display it,
+		 * then the file we're editing, and the latter will have
+		 * the current bit set.
+		 */
 		if (frp == sp->a_frp) {
 			if (frp == sp->frp && frp->cname == NULL)
 				iscur = 1;
-		} else
-			if (F_ISSET(frp, FR_IGNORE))
-				continue;
+		} else if (F_ISSET(frp, FR_IGNORE))
+			continue;
 		name = frp->name == NULL ? frp->tname : frp->name;
+		/*
+		 * Mistake.  The user edited a temporary file (vi /tmp), then
+		 * switched to another file (:e file).  The argument FREF is
+		 * pointing to the temporary file, but it doesn't have a name.
+		 * Gracefully recover through the creative use of goto's.
+		 */
+		if (name == NULL)
+			goto testcur;
 extra:		nlen = strlen(name);
 		col += len = nlen + sep + (iscur ? 2 : 0);
 		if (col >= sp->cols - 1) {
@@ -214,7 +229,7 @@ extra:		nlen = strlen(name);
 			(void)ex_printf(EXCOOKIE, "[%s]", name);
 		else {
 			(void)ex_printf(EXCOOKIE, "%s", name);
-			if (frp == sp->a_frp) {
+testcur:		if (frp == sp->a_frp) {
 				if (frp != sp->frp)
 					name = FILENAME(sp->frp);
 				else
@@ -224,6 +239,7 @@ extra:		nlen = strlen(name);
 			}
 		}
 	}
+	/* This should never happen; left in because it's been known to. */
 	if (cnt == 1)
 		(void)ex_printf(EXCOOKIE, "No files.\n");
 	else
