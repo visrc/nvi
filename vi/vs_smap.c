@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.23 1996/05/07 19:59:00 bostic Exp $ (Berkeley) $Date: 1996/05/07 19:59:00 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.24 1996/07/02 20:32:48 bostic Exp $ (Berkeley) $Date: 1996/07/02 20:32:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -354,7 +354,10 @@ vs_sm_insert(sp, lno)
 	recno_t lno;
 {
 	SMAP *p, *t;
-	size_t cnt_orig, cnt;
+	size_t cnt_orig, cnt, coff;
+
+	/* Save the offset. */
+	coff = p->coff;
 
 	/*
 	 * Find the line in the map, find out how many screen lines
@@ -388,7 +391,7 @@ vs_sm_insert(sp, lno)
 	/* Fill in the SMAP for the new lines, and display. */
 	for (cnt = 1, t = p; cnt <= cnt_orig; ++t, ++cnt) {
 		t->lno = lno;
-		t->coff = 0;
+		t->coff = coff;
 		t->soff = cnt;
 		SMAP_FLUSH(t);
 		if (vs_line(sp, t, NULL, NULL))
