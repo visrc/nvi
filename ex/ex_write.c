@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.27 1994/03/23 16:38:38 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:38:38 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.28 1994/04/26 19:07:44 bostic Exp $ (Berkeley) $Date: 1994/04/26 19:07:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,13 +32,32 @@ static char sccsid[] = "$Id: ex_write.c,v 8.27 1994/03/23 16:38:38 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
-enum which {WQ, WRITE, XIT};
+enum which {WN, WQ, WRITE, XIT};
 
 static int exwr __P((SCR *, EXF *, EXCMDARG *, enum which));
 
 /*
+ * ex_wn --	:wn[!] [>>] [file]
+ *	Write to a file and switch to the next one.
+ */
+int
+ex_wn(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	if (exwr(sp, ep, cmdp, WN))
+		return (1);
+
+	/* The file name isn't a new file to edit. */
+	cmdp->argc = 0;
+
+	return (ex_next(sp, ep, cmdp));
+}
+
+/*
  * ex_wq --	:wq[!] [>>] [file]
- *	Write to a file.
+ *	Write to a file and quit.
  */
 int
 ex_wq(sp, ep, cmdp)
