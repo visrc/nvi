@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.34 1996/02/25 18:25:26 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:25:26 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.35 1996/02/25 19:07:45 bostic Exp $ (Berkeley) $Date: 1996/02/25 19:07:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -257,11 +257,11 @@ cl_vi_init(sp)
 	}
 
 	if (o_term == NULL)
-		Xunsetenv("TERM");
+		unsetenv("TERM");
 	if (o_lines == NULL)
-		Xunsetenv("LINES");
+		unsetenv("LINES");
 	if (o_cols == NULL)
-		Xunsetenv("COLUMNS");
+		unsetenv("COLUMNS");
 
 	/*
 	 * XXX
