@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.11 1996/03/27 18:43:29 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:43:29 $ */
+/* $Id: port.h.in,v 8.12 1996/05/16 20:23:13 bostic Exp $ (Berkeley) $Date: 1996/05/16 20:23:13 $ */
 
 /*
  * Declare the basic types, if they aren't already declared.  Named and
@@ -121,7 +121,7 @@
  * "DB" isn't always portable, and we want the private information.
  */
 #define DB      L__DB
-#undef	pgno_t			/* IRIX has it's own version. */
+#undef	pgno_t			/* IRIX has its own version. */
 #define	pgno_t	L__db_pgno_t
 
 /*
