@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.24 1996/02/25 15:46:22 bostic Exp $ (Berkeley) $Date: 1996/02/25 15:46:22 $
+dnl	$Id: configure.in,v 8.25 1996/02/25 18:23:47 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:23:47 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -196,6 +196,7 @@ AC_REPLACE_FUNCS(strpbrk)
 AC_REPLACE_FUNCS(strsep)
 AC_REPLACE_FUNCS(strtol)
 AC_REPLACE_FUNCS(strtoul)
+AC_REPLACE_FUNCS(unsetenv)
 AC_FUNC_VFORK
 AC_FUNC_VPRINTF
 
@@ -369,7 +370,9 @@ dnl Check for C library DB routines.
 dnl XXX
 dnl Some older versions of DB can't handle vi, so, for now, always compile
 dnl it in, unless the user specifies on the command line that we're to use
-dnl the C library one.
+dnl the C library one.  However, we try and compile in the C library's DB
+dnl hash routines, since vi doesn't use them and the local versions may be
+dnl used to support the password and termcap databases, and may have diverged.
 AC_SUBST(dbobjs)
 AC_MSG_CHECKING(for Berkeley DB package)
 AC_CACHE_VAL(vi_cv_db_lib, [dnl
@@ -392,6 +395,14 @@ if test "$vi_cv_db_lib" = "vi DB routines"; then
 	dbobjs=\$\{DBOBJS\}
 fi
 AC_MSG_RESULT($vi_cv_db_lib)
+AC_MSG_CHECKING(for DB hash routines)
+AC_CACHE_VAL(vi_cv_db_hash_open, [dnl
+AC_TRY_LINK(, [__hash_open(0, 0, 0, 0, 0);],
+	[vi_cv_db_hash_open=yes], [vi_cv_db_hash_open=no])])
+if test "$vi_cv_db_hash_open" = yes; then
+	AC_DEFINE(HAVE_DB_HASH_OPEN)
+fi
+AC_MSG_RESULT($vi_cv_db_hash_open)
 
 dnl Check for C library RE routines.
 dnl XXX
