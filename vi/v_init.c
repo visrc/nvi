@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.8 1993/02/12 10:58:09 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:58:09 $";
+static char sccsid[] = "$Id: v_init.c,v 5.9 1993/02/12 15:18:22 bostic Exp $ (Berkeley) $Date: 1993/02/12 15:18:22 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -19,6 +19,37 @@ static char sccsid[] = "$Id: v_init.c,v 5.8 1993/02/12 10:58:09 bostic Exp $ (Be
 #include "screen.h"
 #include "term.h"
 
+#ifdef	FWOPEN_NOT_AVAILABLE
+#include <sys/syscall.h>			/* SYS_write. */
+
+#include <unistd.h>
+
+/*
+ * The fwopen call substitutes a local routine for the write system call.
+ * This allows vi to trap all of the writes done via stdio by ex.  If you
+ * don't have a fwopen or a similar way of replacing stdio's calls to write,
+ * the following kludge may work.  It depends on your loader not realizing
+ * that it's being tricked and linking the C library with the real write
+ * system call.  Getting the real write system call is a bit tricky, there
+ * are two possible ways listed below.
+ */
+static EXF	*v_ep;
+static int	 v_fd = -1;
+
+ssize_t
+write(fd, buf, n)
+	int fd;
+	const void *buf;
+	size_t n;
+{
+        if (fd == v_fd)
+                return (v_exwrite(v_ep, buf, n));
+        else
+                /* return (_write(fd, buf, n)); */
+		/* return (syscall(SYS_write, fd, buf, n)); */
+}
+#endif
+
 /*
  * v_init --
  *	Initialize vi.
@@ -30,7 +61,14 @@ v_init(ep)
 	ep->s_confirm = v_confirm;
 	ep->s_end = v_end;
 
+#ifdef FWOPEN_NOT_AVAILABLE
+	if ((ep->stdfp = fopen(_PATH_DEVNULL, "w")) == NULL)
+		return (1);
+	v_fd = fileno(ep->stdfp);
+	v_ep = ep;
+#else
 	ep->stdfp = fwopen(ep, v_exwrite);
+#endif
 
 	if (ISSET(O_COMMENT) && v_comment(ep))
 		return (1);
@@ -53,6 +91,10 @@ int
 v_end(ep)
 	EXF *ep;
 {
+#ifdef FWOPEN_NOT_AVAILABLE
+	v_ep = NULL;
+	v_fd = -1;
+#endif
 	(void)fclose(ep->stdfp);
 	ep->stdfp = stdout;
 
