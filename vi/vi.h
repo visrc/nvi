@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.42 1994/10/13 13:59:39 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:39 $
+ *	$Id: vi.h,v 8.43 1994/10/13 14:06:47 bostic Exp $ (Berkeley) $Date: 1994/10/13 14:06:47 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -95,14 +95,13 @@ typedef struct _vicmdarg {
 	 * defined command-by-command.  Every function has to roll its own
 	 * starting and stopping positions, and adjust them if it's being used
 	 * as a motion component.  The general rules are as follows:
+	 *
 	 *	1: If not a motion component, the final cursor is at the end
 	 *	   of the range.
-	 *	2: If moving backward in the file:
-	 *	 a:	Delete moves to the end of the range.
-	 *	 b:	If the line hasn't changed, yank doesn't move, else
-	 *		it moves to the end of the range.
-	 *	3: If moving forward in the file, delete and yank stay at the
-	 *	   start of the range.
+	 *	2: If moving backward in the file, delete and yank move the
+	 *	   final cursor to the end of the range.
+	 *	3: If moving forward in the file, delete and yank leave the
+	 *	   final cursor at the start of the range.
 	 *
 	 * Usually, if moving backward in the file and it's a motion component,
 	 * the starting cursor is decremented by a single character (or, in a
@@ -116,12 +115,8 @@ typedef struct _vicmdarg {
 	 * the final cursor position for all of them: for 'c', the text input
 	 * routines set the cursor to the last character inserted; for '<',
 	 * '>' and '!', the underlying ex commands that do the operation will
-	 * set the cursor for us.   We still need a VC_C flag because there are
-	 * special motion semantics that are associated with the 'c' command. 
-	 * We don't need VC_ flags for the others, because, as far as I know,
-	 * there are no special semantics associated with their motions.  So,
-	 * we group them under a single VC_ flag so that the standard motion
-	 * adjustments get done.
+	 * set the cursor for us, usually to something related to the first
+	 * <nonblank>.
 	 */
 	MARK	 m_start;		/* mark: initial cursor, range start. */
 	MARK	 m_stop;		/* mark: range end. */
