@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.45 2002/03/08 22:37:48 skimo Exp $ (Berkeley) $Date: 2002/03/08 22:37:48 $";
+static const char sccsid[] = "$Id: db.c,v 10.46 2002/03/09 12:48:22 skimo Exp $ (Berkeley) $Date: 2002/03/09 12:48:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,7 +225,6 @@ db_delete(SCR *sp, db_recno_t lno)
 {
 	DBT key;
 	EXF *ep;
-	int rval;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "delete line %lu\n", (u_long)lno);
@@ -266,7 +265,7 @@ db_delete(SCR *sp, db_recno_t lno)
 	log_line(sp, lno, LOG_LINE_DELETE_F);
 
 	/* Update screen. */
-	return (scr_update(sp, lno, LINE_DELETE, 1) || rval);
+	return (scr_update(sp, lno, LINE_DELETE, 1));
 }
 
 /* maybe this could be simpler
