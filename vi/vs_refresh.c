@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.62 1994/08/17 14:33:39 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:33:39 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.63 1994/08/17 18:58:02 bostic Exp $ (Berkeley) $Date: 1994/08/17 18:58:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -608,6 +608,7 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	for (smp = HMAP; smp <= TMAP; ++smp)
 		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
+
 	/*
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
@@ -698,7 +699,8 @@ svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	size_t cols, curlen, endpoint, len, midpoint;
+	SVI_PRIVATE *svp;
+	size_t cols, curlen, endpoint, len, midpoint, scno;
 	char *p, buf[20];
 
 	/* Clear the mode line. */
@@ -749,8 +751,9 @@ svi_modeline(sp, ep)
 	 * column on the screen.
 	 */
 	if (O_ISSET(sp, O_RULER)) {
-		len = snprintf(buf,
-		    sizeof(buf), "%lu,%lu", sp->lno, sp->cno + 1);
+		svp = SVP(sp);
+		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno,
+		    (HMAP->off - 1) * SCREEN_COLS(sp) + svp->sc_col + 1);
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
 			MOVE(sp, INFOLINE(sp), midpoint);
