@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.20 1995/10/03 13:17:54 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:17:54 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.21 1995/10/17 08:25:17 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:25:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static char sccsid[] = "$Id: vs_msg.c,v 10.20 1995/10/03 13:17:54 bostic Exp $ (
 #define	SCROLL_WAIT	0x04		/* User must enter cont. char. */
 
 static void	vs_divider __P((SCR *));
-static int	vs_output __P((SCR *, mtype_t, const char *, int));
+static void	vs_output __P((SCR *, mtype_t, const char *, int));
 static void	vs_msgsave __P((SCR *, mtype_t, const char *, size_t));
 static void	vs_scroll __P((SCR *, CHAR_T *, u_int));
 
@@ -45,9 +45,9 @@ static void	vs_scroll __P((SCR *, CHAR_T *, u_int));
  * messages, e.g. X11 clock icons, should set their scr_busy function to the
  * correct function before calling the main editor routine.
  *
- * PUBLIC: int vs_busy __P((SCR *, const char *, busy_t));
+ * PUBLIC: void vs_busy __P((SCR *, const char *, busy_t));
  */
-int
+void
 vs_busy(sp, msg, btype)
 	SCR *sp;
 	const char *msg;
@@ -62,7 +62,7 @@ vs_busy(sp, msg, btype)
 
 	/* Ex doesn't display busy messages. */
 	if (F_ISSET(sp, S_EX))
-		return (0);
+		return;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -95,6 +95,8 @@ vs_busy(sp, msg, btype)
 		(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
 		break;
 	case BUSY_OFF:
+		if (vip->busy_ref == 0)
+			break;
 		--vip->busy_ref;
 
 		/*
@@ -115,7 +117,7 @@ vs_busy(sp, msg, btype)
 		(void)gettimeofday(&tv, NULL);
 		if (((tv.tv_sec - vip->busy_tv.tv_sec) * 1000000 +
 		    (tv.tv_usec - vip->busy_tv.tv_usec)) < 4000)
-			return (0);
+			return;
 
 		/* Display the update. */
 		if (vip->busy_ch == sizeof(flagc))
@@ -126,7 +128,6 @@ vs_busy(sp, msg, btype)
 		break;
 	}
 	(void)gp->scr_refresh(sp, 0);
-	return (0);
 }
 
 /*
@@ -196,31 +197,31 @@ vs_update(sp, m1, m2)
  * alternate method of displaying messages, e.g. dialog boxes, should set their
  * scr_msg function to the correct function before calling the editor.
  *
- * PUBLIC: int vs_msg __P((SCR *, mtype_t, const char *, size_t));
+ * PUBLIC: void vs_msg __P((SCR *, mtype_t, const char *, size_t));
  */
-int
-vs_msg(sp, mtype, line, rlen)
+void
+vs_msg(sp, mtype, line, len)
 	SCR *sp;
 	mtype_t mtype;
 	const char *line;
-	size_t rlen;
+	size_t len;
 {
 	GS *gp;
 	VI_PRIVATE *vip;
-	size_t cols, len, oldx, oldy, padding;
+	size_t cols, oldx, oldy, padding;
 	const char *e, *s, *t;
 
 	/* If no text is supplied, flush any buffered output. */
 	if (line == NULL) {
 		if (F_ISSET(sp, S_EX))
 			(void)fflush(stdout);
-		return (0);
+		return;
 	}
 
 	/* If the screen isn't ready to display messages, save it. */
 	if (!F_ISSET(sp, S_SCREEN_READY)) {
-		(void)vs_msgsave(sp, mtype, line, rlen);
-		return (rlen);
+		(void)vs_msgsave(sp, mtype, line, len);
+		return;
 	}
 
 	/* Ring the bell if it's scheduled. */
@@ -241,14 +242,14 @@ vs_msg(sp, mtype, line, rlen)
 	if (F_ISSET(sp, S_EX)) {
 		if (!F_ISSET(sp, S_SCREEN_READY) &&
 		    gp->scr_screen(sp, S_EX))
-			return (0);
+			return;
 		F_SET(sp, S_EX_WROTE | S_SCREEN_READY);
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 1);
-		(void)printf("%.*s", (int)rlen, line);
+		(void)printf("%.*s", (int)len, line);
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 0);
-		return (rlen);
+		return;
 	}
 
 	/* Save the cursor position. */
@@ -262,9 +263,9 @@ vs_msg(sp, mtype, line, rlen)
 	if (mtype != vip->mtype) {
 		if (vip->lcontinue != 0) {
 			if (vip->mtype == M_NONE)
-				(void)vs_output(sp, vip->mtype, "\n", 1);
+				vs_output(sp, vip->mtype, "\n", 1);
 			else
-				(void)vs_output(sp, vip->mtype, ".\n", 2);
+				vs_output(sp, vip->mtype, ".\n", 2);
 			vip->lcontinue = 0;
 		}
 		vip->mtype = mtype;
@@ -272,7 +273,7 @@ vs_msg(sp, mtype, line, rlen)
 
 	/* If it's an ex output message, just write it out. */
 	if (mtype == M_NONE) {
-		(void)vs_output(sp, mtype, line, rlen);
+		vs_output(sp, mtype, line, len);
 		goto ret;
 	}
 
@@ -299,13 +300,12 @@ vs_msg(sp, mtype, line, rlen)
 	 * There are almost certainly pathological cases that will break this
 	 * code.
 	 */
-	len = rlen;
 	if (vip->lcontinue != 0)
 		if (len + vip->lcontinue + padding >= sp->cols)
-			(void)vs_output(sp, mtype, ".\n", 2);
+			vs_output(sp, mtype, ".\n", 2);
 		else  {
-			(void)vs_output(sp, mtype, ";", 1);
-			(void)vs_output(sp, M_NONE, "  ", 2);
+			vs_output(sp, mtype, ";", 1);
+			vs_output(sp, M_NONE, "  ", 2);
 		}
 	for (cols = sp->cols - padding, s = line; len > 0; s = t) {
 		for (; isblank(*s) && --len != 0; ++s);
@@ -329,9 +329,9 @@ vs_msg(sp, mtype, line, rlen)
 		len -= e - s;
 		if ((e - s) > 1 && s[(e - s) - 1] == '.')
 			--e;
-		(void)vs_output(sp, mtype, s, e - s);
+		vs_output(sp, mtype, s, e - s);
 		if (len != 0)
-			(void)vs_output(sp, M_NONE, "\n", 1);
+			vs_output(sp, M_NONE, "\n", 1);
 		if (INTERRUPTED(sp))
 			break;
 	}
@@ -341,14 +341,13 @@ ret:	/* Restore the cursor position. */
 
 	/* Refresh the screen. */
 	(void)gp->scr_refresh(sp, 0);
-	return (rlen);
 }
 
 /*
  * vs_output --
  *	Output the text to the screen.
  */
-static int
+static void
 vs_output(sp, mtype, line, llen)
 	SCR *sp;
 	mtype_t mtype;
@@ -443,7 +442,6 @@ vs_output(sp, mtype, line, llen)
 	/* Set up next continuation line. */
 	if (p == NULL)
 		gp->scr_cursor(sp, &notused, &vip->lcontinue);
-	return (rlen);
 }
 
 /*
