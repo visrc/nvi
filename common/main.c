@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.54 1993/12/10 12:20:42 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:42 $";
+static char sccsid[] = "$Id: main.c,v 8.55 1993/12/19 18:36:03 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:36:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -374,15 +374,15 @@ main(argc, argv)
 		switch (F_ISSET(sp, S_SCREENS)) {
 		case S_EX:
 			if (sex_screen_init(sp))
-				return (1);
+				goto err2;
 			break;
 		case S_VI_CURSES:
 			if (svi_screen_init(sp))
-				return (1);
+				goto err2;
 			break;
 		case S_VI_XAW:
 			if (xaw_screen_init(sp))
-				return (1);
+				goto err2;
 			break;
 		default:
 			abort();
@@ -472,6 +472,7 @@ gs_end(gp)
 	GS *gp;
 {
 	MSG *mp;
+	SCR *sp;
 	char *tty;
 
 	/* Reset anything that needs resetting. */
@@ -485,7 +486,18 @@ gs_end(gp)
 	if (F_ISSET(gp, G_BELLSCHED))
 		(void)fprintf(stderr, "\07");		/* \a */
 
-	/* Flush any remaining messages. */
+	/* If there are any remaining screens, flush their messages. */
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
+		for (mp = sp->msgq.lh_first;
+		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
+			(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
+	for (sp = __global_list->hq.cqh_first;
+	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
+		for (mp = sp->msgq.lh_first;
+		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
+			(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
+	/* Flush messages on the global queue. */
 	for (mp = gp->msgq.lh_first;
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
 		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
