@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.49 1996/03/27 09:15:27 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:15:27 $
+.\"     $Id: set.opt.roff,v 8.50 1996/03/28 16:01:48 bostic Exp $ (Berkeley) $Date: 1996/03/28 16:01:48 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -330,7 +330,19 @@ character.
 To set it to
 .LI <escape> ,
 use
-.QT "set filec=<literal-next><escape>" .
+.QT "set cedit=<literal-next><escape>" .
+.sp
+If the
+.OP cedit
+edit option is set to the same character as the
+.OP filec
+edit option,
+.CO vi
+will perform colon command-line editing if the character is entered as
+the first character of the line,
+otherwise,
+.CO vi
+will perform file name expansion.
 .KY columns
 .IP "columns, co [80]"
 The number of columns in the screen.
@@ -445,6 +457,18 @@ To set it to
 .LI <tab> ,
 use
 .QT "set filec=\<tab>" .
+.sp
+If the
+.OP cedit
+edit option is set to the same character as the
+.OP filec
+edit option,
+.CO vi
+will perform colon command-line editing if the character is entered as
+the first character of the line,
+otherwise,
+.CO vi
+will perform file name expansion.
 .KY flash
 .IP "flash [on]"
 This option causes the screen to flash instead of beeping the keyboard,
