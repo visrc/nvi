@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.15 1993/11/01 13:25:32 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:25:32 $";
+static char sccsid[] = "$Id: key.c,v 8.16 1993/11/03 10:16:51 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:16:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,7 +207,7 @@ kloop:	if (keyp->cnt) {
 	 */
 	if (LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
 mloop:		if (ttyp->buf[ttyp->next] < MAX_BIT_SEQ &&
-		    !bit_test(sp->seqb, ttyp->buf[ttyp->next]))
+		    !bit_test(sp->gp->seqb, ttyp->buf[ttyp->next]))
 			goto nomap;
 		qp = seq_find(sp, &ttyp->buf[ttyp->next], ttyp->cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
