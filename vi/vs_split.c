@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.4 1993/08/29 15:21:03 bostic Exp $ (Berkeley) $Date: 1993/08/29 15:21:03 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.5 1993/09/10 18:42:12 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:42:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,10 +48,12 @@ svi_split(sp, argv)
 	}
 	if (scr_init(sp, tsp))
 		goto mem1;
-	if ((tsp->svi_private = malloc(sizeof(SVI_PRIVATE))) == NULL) {
+	if ((SVP(tsp) = malloc(sizeof(SVI_PRIVATE))) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		goto mem2;
 	}
+/* INITIALIZED AT SCREEN CREATE. */
+	memset(SVP(tsp), 0, sizeof(SVI_PRIVATE));
 
 #undef	HMAP
 #undef	TMAP
@@ -66,6 +68,11 @@ svi_split(sp, argv)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		goto mem3;
 	}
+
+/* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
+	if (SVP(sp)->VB != NULL &&
+	    (SVP(tsp)->VB = strdup(SVP(sp)->VB)) == NULL)
+		goto mem4;
 
 	/* Split the screen, and link the screens together. */
 	if (sp->sc_row <= half) {		/* Parent is top half. */
@@ -165,7 +172,7 @@ svi_split(sp, argv)
 	return (0);
 
 mem4:	FREE(HMAP(tsp), SIZE_HMAP * sizeof(SMAP));
-mem3:	FREE(sp->svi_private, sizeof(SVI_PRIVATE));
+mem3:	FREE(SVP(sp), sizeof(SVI_PRIVATE));
 mem2:	(void)scr_end(tsp);
 mem1:	FREE(tsp, sizeof(SCR));
 	return (1);
