@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.2 1995/06/09 12:47:09 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:09 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.3 1995/06/09 15:37:38 bostic Exp $ (Berkeley) $Date: 1995/06/09 15:37:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,20 +154,25 @@ cl_vi_init(sp)
 	 * it's also pretty unlikely.
 	 */
 	gp = sp->gp;
-	if (!tcgetattr(STDIN_FILENO, &t)) {
-		if (gp->original_termios.c_iflag & IXON)
-			t.c_iflag |= IXON;
-		if (gp->original_termios.c_iflag & IXOFF)
-			t.c_iflag |= IXOFF;
+	if (tcgetattr(STDIN_FILENO, &t)) {
+		msgq(sp, M_SYSERR, "tcgetattr");
+		goto err;
+	}
+	if (gp->original_termios.c_iflag & IXON)
+		t.c_iflag |= IXON;
+	if (gp->original_termios.c_iflag & IXOFF)
+		t.c_iflag |= IXOFF;
 
-		t.c_lflag |= ISIG;
+	t.c_lflag |= ISIG;
 #ifdef VDSUSP
-		t.c_cc[VDSUSP] = _POSIX_VDISABLE;
+	t.c_cc[VDSUSP] = _POSIX_VDISABLE;
 #endif
-		t.c_cc[VQUIT] = _POSIX_VDISABLE;
-		t.c_cc[VSUSP] = _POSIX_VDISABLE;
+	t.c_cc[VQUIT] = _POSIX_VDISABLE;
+	t.c_cc[VSUSP] = _POSIX_VDISABLE;
 
-		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
+	if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
+		msgq(sp, M_SYSERR, "tcsetattr");
+		goto err;
 	}
 
 	/* Things are now initialized -- set the bit. */
@@ -181,7 +186,7 @@ cl_vi_init(sp)
 	 * initscr() was called and the CL_INIT_VI bit was set.  Do it now.
 	 */
 	if (cl_term_init(sp)) {
-		(void)cl_vi_end(sp);
+err:		(void)cl_vi_end(sp);
 		return (1);
 	}
 
@@ -202,6 +207,10 @@ cl_vi_end(sp)
 	SCR *sp;
 {
 	CL_PRIVATE *clp;
+
+	clp = CLP(sp);
+	if (!F_ISSET(CLP(sp), CL_INIT_VI))
+		return (0);
 
 	/* Restore signals. */
 	cl_sig_end(sp);
@@ -229,7 +238,6 @@ cl_vi_end(sp)
 	}
 
 #if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
-	clp = CLP(sp);
 	if (clp->lline != NULL)
 		free(clp->lline);
 	free(clp);
@@ -252,9 +260,6 @@ cl_ex_init(sp)
 	CL_PRIVATE *clp;
 	size_t len;
 	char *s, *t, buf[128], tbuf[2048];
-
-	if (!F_ISSET(sp->gp, G_STDIN_TTY))
-		return (1);
 
 	clp = CLP(sp);
 	if (clp == NULL) {
@@ -360,6 +365,10 @@ cl_ex_end(sp)
 {
 	CL_PRIVATE *clp;
 
+	clp = CLP(sp);
+	if (!F_ISSET(CLP(sp), CL_INIT_EX))
+		return (0);
+
 	/* Restore signals. */
 	cl_sig_end(sp);
 
@@ -403,13 +412,15 @@ cl_ex_tinit(sp)
 	struct termios term;
 	CL_PRIVATE *clp;
 
-	clp = CLP(sp);
+	if (!F_ISSET(sp->gp, G_STDIN_TTY))
+		return (0);
 
 	/*
 	 * Move to the bottom of the screen, but don't clear the line, it may
 	 * have valid contents, e.g. :set|file|append.
 	 */
-	if (F_ISSET(CLP(sp), CL_INIT_VI)) {
+	clp = CLP(sp);
+	if (F_ISSET(clp, CL_INIT_VI)) {
 		(void)move(sp->t_maxrows, 0);
 		(void)refresh();
 	}
@@ -465,6 +476,9 @@ cl_ex_tend(sp)
 	SCR *sp;
 {
 	CL_PRIVATE *clp;
+
+	if (!F_ISSET(sp->gp, G_STDIN_TTY))
+		return (0);
 
 	clp = CLP(sp);
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->exterm)) {
