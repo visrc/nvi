@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.24 1992/10/29 14:45:26 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:45:26 $";
+static char sccsid[] = "$Id: vi.c,v 5.25 1992/11/02 09:41:48 bostic Exp $ (Berkeley) $Date: 1992/11/02 09:41:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: vi.c,v 5.24 1992/10/29 14:45:26 bostic Exp $ (Berke
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <termios.h>
+#include <string.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -27,7 +27,6 @@ static char sccsid[] = "$Id: vi.c,v 5.24 1992/10/29 14:45:26 bostic Exp $ (Berke
 #include "extern.h"
 
 static int getcmd __P((VICMDARG *, VICMDARG *));
-static int getcount __P((int, u_long *, int *));
 static int getkeyword __P((VICMDARG *, u_int));
 static int getmotion __P((VICMDARG *, MARK *, MARK *));
 
@@ -38,16 +37,16 @@ int needexerase;
  * vi --
  * 	Main vi command loop.
  */
-void
+int
 vi()
 {
 	register VICMDARG *vp;
 	MARK fm, tm, m;
 	u_int flags;
-	int erase;
 
-	curf->stdfp = fwopen(curf, v_exwrite);
-	scr_ref(curf);
+	if (v_init(curf))
+		return (1);
+	status(curf, curf->lno);
 	for (;;) {
 		/* Report any changes from the previous command. */
 		if (curf->rptlines) {
@@ -167,9 +166,8 @@ err:		if (msgcnt) {
 				dot.flags |= VC_C1SET;
 		}
 	}
-	(void)fclose(curf->stdfp);
-	curf->stdfp = stdout;
-	(void)scr_end(curf);
+	v_end(curf);
+	return (0);
 }
 
 #define	KEY(k, flags) {							\
@@ -217,7 +215,6 @@ getcmd(vp, ismotion)
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
 {
 	register VIKEYS *kp;
-	register u_long count;
 	register u_int flags;
 	u_long hold;
 	int key;
@@ -458,7 +455,7 @@ getkeyword(kp, flags)
 	VICMDARG *kp;
 	u_int flags;
 {
-	register size_t beg, end, key;
+	register size_t beg, end;
 	size_t len;
 	u_char *p;
 
