@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.2 1994/05/18 18:41:43 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:41:43 $";
+static char sccsid[] = "$Id: msg.c,v 8.3 1994/05/21 10:55:49 bostic Exp $ (Berkeley) $Date: 1994/05/21 10:55:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -236,7 +236,7 @@ msg_rpt(sp, is_message)
 		NULL,
 	};
 	recno_t total;
-	u_long rval;
+	u_long rptval;
 	int first, cnt;
 	size_t blen, len;
 	char * const *ap;
@@ -245,7 +245,7 @@ msg_rpt(sp, is_message)
 	if (F_ISSET(sp, S_EXSILENT))
 		return (0);
 
-	if ((rval = O_VAL(sp, O_REPORT)) == 0)
+	if ((rptval = O_VAL(sp, O_REPORT)) == 0)
 		goto norpt;
 
 	GET_SPACE_RET(sp, bp, blen, 512);
@@ -264,12 +264,16 @@ msg_rpt(sp, is_message)
 		}
 
 	/*
-	 * If nothing to report, return.  Note that the number of lines
-	 * must be > than the user's value, not >=.  This is historic
-	 * practice and means that users cannot report on single line
-	 * changes.
+	 * If nothing to report, return.
+	 *
+	 * !!!
+	 * And now, a special vi clone test.  Historically, vi reported if
+	 * the number of changed lines was > than the value, not >=.  Which
+	 * means that users can't report on single line changes, btw.)  In
+	 * any case, if it was a yank command, it was >=, not >.  No lie.  I
+	 * got complaints, so we do it right.
 	 */
-	if (total > rval) {
+	if (total > rptval || sp->rptlines[L_YANKED] >= rptval) {
 		*p = '\0';
 		if (is_message)
 			msgq(sp, M_INFO, "%s", bp);
