@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.10 1993/12/27 16:48:48 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:48:48 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.11 1994/01/09 16:45:46 bostic Exp $ (Berkeley) $Date: 1994/01/09 16:45:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,10 @@ ex_screen_end(sp)
 	if (exp->lastbcomm != NULL)
 		FREE(exp->lastbcomm, strlen(exp->lastbcomm) + 1);
 
+	/* Free private memory. */
 	FREE(exp, sizeof(EX_PRIVATE));
+	sp->ex_private = NULL;
+
 	return (rval);
 }
 
