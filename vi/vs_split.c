@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.17 1996/03/14 21:26:37 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:26:37 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.18 1996/03/15 20:19:19 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:19:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,12 +45,12 @@ vs_split(sp, new)
 	gp = sp->gp;
 
 	/* Check to see if it's possible. */
-	half = sp->rows / 2;
-	if (half < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "222|Screen must be larger than %d to split",
-		     MINIMUM_SCREEN_ROWS);
+	if (sp->rows <= 3) {
+		msgq(sp, M_ERR,
+		    "222|The screen must be larger than 3 lines to split");
 		return (1);
 	}
+	half = sp->rows / 2;
 
 	/* Get a new screen map. */
 	CALLOC(sp, _HMAP(new), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
