@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.40 1996/06/19 17:42:56 bostic Exp $ (Berkeley) $Date: 1996/06/19 17:42:56 $";
+static const char sccsid[] = "$Id: exf.c,v 10.41 1996/06/19 17:49:44 bostic Exp $ (Berkeley) $Date: 1996/06/19 17:49:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -866,10 +866,10 @@ file_write(sp, fm, tm, name, flags)
 		len = snprintf(buf, sizeof(buf), msgstr, p, nlno, nch);
 		break;
 	case OLDFILE:
-		msgstr = msg_cat(sp,
-		    "257|%s: %s%lu lines, %lu characters", NULL);
-		len = snprintf(buf, sizeof(buf), msgstr, p,
-		    LF_ISSET(FS_APPEND) ? "appended: " : "", nlno, nch);
+		msgstr = msg_cat(sp, LF_ISSET(FS_APPEND) ?
+		    "315|%s: appended: %lu lines, %lu characters" :
+		    "257|%s: %lu lines, %lu characters", NULL);
+		len = snprintf(buf, sizeof(buf), msgstr, p, nlno, nch);
 		break;
 	default:
 		abort();
