@@ -6,14 +6,19 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.31 1993/10/03 14:14:23 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:14:23 $";
+static char sccsid[] = "$Id: exf.c,v 8.32 1993/10/04 10:09:24 bostic Exp $ (Berkeley) $Date: 1993/10/04 10:09:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
+/*
+ * Include <sys/file.h>, not <fcntl.h>, the flock(2)
+ * #defines were found there on historical systems.
+ */
+#include <sys/file.h>
+
 #include <errno.h>
-#include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
