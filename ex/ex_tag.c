@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.13 1993/09/28 13:37:16 bostic Exp $ (Berkeley) $Date: 1993/09/28 13:37:16 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.14 1993/09/29 16:18:25 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:18:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,6 @@ ex_tagfirst(sp, tagarg)
 	SCR *sp;
 	char *tagarg;
 {
-	EXF *tep;
 	FREF *frp;
 	MARK m;
 	long tl;
@@ -62,7 +61,7 @@ ex_tagfirst(sp, tagarg)
 	/* Create the file entry. */
 	if ((frp = file_add(sp, NULL, fname, 0)) == NULL)
 		return (1);
-	if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
+	if (file_init(sp, frp, NULL, 0))
 		return (1);
 
 	/*
@@ -81,10 +80,11 @@ ex_tagfirst(sp, tagarg)
 		m.lno = 1;
 		m.cno = 0;
 		flags = SEARCH_FILE | SEARCH_TAG | SEARCH_TERM;
-		sval = f_search(sp, tep, &m, &m, search, NULL, &flags);
+		sval = f_search(sp, sp->ep, &m, &m, search, NULL, &flags);
 		if (sval && (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			sval = f_search(sp, tep, &m, &m, search, NULL, &flags);
+			sval = f_search(sp, sp->ep,
+			    &m, &m, search, NULL, &flags);
 		}
 		if (sval) {
 			msgq(sp, M_ERR, "%s: search pattern not found.", tag);
@@ -92,11 +92,9 @@ ex_tagfirst(sp, tagarg)
 		}
 	}
 
-	/* Set up the screen/file. */
-	sp->ep = tep;
+	/* Set up the screen. */
 	frp->lno = m.lno;
 	frp->cno = m.cno;
-	sp->frp = frp;
 	F_SET(frp, FR_CURSORSET);
 
 	/* Might as well make this the default tag. */
@@ -118,10 +116,9 @@ ex_tagpush(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	enum {TC_CHANGE, TC_CURRENT} which;
-	EXF *tep;
 	FREF *frp;
 	MARK m;
-	TAG *tp;
+	TAG *tp, ttag;
 	u_int flags;
 	int sval;
 	long tl;
@@ -154,21 +151,27 @@ ex_tagpush(sp, ep, cmdp)
 	if (tag_get(sp, sp->tlast, &tag, &fname, &search))
 		return (1);
 
+	/* Save enough information that we can get back. */
+	ttag.frp = sp->frp;
+	ttag.lno = sp->lno;
+	ttag.cno = sp->cno;
+
 	/* Get an FREF structure. */
 	if ((frp = file_add(sp, sp->frp, fname, 1)) == NULL) {
 		FREE(tag, strlen(tag));
 		return (1);
 	}
 
-	/* Get an EXF structure, so we can search. */
-	if (sp->frp == frp) {
+	/* Switch to the new file. */
+	if (sp->frp == frp)
 		which = TC_CURRENT;
-		tep = sp->ep;
-	} else {
+	else {
 		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
 
-		if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
+		if (file_init(sp, frp, NULL)) {
+			FREE(tag, strlen(tag));
 			return (1);
+		}
 		which = TC_CHANGE;
 	}
 
@@ -189,54 +192,41 @@ ex_tagpush(sp, ep, cmdp)
 		m.lno = 1;
 		m.cno = 0;
 		flags = SEARCH_FILE | SEARCH_TAG | SEARCH_TERM;
-		sval = f_search(sp, tep, &m, &m, search, NULL, &flags);
+		sval = f_search(sp, sp->ep, &m, &m, search, NULL, &flags);
 		if (sval && (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			sval = f_search(sp, tep, &m, &m, search, NULL, &flags);
+			sval = f_search(sp, sp->ep,
+			     &m, &m, search, NULL, &flags);
 		}
 		if (sval)
 			msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 	}
 	FREE(tag, strlen(tag));
 
-	/*
-	 * Save enough information that we can get back; if the malloc
-	 * fails, keep going, it just means the user can't return.
-	 */
-	if ((tp = malloc(sizeof(TAG))) == NULL)
-		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
-	else {
-		tp->frp = sp->frp;
-		tp->lno = sp->lno;
-		tp->cno = sp->cno;
-
-		HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
-	}
-
-	if (sval) {
-		switch (which) {
-		case TC_CHANGE:
-			sp->n_ep = tep;
-			sp->n_frp = frp;
-			F_SET(sp, S_FSWITCH);
-			break;
-		case TC_CURRENT:
-			return (1);
-		}
-	} else switch (which) {
-		case TC_CHANGE:
+	switch (which) {
+	case TC_CHANGE:
+		if (!sval) {
 			frp->lno = m.lno;
 			frp->cno = m.cno;
 			F_SET(frp, FR_CURSORSET);
-			sp->n_ep = tep;
-			sp->n_frp = frp;
-			F_SET(sp, S_FSWITCH);
-			break;
-		case TC_CURRENT:
-			sp->lno = m.lno;
-			sp->cno = m.cno;
-			break;
 		}
+		F_SET(sp, S_FSWITCH);
+		break;
+	case TC_CURRENT:
+		if (sval)
+			return (1);
+		sp->lno = m.lno;
+		sp->cno = m.cno;
+		break;
+	}
+
+	/* If the malloc fails, no big deal, just can't return. */
+	if ((tp = malloc(sizeof(TAG))) == NULL)
+		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+	else {
+		*tp = ttag;
+		HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
+	}
 	return (0);
 }
 
@@ -266,13 +256,12 @@ ex_tagpop(sp, ep, cmdp)
 	} else {
 		MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
-		if ((sp->n_ep = file_init(sp, NULL, tp->frp, NULL)) == NULL)
+		if (file_init(sp, tp->frp, NULL, 0))
 			return (1);
 
-		sp->n_frp = tp->frp;
 		tp->frp->lno = tp->lno;
 		tp->frp->cno = tp->cno;
-		F_SET(sp->n_frp, FR_CURSORSET);
+		F_SET(sp->frp, FR_CURSORSET);
 
 		F_SET(sp, S_FSWITCH);
 	}
@@ -308,13 +297,12 @@ ex_tagtop(sp, ep, cmdp)
 	} else {
 		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
 
-		if ((sp->n_ep = file_init(sp, NULL, tp->frp, NULL)) == NULL)
+		if (file_init(sp, tp->frp, NULL, 0))
 			return (1);
 
-		sp->n_frp = tp->frp;
 		tp->frp->lno = tp->lno;
 		tp->frp->cno = tp->cno;
-		F_SET(sp->n_frp, FR_CURSORSET);
+		F_SET(sp->frp, FR_CURSORSET);
 
 		F_SET(sp, S_FSWITCH);
 	}
