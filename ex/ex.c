@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.67 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $";
+static const char sccsid[] = "$Id: ex.c,v 10.68 2000/07/16 20:49:30 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1500,7 +1500,7 @@ addr_verify:
 
 		ecp->save_cmd -= arg1_len;
 		ecp->save_cmdlen += arg1_len;
-		memcpy(ecp->save_cmd, arg1, arg1_len);
+		MEMCPYW(ecp->save_cmd, arg1, arg1_len);
 
 		/*
 		 * Any commands executed from a +cmd are executed starting at
@@ -2149,7 +2149,7 @@ ex_load(sp)
 	 * so we have play games.
 	 */
 	ecp->cp = ecp->o_cp;
-	memcpy(ecp->cp, ecp->cp + ecp->o_clen, ecp->o_clen);
+	MEMCPYW(ecp->cp, ecp->cp + ecp->o_clen, ecp->o_clen);
 	ecp->clen = ecp->o_clen;
 	ecp->range_lno = sp->lno = rp->start++;
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: put.c,v 10.15 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $";
+static const char sccsid[] = "$Id: put.c,v 10.16 2000/07/16 20:49:29 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -164,7 +164,7 @@ put(sp, cbp, namep, cp, rp, append)
 	 */
 	if (tp->q.cqe_next == (void *)&cbp->textq) {
 		if (clen > 0) {
-			memcpy(t, p, clen);
+			MEMCPYW(t, p, clen);
 			t += clen;
 		}
 		if (db_set(sp, lno, bp, t - bp))
@@ -190,9 +190,9 @@ put(sp, cbp, namep, cp, rp, append)
 		t = bp + len;
 
 		/* Add in last part of the CB. */
-		memcpy(t, ltp->lb, ltp->len);
+		MEMCPYW(t, ltp->lb, ltp->len);
 		if (clen)
-			memcpy(t + ltp->len, p, clen);
+			MEMCPYW(t + ltp->len, p, clen);
 		clen += ltp->len;
 
 		/*

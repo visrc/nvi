@@ -1646,7 +1646,7 @@ register struct re_guts *g;
 		return;
 
 	/* turn it into a character string */
-	g->must = malloc((size_t)g->mlen + 1);
+	g->must = malloc(((size_t)g->mlen + 1) * sizeof(CHAR_T));
 	if (g->must == NULL) {		/* argh; just forget it */
 		g->mlen = 0;
 		return;

@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.45 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.46 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -977,7 +977,7 @@ ctag_search(sp, search, slen, tag)
 	 * used a line number, not a search string.  I got complaints, so
 	 * people are still using the format.  POSIX 1003.2 permits it.
 	 */
-	if (isdigit(search[0])) {
+	if (ISDIGIT(search[0])) {
 		INT2CHAR(sp, search, slen+1, np, nlen);
 		m.lno = atoi(np);
 		if (!db_exist(sp, m.lno)) {
@@ -1102,6 +1102,8 @@ ctag_sfile(sp, tfp, tqp, tname)
 	size_t dlen, nlen, slen;
 	int fd, i, nf1, nf2;
 	char *back, *cname, *dname, *front, *map, *name, *p, *search, *t;
+	CHAR_T *wp;
+	size_t wlen;
 
 	if ((fd = open(tfp->name, O_RDONLY, 0)) < 0) {
 		tfp->errnum = errno;
@@ -1205,7 +1207,8 @@ corrupt:		p = msg_print(sp, tname, &nf1);
 		ctag_file(sp, tfp, name, &dname, &dlen);
 
 		CALLOC_GOTO(sp, tp,
-		    TAG *, 1, sizeof(TAG) + dlen + 2 + nlen + 1 + slen + 1);
+		    TAG *, 1, sizeof(TAG) + dlen + 2 + nlen + 1 + 
+		    (slen + 1) * sizeof(CHAR_T));
 		tp->fname = (char *)tp->buf;
 		if (dlen != 0) {
 			memcpy(tp->fname, dname, dlen);
@@ -1215,7 +1218,8 @@ corrupt:		p = msg_print(sp, tname, &nf1);
 		memcpy(tp->fname + dlen, name, nlen + 1);
 		tp->fnlen = dlen + nlen;
 		tp->search = (CHAR_T*)(tp->fname + tp->fnlen + 1);
-		memcpy(tp->search, search, (tp->slen = slen) + 1);
+		CHAR2INT(sp, search, slen + 1, wp, wlen);
+		MEMCPYW(tp->search, wp, (tp->slen = slen) + 1);
 		CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
 	}
 

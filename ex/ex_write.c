@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.34 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.35 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,6 +142,7 @@ exwr(sp, cmdp, cmd)
 	CHAR_T *p;
 	size_t nlen;
 	char *n;
+	int rc;
 
 	NEEDFILE(sp, cmdp);
 
@@ -232,7 +233,8 @@ exwr(sp, cmdp, cmd)
 		/* NOTREACHED */
 	case 2:
 		INT2CHAR(sp, cmdp->argv[1]->bp, cmdp->argv[1]->len+1,
-			 name, nlen);
+			 n, nlen);
+		name = v_strdup(sp, n, nlen - 1);
 
 		/*
 		 * !!!
@@ -269,7 +271,11 @@ exwr(sp, cmdp, cmd)
 		return (1);
 	}
 
-	return (file_write(sp, &cmdp->addr1, &cmdp->addr2, name, flags));
+	rc = file_write(sp, &cmdp->addr1, &cmdp->addr2, name, flags);
+
+	free(name);
+
+	return rc;
 }
 
 /*
@@ -341,7 +347,7 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch, silent)
 			if (db_get(sp, fline, DBG_FATAL, &p, &len))
 				goto err;
 			INT2FILE(sp, p, len, f, flen);
-			if (fwrite(f, 1, flen, fp) != len)
+			if (fwrite(f, 1, flen, fp) != flen)
 				goto err;
 			ccnt += len;
 			if (putc('\n', fp) != '\n')

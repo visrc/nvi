@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.44 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.45 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,7 +223,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 				}
 			} else if (p[0] == '~' && O_ISSET(sp, O_MAGIC)) {
 tilde:				++p;
-				memcpy(t, sp->repl, sp->repl_len);
+				MEMCPYW(t, sp->repl, sp->repl_len);
 				t += sp->repl_len;
 				len += sp->repl_len;
 				continue;
@@ -329,7 +329,7 @@ ex_subtilde(sp, cmdp)
 			return (1);					\
 		}							\
 	}								\
-	memcpy(lb + lbclen, l, len * sizeof(CHAR_T));			\
+	MEMCPYW(lb + lbclen, l, len);					\
 	lbclen += len;							\
 }
 
@@ -982,7 +982,7 @@ iclower:	for (p = ptrn, len = plen; len > 0; ++p, --len)
 		 */
 		MALLOC(sp, *ptrnp, CHAR_T *, (plen + 1) * sizeof(CHAR_T));
 		if (*ptrnp != NULL) {
-			memcpy(*ptrnp, ptrn, plen * sizeof(CHAR_T));
+			MEMCPYW(*ptrnp, ptrn, plen);
 			(*ptrnp)[plen] = '\0';
 		}
 
@@ -1137,7 +1137,7 @@ re_conv(sp, ptrnp, plenp, replacedp)
 					if (O_ISSET(sp, O_MAGIC))
 						*t++ = '~';
 					else {
-						memcpy(t,
+						MEMCPYW(t,
 						    sp->repl, sp->repl_len);
 						t += sp->repl_len;
 					}
@@ -1158,7 +1158,7 @@ re_conv(sp, ptrnp, plenp, replacedp)
 			break;
 		case '~':
 			if (O_ISSET(sp, O_MAGIC)) {
-				memcpy(t, sp->repl, sp->repl_len);
+				MEMCPYW(t, sp->repl, sp->repl_len);
 				t += sp->repl_len;
 			} else
 				*t++ = '~';
@@ -1292,7 +1292,7 @@ re_cscope_conv(sp, ptrnp, plenp, replacedp)
 	t = bp;
 
 	*t++ = '^';
-	memcpy(t, wp, wlen * sizeof(CHAR_T));
+	MEMCPYW(t, wp, wlen);
 	t += wlen;
 
 	for (len = *plenp; len > 0; ++p, --len)

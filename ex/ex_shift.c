@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shift.c,v 10.15 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
+static const char sccsid[] = "$Id: ex_shift.c,v 10.16 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,7 +147,7 @@ shift(sp, cmdp, rl)
 			*tbp++ = ' ';
 
 		/* Add the original line. */
-		memcpy(tbp, p + oldidx, len - oldidx);
+		MEMCPYW(tbp, p + oldidx, len - oldidx);
 
 		/* Set the replacement line. */
 		if (db_set(sp, from, bp, (tbp + (len - oldidx)) - bp)) {

@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.36 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.37 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -260,7 +260,7 @@ more:	len = sizeof(buf) - (endp - buf);
 		}
 	}
 	if (p > buf) {
-		memmove(buf, t, endp - t);
+		MEMMOVE(buf, t, endp - t);
 		endp = buf + (endp - t);
 	}
 	if (endp == buf)
@@ -531,7 +531,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 			FD_SET(sc->sh_master, &rdfd);
 			if (select(sc->sh_master + 1,
 			    &rdfd, NULL, NULL, &tv) == 1) {
-				memmove(bp, t, len);
+				MEMMOVE(bp, t, len);
 				endp = bp + len;
 				goto more;
 			}
@@ -564,6 +564,8 @@ sscr_setprompt(sp, buf, len)
 	size_t len;
 {
 	SCRIPT *sc;
+	char *np;
+	size_t nlen;
 
 	sc = sp->script;
 	if (sc->sh_prompt)
@@ -573,7 +575,8 @@ sscr_setprompt(sp, buf, len)
 		sscr_end(sp);
 		return (1);
 	}
-	memmove(sc->sh_prompt, buf, len);
+	INT2CHAR(sp, buf, len, np, nlen);
+	memmove(sc->sh_prompt, np, nlen);
 	sc->sh_prompt_len = len;
 	sc->sh_prompt[len] = '\0';
 	return (0);

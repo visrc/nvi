@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.56 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
+static const char sccsid[] = "$Id: options.c,v 10.57 2000/07/16 20:49:29 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -309,7 +309,7 @@ opts_init(sp, oargs)
 #define	OI(indx, str) {							\
 	CHAR2INT(sp, str, strlen(str) + 1, wp, wlen);			\
 	a.len = wlen - 1;						\
-	(void)memcpy(b2	, wp, (a.len + 1) * sizeof(CHAR_T));		\
+	(void)MEMCPYW(b2, wp, a.len + 1);				\
 	if (opts_set(sp, argv, NULL)) {					\
 		 optindx = indx;					\
 		goto err;						\

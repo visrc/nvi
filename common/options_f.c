@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.28 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.29 2000/07/16 20:49:29 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -380,4 +380,5 @@ f_fileencoding(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
+	conv_enc(sp, str);
 }

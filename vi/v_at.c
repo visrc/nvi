@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_at.c,v 10.9 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
+static const char sccsid[] = "$Id: v_at.c,v 10.10 2000/07/16 20:49:34 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,7 +108,7 @@ v_at(sp, vp)
 	if (F_ISSET(vp, VC_C1SET)) {
 		len = snprintf(nbuf, sizeof(nbuf), "%lu", vp->count);
 		CHAR2INT(sp, nbuf, len, wp, wlen);
-		memcpy(wbuf, wp, wlen * sizeof(CHAR_T));
+		MEMCPYW(wbuf, wp, wlen);
 		if (v_event_push(sp, NULL, wp, wlen, 0))
 			return (1);
 	}

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.20 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.21 2000/07/16 20:49:33 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -229,6 +229,8 @@ ip_read(sp, ipp, tp, termread, nr)
 	int maxfd;
 	char *bp;
 	int fd;
+	CHAR_T *wp;
+	size_t wlen;
 
 	gp = sp == NULL ? __global_list : sp->gp;
 	bp = ipp->ibuf + ipp->iblen;
@@ -273,8 +275,9 @@ ip_read(sp, ipp, tp, termread, nr)
 	/*
 	 * 3: Read the input.
 	 */
-	switch (*nr = read(fd, termread ? ipp->tbuf : bp, 
-			      termread ? sizeof(ipp->tbuf) : blen)) {
+	switch (*nr = read(fd, termread ? (char *)ipp->tbuf : bp, 
+			      termread ? sizeof(ipp->tbuf)/sizeof(CHAR_T) 
+				       : blen)) {
 	case  0:				/* EOF. */
 		rval = INP_EOF;
 		break;
@@ -284,6 +287,10 @@ err:	        rval = INP_ERR;
 		break;
 	default:				/* Input characters. */
 		if (!termread) ipp->iblen += *nr;
+		else {
+			CHAR2INT(sp, (char *)ipp->tbuf, *nr, wp, wlen);
+			MEMMOVEW(ipp->tbuf, wp, wlen);
+		}
 		rval = INP_OK;
 		break;
 	}
@@ -302,6 +309,8 @@ ip_trans(sp, ipp, evp)
 {
 	u_int32_t skip, val;
 	char *fmt;
+	CHAR_T *wp;
+	size_t wlen;
 
 	if (ipp->ibuf[0] == CODE_OOB ||
 	    ipp->ibuf[0] >= VI_EVENT_SUP)
@@ -339,11 +348,17 @@ ip_trans(sp, ipp, evp)
 			if (ipp->iblen < skip + val)
 				return (0);
 			if (*fmt == 'a') {
-				evp->e_str1 = ipp->ibuf + skip;
-				evp->e_len1 = val;
+				CHAR2INT(sp, ipp->ibuf + skip, val,
+					 wp, wlen);
+				MEMCPYW(ipp->tbuf, wp, wlen);
+				evp->e_str1 = ipp->tbuf;
+				evp->e_len1 = wlen;
 			} else {
-				evp->e_str2 = ipp->ibuf + skip;
-				evp->e_len2 = val;
+				CHAR2INT(sp, ipp->ibuf + skip, val,
+					 wp, wlen);
+				MEMCPYW(ipp->tbuf, wp, wlen);
+				evp->e_str2 = ipp->tbuf;
+				evp->e_len2 = wlen;
 			}
 			skip += val;
 			break;

@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.31 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
+static const char sccsid[] = "$Id: api.c,v 8.32 2000/07/16 20:49:28 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -634,11 +634,11 @@ api_tagq_add(sp, tqp, filename, search, msg)
 	tp->fnlen = flen;
 	tp->search = (CHAR_T *)((char *)tp->fname + flen + 1);
 	CHAR2INT(sp, search, slen + 1, wp, wlen);
-	memcpy(tp->search, wp, wlen);
+	MEMCPYW(tp->search, wp, wlen);
 	tp->slen = slen;
 	tp->msg = tp->search + slen + 1;
 	CHAR2INT(sp, msg, mlen + 1, wp, wlen);
-	memcpy(tp->msg, wp, wlen);
+	MEMCPYW(tp->msg, wp, wlen);
 	tp->mlen = mlen;
 	CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
 

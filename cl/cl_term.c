@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.25 2000/07/15 20:26:33 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:33 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.26 2000/07/16 20:49:28 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,11 +99,11 @@ cl_term_init(sp)
 		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
 		CHAR2INT(sp, tkp->name, strlen(tkp->name), wp, wlen);
-		memcpy(name, wp, wlen * sizeof(CHAR_T));
+		MEMCPYW(name, wp, wlen);
 		CHAR2INT(sp, t, strlen(t), wp, wlen);
-		memcpy(ts, wp, wlen * sizeof(CHAR_T));
+		MEMCPYW(ts, wp, wlen);
 		CHAR2INT(sp, tkp->output, strlen(tkp->output), wp, wlen);
-		memcpy(output, wp, wlen * sizeof(CHAR_T));
+		MEMCPYW(output, wp, wlen);
 		if (seq_set(sp, name, strlen(tkp->name), ts, strlen(t),
 		    output, strlen(tkp->output), SEQ_COMMAND,
 		    SEQ_NOOVERWRITE | SEQ_SCREEN))
@@ -120,9 +120,9 @@ cl_term_init(sp)
 		if (kp == NULL)
 			continue;
 		CHAR2INT(sp, tkp->name, strlen(tkp->name), wp, wlen);
-		memcpy(name, wp, wlen * sizeof(CHAR_T));
+		MEMCPYW(name, wp, wlen);
 		CHAR2INT(sp, t, strlen(t), wp, wlen);
-		memcpy(ts, wp, wlen * sizeof(CHAR_T));
+		MEMCPYW(ts, wp, wlen);
 		if (seq_set(sp, name, strlen(tkp->name), ts, strlen(t),
 		    &kp->ch, 1, SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 			return (1);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.16 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.17 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -769,7 +769,7 @@ parse(sp, csc, tqp, matchesp)
 		tp->slno = slno;
 		if (slen != 0) {
 			tp->search = (CHAR_T*)(tp->fname + tp->fnlen + 1);
-			memcpy(tp->search, search, (tp->slen = slen) + 1);
+			MEMCPYW(tp->search, search, (tp->slen = slen) + 1);
 		}
 		CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
 

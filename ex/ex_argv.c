@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.30 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.31 2000/07/16 20:49:31 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ argv_exp0(sp, excp, cmd, cmdlen)
 
 	exp = EXP(sp);
 	argv_alloc(sp, cmdlen);
-	memcpy(exp->args[exp->argsoff]->bp, cmd, cmdlen * sizeof(CHAR_T));
+	MEMCPYW(exp->args[exp->argsoff]->bp, cmd, cmdlen);
 	exp->args[exp->argsoff]->bp[cmdlen] = '\0';
 	exp->args[exp->argsoff]->len = cmdlen;
 	++exp->argsoff;
@@ -387,7 +387,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			off = p - bp;
 			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
-			memcpy(p, t, tlen);
+			MEMCPYW(p, t, tlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
 			break;
@@ -585,13 +585,13 @@ argv_lexp(SCR *sp, EXCMD *excp, char *path)
 		n = exp->args[exp->argsoff]->bp;
 		if (dlen != 0) {
 			CHAR2INT(sp, dname, dlen, wp, wlen);
-			memcpy(n, wp, wlen * sizeof(CHAR_T));
+			MEMCPYW(n, wp, wlen);
 			n += dlen;
 			if (dlen > 1 || dname[0] != '/')
 				*n++ = '/';
 		}
 		CHAR2INT(sp, dp->d_name, len + 1, wp, wlen);
-		memcpy(n, wp, wlen * sizeof(CHAR_T));
+		MEMCPYW(n, wp, wlen);
 		exp->args[exp->argsoff]->len = dlen + len + 1;
 		++exp->argsoff;
 		excp->argv = exp->args;
