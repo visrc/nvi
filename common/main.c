@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.96 1994/07/15 16:00:07 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:00:07 $";
+static char sccsid[] = "$Id: main.c,v 8.97 1994/07/17 16:50:11 bostic Exp $ (Berkeley) $Date: 1994/07/17 16:50:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -204,9 +204,9 @@ main(argc, argv)
 
 	if (trace_f != NULL) {
 #ifdef DEBUG
-		if ((gp->tracefp = fopen(optarg, "w")) == NULL)
-			err(1, "%s", optarg);
-		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", optarg);
+		if ((gp->tracefp = fopen(trace_f, "w")) == NULL)
+			err(1, "%s", trace_f);
+		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", trace_f);
 #else
 		msgq(sp, M_ERR, "-T support not compiled into this version");
 #endif
@@ -226,9 +226,9 @@ main(argc, argv)
 	if (wsizearg != NULL) {
 		ARGS *av[2], a, b;
 		errno = 0;
-		if (strtol(optarg, &p, 10) < 0 || errno || *p)
-			errx(1, "illegal window size -- %s.", optarg);
-		(void)snprintf(path, sizeof(path), "window=%s", optarg);
+		if (strtol(wsizearg, &p, 10) < 0 || errno || *p)
+			errx(1, "illegal window size -- %s.", wsizearg);
+		(void)snprintf(path, sizeof(path), "window=%s", wsizearg);
 		a.bp = (CHAR_T *)path;
 		a.len = strlen(path);
 		b.bp = NULL;
