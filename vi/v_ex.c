@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.39 1993/02/20 16:36:08 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:36:08 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.40 1993/02/20 16:37:53 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:37:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -155,6 +155,9 @@ v_exwrite(cookie, line, llen)
 	size_t new_lcont;
 	int len, rlen;
 	const char *p;
+
+	new_lcont = 0;		/* In case of a write of 0. */
+	p = &line;
 
 	rlen = llen;
 	for (ep = cookie; llen;) {
