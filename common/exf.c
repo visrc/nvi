@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.55 1993/12/09 19:42:06 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:06 $";
+static char sccsid[] = "$Id: exf.c,v 8.56 1993/12/10 12:20:37 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,11 +58,10 @@ file_add(sp, frp_append, name, ignore)
 	 * it's a temporary file.
 	 */
 	if (name != NULL)
-		for (frp = sp->frefq.tqh_first;
-		    frp != NULL; frp = frp->q.tqe_next) {
+		for (frp = sp->frefq.cqh_first;
+		    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
 			if ((p = FILENAME(frp)) != NULL && !strcmp(p, name))
 				return (frp);
-		}
 
 	/* Allocate and initialize the FREF structure. */
 	CALLOC(sp, frp, FREF *, 1, sizeof(FREF));
@@ -72,11 +71,12 @@ file_add(sp, frp_append, name, ignore)
 	/*
 	 * If no file name specified, or if the file name is a request
 	 * for something temporary, file_init() will allocate the file
-	 * name.
+	 * name.  Temporary files are always ignored.
 	 */
 #define	TEMPORARY_FILE_STRING	"/tmp"
-	if (name != NULL && strcmp(name, TEMPORARY_FILE_STRING) &&
-	    (frp->name = strdup(name)) == NULL) {
+	if (name == NULL || !strcmp(name, TEMPORARY_FILE_STRING))
+		ignore = 1;
+	else if ((frp->name = strdup(name)) == NULL) {
 		FREE(frp, sizeof(FREF));
 		msgq(sp, M_SYSERR, NULL);
 		return (NULL);
@@ -88,9 +88,9 @@ file_add(sp, frp_append, name, ignore)
 
 	/* Append into the chain of file names. */
 	if (frp_append != NULL) {
-		TAILQ_INSERT_AFTER(&sp->frefq, frp_append, frp, q);
+		CIRCLEQ_INSERT_AFTER(&sp->frefq, frp_append, frp, q);
 	} else
-		TAILQ_INSERT_TAIL(&sp->frefq, frp, q);
+		CIRCLEQ_INSERT_TAIL(&sp->frefq, frp, q);
 
 	return (frp);
 }
@@ -100,15 +100,15 @@ file_add(sp, frp_append, name, ignore)
  *	Return the first file name for editing, if any.
  */
 FREF *
-file_first(sp, all)
+file_first(sp)
 	SCR *sp;
-	int all;
 {
 	FREF *frp;
 
 	/* Return the first file name. */
-	for (frp = sp->frefq.tqh_first; frp != NULL; frp = frp->q.tqe_next)
-		if (all || !F_ISSET(frp, FR_IGNORE))
+	for (frp = sp->frefq.cqh_first;
+	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
+		if (!F_ISSET(frp, FR_IGNORE))
 			return (frp);
 	return (NULL);
 }
@@ -118,15 +118,45 @@ file_first(sp, all)
  *	Return the next file name, if any.
  */
 FREF *
-file_next(sp, all)
+file_next(sp, frp)
 	SCR *sp;
-	int all;
+	FREF *frp;
+{
+	while ((frp = frp->q.cqe_next) != (FREF *)&sp->frefq)
+		if (!F_ISSET(frp, FR_IGNORE))
+			return (frp);
+	return (NULL);
+}
+
+/*
+ * file_prev --
+ *	Return the previous file name, if any.
+ */
+FREF *
+file_prev(sp, frp)
+	SCR *sp;
+	FREF *frp;
+{
+	while ((frp = frp->q.cqe_prev) != (FREF *)&sp->frefq)
+		if (!F_ISSET(frp, FR_IGNORE))
+			return (frp);
+	return (NULL);
+}
+
+/*
+ * file_unedited --
+ *	Return if there are files that aren't ignored and are unedited.
+ */
+FREF *
+file_unedited(sp)
+	SCR *sp;
 {
 	FREF *frp;
 
 	/* Return the next file name. */
-	for (frp = sp->frefq.tqh_first; frp != NULL; frp = frp->q.tqe_next)
-		if (all || !F_ISSET(frp, FR_EDITED | FR_IGNORE))
+	for (frp = sp->frefq.cqh_first;
+	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
+		if (!F_ISSET(frp, FR_EDITED | FR_IGNORE))
 			return (frp);
 	return (NULL);
 }

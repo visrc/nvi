@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.11 1993/12/09 19:34:35 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:34:35 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.12 1993/12/10 12:20:57 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,13 +36,14 @@ ex_next(sp, ep, cmdp)
 {
 	ARGS **argv;
 	FREF *frp;
+	char *name;
 
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	if (cmdp->argc) {
 		/* Mark all the current files as ignored. */
-		for (frp = sp->frefq.tqh_first;
-		    frp != NULL; frp = frp->q.tqe_next)
+		for (frp = sp->frefq.cqh_first;
+		    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
 			F_SET(frp, FR_IGNORE);
 
 		/* Add the new files into the file list. */
@@ -50,15 +51,30 @@ ex_next(sp, ep, cmdp)
 			if (file_add(sp, NULL, argv[0]->bp, 0) == NULL)
 				return (1);
 		
-		if ((frp = file_first(sp, 0)) == NULL)
+		if ((frp = file_first(sp)) == NULL)
 			return (1);
-	} else if ((frp = file_next(sp, 0)) == NULL) {
+	} else if ((frp = file_next(sp, sp->a_frp)) == NULL) {
 		msgq(sp, M_ERR, "No more files to edit.");
 		return (1);
 	}
 
+	/*
+	 * There's a tricky sequence, where the user edits two files, e.g.
+	 * "x" and "y".  While in "x", they do ":e y|:f foo", which changes
+	 * the name of that FRP entry.  Then, the :n command finds the file
+	 * "y" with a name change.  If the file name has been changed, get
+	 * a new FREF for the original file name, and make it be the one that
+	 * is displayed in the argument list, not the one with the name change.
+	 */
+	if (frp->cname != NULL) {
+		F_SET(frp, FR_IGNORE);
+		name = frp->name == NULL ? frp->tname : frp->name;
+		if ((frp = file_add(sp, sp->a_frp, name, 0)) == NULL)
+			return (1);
+	}
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
+	sp->a_frp = frp;
 	F_SET(sp, S_FSWITCH);
 	return (0);
 }
@@ -73,22 +89,33 @@ ex_prev(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	FREF *frp;
+	char *name;
+
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
-	if (sp->p_frp == NULL) {
+	if ((frp = file_prev(sp, sp->a_frp)) == NULL) {
 		msgq(sp, M_ERR, "No previous files to edit.");
 		return (1);
 	}
 
-	if (file_init(sp, sp->p_frp, NULL, F_ISSET(cmdp, E_FORCE)))
+	/* See comment in ex_next(). */
+	if (frp->cname != NULL) {
+		F_SET(frp, FR_IGNORE);
+		name = frp->name == NULL ? frp->tname : frp->name;
+		if ((frp = file_add(sp, frp, name, 0)) == NULL)
+			return (1);
+	}
+	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
+	sp->a_frp = frp;
 	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 
 /*
  * ex_rew -- :rew
- *	Edit the first file.
+ *	Re-edit the list of files.
  */
 int
 ex_rew(sp, ep, cmdp)
@@ -98,8 +125,11 @@ ex_rew(sp, ep, cmdp)
 {
 	FREF *frp, *tfrp;
 
-	/* Historic practice -- you can rewind to the current file. */
-	if ((frp = file_first(sp, 0)) == NULL) {
+	/*
+	 * !!!
+	 * Historic practice -- you can rewind to the current file.
+	 */
+	if ((frp = file_first(sp)) == NULL) {
 		msgq(sp, M_ERR, "No previous files to rewind.");
 		return (1);
 	}
@@ -108,21 +138,17 @@ ex_rew(sp, ep, cmdp)
 
 	/*
 	 * !!!
-	 * Historic practice, turn off the edited bit and discard
-	 * any name changes.  Start at the beginning of the file,
-	 * too.
+	 * Historic practice, turn off the edited bit.  The :next and :prev
+	 * code will discard any name changes, so ignore them here.  Start
+	 * at the beginning of the file, too.
 	 */
-	for (tfrp = sp->frefq.tqh_first;
-	    tfrp != NULL; tfrp = tfrp->q.tqe_next) {
+	for (tfrp = sp->frefq.cqh_first;
+	    tfrp != (FREF *)&sp->frefq; tfrp = tfrp->q.cqe_next)
 		F_CLR(tfrp, FR_CHANGEWRITE | FR_CURSORSET | FR_EDITED);
-		if (tfrp->cname != NULL) {
-			free(tfrp->cname);
-			tfrp->cname = NULL;
-		}
-	}
 
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
+	sp->a_frp = frp;
 	F_SET(sp, S_FSWITCH);
 	return (0);
 }
@@ -141,22 +167,39 @@ ex_args(sp, ep, cmdp)
 	int cnt, col, iscur, len, nlen, sep;
 	char *name;
 
+	/*
+	 * !!!
+	 * Ignore files that aren't in the "argument" list unless they are the
+	 * one we're currently editing.  I'm not sure this is right, but the
+	 * historic vi behavior of not showing the current file if it was the
+	 * result of a ":e" command seems wrong.  This is actually tricky.
+	 *
+	 * Also, historic practice was to display the original name of the file
+	 * even if the user had used a file command to change the file name.
+	 * Confusing, at best.  We show both names: the original as that's what
+	 * the user will get in a next, prev or rewind, and the new one since
+	 * that's what the user is actually editing now.
+	 *
+	 * When we find the "argument" FREF, i.e. the current location in the
+	 * user's argument list, if it's not the same as the current FREF, we
+	 * display the current FREF as following the argument in the list.
+	 * This means that if the user edits three files, "x", "y" and "z", and
+	 * then does a :e command in the file "x" to edit "z", "z" will appear
+	 * in the list twice.
+	 */
 	col = len = sep = 0;
-	for (cnt = 1,
-	    frp = sp->frefq.tqh_first; frp != NULL; frp = frp->q.tqe_next) {
-		/*
-		 * !!!
-		 * Ignore files that aren't in the "argument" list unless
-		 * they are the one we're currently editing.  I'm not sure
-		 * this is right, but the historic vi behavior of not
-		 * showing the current file if it was the result of a ":e"
-		 * command seems wrong.
-		 */
-		if (F_ISSET(frp, FR_IGNORE) && frp != sp->frp)
-			continue;
-		nlen = strlen(name = FILENAME(frp));
-		iscur = frp == sp->frp && frp->cname == NULL;
-extra:		col += len = nlen + sep + (iscur ? 2 : 0);
+	for (cnt = 1, frp = sp->frefq.cqh_first;
+	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next) {
+		iscur = 0;
+		if (frp == sp->a_frp) {
+			if (frp == sp->frp && frp->cname == NULL)
+				iscur = 1;
+		} else
+			if (F_ISSET(frp, FR_IGNORE))
+				continue;
+		name = frp->name == NULL ? frp->tname : frp->name;
+extra:		nlen = strlen(name);
+		col += len = nlen + sep + (iscur ? 2 : 0);
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
@@ -167,20 +210,15 @@ extra:		col += len = nlen + sep + (iscur ? 2 : 0);
 		}
 		++cnt;
 
-		/*
-		 * !!!
-		 * Historic practice was to display the original name of the
-		 * file if the user had used an file command to chane the file
-		 * name.  Confusing, at best.  We show both names: the original
-		 * as that's what the user will get in a rewind, and the new
-		 * one as that's what the user is actually editing now.
-		 */
 		if (iscur)
 			(void)ex_printf(EXCOOKIE, "[%s]", name);
 		else {
 			(void)ex_printf(EXCOOKIE, "%s", name);
-			if (frp == sp->frp) {
-				nlen = strlen(name = frp->cname);
+			if (frp == sp->a_frp) {
+				if (frp != sp->frp)
+					name = FILENAME(sp->frp);
+				else
+					name = frp->cname;
 				iscur = 1;
 				goto extra;
 			}

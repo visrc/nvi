@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.73 1993/12/02 15:13:40 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:13:40 $
+ *	$Id: screen.h,v 8.74 1993/12/10 12:20:45 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:45 $
  */
 
 /*
@@ -42,7 +42,7 @@ enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
  * The mtime field should be a struct timespec, but time_t is more portable.
  */
 struct _fref {
-	TAILQ_ENTRY(_fref) q;		/* Linked list of file references. */
+	CIRCLEQ_ENTRY(_fref) q;		/* Linked list of file references. */
 	char	*cname;			/* Changed file name. */
 	char	*name;			/* File name. */
 	char	*tname;			/* Temporary file name. */
@@ -86,10 +86,11 @@ struct _scr {
 	EXF	*ep;			/* Screen's current EXF structure. */
 
 	MSGH	 msgq;			/* Message list. */
-
-	TAILQ_HEAD(_frefh, _fref) frefq;/* FREF list. */
-	FREF	*frp;			/* Current FREF. */
-	FREF	*p_frp;			/* Previous FREF. */
+					/* FREF list. */
+	CIRCLEQ_HEAD(_frefh, _fref) frefq;
+	FREF	*frp;			/* FREF being edited. */
+	FREF	*a_frp;			/* Last argument list FREF edited. */
+	FREF	*p_frp;			/* Last FREF edited. */
 
 	u_long	 ccnt;			/* Command count. */
 	u_long	 q_ccnt;		/* Quit or ZZ command count. */

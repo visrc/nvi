@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.53 1993/12/09 19:42:09 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:09 $";
+static char sccsid[] = "$Id: main.c,v 8.54 1993/12/10 12:20:42 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -285,12 +285,15 @@ main(argc, argv)
 	 * If no argv file, use a temporary file.
 	 */
 	if (tag_f == NULL && rec_f == NULL) {
-		if ((frp = file_first(sp, 1)) == NULL &&
-		    (frp = file_add(sp, NULL, NULL, 0)) == NULL)
+		if ((frp = file_first(sp)) == NULL &&
+		    (frp = file_add(sp, NULL, NULL, 1)) == NULL)
 			goto err1;
 		if (file_init(sp, frp, NULL, 0))
 			goto err1;
 	}
+
+	/* Set up the argument pointer. */
+	sp->a_frp = sp->frp;
 
 	/*
 	 * Initialize the signals.  Use sigaction(2), not signal(3), because
