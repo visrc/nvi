@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_source.c,v 8.1 1993/06/09 22:25:35 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:35 $";
+static char sccsid[] = "$Id: ex_source.c,v 8.2 1993/08/16 12:49:47 bostic Exp $ (Berkeley) $Date: 1993/08/16 12:49:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,5 +24,5 @@ ex_source(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (ex_cfile(sp, ep, (char *)cmdp->argv[0], 1));
+	return (ex_cfile(sp, ep, (char *)cmdp->argv[0]));
 }

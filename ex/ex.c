@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.7 1993/08/16 11:38:11 bostic Exp $ (Berkeley) $Date: 1993/08/16 11:38:11 $";
+static char sccsid[] = "$Id: ex.c,v 8.8 1993/08/16 12:49:56 bostic Exp $ (Berkeley) $Date: 1993/08/16 12:49:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,21 +85,17 @@ ex(sp, ep)
  *	Execute ex commands from a file.
  */
 int
-ex_cfile(sp, ep, filename, noexisterr)
+ex_cfile(sp, ep, filename)
 	SCR *sp;
 	EXF *ep;
 	char *filename;
-	int noexisterr;
 {
 	struct stat sb;
 	int fd, len, rval;
 	char *bp;
 
-	if ((fd = open(filename, O_RDONLY, 0)) < 0) {
-		if (noexisterr)
-			goto e1;
-		return (0);
-	}
+	if ((fd = open(filename, O_RDONLY, 0)) < 0)
+		goto e1;
 	if (fstat(fd, &sb))
 		goto e2;
 
