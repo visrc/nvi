@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.13 1993/02/12 12:40:28 bostic Exp $ (Berkeley) $Date: 1993/02/12 12:40:28 $";
+static char sccsid[] = "$Id: search.c,v 5.14 1993/02/13 12:49:15 bostic Exp $ (Berkeley) $Date: 1993/02/13 12:49:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,10 +55,11 @@ noprev:		msg("No previous search pattern.");
 		*epp = NULL;
 
 	/*
-	 * Use saved pattern if no pattern supplied.  Only the pattern
-	 * is retained, historic vi did not reuse any delta supplied.
+	 * Use saved pattern if no pattern supplied, or if only the delimiter
+	 * character is supplied.  Only the pattern is retained, historic vi
+	 * did not reuse any delta supplied.
 	 */
-	if (ptrn[1] == '\0') {
+	if (ptrn == NULL || ptrn[1] == '\0') {
 		*rep = &sre;
 		return (0);
 	}
