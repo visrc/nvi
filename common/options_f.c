@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.19 1993/10/11 22:02:41 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:41 $";
+static char sccsid[] = "$Id: options_f.c,v 8.20 1993/10/28 08:55:17 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:55:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -373,61 +373,46 @@ DECL(f_tabstop)
 
 /*
  * f_tags --
- *	Build an array of pathnames for the tags routines.  It's not
- *	a fast build as we walk the string twice, but it's unclear we
- *	care.
+ *	Build an queue of pathnames for the tags routines.
  */
 DECL(f_tags)
 {
+	TAGF *tp;
 	size_t len;
-	int cnt;
 	char *p, *t;
-
-						/* Free up previous array. */
-	if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED) && sp->tfhead != NULL) {
-		for (cnt = 0; sp->tfhead[cnt] != NULL; ++cnt)
-			free(sp->tfhead[cnt]->fname);
-		free(sp->tfhead);
-	}
 						/* Copy for user display. */
-	if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED))
-		free(O_STR(sp, O_TAGS));
+	if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED)) {
+		p = O_STR(sp, O_TAGS);
+		FREE(p, strlen(p) + 1);
+	}
 	if ((O_STR(sp, O_TAGS) = strdup(str)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	F_SET(&sp->opts[O_TAGS], OPT_ALLOCATED);
 
-	for (p = t = str, cnt = 0;; ++p) {	/* Count new entries. */
-		if (*p == '\0' || isblank(*p)) {
-			if ((len = p - t) > 1)
-				++cnt;
-			t = p + 1;
-		}
-		if (*p == '\0')
-			break;
+						/* Free previous queue. */
+	while ((tp = sp->tagfq.qe_next) != NULL) {
+		queue_remove(&sp->tagfq, tp, TAGF *, q);
+		FREE(tp->fname, strlen(tp->fname) + 1);
+		FREE(tp, sizeof(TAGF));
 	}
-						/* Allocate new array. */
-	if ((sp->tfhead = malloc((cnt + 1) * sizeof(TAGF))) == NULL)
-		goto mem2;
-	sp->tfhead[cnt] = NULL;
-	for (p = t = str, cnt = 0;; ++p) {	/* Fill in new array. */
+
+	for (p = t = str;; ++p) {		/* Create new queue. */
 		if (*p == '\0' || isblank(*p)) {
 			if ((len = p - t) > 1) {
-				if ((sp->tfhead[cnt] =
-				    malloc(sizeof(TAGF))) == NULL)
-					goto mem1;
-				if ((sp->tfhead[cnt]->fname =
-				    malloc(len + 1)) == NULL) {
-mem1:					sp->tfhead[cnt] = NULL;
-mem2:					msgq(sp, M_ERR,
+				if ((tp = malloc(sizeof(TAGF))) == NULL ||
+				    (tp->fname = malloc(len + 1)) == NULL) {
+					if (tp != NULL)
+						FREE(tp, sizeof(TAGF));
+					msgq(sp, M_ERR,
 					    "Error: %s", strerror(errno));
 					return (1);
 				}
-				memmove(sp->tfhead[cnt]->fname, t, len);
-				sp->tfhead[cnt]->fname[len] = '\0';
-				sp->tfhead[cnt]->flags = 0;
-				++cnt;
+				memmove(tp->fname, t, len);
+				tp->fname[len] = '\0';
+				tp->flags = 0;
+				queue_enter_tail(&sp->tagfq, tp, TAGF *, q);
 			}
 			t = p + 1;
 		}
