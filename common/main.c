@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.51 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
+static const char sccsid[] = "$Id: main.c,v 10.52 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,6 +82,7 @@ editor(gp, argc, argv)
 
 	/* Structures shared by screens so stored in the GS structure. */
 	CIRCLEQ_INIT(&gp->frefq);
+	CIRCLEQ_INIT(&gp->exfq);
 	CIRCLEQ_INIT(&gp->dcb_store.textq);
 	LIST_INIT(&gp->cutq);
 	LIST_INIT(&gp->seqq);

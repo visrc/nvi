@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.39 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $
+ *	$Id: gs.h,v 10.40 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -70,6 +70,8 @@ struct _gs {
 
 					/* File references. */
 	CIRCLEQ_HEAD(_frefh, _fref) frefq;
+ 					/* File structures. */
+ 	CIRCLEQ_HEAD(_exfh, _exf) exfq;
 
 #define	GO_COLUMNS	0		/* Global options: columns. */
 #define	GO_LINES	1		/* Global options: lines. */

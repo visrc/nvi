@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.9 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $
+ *	$Id: exf.h,v 10.10 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $
  */
 					/* Undo direction. */
 /*
@@ -14,6 +14,7 @@
  *	The file structure.
  */
 struct _exf {
+	CIRCLEQ_ENTRY(_exf) q;		/* Linked list of file structures. */
 	int	 refcnt;		/* Reference count. */
 
 					/* Underlying database state. */

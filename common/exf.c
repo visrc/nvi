@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.53 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
+static const char sccsid[] = "$Id: exf.c,v 10.54 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -157,6 +157,30 @@ file_init(sp, frp, rcv_name, flags)
 	F_CLR(frp, ~FR_CURSORSET);
 
 	/*
+	 * Scan the user's path to find the file that we're going to
+	 * try and open.
+	 */
+	if (file_spath(sp, frp, &sb, &exists))
+		return (1);
+
+	/*
+	 * Check whether we already have this file opened in some
+	 * other screen.
+	 */
+	if (exists) {
+		EXF *exfp;
+		for (exfp = sp->gp->exfq.cqh_first;
+		    exfp != (EXF *)&sp->gp->exfq; exfp = exfp->q.cqe_next) {
+			if (exfp->mdev == sb.st_dev &&
+			    exfp->minode == sb.st_ino && 
+			    (exfp != sp->ep || exfp->refcnt > 1)) {
+				ep = exfp;
+				goto postinit;
+			}
+		}
+	}
+
+	/*
 	 * Required EXF initialization:
 	 *	Flush the line caches.
 	 *	Default recover mail file fd to -1.
@@ -166,13 +190,6 @@ file_init(sp, frp, rcv_name, flags)
 	ep->c_lno = ep->c_nlines = OOBLNO;
 	ep->rcv_fd = ep->fcntl_fd = -1;
 	F_SET(ep, F_FIRSTMODIFY);
-
-	/*
-	 * Scan the user's path to find the file that we're going to
-	 * try and open.
-	 */
-	if (file_spath(sp, frp, &sb, &exists))
-		return (1);
 
 	/*
 	 * If no name or backing file, for whatever reason, create a backing
@@ -196,9 +213,11 @@ file_init(sp, frp, rcv_name, flags)
 		if (frp->name == NULL)
 			F_SET(frp, FR_TMPFILE);
 		if ((frp->tname = strdup(tname)) == NULL ||
-		    frp->name == NULL && (frp->name = strdup(tname)) == NULL) {
-			if (frp->tname != NULL)
+		    (frp->name == NULL && 
+		     (frp->name = strdup(tname)) == NULL)) {
+			if (frp->tname != NULL) {
 				free(frp->tname);
+			}
 			msgq(sp, M_SYSERR, NULL);
 			(void)unlink(tname);
 			goto err;
@@ -426,6 +445,10 @@ no_lock:
 
 	/* Redraw the screen from scratch, schedule a welcome message. */
 	F_SET(sp, SC_SCR_REFORMAT | SC_STATUS);
+
+	/* Append into the chain of file structures. */
+	if (ep->refcnt == 1)
+		CIRCLEQ_INSERT_TAIL(&sp->gp->exfq, ep, q);
 
 	return (0);
 
@@ -727,6 +750,7 @@ file_end(sp, ep, force)
 		if (ep->rcv_mpath != NULL && unlink(ep->rcv_mpath))
 			msgq_str(sp, M_SYSERR, ep->rcv_mpath, "243|%s: remove");
 	}
+	CIRCLEQ_REMOVE(&sp->gp->exfq, ep, q);
 	if (ep->fd != -1)
 		(void)close(ep->fd);
 	if (ep->fcntl_fd != -1)
