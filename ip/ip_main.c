@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.3 1996/10/13 15:40:24 bostic Exp $ (Berkeley) $Date: 1996/10/13 15:40:24 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.4 1996/11/27 12:00:23 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,6 +134,7 @@ ip_func_std(gp)
 	gp->scr_clrtoeol = ip_clrtoeol;
 	gp->scr_cursor = ip_cursor;
 	gp->scr_deleteln = ip_deleteln;
+	gp->scr_discard = ip_discard;
 	gp->scr_event = ip_event;
 	gp->scr_ex_adjust = ip_ex_adjust;
 	gp->scr_fmap = ip_fmap;
@@ -145,6 +146,7 @@ ip_func_std(gp)
 	gp->scr_refresh = ip_refresh;
 	gp->scr_rename = ip_rename;
 	gp->scr_screen = ip_screen;
+	gp->scr_split = ip_split;
 	gp->scr_suspend = ip_suspend;
 	gp->scr_usage = ip_usage;
 }

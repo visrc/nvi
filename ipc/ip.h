@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.3 1996/10/13 13:48:47 bostic Exp $ (Berkeley) $Date: 1996/10/13 13:48:47 $
+ *	$Id: ip.h,v 8.4 1996/11/27 12:00:22 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:22 $
  */
 
 typedef struct _ip_private {
@@ -26,7 +26,7 @@ typedef struct _ip_private {
 #define	GIPP(gp)	((IP_PRIVATE *)((gp)->ip_private))
 
 /* The screen line relative to a specific window. */
-#define	RLNO(sp, lno)	(sp)->woff + (lno)
+#define	RLNO(sp, lno)	(sp)->roff + (lno)
 
 /*
  * The IP protocol consists of frames, each containing:
@@ -82,11 +82,14 @@ typedef struct _ip_buf {
 #define	IPO_BUSY	 4	/* Display a busy message: IPO_STR. */
 #define	IPO_CLRTOEOL	 5	/* Clear to the end of the line. */
 #define	IPO_DELETELN	 6	/* Delete a line. */
-#define	IPO_INSERTLN	 7	/* Insert a line. */
-#define	IPO_MOVE	 8	/* Move the cursor: IPO_INT, IPO_INT. */
-#define	IPO_REDRAW	 9	/* Redraw the screen. */
-#define	IPO_REFRESH	10	/* Refresh the screen. */
-#define	IPO_RENAME	11	/* Rename the screen: IPO_STR. */
-#define	IPO_REWRITE	12	/* Rewrite a line: IPO_INT. */
+#define	IPO_DISCARD	 7	/* Discard the screen. */
+#define	IPO_INSERTLN	 8	/* Insert a line. */
+#define	IPO_MOVE	 9	/* Move the cursor: IPO_INT, IPO_INT. */
+#define	IPO_REDRAW	10	/* Redraw the screen. */
+#define	IPO_REFRESH	11	/* Refresh the screen. */
+#define	IPO_RENAME	12	/* Rename the screen: IPO_STR. */
+#define	IPO_REWRITE	13	/* Rewrite a line: IPO_INT. */
+#define	IPO_SPLIT	14	/* Split the screen. */
+#define	IPO_EVENT_MAX	14
 
 #include "ip_extern.h"

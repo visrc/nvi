@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.4 1996/10/13 13:49:52 bostic Exp $ (Berkeley) $Date: 1996/10/13 13:49:52 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.5 1996/11/27 12:00:23 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,6 +213,19 @@ ip_deleteln(sp)
 	return (ip_send(sp, NULL, &ipb));
 }
 
+/*
+ * ip_discard --
+ *	Discard a screen.
+ *
+ * PUBLIC: int ip_discard __P((SCR *, SCR *));
+ */
+int
+ip_discard(discardp, acquirep)
+	SCR *discardp, *acquirep;
+{
+	return (0);
+}
+
 /* 
  * ip_ex_adjust --
  *	Adjust the screen for ex.
@@ -343,6 +356,19 @@ ip_rename(sp)
 	ipb.str = sp->frp->name;
 
 	return (ip_send(sp, "s", &ipb));
+}
+
+/*
+ * ip_split --
+ *	Split a screen.
+ *
+ * PUBLIC: int ip_split __P((SCR *, SCR *));
+ */
+int
+ip_split(origp, newp)
+	SCR *origp, *newp;
+{
+	return (0);
 }
 
 /*
