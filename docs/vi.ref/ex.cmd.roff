@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.29 1994/09/19 13:02:30 bostic Exp $ (Berkeley) $Date: 1994/09/19 13:02:30 $
+.\"	$Id: ex.cmd.roff,v 8.30 1994/09/21 12:24:57 bostic Exp $ (Berkeley) $Date: 1994/09/21 12:24:57 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -194,7 +194,9 @@ treats it as any other character.
 .SP Line:
 Set to the last line written.
 .SP Options:
-None.
+Affected by the
+.OP scroll
+option.
 .SE
 .KY "!"
 .IP "! argument(s)"
@@ -278,15 +280,15 @@ Unchanged if no range was specified, otherwise set to the first
 line of the range.
 .SP Options:
 Affected by the
-.OP autowrite
+.OP shell
 and
-.OP writeany
+.OP warn
 options.
 .SE
-.KY "number"
-.IP "[range] nu[mber] [count] [flags]"
 .KY "#"
-.Ip "[range] # [count] [flags]"
+.IP "[range] # [count] [flags]"
+.KY "number"
+.Ip "[range] nu[mber] [count] [flags]"
 Display the selected lines, each preceded with its line number.
 .sp
 The line number format is
@@ -296,7 +298,9 @@ followed by two spaces.
 .SP Line:
 Set to the last line displayed.
 .SP Options:
-None.
+Affected by the
+.OP list
+option.
 .SE
 .KY "@"
 .IP "@ buffer"
@@ -346,7 +350,6 @@ option.
 .SE
 .KY =
 .IP "[line] = [flags]"
-Display the line number.
 Display the line number of
 .LI line
 (which defaults to the last line in the file).
@@ -373,7 +376,9 @@ additional command character.
 .SP Line:
 Set to the last line modified by the command.
 .SP Options:
-None.
+Affected by the
+.OP shiftwidth
+option.
 .SE
 .KY abbrev
 .IP "ab[brev] lhs rhs"
@@ -647,11 +652,7 @@ you are in
 mode, and the last line of the file if you are in
 .CO ex .
 .SP Options:
-Affected by the
-.OP autowrite
-and
-.OP writeany
-options.
+None.
 .SE
 .KY exusage
 .IP "exu[sage] [command]"
@@ -753,8 +754,8 @@ and
 commands cannot be used as part of these commands.
 .sp
 The editor options
-.OP autoprint ,
 .OP autoindent ,
+.OP autoprint
 and
 .OP report
 are turned off for the duration of the
@@ -766,7 +767,17 @@ commands.
 .SP Line:
 The last line modified.
 .SP Options:
-None.
+Affected by the
+.OP ignorecase
+and
+.OP magic
+options.
+Turns off the
+.OP autoindent ,
+.OP autoprint
+and
+.OP report
+options.
 .SE
 .KY help
 .IP "he[lp]"
@@ -849,7 +860,9 @@ character.
 .SP Line:
 Set to the last line displayed.
 .SP Options:
-None.
+Affected by the
+.OP number
+option.
 .SE
 .KY map
 .IP "map[!] [lhs rhs]"
@@ -917,7 +930,9 @@ character.
 .SP Line:
 Unchanged.
 .SP Options:
-None.
+Affected by the
+.OP remap
+option.
 .SE
 .KY mark
 .KY k
@@ -1057,7 +1072,11 @@ Display the specified lines.
 .SP Line:
 Set to the last line displayed.
 .SP Options:
-None.
+Affected by the
+.OP list
+and
+.OP number
+option.
 .SE
 .KY put
 .IP "[line] pu[t] [buffer]"
@@ -1125,8 +1144,8 @@ character,
 .LI file
 is treated as if it were a shell command, and passed to the program
 named by the
-.LI SHELL
-environment variable.
+.OP shell
+edit option.
 The standard and standard error outputs of that command are read into
 the file after the specified line.
 The special meaning of the
@@ -1152,7 +1171,7 @@ Recover
 if it was previously saved.
 If no saved file by that name exists, the
 .CO recover
-command behaves similarly to the
+command behaves equivalently to the
 .CO edit
 command.
 .SS
@@ -1250,7 +1269,7 @@ None.
 .SE
 .KY shell
 .IP "sh[ell]"
-Run a shell program.
+Run the shell program.
 The program named by the
 .OP shell
 option is run with a
@@ -1261,7 +1280,9 @@ Editing is resumed when that program exits.
 .SP Line:
 Unchanged.
 .SP Options:
-None.
+Affected by the
+.OP shell
+option.
 .SE
 .KY source
 .IP "so[urce] file"
@@ -1393,7 +1414,11 @@ All substitutions completed before the interrupt are retained.
 .SP Line:
 Set to the last line upon which a substitution was made.
 .SP Options:
-None.
+Affected by the
+.OP ignorecase
+and
+.OP magic
+option.
 .SE
 .KY suspend
 .IP "su[spend][!]"
@@ -1413,7 +1438,9 @@ Unchanged.
 .SP Options:
 Affected by the
 .OP autowrite
-option.
+and
+.OP writeany
+options.
 .SE
 .KY tag
 .IP "ta[g][!] tagstring"
@@ -1483,7 +1510,7 @@ character to the command name.
 Set to the line indicated by the tag.
 .SP Options:
 Affected by the
-.OP autowrite ,
+.OP autowrite
 and
 .OP writeany
 options.
@@ -1503,7 +1530,7 @@ character to the command name.
 Set to the line indicated by the tag.
 .SP Options:
 Affected by the
-.OP autowrite ,
+.OP autowrite
 and
 .OP writeany
 options.
@@ -1573,7 +1600,7 @@ or
 as in the
 .CO ex
 .CO z
-command, to specify the the position of the specified line in the screen
+command, to specify the position of the specified line in the screen
 window.
 (The default is to place the line at the top of the screen window.)
 A
@@ -1646,9 +1673,9 @@ no tests are made for the file already existing.
 .sp
 If the file is preceded by a
 .QT !
-character, the program named in the SHELL environment variable is
-invoked with file as its second argument, and the specified lines
-are passed as standard input to that command.
+character, the program named by the shell edit option is
+invoked with file as its second argument, and the specified
+lines are passed as standard input to that command.
 The
 .QT !
 in this usage must be separated from command name by at least one
@@ -1793,6 +1820,6 @@ Set to the last line displayed, with the exception of the
 where the current line is set to the line specified by the command.
 .SP Options:
 Affected by the
-.Sy window
+.OP scroll
 option.
 .SE
