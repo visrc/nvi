@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.76 1994/03/23 13:23:13 bostic Exp $ (Berkeley) $Date: 1994/03/23 13:23:13 $";
+static char sccsid[] = "$Id: main.c,v 8.77 1994/04/11 19:58:52 bostic Exp $ (Berkeley) $Date: 1994/04/11 19:58:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -183,6 +183,10 @@ main(argc, argv)
 
 	/* Build and initialize the GS structure. */
 	__global_list = gp = gs_init();
+
+	/* If not reading from a terminal, it's like -s was specified. */
+	if (!F_ISSET(gp, G_STDIN_TTY))
+		silent = 1;
 
 	if (snapshot)
 		F_SET(gp, G_SNAPSHOT);
