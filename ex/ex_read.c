@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.11 1992/06/07 13:46:58 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:46:58 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.12 1992/06/07 16:45:50 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:45:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,11 +113,11 @@ ex_readfp(fname, fp, fm, cntp)
 	char *fname;
 	FILE *fp;
 	MARK *fm;
-	long *cntp;
+	recno_t *cntp;
 {
-	MARK m;
 	size_t len;
 	long lno;
+	int rval;
 	char *p;
 
 	/*
@@ -129,30 +129,29 @@ ex_readfp(fname, fp, fm, cntp)
 	 * current add module requires both a newline and a terminating NULL.
 	 * This is, of course, stupid.
 	 */
-	m = *fm;
-	for (lno = ++m.lno; p = fgetline(fp, &len); ++m.lno)
-		add(&m, p, len);
+	rval = 0;
+	for (lno = fm->lno; p = fgetline(fp, &len); ++lno)
+		if (file_aline(curf, lno, p, len)) {
+			rval = 1;
+			break;
+		}
 
 	if (ferror(fp)) {
 		msg("%s: %s", strerror(errno));
-		(void)fclose(fp);
-		return (1);
+		rval = 1;
 	}
+
 	if (fclose(fp)) {
 		msg("%s: %s", strerror(errno));
 		return (1);
 	}
 
-	/*
-	 * Set cursor to first line read in.
-	 * XXX
-	 * Should probably be set by the caller.
-	 */
-	curf->lno = lno;
+	if (rval)
+		return (1);
 
 	/* Return the number of lines read in. */
 	if (cntp)
-		*cntp = m.lno - fm->lno;
+		*cntp = lno - fm->lno;
 
 	return (0);
 }
