@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.33 1996/02/22 19:55:47 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:47 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.34 1996/02/25 18:25:26 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:25:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,7 @@ static int cl_ex_end __P((GS *));
 static int cl_ex_init __P((SCR *));
 static int cl_vi_end __P((GS *));
 static int cl_vi_init __P((SCR *));
+static int cl_putenv __P((char *, char *, u_long));
 
 /*
  * cl_screen --
@@ -188,7 +189,7 @@ cl_vi_init(sp)
 {
 	CL_PRIVATE *clp;
 	GS *gp;
-	char *ttype;
+	char *o_cols, *o_lines, *o_term, *ttype;
 
 	gp = sp->gp;
 	clp = CLP(sp);
@@ -204,6 +205,35 @@ cl_vi_init(sp)
 		return (1);
 	}
 
+	/* We'll need a terminal type. */
+	if (opts_empty(sp, O_TERM, 0))
+		return (1);
+	ttype = O_STR(sp, O_TERM);
+
+	/*
+	 * XXX
+	 * Changing the row/column and terminal values is done by putting them
+	 * into the environment, which is then read by curses.  What this loses
+	 * in ugliness, it makes up for in stupidity.  We can't simply put the
+	 * values into the environment ourselves, because in the presence of a
+	 * kernel mechanism for returning the window size, entering values into
+	 * the environment will screw up future screen resizing events, e.g. if
+	 * the user enters a :shell command and then resizes their window.  So,
+	 * if they weren't already in the environment, we make sure to delete
+	 * them immediately after setting them.
+	 *
+	 * XXX
+	 * Putting the TERM variable into the environment is necessary, even
+	 * though we're using newterm() here.  We may be using initscr() as
+	 * the underlying function.
+	 */
+	o_term = getenv("TERM");
+	cl_putenv("TERM", ttype, 0);
+	o_lines = getenv("LINES");
+	cl_putenv("LINES", NULL, (u_long)O_VAL(sp, O_LINES));
+	o_cols = getenv("COLUMNS");
+	cl_putenv("COLUMNS", NULL, (u_long)O_VAL(sp, O_COLUMNS));
+
 	/*
 	 * We don't care about the SCREEN reference returned by newterm, we
 	 * never have more than one SCREEN at a time.
@@ -218,9 +248,6 @@ cl_vi_init(sp)
 	 * have to specify the terminal type.
 	 */
 	errno = 0;
-	if (opts_empty(sp, O_TERM, 0))
-		return (1);
-	ttype = O_STR(sp, O_TERM);
 	if (newterm(ttype, stdout, stdin) == NULL) {
 		if (errno)
 			msgq(sp, M_SYSERR, "%s", ttype);
@@ -228,6 +255,13 @@ cl_vi_init(sp)
 			msgq(sp, M_ERR, "%s: unknown terminal type", ttype);
 		return (1);
 	}
+
+	if (o_term == NULL)
+		Xunsetenv("TERM");
+	if (o_lines == NULL)
+		Xunsetenv("LINES");
+	if (o_cols == NULL)
+		Xunsetenv("COLUMNS");
 
 	/*
 	 * XXX
@@ -475,4 +509,29 @@ cl_ex_end(gp)
 		free(clp->smso);
 #endif
 	return (0);
+}
+
+/*
+ * cl_putenv --
+ *	Put a value into the environment.  We use putenv(3) because it's
+ *	more portable.  The following hack is because some moron decided
+ *	to keep a reference to the memory passed to putenv(3), instead of
+ *	having it allocate its own.  Someone clearly needs to get promoted
+ *	into management.
+ */
+static int
+cl_putenv(name, str, value)
+	char *name, *str;
+	u_long value;
+
+{
+	char *p, buf[128];
+
+	if (str != NULL)
+		(void)snprintf(buf, sizeof(buf), "%s=%s", name, str);
+	else
+		(void)snprintf(buf, sizeof(buf), "%s=%lu", name, value);
+
+	/* XXX: Unfixable memory leak. */
+	return ((p = strdup(buf)) == NULL ? 1 : putenv(p));
 }

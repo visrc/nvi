@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.13 1996/02/06 10:44:48 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:44:48 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.14 1996/02/25 18:25:55 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:25:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,6 @@ static char sccsid[] = "$Id: cl_term.c,v 10.13 1996/02/06 10:44:48 bostic Exp $ 
 
 #include "../common/common.h"
 #include "cl.h"
-
-static int cl_putenv __P((char *));
 
 /*
  * XXX
@@ -216,42 +214,19 @@ cl_optchange(sp, opt, str, valp)
 	char *str;
 	u_long *valp;
 {
-	char buf[64];
-
-	/*
-	 * XXX
-	 * Changing the row/column and terminal values is done by putting them
-	 * into the environment, which is then read by curses.  What this loses
-	 * in ugliness, it makes up for in stupidity.  We can't simply put the
-	 * values into the environment ourselves, because in the presence of a
-	 * kernel mechanism for returning the window size, entering values into
-	 * the environment will screw up future screen resizing events, e.g. if
-	 * the user enters a :shell command and then resizes their window.  As
-	 * there's no portable interface for deleting environmental variables,
-	 * once they're there, they stay.  This is probably reasonable, since
-	 * the user should only have to set one of these if there's no correct
-	 * outside mechanism.
-	 */
 	switch (opt) {
 	case O_COLUMNS:
-		(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", *valp);
-		goto env;
 	case O_LINES:
-		(void)snprintf(buf, sizeof(buf), "LINES=%lu", *valp);
-		goto env;
-	case O_MESG:
-		cl_omesg(sp, CLP(sp), !*valp);
-		break;
 	case O_TERM:
-		(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
-
-		/* Insert the new value into the environment. */
-env:		if (cl_putenv(buf))
-			return (1);
-
-		/* Restart the screen. */
+		/*
+		 * Changing the columns, lines or terminal require that
+		 * we restart the screen.
+		 */
 		F_SET(sp->gp, G_SRESTART);
 		F_CLR(sp, S_SCR_EX | S_SCR_VI);
+		break;
+	case O_MESG:
+		cl_omesg(sp, CLP(sp), !*valp);
 		break;
 	}
 	return (0);
@@ -441,20 +416,4 @@ cl_putchar(ch)
 	int ch;
 {
 	return (putchar(ch));
-}
-
-/*
- * cl_putenv --
- *	Put a value into the environment.  We use putenv(3) because it's
- *	more portable.  The following hack is because some moron decided
- *	to keep a reference to the memory passed to putenv(3), instead of
- *	having it allocate its own.  Someone clearly needs to get promoted
- *	into management.
- */
-static int
-cl_putenv(s)
-	char *s;
-{
-	/* XXX: Unfixable memory leak. */
-	return ((s = strdup(s)) == NULL ? 1 : putenv(s));
 }
