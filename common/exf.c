@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.14 1995/10/17 08:03:02 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:03:02 $";
+static char sccsid[] = "$Id: exf.c,v 10.15 1995/10/17 09:04:35 bostic Exp $ (Berkeley) $Date: 1995/10/17 09:04:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -997,7 +997,7 @@ file_backup(sp, name, bname)
 		FREE_SPACE(sp, bp, blen);
 	return (0);
 
-binc_err:
+alloc_err:
 err:	if (rfd != -1)
 		(void)close(rfd);
 	if (wfd != -1) {
