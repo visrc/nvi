@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.63 1993/11/29 14:15:13 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:13 $";
+static char sccsid[] = "$Id: ex.c,v 8.64 1993/11/29 20:01:50 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:01:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -308,11 +308,10 @@ cend:			if (p > cmd) {
 				    F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 				*p = '\0';
 				if (ex_cmd(sp, ep, cmd, arg1_len)) {
-					if (len || TERM_MORE(sp->gp->key)) {
-						TERM_FLUSH(sp->gp->key);
+					if (len)
 						msgq(sp, M_ERR,
-		    "Ex command failed, remaining command input discarded.");
-					}
+		    "Ex command failed: remaining command input discarded.");
+					term_map_flush(sp, "Ex command failed");
 					return (1);
 				}
 				p = cmd;
@@ -350,22 +349,20 @@ cend:			if (p > cmd) {
 	 */
 	if (arg1 == NULL && len == 0)
 		return (0);
-	if (IN_VI_MODE(sp) && term_push(sp, sp->gp->tty, "\n", 1))
+	if (IN_VI_MODE(sp) && term_push(sp, "\n", 1, 0, 0))
 		goto err;
 	if (len != 0)
-		if (term_push(sp, sp->gp->tty, t, len))
+		if (term_push(sp, t, len, 0, 0))
 			goto err;
 	if (arg1 != NULL) {
 		if (IN_VI_MODE(sp) && len != 0 &&
-		    term_push(sp, sp->gp->tty, "|", 1))
+		    term_push(sp, "|", 1, 0, 0))
 			goto err;
-		if (term_push(sp, sp->gp->tty, arg1, arg1_len))
+		if (term_push(sp, arg1, arg1_len, 0, 0))
 			goto err;
 	}
-	if (IN_VI_MODE(sp) && term_push(sp, sp->gp->tty, ":", 1)) {
-err:		msgq(sp, M_SYSERR, "remaining command input discarded");
-		TERM_FLUSH(sp->gp->key);
-	}
+	if (IN_VI_MODE(sp) && term_push(sp, ":", 1, 0, 0))
+err:		term_map_flush(sp, "Error");
 	return (0);
 }
 

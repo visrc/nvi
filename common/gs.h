@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.23 1993/11/29 14:14:45 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:45 $
+ *	$Id: gs.h,v 8.24 1993/11/29 20:02:01 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:01 $
  */
 
 struct _gs {
@@ -27,15 +27,13 @@ struct _gs {
 #endif
 
 /* INFORMATION SHARED BY ALL SCREENS. */
-	IBUF	*key;			/* Key input buffer. */
-	IBUF	*tty;			/* Tty input buffer. */
+	IBUF	*tty;			/* Key input buffer. */
 
 	LIST_HEAD(_cuth, _cb) cutq;	/* Linked list of cut buffers. */
 
 #define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
 	LIST_HEAD(_seqh, _seq) seqq;	/* Linked list of maps, abbrevs. */
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
-	int	key_cnt;		/* Map expansion count. */
 
 #define	term_key_val(sp, ch)						\
 	((ch) <= MAX_FAST_KEY ? sp->gp->special_key[ch] :		\

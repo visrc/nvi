@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.47 1993/11/29 14:14:46 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:46 $";
+static char sccsid[] = "$Id: main.c,v 8.48 1993/11/29 20:02:02 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -306,16 +306,14 @@ main(argc, argv)
 	 */
 	if (excmdarg != NULL)
 		if (IN_EX_MODE(sp)) {
-			if (term_push(sp, sp->gp->tty,
-			    excmdarg, strlen(excmdarg)))
+			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
 				goto err1;
 		} else if (IN_VI_MODE(sp)) {
-			if (term_push(sp, sp->gp->tty, "\n", 1))
+			if (term_push(sp, "\n", 1, 0, 0))
 				goto err1;
-			if (term_push(sp, sp->gp->tty,
-			    excmdarg, strlen(excmdarg)))
+			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
 				goto err1;
-			if (term_push(sp, sp->gp->tty, ":", 1))
+			if (term_push(sp, ":", 1, 0, 0))
 				goto err1;
 		}
 		
@@ -396,21 +394,16 @@ gs_init()
 	GS *gp;
 	int fd;
 
-	if ((gp = malloc(sizeof(GS))) == NULL)
+	if ((gp = calloc(1, sizeof(GS))) == NULL)
 		err(1, NULL);
-	memset(gp, 0, sizeof(GS));
 
 	CIRCLEQ_INIT(&gp->dq);
 	CIRCLEQ_INIT(&gp->hq);
 	LIST_INIT(&gp->msgq);
 
 	/* Structures shared by screens so stored in the GS structure. */
-	if ((gp->key = malloc(sizeof(IBUF))) == NULL)
+	if ((gp->tty = calloc(1, sizeof(IBUF))) == NULL)
 		err(1, NULL);
-	memset(gp->key, 0, sizeof(IBUF));
-	if ((gp->tty = malloc(sizeof(IBUF))) == NULL)
-		err(1, NULL);
-	memset(gp->tty, 0, sizeof(IBUF));
 
 	LIST_INIT(&gp->cutq);
 	LIST_INIT(&gp->seqq);

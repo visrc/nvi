@@ -4,16 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.19 1993/11/29 14:14:55 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:55 $
+ *	$Id: key.h,v 8.20 1993/11/29 20:02:08 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:08 $
  */
-
-/* Structure for a key input buffer. */
-struct _ibuf {
-	char	*buf;		/* Buffer itself. */
-	int	 cnt;		/* Count of characters. */
-	int	 len;		/* Buffer length. */
-	int	 next;		/* Offset of next character. */
-};
 
 /* Structure to return a character and associated information. */
 struct _ch {
@@ -37,13 +29,29 @@ struct _ch {
 #define	K_VLNEXT	16
 #define	K_VWERASE	17
 #define	K_ZERO		18
-	u_char	 value;		/* Special character lookup values. */
+	u_char	 value;		/* Special character flag values. */
 
-#define	CH_ABBREVIATED	0x01	/* From an abbreviation. */
-#define	CH_MAPPED	0x02	/* From a map. */
-#define	CH_QUOTED	0x04	/* Already quoted. */
+#define	CH_ABBREVIATED	0x01	/* Character from an abbreviation. */
+#define	CH_NOMAP	0x02	/* Do not attempt to map the character. */
+#define	CH_QUOTED	0x04	/* Character is already quoted. */
 	u_char	 flags;
 };
+
+/* Structure for the key input buffer. */
+struct _ibuf {
+	CHAR_T	*ch;		/* Array of characters. */
+	u_char	*chf;		/* Array of character flags (CH_*). */
+#define	MAX_MAP_COUNT	50	/* Maximum times a character can remap. */
+	u_char	*cmap;		/* Number of times character has been mapped. */
+
+	size_t	 cnt;		/* Count of remaining characters. */
+	size_t	 len;		/* Array length. */
+	size_t	 next;		/* Offset of next array entry. */
+};
+				/* Return if more keys in queue. */
+#define	KEYS_WAITING(sp)	((sp)->gp->tty->cnt)
+#define	MAPPED_KEYS_WAITING(sp)						\
+	(KEYS_WAITING(sp) && sp->gp->tty->cmap[sp->gp->tty->next])
 
 /*
  * Structure to name a character.  Used both as an interface to the
@@ -53,11 +61,6 @@ struct _chname {
 	char	*name;		/* Character name. */
 	u_char	 len;		/* Length of the character name. */
 };
-
-				/* Flush keys from expansion buffer. */
-#define	TERM_FLUSH(ibp)		(ibp)->cnt = (ibp)->next = 0
-				/* Return if more keys in expansion buffer. */
-#define	TERM_MORE(ibp)		((ibp)->cnt)
 
 /*
  * Routines that return a key as a side-effect return:
@@ -140,5 +143,6 @@ int		__term_key_val __P((SCR *, ARG_CHAR_T));
 enum input	term_key __P((SCR *, CH *, u_int));
 enum input	term_user_key __P((SCR *, CH *));
 int		term_init __P((SCR *));
-int		term_push __P((SCR *, IBUF *, char *, size_t));
+void		term_map_flush __P((SCR *, char *));
+int		term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
 int		term_waiting __P((SCR *));

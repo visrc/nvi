@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.37 1993/11/29 14:15:31 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:31 $";
+static char sccsid[] = "$Id: vi.c,v 8.38 1993/11/29 20:02:20 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ vi(sp, ep)
 	memset(&cmd, 0, sizeof(VICMDARG));
 
 	for (eval = 0, vp = &cmd;;) {
-		if (!TERM_MORE(sp->gp->key) && log_cursor(sp, ep))
+		if (!MAPPED_KEYS_WAITING(sp) && log_cursor(sp, ep))
 			goto err;
 
 		/*
@@ -222,11 +222,11 @@ vi(sp, ep)
 		sp->lno = m.lno;
 		sp->cno = m.cno;
 
-		if (!TERM_MORE(sp->gp->key)) {
+		if (!MAPPED_KEYS_WAITING(sp)) {
 			(void)msg_rpt(sp, 1);
 
 			if (0)
-err:				TERM_FLUSH(sp->gp->key);
+err:				term_map_flush(sp, "Vi error");
 		}
 
 		/* Refresh the screen. */

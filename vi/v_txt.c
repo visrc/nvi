@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.60 1993/11/29 14:15:26 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:26 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.61 1993/11/29 20:02:17 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,7 +87,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
-	CH ich;			/* Input character structure. */
+	CH ikey;		/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	GS *gp;			/* Global pointer. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
@@ -248,12 +248,18 @@ nullreplay:
 		 * Historically, it wasn't an error to replay non-existent
 		 * input.  This test is necessary, we get here by the user
 		 * doing an input command followed by a nul.
+		 *
+		 * !!!
+		 * Historically, vi did not remap or reabbreviate replayed
+		 * input.  It did, however, beep at you if you changed an
+		 * abbreviation and then replayed the input.
 		 */
 		if (VIP(sp)->rep == NULL)
 			return (0);
-		if (term_push(sp, sp->gp->key, VIP(sp)->rep, VIP(sp)->rep_cnt))
+		if (term_push(sp, VIP(sp)->rep, VIP(sp)->rep_cnt, 0, CH_NOMAP))
 			return (1);
 		testnr = 0;
+		abb = A_NOTSET;
 		LF_CLR(TXT_RECORD);
 	} else
 		testnr = 1;
@@ -267,8 +273,7 @@ nullreplay:
 		 * we're about to wait on a character or we need to know where
 		 * the cursor really is.
 		 */
-		if (showmatch || margin ||
-		    !TERM_MORE(gp->key) && !TERM_MORE(gp->tty)) {
+		if (showmatch || margin || !KEYS_WAITING(sp)) {
 			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 				goto err;
 			if (showmatch) {
@@ -279,9 +284,9 @@ nullreplay:
 		}
 
 		/* Get the next character. */
-next_ch:	if (term_key(sp, &ich, iflags) != INP_OK)
+next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 			goto err;
-		ch = ich.ch;
+		ch = ikey.ch;
 
 		/*
 		 * !!!
@@ -309,7 +314,8 @@ next_ch:	if (term_key(sp, &ich, iflags) != INP_OK)
 
 		/*
 		 * If the character was quoted, replace the last character
-		 * (the literal mark) with the new character.
+		 * (the literal mark) with the new character.  If quoted
+		 * by someone else, simply insert the character.
 		 *
 		 * !!!
 		 * Extension -- if the quoted character is HEX_CH, enter hex
@@ -317,6 +323,8 @@ next_ch:	if (term_key(sp, &ich, iflags) != INP_OK)
 		 * try to use the value as a character.  Anything else resets
 		 * hex mode.
 		 */
+		if (ikey.flags & CH_QUOTED)
+			goto ins_ch;
 		if (quoted == Q_THISCHAR) {
 			--sp->cno;
 			++tp->owrite;
@@ -327,7 +335,7 @@ next_ch:	if (term_key(sp, &ich, iflags) != INP_OK)
 			goto ins_ch;
 		}
 
-		switch (ich.value) {
+		switch (ikey.value) {
 		case K_CR:
 		case K_NL:				/* New line. */
 #define	LINE_RESOLVE {							\
@@ -378,7 +386,8 @@ next_ch:	if (term_key(sp, &ich, iflags) != INP_OK)
 			/* CR returns from the vi command line. */
 			if (LF_ISSET(TXT_CR)) {
 				if (F_ISSET(sp, S_SCRIPT))
-					(void)term_push(sp, gp->key, "\r", 1);
+					(void)term_push(sp,
+					    "\r", 1, 0, CH_NOMAP);
 				goto k_escape;
 			}
 
@@ -483,8 +492,7 @@ next_ch:	if (term_key(sp, &ich, iflags) != INP_OK)
 			F_SET(sp, S_RENUMBER);
 
 			/* Refresh if nothing waiting. */
-			if ((margin ||
-			    !TERM_MORE(gp->key) && !TERM_MORE(gp->tty)) &&
+			if ((margin || !KEYS_WAITING(sp)) &&
 			    sp->s_refresh(sp, ep))
 				goto err;
 			goto next_ch;
@@ -927,23 +935,18 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	 * characters will be re-tested for abbreviations.  It's difficult to
 	 * know what historic practice in this case was, since abbreviations
 	 * were applied to :colon command lines, so entering abbreviations that
-	 * looped was tricky, if not impossible.  In addition, obvious loops
-	 * don't work as expected.  (The command ':ab a b|ab b c|ab c a' will
-	 * silently only implement the last of the abbreviations.)
+	 * looped was tricky, although possible.  In addition, obvious loops
+	 * didn't work as expected.  (The command ':ab a b|ab b c|ab c a' will
+	 * silently only implement and/or display the last abbreviation.)
 	 *
 	 * XXX
-	 * There obvious infinite loop, if a abbreviates to b and b to a, is
-	 * "fixed" by the looping code in the terminal read routines.  It's
-	 * an ugly fix, though because it forces the user out of input mode
-	 * when it returns an error, flushing the queued characters.  My guess
-	 * is that the correct fix is to tag each character with the number of
-	 * times it has been abbreviated, and permit only a single abbreviation.
-	 * This requires a major rework of what an input character looks like.
+	 * The obvious infinite loop, if a abbreviates to b and b to a, is
+	 * NOT FIXED.
 	 */
 	ch = pushc;
-	if (term_push(sp, sp->gp->tty, &ch, 1))
+	if (term_push(sp, &ch, 1, 0, 0))
 		return (1);
-	if (term_push(sp, sp->gp->tty, qp->output, qp->olen))
+	if (term_push(sp, qp->output, qp->olen, 0, 0))
 		return (1);
 
 	/* Move the cursor to the start of the hex value, adjust the length. */
@@ -1235,10 +1238,10 @@ nothex:		tp->lb[sp->cno] = savec;
 	}
 		
 	ch = pushc;
-	if (term_push(sp, sp->gp->tty, &ch, 1))
+	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
 		return (1);
 	ch = value;
-	if (term_push(sp, sp->gp->tty, &ch, 1))
+	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
 		return (1);
 
 	tp->lb[sp->cno] = savec;
@@ -1551,12 +1554,12 @@ txt_margin(sp, tp, didbreak, pushc)
 	}
 
 	ch = pushc;
-	if (term_push(sp, sp->gp->key, &ch, 1))
+	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
 		return (1);
-	if (len && term_push(sp, sp->gp->key, wp, len))
+	if (len && term_push(sp, wp, len, 0, CH_NOMAP | CH_QUOTED))
 		return (1);
 	ch = '\n';
-	if (term_push(sp, sp->gp->key, &ch, 1))
+	if (term_push(sp, &ch, 1, 0, CH_NOMAP))
 		return (1);
 
 	sp->cno -= tlen;

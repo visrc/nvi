@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.27 1993/11/29 14:14:53 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:53 $";
+static char sccsid[] = "$Id: key.c,v 8.28 1993/11/29 20:02:05 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,15 @@ static char sccsid[] = "$Id: key.c,v 8.27 1993/11/29 14:14:53 bostic Exp $ (Berk
 #include "seq.h"
 
 static int keycmp __P((const void *, const void *));
+
+/*
+ * If we're reading less than 20 characters, up the size of the tty buffer.
+ * This shouldn't ever happen, other than the first time through, but it's
+ * possible if a map is large enough.
+ */
+#define	term_read_grow(sp, tty)					\
+	(tty)->len - (tty)->cnt >= 20 ? 0 : __term_read_grow(sp, tty)
+static int __term_read_grow __P((SCR *, IBUF *));
 
 /*
  * XXX
@@ -162,66 +171,100 @@ term_init(sp)
 }
 
 /*
- * There are two sets of input buffers used by ex/vi.  The first is the input
- * from the user, either via the tty or an initial command supplied with the
- * ex or edit commands or similar mechanism.  The second is the the keys from
- * the first after mapping has been done.  Also, executable buffer expansions
- * are pushed into this second buffer.  The reason that there are two is that
- * we only want to flush the latter buffer if a command fails, i.e. if the user
- * enters "@a1G", we don't want to flush the "1G" keys because "@a" failed.
- */ 
-
-/*
  * term_push --
  *	Push keys onto the front of a buffer.
- */
+ *
+ * There is a single input buffer in ex/vi.  Characters are read onto the
+ * end of the buffer by the terminal input routines, and pushed onto the
+ * front of the buffer various other functions in ex/vi.  Each key has an
+ * associated flag value, which indicates if it has already been quoted,
+ * if it is the result of a mapping or an abbreviation.
+ */ 
 int
-term_push(sp, ibp, s, len)
+term_push(sp, s, len, cmap, flags)
 	SCR *sp;
-	IBUF *ibp;
-	char *s;
-	size_t len;
+	CHAR_T *s;			/* Characters. */
+	size_t len;			/* Number of chars. */
+	u_int cmap;			/* Map count. */
+	u_int flags;			/* CH_* flags. */
 {
+	IBUF *tty;
 	size_t nlen;
 
 	/* If we have room, stuff the keys into the buffer. */
-	if (len <= ibp->next) {
-		ibp->next -= len;
-		ibp->cnt += len;
-		memmove(ibp->buf + ibp->next, s, len);
+	tty = sp->gp->tty;
+	if (len <= tty->next || tty->cnt == 0) {
+		if (tty->cnt != 0)
+			tty->next -= len;
+		tty->cnt += len;
+		memmove(tty->ch + tty->next, s, len * sizeof(CHAR_T));
+		memset(tty->chf + tty->next, flags, len);
+		memset(tty->cmap + tty->next, cmap, len);
 		return (0);
 	}
 
 	/* Get enough space plus a little extra. */
-	nlen = ibp->cnt + len;
-	BINC(sp, ibp->buf, ibp->len, nlen + 64);
+	nlen = tty->cnt + len;
+	if (nlen > tty->len) {
+		nlen += 64;
+		BINC(sp,
+		    tty->ch, tty->len, nlen * sizeof(tty->ch[0]));
+		BINC(sp,
+		    tty->chf, tty->len, nlen * sizeof(tty->chf[0]));
+		BINC(sp,
+		    tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
+	}
 
 	/*
-	 * If there is currently characters in the buffer,
-	 * shift them up, and leave a little extra room.
+	 * If there are currently characters in the queue, shift them up,
+	 * leaving some extra room.
 	 */
-#define	TERM_PUSH_SHIFT	20
-	if (ibp->cnt)
-		memmove(ibp->buf + len + TERM_PUSH_SHIFT,
-		    ibp->buf + ibp->next, ibp->cnt);
-	if (len == 1)
-		ibp->buf[TERM_PUSH_SHIFT] = *s;
-	else
-		memmove(ibp->buf + TERM_PUSH_SHIFT, s, len);
-	ibp->next = TERM_PUSH_SHIFT;
-	ibp->cnt += len;
+#define	TERM_PUSH_SHIFT	30
+	if (tty->cnt) {
+		memmove(tty->ch + TERM_PUSH_SHIFT + len,
+		    tty->ch + tty->next, tty->cnt * sizeof(tty->ch[0]));
+		memmove(tty->chf + TERM_PUSH_SHIFT + len,
+		    tty->chf + tty->next, tty->cnt * sizeof(tty->chf[0]));
+		memmove(tty->cmap + TERM_PUSH_SHIFT + len,
+		    tty->cmap + tty->next, tty->cnt * sizeof(tty->cmap[0]));
+	}
+
+	/* Put the new characters into the queue. */
+	tty->next = TERM_PUSH_SHIFT;
+	tty->cnt += len;
+	memmove(tty->ch + TERM_PUSH_SHIFT, s, len * sizeof(tty->ch[0]));
+	memset(tty->chf + TERM_PUSH_SHIFT, flags, len * sizeof(tty->chf[0]));
+	memset(tty->cmap + TERM_PUSH_SHIFT, cmap, len * sizeof(tty->cmap[0]));
 	return (0);
 }
 
-/* Remove characters from the head of a queue. */
+/*
+ * Remove characters from the queue, simultaneously clearing the
+ * flag and map counts.
+ */
 #define	QREM_HEAD(q, len) {						\
+	size_t __off = (q)->next;					\
+	if (len == 1) {							\
+		tty->chf[__off] = 0;					\
+		tty->cmap[__off] = 0;					\
+	} else {							\
+		memset(tty->chf + __off, 0, len);			\
+		memset(tty->cmap + __off, 0, len);			\
+	}								\
 	if (((q)->cnt -= len) == 0)					\
 		(q)->next = 0;						\
 	else								\
 		(q)->next += len;					\
 }
-/* Remove characters from the tail of a queue. */
 #define	QREM_TAIL(q, len) {						\
+	size_t __off = (q)->next + (q)->cnt - 1;			\
+	if (len == 1) {							\
+		tty->chf[__off] = 0;					\
+		tty->cmap[__off] = 0;					\
+	} else {							\
+		memset(tty->chf + __off, 0, len);			\
+		memset(tty->cmap + __off, 0, len);			\
+	}								\
 	if (((q)->cnt -= len) == 0)					\
 		(q)->next = 0;						\
 }
@@ -232,13 +275,13 @@ term_push(sp, ibp, s, len)
  *
  * !!!
  * The flag TXT_MAPNODIGIT probably needs some explanation.  First, the idea
- * of mapping keys is that one or more keystrokes behave like a function key.
+ * of mapping keys is that one or more keystrokes act like a function key.
  * What's going on is that vi is reading a number, and the character following
  * the number may or may not be mapped (TXT_MAPCOMMAND).  For example, if the
  * user is entering the z command, a valid command is "z40+", and we don't want
  * to map the '+', i.e. if '+' is mapped to "xxx", we don't want to change it
- * into "z40xxx".  However, if the user is entering "35x", we want to put all
- * of the characters through the mapping code.
+ * into "z40xxx".  However, if the user enters "35x", we want to put all of the
+ * characters through the mapping code.
  *
  * Historical practice is a bit muddled here.  (Surprise!)  It always permitted
  * mapping digits as long as they weren't the first character of the map, e.g.
@@ -272,23 +315,22 @@ term_push(sp, ibp, s, len)
  *
  * Historic vi tried to detect looping macros by disallowing obvious cases in
  * the map command, maps that that ended with the same letter as they started
- * (which wrongly disallowed map x 'x), and detecting macros that expanded too
- * many times before keys were returned to the command parser.  It didn't get
- * many of the tricky cases right, however, and it was certainly possible to
- * create macros that ran forever.  Finally, changes made before vi realized
- * that the macro was recursing were left in place.
- *
- * We handle the problem by returning no more than MAX_KEYS_WITHOUT_READ keys
- * without reading from the terminal.  If we hit the boundary, we return an
- * error and flush both terminal buffers.  This handles all of the cases, with
- * the exception of macros that loop without returning a character.  We simply
- * count those cases and error if there are more than MAX_MACRO_EXP expansions.
+ * (which wrongly disallowed "map x 'x"), and detecting macros that expanded
+ * too many times before keys were returned to the command parser.  It didn't
+ * get many (most?) of the tricky cases right, however, and it was certainly
+ * possible to create macros that ran forever.  And, even if it did figure out
+ * what was going on, the user was usually tossed into ex mode.  Finally, any
+ * changes made before vi realized that the macro was recursing were left in
+ * place.  This implementation counts how many times each input character has
+ * been mapped.  If it reaches some arbitrary value, we flush all mapped keys
+ * and return an error.
  *
  * XXX
  * The final issue is recovery.  It would be possible to undo all of the work
  * that was done by the macro if we entered a record into the log so that we
  * knew when the macro started, and, in fact, this might be worth doing at some
- * point.  For now we just flush the keys and leave any changes made in place.
+ * point.  Given that this might make the log grow unacceptably (consider that
+ * cursor keys are done with maps), for now we leave any changes made in place.
  */
 enum input
 term_key(sp, chp, flags)
@@ -298,63 +340,59 @@ term_key(sp, chp, flags)
 {
 	enum input rval;
 	struct timeval t;
+	CHAR_T ch;
 	GS *gp;
-	IBUF *keyp, *ttyp;
+	IBUF *tty;
 	SEQ *qp;
-	int ch, ispartial, ml_cnt, nr;
+	int cmap, ispartial, nr;
 
-	/* If we have expanded keys, return the next one. */
 	gp = sp->gp;
-	keyp = gp->key;
-	ttyp = gp->tty;
-loop:	if (keyp->cnt) {
-		ch = keyp->buf[keyp->next];
-		if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(ch)) {
-			chp->ch = NOT_DIGIT_CH;
-			chp->value = 0;
-			chp->flags = 0;
-			return (INP_OK);
-		}
-		QREM_HEAD(keyp, 1);
-		goto ret;
-	}
+	tty = gp->tty;
 
 	/*
-	 * Read in more keys if none in the queue.  Since no timeout is
+	 * If the queue is empty, read more keys in.  Since no timeout is
 	 * requested, s_key_read will either return an error or will read
 	 * some number of characters.
 	 */
-	if (ttyp->cnt == 0) {
-		gp->key_cnt = 0;
+loop:	if (tty->cnt == 0) {
+		if (term_read_grow(sp, tty))
+			return (INP_ERR);
 		if (rval = sp->s_key_read(sp, &nr, NULL))
 			return (rval);
 		/*
 		 * If there's something on the mode line that we wanted
 		 * the user to see, they just entered a character so we
-		 * can presume they saw it.  Clear the bit before doing
-		 * the refresh, the refresh routine is probably checking.
+		 * can presume they saw it.
 		 */
-		if (F_ISSET(sp, S_UPDATE_MODE)) {
+		if (F_ISSET(sp, S_UPDATE_MODE))
 			F_CLR(sp, S_UPDATE_MODE);
-			if (sp->s_refresh(sp, sp->ep))
-				return (INP_ERR);
-		}
 	}
 
-	/* Check for mapped keys.  */
-	if (LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
-		ml_cnt = 0;
+	/* If the key is mappable and should be mapped, look it up. */
+	if (!(tty->chf[tty->next] & CH_NOMAP) &&
+	    LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
+		/* Set up timeout value. */
 		t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
 		t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
-newmap:		ch = ttyp->buf[ttyp->next];
+
+		/* Get the next key. */
+newmap:		ch = tty->ch[tty->next];
 		if (ch < MAX_BIT_SEQ && !bit_test(gp->seqb, ch))
 			goto nomap;
-remap:		qp = seq_find(sp, NULL, &ttyp->buf[ttyp->next], ttyp->cnt,
+
+		/* Search the map. */
+remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 
-		/* If get a partial match, keep trying. */
+		/*
+		 * If get a partial match, read more characters and retry
+		 * the map.  If no characters read, return the characters
+		 * unmapped.
+		 */
 		if (ispartial) {
+			if (term_read_grow(sp, tty))
+				return (INP_ERR);
 			if (rval = sp->s_key_read(sp, &nr, &t))
 				return (rval);
 			if (nr)
@@ -362,56 +400,57 @@ remap:		qp = seq_find(sp, NULL, &ttyp->buf[ttyp->next], ttyp->cnt,
 			goto nomap;
 		}
 
+		/* If no map, return the character. */
 		if (qp == NULL)
 			goto nomap;
 
-#define	MAX_MACRO_EXP	40
-		if (++ml_cnt > MAX_MACRO_EXP)
-			goto rec_err;
+		/*
+		 * If looking for the end of a digit string, and the first
+		 * character of the map is it, pretend we haven't seen the
+		 * character.
+		 */
+		if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(qp->output[0]))
+			goto not_digit_ch;
 
-		if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(qp->output[0])) {
-			chp->ch = NOT_DIGIT_CH;
-			chp->value = 0;
-			chp->flags = 0;
-			return (INP_OK);
-		}
-
-		QREM_HEAD(ttyp, qp->ilen);
-		if (O_ISSET(sp, O_REMAP)) {
-			if (term_push(sp, ttyp, qp->output, qp->olen))
-				goto err;
-			goto newmap;
-		}
-		if (term_push(sp, keyp, qp->output, qp->olen)) {
-err:			msgq(sp, M_SYSERR, "Error: key deleted");
+		/*
+		 * Only permit a character to be remapped a certain number
+		 * of times before we figure that it's not going to finish.
+		 */
+		if ((cmap = tty->cmap[tty->next]) > MAX_MAP_COUNT) {
+			term_map_flush(sp, "Character remapped too many times");
 			return (INP_ERR);
 		}
-		goto loop;
+
+		/* Delete the mapped characters from the queue. */
+		QREM_HEAD(tty, qp->ilen);
+
+		/* If remapping characters, push the character on the queue. */
+		if (O_ISSET(sp, O_REMAP)) {
+			if (term_push(sp, qp->output, qp->olen, ++cmap, 0))
+				return (INP_ERR);
+			goto newmap;
+		}
+
+		/* Else, push the characters on the queue and return one. */
+		if (term_push(sp, qp->output, qp->olen, 0, CH_NOMAP))
+			return (INP_ERR);
 	}
 
-nomap:	ch = ttyp->buf[ttyp->next];
+nomap:	ch = tty->ch[tty->next];
 	if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(ch)) {
-		chp->ch = NOT_DIGIT_CH;
+not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 		chp->value = 0;
 		chp->flags = 0;
 		return (INP_OK);
 	}
-	QREM_HEAD(ttyp, 1);
 
-#define	MAX_KEYS_WITHOUT_READ	1000
-ret:	if (++gp->key_cnt > MAX_KEYS_WITHOUT_READ) {
-rec_err:	gp->key_cnt = 0;
-		TERM_FLUSH(keyp);
-		TERM_FLUSH(ttyp);
-		msgq(sp, M_ERR,
-		    "Error: command expansion too long; keys flushed.");
-		return (INP_ERR);
-	}
-		
 	/* Fill in the return information. */
 	chp->ch = ch;
-	chp->flags = 0;
+	chp->flags = tty->chf[tty->next];
 	chp->value = term_key_val(sp, ch);
+
+	/* Delete the character from the queue. */
+	QREM_HEAD(tty, 1);
 
 	/*
 	 * O_BEAUTIFY eliminates all control characters except
@@ -427,6 +466,27 @@ rec_err:	gp->key_cnt = 0;
 }
 
 /*
+ * term_map_flush --
+ *	Flush any mapped keys.
+ */
+void
+term_map_flush(sp, msg)
+	SCR *sp;
+	char *msg;
+{
+	IBUF *tty;
+
+	tty = sp->gp->tty;
+	if (!tty->cnt || !tty->cmap[tty->next])
+		return;
+	do {
+		QREM_HEAD(tty, 1);
+	} while (tty->cnt && tty->cmap[tty->next]);
+	msgq(sp, M_ERR, "%s: mapped keys flushed.", msg);
+	
+}
+
+/*
  * term_user_key --
  *	Get the next key, but require the user enter one.
  */
@@ -438,29 +498,33 @@ term_user_key(sp, chp)
 	enum input rval;
 	struct timeval t;
 	CHAR_T ch;
-	IBUF *ttyp;
+	IBUF *tty;
 	int nr;
 
 	/*
-	 * Read any keys the user has waiting.  There's an obvious
-	 * race condition, but it's quite short.
+	 * Read any keys the user has waiting.  Make the race condition
+	 * as short as possible.
 	 */
 	t.tv_sec = 0;
 	t.tv_usec = 1;
+	if (term_read_grow(sp, tty))
+		return (INP_ERR);
 	if (rval = sp->s_key_read(sp, &nr, &t))
 		return (rval);
 
 	/* Read another key. */
+	if (term_read_grow(sp, tty))
+		return (INP_ERR);
 	if (rval = sp->s_key_read(sp, &nr, NULL))
 		return (rval);
 			
 	/* Fill in the return information. */
-	ttyp = sp->gp->tty;
-	chp->ch = ttyp->buf[ttyp->next + (ttyp->cnt - 1)];
+	tty = sp->gp->tty;
+	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
 	chp->flags = 0;
 	chp->value = term_key_val(sp, chp->ch);
 
-	QREM_TAIL(ttyp, 1);
+	QREM_TAIL(tty, 1);
 	return (INP_OK);
 }
 
@@ -479,6 +543,35 @@ __term_key_val(sp, ch)
 	k.ch = ch;
 	kp = bsearch(&k, keylist, sizeof(keylist), sizeof(keylist[0]), keycmp);
 	return (kp == NULL ? 0 : kp->value);
+}
+
+/*
+ * __term_read_grow --
+ *	Grow the terminal queue.  This routine is the backup for
+ *	the term_read_grow() macro.
+ */
+static int
+__term_read_grow(sp, tty)
+	SCR *sp;
+	IBUF *tty;
+{
+	size_t alen, len, nlen;
+
+	nlen = tty->len + 64;
+	alen = tty->len - (tty->next + tty->cnt);
+
+	len = tty->len;
+	BINC(sp, tty->ch, len, nlen * sizeof(tty->ch[0]));
+	memset(tty->ch + tty->next + tty->cnt, 0, alen * sizeof(tty->ch[0]));
+
+	len = tty->len;
+	BINC(sp, tty->chf, len, nlen * sizeof(tty->chf[0]));
+	memset(tty->chf + tty->next + tty->cnt, 0, alen * sizeof(tty->chf[0]));
+
+	BINC(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
+	memset(tty->cmap +
+	    tty->next + tty->cnt, 0, alen * sizeof(tty->cmap[0]));
+	return (0);
 }
 
 static int
