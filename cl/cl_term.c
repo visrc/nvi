@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.8 1995/09/28 13:02:29 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:29 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.9 1995/10/04 12:28:36 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:28:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,28 +183,24 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 	size_t flen, tlen;
 {
 	size_t nlen;
-	int nf;
-	char *p, *t, keyname[64];
+	char *p, keyname[64];
 
 	EX_INIT_IGNORE(sp);
 	VI_INIT_IGNORE(sp);
 
 	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(from + 1));
-	if ((t = tigetstr(keyname)) == NULL ||
-	    t == (char *)-1 || strlen(t) == 0)
-		t = NULL;
-	if (t == NULL) {
-		p = msg_print(sp, from, &nf);
-		msgq(sp, M_ERR, "233|This terminal has no %s key", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+	if ((p = tigetstr(keyname)) == NULL ||
+	    p == (char *)-1 || strlen(p) == 0)
+		p = NULL;
+	if (p == NULL) {
+		msgq_str(sp, M_ERR, from, "233|This terminal has no %s key");
 		return (1);
 	}
 
 	nlen = snprintf(keyname,
 	    sizeof(keyname), "function key %d", atoi(from + 1));
 	return (seq_set(sp, keyname, nlen,
-	    t, strlen(t), to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN));
+	    p, strlen(p), to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN));
 }
 
 /*
