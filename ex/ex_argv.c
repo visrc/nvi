@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.14 1993/11/13 18:02:18 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:18 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.15 1993/11/16 18:59:26 bostic Exp $ (Berkeley) $Date: 1993/11/16 18:59:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,7 +198,7 @@ argv_exp3(sp, ep, cmdp, p)
 		 * Copy the argument into place, losing quote chars.
 		 */
 		for (t = exp->args[off].bp; len; *t++ = *ap++, --len)
-			if (sp->special[*ap] == K_VLNEXT && len) {
+			if (sp->special[*ap] == K_VLNEXT) {
 				++ap;
 				--len;
 			}
