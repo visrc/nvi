@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.32 1993/11/18 13:51:10 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:51:10 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.33 1993/11/19 10:55:44 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:55:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,25 +64,14 @@ svi_refresh(sp, ep)
 	 * If related screens share a view into a file, they may have been
 	 * modified as well.  Refresh them if the dirty bit is set.
 	 */
-#define	PAINTBITS	S_REDRAW | S_REFORMAT | S_REFRESH
-	for (tsp = sp;;) {
-		if ((tsp = tsp->q.cqe_prev) == (void *)&sp->gp->dq)
-			break;
-		if (F_ISSET(tsp, PAINTBITS) ||
-		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
+	for (tsp = sp->gp->dq.cqh_first;
+	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
+		if (sp != tsp &&
+		    (F_ISSET(tsp, S_REDRAW | S_REFORMAT | S_REFRESH) ||
+		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY))) {
 			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
-	}
-	for (tsp = sp;;) {
-		if ((tsp = tsp->q.cqe_next) == (void *)&sp->gp->dq)
-			break;
-		if (F_ISSET(tsp, PAINTBITS) ||
-		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
-			(void)svi_paint(tsp, tsp->ep);
-			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
-		}
-	}
 
 	/*
 	 * 3: Refresh the current screen.
