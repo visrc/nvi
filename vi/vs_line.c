@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.11 1993/11/18 13:51:07 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:51:07 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.12 1993/11/22 17:32:24 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:32:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,6 @@ svi_line(sp, ep, smp, yp, xp)
 {
 	CHNAME const *cname;
 	SMAP *tsmp;
-	recno_t lno;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line;
 	size_t oldy, oldx;
@@ -77,6 +76,9 @@ svi_line(sp, ep, smp, yp, xp)
 	/* Get the character map. */
 	cname = sp->cname;
 
+	/* Get a copy of the line. */
+	p = file_gline(sp, ep, smp->lno, &len);
+
 	/*
 	 * Special case if we're printing the info/mode line.  Skip printing
 	 * the leading number, as well as other minor setup.  If painting the
@@ -90,9 +92,7 @@ svi_line(sp, ep, smp, yp, xp)
 	 * Left-right screens are special, because we don't bother building
 	 * a buffer to be skipped over.
 	 *
-	 * If O_NUMBER is set and this is the first screen of a folding
-	 * line or any left-right line, display the line number.  Set
-	 * the number of columns for this screen.
+	 * Set the number of columns for this screen.
 	 */
 	reverse_video = 0;
 	cols_per_screen = sp->cols;
@@ -110,7 +110,13 @@ svi_line(sp, ep, smp, yp, xp)
 		listset = O_ISSET(sp, O_LIST);
 		skip_screens = smp->off - 1;
 
-		if (O_ISSET(sp, O_NUMBER) && skip_screens == 0) {
+		/*
+		 * If O_NUMBER is set and it's line number 1 or the line exists
+		 * and this is the first screen of a folding line or any left-
+		 * right line, display the line number.
+		 */
+		if (O_ISSET(sp, O_NUMBER) &&
+		    (smp->lno == 1 || p != NULL) && skip_screens == 0) {
 			cols_per_screen -= O_NUMBER_LENGTH;
 			(void)snprintf(nbuf,
 			    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
@@ -119,15 +125,15 @@ svi_line(sp, ep, smp, yp, xp)
 	}
 
 	/*
-	 * Get a copy of the line.  Special case non-existent lines and the
-	 * first line of an empty file.  In both cases, the cursor position
-	 * is 0.
+	 * Special case non-existent lines and the first line of an empty
+	 * file.  In both cases, the cursor position is 0, but corrected
+	 * for the O_NUMBER field if it was displayed.
 	 */
-	if ((p = file_gline(sp, ep, smp->lno, &len)) == NULL || len == 0) {
+	if (p == NULL || len == 0) {
 		/* Fill in the cursor. */
 		if (yp != NULL && smp->lno == sp->lno) {
 			*yp = smp - HMAP;
-			*xp = O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0;
+			*xp = sp->cols - cols_per_screen;
 		}
 
 		/* If the line is on the screen, quit. */
@@ -138,15 +144,9 @@ svi_line(sp, ep, smp, yp, xp)
 		smp->c_sboff = smp->c_eboff = 0;
 		smp->c_scoff = smp->c_eclen = 0;
 
-		if (file_lline(sp, ep, &lno))
-			goto err;
-		if (smp->lno > lno) {
+		if (p == NULL) {
 			ADDCH(smp->lno == 1 ?
 			    listset && skip_screens == 0 ? '$' : ' ' : '~');
-		} else if (p == NULL) {
-			GETLINE_ERR(sp, smp->lno);
-err:			MOVEA(sp, oldy, oldx);
-			return (1);
 		} else if (listset && skip_screens == 0)
 			ADDCH('$');
 		clrtoeol();
@@ -346,6 +346,60 @@ err:			MOVEA(sp, oldy, oldx);
 
 ret:	if (reverse_video)
 		standend();
+	MOVEA(sp, oldy, oldx);
+	return (0);
+}
+
+/*
+ * svi_number --
+ *	Repaint the numbers on all the lines.
+ */
+int
+svi_number(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	SMAP *smp;
+	recno_t lno;
+	size_t oldy, oldx;
+	char *p, nbuf[10];
+
+	/*
+	 * Try and avoid getting the last line in the file, by getting the
+	 * line after the last line in the screen -- if it exists, we know
+	 * we have to to number all the lines in the screen.  Get the one
+	 * after the last instead of the last, so that the info line doesn't
+	 * fool us.
+	 *
+	 * If that test fails, we have to check each line for existence.
+	 *
+	 * XXX
+	 * The problem is that file_lline will lie, and tell us that the
+	 * info line is the last line in the file.
+	 */
+	if ((p = file_gline(sp, ep, TMAP->lno - 1, NULL)) != NULL)
+		lno = TMAP->lno + 1;
+
+	getyx(stdscr, oldy, oldx);
+	for (smp = HMAP; smp <= TMAP; ++smp) {
+		if (smp->off != 1)
+			continue;
+		if (ISINFOLINE(sp, smp))
+			break;
+		if (smp->lno != 1)
+			if (p != NULL) {
+				if (smp->lno > lno)
+					break;
+			} else {
+				if ((p =
+				    file_gline(sp, ep, smp->lno, NULL)) == NULL)
+					break;
+				p = NULL;
+			}
+		MOVE(sp, smp - HMAP, 0);
+		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
+		ADDSTR(nbuf);
+	}
 	MOVEA(sp, oldy, oldx);
 	return (0);
 }

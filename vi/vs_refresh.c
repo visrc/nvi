@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.33 1993/11/19 10:55:44 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:55:44 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.34 1993/11/22 17:32:49 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:32:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ svi_refresh(sp, ep)
 	EXF *ep;
 {
 	SCR *tsp;
+	u_int paintbits;
 
 	/*
 	 * 1: Resize the screen.
@@ -62,13 +63,17 @@ svi_refresh(sp, ep)
 	 * 2: Refresh related screens.
 	 *
 	 * If related screens share a view into a file, they may have been
-	 * modified as well.  Refresh them if the dirty bit is set.
+	 * modified as well.  Refresh them if any paint or dirty bits are
+	 * set.
 	 */
+	paintbits = S_REDRAW | S_REFORMAT | S_REFRESH;
+	if (O_ISSET(sp, O_NUMBER))
+		paintbits |= S_RENUMBER;
 	for (tsp = sp->gp->dq.cqh_first;
 	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 		if (sp != tsp &&
-		    (F_ISSET(tsp, S_REDRAW | S_REFORMAT | S_REFRESH) ||
-		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY))) {
+		    (F_ISSET(tsp, paintbits) ||
+		    ep == tsp->ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY))) {
 			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
@@ -101,16 +106,20 @@ svi_paint(sp, ep)
 {
 	CHNAME const *cname;
 	SMAP *smp, tmp;
+	SVI_PRIVATE *svp;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
-	int ch;
+	int ch, didpaint;
 	char *p;
 
 #define	 LNO	sp->lno
-#define	OLNO	sp->olno
+#define	OLNO	svp->olno
 #define	 CNO	sp->cno
-#define	OCNO	sp->ocno
-#define	SCNO	sp->sc_col
+#define	OCNO	svp->ocno
+#define	SCNO	svp->sc_col
+
+	didpaint = 0;
+	svp = SVP(sp);
 
 	/*
 	 * 1: Reformat the lines.
@@ -511,18 +520,26 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		}
 	}
 
-fast:	getyx(stdscr, y, x);		/* Just move the cursor. */
-	y -= sp->woff;			/* Correct for split screens. */
-	goto update;
-
-slow:	/* Find the current line in the map. */
-	for (smp = HMAP; smp->lno != LNO; ++smp);
+	/*
+	 * 4c: Fast cursor update.
+	 *
+	 * Retrieve the current cursor position, and correct it
+	 * for split screens.
+	 */
+fast:	getyx(stdscr, y, x);
+	y -= sp->woff;
+	goto number;
 
 	/*
-	 * If doing left-right scrolling and the cursor movement has changed
-	 * the screen being displayed, scroll it.  If we're painting the info
-	 * line, however, just scroll that single line.
+	 * 4d: Slow cursor update.
+	 *
+	 * Walk through the map and find the current line.  If doing left-right
+	 * scrolling and the cursor movement has changed the screen displayed,
+	 * scroll the screen left or right, unless we're updating the info line
+	 * in which case we just scroll that one line.  Then update the screen
+	 * lines for this file line until we have a new screen cursor position.
 	 */
+slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = svi_screens(sp, ep, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
@@ -534,36 +551,29 @@ slow:	/* Find the current line in the map. */
 			goto paint;
 		}
 	}
-
-	/*
-	 * Update screen lines for this file line until we have a new
-	 * screen cursor position.
-	 */
 	for (y = -1; smp <= TMAP && smp->lno == LNO; ++smp) {
 		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
 		if (y != -1)
 			break;
 	}
-
-	/* Not too bad, move the cursor. */
-	goto update;
+	goto number;
 
 	/*
-	 * Lost big, do what you have to do.  We flush the cache since
-	 * S_REDRAW gets set when the screen isn't worth fixing, and
-	 * it's simpler to just repaint.  So, don't trust anything that
-	 * we think we know about it.
+	 * 5: Repaint the entire screen.
+	 *
+	 * Lost big, do what you have to do.  We flush the cache as S_REDRAW
+	 * gets set when the screen isn't worth fixing, and it's simpler to
+	 * repaint.  So, don't trust anything that we think we know about it.
 	 */
 paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
 	for (smp = HMAP; smp <= TMAP; ++smp)
 		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
-
 	/*
-	 * If it's a small screen and we're redrawing, clear the unused
-	 * lines, ex may have overwritten them.
+	 * If it's a small screen and we're redrawing, clear the unused lines,
+	 * ex may have overwritten them.
 	 */
 	if (F_ISSET(sp, S_REDRAW)) {
 		if (ISSMALLSCREEN(sp))
@@ -574,11 +584,26 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		F_CLR(sp, S_REDRAW);
 	}
 
-	/* Update saved information. */
-update:	OCNO = CNO;
-	OLNO = LNO;
+	didpaint = 1;
 
-	/* Refresh the screen. */
+	/*
+	 * 6: Repaint the line numbers.
+	 *
+	 * If O_NUMBER is set and the S_RENUMBER bit is set, and we didn't
+	 * repaint the screen, repaint all of the line numbers, they've
+	 * changed.
+	 */
+number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
+		if (svi_number(sp, ep))
+			return (1);
+		F_CLR(sp, S_RENUMBER);
+	}
+
+	/*
+	 * 7: Refresh the screen.
+	 *
+	 * If the screen was corrupted, refresh it.
+	 */
 	if (F_ISSET(sp, S_REFRESH)) {
 		wrefresh(curscr);
 		F_CLR(sp, S_REFRESH);
@@ -615,6 +640,10 @@ update:	OCNO = CNO;
 			else if (!F_ISSET(sp, S_UPDATE_MODE))
 				svi_modeline(sp, ep);
 	}
+
+	/* Update saved information. */
+	OCNO = CNO;
+	OLNO = LNO;
 
 	/* Place the cursor. */
 	MOVE(sp, y, SCNO);
