@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.5 1996/02/25 12:14:16 bostic Exp $ (Berkeley) $Date: 1996/02/25 12:14:16 $ */
+/* $Id: acconfig.h,v 8.6 1996/02/25 18:23:18 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:23:18 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -29,6 +29,9 @@
 
 /* Define if you have the curses(3) tigetstr/tigetnum functions. */
 #undef HAVE_CURSES_TIGETSTR
+
+/* Define if you have the DB __hash_open call in the C library. */
+#undef HAVE_DB_HASH_OPEN
 
 /* Define if you have the chsize(2) system call.
 #undef HAVE_FTRUNCATE_CHSIZE
