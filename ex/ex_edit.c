@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.9 1993/09/29 16:16:58 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:16:58 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.10 1993/11/20 10:05:37 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,14 +34,23 @@ ex_edit(sp, ep, cmdp)
 {
 	FREF *frp;
 
+	frp = sp->frp;
 	switch (cmdp->argc) {
 	case 0:
-		frp = sp->frp;
+		/*
+		 * If the name has been changed, we edit that file, not
+		 * the original name.
+		 */
+		if (frp->cname != NULL) {
+			if ((frp = file_add(sp, frp, frp->cname, 1)) == NULL)
+				return (1);
+			set_alt_name(sp, sp->frp->cname);
+		}
 		break;
 	case 1:
 		if ((frp = file_add(sp, sp->frp, cmdp->argv[0], 1)) == NULL)
 			return (1);
-		set_alt_fname(sp, cmdp->argv[0]);
+		set_alt_name(sp, cmdp->argv[0]);
 		break;
 	default:
 		abort();

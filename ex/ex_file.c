@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 8.4 1993/11/13 18:02:22 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:22 $";
+static char sccsid[] = "$Id: ex_file.c,v 8.5 1993/11/20 10:05:38 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,28 +31,31 @@ ex_file(sp, ep, cmdp)
 	FREF *frp;
 	char *p;
 
-	switch(cmdp->argc) {
+	switch (cmdp->argc) {
 	case 0:
 		break;
 	case 1:
+		frp = sp->frp;
+
+		/* Fill in the changed name field. */
 		if ((p = strdup((char *)cmdp->argv[0])) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
-		frp = sp->frp;
-		if (F_ISSET(frp, FR_NONAME)) {
-			F_CLR(frp, FR_NONAME);
-			F_SET(frp, FR_FREE_TNAME);
-		} else {
-			set_alt_fname(sp, frp->fname);
-			FREE(frp->fname, strlen(frp->fname));
-		}
-		frp->fname = p;
-
-		F_SET(frp, FR_NAMECHANGED);
+		if (frp->cname != NULL)
+			FREE(frp->cname, frp->clen);
+		frp->cname = p;
+		frp->clen = strlen(p);
 
 		/* The read-only bit follows the file name; clear it. */
 		F_CLR(frp, FR_RDONLY);
+
+		/* Have to force a write if the file exists, next time. */
+		F_CLR(frp, FR_CHANGEWRITE);
+
+		/* If already have a file name, it becomes the alternate. */
+		if (frp->cname != NULL || frp->name != NULL)
+			set_alt_name(sp, FILENAME(frp));
 		break;
 	default:
 		abort();

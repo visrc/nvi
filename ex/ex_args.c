@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.7 1993/11/18 08:17:37 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:37 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.8 1993/11/20 10:05:34 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,9 +106,19 @@ ex_rew(sp, ep, cmdp)
 
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
-	/* Turn off the edited bit. */
-	for (tfrp = sp->frefq.tqh_first; tfrp != NULL; tfrp = tfrp->q.tqe_next)
+	/*
+	 * !!!
+	 * Historic practice, turn off the edited bit
+	 * and discard any name changes.
+	 */
+	for (tfrp = sp->frefq.tqh_first;
+	    tfrp != NULL; tfrp = tfrp->q.tqe_next) {
 		F_CLR(tfrp, FR_EDITED);
+		if (tfrp->cname != NULL) {
+			FREE(tfrp->cname, tfrp->clen);
+			tfrp->cname = NULL;
+		}
+	}
 
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
@@ -127,12 +137,14 @@ ex_args(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	FREF *frp;
-	int cnt, col, len, sep;
+	int cnt, col, iscur, len, nlen, sep;
+	char *name;
 
 	col = len = sep = 0;
 	for (cnt = 1,
 	    frp = sp->frefq.tqh_first; frp != NULL; frp = frp->q.tqe_next) {
 		/*
+		 * !!!
 		 * Ignore files that aren't in the "argument" list unless
 		 * they are the one we're currently editing.  I'm not sure
 		 * this is right, but the historic vi behavior of not
@@ -141,7 +153,15 @@ ex_args(sp, ep, cmdp)
 		 */
 		if (F_ISSET(frp, FR_IGNORE) && frp != sp->frp)
 			continue;
-		col += len = frp->nlen + sep + (frp == sp->frp ? 2 : 0);
+		if (frp->name == NULL) {
+			name = frp->tname;
+			nlen = frp->tlen;
+		} else {
+			name = frp->name;
+			nlen = frp->nlen;
+		}
+		iscur = frp == sp->frp && frp->cname == NULL;
+extra:		col += len = nlen + sep + (iscur ? 2 : 0);
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
@@ -150,11 +170,27 @@ ex_args(sp, ep, cmdp)
 			sep = 1;
 			(void)ex_printf(EXCOOKIE, " ");
 		}
-		if (frp == sp->frp)
-			(void)ex_printf(EXCOOKIE, "[%s]", frp->fname);
-		else
-			(void)ex_printf(EXCOOKIE, "%s", frp->fname);
 		++cnt;
+
+		/*
+		 * !!!
+		 * Historic practice was to display the original name of the
+		 * file if the user had used an file command to chane the file
+		 * name.  Confusing, at best.  We show both names: the original
+		 * as that's what the user will get in a rewind, and the new
+		 * one as that's what the user is actually editing now.
+		 */
+		if (iscur)
+			(void)ex_printf(EXCOOKIE, "[%s]", name);
+		else {
+			(void)ex_printf(EXCOOKIE, "%s", name);
+			if (frp == sp->frp) {
+				name = frp->cname;
+				nlen = frp->clen;
+				iscur = 1;
+				goto extra;
+			}
+		}
 	}
 	if (cnt == 1)
 		(void)ex_printf(EXCOOKIE, "No files.\n");

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.17 1993/11/18 13:51:14 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:51:14 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.18 1993/11/20 10:06:25 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:06:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,7 +184,7 @@ svi_split(sp, argv)
 			if (file_add(tsp, NULL, *argv, 0) == NULL)
 				goto mem3;
 	} else {
-		if (file_add(tsp, NULL, sp->frp->fname, 0) == NULL)
+		if (file_add(tsp, NULL, FILENAME(sp->frp), 0) == NULL)
 			goto mem3;
 	}
 
@@ -332,21 +332,21 @@ svi_join(csp, nsp)
  *	Background the current screen, and foreground a new one.
  */
 int
-svi_fg(csp, fname)
+svi_fg(csp, name)
 	SCR *csp;
-	char *fname;
+	char *name;
 {
 	SCR *sp;
 
-	if (svi_swap(csp, &sp, fname))
+	if (svi_swap(csp, &sp, name))
 		return (1);
 	if (sp == NULL) {
-		if (fname == NULL)
+		if (name == NULL)
 			msgq(csp, M_ERR, "There are no background screens.");
 		else
 			msgq(csp, M_ERR,
 		    "There's no background screen editing a file named %s.",
-			    fname);
+			    name);
 		return (1);
 	}
 	return (0);
@@ -357,17 +357,17 @@ svi_fg(csp, fname)
  *	Swap the current screen with a hidden one.
  */
 int
-svi_swap(csp, nsp, fname)
+svi_swap(csp, nsp, name)
 	SCR *csp, **nsp;
-	char *fname;
+	char *name;
 {
 	SCR *sp;
 	int issmallscreen;
 
-	/* Find the screen, or, if fname is NULL, the first screen. */
+	/* Find the screen, or, if name is NULL, the first screen. */
 	for (sp = csp->gp->hq.cqh_first;
 	    sp != (void *)&csp->gp->hq; sp = sp->q.cqe_next)
-		if (fname == NULL || !strcmp(sp->frp->fname, fname))
+		if (name == NULL || !strcmp(FILENAME(sp->frp), name))
 			break;
 	if (sp == (void *)&csp->gp->hq) {
 		*nsp = NULL;

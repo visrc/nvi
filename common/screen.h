@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.63 1993/11/19 10:54:45 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:54:45 $
+ *	$Id: screen.h,v 8.64 1993/11/20 10:05:23 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:23 $
  */
 
 /*
@@ -27,11 +27,14 @@ enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
 
 /*
- * Structure for holding file references.  This structure contains the
- * "name" of a file, including the state of the name and if it's backed
- * by a temporary file.  Each SCR structure contains a linked list of
- * these (the user's argument list) as well as pointers for the current,
- * previous and next files.
+ * Structure for holding file references.  Each SCR structure contains a
+ * linked list of these (the user's argument list) as well as pointers to
+ * the current and previous files.  The structure contains the name of the
+ * file, along with the information that follows the name.  A file has up
+ * to three "names".  The tname field is the path of the temporary backing
+ * file, if any.  The name field is the name the user originally used to
+ * specify the file to be edited.  The cname field is the changed name if
+ * the user changed the name.
  *
  * Note that the read-only bit follows the file name, not the file itself.
  *
@@ -40,24 +43,34 @@ enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
  */
 struct _fref {
 	TAILQ_ENTRY(_fref) q;		/* Linked list of file references. */
-	char	*tname;			/* Temporary file name. */
-	char	*fname;			/* File name. */
+	char	*cname;			/* Changed file name. */
+	size_t	 clen;			/* Changed file name length. */
+	char	*name;			/* File name. */
 	size_t	 nlen;			/* File name length. */
+	char	*tname;			/* Temporary file name. */
+	size_t	 tlen;			/* Temporary file name length. */
+
 	recno_t	 lno;			/* 1-N: file cursor line. */
 	size_t	 cno;			/* 0-N: file cursor column. */
 	time_t	 mtime;			/* Last modification time. */
 
-#define	FR_CURSORSET	0x001		/* If lno/cno valid. */
-#define	FR_EDITED	0x002		/* If the file was ever edited. */
-#define	FR_FREE_TNAME	0x004		/* Free the tname field. */
+#define	FR_CHANGEWRITE	0x001		/* Name changed and then written. */
+#define	FR_CURSORSET	0x002		/* If lno/cno valid. */
+#define	FR_EDITED	0x004		/* If the file was ever edited. */
 #define	FR_IGNORE	0x008		/* File isn't part of argument list. */
-#define	FR_NAMECHANGED	0x010		/* File name was changed. */
-#define	FR_NEWFILE	0x020		/* File doesn't really exist yet. */
-#define	FR_NONAME	0x040		/* File has no name. */
-#define	FR_RDONLY	0x080		/* File is read-only. */
-#define	FR_UNLINK_TFILE	0x100		/* Unlink the temporary file. */
+#define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
+#define	FR_RDONLY	0x020		/* File is read-only. */
 	u_int	 flags;
 };
+
+/*
+ * There's a file name hierarchy -- if the user has changed the name, we
+ * use it, otherwise, we use the original name, if there was one, othewise
+ * use the temporary name.
+ */
+#define	FILENAME(frp)							\
+	((frp)->cname != NULL) ? (frp)->cname :				\
+	((frp)->name != NULL) ? (frp)->name : (frp)->tname
 
 /*
  * SCR --
@@ -137,7 +150,7 @@ struct _scr {
 	void	*xaw_private;		/* Vi XAW screen private area. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
-	char	*alt_fname;		/* Ex/vi: alternate file name. */
+	char	*alt_name;		/* Ex/vi: alternate file name. */
 
 					/* Ex/vi: search/substitute info. */
 	regex_t	 sre;			/* Last search RE. */

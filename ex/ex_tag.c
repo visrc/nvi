@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.20 1993/11/18 08:17:45 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:45 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.21 1993/11/20 10:05:42 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,18 +48,18 @@ ex_tagfirst(sp, tagarg)
 	long tl;
 	u_int flags;
 	int sval;
-	char *p, *tag, *fname, *search;
+	char *p, *tag, *name, *search;
 
 	/* Taglength may limit the number of characters. */
 	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(tagarg) > tl)
 		tagarg[tl] = '\0';
 
 	/* Get the tag information. */
-	if (tag_get(sp, tagarg, &tag, &fname, &search))
+	if (tag_get(sp, tagarg, &tag, &name, &search))
 		return (1);
 
 	/* Create the file entry. */
-	if ((frp = file_add(sp, NULL, fname, 0)) == NULL)
+	if ((frp = file_add(sp, NULL, name, 0)) == NULL)
 		return (1);
 	if (file_init(sp, frp, NULL, 0))
 		return (1);
@@ -121,7 +121,7 @@ ex_tagpush(sp, ep, cmdp)
 	u_int flags;
 	int sval;
 	long tl;
-	char *fname, *p, *search, *tag;
+	char *name, *p, *search, *tag;
 	
 	exp = EXP(sp);
 	switch (cmdp->argc) {
@@ -148,7 +148,7 @@ ex_tagpush(sp, ep, cmdp)
 		exp->tlast[tl] = '\0';
 
 	/* Get the tag information. */
-	if (tag_get(sp, exp->tlast, &tag, &fname, &search))
+	if (tag_get(sp, exp->tlast, &tag, &name, &search))
 		return (1);
 
 	/* Save enough information that we can get back. */
@@ -157,7 +157,7 @@ ex_tagpush(sp, ep, cmdp)
 	ttag.cno = sp->cno;
 
 	/* Get an FREF structure. */
-	if ((frp = file_add(sp, sp->frp, fname, 1)) == NULL) {
+	if ((frp = file_add(sp, sp->frp, name, 1)) == NULL) {
 		FREE(tag, strlen(tag));
 		return (1);
 	}
@@ -337,7 +337,7 @@ ex_tagalloc(sp, str)
 	exp = EXP(sp);
 	while ((tp = exp->tagfq.tqh_first) != NULL) {
 		TAILQ_REMOVE(&exp->tagfq, tp, q);
-		FREE(tp->fname, strlen(tp->fname) + 1);
+		FREE(tp->name, strlen(tp->name) + 1);
 		FREE(tp, sizeof(TAGF));
 	}
 
@@ -346,14 +346,14 @@ ex_tagalloc(sp, str)
 		if (*p == '\0' || isblank(*p)) {
 			if ((len = p - t) > 1) {
 				if ((tp = malloc(sizeof(TAGF))) == NULL ||
-				    (tp->fname = malloc(len + 1)) == NULL) {
+				    (tp->name = malloc(len + 1)) == NULL) {
 					if (tp != NULL)
 						FREE(tp, sizeof(TAGF));
 					msgq(sp, M_SYSERR, NULL);
 					return (1);
 				}
-				memmove(tp->fname, t, len);
-				tp->fname[len] = '\0';
+				memmove(tp->name, t, len);
+				tp->name[len] = '\0';
 				tp->flags = 0;
 				TAILQ_INSERT_TAIL(&exp->tagfq, tp, q);
 			}
@@ -385,7 +385,7 @@ ex_tagfree(sp)
 	}
 	while ((tfp = exp->tagfq.tqh_first) != NULL) {
 		TAILQ_REMOVE(&exp->tagfq, tfp, q);
-		FREE(tfp->fname, strlen(tfp->fname) + 1);
+		FREE(tfp->name, strlen(tfp->name) + 1);
 		FREE(tfp, sizeof(TAGF));
 	}
 	FREE(exp->tlast, strlen(exp->tlast) + 1);
@@ -420,7 +420,7 @@ ex_tagcopy(orig, sp)
 		if ((tfp = malloc(sizeof(TAGF))) == NULL)
 			goto nomem;
 		*tfp = *atfp;
-		if ((tfp->fname = strdup(atfp->fname)) == NULL)
+		if ((tfp->name = strdup(atfp->name)) == NULL)
 			goto nomem;
 		TAILQ_INSERT_TAIL(&nexp->tagfq, tfp, q);
 	}
@@ -458,14 +458,14 @@ tag_get(sp, tag, tagp, filep, searchp)
 	    tfp != NULL && p == NULL; tfp = tfp->q.tqe_next) {
 		errno = 0;
 		F_CLR(tfp, TAGF_DNE);
-		if (search(sp, tfp->fname, tag, &p))
+		if (search(sp, tfp->name, tag, &p))
 			if (errno == ENOENT) {
 				if (!F_ISSET(tfp, TAGF_DNE_WARN)) {
 					dne = 1;
 					F_SET(tfp, TAGF_DNE);
 				}
 			} else
-				msgq(sp, M_SYSERR, tfp->fname);
+				msgq(sp, M_SYSERR, tfp->name);
 	}
 	
 	if (p == NULL) {
@@ -475,7 +475,7 @@ tag_get(sp, tag, tagp, filep, searchp)
 			    tfp != NULL; tfp = tfp->q.tqe_next)
 				if (F_ISSET(tfp, TAGF_DNE)) {
 					errno = ENOENT;
-					msgq(sp, M_SYSERR, tfp->fname);
+					msgq(sp, M_SYSERR, tfp->name);
 					F_SET(tfp, TAGF_DNE_WARN);
 				}
 		return (1);
@@ -497,7 +497,7 @@ tag_get(sp, tag, tagp, filep, searchp)
 	*searchp = p;
 	if (*p == '\0') {
 malformed:	free(*tagp);
-		msgq(sp, M_ERR, "%s: corrupted tag in %s.", tag, tfp->fname);
+		msgq(sp, M_ERR, "%s: corrupted tag in %s.", tag, tfp->name);
 		return (1);
 	}
 	return (0);
@@ -512,15 +512,15 @@ malformed:	free(*tagp);
  *	Search a file for a tag.
  */
 static int
-search(sp, fname, tname, tag)
+search(sp, name, tname, tag)
 	SCR *sp;
-	char *fname, *tname, **tag;
+	char *name, *tname, **tag;
 {
 	struct stat sb;
 	int fd, len;
 	char *endp, *back, *front, *map, *p;
 
-	if ((fd = open(fname, O_RDONLY, 0)) < 0)
+	if ((fd = open(name, O_RDONLY, 0)) < 0)
 		return (1);
 
 	/*

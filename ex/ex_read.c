@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.12 1993/11/13 18:02:26 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:26 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.13 1993/11/20 10:05:40 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ ex_read(sp, ep, cmdp)
 	recno_t nlines;
 	size_t blen, len;
 	int rval;
-	char *bp, *fname;
+	char *bp, *name;
 
 	/* If "read !", it's a pipe from a utility. */
 	if (F_ISSET(cmdp, E_FORCE)) {
@@ -64,23 +64,23 @@ ex_read(sp, ep, cmdp)
 
 	/* If no file arguments, read the alternate file. */
 	if (cmdp->argv[0][0] == '\0') {
-		if (sp->alt_fname == NULL) {
+		if (sp->alt_name == NULL) {
 			msgq(sp, M_ERR,
 			    "No default filename from which to read.");
 			return (1);
 		}
-		fname = sp->alt_fname;
+		name = sp->alt_name;
 	} else {
 		if (argv_exp2(sp, ep, cmdp, cmdp->argv[0], 0))
 			return (1);
 
 		switch (cmdp->argc) {
 		case 0:
-			fname = sp->frp->fname;
+			name = FILENAME(sp->frp);
 			break;
 		case 1:
-			fname = (char *)cmdp->argv[0];
-			set_alt_fname(sp, fname);
+			name = (char *)cmdp->argv[0];
+			set_alt_name(sp, name);
 			break;
 		default:
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
@@ -90,12 +90,12 @@ ex_read(sp, ep, cmdp)
 
 	/*
 	 * !!!
-	 * Vi, historically did not permit reads from non-regular files,
+	 * Historically, vi did not permit reads from non-regular files,
 	 * nor did it distinguish between "read !" and "read!", so there
 	 * was no way to "force" it.
 	 */
-	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		msgq(sp, M_SYSERR, fname);
+	if ((fp = fopen(name, "r")) == NULL || fstat(fileno(fp), &sb)) {
+		msgq(sp, M_SYSERR, name);
 		return (1);
 	}
 	if (!S_ISREG(sb.st_mode)) {
@@ -104,7 +104,7 @@ ex_read(sp, ep, cmdp)
 		return (1);
 	}
 
-	rval = ex_readfp(sp, ep, fname, fp, &cmdp->addr1, &nlines, 1);
+	rval = ex_readfp(sp, ep, name, fp, &cmdp->addr1, &nlines, 1);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read
@@ -127,10 +127,10 @@ ex_read(sp, ep, cmdp)
  *	Read lines into the file.
  */
 int
-ex_readfp(sp, ep, fname, fp, fm, nlinesp, success_msg)
+ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	SCR *sp;
 	EXF *ep;
-	char *fname;
+	char *name;
 	FILE *fp;
 	MARK *fm;
 	recno_t *nlinesp;
@@ -158,12 +158,12 @@ ex_readfp(sp, ep, fname, fp, fm, nlinesp, success_msg)
 	}
 
 	if (ferror(fp)) {
-		msgq(sp, M_SYSERR, fname);
+		msgq(sp, M_SYSERR, name);
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		msgq(sp, M_SYSERR, fname);
+		msgq(sp, M_SYSERR, name);
 		return (1);
 	}
 
@@ -177,7 +177,7 @@ ex_readfp(sp, ep, fname, fp, fm, nlinesp, success_msg)
 
 	if (success_msg)
 		msgq(sp, M_INFO, "%s: %lu line%s, %lu characters.",
-		    fname, nlines, nlines == 1 ? "" : "s", ccnt);
+		    name, nlines, nlines == 1 ? "" : "s", ccnt);
 
 	return (0);
 }

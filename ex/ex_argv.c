@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.16 1993/11/18 08:17:40 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:40 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.17 1993/11/20 10:05:35 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -255,28 +255,53 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 			F_SET(cmdp, E_MODIFY);
 			break;
 		case '%':
-			if (F_ISSET(sp->frp, FR_NONAME)) {
+			if (sp->frp->cname == NULL && sp->frp->name == NULL) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for %%.");
 				return (1);
 			}
-			len += sp->frp->nlen;
+			/*
+			 * In other words:
+			 *	t = FILENAME(sp->frp);
+			 */
+			if (sp->frp->cname != NULL) {
+				t = sp->frp->cname;
+				tlen = sp->frp->clen;
+			} else {
+				t = sp->frp->name;
+				tlen =  sp->frp->nlen;
+			}
+			len += tlen;
 			ADD_SPACE(sp, bp, blen, len);
-			memmove(p, sp->frp->fname, sp->frp->nlen);
-			p += sp->frp->nlen;
+			memmove(p, t, tlen);
+			p += tlen;
 			F_SET(cmdp, E_MODIFY);
 			break;
 		case '#':
-			if (sp->alt_fname != NULL)
-				tlen = strlen(t = sp->alt_fname);
-			else if (sp->p_frp != NULL &&
-			     !F_ISSET(sp->p_frp, FR_NONAME)) {
-				t = sp->p_frp->fname;
-				tlen = sp->p_frp->nlen;
-			} else {
+			/*
+			 * Try the alternate file name first, then the
+			 * previously edited file.
+			 */
+			if (sp->alt_name == NULL && (sp->p_frp == NULL ||
+			    sp->frp->cname == NULL && sp->frp->name == NULL)) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for #.");
 				return (1);
+			}
+			/*
+			 * In other words:
+			 *	t = sp->alt_name == NULL ?
+			 *	    FILENAME(sp->frp): sp->alt_name;
+			 */
+			if (sp->alt_name != NULL) {
+				t = sp->alt_name;
+				tlen = strlen(t);
+			} else if (sp->frp->cname != NULL) {
+				t = sp->frp->cname;
+				tlen = sp->frp->clen;
+			} else {
+				t = sp->frp->name;
+				tlen =  sp->frp->nlen;
 			}
 			len += tlen;
 			ADD_SPACE(sp, bp, blen, len);

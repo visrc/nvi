@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.38 1993/11/18 13:50:25 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:25 $";
+static char sccsid[] = "$Id: recover.c,v 8.39 1993/11/20 10:05:20 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -75,10 +75,10 @@ static void	rcv_syncit __P((SCR *, int));
  *	Build a file name that will be used as the recovery file.
  */
 int
-rcv_tmp(sp, ep, fname)
+rcv_tmp(sp, ep, name)
 	SCR *sp;
 	EXF *ep;
-	char *fname;
+	char *name;
 {
 	struct stat sb;
 	int fd;
@@ -101,7 +101,7 @@ rcv_tmp(sp, ep, fname)
 	}
 		
 	/* Newlines delimit the mail messages. */
-	for (p = fname; *p; ++p)
+	for (p = name; *p; ++p)
 		if (*p == '\n') {
 			msgq(sp, M_ERR,
 		    "Files with newlines in the name are unrecoverable.");
@@ -216,7 +216,7 @@ rcv_mailfile(sp, ep)
 	FILE *fp;
 	time_t now;
 	int fd;
-	char *p, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
+	char *p, *t, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
 		msgq(sp, M_ERR, "Information on user id %u not found.", uid);
@@ -248,8 +248,9 @@ rcv_mailfile(sp, ep)
 		return (1);
 	}
 	
-	if ((p = strrchr(sp->frp->fname, '/')) == NULL)
-		p = sp->frp->fname;
+	t = FILENAME(sp->frp);
+	if ((p = strrchr(t, '/')) == NULL)
+		p = t;
 	else
 		++p;
 	(void)time(&now);
@@ -266,8 +267,8 @@ rcv_mailfile(sp, ep)
 	    "On ", ctime(&now),
 	    ", the user ", pw->pw_name,
 	    "was editing a file named ", p);
-	if (p != sp->frp->fname)
-		(void)fprintf(fp, " (%s)", sp->frp->fname);
+	if (p != t)
+		(void)fprintf(fp, " (%s)", t);
 	(void)fprintf(fp, "\n%s%s%s\n",
 	    "on the machine ", host, ", when it was saved for\nrecovery.");
 	(void)fprintf(fp, "\n%s\n%s\n%s\n\n",

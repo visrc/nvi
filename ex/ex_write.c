@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.13 1993/11/13 18:02:33 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:33 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.14 1993/11/20 10:05:44 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,7 +107,7 @@ exwr(sp, ep, cmdp, cmd)
 	register char *p;
 	MARK rm;
 	int flags;
-	char *fname;
+	char *name;
 
 	/* All write commands can have an associated '!'. */
 	LF_INIT(FS_POSSIBLE);
@@ -147,17 +147,17 @@ exwr(sp, ep, cmdp, cmd)
 		for (p += 2; *p && isblank(*p); ++p);
 	}
 
-	/* Build an argv so we get and argument count and file expansion. */
+	/* Build an argv so we get an argument count and file expansion. */
 	if (argv_exp2(sp, ep, cmdp, p, 0))
 		return (1);
 
-	switch(cmdp->argc) {
+	switch (cmdp->argc) {
 	case 0:
-		fname = sp->frp->fname;
+		name = NULL;
 		break;
 	case 1:
-		fname = (char *)cmdp->argv[0];
-		set_alt_fname(sp, fname);
+		name = (char *)cmdp->argv[0];
+		set_alt_name(sp, name);
 		break;
 	default:
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
@@ -166,7 +166,7 @@ exwr(sp, ep, cmdp, cmd)
 
 	if (F_ISSET(cmdp, E_ADDR2_ALL))
 		LF_SET(FS_ALL);
-	return (file_write(sp, ep, &cmdp->addr1, &cmdp->addr2, fname, flags));
+	return (file_write(sp, ep, &cmdp->addr1, &cmdp->addr2, name, flags));
 }
 
 /*
@@ -174,10 +174,10 @@ exwr(sp, ep, cmdp, cmd)
  *	Write a range of lines to a FILE *.
  */
 int
-ex_writefp(sp, ep, fname, fp, fm, tm, nlno, nch)
+ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	SCR *sp;
 	EXF *ep;
-	char *fname;
+	char *name;
 	FILE *fp;
 	MARK *fm, *tm;
 	u_long *nlno, *nch;
@@ -210,7 +210,7 @@ ex_writefp(sp, ep, fname, fp, fm, tm, nlno, nch)
 			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
 				break;
 			if (fwrite(p, 1, len, fp) != len) {
-				msgq(sp, M_SYSERR, fname);
+				msgq(sp, M_SYSERR, name);
 				(void)fclose(fp);
 				return (1);
 			}
@@ -221,7 +221,7 @@ ex_writefp(sp, ep, fname, fp, fm, tm, nlno, nch)
 		}
 	if (fclose(fp)) {
 		if (!F_ISSET(ep, F_MULTILOCK))
-			msgq(sp, M_SYSERR, fname);
+			msgq(sp, M_SYSERR, name);
 		return (1);
 	}
 	if (nlno != NULL) {

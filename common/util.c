@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.22 1993/11/18 10:55:08 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:08 $";
+static char sccsid[] = "$Id: util.c,v 8.23 1993/11/20 10:05:25 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -397,7 +397,7 @@ set_window_size(sp, set_row, ign_env)
 }
 
 /*
- * set_alt_fname --
+ * set_alt_name --
  *	Set the alternate file name.
  *
  * Swap the alternate file name.  It's a routine because I wanted some place
@@ -414,13 +414,13 @@ set_window_size(sp, set_row, ign_env)
  * succeeds, it is set to the last file name that was edited.  Good fun.
  */
 void
-set_alt_fname(sp, fname)
+set_alt_name(sp, name)
 	SCR *sp;
-	char *fname;
+	char *name;
 {
-	if (sp->alt_fname != NULL)
-		FREE(sp->alt_fname, strlen(sp->alt_fname));
-	if ((sp->alt_fname = strdup(fname)) == NULL)
+	if (sp->alt_name != NULL)
+		FREE(sp->alt_name, strlen(sp->alt_name) + 1);
+	if ((sp->alt_name = strdup(name)) == NULL)
 		msgq(sp, M_SYSERR, NULL);
 }
 

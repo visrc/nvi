@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.25 1993/11/18 10:55:10 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:10 $
+ *	$Id: common.h,v 8.26 1993/11/20 10:05:27 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:27 $
  */
 
 /* System includes. */
@@ -168,7 +168,7 @@ char	*charname __P((SCR *, ARG_CHAR_T));
 void	 busy_off __P((SCR *));
 void	 busy_on __P((SCR *, int, char const *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
-void	 set_alt_fname __P((SCR *, char *));
+void	 set_alt_name __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int, int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));

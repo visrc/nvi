@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.38 1993/11/18 13:50:27 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:27 $";
+static char sccsid[] = "$Id: screen.c,v 8.39 1993/11/20 10:05:21 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,8 +80,8 @@ screen_init(orig, spp, flags)
 
 		sp->flags = flags;
 	} else {
-		if (orig->alt_fname != NULL &&
-		    (sp->alt_fname = strdup(orig->alt_fname)) == NULL)
+		if (orig->alt_name != NULL &&
+		    (sp->alt_name = strdup(orig->alt_name)) == NULL)
 			goto mem;
 
 		/* Retain all searching/substitution information. */
@@ -177,11 +177,16 @@ screen_end(sp)
 	/* Cleanup screen private information. */
 	(void)sp->s_end(sp);
 
-	/* Free remembered file names. */
+	/* Free FREF's. */
 	{ FREF *frp;
 		while ((frp = sp->frefq.tqh_first) != NULL) {
 			TAILQ_REMOVE(&sp->frefq, frp, q);
-			FREE(frp->fname, frp->nlen);
+			if (frp->cname != NULL)
+				FREE(frp->cname, frp->clen);
+			if (frp->name != NULL)
+				FREE(frp->name, frp->nlen);
+			if (frp->tname != NULL)
+				FREE(frp->tname, frp->tlen);
 			FREE(frp, sizeof(FREF));
 		}
 	}
@@ -194,8 +199,8 @@ screen_end(sp)
 		sscr_end(sp);
 
 	/* Free alternate file name. */
-	if (sp->alt_fname != NULL)
-		FREE(sp->alt_fname, strlen(sp->alt_fname) + 1);
+	if (sp->alt_name != NULL)
+		FREE(sp->alt_name, strlen(sp->alt_name) + 1);
 
 	/* Free up search information. */
 	if (sp->match != NULL)

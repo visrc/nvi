@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.5 1993/11/18 13:50:43 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:43 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.6 1993/11/20 10:05:41 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,7 @@ ex_sargs(sp, ep, cmdp)
 			sep = 1;
 			(void)ex_printf(EXCOOKIE, " ");
 		}
-		(void)ex_printf(EXCOOKIE, "%s", tsp->frp->fname);
+		(void)ex_printf(EXCOOKIE, "%s", FILENAME(tsp->frp));
 		++cnt;
 	}
 	(void)ex_printf(EXCOOKIE, "\n");
