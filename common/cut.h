@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.18 1993/04/19 15:22:58 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:22:58 $
+ *	$Id: cut.h,v 5.19 1993/04/20 18:39:20 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:39:20 $
  */
 
 typedef struct _cb {			/* Cut buffer. */
@@ -41,7 +41,8 @@ typedef struct _text {			/* Text: a linked list of lines. */
 
 /* Check to see if a cut buffer has contents. */
 #define	CBEMPTY(sp, buf, cb) {						\
-	if ((cb)->txthdr.next == &(cb)->txthdr) {			\
+	if ((cb)->txthdr.next == NULL ||				\
+	    (cb)->txthdr.next == &(cb)->txthdr) {			\
 		if (buf == DEFCB)					\
 			msgq(sp, M_ERR,					\
 			    "The default buffer is empty.");		\
@@ -61,7 +62,9 @@ typedef struct _text {			/* Text: a linked list of lines. */
 		msgq(sp, M_ERR, "Invalid cut buffer name.");		\
 		return (1);						\
 	}								\
-	cb = &sp->cuts[isupper(bname) ? tolower(bname) : bname];	\
+	if (isupper(bname))						\
+		(bname) = tolower(bname);				\
+	cb = &sp->cuts[bname];						\
 }
 
 /* Cut routines. */
