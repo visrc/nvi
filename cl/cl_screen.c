@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.3 1995/01/24 10:51:42 bostic Exp $ (Berkeley) $Date: 1995/01/24 10:51:42 $";
+static char sccsid[] = "$Id: cl_screen.c,v 8.4 1995/01/30 15:14:32 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:14:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,11 +194,11 @@ cl_init(sp)
 	svp->scr_end = cl_end;
 	svp->scr_insertln = cl_insertln;
 	svp->scr_inverse = cl_inverse;
+	svp->scr_linverse = cl_linverse;
 	svp->scr_move = cl_move;
 	svp->scr_refresh = cl_refresh;
 	svp->scr_restore = cl_restore;
 	svp->scr_size = cl_ssize;
-	svp->scr_winch = cl_winch;
 
 	F_SET(clp, CL_CURSES_INIT);
 	return (0);
