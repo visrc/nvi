@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.12 1993/04/06 11:44:49 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:49 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.13 1993/04/12 14:47:13 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:47:13 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -63,7 +63,7 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 	}
 	return (0);
 
-err:	msgq(sp, M_BELL, "Movement not possible");
+err:	msgq(sp, M_BERR, "Movement not possible");
 	for (p = HMAP; p < TMAP; ++p)
 		(void)svi_sm_next(sp, ep, p, p + 1);
 	return (1);
@@ -175,6 +175,40 @@ svi_sm_insert(sp, ep, lno)
 }
 
 /*
+ * svi_sm_reset --
+ *	Reset a line in the SMAP.
+ */
+int
+svi_sm_reset(sp, ep, lno)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;
+{
+	SMAP *p, *t;
+	size_t cnt;
+
+	/*
+	 * See if the number of screen rows taken up by the old display
+	 * for the line is the same as the number needed for the new one.
+	 * If so, simply repaint, otherwise do it the hard way.
+	 */
+        for (p = HMAP; p->lno != lno; ++p);
+	for (cnt = 0, t = p; t->lno == lno && t <= TMAP; ++cnt, ++t);
+	if (cnt == svi_screens(sp, ep, lno, NULL)) {
+		do {
+			if (svi_line(sp, ep, p, NULL, 0, NULL, NULL))
+				return (1);
+		} while (++p < t);
+		return (0);
+	}
+	if (svi_sm_delete(sp, ep, lno))
+		return (1);
+	if (svi_sm_insert(sp, ep, lno))
+		return (1);
+	return (0);
+}
+
+/*
  * svi_sm_up --
  *	Scroll the SMAP up count logical lines.
  */
@@ -205,7 +239,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Line %lu not on the screen.", sp->lno);
 			return (1);
 		}
@@ -349,7 +383,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Line %lu not on the screen", sp->lno);
 			return (1);
 		}
@@ -552,7 +586,7 @@ svi_sm_position(sp, ep, lnop, cnt, pos)
 		for (p = HMAP - 1; cnt; --cnt)
 			for (;;) {
 				if (++p == t) {
-					msgq(sp, M_ERROR,
+					msgq(sp, M_ERR,
 					    "No such line on the screen.");
 					return (1);
 				}
@@ -575,7 +609,7 @@ svi_sm_position(sp, ep, lnop, cnt, pos)
 
 		down = (last - HMAP->lno + 1) / 2;
 		if (down == 0 && HMAP->off != 1) {
-			msgq(sp, M_ERROR, "No such line on the screen.");
+			msgq(sp, M_ERR, "No such line on the screen.");
 			return (1);
 		}
 		*lnop = HMAP->lno + down;
@@ -592,7 +626,7 @@ svi_sm_position(sp, ep, lnop, cnt, pos)
 		for (; cnt; --cnt)
 			for (;;) {
 				if (--p < HMAP) {
-					msgq(sp, M_ERROR,
+					msgq(sp, M_ERR,
 					    "No such line on the screen.");
 					return (1);
 				}
