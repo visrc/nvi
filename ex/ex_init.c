@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.11 1996/02/26 14:22:28 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:22:28 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.12 1996/02/29 10:44:05 bostic Exp $ (Berkeley) $Date: 1996/02/29 10:44:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -174,8 +174,6 @@ ex_exrc(sp)
 	case RCOK:
 		if (ex_run_file(sp, _PATH_SYSEXRC))
 			return (1);
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
-			return (0);
 		break;
 	}
 
@@ -204,7 +202,13 @@ ex_exrc(sp)
 		}
 	}
 
-	if (O_ISSET(sp, O_EXRC))
+	/* Run the commands, they may set the exrc edit option. */
+	if (EXCMD_RUNNING(sp->gp))
+		(void)ex_cmd(sp);
+	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+		return (0);
+
+	if (O_ISSET(sp, O_EXRC)) {
 		switch (exrc_isok(sp, &lsb, _PATH_NEXRC, 0, 0)) {
 		case NOEXIST:
 			if (exrc_isok(sp, &lsb, _PATH_EXRC, 0, 0) == RCOK &&
@@ -222,6 +226,13 @@ ex_exrc(sp)
 				return (1);
 			break;
 		}
+		/* Run the commands. */
+		if (EXCMD_RUNNING(sp->gp))
+			(void)ex_cmd(sp);
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+			return (0);
+	}
+
 	return (0);
 }
 
