@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.2 1993/07/06 07:53:19 bostic Exp $ (Berkeley) $Date: 1993/07/06 07:53:19 $";
+static char sccsid[] = "$Id: ex.c,v 8.3 1993/07/21 08:52:51 bostic Exp $ (Berkeley) $Date: 1993/07/21 08:52:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,8 @@ static char sccsid[] = "$Id: ex.c,v 8.2 1993/07/06 07:53:19 bostic Exp $ (Berkel
 
 char *defcmdarg[2];
 
-static char	*linespec __P((SCR *, EXF *, char *, EXCMDARG *));
+static char	*getline __P((SCR *, EXF *, char *, MARK *));
+static char	*getrange __P((SCR *, EXF *, char *, EXCMDARG *));
 
 #define	DEFCOM	".+1"
 
@@ -200,6 +201,7 @@ ex_cmd(sp, ep, exc)
 {
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
+	MARK cur;
 	recno_t lcount, lno, num;
 	long flagoff;
 	u_int saved_mode;
@@ -231,7 +233,7 @@ ex_cmd(sp, ep, exc)
 	 * Parse line specifiers if the command uses addresses.  New command
 	 * line position is returned, or NULL on error.  
 	 */
-	if ((exc = linespec(sp, ep, exc, &cmd)) == NULL)
+	if ((exc = getrange(sp, ep, exc, &cmd)) == NULL)
 		return (1);
 
 	/* Skip whitespace. */
@@ -279,8 +281,8 @@ ex_cmd(sp, ep, exc)
 		 * Another "special" feature.
 		 * NOTE: cmd.string is NOT nul terminated in this case.
 		 */
-		if (cp == &cmds[C_SHIFTL] && *exc == '<' ||
-		    cp == &cmds[C_SHIFTR] && *exc == '>') {
+		if ((cp == &cmds[C_SHIFTL] && *exc == '<') ||
+		    (cp == &cmds[C_SHIFTR] && *exc == '>')) {
 			ch = *exc;
 			for (cmd.string = exc; *++exc == ch;);
 		}
@@ -320,9 +322,9 @@ ex_cmd(sp, ep, exc)
 	 * where the 0 address is only valid if it's a default address.
 	 */
 	flagoff = 0;
-	switch(flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
+	switch (flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
-		switch(cmd.addrcnt) {
+		switch (cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 1;
 			if (LF_ISSET(E_ZERODEF)) {
@@ -364,7 +366,7 @@ ex_cmd(sp, ep, exc)
 		}
 		/* FALLTHROUGH */
 	case E_ADDR2:				/* Two addresses: */
-two:		switch(cmd.addrcnt) {
+two:		switch (cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 2;
 			if (LF_ISSET(E_ZERODEF) && sp->lno == 1) {
@@ -503,8 +505,13 @@ end2:			break;
 			}
 			break;
 		case 'l':				/* line */
-			if (isdigit(*exc)) {
-				cmd.lineno = strtol(exc, &endp, 10);
+			endp = getline(sp, ep, exc, &cur);
+			if (endp == NULL || exc == endp) {
+				msgq(sp, M_ERR, 
+				     "%s: bad line specification", exc);
+				return (1);
+			} else {
+				cmd.lineno = cur.lno;
 				exc = endp;
 			}
 			break;
@@ -548,7 +555,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s.", cp->usage);
 	}
 
 	/* Verify that the addresses are legal. */
-addr2:	switch(cmd.addrcnt) {
+addr2:	switch (cmd.addrcnt) {
 	case 2:
 		if (file_lline(sp, ep, &lcount))
 			return (1);
@@ -716,21 +723,20 @@ addr2:	switch(cmd.addrcnt) {
 }
 
 /*
- * linespec --
- *	Parse a line specifier for ex commands.
+ * getrange --
+ *	Get a line range for ex commands.
  *
  * XXX
  *	Currently ignores any character quoting.  Not sure that's right.
  */
 static char *
-linespec(sp, ep, cmd, cp)
+getrange(sp, ep, cmd, cp)
 	SCR *sp;
 	EXF *ep;
 	char *cmd;
 	EXCMDARG *cp;
 {
-	MARK cur, savecursor, sm, *mp;
-	long num, total;
+	MARK cur, savecursor;
 	int savecursor_set;
 	char *endp;
 
@@ -750,7 +756,7 @@ linespec(sp, ep, cmd, cp)
 	/* Parse comma or semi-colon delimited line specs. */
 	savecursor_set = 0;
 	for (cp->addrcnt = 0;;) {
-		switch(*cmd) {
+		switch (*cmd) {
 		case ';':		/* Semi-colon delimiter. */
 			/*
 			 * Comma delimiters delimit; semi-colon delimiters
@@ -771,89 +777,18 @@ linespec(sp, ep, cmd, cp)
 		case ',':		/* Comma delimiter. */
 			++cmd;
 			break;
-		case '$':		/* Last line. */
-			if (file_lline(sp, ep, &cur.lno))
-				return (NULL);
-			cur.cno = 0;
-			++cmd;
-			break;
-					/* Absolute line number. */
-		case '0': case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':
-			cur.lno = strtol(cmd, &endp, 10);
-			cur.cno = 0;
-			cmd = endp;
-			break;
-		case '\'':		/* Set mark. */
-			if (cmd[1] == '\0') {
-				msgq(sp, M_ERR,
-				    "No mark name; use 'a' to 'z'.");
-				return (NULL);
-			}
-			if ((mp = mark_get(sp, ep, cmd[1])) == NULL)
-				return (NULL);
-			cur = *mp;
-			cmd += 2;
-			break;
-		case '/':		/* Search forward. */
-			sm.lno = sp->lno;
-			sm.cno = sp->cno;
-			if (f_search(sp, ep,
-			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
-				return (NULL);
-			cur.lno = sp->lno = sm.lno;
-			cur.cno = sp->cno = sm.cno;
-			cmd = endp;
-			break;
-		case '?':		/* Search backward. */
-			sm.lno = sp->lno;
-			sm.cno = sp->cno;
-			if (b_search(sp, ep,
-			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
-				return (NULL);
-			cur.lno = sp->lno = sm.lno;
-			cur.cno = sp->cno = sm.cno;
-			cmd = endp;
-			break;
-		case '.':		/* Current position. */
-			++cmd;
-			/* FALLTHROUGH */
-		case '+':		/* Increment. */
-		case '-':		/* Decrement. */
-			/* If an empty file, then '.' is 0, not 1. */
-			if (sp->lno == 1) {
-				if (file_lline(sp, ep, &cur.lno))
-					return (NULL);
-				if (cur.lno != 0)
-					cur.lno = 1;
-			} else
-				cur.lno = sp->lno;
-			cur.cno = sp->cno;
-			break;
 		default:
-			goto done;
-		}
-
-		/*
-		 * Evaluate any offset.  Offsets are +/- any number, or,
-		 * any number of +/- signs, or any combination thereof.
-		 */
-		for (total = 0; *cmd == '-' || *cmd == '+'; total += num) {
-			num = *cmd == '-' ? -1 : 1;
-			if (isdigit(*++cmd)) {
-				num *= strtol(cmd, &endp, 10);
+			if ((endp = getline(sp, ep, cmd, &cur)) == NULL)
+				return (NULL);
+			if (cmd == endp)
+				goto done;
+			else
 				cmd = endp;
-			}
+			break;
 		}
-		if (total < 0 && -total > cur.lno) {
-			msgq(sp, M_ERR,
-			    "Reference to a line number less than 0.");
-			return (NULL);
-		}
-		cur.lno += total;
 
 		/* Extra addresses are discarded, starting with the first. */
-		switch(cp->addrcnt) {
+		switch (cp->addrcnt) {
 		case 0:
 			cp->addr1 = cur;
 			cp->addrcnt = 1;
@@ -868,7 +803,6 @@ linespec(sp, ep, cmd, cp)
 			break;
 		}
 	}
-
 	/*
 	 * XXX
 	 * This is probably not right for treatment of savecursor -- figure
@@ -878,6 +812,104 @@ done:	if (savecursor_set) {
 		sp->lno = savecursor.lno;
 		sp->cno = savecursor.cno;
 	}
-
 	return (cmd);
+}
+
+/*
+ * Get a single line address specifier.
+ */
+static char *
+getline(sp, ep, cmd, cur)
+	SCR *sp;
+	EXF *ep;
+	char *cmd;
+	MARK *cur;
+{
+	MARK sm, *mp;
+	long num, total;
+	char *endp;
+
+	for (;;) {
+		switch (*cmd) {
+		case '$':		/* Last line. */
+			if (file_lline(sp, ep, &cur->lno))
+				return (NULL);
+			cur->cno = 0;
+			++cmd;
+			break;
+					/* Absolute line number. */
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			cur->lno = strtol(cmd, &endp, 10);
+			cur->cno = 0;
+			cmd = endp;
+			break;
+		case '\'':		/* Set mark. */
+			if (cmd[1] == '\0') {
+				msgq(sp, M_ERR,
+				    "No mark name; use 'a' to 'z'.");
+				return (NULL);
+			}
+			if ((mp = mark_get(sp, ep, cmd[1])) == NULL)
+				return (NULL);
+			*cur = *mp;
+			cmd += 2;
+			break;
+		case '/':		/* Search forward. */
+			sm.lno = sp->lno;
+			sm.cno = sp->cno;
+			if (f_search(sp, ep,
+			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
+				return (NULL);
+			cur->lno = sp->lno = sm.lno;
+			cur->cno = sp->cno = sm.cno;
+			cmd = endp;
+			break;
+		case '?':		/* Search backward. */
+			sm.lno = sp->lno;
+			sm.cno = sp->cno;
+			if (b_search(sp, ep,
+			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
+				return (NULL);
+			cur->lno = sp->lno = sm.lno;
+			cur->cno = sp->cno = sm.cno;
+			cmd = endp;
+			break;
+		case '.':		/* Current position. */
+			++cmd;
+			/* FALLTHROUGH */
+		case '+':		/* Increment. */
+		case '-':		/* Decrement. */
+			/* If an empty file, then '.' is 0, not 1. */
+			if (sp->lno == 1) {
+				if (file_lline(sp, ep, &cur->lno))
+					return (NULL);
+				if (cur->lno != 0)
+					cur->lno = 1;
+			} else
+				cur->lno = sp->lno;
+			cur->cno = sp->cno;
+			break;
+		default:
+			return cmd;
+		}
+
+		/*
+		 * Evaluate any offset.  Offsets are +/- any number, or,
+		 * any number of +/- signs, or any combination thereof.
+		 */
+		for (total = 0; *cmd == '-' || *cmd == '+'; total += num) {
+			num = *cmd == '-' ? -1 : 1;
+			if (isdigit(*++cmd)) {
+				num *= strtol(cmd, &endp, 10);
+				cmd = endp;
+			}
+		}
+		if (total < 0 && -total > cur->lno) {
+			msgq(sp, M_ERR,
+			    "Reference to a line number less than 0.");
+			return (NULL);
+		}
+		cur->lno += total;
+	}
 }
