@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.14 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.15 2000/05/07 19:49:42 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,6 +57,8 @@ ip_addstr(sp, str, len)
 	ipb.len1 = len;
 	ipb.str1 = str;
 	rval = vi_send("a", &ipb);
+	/* XXXX */
+	ipp->col += len;
 
 	if (iv)
 		ip_attr(sp, SA_INVERSE, 0);
@@ -158,6 +160,28 @@ ip_clrtoeol(sp)
 	SCR *sp;
 {
 	IP_BUF ipb;
+ 	IP_PRIVATE *ipp = IPP(sp);
+ 
+ 	/* Temporary hack until we can pass screen pointers
+ 	 * or name screens
+ 	 */
+ 	if (IS_VSPLIT(sp)) {
+ 		size_t x, y, spcnt;
+ 		IP_PRIVATE *ipp;
+ 		int error;
+ 
+ 		ipp = IPP(sp);
+ 		y = ipp->row;
+ 		x = ipp->col;
+ 		error = 0;
+ 		for (spcnt = sp->cols - x; 
+ 		     spcnt > 0 && ! error; --spcnt)
+ 			error = ip_addstr(sp, " ", 1);
+ 		if (sp->coff == 0)
+ 			error |= ip_addstr(sp, "|", 1);
+ 		error |= ip_move(sp, y, x);
+ 		return error;
+ 	}
 
 	ipb.code = SI_CLRTOEOL;
 
@@ -222,11 +246,11 @@ ip_deleteln(sp)
  * ip_discard --
  *	Discard a screen.
  *
- * PUBLIC: int ip_discard __P((SCR *, SCR *));
+ * PUBLIC: int ip_discard __P((SCR *, SCR **));
  */
 int
 ip_discard(discardp, acquirep)
-	SCR *discardp, *acquirep;
+ 	SCR *discardp, **acquirep;
 {
 	return (0);
 }
@@ -322,7 +346,7 @@ ip_move(sp, lno, cno)
 
 	ipb.code = SI_MOVE;
 	ipb.val1 = RLNO(sp, lno);
-	ipb.val2 = cno;
+	ipb.val2 = RCNO(sp, cno);
 	return (vi_send("12", &ipb));
 }
 

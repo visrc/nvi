@@ -25,7 +25,7 @@ COBJS=	addbytes.o addch.o box.o clear.o clrtobot.o clrtoeol.o \
 	erase.o fullname.o getch.o getstr.o id_subwins.o idlok.o initscr.o \
 	insch.o insertln.o longname.o move.o mvwin.o newwin.o overlay.o \
 	overwrite.o putchar.o refresh.o scroll.o setterm.o standout.o \
-	toucholap.o touchwin.o tscroll.o tstp.o tty.o unctrl.o waddnstr.o
+	toucholap.o touchwin.o tscroll.o tstp.o tty.o unctrl.o wwaddnstr.o
 IPOBJS=	ip_funcs.o ip_main.o ip_read.o ip_screen.o ip_send.o ip_term.o
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
 VIOBJS= api.o cut.o db.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
@@ -605,7 +605,7 @@ tty.o: $(srcdir)/curses/tty.c
 	$(CC) -D_CURSES_PRIVATE $(CFLAGS) $?
 unctrl.o: $(srcdir)/curses/unctrl.c
 	$(CC) -D_CURSES_PRIVATE $(CFLAGS) $?
-waddnstr.o: $(srcdir)/curses/waddnstr.c
+wwaddnstr.o: $(srcdir)/curses/waddnstr.c
 	$(CC) -D_CURSES_PRIVATE $(CFLAGS) $?
 
 # Regular Expressions sources.
@@ -619,7 +619,7 @@ regfree.o: $(srcdir)/regex/regfree.c
 	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $?
 
 # Random C library replacement and workaround sources.
-addnstr.o: $(srcdir)/clib/addnstr.c
+waddnstr.o: $(srcdir)/clib/addnstr.c
 	$(CC) $(CFLAGS) $?
 bsearch.o: $(srcdir)/clib/bsearch.c
 	$(CC) $(CFLAGS) $?

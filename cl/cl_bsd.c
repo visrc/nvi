@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_bsd.c,v 8.29 1996/07/01 10:03:17 bostic Exp $ (Berkeley) $Date: 1996/07/01 10:03:17 $";
+static const char sccsid[] = "$Id: cl_bsd.c,v 8.30 2000/05/07 19:49:39 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,23 +40,24 @@ static char	*vb;				/* Visible bell string. */
  * minimal set of functions.
  */
 
-#ifndef HAVE_CURSES_ADDNSTR
+#ifndef HAVE_CURSES_WADDNSTR
 /*
- * addnstr --
+ * waddnstr --
  *
- * PUBLIC: #ifndef HAVE_CURSES_ADDNSTR
- * PUBLIC: int addnstr __P((char *, int));
+ * PUBLIC: #ifndef HAVE_CURSES_WADDNSTR
+ * PUBLIC: int waddnstr __P((WINDOW*, char *, int));
  * PUBLIC: #endif
  */
 int
-addnstr(s, n)
+waddnstr(w, s, n)
+	WINDOW *w;
 	char *s;
 	int n;
 {
 	int ch;
 
 	while (n-- && (ch = *s++))
-		addch(ch);
+		waddch(w, ch);
 	return (OK);
 }
 #endif

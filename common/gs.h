@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.40 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $
+ *	$Id: gs.h,v 10.41 2000/05/07 19:49:40 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:40 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -168,7 +168,7 @@ struct _gs {
 					/* Delete a line. */
 	int	(*scr_deleteln) __P((SCR *));
 					/* Discard a screen. */
-	int	(*scr_discard) __P((SCR *, SCR *));
+	int	(*scr_discard) __P((SCR *, SCR **));
 					/* Get a keyboard event. */
 	int	(*scr_event) __P((SCR *, EVENT *, u_int32_t, int));
 					/* Ex: screen adjustment routine. */

@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.19 2000/04/21 19:00:39 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:39 $
+ *	$Id: ip.h,v 8.20 2000/05/07 19:49:42 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:42 $
  */
 
 extern int vi_ifd;		/* Input file descriptor. */
@@ -33,6 +33,7 @@ typedef struct _ip_private {
 
 /* The screen line relative to a specific window. */
 #define	RLNO(sp, lno)	(sp)->roff + (lno)
+#define	RCNO(sp, cno)	(sp)->coff + (cno)
 
 #define	IPO_CODE_LEN	1	/* Length of a code value. */
 #define	IPO_INT_LEN	4	/* Length of an integer. */

@@ -452,19 +452,19 @@ dnl BSD or System V style curses.  Use the newterm function, all System V
 dnl curses implementations have it, none, as far as I know, of the BSD ones do.
 if test "$vi_cv_curses" = "bundled curses"; then
 	AC_DEFINE(HAVE_BSD_CURSES)
-	AC_DEFINE(HAVE_CURSES_ADDNSTR)
+	AC_DEFINE(HAVE_CURSES_WADDNSTR)
 	AC_DEFINE(HAVE_CURSES_IDLOK)
 else
-	dnl Check for the addnstr function.
-	AC_MSG_CHECKING(for addnstr)
-	AC_CACHE_VAL(vi_cv_have_curses_addnstr, [dnl
-	AC_TRY_LINK([#include <curses.h>], [addnstr(0, 0);],
-		[vi_cv_have_curses_addnstr=yes],
-		[vi_cv_have_curses_addnstr=no])])
-	if test "$vi_cv_have_curses_addnstr" = yes; then
-		AC_DEFINE(HAVE_CURSES_ADDNSTR)
+	dnl Check for the waddnstr function.
+	AC_MSG_CHECKING(for waddnstr)
+	AC_CACHE_VAL(vi_cv_have_curses_waddnstr, [dnl
+	AC_TRY_LINK([#include <curses.h>], [waddnstr(0, 0);],
+		[vi_cv_have_curses_waddnstr=yes],
+		[vi_cv_have_curses_waddnstr=no])])
+	if test "$vi_cv_have_curses_waddnstr" = yes; then
+		AC_DEFINE(HAVE_CURSES_WADDNSTR)
 	fi
-	AC_MSG_RESULT($vi_cv_have_curses_addnstr)
+	AC_MSG_RESULT($vi_cv_have_curses_waddnstr)
 
 	dnl Check for the beep function.
 	AC_MSG_CHECKING(for beep)

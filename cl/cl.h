@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.22 1996/12/18 15:57:37 bostic Exp $ (Berkeley) $Date: 1996/12/18 15:57:37 $
+ *	$Id: cl.h,v 10.23 2000/05/07 19:49:39 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:39 $
  */
 
 typedef struct _cl_private {
@@ -56,13 +56,18 @@ typedef struct _cl_private {
 
 #define	CLP(sp)		((CL_PRIVATE *)((sp)->gp->cl_private))
 #define	GCLP(gp)	((CL_PRIVATE *)gp->cl_private)
+#define	CLSP(sp)	((WINDOW *)((sp)->cl_private))
 
 /* Return possibilities from the keyboard read routine. */
 typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 
 /* The screen position relative to a specific window. */
+/*
 #define	RCNO(sp, cno)	(sp)->coff + (cno)
 #define	RLNO(sp, lno)	(sp)->roff + (lno)
+*/
+#define	RCNO(sp, cno)	(cno)
+#define	RLNO(sp, lno)	(lno)
 
 /*
  * XXX

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.34 1996/12/18 10:24:31 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:24:31 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.35 2000/05/07 19:49:43 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -247,7 +247,7 @@ vs_vsplit(sp, new)
 	cols = sp->cols / 2;
 	new->cols = sp->cols - cols - 1;
 	sp->cols = cols;
-	new->coff = cols + 1;
+	new->coff = sp->coff + cols + 1;
 	sp->cno = 0;
 
 	/* Nothing else changes. */
@@ -445,7 +445,7 @@ vs_discard(sp, spp)
 		*spp = tsp;
 
 	/* Tell the display that we're discarding a screen. */
-	(void)gp->scr_discard(sp, tsp);
+	(void)gp->scr_discard(sp, list);
 
 	return (0);
 }
@@ -711,7 +711,7 @@ vs_swap(sp, nspp, name)
 	char *name;
 {
 	GS *gp;
-	SCR *nsp;
+	SCR *nsp, *list[2];
 
 	gp = sp->gp;
 
@@ -788,6 +788,10 @@ vs_swap(sp, nspp, name)
 
 	/* Draw the new screen from scratch, and add a status line. */
 	F_SET(nsp, SC_SCR_REDRAW | SC_STATUS);
+
+	list[0] = nsp; list[1] = NULL;
+	(void)gp->scr_discard(sp, list);
+
 	return (0);
 }
 
@@ -804,7 +808,7 @@ vs_resize(sp, count, adj)
 	adj_t adj;
 {
 	GS *gp;
-	SCR *g, *s;
+	SCR *g, *s, *prev, *next, *list[3] = {NULL, NULL, NULL};
 	size_t g_off, s_off;
 
 	gp = sp->gp;
@@ -827,6 +831,25 @@ vs_resize(sp, count, adj)
 		}
 	}
 
+	/* Find first overlapping screen */
+	for (next = sp->q.cqe_next; 
+	     next != (void *)&gp->dq && 
+	     (next->coff >= sp->coff + sp->cols || 
+	      next->coff + next->cols <= sp->coff); 
+	     next = next->q.cqe_next);
+	/* See if we can use it */
+	if (next != (void *)&gp->dq && 
+	    (sp->coff != next->coff || sp->cols != next->cols))
+		next = (void *)&gp->dq;
+	for (prev = sp->q.cqe_prev; 
+	     prev != (void *)&gp->dq && 
+	     (prev->coff >= sp->coff + sp->cols || 
+	      prev->coff + prev->cols <= sp->coff); 
+	     prev = prev->q.cqe_prev);
+	if (prev != (void *)&gp->dq && 
+	    (sp->coff != prev->coff || sp->cols != prev->cols))
+		prev = (void *)&gp->dq;
+
 	g_off = s_off = 0;
 	if (adj == A_DECREASE) {
 		if (count < 0)
@@ -834,23 +857,21 @@ vs_resize(sp, count, adj)
 		s = sp;
 		if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count)
 			goto toosmall;
-		if ((g = sp->q.cqe_prev) == (void *)&gp->dq) {
-			if ((g = sp->q.cqe_next) == (void *)&gp->dq)
+		if ((g = prev) == (void *)&gp->dq) {
+			if ((g = next) == (void *)&gp->dq)
 				goto toobig;
 			g_off = -count;
 		} else
 			s_off = count;
 	} else {
 		g = sp;
-		if ((s = sp->q.cqe_next) != (void *)&gp->dq)
-			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count)
-				s = NULL;
-			else
+		if ((s = next) != (void *)&gp->dq &&
+		    s->t_maxrows >= MINIMUM_SCREEN_ROWS + count)
 				s_off = count;
 		else
 			s = NULL;
 		if (s == NULL) {
-			if ((s = sp->q.cqe_prev) == (void *)&gp->dq) {
+			if ((s = prev) == (void *)&gp->dq) {
 toobig:				msgq(sp, M_BERR, adj == A_DECREASE ?
 				    "227|The screen cannot shrink" :
 				    "228|The screen cannot grow");
@@ -889,6 +910,10 @@ toosmall:			msgq(sp, M_BERR,
 		s->t_minrows = s->t_maxrows;
 	_TMAP(s) -= count;
 	F_SET(s, SC_SCR_REFORMAT | SC_STATUS);
+
+	/* XXXX */
+	list[0] = g; list[1] = s;
+	gp->scr_discard(0, list);
 
 	return (0);
 }

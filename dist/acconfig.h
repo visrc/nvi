@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.19 2000/04/21 21:26:20 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:20 $ */
+/* $Id: acconfig.h,v 8.20 2000/05/07 19:49:41 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:41 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -15,8 +15,8 @@
 /* Define if you have a BSD version of curses. */
 #undef HAVE_BSD_CURSES
 
-/* Define if you have the curses(3) addnstr function. */
-#undef HAVE_CURSES_ADDNSTR
+/* Define if you have the curses(3) waddnstr function. */
+#undef HAVE_CURSES_WADDNSTR
 
 /* Define if you have the curses(3) beep function. */
 #undef HAVE_CURSES_BEEP

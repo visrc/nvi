@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.49 1996/09/24 20:48:04 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:48:04 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.50 2000/05/07 19:49:39 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,10 +48,12 @@ cl_screen(sp, flags)
 	u_int32_t flags;
 {
 	CL_PRIVATE *clp;
+	WINDOW *win;
 	GS *gp;
 
 	gp = sp->gp;
 	clp = CLP(sp);
+	win = CLSP(sp) ? CLSP(sp) : stdscr;
 
 	/* See if the current information is incorrect. */
 	if (F_ISSET(gp, G_SRESTART)) {
@@ -91,11 +93,11 @@ cl_screen(sp, flags)
 		F_CLR(sp, SC_SCR_VI);
 
 		if (sp->q.cqe_next != (void *)&gp->dq) {
-			(void)move(RLNO(sp, sp->rows), 0);
-			clrtobot();
+			(void)wmove(win, RLNO(sp, sp->rows), 0);
+			wclrtobot(win);
 		}
-		(void)move(RLNO(sp, sp->rows) - 1, 0);
-		refresh();
+		(void)wmove(win, RLNO(sp, sp->rows) - 1, 0);
+		wrefresh(win);
 	}
 
 	/* Enter the requested mode. */
