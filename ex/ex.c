@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.67 1993/11/30 14:19:30 bostic Exp $ (Berkeley) $Date: 1993/11/30 14:19:30 $";
+static char sccsid[] = "$Id: ex.c,v 8.68 1993/11/30 15:47:38 bostic Exp $ (Berkeley) $Date: 1993/11/30 15:47:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -371,25 +371,25 @@ err:		term_map_flush(sp, "Error");
  *	Parse and execute an ex command.  
  */
 int
-ex_cmd(sp, ep, exc, arg1_len)
+ex_cmd(sp, ep, cmd, arg1_len)
 	SCR *sp;
 	EXF *ep;
-	char *exc;
+	char *cmd;
 	int arg1_len;
 {
 	CHAR_T esc;
 	EX_PRIVATE *exp;
-	EXCMDARG cmd;
+	EXCMDARG exc;
 	EXCMDLIST const *cp;
 	MARK cur;
 	recno_t lcount, lno, num;
 	long flagoff;
 	u_int saved_mode;
-	int ch, cmdlen, flags, uselastcmd;
+	int ch, cnamelen, flags, uselastcmd;
 	char *p, *t, *endp;
 
 #if defined(DEBUG) && 0
-	TRACE(sp, "ex: {%s}\n", exc);
+	TRACE(sp, "ex: {%s}\n", cmd);
 #endif
 	/*
 	 * !!!
@@ -398,32 +398,32 @@ ex_cmd(sp, ep, exc, arg1_len)
 	 * The stripping is done here because, historically, any command
 	 * could have preceding colons, e.g. ":g/pattern/:p" worked.
 	 */
-	for (; *exc == ':'; ++exc);
+	for (; *cmd == ':'; ++cmd);
 
 	/* Ignore command lines that start with a double-quote. */
-	if (*exc == '"')
+	if (*cmd == '"')
 		return (0);
 
 	/* Skip whitespace. */
-	for (; isblank(*exc); ++exc);
+	for (; isblank(*cmd); ++cmd);
 
 	/* Initialize the argument structure. */
-	memset(&cmd, 0, sizeof(EXCMDARG));
+	memset(&exc, 0, sizeof(EXCMDARG));
 	exp = EXP(sp);
 	exp->ex_argv[0] = "";
 	exp->ex_argv[1] = NULL;
-	cmd.argc = 0;
-	cmd.argv = exp->ex_argv;
+	exc.argc = 0;
+	exc.argv = exp->ex_argv;
 
 	/*
 	 * Parse line specifiers if the command uses addresses.
 	 * New command line position is returned, or NULL on error.  
 	 */
-	if ((exc = ep_range(sp, ep, exc, &cmd)) == NULL)
+	if ((cmd = ep_range(sp, ep, cmd, &exc)) == NULL)
 		return (1);
 
 	/* Skip whitespace. */
-	for (; isblank(*exc); ++exc);
+	for (; isblank(*cmd); ++cmd);
 
 	/*
 	 * If no command, ex does the last specified of p, l, or #, and vi
@@ -432,20 +432,21 @@ ex_cmd(sp, ep, exc, arg1_len)
 	 * are all single character commands.
 	 */
 #define	SINGLE_CHAR_COMMANDS	"!#&<=>@~"
-	if (*exc) {
-		if (strchr(SINGLE_CHAR_COMMANDS, *exc)) {
-			p = exc;
-			exc++;
-			cmdlen = 1;
+	if (*cmd) {
+		if (strchr(SINGLE_CHAR_COMMANDS, *cmd)) {
+			p = cmd;
+			cmd++;
+			cnamelen = 1;
 		} else {
-			for (p = exc; isalpha(*exc); ++exc);
-			cmdlen = exc - p;
-			if (cmdlen == 0) {
+			for (p = cmd; isalpha(*cmd); ++cmd);
+			cnamelen = cmd - p;
+			if (cnamelen == 0) {
 				msgq(sp, M_ERR, "Unknown command name.");
 				return (1);
 			}
 		}
-		for (cp = cmds; cp->name && memcmp(p, cp->name, cmdlen); ++cp);
+		for (cp = cmds;
+		    cp->name && memcmp(p, cp->name, cnamelen); ++cp);
 
 		/*
 		 * !!!
@@ -456,11 +457,11 @@ ex_cmd(sp, ep, exc, arg1_len)
 		 */
 		if (cp->name == NULL)
 			if (p[0] == 'k' && p[1] && !p[2]) {
-				exc = p + 1;
+				cmd = p + 1;
 				cp = &cmds[C_K];
 			} else {
-				msgq(sp, M_ERR,
-				    "The %.*s command is unknown.", cmdlen, p);
+				msgq(sp, M_ERR, "The %.*s command is unknown.",
+				    cnamelen, p);
 				return (1);
 			}
 		uselastcmd = 0;
@@ -469,14 +470,14 @@ ex_cmd(sp, ep, exc, arg1_len)
 		if (F_ISSET(cp, E_NOPERM)) {
 			msgq(sp, M_ERR,
 			    "The %.*s command is not currently supported.",
-			    cmdlen, p);
+			    cnamelen, p);
 			return (1);
 		}
 
 		/* Some commands aren't okay in globals. */
 		if (F_ISSET(sp, S_GLOBAL) && F_ISSET(cp, E_NOGLOBAL)) {
 			msgq(sp, M_ERR,
-"The %.*s command can't be used as part of a global command.", cmdlen, p);
+"The %.*s command can't be used as part of a global command.", cnamelen, p);
 			return (1);
 		}
 
@@ -488,9 +489,9 @@ ex_cmd(sp, ep, exc, arg1_len)
 		    (cp == &cmds[C_SHIFTR] && *p == '>')) {
 			exp->ex_argv[0] = p;
 			exp->ex_argv[1] = NULL;
-			cmd.argc = 1;
-			cmd.argv = exp->ex_argv;
-			for (ch = *p, exc = p; *++exc == ch;);
+			exc.argc = 1;
+			exc.argv = exp->ex_argv;
+			for (ch = *p, cmd = p; *++cmd == ch;);
 		}
 
 		/*
@@ -541,76 +542,76 @@ ex_cmd(sp, ep, exc, arg1_len)
 	flagoff = 0;
 	switch (flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
-		switch (cmd.addrcnt) {
+		switch (exc.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
-			cmd.addrcnt = 1;
-			F_SET(&cmd, E_ADDRDEF);
+			exc.addrcnt = 1;
+			F_SET(&exc, E_ADDRDEF);
 			if (LF_ISSET(E_ZERODEF)) {
 				if (file_lline(sp, ep, &lno))
 					return (1);
 				if (lno == 0) {
-					cmd.addr1.lno = 0;
+					exc.addr1.lno = 0;
 					LF_SET(E_ZERO);
 				} else
-					cmd.addr1.lno = sp->lno;
+					exc.addr1.lno = sp->lno;
 			} else
-				cmd.addr1.lno = sp->lno;
-			cmd.addr1.cno = sp->cno;
+				exc.addr1.lno = sp->lno;
+			exc.addr1.cno = sp->cno;
 			break;
 		case 1:
 			break;
 		case 2:				/* Lose the first address. */
-			cmd.addrcnt = 1;
-			cmd.addr1 = cmd.addr2;
+			exc.addrcnt = 1;
+			exc.addr1 = exc.addr2;
 		}
 		break;
 	case E_ADDR2_NONE:			/* Zero/two addresses: */
-		if (cmd.addrcnt == 0)		/* Default to nothing. */
+		if (exc.addrcnt == 0)		/* Default to nothing. */
 			break;
 		goto two;
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
-		if (cmd.addrcnt == 0) {		/* Default entire/empty file. */
-			cmd.addrcnt = 2;
-			F_SET(&cmd, E_ADDRDEF);
-			if (file_lline(sp, ep, &cmd.addr2.lno))
+		if (exc.addrcnt == 0) {		/* Default entire/empty file. */
+			exc.addrcnt = 2;
+			F_SET(&exc, E_ADDRDEF);
+			if (file_lline(sp, ep, &exc.addr2.lno))
 				return (1);
-			if (LF_ISSET(E_ZERODEF) && cmd.addr2.lno == 0) {
-				cmd.addr1.lno = 0;
+			if (LF_ISSET(E_ZERODEF) && exc.addr2.lno == 0) {
+				exc.addr1.lno = 0;
 				LF_SET(E_ZERO);
 			} else
-				cmd.addr1.lno = 1;
-			cmd.addr1.cno = cmd.addr2.cno = 0;
-			F_SET(&cmd, E_ADDR2_ALL);
+				exc.addr1.lno = 1;
+			exc.addr1.cno = exc.addr2.cno = 0;
+			F_SET(&exc, E_ADDR2_ALL);
 			break;
 		}
 		/* FALLTHROUGH */
 	case E_ADDR2:				/* Two addresses: */
-two:		switch (cmd.addrcnt) {
+two:		switch (exc.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
-			cmd.addrcnt = 2;
-			F_SET(&cmd, E_ADDRDEF);
+			exc.addrcnt = 2;
+			F_SET(&exc, E_ADDRDEF);
 			if (LF_ISSET(E_ZERODEF) && sp->lno == 1) {
 				if (file_lline(sp, ep, &lno))
 					return (1);
 				if (lno == 0) {
-					cmd.addr1.lno = cmd.addr2.lno = 0;
+					exc.addr1.lno = exc.addr2.lno = 0;
 					LF_SET(E_ZERO);
 				} else 
-					cmd.addr1.lno = cmd.addr2.lno = sp->lno;
+					exc.addr1.lno = exc.addr2.lno = sp->lno;
 			} else
-				cmd.addr1.lno = cmd.addr2.lno = sp->lno;
-			cmd.addr1.cno = cmd.addr2.cno = sp->cno;
+				exc.addr1.lno = exc.addr2.lno = sp->lno;
+			exc.addr1.cno = exc.addr2.cno = sp->cno;
 			break;
 		case 1:				/* Default to first address. */
-			cmd.addrcnt = 2;
-			cmd.addr2 = cmd.addr1;
+			exc.addrcnt = 2;
+			exc.addr2 = exc.addr1;
 			break;
 		case 2:
 			break;
 		}
 		break;
 	default:
-		if (cmd.addrcnt)		/* Error. */
+		if (exc.addrcnt)		/* Error. */
 			goto usage;
 	}
 
@@ -623,7 +624,7 @@ two:		switch (cmd.addrcnt) {
 	 */
 	if (cp == &cmds[C_SET]) {
 		(void)term_key_ch(sp, K_VLNEXT, &esc);
-		for (p = exc; (ch = *p) != '\0'; ++p)
+		for (p = cmd; (ch = *p) != '\0'; ++p)
 			if (ch == '\\')
 				*p = esc;
 	}
@@ -635,29 +636,29 @@ two:		switch (cmd.addrcnt) {
 		 * skip leading whitespace.
 		 */
 		if (cp != &cmds[C_WRITE])
-			for (; isblank(*exc); ++exc);
+			for (; isblank(*cmd); ++cmd);
 
 		/*
 		 * When reach the end of the command, quit, unless it's
 		 * a command that does its own parsing, in which case we
 		 * want to build a reasonable argv for it.
 		 */
-		if (*p != 's' && *p != 'S' && *exc == '\0')
+		if (*p != 's' && *p != 'S' && *cmd == '\0')
 			break;
 
 		switch (*p) {
 		case '!':				/* ! */
-			if (*exc == '!') {
-				++exc;
-				F_SET(&cmd, E_FORCE);
+			if (*cmd == '!') {
+				++cmd;
+				F_SET(&exc, E_FORCE);
 			}
 			break;
 		case '+':				/* +cmd */
-			if (*exc != '+')
+			if (*cmd != '+')
 				break;
-			exc += arg1_len + 1;
-			if (*exc)
-				*exc++ = '\0';
+			cmd += arg1_len + 1;
+			if (*cmd)
+				*cmd++ = '\0';
 			break;
 		case '1':				/* +, -, #, l, p */
 			/*
@@ -670,8 +671,8 @@ two:		switch (cmd.addrcnt) {
 			 * handle them regardless of the stupidity of their
 			 * location.
 			 */
-			for (;; ++exc)
-				switch (*exc) {
+			for (;; ++cmd)
+				switch (*cmd) {
 				case '+':
 					++flagoff;
 					break;
@@ -679,13 +680,13 @@ two:		switch (cmd.addrcnt) {
 					--flagoff;
 					break;
 				case '#':
-					F_SET(&cmd, E_F_HASH);
+					F_SET(&exc, E_F_HASH);
 					break;
 				case 'l':
-					F_SET(&cmd, E_F_LIST);
+					F_SET(&exc, E_F_LIST);
 					break;
 				case 'p':
-					F_SET(&cmd, E_F_PRINT);
+					F_SET(&exc, E_F_PRINT);
 					break;
 				default:
 					goto end1;
@@ -693,23 +694,23 @@ two:		switch (cmd.addrcnt) {
 end1:			break;
 		case '2':				/* -, ., +, ^ */
 		case '3':				/* -, ., +, ^, = */
-			for (;; ++exc)
-				switch (*exc) {
+			for (;; ++cmd)
+				switch (*cmd) {
 				case '-':
-					F_SET(&cmd, E_F_DASH);
+					F_SET(&exc, E_F_DASH);
 					break;
 				case '.':
-					F_SET(&cmd, E_F_DOT);
+					F_SET(&exc, E_F_DOT);
 					break;
 				case '+':
-					F_SET(&cmd, E_F_PLUS);
+					F_SET(&exc, E_F_PLUS);
 					break;
 				case '^':
-					F_SET(&cmd, E_F_CARAT);
+					F_SET(&exc, E_F_CARAT);
 					break;
 				case '=':
 					if (*p == '3') {
-						F_SET(&cmd, E_F_EQUAL);
+						F_SET(&exc, E_F_EQUAL);
 						break;
 					}
 					/* FALLTHROUGH */
@@ -718,22 +719,22 @@ end1:			break;
 				}
 end2:			break;
 		case 'b':				/* buffer */
-			cmd.buffer = *exc++;
-			F_SET(&cmd, E_BUFFER);
+			exc.buffer = *cmd++;
+			F_SET(&exc, E_BUFFER);
 			break;
 		case 'C':				/* count */
 		case 'n':
 		case 'c':				/* count (address) */
-			if (!isdigit(*exc) &&
-			    (*p != 'n' || (*exc != '+' && *exc != '-')))
+			if (!isdigit(*cmd) &&
+			    (*p != 'n' || (*cmd != '+' && *cmd != '-')))
 				break;
-			lcount = strtol(exc, &endp, 10);
+			lcount = strtol(cmd, &endp, 10);
 			if (lcount == 0) {
 				msgq(sp, M_ERR,
 				    "Count may not be zero.");
 				return (1);
 			}
-			exc = endp;
+			cmd = endp;
 			/*
 			 * Count as address offsets occur in commands taking
 			 * two addresses.  Historic vi practice was to use
@@ -744,37 +745,37 @@ end2:			break;
 			 * line addresses.
 			 */
 			if (*p == 'C' || *p == 'n')
-				cmd.count = lcount;
+				exc.count = lcount;
 			else {
-				cmd.addr1 = cmd.addr2;
-				cmd.addr2.lno = cmd.addr1.lno + lcount - 1;
+				exc.addr1 = exc.addr2;
+				exc.addr2.lno = exc.addr1.lno + lcount - 1;
 			}
-			F_SET(&cmd, E_COUNT);
+			F_SET(&exc, E_COUNT);
 			break;
 		case 'f':				/* file */
-			if (argv_exp2(sp, ep, &cmd, exc, cp == &cmds[C_BANG]))
+			if (argv_exp2(sp, ep, &exc, cmd, cp == &cmds[C_BANG]))
 				return (1);
 			goto countchk;
 		case 'l':				/* line */
-			endp = ep_line(sp, ep, exc, &cur);
-			if (endp == NULL || exc == endp) {
+			endp = ep_line(sp, ep, cmd, &cur);
+			if (endp == NULL || cmd == endp) {
 				msgq(sp, M_ERR, 
-				     "%s: bad line specification", exc);
+				     "%s: bad line specification", cmd);
 				return (1);
 			} else {
-				cmd.lineno = cur.lno;
-				exc = endp;
+				exc.lineno = cur.lno;
+				cmd = endp;
 			}
 			break;
 		case 'S':				/* string, file exp. */
-			if (argv_exp1(sp, ep, &cmd, exc, cp == &cmds[C_BANG]))
+			if (argv_exp1(sp, ep, &exc, cmd, cp == &cmds[C_BANG]))
 				return (1);
 			goto addr2;
 		case 's':				/* string */
-			exp->ex_argv[0] = exc;
+			exp->ex_argv[0] = cmd;
 			exp->ex_argv[1] = NULL;
-			cmd.argc = 1;
-			cmd.argv = exp->ex_argv;
+			exc.argc = 1;
+			exc.argv = exp->ex_argv;
 			goto addr2;
 		case 'W':				/* word string */
 			/*
@@ -786,7 +787,7 @@ end2:			break;
 			 *
 			 * Word.
 			 */
-			for (p = t = exc; (ch = *p) != '\0'; *t++ = ch, ++p)
+			for (p = t = cmd; (ch = *p) != '\0'; *t++ = ch, ++p)
 				if (term_key_val(sp, ch) == K_VLNEXT &&
 				    p[1] != '\0')
 					ch = *++p;
@@ -794,7 +795,7 @@ end2:			break;
 					break;
 			if (*p == '\0')
 				goto usage;
-			exp->ex_argv[0] = exc;
+			exp->ex_argv[0] = cmd;
 
 			/* Delete leading whitespace. */
 			for (*t++ = '\0'; (ch = *++p) != '\0' && isblank(ch););
@@ -807,11 +808,11 @@ end2:			break;
 					ch = *p++;
 			*t = '\0';
 			exp->ex_argv[2] = NULL;
-			cmd.argc = 2;
-			cmd.argv = exp->ex_argv;
+			exc.argc = 2;
+			exc.argv = exp->ex_argv;
 			goto addr2;
 		case 'w':				/* word */
-			if (argv_exp3(sp, ep, &cmd, exc))
+			if (argv_exp3(sp, ep, &exc, cmd))
 				return (1);
 countchk:		if (*++p != 'N') {		/* N */
 				/*
@@ -820,8 +821,8 @@ countchk:		if (*++p != 'N') {		/* N */
 				 * number, if required.
 				 */
 				num = *p - '0';
-				if ((*++p != 'o' || cmd.argc != 0) &&
-				    cmd.argc != num)
+				if ((*++p != 'o' || exc.argc != 0) &&
+				    exc.argc != num)
 					goto usage;
 			}
 			goto addr2;
@@ -835,14 +836,14 @@ countchk:		if (*++p != 'N') {		/* N */
 	 * Shouldn't be anything left, and no more required fields.
 	 * That means neither 'l' or 'r' in the syntax.
 	 */
-	for (; *exc && isblank(*exc); ++exc);
-	if (*exc || strpbrk(p, "lr")) {
+	for (; *cmd && isblank(*cmd); ++cmd);
+	if (*cmd || strpbrk(p, "lr")) {
 usage:		msgq(sp, M_ERR, "Usage: %s.", cp->usage);
 		return (1);
 	}
 
 	/* Verify that the addresses are legal. */
-addr2:	switch (cmd.addrcnt) {
+addr2:	switch (exc.addrcnt) {
 	case 2:
 		if (file_lline(sp, ep, &lcount))
 			return (1);
@@ -854,9 +855,9 @@ addr2:	switch (cmd.addrcnt) {
 		 * of the underlying commands handle random line numbers,
 		 * fix it here.
 		 */
-		if (cmd.addr2.lno > lcount)
-			if (F_ISSET(&cmd, E_COUNT))
-				cmd.addr2.lno = lcount;
+		if (exc.addr2.lno > lcount)
+			if (F_ISSET(&exc, E_COUNT))
+				exc.addr2.lno = lcount;
 			else {
 				if (lcount == 0)
 					msgq(sp, M_ERR, "The file is empty.");
@@ -868,7 +869,7 @@ addr2:	switch (cmd.addrcnt) {
 			}
 		/* FALLTHROUGH */
 	case 1:
-		num = cmd.addr1.lno;
+		num = exc.addr1.lno;
 		/*
 		 * If it's a "default vi command", zero is okay.  Historic
 		 * vi allowed this, note, it's also the hack that allows
@@ -896,14 +897,14 @@ addr2:	switch (cmd.addrcnt) {
 
 	/* If doing a default command, vi just moves to the line. */
 	if (IN_VI_MODE(sp) && uselastcmd) {
-		switch (cmd.addrcnt) {
+		switch (exc.addrcnt) {
 		case 2:
-			sp->lno = cmd.addr2.lno ? cmd.addr2.lno : 1;
-			sp->cno = cmd.addr2.cno;
+			sp->lno = exc.addr2.lno ? exc.addr2.lno : 1;
+			sp->cno = exc.addr2.cno;
 			break;
 		case 1:
-			sp->lno = cmd.addr1.lno ? cmd.addr1.lno : 1;
-			sp->cno = cmd.addr1.cno;
+			sp->lno = exc.addr1.lno ? exc.addr1.lno : 1;
+			sp->cno = exc.addr1.cno;
 			break;
 		}
 		return (0);
@@ -913,28 +914,28 @@ addr2:	switch (cmd.addrcnt) {
 	if (LF_ISSET(E_SETLAST))
 		exp->lastcmd = cp;
 
-	cmd.cmd = cp;
+	exc.cmd = cp;
 #if defined(DEBUG) && 0
 {
 	int __cnt;
 
-	TRACE(sp, "ex_cmd: %s", cmd.cmd->name);
-	if (cmd.addrcnt > 0) {
-		TRACE(sp, "\taddr1 %d", cmd.addr1.lno);
-		if (cmd.addrcnt > 1)
-			TRACE(sp, " addr2: %d", cmd.addr2.lno);
+	TRACE(sp, "ex_cmd: %s", exc.cmd->name);
+	if (exc.addrcnt > 0) {
+		TRACE(sp, "\taddr1 %d", exc.addr1.lno);
+		if (exc.addrcnt > 1)
+			TRACE(sp, " addr2: %d", exc.addr2.lno);
 		TRACE(sp, "\n");
 	}
-	if (cmd.lineno)
-		TRACE(sp, "\tlineno %d", cmd.lineno);
-	if (cmd.flags)
-		TRACE(sp, "\tflags %0x", cmd.flags);
-	if (F_ISSET(&cmd, E_BUFFER))
-		TRACE(sp, "\tbuffer %c", cmd.buffer);
+	if (exc.lineno)
+		TRACE(sp, "\tlineno %d", exc.lineno);
+	if (exc.flags)
+		TRACE(sp, "\tflags %0x", exc.flags);
+	if (F_ISSET(&exc, E_BUFFER))
+		TRACE(sp, "\tbuffer %c", exc.buffer);
 	TRACE(sp, "\n");
-	if (cmd.argc) {
-		for (__cnt = 0; __cnt < cmd.argc; ++__cnt)
-			TRACE(sp, "\targ %d: {%s}", __cnt, cmd.argv[__cnt]);
+	if (exc.argc) {
+		for (__cnt = 0; __cnt < exc.argc; ++__cnt)
+			TRACE(sp, "\targ %d: {%s}", __cnt, exc.argv[__cnt]);
 		TRACE(sp, "\n");
 	}
 }
@@ -957,7 +958,7 @@ addr2:	switch (cmd.addrcnt) {
 		++sp->ccnt;
 
 	/* Do the command. */
-	if ((cp->fn)(sp, ep, &cmd))
+	if ((cp->fn)(sp, ep, &exc))
 		return (1);
 
 #ifdef DEBUG
@@ -982,7 +983,7 @@ addr2:	switch (cmd.addrcnt) {
 	 * stuff to print out.
 	 */
 	 if (LF_ISSET(E_F_PRCLEAR))
-		F_CLR(&cmd, E_F_HASH | E_F_LIST | E_F_PRINT);
+		F_CLR(&exc, E_F_HASH | E_F_LIST | E_F_PRINT);
 
 	/*
 	 * If the command was successful, and there was an explicit flag to
@@ -1010,25 +1011,25 @@ addr2:	switch (cmd.addrcnt) {
 	if (F_ISSET(sp, S_AUTOPRINT) && O_ISSET(sp, O_AUTOPRINT))
 		LF_INIT(E_F_PRINT);
 	else
-		LF_INIT(F_ISSET(&cmd, E_F_HASH | E_F_LIST | E_F_PRINT));
+		LF_INIT(F_ISSET(&exc, E_F_HASH | E_F_LIST | E_F_PRINT));
 
-	memset(&cmd, 0, sizeof(EXCMDARG));
-	cmd.addrcnt = 2;
-	cmd.addr1.lno = cmd.addr2.lno = sp->lno;
-	cmd.addr1.cno = cmd.addr2.cno = sp->cno;
+	memset(&exc, 0, sizeof(EXCMDARG));
+	exc.addrcnt = 2;
+	exc.addr1.lno = exc.addr2.lno = sp->lno;
+	exc.addr1.cno = exc.addr2.cno = sp->cno;
 	if (flags) {
 		switch (flags) {
 		case E_F_HASH:
-			cmd.cmd = &cmds[C_HASH];
-			ex_number(sp, ep, &cmd);
+			exc.cmd = &cmds[C_HASH];
+			ex_number(sp, ep, &exc);
 			break;
 		case E_F_LIST:
-			cmd.cmd = &cmds[C_LIST];
-			ex_list(sp, ep, &cmd);
+			exc.cmd = &cmds[C_LIST];
+			ex_list(sp, ep, &exc);
 			break;
 		case E_F_PRINT:
-			cmd.cmd = &cmds[C_PRINT];
-			ex_pr(sp, ep, &cmd);
+			exc.cmd = &cmds[C_PRINT];
+			ex_pr(sp, ep, &exc);
 			break;
 		}
 	}
