@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 9.8 1995/05/05 18:47:01 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:47:01 $";
+static char sccsid[] = "$Id: cl_term.c,v 9.9 1995/05/26 09:07:13 bostic Exp $ (Berkeley) $Date: 1995/05/26 09:07:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -248,7 +248,7 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 	int nf;
 	char *p, *t, keyname[64];
 
-	VI_INIT;
+	VI_INIT_IGNORE(sp);
 
 #ifdef SYSV_CURSES
 	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(from + 1));
@@ -342,32 +342,49 @@ cl_optchange(sp, opt)
 	clp = CLP(sp);
 	switch (opt) {
 	case O_COLUMNS:
-		/* Set the columns value in the environment for curses. */
+		/*
+		 * XXX
+		 * The actual changing of the row/column and terminal value is
+		 * done by putting them into the environment, which is used by
+		 * curses.  Stupid, but ugly.
+		 *
+		 * Set the columns value in the environment for curses.
+		 */
 		(void)snprintf(buf,
 		    sizeof(buf), "COLUMNS=%lu", O_VAL(sp, O_COLUMNS));
 		if (cl_putenv(buf))
 			return (1);
 
-		VI_INIT;
+		VI_INIT_IGNORE(sp);
 		F_SET(clp, CL_SIGWINCH);
 		break;
 	case O_LINES:
-		/* Set the rows value in the environment for curses. */
+		/*
+		 * XXX
+		 * See comment for O_COLUMNS.
+		 *
+		 * Set the rows value in the environment for curses.
+		 */
 		(void)snprintf(buf,
 		    sizeof(buf), "LINES=%lu", O_VAL(sp, O_LINES));
 		if (cl_putenv(buf))
 			return (1);
 
-		VI_INIT;
+		VI_INIT_IGNORE(sp);
 		F_SET(clp, CL_SIGWINCH);
 		break;
 	case O_TERM:
-		/* Set the terminal value in the environment for curses. */
+		/*
+		 * XXX
+		 * See comment for O_COLUMNS.
+		 *
+		 * Set the terminal value in the environment for curses.
+		 */
 		(void)snprintf(buf, sizeof(buf), "TERM=%s", O_VAL(sp, O_TERM));
 		if (cl_putenv(buf))
 			return (1);
 		
-		VI_INIT;
+		VI_INIT_IGNORE(sp);
 
 		/* Toss any saved visual bell information. */
 		if (clp->VB != NULL) {
@@ -523,7 +540,13 @@ noterm:	if (row == 0)
 	if (col == 0)
 		col = 80;
 
-	/* POSIX 1003.2 requires the environment to override. */
+	/*
+	 * !!!
+	 * POSIX 1003.2 requires the environment to override everything.
+	 * Often, people can get nvi to stop messing up their screen by
+	 * deleting the LINES and COLUMNS environment variables from their
+	 * dot-files.
+	 */
 	if ((s = getenv("LINES")) != NULL)
 		row = strtol(s, NULL, 10);
 	if ((s = getenv("COLUMNS")) != NULL)
@@ -548,13 +571,13 @@ static int
 cl_putenv(s)
 	char *s;
 {
-	/* XXX: Memory leak. */
+	/* XXX: Unfixable memory leak. */
 	return ((s = strdup(s)) == NULL ? 1 : putenv(s));
 }
 
 /*
  * cl_putchar --
- *	Functional version of putchar, for tputs.
+ *	Function version of putchar, for tputs.
  *
  * PUBLIC: void cl_putchar __P((int));
  */
