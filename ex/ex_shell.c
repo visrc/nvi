@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.10 1993/11/12 16:43:09 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:43:09 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.11 1993/11/12 17:48:41 bostic Exp $ (Berkeley) $Date: 1993/11/12 17:48:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -54,7 +54,7 @@ ex_exec_proc(sp, shell, cmd, p1, p2)
 	int isig, rval;
 
 	/* Clear the rest of the screen. */
-	if (F_ISSET(sp, S_MODE_VI) && sp->s_clear(sp))
+	if (sp->s_clear(sp))
 		return (1);
 
 	/*
@@ -133,9 +133,8 @@ ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
 		}
 	}
 
-	/* If in vi mode, redraw. */
-	if (F_ISSET(sp, S_MODE_VI))
-		F_SET(sp, S_REDRAW);
+	/* Redraw the screen. */
+	F_SET(sp, S_REDRAW);
 
 	return (rval);
 }
