@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.33 1992/12/05 11:23:09 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:23:09 $";
+static char sccsid[] = "$Id: exf.c,v 5.34 1992/12/20 15:11:47 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:11:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,7 +42,6 @@ static EXF defexf = {
 	stdout, 				/* stdfp */
 	{ 0 },					/* sre */
 	0, NULL,				/* rptlines, rptlabel */
-	F_FORGET,				/* remember */
 	NULL, 0, 0,				/* name, nlen, flags */
 };
 
@@ -218,7 +217,7 @@ file_start(ep)
 	EXF *ep;
 {
 	struct stat sb;
-	int fd, noname;
+	int fd;
 	char *openname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	fd = -1;
@@ -229,16 +228,13 @@ file_start(ep)
 			return (1);
 		}
 
-		if (file_ins((EXF *)&exfhdr, tname, 1))
-			return (1);
-
-		noname = ep == NULL;
-		if ((ep = file_first(1)) == NULL)
-			PANIC;
-		if (noname)
+		if (ep == NULL) {
+			if (file_ins((EXF *)&exfhdr, tname, 1))
+				return (1);
+			if ((ep = file_first(1)) == NULL)
+				PANIC;
 			FF_SET(ep, F_NONAME);
-		else
-			FF_SET(ep, F_NAMECHANGED);
+		}
 		openname = tname;
 	} else
 		openname = ep->name;
