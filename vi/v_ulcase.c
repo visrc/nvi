@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.6 1992/05/15 10:54:20 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:54:20 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.7 1992/05/18 07:54:07 bostic Exp $ (Berkeley) $Date: 1992/05/18 07:54:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,10 +46,13 @@ v_ulcase(vp, cp, rp)
 
 	for (change = 0; cnt--; ++cno) {
 		if (cno == len) {
-			if (change && file_sline(curf, lno, start, len)) {
-				rp->lno = lno;
-				rp->cno = cno;
-				return (1);
+			if (change) {
+				if (file_sline(curf, lno, start, len)) {
+					rp->lno = lno;
+					rp->cno = cno;
+					return (1);
+				}
+				scr_lchange(lno);
 			}
 			GETLINE(start, ++lno, len);
 			if (start == NULL) {
@@ -73,5 +76,10 @@ v_ulcase(vp, cp, rp)
 	}
 	rp->lno = lno;
 	rp->cno = cno;
-	return (change && file_sline(curf, lno, start, len));
+	if (change) {
+		if (file_sline(curf, lno, start, len))
+			return (1);
+		scr_lchange(lno);
+	}
+	return (0);
 }
