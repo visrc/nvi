@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.28 1994/05/22 10:27:19 bostic Exp $ (Berkeley) $Date: 1994/05/22 10:27:19 $";
+static char sccsid[] = "$Id: db.c,v 8.29 1994/06/27 09:33:23 bostic Exp $ (Berkeley) $Date: 1994/06/27 09:33:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,7 +134,6 @@ file_dline(sp, ep, lno)
 	recno_t lno;
 {
 	DBT key;
-	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", lno);
@@ -192,7 +191,6 @@ file_aline(sp, ep, update, lno, p, len)
 {
 	DBT data, key;
 	recno_t lline;
-	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
@@ -287,7 +285,6 @@ file_iline(sp, ep, lno, p, len)
 {
 	DBT data, key;
 	recno_t lline;
-	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp,
@@ -355,7 +352,6 @@ file_sline(sp, ep, lno, p, len)
 	size_t len;
 {
 	DBT data, key;
-	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp,

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.5 1994/05/23 09:04:24 bostic Exp $ (Berkeley) $Date: 1994/05/23 09:04:24 $";
+static char sccsid[] = "$Id: msg.c,v 8.6 1994/06/27 09:33:36 bostic Exp $ (Berkeley) $Date: 1994/06/27 09:33:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,6 @@ msg_app(gp, sp, inv_video, p, len)
 	size_t len;
 {
 	static int reenter;		/* STATIC: Re-entrancy check. */
-	sigset_t set;
 	MSG *mp, *nmp;
 
 	/*
