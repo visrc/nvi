@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.46 1996/08/19 21:46:05 bostic Exp $ (Berkeley) $Date: 1996/08/19 21:46:05 $";
+static const char sccsid[] = "$Id: msg.c,v 10.47 1996/09/15 14:00:16 bostic Exp $ (Berkeley) $Date: 1996/09/15 14:00:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -629,27 +629,8 @@ msgq_status(sp, lno, flags)
 	(void)sprintf(p, " (pid %lu)", (u_long)getpid());
 	p += strlen(p);
 #endif
-	len = p - bp;
-
-	/*
-	 * Poison.
-	 *
-	 * This message may not be altered in any way, without the written
-	 * permission of Keith Bostic.  See the LICENSE file for further
-	 * information.
-	 */
-#define	POISON	"   UNLICENSED"
-	if (!poisoned && len < sp->cols - ((sizeof(POISON) - 1) + 1)) {
-		memset(p, ' ', sp->cols - len);
-		p = (bp + sp->cols) - ((sizeof(POISON) - 1) + 1);
-		memcpy(p, POISON, sizeof(POISON) - 1);
-		p = (bp + sp->cols) - 1;
-		len = p - bp;
-		poisoned = 1;
-	}
-
 	*p++ = '\n';
-	++len;
+	len = p - bp;
 
 	/*
 	 * There's a nasty problem with long path names.  Cscope and tags files
