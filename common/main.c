@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.83 1994/04/26 14:35:45 bostic Exp $ (Berkeley) $Date: 1994/04/26 14:35:45 $";
+static char sccsid[] = "$Id: main.c,v 8.84 1994/04/26 15:58:01 bostic Exp $ (Berkeley) $Date: 1994/04/26 15:58:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -389,9 +389,11 @@ main(argc, argv)
 
 	/*
 	 * Initialize the signals.  Use sigaction(2), not signal(3), because
-	 * we don't want to always restart system calls on 4BSD systems.  It
-	 * would be nice in some cases to restart system calls, but SA_RESTART
-	 * is a 4BSD extension so we can't use it.
+	 * we don't always want to restart system calls on 4BSD systems -- 
+	 * the example is when waiting for a command mode keystroke and we
+	 * a SIGWINCH arrives.  Try and set the resetart bit (SA_RESTART) on
+	 * SIGALRM, anyway, it's just that many fewer interruptions to deal
+	 * with.
 	 *
 	 * SIGALRM:
 	 *	Walk structures and call handling routines.
@@ -402,7 +404,11 @@ main(argc, argv)
 	 */
 	act.sa_handler = h_alrm;
 	sigemptyset(&act.sa_mask);
+#ifdef SA_RESTART
+	act.sa_flags = SA_RESTART;
+#else
 	act.sa_flags = 0;
+#endif
 	if (sigaction(SIGALRM, &act, NULL)) {
 		msgq(sp, M_SYSERR, "timer: sigaction");
 		goto err;
