@@ -1,9 +1,9 @@
-#	$Id: Makefile,v 8.6 1994/05/25 23:45:53 bostic Exp $ (Berkeley) $Date: 1994/05/25 23:45:53 $
+#	$Id: Makefile,v 8.7 1994/05/26 00:06:26 bostic Exp $ (Berkeley) $Date: 1994/05/26 00:06:26 $
 
 DIR=	usd/13.viref
 SRCS=	vi.ref ex.cmd.roff set.opt.roff vi.cmd.roff ref.so
 MACROS=	-me
-CLEANFILES+=vi.ref.txt vi.ref.ps vi.ref.roff __1 __2 __3 __4
+CLEANFILES+=vi.ref.txt vi.ref.ps vi.ref.roff index index.so __1 __2 __3 __4
 
 paper.ps: index.so vi.ref.roff
 	soelim vi.ref.roff | ${TBL} | ${ROFF} > ${.TARGET}
