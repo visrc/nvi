@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.14 1994/12/01 17:53:53 bostic Exp $ (Berkeley) $Date: 1994/12/01 17:53:53 $";
+static char sccsid[] = "$Id: ex.c,v 9.15 1994/12/01 18:11:01 bostic Exp $ (Berkeley) $Date: 1994/12/01 18:11:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -462,6 +462,19 @@ done:		if (bp != NULL)
 		}
 
 		/*
+		 * !!!
+		 * Historic vi permitted a capital 'P' at the beginning of
+		 * any command that started with 'p'.  Probably wanted the
+		 * P command for backward compatibility, and the code just
+		 * made Preserve and Put work by accident.
+		 */
+		if (*p == 'P') {
+			tmp = 1;
+			*p = 'p';
+		} else
+			tmp = 0;
+
+		/*
 		 * Search the table for the command.
 		 *
 		 * !!!
@@ -478,6 +491,7 @@ done:		if (bp != NULL)
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
+			case 'P':
 			case 's':
 				cmd -= namelen - 1;
 				cmdlen += namelen - 1;
@@ -492,6 +506,8 @@ done:		if (bp != NULL)
 				}
 				/* FALLTHROUGH */
 			default:
+				if (tmp)
+					*p = 'P';
 				ex_unknown(sp, p, namelen);
 				goto err;
 			}
