@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.57 1996/05/02 10:04:22 bostic Exp $ (Berkeley) $Date: 1996/05/02 10:04:22 $
+.\"     $Id: set.opt.roff,v 8.58 1996/05/10 16:55:47 bostic Exp $ (Berkeley) $Date: 1996/05/10 16:55:47 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -1201,6 +1201,7 @@ option, with the exception that it specifies the number of columns
 from the
 .i left
 margin before the line splits, not the right margin.
+.sp
 If both
 .OP wraplen
 and
@@ -1241,6 +1242,14 @@ character, it is discarded.
 If wrapmargin is set to 0,
 or if there is no blank character upon which to split the line,
 the line is not broken.
+.sp
+If both
+.OP wraplen
+and
+.OP wrapmargin
+are set, the
+.OP wrapmargin
+value is used.
 .KY wrapscan
 .IP "wrapscan, ws [on]"
 This option causes searches to wrap around the end or the beginning
