@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.22 1995/10/17 13:13:11 bostic Exp $ (Berkeley) $Date: 1995/10/17 13:13:11 $";
+static char sccsid[] = "$Id: ex.c,v 10.23 1995/10/18 10:32:03 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:32:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1578,6 +1578,9 @@ rsuccess:	tmp = 0;
 
 	/* Turn off any file name error information. */
 	gp->if_name = NULL;
+
+	/* Turn off the global command bit. */
+	F_CLR(sp, S_EX_GLOBAL);
 
 	return (tmp);
 }
