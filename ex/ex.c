@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.128 1994/07/02 20:46:23 bostic Exp $ (Berkeley) $Date: 1994/07/02 20:46:23 $";
+static char sccsid[] = "$Id: ex.c,v 8.129 1994/07/16 12:12:23 bostic Exp $ (Berkeley) $Date: 1994/07/16 12:12:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -511,23 +511,21 @@ loop:	if (nl) {
 	if (cp == &cmds[C_EDIT] || cp == &cmds[C_EX] ||
 	    cp == &cmds[C_NEXT] || cp == &cmds[C_VISUAL_VI]) {
 		/*
-		 * Move to the next non-whitespace character.
-		 * The first '!' is eaten as a force flag.
+		 * Move to the next non-whitespace character.  A '!'
+		 * immediately following the command is eaten as a
+		 * force flag.
 		 */
-		for (tmp = 0; cmdlen > 0; --cmdlen, ++cmd) {
-			ch = *cmd;
-			if (!isblank(ch)) {
-				if (!tmp && ch == '!') {
-					tmp = 1;
-					F_SET(&exc, E_FORCE);
+		if (cmdlen > 0 && *cmd == '!') {
+			++cmd;
+			--cmdlen;
+			F_SET(&exc, E_FORCE);
 
-					/* Reset, don't reparse. */
-					save_cmd = cmd + 1;
-					continue;
-				}
-				break;
-			}
+			/* Reset, don't reparse. */
+			save_cmd = cmd;
 		}
+		for (tmp = 0; cmdlen > 0; --cmdlen, ++cmd)
+			if (!isblank(*cmd))
+				break;
 		/*
 		 * QUOTING NOTE:
 		 *
@@ -779,16 +777,23 @@ two:		switch (exc.addrcnt) {
 	flagoff = 0;
 	for (p = cp->syntax; *p != '\0'; ++p) {
 		/*
-		 * The write command is sensitive to leading whitespace, e.g.
-		 * "write !" is different from "write!".  If not the write
-		 * command, skip leading whitespace.
+		 * The force flag is sensitive to leading whitespace, i.e.
+		 * "next !" is different from "next!".  Handle it before
+		 * skipping leading <blank>s.
 		 */
-		if (cp != &cmds[C_WRITE])
-			for (; cmdlen > 0; --cmdlen, ++cmd) {
-				ch = *cmd;
-				if (!isblank(ch))
-					break;
+		if (*p == '!') {
+			if (cmdlen > 0 && *cmd == '!') {
+				++cmd;
+				--cmdlen;
+				F_SET(&exc, E_FORCE);
 			}
+			continue;
+		}
+
+		/* Skip leading <blank>s. */
+		for (; cmdlen > 0; --cmdlen, ++cmd)
+			if (!isblank(*cmd))
+				break;
 
 		/*
 		 * Quit when reach the end of the command, unless it's a
@@ -796,19 +801,13 @@ two:		switch (exc.addrcnt) {
 		 * to build a reasonable argv for it.  This code guarantees
 		 * that there will be an argv when the function gets called,
 		 * so the correct test is for a length of 0, not for the
-		 * argc > 0.
+		 * argc > 0.  Since '!' can precede commands that do their
+		 * own parsing, we have to have already handled it.
 		 */
-		if (cmdlen == 0 && *p != '!' && *p != 'S' && *p != 's')
+		if (cmdlen == 0 && *p != 'S' && *p != 's')
 			break;
 
 		switch (*p) {
-		case '!':				/* ! */
-			if (*cmd == '!') {
-				++cmd;
-				--cmdlen;
-				F_SET(&exc, E_FORCE);
-			}
-			break;
 		case '1':				/* +, -, #, l, p */
 			/*
 			 * !!!
