@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.5 1995/07/04 12:42:08 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:08 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.6 1995/07/08 12:45:00 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:45:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,15 +63,13 @@ ex_bang(sp, cmdp)
 	int rval;
 	char *bp, *msg;
 
-	NEEDFILE(sp, cmdp);
-
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
 		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
-	/* Set the last bang command. */
+	/* Set the "last bang command" remembered value. */
 	exp = EXP(sp);
 	if (exp->lastbcomm != NULL)
 		free(exp->lastbcomm);
@@ -81,26 +79,22 @@ ex_bang(sp, cmdp)
 	}
 
 	/*
-	 * If the command was modified by the expansion, we redisplay it.
-	 * Redisplaying it in vi mode is tricky, and handled separately
-	 * in each case below.  If we're in ex mode, it's easy, so we just
-	 * do it here.
+	 * If the command was modified by the expansion, it was historically
+	 * redisplayed.
 	 */
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
-		if (F_ISSET(sp, S_EX)) {
-			(void)ex_printf(sp, "!%s\n", ap->bp);
-			(void)ex_fflush(sp);
-		}
 		/*
-		 * Vi: Display the command if modified.  Historic vi displayed
+		 * Display the command if modified.  Historic ex/vi displayed
 		 * the command if it was modified due to file name and/or bang
-		 * expansion.  If piping lines, it was immediately overwritten
-		 * by any error or line change reporting.  We don't the user to
-		 * have to page through the responses, so we only post it until
-		 * it's erased by something else.  Otherwise, pass it on to the
-		 * ex_exec_proc routine to display after the screen has been
-		 * cleaned up.
+		 * expansion.  If piping lines in vi, it would be immediately
+		 * overwritten by any error or line change reporting.  We don't
+		 * want the user to have to enter a key because of this message,
+		 * so we display it as a busy message.
+		 *
+		 * If that's not possible, i.e. we're entering canonical mode,
+		 * pass it on to the ex_exec_proc routine to display after the
+		 * screen has been reset.
 		 */
 		if (F_ISSET(sp, S_VI)) {
 			GET_SPACE_RET(sp, bp, blen, ap->len + 3);
@@ -108,6 +102,9 @@ ex_bang(sp, cmdp)
 			memmove(bp + 1, ap->bp, ap->len);
 			bp[ap->len + 1] = '\n';
 			bp[ap->len + 2] = '\0';
+		} else if (F_ISSET(sp, S_EX)) {
+			(void)ex_printf(sp, "!%s\n", ap->bp);
+			(void)ex_fflush(sp);
 		}
 	}
 
@@ -121,6 +118,8 @@ ex_bang(sp, cmdp)
 	 * vi's historic behavior.
 	 */
 	if (cmdp->addrcnt != 0) {
+		NEEDFILE(sp, cmdp);
+
 		/* Autoprint is set historically, even if the command fails. */
 		F_SET(cmdp, E_AUTOPRINT);
 
@@ -128,12 +127,12 @@ ex_bang(sp, cmdp)
 		 * Vi gets a busy message.
 		 *
 		 * !!!
-		 * Vi doesn't want the <newline> at the end of the message.
+		 * Busy messages don't want the <newline> at the end of the
+		 * message.
 		 */
 		if (bp != NULL) {
 			bp[ap->len + 1] = '\0';
-			if (sp->gp->scr_busy != NULL)
-				(void)sp->gp->scr_busy(sp, bp, 1);
+			(void)sp->gp->scr_busy(sp, bp, 1);
 		}
 
 		/*
@@ -143,7 +142,7 @@ ex_bang(sp, cmdp)
 		 * bad attitude.  The simple solution is to turn it into a
 		 * FILTER_READ operation, but that means that we don't put
 		 * an empty line into the default cut buffer as did historic
-		 * vi.  Tough.
+		 * vi.  Imagine, if you can, my disappointment.
 		 */
 		ftype = FILTER;
 		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
@@ -166,7 +165,7 @@ ex_bang(sp, cmdp)
 		 * did a backward motion it didn't.  And, if you followed a
 		 * backward motion with a forward motion, it wouldn't move to
 		 * the nonblank for either.  Going to the nonblank generally
-		 * seems more useful, so we do it.
+		 * seems more useful and consistent, so we do it.
 		 */
 		sp->lno = rm.lno;
 		sp->cno = rm.cno;
@@ -178,10 +177,10 @@ ex_bang(sp, cmdp)
 	}
 
 	/*
-	 * If no addresses were specified, run the command.  If the file
-	 * has been modified and autowrite is set, write the file back.
-	 * If the file has been modified, autowrite is not set and the
-	 * warn option is set, tell the user about the file.
+	 * If no addresses were specified, run the command.  If the file has
+	 * been modified and autowrite is set, write the file back.  If the
+	 * file has been modified, autowrite is not set and the warn option is
+	 * set, tell the user about the file.
 	 */
 	msg = NULL;
 	if (F_ISSET(sp->ep, F_MODIFIED))
@@ -193,25 +192,20 @@ ex_bang(sp, cmdp)
 		} else if (O_ISSET(sp, O_WARN) && !F_ISSET(sp, S_EX_SILENT))
 			msg = "File modified since last write.\n";
 
-	/* Run the command. */
-	rval = ex_exec_proc(sp, cmdp, ap->bp, bp, msg);
+	rval = ex_exec_proc(sp, cmdp, ap->bp, msg, bp);
 
 ret2:	if (F_ISSET(sp, S_EX)) {
-#ifdef __TK__
 		/*
-		 * Put ex error messages out so they aren't confused with
-		 * the autoprint output.
+		 * Make sure all ex messages are flushed out so they aren't
+		 * confused with any autoprint output.
 		 */
-		if (rval)
-			(void)ex_fflush(sp);
-#endif
+		(void)ex_fflush(sp);
 
 		/* Ex terminates with a bang, even if the command fails. */
 		if (!F_ISSET(sp, S_EX_SILENT))
 			(void)write(STDOUT_FILENO, "!\n", 2);
 	}
 
-	/* Free the extra space. */
 ret1:	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
 
