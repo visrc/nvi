@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.1 1992/05/13 11:38:19 bostic Exp $ (Berkeley) $Date: 1992/05/13 11:38:19 $";
+static char sccsid[] = "$Id: v_word.c,v 5.2 1992/05/15 11:12:18 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:12:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,7 +14,6 @@ static char sccsid[] = "$Id: v_word.c,v 5.1 1992/05/13 11:38:19 bostic Exp $ (Be
 #include <ctype.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "options.h"
 #include "vcmd.h"
 #include "extern.h"
@@ -83,8 +82,8 @@ fword(vp, cp, rp, spaceonly)
 	int empty;
 	char *startp;
 
-	cno = cp->cno;
 	lno = cp->lno;
+	cno = cp->cno;
 
 	EGETLINE(p, lno, len);
 
@@ -116,7 +115,7 @@ fword(vp, cp, rp, spaceonly)
 			if (p == NULL) {
 				/* If already at eof, complain. */
 				if (empty) {
-					v_eof();
+					v_eof(NULL);
 					return (1);
 				}
 				--lno;
@@ -181,7 +180,7 @@ bword(vp, cp, rp, spaceonly)
 
 	/* Check for start of file. */
 	if (lno == 1 && cno == 0) {
-		v_sof();
+		v_sof(NULL);
 		return (1);
 	}
 
@@ -292,8 +291,8 @@ eword(vp, cp, rp, spaceonly)
 	int empty;
 	char *startp;
 
-	cno = cp->cno;
 	lno = cp->lno;
+	cno = cp->cno;
 
 	EGETLINE(p, lno, len);
 
@@ -345,7 +344,7 @@ line:			GETLINE(p, ++lno, len);
 			if (p == NULL) {
 				/* If already at eof, complain. */
 				if (empty) {
-					v_eof();
+					v_eof(NULL);
 					return (1);
 				}
 				--lno;
