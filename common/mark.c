@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 9.6 1994/12/16 12:20:46 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:20:46 $";
+static char sccsid[] = "$Id: mark.c,v 9.7 1994/12/16 14:41:00 bostic Exp $ (Berkeley) $Date: 1994/12/16 14:41:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,10 +107,11 @@ mark_end(sp, ep)
  *	Get the location referenced by a mark.
  */
 int
-mark_get(sp, key, mp)
+mark_get(sp, key, mp, mtype)
 	SCR *sp;
 	ARG_CHAR_T key;
 	MARK *mp;
+	enum msgtype mtype;
 {
 	LMARK *lmp;
 	size_t len;
@@ -120,11 +121,11 @@ mark_get(sp, key, mp)
 
 	lmp = mark_find(sp, key);
 	if (lmp == NULL || lmp->name != key) {
-		msgq(sp, M_BERR, "049|Mark %s: not set", KEY_NAME(sp, key));
+		msgq(sp, mtype, "049|Mark %s: not set", KEY_NAME(sp, key));
                 return (1);
 	}
 	if (F_ISSET(lmp, MARK_DELETED)) {
-		msgq(sp, M_BERR,
+		msgq(sp, mtype,
 		    "050|Mark %s: the line was deleted", KEY_NAME(sp, key));
                 return (1);
 	}
@@ -136,7 +137,7 @@ mark_get(sp, key, mp)
 	 */
 	if ((lmp->lno != 1 || lmp->cno != 0) &&
 	    file_gline(sp, lmp->lno, &len) == NULL) {
-		msgq(sp, M_BERR,
+		msgq(sp, mtype,
 		    "051|Mark %s: cursor position no longer exists",
 		    KEY_NAME(sp, key));
 		return (1);

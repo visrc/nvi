@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 9.3 1994/12/16 12:43:00 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:00 $";
+static char sccsid[] = "$Id: v_mark.c,v 9.4 1994/12/16 14:41:32 bostic Exp $ (Berkeley) $Date: 1994/12/16 14:41:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,7 +87,7 @@ mark(sp, vp, cmd)
 	MARK m;
 	size_t len;
 
-	if (mark_get(sp, vp->character, &vp->m_stop))
+	if (mark_get(sp, vp->character, &vp->m_stop, M_BERR))
 		return (1);
 
 	/*

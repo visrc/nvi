@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.17 1994/12/01 23:05:29 bostic Exp $ (Berkeley) $Date: 1994/12/01 23:05:29 $";
+static char sccsid[] = "$Id: ex.c,v 9.18 1994/12/16 14:41:16 bostic Exp $ (Berkeley) $Date: 1994/12/16 14:41:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1743,7 +1743,7 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 			msgq(sp, M_ERR, "114|No mark name supplied");
 			return (1);
 		}
-		if (mark_get(sp, cmd[1], cur))
+		if (mark_get(sp, cmd[1], cur, M_ERR))
 			return (1);
 		cmd += 2;
 		cmdlen -= 2;
