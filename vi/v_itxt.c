@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.40 1993/05/05 16:18:18 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:18:18 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.41 1993/05/07 14:18:49 bostic Exp $ (Berkeley) $Date: 1993/05/07 14:18:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,6 +216,7 @@ v_iO(sp, ep, vp, fm, tm, rp)
 		if (fm->lno == 1 && file_lline(sp, ep) == 0) {
 			p = NULL;
 			len = 0;
+			LF_CLR(TXT_AUTOINDENT);
 		} else {
 			p = "";
 			len = 0;
@@ -263,6 +264,7 @@ v_io(sp, ep, vp, fm, tm, rp)
 		if (sp->lno == 1 && file_lline(sp, ep) == 0) {
 			p = NULL;
 			len = 0;
+			LF_CLR(TXT_AUTOINDENT);
 		} else {
 			p = "";
 			len = 0;
