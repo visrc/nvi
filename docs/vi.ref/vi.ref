@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.79 1996/08/11 16:05:36 bostic Exp $ (Berkeley) $Date: 1996/08/11 16:05:36 $
+.\"     $Id: vi.ref,v 8.80 1996/08/17 13:21:43 bostic Exp $ (Berkeley) $Date: 1996/08/17 13:21:43 $
 .\"
 .\"
 .so ref.so
@@ -25,9 +25,10 @@ University of California, Berkeley
 Berkeley, California  94720
 .sp 1
 \*(td
+.)l
 .sp 3
+.(l C
 .i Abstract
-.sp
 .)l
 .(q
 .pp
@@ -39,6 +40,30 @@ which are reimplementations of the historic Berkeley
 editors.
 .)q
 .sp 3
+.(l C
+.i Licensing
+.)l
+.sp
+.lp
+Copyright (c) 1991, 1992, 1993, 1994
+.ti +5
+The Regents of the University of California.  All Rights Reserved.
+.lp
+Copyright (c) 1991, 1992, 1993, 1994, 1995, 1996
+.ti +5
+Keith Bostic.  All Rights Reserved.
+.sp
+.pp
+The vi program is shareware.  You are welcome to copy, modify and share
+it with others under the conditions listed in the LICENSE file.  If your
+company finds this vi implementation sufficiently useful that you would
+have purchased it, or your company wishes to redistribute it,
+contributions to the authors would be appreciated.  If your company
+purchased this program or a distribution including this program, and you
+found this program useful, please encourage your vendor to contribute to
+the authors.  To redistribute this program under conditions other than
+these, please contact Keith Bostic for permission.
+.bp 2
 .(l C
 .i Acknowledgements
 .)l
@@ -71,6 +96,11 @@ Scrolling and reworking for
 .CO nvi
 was done by Elan Amir.
 .pp
+George Neville-Neil added the Tcl interpreter,
+and Sven Verdoolaege added the Perl5 interpreter.
+.pp
+Rob Mayoff added Cscope support.
+.pp
 The Institute of Electrical and Electronics Engineers has
 given us permission to reprint portions of their documentation.
 Portions of this document are reprinted and reproduced from
@@ -82,19 +112,10 @@ Engineers, Inc.
 The financial support of UUNET Communications Services is gratefully
 acknowledged.
 .)q
-.sp 6
-.lp
-Copyright (c) 1991, 1993, 1994
-.ti +5
-The Regents of the University of California.  All Rights Reserved.
-.lp
-Copyright (c) 1994, 1995
-.ti +5
-Keith Bostic.  All Rights Reserved.
 .sy echo -n >index
 .oh 'Nvi/Nex Reference''USD:13-%'
 .eh 'USD:13-%''Nvi/Nex Reference'
-.bp 3
+.bp 4
 .SH 1 Description
 .pp
 .CO Vi
@@ -1829,7 +1850,7 @@ of the file.
 .nf
 .so index.so
 .fi
-.bp 2
+.bp 3
 .1c
 .ce 1
 \fB\s+2Table of Contents\s0\fP
