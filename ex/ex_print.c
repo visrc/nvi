@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 9.6 1995/01/29 15:30:29 bostic Exp $ (Berkeley) $Date: 1995/01/29 15:30:29 $";
+static char sccsid[] = "$Id: ex_print.c,v 9.7 1995/02/02 15:08:27 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:08:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,7 +201,7 @@ ex_scprint(sp, fp, tp)
 		if (ex_prchars(sp, p, &col, 5, 0, 0))
 			return (1);
 	}
-	(void)fflush(sp->stdfp);
+	(void)ex_fflush(EXCOOKIE);
 	return (0);
 }
 
