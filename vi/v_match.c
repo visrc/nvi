@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.21 1993/05/10 16:04:38 bostic Exp $ (Berkeley) $Date: 1993/05/10 16:04:38 $";
+static char sccsid[] = "$Id: v_match.c,v 5.22 1993/05/15 21:24:53 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,12 +31,15 @@ v_match(sp, ep, vp, fm, tm, rp)
 {
 	register int cnt, matchc, startc;
 	enum direction dir;
+	recno_t lno;
 	size_t len;
 	int ch;
 	char *p;
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			goto nomatch;
 		GETLINE_ERR(sp, fm->lno);
 		return (1);

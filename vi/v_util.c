@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.30 1993/04/12 14:57:13 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:57:13 $";
+static char sccsid[] = "$Id: v_util.c,v 5.31 1993/05/15 21:25:49 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:25:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,8 @@ v_eof(sp, ep, mp)
 	if (mp == NULL)
 		msgq(sp, M_BERR, "Already at end-of-file.");
 	else {
-		lno = file_lline(sp, ep);
+		if (file_lline(sp, ep, &lno))
+			return;
 		if (mp->lno >= lno)
 			msgq(sp, M_BERR, "Already at end-of-file.");
 		else

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.24 1993/05/14 13:52:33 bostic Exp $ (Berkeley) $Date: 1993/05/14 13:52:33 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.25 1993/05/15 21:26:49 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:26:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,7 +103,8 @@ svi_sm_fill(sp, ep, lno, pos)
 		}
 
 		/* See if less than half a screen from the bottom. */
-		tmp.lno = file_lline(sp, ep);
+		if (file_lline(sp, ep, &tmp.lno))
+			return (1);
 		tmp.off = svi_screens(sp, ep, tmp.lno, NULL);
 		if (svi_sm_nlines(sp, ep,
 		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
@@ -172,7 +173,8 @@ err:	HMAP->lno = 1;
 		if (cnt_orig == 1)					\
 			return (0);					\
 		if (file_gline(sp, ep, lno, NULL) == NULL)		\
-			lno = file_lline(sp, ep);			\
+			if (file_lline(sp, ep, &lno))			\
+				return (1);				\
 		F_SET(sp, S_REDRAW);					\
 		return (svi_sm_fill(sp, ep, lno, P_TOP));		\
 	}								\
@@ -426,7 +428,8 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 			break;
 	}
 
-	last = file_lline(sp, ep);
+	if (file_lline(sp, ep, &last))
+		return (1);
 	for (svmap = *p, scrolled = 0;; scrolled = 1) {
 		if (count == 0)
 			break;
@@ -772,7 +775,8 @@ svi_sm_position(sp, ep, lnop, cnt, pos)
 		 * Set t to point at the map entry one past the last legal
 		 * entry in the map.
 		 */
-		last = file_lline(sp, ep);
+		if (file_lline(sp, ep, &last))
+			return (1);
 		if (TMAP->lno <= last)
 			t = TMAP + 1;
 		else
@@ -799,7 +803,8 @@ svi_sm_position(sp, ep, lnop, cnt, pos)
 		 *
 		 * Check for less than a full screen of lines.
 		 */
-		last = file_lline(sp, ep);
+		if (file_lline(sp, ep, &last))
+			return (1);
 		if (TMAP->lno < last)
 			last = TMAP->lno;
 
@@ -812,7 +817,8 @@ svi_sm_position(sp, ep, lnop, cnt, pos)
 		break;
 	case P_BOTTOM:
 		/* Set p to point at the last legal entry in the map. */
-		last = file_lline(sp, ep);
+		if (file_lline(sp, ep, &last))
+			return (1);
 		if (TMAP->lno <= last)
 			p = TMAP + 1;
 		else

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.26 1993/05/13 14:06:51 bostic Exp $ (Berkeley) $Date: 1993/05/13 14:06:51 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.27 1993/05/15 21:24:41 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,7 @@ v_replace(sp, ep, vp, fm, tm, rp)
 {
 	TEXT *tp;
 	size_t blen, len;
+	recno_t lno;
 	u_long cnt;
 	int rval;
 	char *bp, *p;
@@ -46,7 +47,9 @@ v_replace(sp, ep, vp, fm, tm, rp)
 	 * has odd semantics.
 	 */
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		if (file_lline(sp, ep) != 0) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno != 0) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}

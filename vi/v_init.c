@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.31 1993/05/15 11:24:05 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:24:05 $";
+static char sccsid[] = "$Id: v_init.c,v 5.32 1993/05/15 21:24:47 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,7 +101,9 @@ v_init(sp, ep)
 		sp->cno = ep->cno;
 		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
 			if (sp->lno != 1 || sp->cno != 0) {
-				if ((sp->lno = file_lline(sp, ep)) == 0)
+				if (file_lline(sp, ep, &sp->lno))
+					return (1);
+				if (sp->lno == 0)
 					sp->lno = 1;
 				sp->cno = 0;
 			}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.26 1993/05/08 16:37:07 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:37:07 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.27 1993/05/15 21:24:34 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,6 +131,7 @@ v_chf(sp, ep, vp, fm, tm, rp)
 	register int key;
 	register char *endp, *p;
 	size_t len;
+	recno_t lno;
 	u_long cnt;
 	char *startp;
 
@@ -138,7 +139,9 @@ v_chf(sp, ep, vp, fm, tm, rp)
 	sp->lastckey = key = vp->character;
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			NOTFOUND(key);
 		GETLINE_ERR(sp, fm->lno);
 		return (1);
@@ -197,6 +200,7 @@ v_chF(sp, ep, vp, fm, tm, rp)
 {
 	register int key;
 	register char *p, *endp;
+	recno_t lno;
 	size_t len;
 	u_long cnt;
 
@@ -204,7 +208,9 @@ v_chF(sp, ep, vp, fm, tm, rp)
 	sp->lastckey = key = vp->character;
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			NOTFOUND(key);
 		GETLINE_ERR(sp, fm->lno);
 		return (1);

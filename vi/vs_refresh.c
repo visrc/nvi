@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.61 1993/05/10 14:37:02 bostic Exp $ (Berkeley) $Date: 1993/05/10 14:37:02 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.62 1993/05/15 21:26:32 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:26:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,7 +139,8 @@ svi_refresh(sp, ep)
 		 * calculation is safe because we know there's at least one
 		 * full screen of lines, otherwise couldn't have gotten here.
 		 */
-		lastline = file_lline(sp, ep);
+		if (file_lline(sp, ep, &lastline))
+			return (1);
 		tmp.lno = LNO;
 		tmp.off = 1;
 		lcnt = svi_sm_nlines(sp, ep, &tmp, lastline, sp->t_rows);
@@ -266,7 +267,9 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * here repeatedly.
 	 */
 	if ((p = file_gline(sp, ep, LNO, &len)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lastline))
+			return (1);
+		if (lastline == 0)
 			goto slow;
 		GETLINE_ERR(sp, LNO);
 		return (1);

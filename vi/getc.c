@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 5.15 1993/05/08 09:54:25 bostic Exp $ (Berkeley) $Date: 1993/05/08 09:54:25 $";
+static char sccsid[] = "$Id: getc.c,v 5.16 1993/05/15 21:24:29 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,9 +29,13 @@ getc_init(sp, ep, fm, chp)
 	MARK *fm;
 	int *chp;
 {
+	recno_t lno;
+
 	GM = *fm;
 	if ((GB = file_gline(sp, ep, fm->lno, &GL)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			v_eol(sp, ep, NULL);
 		else
 			GETLINE_ERR(sp, fm->lno);

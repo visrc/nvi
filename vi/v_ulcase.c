@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.23 1993/05/13 11:43:43 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:43 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.24 1993/05/15 21:25:41 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:25:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,9 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 	for (change = -1, cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt;) {
 		/* Get the line; EOF is an infinite sink. */
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) >= fm->lno) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno >= fm->lno) {
 				GETLINE_ERR(sp, fm->lno);
 				rval = 1;
 				break;

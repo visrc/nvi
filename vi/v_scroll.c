@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.34 1993/05/11 16:11:23 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:23 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.35 1993/05/15 21:25:09 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:25:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,8 @@ v_lgoto(sp, ep, vp, fm, tm, rp)
 {
 	recno_t last;
 
-	last = file_lline(sp, ep);
+	if (file_lline(sp, ep, &last))
+		return (1);
 	if (F_ISSET(vp, VC_C1SET)) {
 		if (last < vp->count) {
 			v_eof(sp, ep, fm);

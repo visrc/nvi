@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.22 1993/05/13 16:07:46 bostic Exp $ (Berkeley) $Date: 1993/05/13 16:07:46 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.23 1993/05/15 21:24:23 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,10 +25,13 @@ v_Delete(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	size_t len;
 
 	if (file_gline(sp, ep, fm->lno, &len) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			return (0);
 		GETLINE_ERR(sp, fm->lno);
 		return (1);
@@ -69,7 +72,9 @@ v_delete(sp, ep, vp, fm, tm, rp)
 		return (1);
 
 	/* Check for deleting the file. */
-	if ((nlines = file_lline(sp, ep)) == 0) {
+	if (file_lline(sp, ep, &nlines))
+		return (1);
+	if (nlines == 0) {
 		rp->lno = 1;
 		rp->cno = 0;
 		return (0);

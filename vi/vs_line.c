@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.17 1993/05/14 13:52:13 bostic Exp $ (Berkeley) $Date: 1993/05/14 13:52:13 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.18 1993/05/15 21:26:40 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:26:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,6 +46,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	size_t len, *xp, *yp;
 {
 	CHNAME *cname;
+	recno_t lno;
 	size_t chlen, cols_per_screen, cno_cnt, count_cols, last_count_cols;
 	size_t offset_in_char, skip_screens;
 	int ch, listset, partial, reverse_video;
@@ -115,7 +116,9 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 			*xp = 0;
 			*yp = smp - HMAP;
 		}
-		if (smp->lno > file_lline(sp, ep)) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (smp->lno > lno) {
 			ADDCH(smp->lno == 1 ?
 			    listset && skip_screens == 0 ? '$' : ' ' : '~');
 		} else if (p == NULL) {

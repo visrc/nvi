@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.46 1993/05/13 15:03:31 bostic Exp $ (Berkeley) $Date: 1993/05/13 15:03:31 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.47 1993/05/15 21:25:31 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:25:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,6 +39,7 @@ v_iA(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	u_long cnt;
 	size_t len;
 	u_int flags;
@@ -50,7 +51,9 @@ v_iA(sp, ep, vp, fm, tm, rp)
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/* Move the cursor to the end of the line. */
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno != 0) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
@@ -79,6 +82,7 @@ v_ia(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	u_long cnt;
 	u_int flags;
 	size_t len;
@@ -93,7 +97,9 @@ v_ia(sp, ep, vp, fm, tm, rp)
 		 * repaint the screen.
 		 */
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno != 0) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
@@ -127,6 +133,7 @@ v_iI(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	u_long cnt;
 	size_t len, wlen;
 	u_int flags;
@@ -141,7 +148,9 @@ v_iI(sp, ep, vp, fm, tm, rp)
 		 * the screen.
 		 */
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno != 0) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
@@ -172,6 +181,7 @@ v_ii(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	u_long cnt;
 	size_t len;
 	u_int flags;
@@ -182,7 +192,9 @@ v_ii(sp, ep, vp, fm, tm, rp)
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno != 0) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
@@ -210,7 +222,7 @@ v_iO(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t ai_line;
+	recno_t ai_line, lno;
 	size_t len;
 	u_long cnt;
 	u_int flags;
@@ -220,12 +232,16 @@ v_iO(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp, VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		if (fm->lno == 1 && file_lline(sp, ep) == 0) {
+		if (fm->lno == 1) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno == 0)
+				goto insert;
 			p = NULL;
 			len = 0;
 			ai_line = OOBLNO;
 		} else {
-			p = "";
+insert:			p = "";
 			len = 0;
 			if (file_iline(sp, ep, sp->lno, p, len))
 				return (1);
@@ -256,7 +272,7 @@ v_io(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t ai_line;
+	recno_t ai_line, lno;
 	size_t len;
 	u_long cnt;
 	u_int flags;
@@ -266,12 +282,16 @@ v_io(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		if (sp->lno == 1 && file_lline(sp, ep) == 0) {
+		if (sp->lno == 1) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno == 0)
+				goto insert;
 			p = NULL;
 			len = 0;
 			ai_line = OOBLNO;
 		} else {
-			p = "";
+insert:			p = "";
 			len = 0;
 			if (file_aline(sp, ep, sp->lno, p, len))
 				return (1);
@@ -304,6 +324,7 @@ v_Change(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	size_t len;
 	u_int flags;
 	char *p;
@@ -346,7 +367,9 @@ v_Change(sp, ep, vp, fm, tm, rp)
 	} else { 
 		/* The line may be empty, but that's okay. */
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno != 0) {
 				GETLINE_ERR(sp, tm->lno);
 				return (1);
 			}
@@ -374,6 +397,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	size_t len;
 	u_int flags;
 	int lmode;
@@ -400,9 +424,13 @@ v_change(sp, ep, vp, fm, tm, rp)
 	if (fm->lno == tm->lno)
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL ||
 		    len == 0) {
-			if (p == NULL && file_lline(sp, ep) != 0) {
-				GETLINE_ERR(sp, fm->lno);
-				return (1);
+			if (p == NULL) {
+				if (file_lline(sp, ep, &lno))
+					return (1);
+				if (lno != 0) {
+					GETLINE_ERR(sp, fm->lno);
+					return (1);
+				}
 			}
 			LF_SET(TXT_APPENDEOL);
 			len = 0;
@@ -422,7 +450,9 @@ v_change(sp, ep, vp, fm, tm, rp)
 			return (1);
 
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno != 0) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
@@ -447,6 +477,7 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	u_long cnt;
 	size_t len;
 	u_int flags;
@@ -459,7 +490,9 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 	*rp = *fm;
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	if ((p = file_gline(sp, ep, rp->lno, &len)) == NULL) {
-		if (file_lline(sp, ep) != 0) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno != 0) {
 			GETLINE_ERR(sp, rp->lno);
 			return (1);
 		}
@@ -518,6 +551,7 @@ v_subst(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	size_t len;
 	u_int flags;
 	char *p;
@@ -526,7 +560,9 @@ v_subst(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		if (file_lline(sp, ep) != 0) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno != 0) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.20 1993/05/13 16:25:35 bostic Exp $ (Berkeley) $Date: 1993/05/13 16:25:35 $";
+static char sccsid[] = "$Id: v_word.c,v 5.21 1993/05/15 21:25:58 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:25:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,8 +81,9 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 	int spaceonly;
 {
 	register char *p;
+	recno_t lno;
 	size_t len, llen;
-	u_long cno, cnt, lno;
+	u_long cno, cnt;
 	int empty;
 	char *startp;
 
@@ -90,7 +91,9 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 	cno = fm->cno;
 
 	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			v_eof(sp, ep, NULL);
 		else
 			GETLINE_ERR(sp, lno);
@@ -214,8 +217,9 @@ bword(sp, ep, vp, fm, rp, spaceonly)
 	int spaceonly;
 {
 	register char *p;
+	recno_t lno;
 	size_t len;
-	u_long cno, cnt, lno;
+	u_long cno, cnt;
 	char *startp;
 
 	lno = fm->lno;
@@ -228,7 +232,9 @@ bword(sp, ep, vp, fm, rp, spaceonly)
 	}
 
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			v_sof(sp, NULL);
 		else
 			GETLINE_ERR(sp, lno);
@@ -366,8 +372,9 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 	int spaceonly;
 {
 	register char *p;
+	recno_t lno;
 	size_t len, llen;
-	u_long cno, cnt, lno;
+	u_long cno, cnt;
 	int empty;
 	char *startp;
 
@@ -375,7 +382,9 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 	cno = fm->cno;
 
 	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
-		if (file_lline(sp, ep) == 0)
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
 			v_eof(sp, ep, NULL);
 		else
 			GETLINE_ERR(sp, lno);
