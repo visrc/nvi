@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.17 1993/02/19 11:14:43 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:14:43 $";
+static char sccsid[] = "$Id: v_util.c,v 5.18 1993/02/19 11:25:40 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:25:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,7 +170,7 @@ onwinch(signo)
 
 	/* Do the resize if waiting. */
 	if (FF_ISSET(curf, F_READING)) {
-		curf->scr_update(curf);
+		scr_update(curf);
 		refresh();
 	}
 }
