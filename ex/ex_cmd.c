@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.18 1993/10/11 09:24:20 bostic Exp $ (Berkeley) $Date: 1993/10/11 09:24:20 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.19 1993/10/27 14:51:51 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:51:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -293,7 +293,7 @@ EXCMDLIST const cmds[] = {
 	    "su[spend][!]",
 	    "suspend the edit session"},
 /* C_T */
-	{"t",		ex_move,	E_ADDR2|E_NORC,
+	{"t",		ex_copy,	E_ADDR2|E_NORC,
 	    "l1", 
 	    "[line [,line]] t line [flags]",
 	    "move lines elsewhere in the file"},
