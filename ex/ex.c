@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.50 1996/06/30 16:13:55 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:13:55 $";
+static const char sccsid[] = "$Id: ex.c,v 10.51 1996/07/09 19:01:20 bostic Exp $ (Berkeley) $Date: 1996/07/09 19:01:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -812,7 +812,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 	 * case where the 0 address is only valid if it's a default address.
 	 *
 	 * Also, set a flag if we set the default addresses.  Some commands
-	 * (ex: z) care if the user specified an address of if we just used
+	 * (ex: z) care if the user specified an address or if we just used
 	 * the current cursor.
 	 */
 	switch (F_ISSET(ecp, E_ADDR1 | E_ADDR2 | E_ADDR2_ALL | E_ADDR2_NONE)) {
@@ -1202,7 +1202,7 @@ usage:		msgq(sp, M_ERR, "086|Usage: %s", ecp->cmd->usage);
 	/*
 	 * Verify that the addresses are legal.  Check the addresses here,
 	 * because this is a place where all ex addresses pass through.
-	 * (They don't all pass through ep_line(), for instance.)  We're
+	 * (They don't all pass through ex_line(), for instance.)  We're
 	 * assuming that any non-existent line doesn't exist because it's
 	 * past the end-of-file.  That's a pretty good guess.
 	 *
