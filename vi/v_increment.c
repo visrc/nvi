@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.13 1992/11/06 18:06:02 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:06:02 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.14 1992/11/11 18:24:19 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:24:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,26 +116,18 @@ underflow:			bell();
 		GETLINE_ERR(fm->lno);
 		return (1);
 	}
-	if (vp->klen >= nlen) {
-		bcopy(nbuf, p + fm->cno, nlen);
-		if (vp->klen > nlen) {
-			p += fm->cno + nlen;
-			bcopy(p + vp->klen - nlen, p, len - fm->cno - vp->klen);
-			len -= vp->klen - nlen;
-		}
-		np = NULL;
-	} else {
-		if ((np = malloc(len + nlen)) == NULL) {
-			msg("Error: %s", strerror(errno));
-			return (1);
-		}
-		bcopy(p, np, fm->cno);
-		bcopy(nbuf, np + fm->cno, nlen);
-		bcopy(p + fm->cno + vp->klen,
-		    np + fm->cno + nlen, len - fm->cno - vp->klen);
-		p = np;
-		len = len - vp->klen + nlen;
+
+	if ((np = malloc(len + nlen)) == NULL) {
+		msg("Error: %s", strerror(errno));
+		return (1);
 	}
+	bcopy(p, np, fm->cno);
+	bcopy(nbuf, np + fm->cno, nlen);
+	bcopy(p + fm->cno + vp->klen,
+	    np + fm->cno + nlen, len - fm->cno - vp->klen);
+	p = np;
+	len = len - vp->klen + nlen;
+
 	if (file_sline(curf, fm->lno, p, len))
 		rval = 1;
 	else {
