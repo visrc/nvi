@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 10.5 1995/10/16 15:33:46 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:46 $";
+static char sccsid[] = "$Id: v_left.c,v 10.6 1995/10/18 12:19:23 bostic Exp $ (Berkeley) $Date: 1995/10/18 12:19:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,23 +161,35 @@ v_first(sp, vp)
 
 	/*
 	 * !!!
-	 * The ^ command succeeded if used as a command without a whitespace
-	 * character preceding the cursor in the line, but failed if used as
-	 * a motion component in the same situation.
+	 * The ^ command succeeded if used as a command when the cursor was
+	 * on the first non-blank in the line, but failed if used as a motion
+	 * component in the same situation.
 	 */
-	if (ISMOTION(vp) && vp->m_start.cno <= vp->m_stop.cno) {
+	if (ISMOTION(vp) && vp->m_start.cno == vp->m_stop.cno) {
 		v_sol(sp);
 		return (1);
 	}
 
 	/*
-	 * All commands move to the end of the range.  Motion commands
-	 * adjust the starting point to the character before the current
-	 * one.
+	 * If moving right, non-motion commands move to the end of the range.
+	 * Delete and yank stay at the start.  Motion commands adjust the
+	 * ending point to the character before the current ending charcter.
+	 *
+	 * If moving left, all commands move to the end of the range.  Motion
+	 * commands adjust the starting point to the character before the
+	 * current starting character.
 	 */
-	if (ISMOTION(vp))
-		--vp->m_start.cno;
-	vp->m_final = vp->m_stop;
+	if (vp->m_start.cno < vp->m_stop.cno)
+		if (ISMOTION(vp)) {
+			--vp->m_stop.cno;
+			vp->m_final = vp->m_start;
+		} else
+			vp->m_final = vp->m_stop;
+	else {
+		if (ISMOTION(vp))
+			--vp->m_start.cno;
+		vp->m_final = vp->m_stop;
+	}
 	return (0);
 }
 
@@ -224,14 +236,19 @@ v_ncol(sp, vp)
 
 	/*
 	 * If moving right, non-motion commands move to the end of the range.
-	 * Delete and yank stay at the start.
+	 * Delete and yank stay at the start.  Motion commands adjust the
+	 * ending point to the character before the current ending charcter.
 	 *
 	 * If moving left, all commands move to the end of the range.  Motion
 	 * commands adjust the starting point to the character before the
-	 * current one.
+	 * current starting character.
 	 */
 	if (vp->m_start.cno < vp->m_stop.cno)
-		vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
+		if (ISMOTION(vp)) {
+			--vp->m_stop.cno;
+			vp->m_final = vp->m_start;
+		} else
+			vp->m_final = vp->m_stop;
 	else {
 		if (ISMOTION(vp))
 			--vp->m_start.cno;
