@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.9 1994/11/19 12:31:48 bostic Exp $ (Berkeley) $Date: 1994/11/19 12:31:48 $";
+static char sccsid[] = "$Id: ex.c,v 9.10 1994/11/19 16:55:04 bostic Exp $ (Berkeley) $Date: 1994/11/19 16:55:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1018,8 +1018,10 @@ end2:			break;
 				F_SET(&exc, E_COUNT_NEG);
 			else if (*cmd == '+')
 				F_SET(&exc, E_COUNT_POS);
-			if ((nret = nget_slong(sp, &ltmp, cmd, &t)) != NUM_OK)
+			if ((nret = nget_slong(sp, &ltmp, cmd, &t)) != NUM_OK) {
 				badlno(sp, 0, nret);
+				goto err;
+			}
 			if (ltmp == 0 && *p != '0') {
 				msgq(sp, M_ERR, "104|Count may not be zero");
 				goto err;
@@ -1503,7 +1505,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		case '%':		/* Entire file. */
 			if (sp->ep == NULL) {
 				badlno(sp, 0, NUM_OK);
-				return (0);
+				return (1);
 			}
 			/*
 			 * !!!
@@ -1530,7 +1532,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		case ';':               /* Semi-colon delimiter. */
 			if (sp->ep == NULL) {
 				badlno(sp, 0, NUM_OK);
-				return (0);
+				return (1);
 			}
 			if (addr != ADDR_FOUND)
 				switch (excp->addrcnt) {
@@ -1684,10 +1686,16 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 	case '5': case '6': case '7': case '8': case '9':
 		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
-
-		cur->cno = 0;
-		if ((nret = nget_slong(sp, &cur->lno, cmd, &endp)) != NUM_OK)
+		if ((nret = nget_slong(sp, &val, cmd, &endp)) != NUM_OK) {
 			badlno(sp, 0, nret);
+			return (1);
+		}
+		if (!NPFITS(MAX_REC_NUMBER, 0, val)) {
+			msgq(sp, M_ERR, omsg);
+			return (1);
+		}
+		cur->lno = val;
+		cur->cno = 0;
 		cmdlen -= (endp - cmd);
 		cmd = endp;
 		break;
@@ -1827,8 +1835,10 @@ search:		F_SET(exp, EX_ABSMARK);
 				if ((nret = nget_slong(sp,
 				    &val, cmd, &endp)) != NUM_OK ||
 				    (nret = NADD_SLONG(sp,
-				    total, val)) != NUM_OK)
+				    total, val)) != NUM_OK) {
 					badlno(sp, 0, nret);
+					return (1);
+				}
 				total += isneg ? -val : val;
 				cmdlen -= (endp - cmd);
 				cmd = endp;
