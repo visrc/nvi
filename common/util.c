@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.65 1994/06/20 16:56:38 bostic Exp $ (Berkeley) $Date: 1994/06/20 16:56:38 $";
+static char sccsid[] = "$Id: util.c,v 8.66 1994/06/27 09:32:56 bostic Exp $ (Berkeley) $Date: 1994/06/27 09:32:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -284,7 +284,7 @@ set_alt_name(sp, name)
 	char *name;
 {
 	if (sp->alt_name != NULL)
-		FREE(sp->alt_name, strlen(sp->alt_name) + 1);
+		free(sp->alt_name);
 	if (name == NULL)
 		sp->alt_name = NULL;
 	else if ((sp->alt_name = strdup(name)) == NULL)
@@ -338,10 +338,11 @@ v_strdup(sp, str, len)
 {
 	CHAR_T *copy;
 
-	MALLOC(sp, copy, CHAR_T *, len);
+	MALLOC(sp, copy, CHAR_T *, len + 1);
 	if (copy == NULL)
 		return (NULL);
 	memmove(copy, str, len * sizeof(CHAR_T));
+	copy[len] = '\0';
 	return (copy);
 }
 
