@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.91 1994/03/23 16:40:30 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:40:30 $
+ *	$Id: screen.h,v 8.92 1994/03/23 16:43:26 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:43:26 $
  */
 
 /*
@@ -273,7 +273,7 @@ struct _scr {
 void	 h_alrm __P((int));
 int	 busy_on __P((SCR *, char const *));
 void	 busy_off __P((SCR *));
-int	 rcv_on __P((SCR *));
+int	 rcv_on __P((SCR *, EXF *));
 
 /* Interrupts have no structure, so routines are here. */
 void	 intr_end __P((SCR *));
