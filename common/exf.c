@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.45 1993/02/25 17:42:43 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:42:43 $";
+static char sccsid[] = "$Id: exf.c,v 5.46 1993/02/25 20:27:16 bostic Exp $ (Berkeley) $Date: 1993/02/25 20:27:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -193,10 +193,12 @@ file_start(ep)
 	EXF *ep;
 {
 	struct stat sb;
+	u_int addflags;
 	int fd;
 	char *openname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	fd = -1;
+	addflags = 0;
 	if (ep == NULL || stat(ep->name, &sb)) { 
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
@@ -210,7 +212,7 @@ file_start(ep)
 				return (NULL);
 			if ((ep = file_first(1)) == NULL)
 				return (NULL);
-			FF_SET(ep, F_NONAME);
+			addflags |= F_NONAME;
 		}
 
 		/*
@@ -227,14 +229,11 @@ file_start(ep)
 	} else
 		openname = ep->name;
 
-	/* Only a few bits are retained between edit instances. */
-	ep->flags &= F_RETAINMASK;
-
 	/* Open a db structure. */
 	ep->db = dbopen(openname, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
 	    DEFFILEMODE, DB_RECNO, NULL);
 	if (ep->db == NULL && errno == EAGAIN) {
-		FF_SET(ep, F_RDONLY);
+		addflags |= F_RDONLY;
 		ep->db = dbopen(openname, O_CREAT | O_NONBLOCK | O_RDONLY,
 		    DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
@@ -248,6 +247,10 @@ file_start(ep)
 	}
 	if (fd != -1)
 		(void)close(fd);
+
+	/* Only a few bits are retained between edit instances. */
+	ep->flags &= F_RETAINMASK;
+	FF_SET(ep, addflags);
 
 	/* Flush the line caches. */
 	ep->c_lno = ep->c_nlines = OOBLNO;
