@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.17 1994/01/22 13:38:46 bostic Exp $ (Berkeley) $Date: 1994/01/22 13:38:46 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.18 1994/01/22 17:26:54 bostic Exp $ (Berkeley) $Date: 1994/01/22 17:26:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -174,6 +174,8 @@ svi_line(sp, ep, smp, yp, xp)
 		offset_in_line = smp->c_sboff;
 		offset_in_char = smp->c_scoff;
 		p = &p[offset_in_line];
+		if (skip_screens != 0)
+			cols_per_screen = sp->cols;
 	} else if (smp != HMAP &&
 	    SMAP_CACHE(tsmp = smp - 1) && tsmp->lno == smp->lno) {
 		if (tsmp->c_eclen != tsmp->c_ecsize) {
@@ -188,6 +190,8 @@ svi_line(sp, ep, smp, yp, xp)
 		smp->c_sboff = offset_in_line;
 		smp->c_scoff = offset_in_char;
 		p = &p[offset_in_line];
+		if (skip_screens != 0)
+			cols_per_screen = sp->cols;
 	} else {
 		offset_in_line = 0;
 		offset_in_char = 0;
