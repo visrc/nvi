@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.24 1995/01/23 17:26:42 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:42 $";
+static char sccsid[] = "$Id: ex.c,v 9.25 1995/01/30 09:59:37 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:59:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1088,8 +1088,7 @@ end2:			break;
 			 * The target line should exist for these commands,
 			 * but 0 is legal for them as well.
 			 */
-			if (cur.lno != 0 &&
-			    file_gline(sp, cur.lno, NULL) == NULL) {
+			if (cur.lno != 0 && !file_eline(sp, cur.lno)) {
 				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 				goto err;
 			}
@@ -1216,7 +1215,7 @@ addr2:	switch (exc.addrcnt) {
 				ex_badaddr(sp, cp, A_ZERO, NUM_OK);
 				goto err;
 			}
-		} else if (file_gline(sp, exc.addr2.lno, NULL) == NULL)
+		} else if (!file_eline(sp, exc.addr2.lno))
 			if (F_ISSET(&exc, E_COUNT)) {
 				if (file_lline(sp, &lno))
 					goto err;
@@ -1233,7 +1232,7 @@ addr2:	switch (exc.addrcnt) {
 				ex_badaddr(sp, cp, A_ZERO, NUM_OK);
 				goto err;
 			}
-		} else if (file_gline(sp, exc.addr1.lno, NULL) == NULL) {
+		} else if (!file_eline(sp, exc.addr1.lno)) {
 			ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 			goto err;
 		}
@@ -1407,7 +1406,7 @@ addr2:	switch (exc.addrcnt) {
 				ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 				goto err;
 			}
-			if (file_gline(sp, sp->lno + flagoff, NULL) == NULL) {
+			if (!file_eline(sp, sp->lno + flagoff)) {
 				msgq(sp, M_ERR,
 				    "111|Flag offset past end-of-file");
 				goto err;
