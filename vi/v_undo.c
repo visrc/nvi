@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.3 1993/12/28 17:05:15 bostic Exp $ (Berkeley) $Date: 1993/12/28 17:05:15 $";
+static char sccsid[] = "$Id: v_undo.c,v 8.4 1993/12/28 17:07:20 bostic Exp $ (Berkeley) $Date: 1993/12/28 17:07:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,12 +62,12 @@ v_undo(sp, ep, vp, fm, tm, rp)
 	 * undo, in which case we always undo the last operation.  Since
 	 * 'u' didn't set '.' in historic vi, the breakage should be limited.
 	 */
-	if (!F_ISSET(ep, F_UNDO))
+	if (!F_ISSET(ep, F_UNDO)) {
+		F_SET(ep, F_UNDO);
 		ep->lundo = BACKWARD;
-	else if (!F_ISSET(vp, VC_ISDOT))
+	} else if (!F_ISSET(vp, VC_ISDOT))
 		ep->lundo = ep->lundo == BACKWARD ? FORWARD : BACKWARD;
 
-	F_SET(ep, F_UNDO);
 	switch (ep->lundo) {
 	case BACKWARD:
 		return (log_backward(sp, ep, rp));
