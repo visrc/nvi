@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.2 1992/10/18 13:03:22 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:03:22 $";
+static char sccsid[] = "$Id: db.c,v 5.3 1992/10/26 09:30:57 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:30:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,6 +19,10 @@ static char sccsid[] = "$Id: db.c,v 5.2 1992/10/18 13:03:22 bostic Exp $ (Berkel
 #include "exf.h"
 #include "screen.h"
 #include "extern.h"
+
+static recno_t	 ll_lno = OOBLNO;		/* One line cache. */
+static size_t	 ll_len;
+static u_char	*ll_lp;
 
 /*
  * file_gline --
@@ -39,7 +43,7 @@ file_gline(ep, lno, lenp)
 	 * have to have an oob condition for the look-aside into the input
 	 * buffer anyway.
 	 */
-	if (lno == 0)
+	if (lno == OOBLNO)
 		return (NULL);
 
 	/*
@@ -59,12 +63,22 @@ file_gline(ep, lno, lenp)
 		return (tp->lp);
 	}
 
+	/* Check the cache. */
+	if (lno == ll_lno) {
+		if (lenp)
+			*lenp = ll_len;
+		return (ll_lp);
+	}
+	ll_lno = OOBLNO;
+
 	/* Get the line from the underlying database. */
 	key.data = &lno;
 	key.size = sizeof(lno);
 	switch((ep->db->get)(ep->db, &key, &data, 0)) {
         case -1:
-		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		bell();
+		msg("Error: %s/%d: unable to get line %u: %s.",
+		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		/* FALLTHROUGH */
         case 1:
 		return (NULL);
@@ -73,11 +87,9 @@ file_gline(ep, lno, lenp)
 	if (lenp)
 		*lenp = data.size;
 
-#ifdef NOTDEF
-	/* Update screen. */
-	scr_update(ep, lno, data.data, data.size, LINE_GET);
-#endif
-
+	ll_lno = lno;
+	ll_len = data.size;
+	ll_lp = data.data;
 	return (data.data);
 }
 
@@ -100,12 +112,18 @@ file_dline(ep, lno)
 	key.data = &lno;
 	key.size = sizeof(lno);
 	if ((ep->db->del)(ep->db, &key, 0) == 1) {
-		msg("%s: line %lu: not found", ep->name, lno);
+		bell();
+		msg("Error: %s/%d: unable to delete line %u: %s.",
+		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
 
 	/* Update screen. */
 	scr_update(ep, lno, NULL, 0, LINE_DELETE);
+
+	/* Flush the cache. */
+	if (lno <= ll_lno)
+		ll_lno = OOBLNO;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -135,12 +153,18 @@ file_aline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		bell();
+		msg("Error: %s/%d: unable to append to line %u: %s.",
+		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
 
 	/* Update screen. */
 	scr_update(ep, lno, p, len, LINE_APPEND);
+
+	/* Flush the cache. */
+	if (lno >= ll_lno)
+		ll_lno = OOBLNO;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -170,12 +194,17 @@ file_iline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IBEFORE) == -1) {
-		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		msg("Error: %s/%d: unable to insert at line %u: %s.",
+		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
 
 	/* Update screen. */
 	scr_update(ep, lno, p, len, LINE_INSERT);
+
+	/* Flush the cache. */
+	if (lno >= ll_lno)
+		ll_lno = OOBLNO;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -205,13 +234,18 @@ file_sline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		msg("Error: %s/%d: unable to store line %u: %s.",
+		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
 
 	/* Update screen. */
 	scr_update(ep, lno, p, len, LINE_RESET);
 	
+	/* Flush the cache. */
+	if (lno == ll_lno)
+		ll_lno = OOBLNO;
+
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
 	return (0);
@@ -240,7 +274,8 @@ file_ibresolv(ep, ibp)
 	data.data = tp->lp;
 	data.size = tp->len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		msg("Error: %s/%d: unable to store line %u: %s.",
+		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
 
@@ -249,10 +284,14 @@ file_ibresolv(ep, ibp)
 		data.data = tp->lp;
 		data.size = tp->len;
 		if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-			msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+			msg("Error: %s/%d: unable to store line %u: %s.",
+			    tail(__FILE__), __LINE__, lno, strerror(errno));
 			return (1);
 		}
 	}
+
+	/* Flush the cache. */
+	ll_lno = OOBLNO;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -277,7 +316,8 @@ file_lline(ep)
 
 	switch((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
         case -1:
-		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		msg("Error: %s/%d: unable to get last line: %s.",
+		    tail(__FILE__), __LINE__, strerror(errno));
 		/* FALLTHROUGH */
         case 1:
 		lno = 0;
