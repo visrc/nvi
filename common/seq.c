@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 10.1 1995/04/13 17:18:36 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:36 $";
+static char sccsid[] = "$Id: seq.c,v 10.2 1995/05/05 18:44:29 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:44:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,9 @@ static int e_memcmp __P((CHAR_T *, EVENT *, size_t));
 /*
  * seq_set --
  *	Internal version to enter a sequence.
+ *
+ * PUBLIC: int seq_set __P((SCR *, CHAR_T *,
+ * PUBLIC:    size_t, CHAR_T *, size_t, CHAR_T *, size_t, seq_t, int));
  */
 int
 seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
@@ -134,6 +137,8 @@ mem1:		errno = sv_errno;
 /*
  * seq_delete --
  *	Delete a sequence.
+ *
+ * PUBLIC: int seq_delete __P((SCR *, CHAR_T *, size_t, seq_t));
  */
 int
 seq_delete(sp, input, ilen, stype)
@@ -152,6 +157,8 @@ seq_delete(sp, input, ilen, stype)
 /*
  * seq_mdel --
  *	Delete a map entry, without lookup.
+ *
+ * PUBLIC: int seq_mdel __P((SEQ *));
  */
 int
 seq_mdel(qp)
@@ -171,6 +178,9 @@ seq_mdel(qp)
  * seq_find --
  *	Search the sequence list for a match to a buffer, if ispartial
  *	isn't NULL, partial matches count.
+ *
+ * PUBLIC: SEQ *seq_find
+ * PUBLIC:    __P((SCR *, SEQ **, EVENT *, CHAR_T *, size_t, seq_t, int *));
  */
 SEQ *
 seq_find(sp, lastqp, e_input, c_input, ilen, stype, ispartialp)
@@ -254,6 +264,8 @@ seq_find(sp, lastqp, e_input, c_input, ilen, stype, ispartialp)
 /*
  * seq_close --
  *	Discard all sequences.
+ *
+ * PUBLIC: void seq_close __P((GS *));
  */
 void
 seq_close(gp)
@@ -276,6 +288,8 @@ seq_close(gp)
 /*
  * seq_dump --
  *	Display the sequence entries of a specified type.
+ *
+ * PUBLIC: int seq_dump __P((SCR *, seq_t, int));
  */
 int
 seq_dump(sp, stype, isname)
@@ -294,28 +308,26 @@ seq_dump(sp, stype, isname)
 		++cnt;
 		for (p = qp->input,
 		    olen = qp->ilen, len = 0; olen > 0; --olen, ++p)
-			len += ex_printf(EXCOOKIE, "%s", KEY_NAME(sp, *p));
+			len += ex_puts(sp, KEY_NAME(sp, *p));
 		for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
-			len -= ex_printf(EXCOOKIE, " ");
+			len -= ex_puts(sp, " ");
 
 		if (qp->output != NULL)
 			for (p = qp->output,
 			    olen = qp->olen, len = 0; olen > 0; --olen, ++p)
-				len +=
-				    ex_printf(EXCOOKIE, "%s", KEY_NAME(sp, *p));
+				len += ex_puts(sp, KEY_NAME(sp, *p));
 		else
 			len = 0;
 
 		if (isname && qp->name != NULL) {
 			for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
-				len -= ex_printf(EXCOOKIE, " ");
+				len -= ex_puts(sp, " ");
 			for (p = qp->name,
 			    olen = qp->nlen; olen > 0; --olen, ++p)
-				(void)ex_printf(EXCOOKIE,
-				    "%s", KEY_NAME(sp, *p));
+				(void)ex_puts(sp, KEY_NAME(sp, *p));
 		}
 		F_SET(sp, S_EX_WROTE);
-		(void)ex_printf(EXCOOKIE, "\n");
+		(void)ex_puts(sp, "\n");
 	}
 	return (cnt);
 }
@@ -323,6 +335,8 @@ seq_dump(sp, stype, isname)
 /*
  * seq_save --
  *	Save the sequence entries to a file.
+ *
+ * PUBLIC: int seq_save __P((SCR *, FILE *, char *, seq_t));
  */
 int
 seq_save(sp, fp, prefix, stype)
