@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.88 1994/03/13 11:30:01 bostic Exp $ (Berkeley) $Date: 1994/03/13 11:30:01 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.89 1994/03/13 11:36:46 bostic Exp $ (Berkeley) $Date: 1994/03/13 11:36:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,23 +62,6 @@ static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
 /*
  * v_ntext --
  *	Read in text from the user.
- *
- * !!!
- * Historic vi always used:
- *
- *	^D: autoindent deletion
- *	^H: last character deletion
- *	^W: last word deletion
- *	^V: quote the next character
- *
- * regardless of the user's choices for these characters.  The user's erase
- * and kill characters worked in addition to these characters.  Ex was not
- * completely consistent with this, as it did map the scroll command to the
- * user's EOF character.
- *
- * This implementation does not use fixed characters, but uses whatever the
- * user specified as described by the termios structure.  I'm getting away
- * with something here, but I think I'm unlikely to get caught.
  *
  * !!!
  * Historic vi did a special screen optimization for tab characters.  For
