@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.99 2000/07/21 17:35:05 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:05 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.100 2000/08/30 18:03:44 skimo Exp $ (Berkeley) $Date: 2000/08/30 18:03:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -308,6 +308,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 		tp->ai = tp->insert = tp->offset = tp->owrite = 0;
 		if (lp != NULL) {
 			tp->len = len;
+			BINC_RETW(sp, tp->lb, tp->lb_len, len);
 			MEMMOVEW(tp->lb, lp, len);
 		} else
 			tp->len = 0;
