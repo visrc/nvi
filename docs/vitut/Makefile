@@ -1,17 +1,17 @@
-#	$Id: Makefile,v 8.4 1994/05/23 14:24:45 mckusick Exp $ (Berkeley) $Date: 1994/05/23 14:24:45 $
+#	$Id: Makefile,v 8.5 1996/06/27 19:54:31 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:54:31 $
 
-DIR=	usd/11.vitut
-SRCS=	vi.in vi.chars
 MACROS=	-ms
-CLEANFILES+=summary.* viapwh.*
+ROFF=	groff
+TBL=	tbl
 
-paper.ps: ${SRCS} summary.ps viapwh.ps
-	${TBL} ${SRCS} | ${ROFF} > ${.TARGET}
+vitut.ps: vi.in vi.chars summary.ps viapwh.ps
+	${TBL} vi.in vi.chars | ${ROFF} ${MACROS} > $@
 
 summary.ps: vi.summary
-	${TBL} vi.summary | ${ROFF}  > ${.TARGET}
+	${TBL} vi.summary | ${ROFF}  ${MACROS} > $@
 
 viapwh.ps: vi.apwh.ms
-	${TBL} vi.apwh.ms | ${ROFF} > ${.TARGET}
+	${TBL} vi.apwh.ms | ${ROFF} ${MACROS} > $@
 
-.include <bsd.doc.mk>
+clean:
+	rm -f vitut.ps summary.ps viapwh.ps
