@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.24 1995/11/29 20:47:18 bostic Exp $ (Berkeley) $Date: 1995/11/29 20:47:18 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.25 1996/02/06 17:02:07 bostic Exp $ (Berkeley) $Date: 1996/02/06 17:02:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,15 +183,18 @@ ex_read(sp, cmdp)
 		if (argv_exp2(sp, cmdp, arg, arglen))
 			return (1);
 		/*
-		 * 0/1 args: impossible.
-		 *   2 args: read it.
-		 *  >2 args: object, too many args.
+		 *  0 args: impossible.
+		 *  1 args: unknown expansion, e.g. "$5"; read original
+		 *  2 args: read it.
+		 * >2 args: object, too many args.
 		 */
 		switch (cmdp->argc) {
 		case 0:
-		case 1:
 			abort();
 			/* NOTREACHED */
+		case 1:
+			name = cmdp->argv[0]->bp;
+			goto readit;
 		case 2:
 			name = cmdp->argv[1]->bp;
 			/*
@@ -200,7 +203,7 @@ ex_read(sp, cmdp)
 			 * "unnamed" files, or, if the file had a name, set
 			 * the alternate file name.
 			 */
-			if (F_ISSET(sp->frp, FR_TMPFILE) &&
+readit:			if (F_ISSET(sp->frp, FR_TMPFILE) &&
 			    !F_ISSET(sp->frp, FR_EXNAMED)) {
 				if ((p = v_strdup(sp, cmdp->argv[1]->bp,
 				    cmdp->argv[1]->len)) != NULL) {
