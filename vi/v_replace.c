@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.7 1993/10/31 14:21:13 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:21:13 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.8 1993/10/31 15:19:07 bostic Exp $ (Berkeley) $Date: 1993/10/31 15:19:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 
 		/* The first part of the current line. */
 		if (file_sline(sp, ep, fm->lno, p, fm->cno))
-			return (1);
+			goto err_ret;
 
 		/*
 		 * The rest of the current line.  And, of course, now it gets
@@ -121,27 +121,29 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		    len && isblank(*p); --len, ++p);
 
 		if ((tp = text_init(sp, p, len, len)) == NULL)
-			return (1);
+			goto err_ret;
 		if (txt_auto(sp, ep, fm->lno, NULL, tp))
-			return (1);
+			goto err_ret;
 		rp->cno = tp->ai ? tp->ai - 1 : 0;
 		if (file_aline(sp, ep, 1, fm->lno, tp->lb, tp->len))
-			return (1);
+			goto err_ret;
 		text_free(tp);
 		
+		rval = 0;
+
 		/* All of the middle lines. */
 		while (--cnt)
-			if (file_aline(sp, ep, 1, fm->lno, "", 0))
-				return (1);
-		return (0);
+			if (file_aline(sp, ep, 1, fm->lno, "", 0)) {
+err_ret:			rval = 1;
+				break;
+			}
+	} else {
+		memset(bp + fm->cno, ch, cnt);
+		rval = file_sline(sp, ep, fm->lno, bp, len);
+
+		rp->lno = fm->lno;
+		rp->cno = fm->cno + cnt - 1;
 	}
-
-	memset(bp + fm->cno, ch, cnt);
-	rval = file_sline(sp, ep, fm->lno, bp, len);
-
-	rp->lno = fm->lno;
-	rp->cno = fm->cno + cnt - 1;
-
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }
