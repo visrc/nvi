@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.12 1996/12/11 13:09:08 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:09:08 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.13 1996/12/11 13:35:06 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:35:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,7 +241,9 @@ static int
 vi_quit(ipbp)
 	IP_BUF *ipbp;
 {
-	/* XXX: Nothing. */
+	if (__vi_exitp != NULL)
+		__vi_exitp();
+
 	return (0);
 }
 

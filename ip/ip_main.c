@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.6 1996/12/10 21:01:55 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:01:55 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.7 1996/12/11 13:34:22 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:34:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,12 +83,14 @@ ip_main(argc, argv, gp, ip_arg)
 	ipb.code = SI_QUIT;
 	(void)__vi_send(NULL, &ipb);
 
+	/* Give the screen a couple of seconds to deal with it. */
+	sleep(2);
+
 	/* Free the global and IP private areas. */
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	free(ipp);
 	free(gp);
 #endif
-
 	return (rval);
 }
 

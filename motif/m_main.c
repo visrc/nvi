@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.23 1996/12/11 13:07:17 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:07:17 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.24 1996/12/11 13:34:34 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:34:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,6 +48,7 @@ static	Widget		top_level;
 static	XtAppContext	ctx;
 
 static void onchld __P((int));
+static void onexit __P((void));
 
 
 /* resources for the vi widgets unless the user overrides them */
@@ -183,7 +184,7 @@ static	void	create_top_level_shell( argc, argv )
     XtManageChild( menu_b );
 
     /* add the VI widget from the library */
-    vi_create_editor( "editor", main_w );
+    vi_create_editor( "editor", main_w, onexit );
 
     /* put it up */
     XtRealizeWidget( top_level );
@@ -204,7 +205,7 @@ main(argc, argv)
 	 */
 	create_top_level_shell(&argc, argv);
 
-	/* We need to know if the child process dies horribly. */
+	/* We need to know if the child process goes away. */
 	(void)signal(SIGCHLD, onchld);
 
 	/* Run vi: the parent returns, the child is the vi process. */
@@ -232,4 +233,14 @@ onchld(signo)
 	/* If the vi process goes away, we exit as well. */
 	if (kill(pid, 0))
 		vi_fatal_message(top_level, "The vi process died.  Exiting.");
+}
+
+/*
+ * onexit --
+ *	Function called when the editor "quits".
+ */
+static void
+onexit()
+{
+	exit (0);
 }
