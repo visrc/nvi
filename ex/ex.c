@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.42 1993/10/31 14:45:03 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:45:03 $";
+static char sccsid[] = "$Id: ex.c,v 8.43 1993/10/31 15:14:44 bostic Exp $ (Berkeley) $Date: 1993/10/31 15:14:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -871,8 +871,10 @@ addr2:	switch (cmd.addrcnt) {
 
 #ifdef DEBUG
 	/* Make sure no function left the temporary space locked. */
-	if (F_ISSET(sp->gp, G_TMP_INUSE))
-		abort();
+	if (F_ISSET(sp->gp, G_TMP_INUSE)) {
+		msgq(sp, M_ERR, "Error: ex: temporary buffer not released.");
+		return (1);
+	}
 #endif
 
 	/* If the world changed, we're done. */

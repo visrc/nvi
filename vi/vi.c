@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.24 1993/10/31 14:20:59 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:20:59 $";
+static char sccsid[] = "$Id: vi.c,v 8.25 1993/10/31 15:14:35 bostic Exp $ (Berkeley) $Date: 1993/10/31 15:14:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,8 +150,11 @@ vi(sp, ep)
 			goto err;
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
-		if (F_ISSET(sp->gp, G_TMP_INUSE))
-			abort();
+		if (F_ISSET(sp->gp, G_TMP_INUSE)) {
+			msgq(sp, M_ERR,
+			    "Error: vi: temporary buffer not released.");
+			return (1);
+		}
 #endif
 		/*
 		 * If that command took us out of vi or changed the screen,
