@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.26 1994/01/07 19:29:09 bostic Exp $ (Berkeley) $Date: 1994/01/07 19:29:09 $
+ *	$Id: key.h,v 8.27 1994/03/07 15:53:12 bostic Exp $ (Berkeley) $Date: 1994/03/07 15:53:12 $
  */
 
 /* Structure to return a character and associated information. */
@@ -103,6 +103,9 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #ifndef isblank
 #define	isblank(ch)	((ch) == ' ' || (ch) == '\t')
 #endif
+
+/* The "standard" tab width, for displaying things to users. */
+#define	STANDARD_TAB	6
 
 /* Various special characters, messages. */
 #define	CURSOR_CH	' '			/* Cursor character. */
