@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.14 1994/06/29 18:52:26 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:52:26 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.15 1994/07/02 12:49:34 bostic Exp $ (Berkeley) $Date: 1994/07/02 12:49:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,9 +94,9 @@ ex_move(sp, ep, cmdp)
 	LMARK *lmp;
 	MARK fm1, fm2;
 	recno_t cnt, diff, fl, tl, mfl, mtl;
-	size_t len;
+	size_t blen, len;
 	int mark_reset;
-	char *p;
+	char *bp, *p;
 
 	/*
 	 * It's not possible to move things into the area that's being
@@ -133,6 +133,9 @@ ex_move(sp, ep, cmdp)
 			(void)log_mark(sp, ep, lmp);
 		}
 
+	/* Get memory for the copy. */
+	GET_SPACE_RET(sp, bp, blen, 256);
+
 	/* Move the lines. */
 	diff = (fm2.lno - fm1.lno) + 1;
 	if (tl > fl) {				/* Destination > source. */
@@ -141,7 +144,9 @@ ex_move(sp, ep, cmdp)
 		for (cnt = diff; cnt--;) {
 			if ((p = file_gline(sp, ep, fl, &len)) == NULL)
 				return (1);
-			if (file_aline(sp, ep, 1, tl, p, len))
+			BINC_RET(sp, bp, blen, len);
+			memmove(bp, p, len);
+			if (file_aline(sp, ep, 1, tl, bp, len))
 				return (1);
 			if (mark_reset)
 				for (lmp = ep->marks.lh_first;
@@ -158,7 +163,9 @@ ex_move(sp, ep, cmdp)
 		for (cnt = diff; cnt--;) {
 			if ((p = file_gline(sp, ep, fl, &len)) == NULL)
 				return (1);
-			if (file_aline(sp, ep, 1, tl++, p, len))
+			BINC_RET(sp, bp, blen, len);
+			memmove(bp, p, len);
+			if (file_aline(sp, ep, 1, tl++, bp, len))
 				return (1);
 			if (mark_reset)
 				for (lmp = ep->marks.lh_first;
@@ -171,6 +178,8 @@ ex_move(sp, ep, cmdp)
 				return (1);
 		}
 	}
+	FREE_SPACE(sp, bp, blen);
+
 	sp->lno = tl;				/* Last line moved. */
 	sp->cno = 0;
 
