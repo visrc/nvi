@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.14 1993/10/04 08:47:53 bostic Exp $ (Berkeley) $Date: 1993/10/04 08:47:53 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.15 1993/10/04 11:00:51 bostic Exp $ (Berkeley) $Date: 1993/10/04 11:00:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -439,8 +439,16 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	int cursor_move;
 {
 	SMAP *p, svmap, tmp;
-	recno_t last;
-	int ignore_cursor, scrolled;
+	recno_t last, scount;
+	int ignore_cursor;
+
+	/* Check to see if it's possible. */
+	if (file_lline(sp, ep, &last))
+		return (1);
+	if (last == 0) {
+		v_eof(sp, ep, NULL);
+		return (1);
+	}
 
 	/* Set the default return position. */
 	rp->lno = sp->lno;
@@ -474,6 +482,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	 * If it's a small screen, and the movement is small, open up
 	 * the screen.  Otherwise, compress and repaint.
 	 */
+	scount = count;
 	if (ISSMALLSCREEN(sp))
 		if (count <= HALFTEXT(sp))
 			for (; count && sp->t_rows != sp->t_maxrows;
@@ -481,6 +490,10 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 				if (svi_sm_next(sp, ep, TMAP, TMAP + 1))
 					return (1);
 				++TMAP;
+				if (TMAP->lno > last) {
+					--TMAP;
+					break;
+				}
 				if (svi_line(sp, ep, TMAP, NULL, NULL))
 					return (1);
 			}
@@ -494,17 +507,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 			}
 		}
 
-	if (file_lline(sp, ep, &last))
-		return (1);
-	if (last == 0) {
-		v_eof(sp, ep, NULL);
-		return (1);
-	}
-	for (scrolled = 0;; scrolled = 1) {
-		if (count == 0)
-			break;
-		--count;
-
+	for (; count; --count) {
 		/* Decide what would show up on the screen. */
 		if (svi_sm_next(sp, ep, TMAP, &tmp))
 			return (1);
@@ -531,8 +534,8 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		 * EOF, else move there.  Otherwise, try and place the cursor
 		 * roughly where it was before.
 		 */
-		if (!scrolled || count) {
-			if (sp->lno == last) {
+		if (count) {
+			if (count == scount) {
 				v_eof(sp, ep, NULL);
 				return (1);
 			}
@@ -551,7 +554,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		F_SET(SVP(sp), SVI_CUR_INVALID);
 
 		/* It's an error if we didn't scroll enough. */
-		if (!scrolled || count) {
+		if (count) {
 			v_eof(sp, ep, NULL);
 			return (1);
 		}
@@ -639,8 +642,14 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	int cursor_move;
 {
 	SMAP *p, svmap;
-	int ignore_cursor, scrolled;
+	int ignore_cursor;
 
+	/* If at the start of the file, we're done. */
+	if (HMAP->lno == 1 && HMAP->off == 1) {
+		v_sof(sp, NULL);
+		return (1);
+	}
+			
 	/* Set the default return position. */
 	rp->lno = sp->lno;
 	rp->cno = sp->cno;
@@ -667,14 +676,16 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		}
 	}
 
-	/* Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	/*
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
 	 *
 	 * If it's a small screen, and the movement is small, open up
 	 * the screen.  Otherwise, compress and repaint.
 	 */
 	if (ISSMALLSCREEN(sp))
 		if (count <= HALFTEXT(sp))
-			for (; count && sp->t_rows != sp->t_maxrows;
+			for (; count && sp->t_rows != sp->t_maxrows &&
+			    (HMAP->lno > 1 || HMAP->off > 1);
 			    --count, ++sp->t_rows) {
 				++TMAP;
 				if (svi_sm_1down(sp, ep))
@@ -690,11 +701,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 			}
 		}
 
-	for (scrolled = 0;; scrolled = 1) {
-		if (count == 0)
-			break;
-		--count;
-
+	for (; count; --count) {
 		/* If the line doesn't exist, we're done. */
 		if (HMAP->lno == 1 && HMAP->off == 1)
 			break;
@@ -717,7 +724,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		 * SOF, else move there.  Otherwise, try and place the cursor
 		 * roughly where it was before.
 		 */
-		if (!scrolled || count) {
+		if (count) {
 			if (sp->lno == HMAP->lno) {
 				v_sof(sp, NULL);
 				return (1);
@@ -732,7 +739,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		F_SET(SVP(sp), SVI_CUR_INVALID);
 
 		/* It's an error if we didn't scroll enough. */
-		if (!scrolled || count) {
+		if (count) {
 			v_sof(sp, NULL);
 			return (1);
 		}
