@@ -92,7 +92,7 @@ perl_init(gp)
 	GS *gp;
 {
         char buf[64];
-	char *bootargs[] = { "VI" };
+	char *bootargs[] = { "VI", NULL };
 	AV * av;
 
 #ifndef HAVE_PERL_5_003_01
