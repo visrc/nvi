@@ -3,52 +3,50 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.8 1994/01/24 07:56:44 bostic Exp $ (Berkeley) $Date: 1994/01/24 07:56:44 $
+.\"     $Id: vi.ref,v 8.9 1994/02/21 23:50:58 bostic Exp $ (Berkeley) $Date: 1994/02/21 23:50:58 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
 .Os
-.Sh Name
+.Sh NAME
 .Nm ex, vi, view
 .Nd text editors
 .Sh SYNOPSIS
-.Nm vi
+.Nm \&vi
 .Op Fl eFlRv
 .Op Fl c Ar command
 .Op Fl r Ar file
 .Op Fl t Ar tag
 .Op Fl w Ar size
-.Op Fl x Ar aw
-.br
+.Op Fl x Ar \&aw
 .Nm view
 .Op Fl eFlRv
 .Op Fl c Ar command
 .Op Fl r Ar file
 .Op Fl t Ar tag
 .Op Fl w Ar size
-.Op Fl x Ar aw
-.br
-.Nm ex
+.Op Fl x Ar \&aw
+.Nm \&ex
 .Op Fl eFlRsv
 .Op Fl c Ar command
 .Op Fl r Ar file
 .Op Fl t Ar tag
 .Op Fl w Ar size
-.Op Fl x Ar aw
+.Op Fl x Ar \&aw
 .Sh DESCRIPTION
 .Nm \&Ex
 is a line-oriented text editor.
-.Nm Vi
+.Nm \&Vi
 is a screen oriented text editor, based on
-.Nm ex .
+.Nm \&ex .
 .Nm View
 is the same as using the
 .Fl R
 (read-only) option of
-.Nm vi .
+.Nm \&vi .
 .Nm \&Ex
 and
-.Nm vi
+.Nm \&vi
 are really different interfaces to the same program,
 and it is possible to switch back and forth during the same edit session.
 .Pp
@@ -62,9 +60,9 @@ and
 .Nm nvi
 are intended as bug-for-bug compatible replacements for the original
 Fourth Berkeley Software Distribution (4BSD)
-.Nm ex
+.Nm \&ex
 and
-.Nm vi
+.Nm \&vi
 programs.
 .Pp
 The following options are available:
@@ -92,7 +90,7 @@ the file too.)
 List the files that may be recovered using the
 .Fl r
 option of
-.Nm vi .
+.Nm \&vi .
 This is the new interface for the historic
 .Fl r
 without a file argument syntax.
@@ -105,10 +103,10 @@ Start editing in read-only mode, as if the command name was
 Recover the specified file.
 .It Fl s
 Enter batch mode; applicable only to
-.Nm ex
+.Nm \&ex
 edit sessions.
 Batch mode is useful when running
-.Nm ex
+.Nm \&ex
 scripts.
 Prompts, informative messages and other user oriented things are
 turned off.
@@ -125,7 +123,7 @@ Start editing at the specified tag.
 Set the initial window size to the specified number of lines.
 .It Fl v
 Start editing in vi mode, as if the command name was
-.Nm vi
+.Nm \&vi
 or
 .Nm view .
 .It Fl x
@@ -239,7 +237,7 @@ The command
 makes
 .Nm nvi
 do left-right screen scrolling, instead of the traditional
-.Nm vi
+.Nm \&vi
 line wrapping.
 .Sh RECOVERY
 There is no recovery program for nvi, nor does it run setuid.
@@ -344,7 +342,7 @@ found in the
 found in the
 .Dq "UNIX User's Manual Supplementary Documents" .
 .sp
-.Dq "Ex Reference Manual (Version 3.7)" ,
+.Dq "\&Ex Reference Manual (Version 3.7)" ,
 found in the
 .Dq "UNIX User's Manual Supplementary Documents" .
 .Pp
