@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.59 1994/07/15 16:14:16 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:14:16 $";
+static char sccsid[] = "$Id: options.c,v 8.60 1994/07/15 16:46:42 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:46:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -289,14 +289,6 @@ opts_init(sp)
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
 	(void)snprintf(b1, sizeof(b1), "recdir=%s", _PATH_PRESERVE);
 	SET_DEF(O_RECDIR, b1);
-	/*
-	 * XXX
-	 * Initialize ^D, ^U scrolling value here, we didn't have the
-	 * options information when the screen was initialized.
-	 */
-	sp->defscroll = O_VAL(sp, O_LINES) / 2;
-	(void)snprintf(b1, sizeof(b1), "scroll=%ld", sp->defscroll);
-	SET_DEF(O_SCROLL, b1);
 	SET_DEF(O_SECTIONS, "sections=NHSHH HUnhsh");
 	(void)snprintf(b1, sizeof(b1), "shell=%s",
 	    (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
@@ -309,6 +301,16 @@ opts_init(sp)
 	(void)snprintf(b1, sizeof(b1), "term=%s",
 	    (s = getenv("TERM")) == NULL ? "unknown" : s);
 	SET_DEF(O_TERM, b1);
+
+	/*
+	 * XXX
+	 * Initialize ^D, ^U scrolling value here, after TERM.  (We didn't
+	 * have the options information when the screen was initialized.)
+	 * Initializing term should have created a LINES/COLUMNS value.
+	 */
+	sp->defscroll = O_VAL(sp, O_LINES) / 2;
+	(void)snprintf(b1, sizeof(b1), "scroll=%ld", sp->defscroll);
+	SET_DEF(O_SCROLL, b1);
 
 	/*
 	 * The default window option values are:
