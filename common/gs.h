@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.41 1994/09/16 16:59:19 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:19 $
+ *	$Id: gs.h,v 9.1 1994/11/09 18:37:45 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:45 $
  */
 
 struct _gs {
@@ -85,3 +85,22 @@ struct _gs {
 };
 
 extern GS *__global_list;		/* List of screens. */
+
+/*
+ * Signals/timers have no structure or include files, so it's all here.
+ *
+ * Block all signals that are being handled.  Used to keep the underlying DB
+ * system calls from being interrupted and not restarted, as it could cause
+ * consistency problems.  Also used when vi forks child processes, to avoid
+ * a signal arriving after the fork and before the exec, causing both parent
+ * and child to attempt recovery processing.
+ */
+#define	SIGBLOCK(gp) \
+	(void)sigprocmask(SIG_BLOCK, &(gp)->blockset, NULL);
+#define	SIGUNBLOCK(gp) \
+	(void)sigprocmask(SIG_UNBLOCK, &(gp)->blockset, NULL);
+
+void	 busy_off __P((SCR *));
+int	 busy_on __P((SCR *, char const *));
+void	 sig_end __P((void));
+int	 sig_init __P((SCR *));

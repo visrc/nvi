@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.52 1994/10/24 11:16:14 bostic Exp $ (Berkeley) $Date: 1994/10/24 11:16:14 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.1 1994/11/09 18:35:39 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,23 +32,20 @@ static char sccsid[] = "$Id: vs_smap.c,v 8.52 1994/10/24 11:16:14 bostic Exp $ (
 
 static int	svi_deleteln __P((SCR *, int));
 static int	svi_insertln __P((SCR *, int));
-static int	svi_sm_delete __P((SCR *, EXF *, recno_t));
-static int	svi_sm_down __P((SCR *, EXF *,
-		    MARK *, recno_t, enum sctype, SMAP *));
+static int	svi_sm_delete __P((SCR *, recno_t));
+static int	svi_sm_down __P((SCR *, MARK *, recno_t, enum sctype, SMAP *));
 static int	svi_sm_erase __P((SCR *));
-static int	svi_sm_insert __P((SCR *, EXF *, recno_t));
-static int	svi_sm_reset __P((SCR *, EXF *, recno_t));
-static int	svi_sm_up __P((SCR *, EXF *,
-		    MARK *, recno_t, enum sctype, SMAP *));
+static int	svi_sm_insert __P((SCR *, recno_t));
+static int	svi_sm_reset __P((SCR *, recno_t));
+static int	svi_sm_up __P((SCR *, MARK *, recno_t, enum sctype, SMAP *));
 
 /*
  * svi_change --
  *	Make a change to the screen.
  */
 int
-svi_change(sp, ep, lno, op)
+svi_change(sp, lno, op)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	enum operation op;
 {
@@ -80,14 +77,14 @@ svi_change(sp, ep, lno, op)
 				--p->lno;
 			if (sp->lno >= lno)
 				--sp->lno;
-			F_SET(sp, S_RENUMBER);
+			F_SET(SVP(sp), SVI_SCR_NUMBER);
 			break;
 		case LINE_INSERT:
 			for (p = HMAP; p <= TMAP; ++p)
 				++p->lno;
 			if (sp->lno >= lno)
 				++sp->lno;
-			F_SET(sp, S_RENUMBER);
+			F_SET(SVP(sp), SVI_SCR_NUMBER);
 			break;
 		case LINE_RESET:
 			break;
@@ -95,7 +92,7 @@ svi_change(sp, ep, lno, op)
 		return (0);
 	}
 
-	F_SET(SVP(sp), SVI_SCREENDIRTY);
+	F_SET(SVP(sp), SVI_SCR_DIRTY);
 
 	/* Invalidate the cursor, if it's on this line. */
 	if (sp->lno == lno)
@@ -108,17 +105,17 @@ svi_change(sp, ep, lno, op)
 
 	switch (op) {
 	case LINE_DELETE:
-		if (svi_sm_delete(sp, ep, lno))
+		if (svi_sm_delete(sp, lno))
 			return (1);
-		F_SET(sp, S_RENUMBER);
+		F_SET(SVP(sp), SVI_SCR_NUMBER);
 		break;
 	case LINE_INSERT:
-		if (svi_sm_insert(sp, ep, lno))
+		if (svi_sm_insert(sp, lno))
 			return (1);
-		F_SET(sp, S_RENUMBER);
+		F_SET(SVP(sp), SVI_SCR_NUMBER);
 		break;
 	case LINE_RESET:
-		if (svi_sm_reset(sp, ep, lno))
+		if (svi_sm_reset(sp, lno))
 			return (1);
 		break;
 	default:
@@ -143,9 +140,8 @@ svi_change(sp, ep, lno, op)
  * already filled in, and we just finish up the job.
  */
 int
-svi_sm_fill(sp, ep, lno, pos)
+svi_sm_fill(sp, lno, pos)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	enum position pos;
 {
@@ -163,7 +159,7 @@ svi_sm_fill(sp, ep, lno, pos)
 	 * is already in the map or close by -- scrolling the screen would
 	 * be a lot better than redrawing.
 	 */
-	F_SET(sp, S_REDRAW);
+	F_SET(sp, S_SCR_REFRESH);
 
 	switch (pos) {
 	case P_FILL:
@@ -171,18 +167,18 @@ svi_sm_fill(sp, ep, lno, pos)
 		tmp.off = 1;
 
 		/* See if less than half a screen from the top. */
-		if (svi_sm_nlines(sp, ep,
+		if (svi_sm_nlines(sp,
 		    &tmp, lno, HALFTEXT(sp)) <= HALFTEXT(sp)) {
 			lno = 1;
 			goto top;
 		}
 
 		/* See if less than half a screen from the bottom. */
-		if (file_lline(sp, ep, &tmp.lno))
+		if (file_lline(sp, &tmp.lno))
 			return (1);
 		if (!O_ISSET(sp, O_LEFTRIGHT))
-			tmp.off = svi_opt_screens(sp, ep, tmp.lno, NULL);
-		if (svi_sm_nlines(sp, ep,
+			tmp.off = svi_opt_screens(sp, tmp.lno, NULL);
+		if (svi_sm_nlines(sp,
 		    &tmp, lno, HALFTEXT(sp)) <= HALFTEXT(sp)) {
 			TMAP->lno = tmp.lno;
 			if (!O_ISSET(sp, O_LEFTRIGHT))
@@ -197,14 +193,14 @@ top:			HMAP->lno = lno;
 		}
 		/* If we fail, just punt. */
 		for (p = HMAP; p < TMAP; ++p)
-			if (svi_sm_next(sp, ep, p, p + 1))
+			if (svi_sm_next(sp, p, p + 1))
 				goto err;
 		break;
 	case P_MIDDLE:
 		/* If we fail, guess that the file is too small. */
 middle:		p = HMAP + (TMAP - HMAP) / 2;
 		for (p->lno = lno, p->off = 1; p > HMAP; --p)
-			if (svi_sm_prev(sp, ep, p, p - 1)) {
+			if (svi_sm_prev(sp, p, p - 1)) {
 				lno = 1;
 				goto top;
 			}
@@ -212,18 +208,18 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 		/* If we fail, just punt. */
 		p = HMAP + (TMAP - HMAP) / 2;
 		for (; p < TMAP; ++p)
-			if (svi_sm_next(sp, ep, p, p + 1))
+			if (svi_sm_next(sp, p, p + 1))
 				goto err;
 		break;
 	case P_BOTTOM:
 		if (lno != OOBLNO) {
 			TMAP->lno = lno;
 			if (!O_ISSET(sp, O_LEFTRIGHT))
-				TMAP->off = svi_opt_screens(sp, ep, lno, NULL);
+				TMAP->off = svi_opt_screens(sp, lno, NULL);
 		}
 		/* If we fail, guess that the file is too small. */
 bottom:		for (p = TMAP; p > HMAP; --p)
-			if (svi_sm_prev(sp, ep, p, p - 1)) {
+			if (svi_sm_prev(sp, p, p - 1)) {
 				lno = 1;
 				goto top;
 			}
@@ -240,7 +236,7 @@ bottom:		for (p = TMAP; p > HMAP; --p)
 err:	HMAP->lno = 1;
 	HMAP->off = 1;
 	for (p = HMAP; p < TMAP; ++p)
-		if (svi_sm_next(sp, ep, p, p + 1))
+		if (svi_sm_next(sp, p, p + 1))
 			return (1);
 	return (0);
 }
@@ -258,11 +254,11 @@ err:	HMAP->lno = 1;
 	if (cnt_orig >= sp->t_rows) {					\
 		if (cnt_orig == 1)					\
 			return (0);					\
-		if (file_gline(sp, ep, lno, NULL) == NULL)		\
-			if (file_lline(sp, ep, &lno))			\
+		if (file_gline(sp, lno, NULL) == NULL)			\
+			if (file_lline(sp, &lno))			\
 				return (1);				\
-		F_SET(sp, S_REDRAW);					\
-		return (svi_sm_fill(sp, ep, lno, P_TOP));		\
+		F_SET(sp, S_SCR_REFRESH);				\
+		return (svi_sm_fill(sp, lno, P_TOP));			\
 	}								\
 }
 
@@ -271,9 +267,8 @@ err:	HMAP->lno = 1;
  *	Delete a line out of the SMAP.
  */
 static int
-svi_sm_delete(sp, ep, lno)
+svi_sm_delete(sp, lno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 {
 	SMAP *p, *t;
@@ -306,10 +301,10 @@ svi_sm_delete(sp, ep, lno)
 
 	/* Display the new lines. */
 	for (p = TMAP - cnt_orig;;) {
-		if (p < TMAP && svi_sm_next(sp, ep, p, p + 1))
+		if (p < TMAP && svi_sm_next(sp, p, p + 1))
 			return (1);
 		/* svi_sm_next() flushed the cache. */
-		if (svi_line(sp, ep, ++p, NULL, NULL))
+		if (svi_line(sp, ++p, NULL, NULL))
 			return (1);
 		if (p == TMAP)
 			break;
@@ -322,9 +317,8 @@ svi_sm_delete(sp, ep, lno)
  *	Insert a line into the SMAP.
  */
 static int
-svi_sm_insert(sp, ep, lno)
+svi_sm_insert(sp, lno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 {
 	SMAP *p, *t;
@@ -338,7 +332,7 @@ svi_sm_insert(sp, ep, lno)
 	if (O_ISSET(sp, O_LEFTRIGHT))
 		cnt_orig = 1;
 	else
-		cnt_orig = svi_opt_screens(sp, ep, lno, NULL);
+		cnt_orig = svi_opt_screens(sp, lno, NULL);
 
 	TOO_WEIRD;
 
@@ -367,7 +361,7 @@ svi_sm_insert(sp, ep, lno)
 		t->lno = lno;
 		t->off = cnt;
 		SMAP_FLUSH(t);
-		if (svi_line(sp, ep, t, NULL, NULL))
+		if (svi_line(sp, t, NULL, NULL))
 			return (1);
 	}
 	return (0);
@@ -378,9 +372,8 @@ svi_sm_insert(sp, ep, lno)
  *	Reset a line in the SMAP.
  */
 static int
-svi_sm_reset(sp, ep, lno)
+svi_sm_reset(sp, lno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 {
 	SMAP *p, *t;
@@ -398,7 +391,7 @@ svi_sm_reset(sp, ep, lno)
 	} else {
 		for (cnt_orig = 0,
 		    t = p; t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
-		cnt_new = svi_opt_screens(sp, ep, lno, NULL);
+		cnt_new = svi_opt_screens(sp, lno, NULL);
 	}
 
 	TOO_WEIRD;
@@ -406,7 +399,7 @@ svi_sm_reset(sp, ep, lno)
 	if (cnt_orig == cnt_new) {
 		do {
 			SMAP_FLUSH(p);
-			if (svi_line(sp, ep, p, NULL, NULL))
+			if (svi_line(sp, p, NULL, NULL))
 				return (1);
 		} while (++p < t);
 		return (0);
@@ -437,7 +430,7 @@ svi_sm_reset(sp, ep, lno)
 			t->lno = lno;
 			t->off = cnt;
 			SMAP_FLUSH(t);
-			if (svi_line(sp, ep, t, NULL, NULL))
+			if (svi_line(sp, t, NULL, NULL))
 				return (1);
 		}
 	} else {
@@ -457,16 +450,16 @@ svi_sm_reset(sp, ep, lno)
 			t->lno = lno;
 			t->off = cnt;
 			SMAP_FLUSH(t);
-			if (svi_line(sp, ep, t, NULL, NULL))
+			if (svi_line(sp, t, NULL, NULL))
 				return (1);
 		}
 
 		/* Display the new lines at the bottom of the screen. */
 		for (t = TMAP - diff;;) {
-			if (t < TMAP && svi_sm_next(sp, ep, t, t + 1))
+			if (t < TMAP && svi_sm_next(sp, t, t + 1))
 				return (1);
 			/* svi_sm_next() flushed the cache. */
-			if (svi_line(sp, ep, ++t, NULL, NULL))
+			if (svi_line(sp, ++t, NULL, NULL))
 				return (1);
 			if (t == TMAP)
 				break;
@@ -481,9 +474,8 @@ svi_sm_reset(sp, ep, lno)
  *	semantics based on the vi command, *sigh*.
  */
 int
-svi_sm_scroll(sp, ep, rp, count, scmd)
+svi_sm_scroll(sp, rp, count, scmd)
 	SCR *sp;
-	EXF *ep;
 	MARK *rp;
 	recno_t count;
 	enum sctype scmd;
@@ -498,7 +490,7 @@ svi_sm_scroll(sp, ep, rp, count, scmd)
 	F_SET(SVP(sp), SVI_CUR_INVALID);
 
 	/* Find the cursor in the screen. */
-	if (svi_sm_cursor(sp, ep, &smp))
+	if (svi_sm_cursor(sp, &smp))
 		return (1);
 
 	switch (scmd) {
@@ -506,14 +498,14 @@ svi_sm_scroll(sp, ep, rp, count, scmd)
 	case CNTRL_U:
 	case CNTRL_Y:
 	case Z_CARAT:
-		if (svi_sm_down(sp, ep, rp, count, scmd, smp))
+		if (svi_sm_down(sp, rp, count, scmd, smp))
 			return (1);
 		break;
 	case CNTRL_D:
 	case CNTRL_E:
 	case CNTRL_F:
 	case Z_PLUS:
-		if (svi_sm_up(sp, ep, rp, count, scmd, smp))
+		if (svi_sm_up(sp, rp, count, scmd, smp))
 			return (1);
 		break;
 	default:
@@ -532,7 +524,7 @@ svi_sm_scroll(sp, ep, rp, count, scmd)
 	 * Live with it.
 	 */
 	if (scmd != CNTRL_E && scmd != CNTRL_Y &&
-	    rp->cno == 0 && nonblank(sp, ep, rp->lno, &rp->cno))
+	    rp->cno == 0 && nonblank(sp, rp->lno, &rp->cno))
 		return (1);
 
 	return (0);
@@ -543,9 +535,8 @@ svi_sm_scroll(sp, ep, rp, count, scmd)
  *	Scroll the SMAP up count logical lines.
  */
 static int
-svi_sm_up(sp, ep, rp, count, scmd, smp)
+svi_sm_up(sp, rp, count, scmd, smp)
 	SCR *sp;
-	EXF *ep;
 	MARK *rp;
 	enum sctype scmd;
 	recno_t count;
@@ -565,17 +556,17 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 	 * the cursor wasn't at the end of the map, test to see if the map
 	 * is mostly empty.
 	 */
-	if (svi_sm_next(sp, ep, TMAP, &s1))
+	if (svi_sm_next(sp, TMAP, &s1))
 		return (1);
-	if (s1.lno > TMAP->lno && !file_gline(sp, ep, s1.lno, NULL)) {
+	if (s1.lno > TMAP->lno && !file_gline(sp, s1.lno, NULL)) {
 		if (scmd == CNTRL_E || scmd == Z_PLUS || smp == TMAP) {
-			v_eof(sp, ep, NULL);
+			v_eof(sp, NULL);
 			return (1);
 		}
-		if (svi_sm_next(sp, ep, smp, &s1))
+		if (svi_sm_next(sp, smp, &s1))
 			return (1);
-		if (s1.lno > smp->lno && !file_gline(sp, ep, s1.lno, NULL)) {
-			v_eof(sp, ep, NULL);
+		if (s1.lno > smp->lno && !file_gline(sp, s1.lno, NULL)) {
+			v_eof(sp, NULL);
 			return (1);
 		}
 	}
@@ -598,28 +589,28 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 			if (svi_sm_erase(sp))
 				return (1);
 			for (; count--; s1 = s2) {
-				if (svi_sm_next(sp, ep, &s1, &s2))
+				if (svi_sm_next(sp, &s1, &s2))
 					return (1);
 				if (s2.lno != s1.lno &&
-				    !file_gline(sp, ep, s2.lno, NULL))
+				    !file_gline(sp, s2.lno, NULL))
 					break;
 			}
 			TMAP[0] = s2;
-			if (svi_sm_fill(sp, ep, OOBLNO, P_BOTTOM))
+			if (svi_sm_fill(sp, OOBLNO, P_BOTTOM))
 				return (1);
-			return (svi_sm_position(sp, ep, rp, 0, P_TOP));
+			return (svi_sm_position(sp, rp, 0, P_TOP));
 		}
-		cursor_set = scmd == CNTRL_E || svi_sm_cursor(sp, ep, &ssmp);
+		cursor_set = scmd == CNTRL_E || svi_sm_cursor(sp, &ssmp);
 		for (; count &&
 		    sp->t_rows != sp->t_maxrows; --count, ++sp->t_rows) {
-			if (svi_sm_next(sp, ep, TMAP, &s1))
+			if (svi_sm_next(sp, TMAP, &s1))
 				return (1);
 			if (TMAP->lno != s1.lno &&
-			    !file_gline(sp, ep, s1.lno, NULL))
+			    !file_gline(sp, s1.lno, NULL))
 				break;
 			*++TMAP = s1;
 			/* svi_sm_next() flushed the cache. */
-			if (svi_line(sp, ep, TMAP, NULL, NULL))
+			if (svi_line(sp, TMAP, NULL, NULL))
 				return (1);
 
 			if (!cursor_set)
@@ -635,15 +626,15 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 
 	for (echanged = zset = 0; count; --count) {
 		/* Decide what would show up on the screen. */
-		if (svi_sm_next(sp, ep, TMAP, &s1))
+		if (svi_sm_next(sp, TMAP, &s1))
 			return (1);
 
 		/* If the line doesn't exist, we're done. */
-		if (TMAP->lno != s1.lno && !file_gline(sp, ep, s1.lno, NULL))
+		if (TMAP->lno != s1.lno && !file_gline(sp, s1.lno, NULL))
 			break;
 
 		/* Scroll the screen cursor up one logical line. */
-		if (svi_sm_1up(sp, ep))
+		if (svi_sm_1up(sp))
 			return (1);
 		switch (scmd) {
 		case CNTRL_E:
@@ -680,7 +671,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 		if (echanged) {
 			rp->lno = smp->lno;
 			rp->cno =
-			    svi_cm_private(sp, ep, smp->lno, smp->off, sp->rcm);
+			    svi_cm_private(sp, smp->lno, smp->off, sp->rcm);
 		}
 		return (0);
 	case CNTRL_F:
@@ -702,7 +693,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 		 */
 		for (; count; --count, ++smp)
 			if (smp == TMAP ||
-			    !file_gline(sp, ep, smp[1].lno, NULL))
+			    !file_gline(sp, smp[1].lno, NULL))
 				break;
 		break;
 	case Z_PLUS:
@@ -712,7 +703,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 		abort();
 	}
 
-	if (!SMAP_CACHE(smp) && svi_line(sp, ep, smp, NULL, NULL))
+	if (!SMAP_CACHE(smp) && svi_line(sp, smp, NULL, NULL))
 		return (1);
 	rp->lno = smp->lno;
 	rp->cno = smp->c_sboff;
@@ -724,9 +715,8 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
  *	Scroll the SMAP up one.
  */
 int
-svi_sm_1up(sp, ep)
+svi_sm_1up(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	/*
 	 * Delete the top line of the screen.  Shift the screen map up.
@@ -738,15 +728,15 @@ svi_sm_1up(sp, ep)
 
 	/* One-line screens can fail. */
 	if (HMAP == TMAP) {
-		if (svi_sm_next(sp, ep, TMAP, TMAP))
+		if (svi_sm_next(sp, TMAP, TMAP))
 			return (1);
 	} else {
 		memmove(HMAP, HMAP + 1, (sp->rows - 1) * sizeof(SMAP));
-		if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
+		if (svi_sm_next(sp, TMAP - 1, TMAP))
 			return (1);
 	}
 	/* svi_sm_next() flushed the cache. */
-	if (svi_line(sp, ep, TMAP, NULL, NULL))
+	if (svi_line(sp, TMAP, NULL, NULL))
 		return (1);
 	return (0);
 }
@@ -778,9 +768,8 @@ svi_deleteln(sp, cnt)
  *	Scroll the SMAP down count logical lines.
  */
 static int
-svi_sm_down(sp, ep, rp, count, scmd, smp)
+svi_sm_down(sp, rp, count, scmd, smp)
 	SCR *sp;
-	EXF *ep;
 	MARK *rp;
 	recno_t count;
 	SMAP *smp;
@@ -814,23 +803,23 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 			if (svi_sm_erase(sp))
 				return (1);
 			for (; count--; s1 = s2) {
-				if (svi_sm_prev(sp, ep, &s1, &s2))
+				if (svi_sm_prev(sp, &s1, &s2))
 					return (1);
 				if (s2.lno == 1 && s2.off == 1)
 					break;
 			}
 			HMAP[0] = s2;
-			if (svi_sm_fill(sp, ep, OOBLNO, P_TOP))
+			if (svi_sm_fill(sp, OOBLNO, P_TOP))
 				return (1);
-			return (svi_sm_position(sp, ep, rp, 0, P_BOTTOM));
+			return (svi_sm_position(sp, rp, 0, P_BOTTOM));
 		}
-		cursor_set = scmd == CNTRL_Y || svi_sm_cursor(sp, ep, &ssmp);
+		cursor_set = scmd == CNTRL_Y || svi_sm_cursor(sp, &ssmp);
 		for (; count &&
 		    sp->t_rows != sp->t_maxrows; --count, ++sp->t_rows) {
 			if (HMAP->lno == 1 && HMAP->off == 1)
 				break;
 			++TMAP;
-			if (svi_sm_1down(sp, ep))
+			if (svi_sm_1down(sp))
 				return (1);
 		}
 		if (!cursor_set) {
@@ -847,7 +836,7 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 			break;
 
 		/* Scroll the screen and cursor down one logical line. */
-		if (svi_sm_1down(sp, ep))
+		if (svi_sm_1down(sp))
 			return (1);
 		switch (scmd) {
 		case CNTRL_Y:
@@ -882,7 +871,7 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 		 */
 		if (!count) {
 			for (smp = TMAP; smp > HMAP; --smp)
-				if (file_gline(sp, ep, smp->lno, NULL))
+				if (file_gline(sp, smp->lno, NULL))
 					break;
 			break;
 		}
@@ -907,7 +896,7 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 		if (ychanged) {
 			rp->lno = smp->lno;
 			rp->cno =
-			    svi_cm_private(sp, ep, smp->lno, smp->off, sp->rcm);
+			    svi_cm_private(sp, smp->lno, smp->off, sp->rcm);
 		}
 		return (0);
 	case Z_CARAT:
@@ -917,7 +906,7 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 		abort();
 	}
 
-	if (!SMAP_CACHE(smp) && svi_line(sp, ep, smp, NULL, NULL))
+	if (!SMAP_CACHE(smp) && svi_line(sp, smp, NULL, NULL))
 		return (1);
 	rp->lno = smp->lno;
 	rp->cno = smp->c_sboff;
@@ -946,9 +935,8 @@ svi_sm_erase(sp)
  *	Scroll the SMAP down one.
  */
 int
-svi_sm_1down(sp, ep)
+svi_sm_1down(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	/*
 	 * Clear the bottom line of the screen, insert a line at the top
@@ -961,10 +949,10 @@ svi_sm_1down(sp, ep)
 	if (svi_insertln(sp, 1))
 		return (1);
 	memmove(HMAP + 1, HMAP, (sp->rows - 1) * sizeof(SMAP));
-	if (svi_sm_prev(sp, ep, HMAP + 1, HMAP))
+	if (svi_sm_prev(sp, HMAP + 1, HMAP))
 		return (1);
 	/* svi_sm_prev() flushed the cache. */
-	if (svi_line(sp, ep, HMAP, NULL, NULL))
+	if (svi_line(sp, HMAP, NULL, NULL))
 		return (1);
 	return (0);
 }
@@ -996,9 +984,8 @@ svi_insertln(sp, cnt)
  *	Fill in the next entry in the SMAP.
  */
 int
-svi_sm_next(sp, ep, p, t)
+svi_sm_next(sp, p, t)
 	SCR *sp;
-	EXF *ep;
 	SMAP *p, *t;
 {
 	size_t lcnt;
@@ -1008,7 +995,7 @@ svi_sm_next(sp, ep, p, t)
 		t->lno = p->lno + 1;
 		t->off = p->off;
 	} else {
-		lcnt = svi_opt_screens(sp, ep, p->lno, NULL);
+		lcnt = svi_opt_screens(sp, p->lno, NULL);
 		if (lcnt == p->off) {
 			t->lno = p->lno + 1;
 			t->off = 1;
@@ -1025,9 +1012,8 @@ svi_sm_next(sp, ep, p, t)
  *	Fill in the previous entry in the SMAP.
  */
 int
-svi_sm_prev(sp, ep, p, t)
+svi_sm_prev(sp, p, t)
 	SCR *sp;
-	EXF *ep;
 	SMAP *p, *t;
 {
 	SMAP_FLUSH(t);
@@ -1039,7 +1025,7 @@ svi_sm_prev(sp, ep, p, t)
 		t->off = p->off - 1;
 	} else {
 		t->lno = p->lno - 1;
-		t->off = svi_opt_screens(sp, ep, t->lno, NULL);
+		t->off = svi_opt_screens(sp, t->lno, NULL);
 	}
 	return (t->lno == 0);
 }
@@ -1049,9 +1035,8 @@ svi_sm_prev(sp, ep, p, t)
  *	Return the SMAP entry referenced by the cursor.
  */
 int
-svi_sm_cursor(sp, ep, smpp)
+svi_sm_cursor(sp, smpp)
 	SCR *sp;
-	EXF *ep;
 	SMAP **smpp;
 {
 	SMAP *p;
@@ -1070,7 +1055,7 @@ svi_sm_cursor(sp, ep, smpp)
 			*smpp = p;
 			return (0);
 		}
-		if (!SMAP_CACHE(p) && svi_line(sp, ep, p, NULL, NULL))
+		if (!SMAP_CACHE(p) && svi_line(sp, p, NULL, NULL))
 			return (1);
 		if (p->c_eboff >= sp->cno) {
 			*smpp = p;
@@ -1089,9 +1074,8 @@ svi_sm_cursor(sp, ep, smpp)
  *	know what's really out there.
  */
 int
-svi_sm_position(sp, ep, rp, cnt, pos)
+svi_sm_position(sp, rp, cnt, pos)
 	SCR *sp;
-	EXF *ep;
 	MARK *rp;
 	u_long cnt;
 	enum position pos;
@@ -1110,7 +1094,7 @@ svi_sm_position(sp, ep, rp, cnt, pos)
 		if (cnt > TMAP - HMAP)
 			goto sof;
 		smp = HMAP + cnt;
-		if (cnt && file_gline(sp, ep, smp->lno, NULL) == NULL) {
+		if (cnt && file_gline(sp, smp->lno, NULL) == NULL) {
 sof:			msgq(sp, M_BERR, "219|Movement past the end-of-screen");
 			return (1);
 		}
@@ -1122,8 +1106,8 @@ sof:			msgq(sp, M_BERR, "219|Movement past the end-of-screen");
 		 * If the screen isn't filled, find the middle of what's
 		 * real and move there.
 		 */
-		if (file_gline(sp, ep, TMAP->lno, NULL) == NULL) {
-			if (file_lline(sp, ep, &last))
+		if (file_gline(sp, TMAP->lno, NULL) == NULL) {
+			if (file_lline(sp, &last))
 				return (1);
 			for (smp = TMAP; smp->lno > last && smp > HMAP; --smp);
 			if (smp > HMAP)
@@ -1141,8 +1125,8 @@ sof:			msgq(sp, M_BERR, "219|Movement past the end-of-screen");
 		if (cnt > TMAP - HMAP)
 			goto eof;
 		smp = TMAP - cnt;
-		if (file_gline(sp, ep, smp->lno, NULL) == NULL) {
-			if (file_lline(sp, ep, &last))
+		if (file_gline(sp, smp->lno, NULL) == NULL) {
+			if (file_lline(sp, &last))
 				return (1);
 			for (; smp->lno > last && smp > HMAP; --smp);
 			if (cnt > smp - HMAP) {
@@ -1158,7 +1142,7 @@ eof:				msgq(sp, M_BERR,
 	}
 
 	/* Make sure that the cached information is valid. */
-	if (!SMAP_CACHE(smp) && svi_line(sp, ep, smp, NULL, NULL))
+	if (!SMAP_CACHE(smp) && svi_line(sp, smp, NULL, NULL))
 		return (1);
 	rp->lno = smp->lno;
 	rp->cno = smp->c_sboff;
@@ -1172,9 +1156,8 @@ eof:				msgq(sp, M_BERR,
  *	start of some file line, less than a maximum value.
  */
 recno_t
-svi_sm_nlines(sp, ep, from_sp, to_lno, max)
+svi_sm_nlines(sp, from_sp, to_lno, max)
 	SCR *sp;
-	EXF *ep;
 	SMAP *from_sp;
 	recno_t to_lno;
 	size_t max;
@@ -1191,12 +1174,12 @@ svi_sm_nlines(sp, ep, from_sp, to_lno, max)
 	if (from_sp->lno > to_lno) {
 		lcnt = from_sp->off - 1;	/* Correct for off-by-one. */
 		for (lno = from_sp->lno; --lno >= to_lno && lcnt <= max;)
-			lcnt += svi_opt_screens(sp, ep, lno, NULL);
+			lcnt += svi_opt_screens(sp, lno, NULL);
 	} else {
 		lno = from_sp->lno;
-		lcnt = (svi_opt_screens(sp, ep, lno, NULL) - from_sp->off) + 1;
+		lcnt = (svi_opt_screens(sp, lno, NULL) - from_sp->off) + 1;
 		for (; ++lno < to_lno && lcnt <= max;)
-			lcnt += svi_opt_screens(sp, ep, lno, NULL);
+			lcnt += svi_opt_screens(sp, lno, NULL);
 	}
 	return (lcnt);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.50 1994/08/31 17:14:25 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:14:25 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.1 1994/11/09 18:35:42 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ svi_split(sp, argv, argc)
 	}
 
 	/* Get a new screen. */
-	if (screen_init(sp, &tsp, 0))
+	if (screen_init(sp, &tsp))
 		return (1);
 	CALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	if (_HMAP(tsp) == NULL)
@@ -88,7 +88,7 @@ svi_split(sp, argv, argc)
 	 */
 	tsp->cols = sp->cols;
 
-	cnt = svi_sm_cursor(sp, sp->ep, &smp) ? 0 : smp - HMAP;
+	cnt = svi_sm_cursor(sp, &smp) ? 0 : smp - HMAP;
 	if (cnt <= half) {			/* Parent is top half. */
 		/* Child. */
 		tsp->rows = sp->rows - half;
@@ -217,16 +217,15 @@ svi_split(sp, argv, argc)
 		++sp->ep->refcnt;
 
 		tsp->frp->flags = sp->frp->flags;
-		tsp->frp->lno = sp->lno;
-		tsp->frp->cno = sp->cno;
-		F_SET(tsp->frp, FR_CURSORSET);
+		tsp->lno = sp->lno;
+		tsp->cno = sp->cno;
 
 		/* Copy the parent's map into the child's map. */
 		memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
 	} else {
 		if (file_init(tsp, tsp->frp, NULL, 0))
 			goto err;
-		(void)svi_sm_fill(tsp, tsp->ep, 1, P_TOP);
+		(void)svi_sm_fill(tsp, 1, P_TOP);
 	}
 
 	/* Everything's initialized, put the screen on the displayed queue.*/
@@ -247,7 +246,7 @@ svi_split(sp, argv, argc)
 	clrtoeol();
 
 	/* Redraw the status line for the parent screen. */
-	(void)msg_status(sp, sp->ep, sp->lno, 0);
+	(void)msg_status(sp, sp->lno, 0);
 
 	/* Save the parent screen's cursor information. */
 	sp->frp->lno = sp->lno;
@@ -255,7 +254,7 @@ svi_split(sp, argv, argc)
 	F_SET(sp->frp, FR_CURSORSET);
 
 	/* Completely redraw the child screen. */
-	F_SET(tsp, S_REDRAW);
+	F_SET(tsp, S_SCR_REFRESH);
 
 	/* Switch screens. */
 	sp->nextdisp = tsp;
@@ -357,9 +356,9 @@ svi_join(csp, nsp)
 		sp->t_maxrows += csp->rows;
 		sp->t_rows = sp->t_minrows = sp->t_maxrows;
 		TMAP = HMAP + (sp->t_rows - 1);
-		if (svi_sm_fill(sp, sp->ep, sp->lno, P_FILL))
+		if (svi_sm_fill(sp, sp->lno, P_FILL))
 			return (1);
-		F_SET(sp, S_REDRAW);
+		F_SET(sp, S_SCR_REFRESH);
 	}
 
 	/* Reset the length of the default scroll. */
@@ -504,7 +503,7 @@ svi_swap(csp, nsp, name)
 	TMAP = HMAP + (sp->t_rows - 1);
 
 	/* Fill the map. */
-	if (svi_sm_fill(sp, sp->ep, sp->lno, P_FILL))
+	if (svi_sm_fill(sp, sp->lno, P_FILL))
 		return (1);
 
 	/*
@@ -518,7 +517,7 @@ svi_swap(csp, nsp, name)
 	CIRCLEQ_INSERT_AFTER(&csp->gp->dq, csp, sp, q);
 	SIGUNBLOCK(sp->gp);
 
-	F_SET(sp, S_REDRAW);
+	F_SET(sp, S_SCR_REFRESH);
 	return (0);
 }
 
@@ -600,8 +599,8 @@ toosmall:			msgq(sp, M_BERR,
 		g->t_minrows += count;
 	g->t_maxrows += count;
 	_TMAP(g) += count;
-	(void)msg_status(g, g->ep, g->lno, 0);
-	F_SET(g, S_REFORMAT);
+	(void)msg_status(g, g->lno, 0);
+	F_SET(g, S_SCR_REFORMAT);
 
 	s->rows -= count;
 	s->t_rows -= count;
@@ -609,8 +608,8 @@ toosmall:			msgq(sp, M_BERR,
 	if (s->t_minrows > s->t_maxrows)
 		s->t_minrows = s->t_maxrows;
 	_TMAP(s) -= count;
-	(void)msg_status(s, s->ep, s->lno, 0);
-	F_SET(s, S_REFORMAT);
+	(void)msg_status(s, s->lno, 0);
+	F_SET(s, S_SCR_REFORMAT);
 
 	return (0);
 }

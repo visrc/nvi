@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.19 1994/07/28 12:34:54 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:34:54 $
+ *	$Id: cut.h,v 9.1 1994/11/09 18:37:39 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:39 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -59,11 +59,11 @@ struct _text {				/* Text: a linked list of lines. */
 #define	CUT_LINEMODE	0x01		/* Cut in line mode. */
 #define	CUT_NUMOPT	0x02		/* Numeric buffer: optional. */
 #define	CUT_NUMREQ	0x04		/* Numeric buffer: required. */
-int	 cut __P((SCR *, EXF *, CHAR_T *, MARK *, MARK *, int));
+int	 cut __P((SCR *, CHAR_T *, MARK *, MARK *, int));
 
-int	 cut_line __P((SCR *, EXF *, recno_t, size_t, size_t, CB *));
-int	 delete __P((SCR *, EXF *, MARK *, MARK *, int));
-int	 put __P((SCR *, EXF *, CB *, CHAR_T *, MARK *, MARK *, int));
+int	 cut_line __P((SCR *, recno_t, size_t, size_t, CB *));
+int	 delete __P((SCR *, MARK *, MARK *, int));
+int	 put __P((SCR *, CB *, CHAR_T *, MARK *, MARK *, int));
 
 void	 text_free __P((TEXT *));
 TEXT	*text_init __P((SCR *, const char *, size_t, size_t));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.34 1994/10/13 17:30:06 bostic Exp $ (Berkeley) $Date: 1994/10/13 17:30:06 $";
+static char sccsid[] = "$Id: db.c,v 9.1 1994/11/09 18:37:46 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,7 @@ static char sccsid[] = "$Id: db.c,v 8.34 1994/10/13 17:30:06 bostic Exp $ (Berke
 #include "vi.h"
 #include "excmd.h"
 
-static __inline int scr_update
-    __P((SCR *, EXF *, recno_t, enum operation, int));
+static __inline int scr_update __P((SCR *, recno_t, enum operation, int));
 
 /*
  * file_gline --
@@ -37,9 +36,8 @@ static __inline int scr_update
  *	call file_rline to retrieve it from the database.
  */
 char *
-file_gline(sp, ep, lno, lenp)
+file_gline(sp, lno, lenp)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;				/* Line number. */
 	size_t *lenp;				/* Length store. */
 {
@@ -75,7 +73,7 @@ file_gline(sp, ep, lno, lenp)
 		if (lno > l2)
 			lno -= l2 - l1;
 	}
-	return (file_rline(sp, ep, lno, lenp));
+	return (file_rline(sp, lno, lenp));
 }
 
 /*
@@ -84,15 +82,16 @@ file_gline(sp, ep, lno, lenp)
  *	it from the file.
  */
 char *
-file_rline(sp, ep, lno, lenp)
+file_rline(sp, lno, lenp)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;				/* Line number. */
 	size_t *lenp;				/* Length store. */
 {
 	DBT data, key;
+	EXF *ep;
 
 	/* Check the cache. */
+	ep = sp->ep;
 	if (lno == ep->c_lno) {
 		if (lenp)
 			*lenp = ep->c_len;
@@ -128,12 +127,12 @@ file_rline(sp, ep, lno, lenp)
  *	Delete a line from the file.
  */
 int
-file_dline(sp, ep, lno)
+file_dline(sp, lno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 {
 	DBT key;
+	EXF *ep;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", lno);
@@ -143,13 +142,14 @@ file_dline(sp, ep, lno)
 	 * Marks and global commands have to know when lines are
 	 * inserted or deleted.
 	 */
-	mark_insdel(sp, ep, LINE_DELETE, lno);
-	global_insdel(sp, ep, LINE_DELETE, lno);
+	mark_insdel(sp, LINE_DELETE, lno);
+	global_insdel(sp, LINE_DELETE, lno);
 
 	/* Log change. */
-	log_line(sp, ep, lno, LOG_LINE_DELETE);
+	log_line(sp, lno, LOG_LINE_DELETE);
 
 	/* Update file. */
+	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	SIGBLOCK(sp->gp);
@@ -168,11 +168,11 @@ file_dline(sp, ep, lno)
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
-		(void)rcv_init(sp, ep);
+		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
 	/* Update screen. */
-	return (scr_update(sp, ep, lno, LINE_DELETE, 1));
+	return (scr_update(sp, lno, LINE_DELETE, 1));
 }
 
 /*
@@ -180,15 +180,15 @@ file_dline(sp, ep, lno)
  *	Append a line into the file.
  */
 int
-file_aline(sp, ep, update, lno, p, len)
+file_aline(sp, update, lno, p, len)
 	SCR *sp;
-	EXF *ep;
 	int update;
 	recno_t lno;
 	char *p;
 	size_t len;
 {
 	DBT data, key;
+	EXF *ep;
 	int isempty;
 	recno_t lline;
 
@@ -210,15 +210,16 @@ file_aline(sp, ep, update, lno, p, len)
 	 */
 	isempty = 0;
 	if (lno == 0) {
-		if (file_lline(sp, ep, &lline))
+		if (file_lline(sp, &lline))
 			return (1);
 		if (lline == 0) {
 			isempty = 1;
-			F_SET(sp, S_REDRAW);
+			F_SET(sp, S_SCR_REFRESH);
 		}
 	}
 
 	/* Update file. */
+	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
@@ -239,11 +240,11 @@ file_aline(sp, ep, update, lno, p, len)
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
-		(void)rcv_init(sp, ep);
+		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
 	/* Log change. */
-	log_line(sp, ep, lno + 1, LOG_LINE_APPEND);
+	log_line(sp, lno + 1, LOG_LINE_APPEND);
 
 	/*
 	 * XXX
@@ -262,8 +263,8 @@ file_aline(sp, ep, update, lno, p, len)
 	 * I know, but someone complained.
 	 */
 	if (!isempty)
-		mark_insdel(sp, ep, LINE_INSERT, lno + 1);
-	global_insdel(sp, ep, LINE_INSERT, lno + 1);
+		mark_insdel(sp, LINE_INSERT, lno + 1);
+	global_insdel(sp, LINE_INSERT, lno + 1);
 
 	/*
 	 * Update screen.
@@ -275,7 +276,7 @@ file_aline(sp, ep, update, lno, p, len)
 	 * is called to copy the new lines from the cut buffer into the file,
 	 * it has to know not to update the screen again.
 	 */
-	return (scr_update(sp, ep, lno, LINE_APPEND, update));
+	return (scr_update(sp, lno, LINE_APPEND, update));
 }
 
 /*
@@ -283,14 +284,14 @@ file_aline(sp, ep, update, lno, p, len)
  *	Insert a line into the file.
  */
 int
-file_iline(sp, ep, lno, p, len)
+file_iline(sp, lno, p, len)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	char *p;
 	size_t len;
 {
 	DBT data, key;
+	EXF *ep;
 	recno_t lline;
 
 #if defined(DEBUG) && 0
@@ -300,13 +301,14 @@ file_iline(sp, ep, lno, p, len)
 
 	/* Very nasty special case.  See comment in file_aline(). */
 	if (lno == 1) {
-		if (file_lline(sp, ep, &lline))
+		if (file_lline(sp, &lline))
 			return (1);
 		if (lline == 0)
-			F_SET(sp, S_REDRAW);
+			F_SET(sp, S_SCR_REFRESH);
 	}
 
 	/* Update file. */
+	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
@@ -327,22 +329,22 @@ file_iline(sp, ep, lno, p, len)
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
-		(void)rcv_init(sp, ep);
+		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
 	/* Log change. */
-	log_line(sp, ep, lno, LOG_LINE_INSERT);
+	log_line(sp, lno, LOG_LINE_INSERT);
 
 	/*
 	 * XXX
 	 * Marks and global commands have to know when lines are
 	 * inserted or deleted.
 	 */
-	mark_insdel(sp, ep, LINE_INSERT, lno);
-	global_insdel(sp, ep, LINE_INSERT, lno);
+	mark_insdel(sp, LINE_INSERT, lno);
+	global_insdel(sp, LINE_INSERT, lno);
 
 	/* Update screen. */
-	return (scr_update(sp, ep, lno, LINE_INSERT, 1));
+	return (scr_update(sp, lno, LINE_INSERT, 1));
 }
 
 /*
@@ -350,23 +352,24 @@ file_iline(sp, ep, lno, p, len)
  *	Store a line in the file.
  */
 int
-file_sline(sp, ep, lno, p, len)
+file_sline(sp, lno, p, len)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	char *p;
 	size_t len;
 {
 	DBT data, key;
+	EXF *ep;
 
 #if defined(DEBUG) && 0
 	TRACE(sp,
 	    "replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	/* Log before change. */
-	log_line(sp, ep, lno, LOG_LINE_RESET_B);
+	log_line(sp, lno, LOG_LINE_RESET_B);
 
 	/* Update file. */
+	ep = sp->ep;
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
@@ -385,14 +388,14 @@ file_sline(sp, ep, lno, p, len)
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
-		(void)rcv_init(sp, ep);
+		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
 	/* Log after change. */
-	log_line(sp, ep, lno, LOG_LINE_RESET_F);
+	log_line(sp, lno, LOG_LINE_RESET_F);
 
 	/* Update screen. */
-	return (scr_update(sp, ep, lno, LINE_RESET, 1));
+	return (scr_update(sp, lno, LINE_RESET, 1));
 }
 
 /*
@@ -400,15 +403,16 @@ file_sline(sp, ep, lno, p, len)
  *	Return the number of lines in the file.
  */
 int
-file_lline(sp, ep, lnop)
+file_lline(sp, lnop)
 	SCR *sp;
-	EXF *ep;
 	recno_t *lnop;
 {
 	DBT data, key;
+	EXF *ep;
 	recno_t lno;
 
 	/* Check the cache. */
+	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO) {
 		*lnop = (F_ISSET(sp, S_INPUT) &&
 		    ((TEXT *)sp->tiqp->cqh_last)->lno > ep->c_nlines ?
@@ -451,19 +455,20 @@ file_lline(sp, ep, lnop)
  *	just changed.
  */
 static __inline int
-scr_update(sp, ep, lno, op, current)
+scr_update(sp, lno, op, current)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	enum operation op;
 	int current;
 {
+	EXF *ep;
 	SCR *tsp;
 
+	ep = sp->ep;
 	if (ep->refcnt != 1)
 		for (tsp = sp->gp->dq.cqh_first;
 		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 			if (sp != tsp && tsp->ep == ep)
-				(void)sp->s_change(tsp, ep, lno, op);
-	return (current && sp->s_change(sp, ep, lno, op));
+				(void)sp->s_change(tsp, lno, op);
+	return (current && sp->s_change(sp, lno, op));
 }

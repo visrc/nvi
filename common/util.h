@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 8.1 1994/10/09 14:02:14 bostic Exp $ (Berkeley) $Date: 1994/10/09 14:02:14 $
+ *	$Id: util.h,v 9.1 1994/11/09 18:38:20 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:20 $
  */
 
 /*
@@ -20,7 +20,7 @@
 #endif
 
 /* Function prototypes that don't seem to belong anywhere else. */
-int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
+int	 nonblank __P((SCR *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
 char	*tail __P((char *));
 CHAR_T	*v_strdup __P((SCR *, const CHAR_T *, size_t));

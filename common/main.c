@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.113 1994/09/26 19:47:50 bostic Exp $ (Berkeley) $Date: 1994/09/26 19:47:50 $";
+static char sccsid[] = "$Id: main.c,v 9.1 1994/11/09 18:37:50 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,10 +47,8 @@ static char sccsid[] = "$Id: main.c,v 8.113 1994/09/26 19:47:50 bostic Exp $ (Be
 #include "vi.h"
 #include "excmd.h"
 #include "../ex/tag.h"
+#include "../sex/sex_screen.h"
 
-enum rc { NOEXIST, NOPERM, OK };
-
-static enum rc	 exrc_isok __P((SCR *, struct stat *, char *, int, int));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((void));
 static void	 obsolete __P((char *[]));
@@ -66,12 +64,11 @@ main(argc, argv)
 	extern int optind;
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
-	struct stat hsb, lsb;
 	GS *gp;
 	FREF *frp;
 	SCR *sp;
 	u_int flags, saved_vi_mode;
-	int ch, eval, flagchk, lflag, readonly, silent, snapshot;
+	int ch, eval, flagchk, lflag, need_lreset, readonly, silent, snapshot;
 	char *excmdarg, *myname, *p, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
@@ -170,12 +167,20 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
-	/* Silent is only applicable to ex. */
-	if (silent && !LF_ISSET(S_EX))
-		errx(1, "-s only applicable to ex.");
+	/* List recovery files if -r specified without file arguments. */
+	if (flagchk == 'r' && argv[0] == NULL)
+		exit(rcv_list(sp));
 
 	/* Build and initialize the GS structure. */
 	__global_list = gp = gs_init();
+
+	/* Set the file snapshot flag. */
+	if (snapshot)
+		F_SET(gp, G_SNAPSHOT);
+
+	/* Silent is only applicable to ex. */
+	if (silent && !LF_ISSET(S_EX))
+		errx(1, "-s only applicable to ex.");
 
 	/*
 	 * If not reading from a terminal, it's like -s was specified to
@@ -191,24 +196,7 @@ main(argc, argv)
 		goto err;
 	}
 
-	/*
-	 * Build and initialize the first/current screen.  This is a bit
-	 * tricky.  If an error is returned, we may or may not have a
-	 * screen structure.  If we have a screen structure, put it on a
-	 * display queue so that the error messages get displayed.
-	 *
-	 * !!!
-	 * Signals not on, no need to block them for queue manipulation.
-	 */
-	if (screen_init(NULL, &sp, flags)) {
-		if (sp != NULL)
-			CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
-		goto err;
-	}
-	sp->saved_vi_mode = saved_vi_mode;
-	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
-
-	if (trace_f != NULL) {
+	if (trace_f != NULL) {		/* Trace file initialization. */
 #ifdef DEBUG
 		if ((gp->tracefp = fopen(trace_f, "w")) == NULL)
 			err(1, "%s", trace_f);
@@ -218,18 +206,42 @@ main(argc, argv)
 		    "041|-T support not compiled into this version");
 #endif
 	}
+
+	/*
+	 * Build and initialize the first/current screen.  This is a bit
+	 * tricky.  If an error is returned, we may or may not have a
+	 * screen structure.  If we have a screen structure, put it on a
+	 * display queue so that the error messages get displayed.
+	 *
+	 * !!!
+	 * Signals not turned on, don't block them for queue manipulation.
+	 *
+	 * !!!
+	 * Everything we do until we go interactive is done in ex mode.
+	 */
+	if (screen_init(NULL, &sp)) {
+		if (sp != NULL)
+			CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
+		goto err;
+	}
+	F_SET(sp, S_EX);
+	sp->saved_vi_mode = saved_vi_mode;
+	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
+
 	if (term_init(sp))		/* Terminal initialization. */
+		goto err;
+	if (term_window(sp, 0))		/* Screen size initialization. */
 		goto err;
 
 	{ int oargs[4], *oargp = oargs;
-	if (readonly)			/* Options initialization. */
+	if (readonly)			/* Command-line options. */
 		*oargp++ = O_READONLY;
 	if (lflag) {
 		*oargp++ = O_LISP;
 		*oargp++ = O_SHOWMATCH;
 	}
 	*oargp = -1;
-	if (opts_init(sp, oargs))
+	if (opts_init(sp, oargs))	/* Options initialization. */
 		goto err;
 	}
 
@@ -257,92 +269,19 @@ main(argc, argv)
 		     "042|Unable to set command line window size option");
 	}
 
-#ifdef	DIGRAPHS
+#ifdef DIGRAPHS
 	if (digraph_init(sp))		/* Digraph initialization. */
 		goto err;
 #endif
 
-	/*
-	 * Source the system, environment, $HOME and local .exrc values.
-	 * Vi historically didn't check $HOME/.exrc if the environment
-	 * variable EXINIT was set.  This is all done before the file is
-	 * read in, because things in the .exrc information can set, for
-	 * example, the recovery directory.
-	 *
-	 * !!!
-	 * While nvi can handle any of the options settings of historic vi,
-	 * the converse is not true.  Since users are going to have to have
-	 * files and environmental variables that work with both, we use nvi
-	 * versions of both the $HOME and local startup files if they exist,
-	 * otherwise the historic ones.
-	 *
-	 * !!!
-	 * For a discussion of permissions and when what .exrc files are
-	 * read, see the the comment above the exrc_isok() function below.
-	 *
-	 * !!!
-	 * If the user started the historic of vi in $HOME, vi read the user's
-	 * .exrc file twice, as $HOME/.exrc and as ./.exrc.  We avoid this, as
-	 * it's going to make some commands behave oddly, and I can't imagine
-	 * anyone depending on it.
-	 */
-	if (!silent) {
-		switch (exrc_isok(sp, &hsb, _PATH_SYSEXRC, 1, 0)) {
-		case NOEXIST:
-		case NOPERM:
-			break;
-		case OK:
-			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC, 0);
-			break;
-		}
+	if (sig_init(sp))		/* Signal initialization. */
+		goto err;
 
-		if ((p = getenv("NEXINIT")) != NULL ||
-		    (p = getenv("EXINIT")) != NULL)
-			if ((p = strdup(p)) == NULL) {
-				msgq(sp, M_SYSERR, NULL);
-				goto err;
-			} else {
-				F_SET(sp, S_VLITONLY);
-				(void)ex_icmd(sp, NULL, p, strlen(p), 0);
-				F_CLR(sp, S_VLITONLY);
-				free(p);
-			}
-		else if ((p = getenv("HOME")) != NULL && *p) {
-			(void)snprintf(path,
-			    sizeof(path), "%s/%s", p, _PATH_NEXRC);
-			switch (exrc_isok(sp, &hsb, path, 0, 1)) {
-			case NOEXIST:
-				(void)snprintf(path,
-				    sizeof(path), "%s/%s", p, _PATH_EXRC);
-				if (exrc_isok(sp, &hsb, path, 0, 1) == OK)
-					(void)ex_cfile(sp, NULL, path, 0);
-				break;
-			case NOPERM:
-				break;
-			case OK:
-				(void)ex_cfile(sp, NULL, path, 0);
-				break;
-			}
-		}
-
-		if (O_ISSET(sp, O_EXRC))
-			switch (exrc_isok(sp, &lsb, _PATH_NEXRC, 0, 0)) {
-			case NOEXIST:
-				if (exrc_isok(sp,
-				    &lsb, _PATH_EXRC, 0, 0) == OK &&
-				    (lsb.st_dev != hsb.st_dev ||
-				    lsb.st_ino != hsb.st_ino))
-					(void)ex_cfile(sp, NULL, _PATH_EXRC, 0);
-				break;
-			case NOPERM:
-				break;
-			case OK:
-				if (lsb.st_dev != hsb.st_dev ||
-				    lsb.st_ino != hsb.st_ino)
-					(void)ex_cfile(sp,
-					    NULL, _PATH_NEXRC, 0);
-				break;
-			}
+	if (!silent) {			/* Read EXINIT, exrc files. */
+		if (sex_screen_exrc(sp))
+			goto err;
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+			goto done;
 	}
 
 	/*
@@ -356,23 +295,27 @@ main(argc, argv)
 	 */
 	sp->defscroll = (O_VAL(sp, O_WINDOW) + 1) / 2;
 
-	/* List recovery files if -r specified without file arguments. */
-	if (flagchk == 'r' && argv[0] == NULL)
-		exit(rcv_list(sp));
-
-	/* Set the file snapshot flag. */
-	if (snapshot)
-		F_SET(gp, G_SNAPSHOT);
-
 	/* Use a tag file if specified. */
-	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
-		goto err;
+	if (tag_f != NULL) {
+		if (ex_tagfirst(sp, tag_f))
+			goto err;
+		need_lreset = 1;
+	} else
+		need_lreset = 0;
 
 	/*
-	 * Append any remaining arguments as file names.  Files are
-	 * recovery files if -r specified.
+	 * Append any remaining arguments as file names.  Files are recovery
+	 * files if -r specified.  If the tag option or ex startup commands
+	 * loaded a file, then any file arguments are going to come after it.
 	 */
 	if (*argv != NULL) {
+		if (sp->frp != NULL) {
+			MALLOC_NOMSG(sp,
+			    *--argv, char *, strlen(sp->frp->name) + 1);
+			if (*argv == NULL)
+				err(1, NULL);
+			(void)strcpy(*argv, sp->frp->name);
+		}
 		sp->argv = sp->cargv = argv;
 		F_SET(sp, S_ARGNOFREE);
 		if (flagchk == 'r')
@@ -380,10 +323,11 @@ main(argc, argv)
 	}
 
 	/*
-	 * If the tag option hasn't already created a file, create one.
-	 * If no files as arguments, use a temporary file.
+	 * If the ex startup commands and or/the tag option haven't already
+	 * created a file, create one.  If no files as arguments, use a
+	 * temporary file.
 	 */
-	if (tag_f == NULL) {
+	if (sp->frp == NULL && tag_f == NULL) {
 		if ((frp = file_add(sp,
 		    sp->argv == NULL ? NULL : (CHAR_T *)(sp->argv[0]))) == NULL)
 			goto err;
@@ -391,43 +335,56 @@ main(argc, argv)
 			F_SET(frp, FR_RECOVER);
 		if (file_init(sp, frp, NULL, 0))
 			goto err;
+		need_lreset = 1;
 	}
 
 	/*
-	 * If there's an initial command, push it on the command stack.
-	 * Historically, it was always an ex command, not vi in vi mode
-	 * or ex in ex mode.  So, make it look like an ex command to vi.
-	 *
-	 * !!!
-	 * Historically, all such commands were executed with the last
-	 * line of the file as the current line, and not the first, so
-	 * set up vi to be at the end of the file.
+	 * If there's an initial command, execute it.  Historically, it
+	 * was always an ex command, not vi in vi mode or ex in ex mode.
+	 * Historically, it was always executed from the last line of the
+	 * file, too, so if we haven't already had a command that would
+	 * have resulted in an address in the file, move to the last line.
 	 */
-	if (excmdarg != NULL)
-		if (IN_EX_MODE(sp)) {
-			if (term_push(sp, "\n", 1, 0))
-				goto err;
-			if (term_push(sp, excmdarg, strlen(excmdarg), 0))
-				goto err;
-		} else if (IN_VI_MODE(sp)) {
-			if (term_push(sp, "\n", 1, 0))
-				goto err;
-			if (term_push(sp, excmdarg, strlen(excmdarg), 0))
-				goto err;
-			if (term_push(sp, ":", 1, 0))
-				goto err;
-			if (file_lline(sp, sp->ep, &sp->frp->lno))
-				goto err;
-			F_SET(sp->frp, FR_CURSORSET);
+	if (excmdarg != NULL) {
+		if (need_lreset) {
+			file_cinit(sp);
+			need_lreset = 0;
 		}
+		if (sex_screen_icmd(sp, excmdarg))
+			goto err;
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+			goto done;
+	}
 
-	/* Set up signals. */
-	if (sig_init(sp))
-		goto err;
+	/*
+	 * Set the initial screen type.  The user may have tried to set
+	 * it themselves in the startup information, but that's too bad
+	 * -- they called us with a specific name, and that applies now.
+	 * If the cursor position not already set for whatever reason,
+	 * reinitialize the cursor position, too.
+	 */
+	if (F_ISSET(sp, S_SCREENS) != LF_ISSET(S_SCREENS)) {
+		F_CLR(sp, S_SCREENS);
+		F_SET(sp, LF_ISSET(S_SCREENS));
+		if (need_lreset)
+			file_cinit(sp);
+	}
 
 	for (;;) {
-		/* Ignore errors -- other screens may succeed. */
-		(void)sp->s_edit(sp, sp->ep);
+		/* Edit, ignoring errors -- other screens may succeed. */
+		switch (F_ISSET(sp, S_SCREENS)) {
+		case S_EX:
+			(void)sex_screen_edit(sp);
+			break;
+		case S_VI_CURSES:
+			(void)svi_screen_edit(sp);
+			break;
+		case S_VI_XAW:
+			(void)xaw_screen_edit(sp);
+			break;
+		default:
+			abort();
+		}
 
 		/*
 		 * Edit the next screen on the display queue, or, move
@@ -443,30 +400,9 @@ main(argc, argv)
 				SIGUNBLOCK(__global_list);
 			} else
 				break;
-
-		/*
-		 * The screen type may have changed -- reinitialize the
-		 * functions in case it has.
-		 */
-		switch (F_ISSET(sp, S_SCREENS)) {
-		case S_EX:
-			if (sex_screen_init(sp))
-				goto err;
-			break;
-		case S_VI_CURSES:
-			if (svi_screen_init(sp))
-				goto err;
-			break;
-		case S_VI_XAW:
-			if (xaw_screen_init(sp))
-				goto err;
-			break;
-		default:
-			abort();
-		}
 	}
 
-	eval = 0;
+done:	eval = 0;
 	if (0)
 err:		eval = 1;
 
@@ -584,114 +520,6 @@ gs_end(gp)
 	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
 	 * OFF SIGNALS/TIMERS, SO IT MAY STILL BE REFERENCED.
 	 */
-}
-
-/*
- * exrc_isok --
- *	Check a .exrc file for source-ability.
- *
- * !!!
- * Historically, vi read the $HOME and local .exrc files if they were owned
- * by the user's real ID, or the "sourceany" option was set, regardless of
- * any other considerations.  We no longer support the sourceany option as
- * it's a security problem of mammoth proportions.  We require the system
- * .exrc file to be owned by root, the $HOME .exrc file to be owned by the
- * user's effective ID (or that the user's effective ID be root) and the
- * local .exrc files to be owned by the user's effective ID.  In all cases,
- * the file cannot be writeable by anyone other than its owner.
- *
- * In O'Reilly ("Learning the VI Editor", Fifth Ed., May 1992, page 106),
- * it notes that System V release 3.2 and later has an option "[no]exrc".
- * The behavior is that local .exrc files are read only if the exrc option
- * is set.  The default for the exrc option was off, so, by default, local
- * .exrc files were not read.  The problem this was intended to solve was
- * that System V permitted users to give away files, so there's no possible
- * ownership or writeability test to ensure that the file is safe.
- *
- * POSIX 1003.2-1992 standardized exrc as an option.  It required the exrc
- * option to be off by default, thus local .exrc files are not to be read
- * by default.  The Rationale noted (incorrectly) that this was a change
- * to historic practice, but correctly noted that a default of off improves
- * system security.  POSIX also required that vi check the effective user
- * ID instead of the real user ID, which is why we've switched from historic
- * practice.
- *
- * We initialize the exrc variable to off.  If it's turned on by the system
- * or $HOME .exrc files, and the local .exrc file passes the ownership and
- * writeability tests, then we read it.  This breaks historic 4BSD practice,
- * but it gives us a measure of security on systems where users can give away
- * files.
- */
-static enum rc
-exrc_isok(sp, sbp, path, rootown, rootid)
-	SCR *sp;
-	struct stat *sbp;
-	char *path;
-	int rootown, rootid;
-{
-	enum { ROOTOWN, OWN, WRITER } etype;
-	uid_t euid;
-	int nf1, nf2;
-	char *a, *b, buf[MAXPATHLEN];
-
-	/* Check for the file's existence. */
-	if (stat(path, sbp))
-		return (NOEXIST);
-
-	/* Check ownership permissions. */
-	euid = geteuid();
-	if (!(rootown && sbp->st_uid == 0) &&
-	    !(rootid && euid == 0) && sbp->st_uid != euid) {
-		etype = rootown ? ROOTOWN : OWN;
-		goto denied;
-	}
-
-	/* Check writeability. */
-	if (sbp->st_mode & (S_IWGRP | S_IWOTH)) {
-		etype = WRITER;
-		goto denied;
-	}
-	return (OK);
-
-denied:	a = msg_print(sp, path, &nf1);
-	if (strchr(path, '/') == NULL && getcwd(buf, sizeof(buf)) != NULL) {
-		b = msg_print(sp, buf, &nf2);
-		switch (etype) {
-		case ROOTOWN:
-			msgq(sp, M_ERR,
-			    "043|%s/%s: not sourced: not owned by you or root",
-			    b, a);
-			break;
-		case OWN:
-			msgq(sp, M_ERR,
-			    "044|%s/%s: not sourced: not owned by you", b, a);
-			break;
-		case WRITER:
-			msgq(sp, M_ERR,
-    "045|%s/%s: not sourced: writeable by a user other than the owner", b, a);
-			break;
-		}
-		if (nf2)
-			FREE_SPACE(sp, b, 0);
-	} else
-		switch (etype) {
-		case ROOTOWN:
-			msgq(sp, M_ERR,
-			    "046|%s: not sourced: not owned by you or root", a);
-			break;
-		case OWN:
-			msgq(sp, M_ERR,
-			    "047|%s: not sourced: not owned by you", a);
-			break;
-		case WRITER:
-			msgq(sp, M_ERR,
-	    "048|%s: not sourced: writeable by a user other than the owner", a);
-			break;
-		}
-
-	if (nf1)
-		FREE_SPACE(sp, a, 0);
-	return (NOPERM);
 }
 
 static void

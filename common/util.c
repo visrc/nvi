@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.80 1994/10/09 17:24:34 bostic Exp $ (Berkeley) $Date: 1994/10/09 17:24:34 $";
+static char sccsid[] = "$Id: util.c,v 9.1 1994/11/09 18:38:18 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,9 +73,8 @@ binc(sp, bp, bsizep, min)
  *	the column to 0, it's safest.
  */
 int
-nonblank(sp, ep, lno, cnop)
+nonblank(sp, lno, cnop)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	size_t *cnop;
 {
@@ -87,8 +86,8 @@ nonblank(sp, ep, lno, cnop)
 	*cnop = 0;
 
 	/* Get the line. */
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((p = file_gline(sp, lno, &len)) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
 			return (0);

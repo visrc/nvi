@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.22 1994/08/31 17:12:07 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:07 $";
+static char sccsid[] = "$Id: mark.c,v 9.1 1994/11/09 18:37:53 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ static char sccsid[] = "$Id: mark.c,v 8.22 1994/08/31 17:12:07 bostic Exp $ (Ber
 
 #include "vi.h"
 
-static LMARK *mark_find __P((SCR *, EXF *, ARG_CHAR_T));
+static LMARK *mark_find __P((SCR *, ARG_CHAR_T));
 
 /*
  * Marks are maintained in a key sorted doubly linked list.  We can't
@@ -73,8 +73,12 @@ mark_init(sp, ep)
 	LMARK *lmp;
 
 	/*
-	 * Make sure the marks have been set up.  If they
-	 * haven't, do so, and create the absolute mark.
+	 * !!!
+	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
+	 *
+	 *
+	 * Make sure the marks have been set up.  If they haven't,
+	 * do so, and create the absolute mark.
 	 */
 	MALLOC_RET(sp, lmp, LMARK *, sizeof(LMARK));
 	lmp->lno = 1;
@@ -96,6 +100,10 @@ mark_end(sp, ep)
 {
 	LMARK *lmp;
 
+	/*
+	 * !!!
+	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
+	 */
 	while ((lmp = ep->marks.lh_first) != NULL) {
 		LIST_REMOVE(lmp, q);
 		FREE(lmp, sizeof(LMARK));
@@ -108,9 +116,8 @@ mark_end(sp, ep)
  *	Get the location referenced by a mark.
  */
 int
-mark_get(sp, ep, key, mp)
+mark_get(sp, key, mp)
 	SCR *sp;
-	EXF *ep;
 	ARG_CHAR_T key;
 	MARK *mp;
 {
@@ -120,7 +127,7 @@ mark_get(sp, ep, key, mp)
 	if (key == ABSMARK2)
 		key = ABSMARK1;
 
-	lmp = mark_find(sp, ep, key);
+	lmp = mark_find(sp, key);
 	if (lmp == NULL || lmp->name != key) {
 		msgq(sp, M_BERR, "049|Mark %s: not set", KEY_NAME(sp, key));
                 return (1);
@@ -130,7 +137,7 @@ mark_get(sp, ep, key, mp)
 		    "050|Mark %s: the line was deleted", KEY_NAME(sp, key));
                 return (1);
 	}
-	if (file_gline(sp, ep, lmp->lno, &len) == NULL ||
+	if (file_gline(sp, lmp->lno, &len) == NULL ||
 	    lmp->cno > len || lmp->cno == len && len != 0) {
 		msgq(sp, M_BERR,
 		    "051|Mark %s: cursor position no longer exists",
@@ -147,9 +154,8 @@ mark_get(sp, ep, key, mp)
  *	Set the location referenced by a mark.
  */
 int
-mark_set(sp, ep, key, value, userset)
+mark_set(sp, key, value, userset)
 	SCR *sp;
-	EXF *ep;
 	ARG_CHAR_T key;
 	MARK *value;
 	int userset;
@@ -165,11 +171,11 @@ mark_set(sp, ep, key, value, userset)
 	 * an undo, and we set it if it's not already set or if it was set
 	 * by a previous undo.
 	 */
-	lmp = mark_find(sp, ep, key);
+	lmp = mark_find(sp, key);
 	if (lmp == NULL || lmp->name != key) {
 		MALLOC_RET(sp, lmt, LMARK *, sizeof(LMARK));
 		if (lmp == NULL) {
-			LIST_INSERT_HEAD(&ep->marks, lmt, q);
+			LIST_INSERT_HEAD(&sp->ep->marks, lmt, q);
 		} else
 			LIST_INSERT_AFTER(lmp, lmt, q);
 		lmp = lmt;
@@ -190,9 +196,8 @@ mark_set(sp, ep, key, value, userset)
  *	where it would go.
  */
 static LMARK *
-mark_find(sp, ep, key)
+mark_find(sp, key)
 	SCR *sp;
-	EXF *ep;
 	ARG_CHAR_T key;
 {
 	LMARK *lmp, *lastlmp;
@@ -201,7 +206,7 @@ mark_find(sp, ep, key)
 	 * Return the requested mark or the slot immediately before
 	 * where it should go.
 	 */
-	for (lastlmp = NULL, lmp = ep->marks.lh_first;
+	for (lastlmp = NULL, lmp = sp->ep->marks.lh_first;
 	    lmp != NULL; lastlmp = lmp, lmp = lmp->q.le_next)
 		if (lmp->name >= key)
 			return (lmp->name == key ? lmp : lastlmp);
@@ -213,9 +218,8 @@ mark_find(sp, ep, key)
  *	Update the marks based on an insertion or deletion.
  */
 void
-mark_insdel(sp, ep, op, lno)
+mark_insdel(sp, op, lno)
 	SCR *sp;
-	EXF *ep;
 	enum operation op;
 	recno_t lno;
 {
@@ -225,17 +229,17 @@ mark_insdel(sp, ep, op, lno)
 	case LINE_APPEND:
 		return;
 	case LINE_DELETE:
-		for (lmp = ep->marks.lh_first;
+		for (lmp = sp->ep->marks.lh_first;
 		    lmp != NULL; lmp = lmp->q.le_next)
 			if (lmp->lno >= lno)
 				if (lmp->lno == lno) {
 					F_SET(lmp, MARK_DELETED);
-					(void)log_mark(sp, ep, lmp);
+					(void)log_mark(sp, lmp);
 				} else
 					--lmp->lno;
 		return;
 	case LINE_INSERT:
-		for (lmp = ep->marks.lh_first;
+		for (lmp = sp->ep->marks.lh_first;
 		    lmp != NULL; lmp = lmp->q.le_next)
 			if (lmp->lno >= lno)
 				++lmp->lno;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.53 1994/11/02 10:39:21 bostic Exp $ (Berkeley) $Date: 1994/11/02 10:39:21 $";
+static char sccsid[] = "$Id: search.c,v 9.1 1994/11/09 18:38:09 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static char sccsid[] = "$Id: search.c,v 8.53 1994/11/02 10:39:21 bostic Exp $ (B
 #include "vi.h"
 #include "excmd.h"
 
-static int	check_delta __P((SCR *, EXF *, long, recno_t));
+static int	check_delta __P((SCR *, long, recno_t));
 static int	ctag_conv __P((SCR *, char **, int *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
 		    char *, char **, long *, u_int *));
@@ -243,9 +243,8 @@ ctag_conv(sp, ptrnp, replacedp)
 }
 
 int
-f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
+f_search(sp, fm, rm, ptrn, eptrn, flagp)
 	SCR *sp;
-	EXF *ep;
 	MARK *fm, *rm;
 	char *ptrn, **eptrn;
 	u_int *flagp;
@@ -259,7 +258,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	int btear, eval, rval, wrapped;
 	char *l;
 
-	if (file_lline(sp, ep, &lno))
+	if (file_lline(sp, &lno))
 		return (1);
 	flags = *flagp;
 	if (lno == 0) {
@@ -283,7 +282,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		lno = 1;
 		coff = 0;
 	} else {
-		if ((l = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if ((l = file_gline(sp, fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
@@ -313,7 +312,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			break;
 		}
 		if (wrapped && lno > fm->lno ||
-		    (l = file_gline(sp, ep, lno, &len)) == NULL) {
+		    (l = file_gline(sp, lno, &len)) == NULL) {
 			if (wrapped) {
 				if (LF_ISSET(SEARCH_MSG))
 					smsg(sp, S_NOTFOUND);
@@ -360,7 +359,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		 * past the end of the line with $, so check for that case.
 		 */
 		if (delta) {
-			if (check_delta(sp, ep, delta, lno))
+			if (check_delta(sp, delta, lno))
 				break;
 			rm->lno = delta + lno;
 			rm->cno = 0;
@@ -392,9 +391,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 }
 
 int
-b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
+b_search(sp, fm, rm, ptrn, eptrn, flagp)
 	SCR *sp;
-	EXF *ep;
 	MARK *fm, *rm;
 	char *ptrn, **eptrn;
 	u_int *flagp;
@@ -408,7 +406,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	int btear, eval, rval, wrapped;
 	char *l;
 
-	if (file_lline(sp, ep, &lno))
+	if (file_lline(sp, &lno))
 		return (1);
 	flags = *flagp;
 	if (lno == 0) {
@@ -453,7 +451,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 					smsg(sp, S_SOF);
 				break;
 			}
-			if (file_lline(sp, ep, &lno))
+			if (file_lline(sp, &lno))
 				goto err;
 			if (lno == 0) {
 				if (LF_ISSET(SEARCH_MSG))
@@ -465,7 +463,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			continue;
 		}
 
-		if ((l = file_gline(sp, ep, lno, &len)) == NULL)
+		if ((l = file_gline(sp, lno, &len)) == NULL)
 			goto err;
 
 		/* Set the termination. */
@@ -494,7 +492,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			smsg(sp, S_WRAP);
 
 		if (delta) {
-			if (check_delta(sp, ep, delta, lno))
+			if (check_delta(sp, delta, lno))
 				break;
 			rm->lno = delta + lno;
 			rm->cno = 0;
@@ -707,9 +705,8 @@ re_conv(sp, ptrnp, replacedp)
  *	Check a line delta to see if it's legal.
  */
 static int
-check_delta(sp, ep, delta, lno)
+check_delta(sp, delta, lno)
 	SCR *sp;
-	EXF *ep;
 	long delta;
 	recno_t lno;
 {
@@ -735,7 +732,7 @@ check_delta(sp, ep, delta, lno)
 		omsg = "250|Delta value overflow";
 		if (add_uslong(sp, (u_long)lno, (u_long)delta, omsg))
 			return (1);
-		if (file_gline(sp, ep, lno + delta, NULL) == NULL) {
+		if (file_gline(sp, lno + delta, NULL) == NULL) {
 			msgq(sp, M_ERR, "251|Search offset past end-of-file");
 			return (1);
 		}

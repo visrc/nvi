@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.77 1994/10/28 11:50:03 bostic Exp $ (Berkeley) $Date: 1994/10/28 11:50:03 $";
+static char sccsid[] = "$Id: recover.c,v 9.1 1994/11/09 18:38:03 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -115,7 +115,7 @@ static char sccsid[] = "$Id: recover.c,v 8.77 1994/10/28 11:50:03 bostic Exp $ (
 static int	 rcv_copy __P((SCR *, int, char *));
 static void	 rcv_email __P((SCR *, char *));
 static char	*rcv_gets __P((char *, size_t, int));
-static int	 rcv_mailfile __P((SCR *, EXF *, int, char *));
+static int	 rcv_mailfile __P((SCR *, int, char *));
 static int	 rcv_mktemp __P((SCR *, char *, char *, int));
 
 /*
@@ -133,6 +133,10 @@ rcv_tmp(sp, ep, name)
 	char *dp, *p, path[MAXPATHLEN];
 
 	/*
+	 * !!!
+	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
+	 *
+	 *
 	 * If the recovery directory doesn't exist, try and create it.  As
 	 * the recovery files are themselves protected from reading/writing
 	 * by other than the owner, the worst that can happen is that a user
@@ -179,13 +183,15 @@ err:		msgq(sp, M_ERR,
  *	Force the file to be snapshotted for recovery.
  */
 int
-rcv_init(sp, ep)
+rcv_init(sp)
 	SCR *sp;
-	EXF *ep;
 {
+	EXF *ep;
 	recno_t lno;
 	int btear, nf;
 	char *p;
+
+	ep = sp->ep;
 
 	/* Only do this once. */
 	F_CLR(ep, F_FIRSTMODIFY);
@@ -200,11 +206,11 @@ rcv_init(sp, ep)
 	/* Test if we're recovering a file, not editing one. */
 	if (ep->rcv_mpath == NULL) {
 		/* Build a file to mail to the user. */
-		if (rcv_mailfile(sp, ep, 0, NULL))
+		if (rcv_mailfile(sp, 0, NULL))
 			goto err;
 
 		/* Force a read of the entire file. */
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			goto err;
 
 		/* Turn on a busy message, and sync it to backing store. */
@@ -224,7 +230,7 @@ rcv_init(sp, ep)
 	}
 
 	/* Turn on the recovery timer, if it's not yet running. */
-	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp, ep)) {
+	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp)) {
 err:		msgq(sp, M_ERR,
 		    "078|Modifications not recoverable if the session fails");
 		return (1);
@@ -247,15 +253,16 @@ err:		msgq(sp, M_ERR,
  *		ending the file session
  */
 int
-rcv_sync(sp, ep, flags)
+rcv_sync(sp, flags)
 	SCR *sp;
-	EXF *ep;
 	u_int flags;
 {
+	EXF *ep;
 	int btear, fd, nf, rval;
 	char *dp, *p, buf[1024];
 
 	/* Make sure that there's something to recover/sync. */
+	ep = sp->ep;
 	if (ep == NULL || !F_ISSET(ep, F_RCV_ON))
 		return (0);
 
@@ -303,7 +310,7 @@ rcv_sync(sp, ep, flags)
 			goto e1;
 		if (rcv_copy(sp, fd, ep->rcv_path) || close(fd))
 			goto e2;
-		if (rcv_mailfile(sp, ep, 1, buf)) {
+		if (rcv_mailfile(sp, 1, buf)) {
 e2:			(void)unlink(buf);
 e1:			if (fd != -1)
 				(void)close(fd);
@@ -314,7 +321,7 @@ e1:			if (fd != -1)
 	}
 
 	/* REQUEST: end the file session. */
-	if (LF_ISSET(RCV_ENDSESSION) && file_end(sp, ep, 1))
+	if (LF_ISSET(RCV_ENDSESSION) && file_end(sp, NULL, 1))
 		rval = 1;
 
 	/* Called by :preserve code, unblock signals. */
@@ -328,12 +335,12 @@ ret:	SIGUNBLOCK(sp->gp);
  *	Build the file to mail to the user.
  */
 static int
-rcv_mailfile(sp, ep, issync, cp_path)
+rcv_mailfile(sp, issync, cp_path)
 	SCR *sp;
-	EXF *ep;
 	int issync;
 	char *cp_path;
 {
+	EXF *ep;
 	struct passwd *pw;
 	size_t len;
 	time_t now;
@@ -360,7 +367,8 @@ rcv_mailfile(sp, ep, issync, cp_path)
 	 * be recovered.  There's an obvious window between the mkstemp call
 	 * and the lock, but it's pretty small.
 	 */
-	if (file_lock(NULL, NULL, fd, 1) != LOCK_SUCCESS)
+	ep = sp->ep;
+	if (file_lock(sp, NULL, NULL, fd, 1) != LOCK_SUCCESS)
 		msgq(sp, M_SYSERR, "081|Unable to lock recovery file");
 	if (!issync) {
 		/* Save the recover file descriptor, and mail path. */
@@ -446,11 +454,12 @@ wout:		*t2++ = '\n';
 			goto werr;
 	}
 
-	if (issync)
+	if (issync) {
 		rcv_email(sp, mpath);
-	else if (close(fd)) {
-werr:		msgq(sp, M_SYSERR, "083|Recovery file");
-		goto err;
+		if (close(fd)) {
+werr:			msgq(sp, M_SYSERR, "083|Recovery file");
+			goto err;
+		}
 	}
 	return (0);
 
@@ -505,7 +514,7 @@ rcv_list(sp)
 		if ((fp = fopen(dp->d_name, "r+")) == NULL)
 			continue;
 
-		switch (file_lock(NULL, NULL, fileno(fp), 1)) {
+		switch (file_lock(sp, NULL, NULL, fileno(fp), 1)) {
 		case LOCK_FAILED:
 			/*
 			 * XXX
@@ -619,7 +628,7 @@ rcv_read(sp, frp)
 		if ((fd = open(recpath, O_RDWR, 0)) == -1)
 			continue;
 
-		switch (file_lock(NULL, NULL, fd, 1)) {
+		switch (file_lock(sp, NULL, NULL, fd, 1)) {
 		case LOCK_FAILED:
 			/*
 			 * XXX

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 8.14 1994/09/02 09:36:42 bostic Exp $ (Berkeley) $Date: 1994/09/02 09:36:42 $";
+static char sccsid[] = "$Id: delete.c,v 9.1 1994/11/09 18:37:40 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,8 @@ static char sccsid[] = "$Id: delete.c,v 8.14 1994/09/02 09:36:42 bostic Exp $ (B
  *	Delete a range of text.
  */
 int
-delete(sp, ep, fm, tm, lmode)
+delete(sp, fm, tm, lmode)
 	SCR *sp;
-	EXF *ep;
 	MARK *fm, *tm;
 	int lmode;
 {
@@ -49,7 +48,7 @@ delete(sp, ep, fm, tm, lmode)
 	/* Case 1 -- delete in line mode. */
 	if (lmode) {
 		for (lno = tm->lno; lno >= fm->lno; --lno)
-			if (file_dline(sp, ep, lno))
+			if (file_dline(sp, lno))
 				return (1);
 		goto vdone;
 	}
@@ -58,11 +57,11 @@ delete(sp, ep, fm, tm, lmode)
 	 * Case 2 -- delete to EOF.  This is a special case because it's
 	 * easier to pick it off than try and find it in the other cases.
  	 */
-	if (file_lline(sp, ep, &lno))
+	if (file_lline(sp, &lno))
 		return (1);
 	if (tm->lno >= lno) {
 		if (tm->lno == lno) {
-			if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+			if ((p = file_gline(sp, lno, &len)) == NULL) {
 				GETLINE_ERR(sp, lno);
 				return (1);
 			}
@@ -71,17 +70,17 @@ delete(sp, ep, fm, tm, lmode)
 			eof = 1;
 		if (eof) {
 			for (lno = tm->lno; lno > fm->lno; --lno) {
-				if (file_dline(sp, ep, lno))
+				if (file_dline(sp, lno))
 					return (1);
 				++sp->rptlines[L_DELETED];
 			}
-			if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+			if ((p = file_gline(sp, fm->lno, &len)) == NULL) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
 			GET_SPACE_RET(sp, bp, blen, fm->cno);
 			memmove(bp, p, fm->cno);
-			if (file_sline(sp, ep, fm->lno, bp, fm->cno))
+			if (file_sline(sp, fm->lno, bp, fm->cno))
 				return (1);
 			goto done;
 		}
@@ -89,7 +88,7 @@ delete(sp, ep, fm, tm, lmode)
 
 	/* Case 3 -- delete within a single line. */
 	if (tm->lno == fm->lno) {
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if ((p = file_gline(sp, fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
@@ -97,7 +96,7 @@ delete(sp, ep, fm, tm, lmode)
 		if (fm->cno != 0)
 			memmove(bp, p, fm->cno);
 		memmove(bp + fm->cno, p + (tm->cno + 1), len - (tm->cno + 1));
-		if (file_sline(sp, ep, fm->lno,
+		if (file_sline(sp, fm->lno,
 		    bp, len - ((tm->cno - fm->cno) + 1)))
 			goto err;
 		goto done;
@@ -109,7 +108,7 @@ delete(sp, ep, fm, tm, lmode)
 	 * Copy the start partial line into place.
 	 */
 	if ((tlen = fm->cno) != 0) {
-		if ((p = file_gline(sp, ep, fm->lno, NULL)) == NULL) {
+		if ((p = file_gline(sp, fm->lno, NULL)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
@@ -118,7 +117,7 @@ delete(sp, ep, fm, tm, lmode)
 	}
 
 	/* Copy the end partial line into place. */
-	if ((p = file_gline(sp, ep, tm->lno, &len)) == NULL) {
+	if ((p = file_gline(sp, tm->lno, &len)) == NULL) {
 		GETLINE_ERR(sp, tm->lno);
 		goto err;
 	}
@@ -144,12 +143,12 @@ delete(sp, ep, fm, tm, lmode)
 	}
 
 	/* Set the current line. */
-	if (file_sline(sp, ep, fm->lno, bp, tlen))
+	if (file_sline(sp, fm->lno, bp, tlen))
 		goto err;
 
 	/* Delete the last and intermediate lines. */
 	for (lno = tm->lno; lno > fm->lno; --lno)
-		if (file_dline(sp, ep, lno))
+		if (file_dline(sp, lno))
 			goto err;
 
 	/* Reporting. */

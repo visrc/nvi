@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 8.12 1994/08/31 17:12:18 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:18 $";
+static char sccsid[] = "$Id: put.c,v 9.1 1994/11/09 18:38:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,8 @@ static char sccsid[] = "$Id: put.c,v 8.12 1994/08/31 17:12:18 bostic Exp $ (Berk
  *	Put text buffer contents into the file.
  */
 int
-put(sp, ep, cbp, namep, cp, rp, append)
+put(sp, cbp, namep, cp, rp, append)
 	SCR *sp;
-	EXF *ep;
 	CB *cbp;
 	CHAR_T *namep;
 	MARK *cp, *rp;
@@ -83,12 +82,12 @@ put(sp, ep, cbp, namep, cp, rp, append)
 	 * in the file.
 	 */
 	if (cp->lno == 1) {
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0) {
 			for (; tp != (void *)&cbp->textq;
 			    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
-				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
+				if (file_aline(sp, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
 			rp->cno = 0;
@@ -102,10 +101,10 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		rp->lno = lno + 1;
 		for (; tp != (void *)&cbp->textq;
 		    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
-			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
+			if (file_aline(sp, 1, lno, tp->lb, tp->len))
 				return (1);
 		rp->cno = 0;
-		(void)nonblank(sp, ep, rp->lno, &rp->cno);
+		(void)nonblank(sp, rp->lno, &rp->cno);
 		return (0);
 	}
 
@@ -119,7 +118,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 	 * Get the first line.
 	 */
 	lno = cp->lno;
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+	if ((p = file_gline(sp, lno, &len)) == NULL) {
 		GETLINE_ERR(sp, lno);
 		return (1);
 	}
@@ -161,7 +160,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 			memmove(t, p, clen);
 			t += clen;
 		}
-		if (file_sline(sp, ep, lno, bp, t - bp))
+		if (file_sline(sp, lno, bp, t - bp))
 			goto mem;
 		if (sp->rptlchange != lno) {
 			sp->rptlchange = lno;
@@ -198,7 +197,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		 *
 		 * Output the line replacing the original line.
 		 */
-		if (file_sline(sp, ep, lno, bp, t - bp))
+		if (file_sline(sp, lno, bp, t - bp))
 			goto mem;
 		if (sp->rptlchange != lno) {
 			sp->rptlchange = lno;
@@ -217,10 +216,10 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		for (tp = tp->q.cqe_next;
 		    tp->q.cqe_next != (void *)&cbp->textq;
 		    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
-			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
+			if (file_aline(sp, 1, lno, tp->lb, tp->len))
 				goto mem;
 
-		if (file_aline(sp, ep, 1, lno, t, clen))
+		if (file_aline(sp, 1, lno, t, clen))
 mem:			rval = 1;
 		++sp->rptlines[L_ADDED];
 	}

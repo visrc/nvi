@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.75 1994/10/23 10:14:19 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:14:19 $";
+static char sccsid[] = "$Id: options.c,v 9.1 1994/11/09 18:37:58 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,12 +92,19 @@ static OPTLIST const optlist[] = {
 /* O_LISP	    4BSD */
 /*
  * XXX
- * When the lisp option is implemented, delete
- * the OPT_NOSAVE flag, so that :mkexrc dumps it.
+ * When the lisp option is implemented, delete the OPT_NOSAVE flag,
+ * so that :mkexrc dumps it.
  */
 	{"lisp",	f_lisp,		OPT_0BOOL,	OPT_NOSAVE},
 /* O_LIST	    4BSD */
 	{"list",	f_list,		OPT_0BOOL,	0},
+/*
+ * XXX
+ * Locking isn't reliable enough over NFS to require it, in addition,
+ * it's a serious startup performance problem over some remote links.
+ */
+/* O_LOCK	  4.4BSD */
+	{"lock",	NULL,		OPT_0BOOL,	0},
 /* O_MAGIC	    4BSD */
 	{"magic",	NULL,		OPT_1BOOL,	0},
 /* O_MATCHTIME	  4.4BSD */
@@ -581,8 +588,10 @@ nostr:			if (op->func != NULL) {
 				} else
 					F_SET(&sp->opts[offset], OPT_ALLOCATED);
 			}
-change:			if (sp->s_optchange != NULL)
-				(void)sp->s_optchange(sp, offset);
+change:			(void)ex_optchange(sp, offset);
+			(void)sex_optchange(sp, offset);
+			(void)svi_optchange(sp, offset);
+			(void)v_optchange(sp, offset);
 			F_SET(&sp->opts[offset], OPT_SET);
 			break;
 		default:
@@ -608,18 +617,6 @@ opts_dump(sp, type)
 	int numcols, numrows, row;
 	int b_op[O_OPTIONCOUNT], s_op[O_OPTIONCOUNT];
 	char nbuf[20];
-
-	/*
-	 * XXX
-	 * It's possible to get here by putting "set option" in the
-	 * .exrc file.  I can't think of a clean way to layer this,
-	 * or a reasonable check to make, so we block it here.
-	 */
-	if (sp->stdfp == NULL) {
-		msgq(sp, M_ERR,
-	    "059|Option display requires that the screen be initialized");
-		return;
-	}
 
 	/*
 	 * Options are output in two groups -- those that fit in a column and
@@ -721,6 +718,7 @@ opts_dump(sp, type)
 		if (++row < b_num)
 			(void)ex_printf(EXCOOKIE, "\n");
 	}
+	F_SET(sp, S_SCR_EXWROTE);
 	(void)ex_printf(EXCOOKIE, "\n");
 }
 

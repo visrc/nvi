@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.108 1994/10/31 19:25:57 bostic Exp $ (Berkeley) $Date: 1994/10/31 19:25:57 $";
+static char sccsid[] = "$Id: exf.c,v 9.1 1994/11/09 18:37:41 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,7 +41,7 @@ static char sccsid[] = "$Id: exf.c,v 8.108 1994/10/31 19:25:57 bostic Exp $ (Ber
 #include "vi.h"
 #include "excmd.h"
 
-static int file_backup __P((SCR *, EXF *, char *, char *));
+static int file_backup __P((SCR *, char *, char *));
 
 /*
  * file_add --
@@ -135,7 +135,7 @@ file_init(sp, frp, rcv_name, flags)
 	 * Required FRP initialization; the only flag we keep is the
 	 * cursor information.
 	 */
-	F_CLR(frp, ~FR_CURSORSET);
+	F_CLR(frp, ~(FR_CURSORSET | FR_FNONBLANK));
 
 	/*
 	 * Required EXF initialization:
@@ -276,7 +276,7 @@ file_init(sp, frp, rcv_name, flags)
 	 * Side-effect: after the call to file_end(), sp->frp may be NULL.
 	 */
 	F_SET(frp, FR_DONTDELETE);
-	if (sp->ep != NULL && file_end(sp, sp->ep, LF_ISSET(FS_FORCE))) {
+	if (sp->ep != NULL && file_end(sp, NULL, LF_ISSET(FS_FORCE))) {
 		(void)file_end(sp, ep, 1);
 		goto err;
 	}
@@ -302,7 +302,7 @@ file_init(sp, frp, rcv_name, flags)
 	 * an error.
 	 */
 	if (rcv_name == NULL)
-		switch (file_lock(oname,
+		switch (file_lock(sp, oname,
 		    &ep->fcntl_fd, ep->db->fd(ep->db), 0)) {
 		case LOCK_FAILED:
 			F_SET(frp, FR_UNLOCKED);
@@ -374,6 +374,13 @@ file_init(sp, frp, rcv_name, flags)
 	++ep->refcnt;
 	sp->ep = ep;
 	sp->frp = frp;
+
+	/* Set the initial cursor position. */
+	file_cinit(sp);
+
+	/* Redraw the screen from scratch. */
+	F_SET(sp, S_SCR_REFORMAT);
+
 	return (0);
 
 err:	if (frp->name != NULL) {
@@ -401,6 +408,54 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 }
 
 /*
+ * file_cinit --
+ *	Set up the initial cursor position.
+ */
+void
+file_cinit(sp)
+	SCR *sp;
+{
+	size_t len;
+	int nb;
+
+	/*
+	 * If in ex mode, move to the last line, first nonblank character.
+	 * Otherwise, if the file has previously been edited, move to the
+	 * last position, and check it for validity.  Otherwise, move to
+	 * the first line, first nonblank.  This gets called by some the
+	 * file init code, because we may be in a file of ex commands and
+	 * we want to execute them from the right location in the file.  A
+	 * few other places that want special case behavior also call here.
+	 */
+	nb = 0;
+	if (IN_EX_MODE(sp)) {
+		if (file_lline(sp, &sp->lno))
+			sp->lno = 1;
+		nb = 1;
+	} else {
+		if (F_ISSET(sp->frp, FR_CURSORSET)) {
+			sp->lno = sp->frp->lno;
+			if (F_ISSET(sp->frp, FR_FNONBLANK))
+				nb = 1;
+			else
+				sp->cno = sp->frp->cno;
+		} else {
+			sp->lno = 1;
+			nb = 1;
+		}
+		if (file_gline(sp, sp->lno, &len) == NULL) {
+			sp->lno = 1;
+			sp->cno = 0;
+			return;
+		}
+		if (!nb && sp->cno > len)
+			nb = 1;
+	}
+	if (nb)
+		(void)nonblank(sp, sp->lno, &sp->cno);
+}
+
+/*
  * file_end --
  *	Stop editing a file.
  */
@@ -415,6 +470,15 @@ file_end(sp, ep, force)
 	char *p;
 
 	/*
+	 * !!!
+	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
+	 * (If argument ep is NULL, use sp->ep.)
+	 */
+	if (ep == NULL)
+		ep = sp->ep;
+
+	/*
+	 *
 	 * Clean up the FREF structure.
 	 *
 	 * Save the cursor location.
@@ -455,8 +519,6 @@ file_end(sp, ep, force)
 
 	/*
 	 * Clean up the EXF structure.
-	 *
-	 * sp->ep MAY NOT BE THE SAME AS THE ARGUMENT ep, SO DON'T USE IT!
 	 *
 	 * If multiply referenced, just decrement the count and return.
 	 */
@@ -524,15 +586,15 @@ file_end(sp, ep, force)
  *	why all the flags.
  */
 int
-file_write(sp, ep, fm, tm, name, flags)
+file_write(sp, fm, tm, name, flags)
 	SCR *sp;
-	EXF *ep;
 	MARK *fm, *tm;
 	char *name;
 	int flags;
 {
 	enum { NEWFILE, NONE, EXISTING } mtype;
 	struct stat sb;
+	EXF *ep;
 	FILE *fp;
 	FREF *frp;
 	MARK from, to;
@@ -611,8 +673,9 @@ file_write(sp, ep, fm, tm, name, flags)
 	else {
 		mtype = NONE;
 		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
+			ep = sp->ep;
 			if (ep->mtime != 0 &&
-			    (sb.st_dev != ep->mdev ||
+			    (sb.st_dev != sp->ep->mdev ||
 			    sb.st_ino != ep->minode ||
 			    sb.st_mtime != ep->mtime)) {
 				p = msg_print(sp, name, &nf);
@@ -639,7 +702,7 @@ file_write(sp, ep, fm, tm, name, flags)
 
 	/* Backup the file if requested. */
 	p = O_STR(sp, O_BACKUP);
-	if (p[0] != '\0' && file_backup(sp, ep, name, p) && !LF_ISSET(FS_FORCE))
+	if (p[0] != '\0' && file_backup(sp, name, p) && !LF_ISSET(FS_FORCE))
 		return (1);
 
 	/* Open the file. */
@@ -666,7 +729,7 @@ file_write(sp, ep, fm, tm, name, flags)
 		from.lno = 1;
 		from.cno = 0;
 		fm = &from;
-		if (file_lline(sp, ep, &to.lno))
+		if (file_lline(sp, &to.lno))
 			return (1);
 		to.cno = 0;
 		tm = &to;
@@ -674,7 +737,7 @@ file_write(sp, ep, fm, tm, name, flags)
 
 	/* Turn on the busy message. */
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Writing...");
-	rval = ex_writefp(sp, ep, name, fp, fm, tm, &nlno, &nch);
+	rval = ex_writefp(sp, name, fp, fm, tm, &nlno, &nch);
 	if (btear)
 		busy_off(sp);
 
@@ -683,7 +746,8 @@ file_write(sp, ep, fm, tm, name, flags)
 	 * we re-init the time.  That way the user can clean up the disk
 	 * and rewrite without having to force it.
 	 */
-	if (noname)
+	if (noname) {
+		ep = sp->ep;
 		if (stat(name, &sb))
 			ep->mtime = 0;
 		else {
@@ -691,6 +755,7 @@ file_write(sp, ep, fm, tm, name, flags)
 			ep->minode = sb.st_ino;
 			ep->mtime = sb.st_mtime;
 		}
+	}
 
 	/* If the write failed, complain loudly. */
 	if (rval) {
@@ -718,7 +783,7 @@ file_write(sp, ep, fm, tm, name, flags)
 	 * losing their changes by exiting.
 	 */
 	if (LF_ISSET(FS_ALL)) {
-		F_CLR(ep, F_MODIFIED);
+		F_CLR(sp->ep, F_MODIFIED);
 		if (F_ISSET(frp, FR_TMPFILE))
 			if (noname)
 				F_SET(frp, FR_TMPEXIT);
@@ -781,9 +846,8 @@ file_write(sp, ep, fm, tm, name, flags)
  * recreate the file.  So, let's not risk it.
  */
 static int
-file_backup(sp, ep, name, bname)
+file_backup(sp, name, bname)
 	SCR *sp;
-	EXF *ep;
 	char *name, *bname;
 {
 	struct dirent *dp;
@@ -824,14 +888,14 @@ file_backup(sp, ep, name, bname)
 	 *
 	 * Shell and file name expand the option's value.
 	 */
-	argv_init(sp, ep, &cmd);
+	argv_init(sp, &cmd);
 	ex_cbuild(&cmd, 0, 0, 0, 0, 0, ap, &a, NULL);
 	if (bname[0] == 'N') {
 		version = 1;
 		++bname;
 	} else
 		version = 0;
-	if (argv_exp2(sp, ep, &cmd, bname, strlen(bname)))
+	if (argv_exp2(sp, &cmd, bname, strlen(bname)))
 		return (1);
 
 	/*
@@ -972,30 +1036,33 @@ err:	if (rfd != -1)
  *	:tagpush, :tagpop, ^^ modifications check.
  */
 int
-file_m1(sp, ep, force, flags)
+file_m1(sp, force, flags)
 	SCR *sp;
-	EXF *ep;
 	int force, flags;
 {
+	/* If no file loaded, return no modifications. */
+	if (sp->ep == NULL)
+		return (0);
+
 	/*
 	 * If the file has been modified, we'll want to write it back or
 	 * fail.  If autowrite is set, we'll write it back automatically,
 	 * unless force is also set.  Otherwise, we fail unless forced or
 	 * there's another open screen on this file.
 	 */
-	if (F_ISSET(ep, F_MODIFIED))
+	if (F_ISSET(sp->ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
 			if (!force &&
-			    file_write(sp, ep, NULL, NULL, NULL, flags))
+			    file_write(sp, NULL, NULL, NULL, flags))
 				return (1);
-		} else if (ep->refcnt <= 1 && !force) {
+		} else if (sp->ep->refcnt <= 1 && !force) {
 			msgq(sp, M_ERR, LF_ISSET(FS_POSSIBLE) ?
 "021|File modified since last complete write; write or use ! to override" :
 "022|File modified since last complete write; write or use :edit! to override");
 			return (1);
 		}
 
-	return (file_m3(sp, ep, force));
+	return (file_m3(sp, force));
 }
 
 /*
@@ -1004,22 +1071,25 @@ file_m1(sp, ep, force, flags)
  *	modifications check.
  */
 int
-file_m2(sp, ep, force)
+file_m2(sp, force)
 	SCR *sp;
-	EXF *ep;
 	int force;
 {
+	/* If no file loaded, return no modifications. */
+	if (sp->ep == NULL)
+		return (0);
+
 	/*
 	 * If the file has been modified, we'll want to fail, unless forced
 	 * or there's another open screen on this file.
 	 */
-	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
+	if (F_ISSET(sp->ep, F_MODIFIED) && sp->ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
 "023|File modified since last complete write; write or use ! to override");
 		return (1);
 	}
 
-	return (file_m3(sp, ep, force));
+	return (file_m3(sp, force));
 }
 
 /*
@@ -1027,11 +1097,14 @@ file_m2(sp, ep, force)
  * 	Third modification check routine.
  */
 int
-file_m3(sp, ep, force)
+file_m3(sp, force)
 	SCR *sp;
-	EXF *ep;
 	int force;
 {
+	/* If no file loaded, return no modifications. */
+	if (sp->ep == NULL)
+		return (0);
+
 	/*
 	 * Don't exit while in a temporary files if the file was ever modified.
 	 * The problem is that if the user does a ":wq", we write and quit,
@@ -1039,7 +1112,7 @@ file_m3(sp, ep, force)
 	 * We permit writing to temporary files, so that user maps using file
 	 * system names work with temporary files.
 	 */
-	if (F_ISSET(sp->frp, FR_TMPEXIT) && ep->refcnt <= 1 && !force) {
+	if (F_ISSET(sp->frp, FR_TMPEXIT) && sp->ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
 		    "024|File is a temporary; exit will discard modifications");
 		return (1);
@@ -1069,10 +1142,14 @@ file_m3(sp, ep, force)
  * is ended. So, in that case we have to acquire an extra file descriptor.
  */
 enum lockt
-file_lock(name, fdp, fd, iswrite)
+file_lock(sp, name, fdp, fd, iswrite)
+	SCR *sp;
 	char *name;
 	int fd, *fdp, iswrite;
 {
+	if (O_ISSET(sp, O_LOCK))
+		return (LOCK_SUCCESS);
+	
 #if !defined(USE_FCNTL) && defined(LOCK_EX)
 					/* Hurrah!  We've got flock(2). */
 	/*

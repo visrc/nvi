@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.68 1994/08/31 17:12:21 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:21 $";
+static char sccsid[] = "$Id: screen.c,v 9.1 1994/11/09 18:38:05 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,9 +37,8 @@ static char sccsid[] = "$Id: screen.c,v 8.68 1994/08/31 17:12:21 bostic Exp $ (B
  *	Do the default initialization of an SCR structure.
  */
 int
-screen_init(orig, spp, flags)
+screen_init(orig, spp)
 	SCR *orig, **spp;
-	u_int flags;
 {
 	SCR *sp;
 	size_t len;
@@ -56,6 +55,8 @@ screen_init(orig, spp, flags)
 
 	sp->ccnt = 2;				/* Anything > 1 */
 
+	sp->stdfp = stdout;			/* Start off at the terminal. */
+
 	FD_ZERO(&sp->rdfd);
 
 	/*
@@ -70,25 +71,6 @@ screen_init(orig, spp, flags)
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	if (orig == NULL) {
 		sp->searchdir = NOTSET;
-
-		switch (flags & S_SCREENS) {
-		case S_EX:
-			if (sex_screen_init(sp))
-				return (1);
-			break;
-		case S_VI_CURSES:
-			if (svi_screen_init(sp))
-				return (1);
-			break;
-		case S_VI_XAW:
-			if (xaw_screen_init(sp))
-				return (1);
-			break;
-		default:
-			abort();
-		}
-
-		sp->flags = flags;
 	} else {
 		if (orig->alt_name != NULL &&
 		    (sp->alt_name = strdup(orig->alt_name)) == NULL)
@@ -148,7 +130,6 @@ mem:				msgq(orig, M_SYSERR, NULL);
 		sp->s_get		= orig->s_get;
 		sp->s_key_read		= orig->s_key_read;
 		sp->s_fmap		= orig->s_fmap;
-		sp->s_optchange		= orig->s_optchange;
 		sp->s_position		= orig->s_position;
 		sp->s_rabs		= orig->s_rabs;
 		sp->s_rcm		= orig->s_rcm;
@@ -156,7 +137,6 @@ mem:				msgq(orig, M_SYSERR, NULL);
 		sp->s_scroll		= orig->s_scroll;
 		sp->s_split		= orig->s_split;
 		sp->s_suspend		= orig->s_suspend;
-		sp->s_window		= orig->s_window;
 
 		F_SET(sp, F_ISSET(orig, S_SCREENS));
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.38 1994/09/02 20:19:15 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:19:15 $";
+static char sccsid[] = "$Id: options_f.c,v 9.1 1994/11/09 18:38:01 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ DECL(f_columns)
 	/* Set the value. */
 	O_VAL(sp, O_COLUMNS) =  val;
 
-	F_SET(sp, S_RESIZE);
+	F_SET(sp, S_SCR_RESIZE);
 	return (0);
 }
 
@@ -95,7 +95,7 @@ DECL(f_leftright)
 		O_CLR(sp, O_LEFTRIGHT);
 	else
 		O_SET(sp, O_LEFTRIGHT);
-	F_SET(sp, S_REFORMAT | S_REDRAW);
+	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
@@ -128,7 +128,7 @@ DECL(f_lines)
 	if (!F_ISSET(&sp->opts[O_WINDOW], OPT_SET))
 		O_VAL(sp, O_WINDOW) = val - 1;
 
-	F_SET(sp, S_RESIZE);
+	F_SET(sp, S_SCR_RESIZE);
 	return (0);
 }
 
@@ -145,7 +145,7 @@ DECL(f_list)
 	else
 		O_SET(sp, O_LIST);
 
-	F_SET(sp, S_REFORMAT | S_REDRAW);
+	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
@@ -216,7 +216,7 @@ DECL(f_number)
 	else
 		O_SET(sp, O_NUMBER);
 
-	F_SET(sp, S_REFORMAT | S_REDRAW);
+	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
@@ -228,7 +228,7 @@ DECL(f_octal)
 		O_SET(sp, O_OCTAL);
 
 	key_init(sp);
-	F_SET(sp, S_REFORMAT | S_REDRAW);
+	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
@@ -305,7 +305,7 @@ DECL(f_tabstop)
 	}
 	O_VAL(sp, O_TABSTOP) = val;
 
-	F_SET(sp, S_REFORMAT | S_REDRAW);
+	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
@@ -325,6 +325,12 @@ DECL(f_term)
 	(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
 	if (opt_putenv(buf))
 		return (1);
+
+	/* Reset the screen size. */
+	if (term_window(sp, 0))
+		return (1);
+	F_SET(sp, S_SCR_RESIZE);
+
 	return (0);
 }
 

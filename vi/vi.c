@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.99 1994/10/24 10:59:59 bostic Exp $ (Berkeley) $Date: 1994/10/24 10:59:59 $";
+static char sccsid[] = "$Id: vi.c,v 9.1 1994/11/09 18:36:40 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,14 +31,14 @@ static char sccsid[] = "$Id: vi.c,v 8.99 1994/10/24 10:59:59 bostic Exp $ (Berke
 #include "vcmd.h"
 
 enum gcret { GC_ERR, GC_ERR_NOFLUSH, GC_OK } gcret;
-static enum gcret getcmd __P((SCR *, EXF *,
-		VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
+static enum gcret getcmd
+	__P((SCR *, VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
 static __inline int
 	   getcount __P((SCR *, ARG_CHAR_T, u_long *));
 static __inline int
 	   getkey __P((SCR *, CH *, u_int));
-static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
-static int getmotion __P((SCR *, EXF *, VICMDARG *, VICMDARG *, int *));
+static int getkeyword __P((SCR *, VICMDARG *, u_int));
+static int getmotion __P((SCR *, VICMDARG *, VICMDARG *, int *));
 
 /*
  * Side-effect:
@@ -53,9 +53,8 @@ static int getmotion __P((SCR *, EXF *, VICMDARG *, VICMDARG *, int *));
  * 	Main vi command loop.
  */
 int
-vi(sp, ep)
+vi(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	MARK abs;
 	VICMDARG cmd, *vp;
@@ -63,7 +62,7 @@ vi(sp, ep)
 	int comcount, eval, mapped;
 
 	/* Start vi and paint the screen. */
-	if (v_init(sp, ep))
+	if (v_init(sp))
 		return (1);
 
 	/* Initialize the command structure. */
@@ -72,7 +71,7 @@ vi(sp, ep)
 	for (eval = 0, vp = &cmd;;) {
 		/* Refresh the screen. */
 		sp->showmode = "Command";
-		if (sp->s_refresh(sp, ep)) {
+		if (sp->s_refresh(sp)) {
 			eval = 1;
 			break;
 		}
@@ -80,7 +79,7 @@ vi(sp, ep)
 		/* Set the new favorite position. */
 		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
 			sp->rcm_last = 0;
-			(void)sp->s_column(sp, ep, &sp->rcm);
+			(void)sp->s_column(sp, &sp->rcm);
 		}
 
 		/*
@@ -91,7 +90,7 @@ vi(sp, ep)
 		if (MAPPED_KEYS_WAITING(sp))
 			mapped = 1;
 		else {
-			if (log_cursor(sp, ep))
+			if (log_cursor(sp))
 				goto err;
 			mapped = 0;
 		}
@@ -115,7 +114,7 @@ vi(sp, ep)
 		 * put leading <escape> characters in maps to clean up vi
 		 * state before the map was interpreted.
 		 */
-		switch (getcmd(sp, ep, DOT, vp, NULL, &comcount, &mapped)) {
+		switch (getcmd(sp, DOT, vp, NULL, &comcount, &mapped)) {
 		case GC_ERR:
 			goto err;
 		case GC_ERR_NOFLUSH:
@@ -160,7 +159,7 @@ vi(sp, ep)
 		if (F_ISSET(vp, V_MOTION)) {
 			flags = F_ISSET(vp, VM_RCM_MASK);
 			F_CLR(vp, VM_RCM_MASK);
-			if (getmotion(sp, ep, DOTMOTION, vp, &mapped))
+			if (getmotion(sp, DOTMOTION, vp, &mapped))
 				goto err;
 			if (F_ISSET(vp, VM_NOMOTION))
 				goto err;
@@ -186,7 +185,7 @@ vi(sp, ep)
 
 		/* Save the mode and call the function. */
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
-		if ((vp->kp->func)(sp, ep, vp))
+		if ((vp->kp->func)(sp, vp))
 			goto err;
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
@@ -252,7 +251,7 @@ vi(sp, ep)
 		case VM_RCM_SET:
 			break;
 		case VM_RCM:
-			vp->m_final.cno = sp->s_rcm(sp, ep, vp->m_final.lno);
+			vp->m_final.cno = sp->s_rcm(sp, vp->m_final.lno);
 			break;
 		case VM_RCM_SETLAST:
 			sp->rcm_last = 1;
@@ -261,7 +260,7 @@ vi(sp, ep)
 			vp->m_final.cno = 0;
 			/* FALLTHROUGH */
 		case VM_RCM_SETNNB:
-			if (nonblank(sp, ep, vp->m_final.lno, &vp->m_final.cno))
+			if (nonblank(sp, vp->m_final.lno, &vp->m_final.cno))
 				goto err;
 			break;
 		default:
@@ -280,7 +279,7 @@ vi(sp, ep)
 		    F_ISSET(vp, V_ABS_L) && sp->lno != abs.lno ||
 		    F_ISSET(vp, V_ABS_C) &&
 		    (sp->lno != abs.lno || sp->cno != abs.cno)) &&
-		    mark_set(sp, ep, ABSMARK1, &abs, 1))
+		    mark_set(sp, ABSMARK1, &abs, 1))
 			goto err;
 
 		if (!MAPPED_KEYS_WAITING(sp)) {
@@ -343,9 +342,8 @@ VIKEYS const tmotion = {
  *	[count] key [character]
  */
 static enum gcret
-getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
+getcmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *dp, *vp;
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
 	int *comcountp, *mappedp;
@@ -555,7 +553,7 @@ usage:			if (ismotion == NULL)
 
 	/* Get any associated keyword. */
 	if (F_ISSET(kp, V_KEYNUM | V_KEYW) &&
-	    getkeyword(sp, ep, vp, F_ISSET(kp, V_KEYNUM | V_KEYW)))
+	    getkeyword(sp, vp, F_ISSET(kp, V_KEYNUM | V_KEYW)))
 		return (GC_ERR);
 
 	return (GC_OK);
@@ -579,9 +577,8 @@ esc:	switch (cpart) {
  * Get resulting motion mark.
  */
 static int
-getmotion(sp, ep, dm, vp, mappedp)
+getmotion(sp, dm, vp, mappedp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *dm, *vp;
 	int *mappedp;
 {
@@ -602,8 +599,7 @@ getmotion(sp, ep, dm, vp, mappedp)
 		F_CLR(&motion, VM_COMMASK);
 	} else {
 		memset(&motion, 0, sizeof(VICMDARG));
-		if (getcmd(sp, ep,
-		    NULL, &motion, vp, &notused, mappedp) != GC_OK)
+		if (getcmd(sp, NULL, &motion, vp, &notused, mappedp) != GC_OK)
 			return (1);
 	}
 
@@ -648,12 +644,12 @@ getmotion(sp, ep, dm, vp, mappedp)
 		 * text.
 		 */
 		vp->m_stop.lno = sp->lno + motion.count - 1;
-		if (file_gline(sp, ep, vp->m_stop.lno, &len) == NULL) {
+		if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
 			if (vp->m_stop.lno != 1 ||
 			   vp->key != 'c' && vp->key != '!') {
 				m.lno = sp->lno;
 				m.cno = sp->cno;
-				v_eof(sp, ep, &m);
+				v_eof(sp, &m);
 				goto err;
 			}
 			vp->m_stop.cno = 0;
@@ -700,7 +696,7 @@ getmotion(sp, ep, dm, vp, mappedp)
 		    motion.m_stop.cno = motion.m_start.cno = sp->cno;
 
 		/* Run the function. */
-		if ((motion.kp->func)(sp, ep, &motion))
+		if ((motion.kp->func)(sp, &motion))
 			goto err;
 
 		/*
@@ -766,9 +762,8 @@ err:		rval = 1;
  *	Get the "word" the cursor is on.
  */
 static int
-getkeyword(sp, ep, vp, flags)
+getkeyword(sp, vp, flags)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 	u_int flags;
 {
@@ -776,11 +771,11 @@ getkeyword(sp, ep, vp, flags)
 	size_t beg, end, len;
 	char *p;
 
-	if ((p = file_gline(sp, ep, sp->lno, &len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((p = file_gline(sp, sp->lno, &len)) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
-			v_eof(sp, ep, NULL);
+			v_eof(sp, NULL);
 		else
 			GETLINE_ERR(sp, sp->lno);
 		return (1);
@@ -873,7 +868,7 @@ noword:			msgq(sp, M_BERR,
 	 */
 	if (beg != sp->cno) {
 		sp->cno = beg;
-		sp->s_refresh(sp, ep);
+		(void)sp->s_refresh(sp);
 	}
 
 	/*

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.129 1994/09/16 20:34:15 bostic Exp $ (Berkeley) $Date: 1994/09/16 20:34:15 $
+ *	$Id: screen.h,v 9.1 1994/11/09 18:38:06 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:06 $
  */
 
 /*
@@ -177,51 +177,48 @@ struct _scr {
 					/* Put up a busy message. */
 	int	(*s_busy) __P((SCR *, char const *));
 					/* Change a screen line. */
-	int	(*s_change) __P((SCR *, EXF *, recno_t, enum operation));
+	int	(*s_change) __P((SCR *, recno_t, enum operation));
 					/* Clear the screen. */
 	int	(*s_clear) __P((SCR *));
 					/* Return column close to specified. */
-	size_t	(*s_colpos) __P((SCR *, EXF *, recno_t, size_t));
+	size_t	(*s_colpos) __P((SCR *, recno_t, size_t));
 					/* Return the logical cursor column. */
-	int	(*s_column) __P((SCR *, EXF *, size_t *));
+	int	(*s_column) __P((SCR *, size_t *));
 	enum confirm			/* Confirm an action with the user. */
-		(*s_confirm) __P((SCR *, EXF *, MARK *, MARK *));
+		(*s_confirm) __P((SCR *, MARK *, MARK *));
 					/* Change the relative screen size. */
 	int	(*s_crel) __P((SCR *, long));
 					/* Edit a file. */
-	int	(*s_edit) __P((SCR *, EXF *));
+	int	(*s_edit) __P((SCR *));
 					/* End a screen. */
 	int	(*s_end) __P((SCR *));
 					/* Run a single ex command. */
-	int	(*s_ex_cmd) __P((SCR *, EXF *, EXCMDARG *, MARK *));
+	int	(*s_ex_cmd) __P((SCR *, EXCMDARG *, MARK *));
 					/* Run user's ex commands. */
-	int	(*s_ex_run) __P((SCR *, EXF *, MARK *));
+	int	(*s_ex_run) __P((SCR *, MARK *));
 					/* Screen's ex write function. */
 	int	(*s_ex_write) __P((void *, const char *, int));
 					/* Foreground the screen. */
 	int	(*s_fg) __P((SCR *, CHAR_T *));
 					/* Fill the screen's map. */
-	int	(*s_fill) __P((SCR *, EXF *, recno_t, enum position));
+	int	(*s_fill) __P((SCR *, recno_t, enum position));
 	enum input			/* Get a line from the user. */
-		(*s_get) __P((SCR *, EXF *, TEXTH *, ARG_CHAR_T, u_int));
+		(*s_get) __P((SCR *, TEXTH *, ARG_CHAR_T, u_int));
 	enum input			/* Get a key from the user. */
 		(*s_key_read) __P((SCR *, int *, struct timeval *));
 					/* Map a function key. */
 	int	(*s_fmap) __P((SCR *,
 		    enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
-					/* Tell the screen an option changed. */
-	int	(*s_optchange) __P((SCR *, int));
 					/* Return column at screen position. */
-	int	(*s_position) __P((SCR *, EXF *,
-		   MARK *, u_long, enum position));
+	int	(*s_position) __P((SCR *, MARK *, u_long, enum position));
 					/* Change the absolute screen size. */
 	int	(*s_rabs) __P((SCR *, long, enum adjust));
 					/* Return column close to selection. */
-	size_t	(*s_rcm) __P((SCR *, EXF *, recno_t));
+	size_t	(*s_rcm) __P((SCR *, recno_t));
 					/* Refresh the screen. */
-	int	(*s_refresh) __P((SCR *, EXF *));
+	int	(*s_refresh) __P((SCR *));
 					/* Move down the screen. */
-	int	(*s_scroll) __P((SCR *, EXF *, MARK *, recno_t, enum sctype));
+	int	(*s_scroll) __P((SCR *, MARK *, recno_t, enum sctype));
 					/* Split the screen. */
 	int	(*s_split) __P((SCR *, ARGS *[], int));
 					/* Suspend the screen. */
@@ -244,70 +241,76 @@ struct _scr {
 /* Major screen/file changes. */
 #define	S_EXIT		0x0000008	/* Exiting (not forced). */
 #define	S_EXIT_FORCE	0x0000010	/* Exiting (forced). */
-#define	S_FSWITCH	0x0000020	/* Switch files. */
-#define	S_SSWITCH	0x0000040	/* Switch screens. */
-#define	S_MAJOR_CHANGE			/* Screen or file changes. */	\
-	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)
+#define	S_SSWITCH	0x0000020	/* Switch screens. */
+#define	S_MAJOR_CHANGE	(S_EXIT | S_EXIT_FORCE | S_SSWITCH)
 
-#define	S_ARGNOFREE	0x0000080	/* Argument list wasn't allocated. */
-#define	S_ARGRECOVER	0x0000100	/* Argument list is recovery files. */
-#define	S_BELLSCHED	0x0000200	/* Bell scheduled. */
-#define	S_CONTINUE	0x0000400	/* Need to ask the user to continue. */
-#define	S_EXSILENT	0x0000800	/* Ex batch script. */
-#define	S_GLOBAL	0x0001000	/* Doing a global command. */
-#define	S_INPUT		0x0002000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0004000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0008000	/* If can be interrupted. */
-#define	S_IVIDEO	0x0010000	/* Display in inverse video. */
-#define	S_REDRAW	0x0020000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0040000	/* Reformat the screen. */
-#define	S_REFRESH	0x0080000	/* Refresh the screen. */
-#define	S_RENUMBER	0x0100000	/* Renumber the screen. */
-#define	S_RESIZE	0x0200000	/* Resize the screen. */
-#define	S_SCRIPT	0x0400000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0800000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x1000000	/* The substitute RE has been set. */
-#define	S_UPDATE_MODE	0x2000000	/* Don't repaint modeline. */
-#define	S_VLITONLY	0x4000000	/* ^V literal next only. */
+/*
+ * Public screen formatting flags.  Each flag implies the flags that
+ * follow it.
+ *
+ * S_SCR_RESIZE
+ *	The screen size has changed.  Requires that the current screen
+ *	real estate be reallocated, and...
+ * S_SCR_REFORMAT
+ *	The expected presentation of the lines on the screen have changed,
+ *	requiring that the intended screen lines be recalculated, and ...
+ * S_SCR_REFRESH
+ *	The screen doesn't correctly represent the file; repaint it.  Also,
+ *	setting S_SCR_REFRESH in the current window causes *all* windows to
+ *	be repainted.
+ *
+ * In addition there are two additional flags:
+ *
+ * S_SCR_EXWROTE
+ *	The ex part of the editor wrote to the screen.
+ * S_SCR_UMODE
+ *	Don't update the mode line until the user enters a character.
+ */
+#define	S_SCR_RESIZE	0x0000040	/* Resize (reformat, refresh). */
+#define	S_SCR_REFORMAT	0x0000080	/* Reformat (refresh). */
+#define	S_SCR_REFRESH	0x0000100	/* Refresh. */
+#define	S_SCR_EXWROTE	0x0000200	/* Ex wrote the screen. */
+#define	S_SCR_UMODE	0x0000400	/* Don't repaint modeline. */
+
+#define	S_ARGNOFREE	0x0000800	/* Argument list wasn't allocated. */
+#define	S_ARGRECOVER	0x0001000	/* Argument list is recovery files. */
+#define	S_BELLSCHED	0x0002000	/* Bell scheduled. */
+#define	S_CONTINUE	0x0004000	/* Need to ask the user to continue. */
+#define	S_EXSILENT	0x0008000	/* Ex batch script. */
+#define	S_GLOBAL	0x0010000	/* Doing a global command. */
+#define	S_INPUT		0x0020000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0040000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0080000	/* If can be interrupted. */
+#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0200000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0400000	/* The substitute RE has been set. */
 	u_int32_t flags;
 };
 
-/*
- * Signals/timers have no structure, so it's all here.
- *
- * Block all signals that are being handled.  Used to keep the underlying DB
- * system calls from being interrupted and not restarted, as it could cause
- * consistency problems.  Also used when vi forks child processes, to avoid
- * a signal arriving after the fork and before the exec, causing both parent
- * and child to attempt recovery processing.
- */
-#define	SIGBLOCK(gp) \
-	(void)sigprocmask(SIG_BLOCK, &(gp)->blockset, NULL);
-#define	SIGUNBLOCK(gp) \
-	(void)sigprocmask(SIG_UNBLOCK, &(gp)->blockset, NULL);
-
-void	 busy_off __P((SCR *));
-int	 busy_on __P((SCR *, char const *));
-void	 sig_end __P((void));
-int	 sig_init __P((SCR *));
-
 /* Generic routines to start/stop a screen. */
 int	 screen_end __P((SCR *));
-int	 screen_init __P((SCR *, SCR **, u_int));
+int	 screen_init __P((SCR *, SCR **));
 
 /* Public interfaces to the underlying screens. */
+int	 ex_optchange __P((SCR *, int));
 int	 ex_screen_copy __P((SCR *, SCR *));
 int	 ex_screen_end __P((SCR *));
-int	 ex_screen_init __P((SCR *));
+
+int	 sex_optchange __P((SCR *, int));
 int	 sex_screen_copy __P((SCR *, SCR *));
+int	 sex_screen_edit __P((SCR *));
 int	 sex_screen_end __P((SCR *));
-int	 sex_screen_init __P((SCR *));
+
+int	 svi_optchange __P((SCR *, int));
 int	 svi_screen_copy __P((SCR *, SCR *));
+int	 svi_screen_edit __P((SCR *));
 int	 svi_screen_end __P((SCR *));
-int	 svi_screen_init __P((SCR *));
+
+int	 v_optchange __P((SCR *, int));
 int	 v_screen_copy __P((SCR *, SCR *));
 int	 v_screen_end __P((SCR *));
-int	 v_screen_init __P((SCR *));
+
+int	 xaw_optchange __P((SCR *, int));
 int	 xaw_screen_copy __P((SCR *, SCR *));
+int	 xaw_screen_edit __P((SCR *));
 int	 xaw_screen_end __P((SCR *));
-int	 xaw_screen_init __P((SCR *));

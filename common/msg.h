@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.14 1994/08/31 17:12:12 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:12 $
+ *	$Id: msg.h,v 9.1 1994/11/09 18:37:57 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:57 $
  */
 
 /*
@@ -44,5 +44,5 @@ void 	 msg_close __P((GS *));
 int 	 msg_open __P((SCR *, char *));
 char	*msg_print __P((SCR *, char *, int *));
 int 	 msg_rpt __P((SCR *, int));
-int 	 msg_status __P((SCR *, EXF *, recno_t, int));
+int 	 msg_status __P((SCR *, recno_t, int));
 void 	 msgq __P((SCR *, enum msgtype, const char *, ...));

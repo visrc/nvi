@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.34 1994/09/07 11:51:59 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:51:59 $";
+static char sccsid[] = "$Id: seq.c,v 9.1 1994/11/09 18:38:12 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -276,6 +276,7 @@ seq_dump(sp, stype, isname)
 				(void)ex_printf(EXCOOKIE,
 				    "%s", KEY_NAME(sp, *p));
 		}
+		F_SET(sp, S_SCR_EXWROTE);
 		(void)ex_printf(EXCOOKIE, "\n");
 	}
 	return (cnt);

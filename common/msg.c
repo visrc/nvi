@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.19 1994/09/15 10:34:07 bostic Exp $ (Berkeley) $Date: 1994/09/15 10:34:07 $";
+static char sccsid[] = "$Id: msg.c,v 9.1 1994/11/09 18:37:55 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -469,8 +469,10 @@ msg_rpt(sp, is_message)
 		*p = '\0';
 		if (is_message)
 			msgq(sp, M_INFO, "%s", bp);
-		else
-			ex_printf(EXCOOKIE, "%s\n", bp);
+		else {
+			F_SET(sp, S_SCR_EXWROTE);
+			(void)ex_printf(EXCOOKIE, "%s\n", bp);
+		}
 	}
 
 	FREE_SPACE(sp, bp, blen);
@@ -486,9 +488,8 @@ norpt:	sp->rptlchange = OOBLNO;
  *	Report on the file's status.
  */
 int
-msg_status(sp, ep, lno, showlast)
+msg_status(sp, lno, showlast)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	int showlast;
 {
@@ -517,18 +518,18 @@ msg_status(sp, ep, lno, showlast)
 		nf = "";
 		if (F_ISSET(sp->frp, FR_NAMECHANGE)) {
 			nc = "name changed";
-			mo = F_ISSET(ep, F_MODIFIED) ?
+			mo = F_ISSET(sp->ep, F_MODIFIED) ?
 			    ", modified" : ", unmodified";
 		} else {
 			nc = "";
-			mo = F_ISSET(ep, F_MODIFIED) ?
+			mo = F_ISSET(sp->ep, F_MODIFIED) ?
 			    "modified" : "unmodified";
 		}
 	}
 	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
 	ul = F_ISSET(sp->frp, FR_UNLOCKED) ? ", UNLOCKED" : "";
 	if (showlast) {
-		if (file_lline(sp, ep, &last))
+		if (file_lline(sp, &last))
 			return (1);
 		if (last >= 1)
 			msgq(sp, M_INFO,

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.43 1994/10/13 14:06:47 bostic Exp $ (Berkeley) $Date: 1994/10/13 14:06:47 $
+ *	$Id: vi.h,v 9.1 1994/11/09 18:36:38 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:38 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -125,7 +125,7 @@ typedef struct _vicmdarg {
 
 /* Vi command structure. */
 struct _vikeys {			/* Underlying function. */
-	int	 (*func) __P((SCR *, EXF *, VICMDARG *));
+	int	 (*func) __P((SCR *, VICMDARG *));
 #define	V_ABS		0x00004000	/* Absolute movement, set '' mark. */
 #define	V_ABS_C		0x00008000	/* V_ABS: if the line/column changed. */
 #define	V_ABS_L		0x00010000	/* V_ABS: if the line changed. */
@@ -166,12 +166,12 @@ typedef struct _vcs {
 	int	 cs_flags;		/* Return flags. */
 } VCS;
 
-int	cs_bblank __P((SCR *, EXF *, VCS *));
-int	cs_fblank __P((SCR *, EXF *, VCS *));
-int	cs_fspace __P((SCR *, EXF *, VCS *));
-int	cs_init __P((SCR *, EXF *, VCS *));
-int	cs_next __P((SCR *, EXF *, VCS *));
-int	cs_prev __P((SCR *, EXF *, VCS *));
+int	cs_bblank __P((SCR *, VCS *));
+int	cs_fblank __P((SCR *, VCS *));
+int	cs_fspace __P((SCR *, VCS *));
+int	cs_init __P((SCR *, VCS *));
+int	cs_next __P((SCR *, VCS *));
+int	cs_prev __P((SCR *, VCS *));
 
 					/* Character search information. */
 enum cdirection	{ CNOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH };
@@ -201,26 +201,25 @@ typedef struct _vi_private {
 #define	VIP(sp)	((VI_PRIVATE *)((sp)->vi_private))
 
 /* Vi function prototypes. */
-int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *, size_t, TEXT *));
+int	txt_auto __P((SCR *, recno_t, TEXT *, size_t, TEXT *));
 int	v_buildps __P((SCR *));
 int	v_end __P((SCR *));
-void	v_eof __P((SCR *, EXF *, MARK *));
-void	v_eol __P((SCR *, EXF *, MARK *));
+void	v_eof __P((SCR *, MARK *));
+void	v_eol __P((SCR *, MARK *));
 int	v_exwrite __P((void *, const char *, int));
-int	v_init __P((SCR *, EXF *));
+int	v_init __P((SCR *));
 int	v_isempty __P((char *, size_t));
 int	v_msgflush __P((SCR *));
 void	v_nomove __P((SCR *));
-int	v_ntext __P((SCR *, EXF *, TEXTH *, MARK *,
+int	v_ntext __P((SCR *, TEXTH *, MARK *,
 	    const char *, const size_t, MARK *, ARG_CHAR_T, recno_t, u_int));
-int	v_optchange __P((SCR *, int));
 int	v_screen_copy __P((SCR *, SCR *));
 int	v_screen_end __P((SCR *));
 void	v_sof __P((SCR *, MARK *));
 void	v_sol __P((SCR *));
-int	vi __P((SCR *, EXF *));
+int	vi __P((SCR *));
 
-#define	VIPROTO(name)	int name __P((SCR *, EXF *, VICMDARG *))
+#define	VIPROTO(name)	int name __P((SCR *, VICMDARG *))
 VIPROTO(v_again);
 VIPROTO(v_at);
 VIPROTO(v_bmark);

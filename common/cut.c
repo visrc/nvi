@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.35 1994/09/02 13:24:42 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:24:42 $";
+static char sccsid[] = "$Id: cut.c,v 9.1 1994/11/09 18:37:37 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,9 +65,8 @@ static int	cb_rotate __P((SCR *));
  * we just treat the numeric buffers like any other named buffer.
  */
 int
-cut(sp, ep, namep, fm, tm, flags)
+cut(sp, namep, fm, tm, flags)
 	SCR *sp;
-	EXF *ep;
 	CHAR_T *namep;
 	int flags;
 	MARK *fm, *tm;
@@ -143,25 +142,25 @@ copyloop:
 	if (LF_ISSET(CUT_LINEMODE)) {
 		cbp->flags |= CB_LMODE;
 		for (lno = fm->lno; lno <= tm->lno; ++lno)
-			if (cut_line(sp, ep, lno, 0, 0, cbp))
+			if (cut_line(sp, lno, 0, 0, cbp))
 				goto cut_line_err;
 	} else {
 		/*
 		 * Get the first line.  A length of 0 causes cut_line
 		 * to cut from the MARK to the end of the line.
 		 */
-		if (cut_line(sp, ep, fm->lno, fm->cno, fm->lno != tm->lno ?
+		if (cut_line(sp, fm->lno, fm->cno, fm->lno != tm->lno ?
 		    ENTIRE_LINE : (tm->cno - fm->cno) + 1, cbp))
 			goto cut_line_err;
 
 		/* Get the intermediate lines. */
 		for (lno = fm->lno; ++lno < tm->lno;)
-			if (cut_line(sp, ep, lno, 0, ENTIRE_LINE, cbp))
+			if (cut_line(sp, lno, 0, ENTIRE_LINE, cbp))
 				goto cut_line_err;
 
 		/* Get the last line. */
 		if (tm->lno != fm->lno &&
-		    cut_line(sp, ep, lno, 0, tm->cno + 1, cbp)) {
+		    cut_line(sp, lno, 0, tm->cno + 1, cbp)) {
 cut_line_err:		text_lfree(&cbp->textq);
 			cbp->len = 0;
 			cbp->flags = 0;
@@ -240,9 +239,8 @@ cb_rotate(sp)
  *	Cut a portion of a single line.
  */
 int
-cut_line(sp, ep, lno, fcno, clen, cbp)
+cut_line(sp, lno, fcno, clen, cbp)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	size_t fcno, clen;
 	CB *cbp;
@@ -252,7 +250,7 @@ cut_line(sp, ep, lno, fcno, clen, cbp)
 	char *p;
 
 	/* Get the line. */
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+	if ((p = file_gline(sp, lno, &len)) == NULL) {
 		GETLINE_ERR(sp, lno);
 		return (1);
 	}
