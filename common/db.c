@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.29 1993/05/06 01:08:22 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:08:22 $";
+static char sccsid[] = "$Id: db.c,v 5.30 1993/05/10 11:15:10 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:15:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,8 @@ static char sccsid[] = "$Id: db.c,v 5.29 1993/05/06 01:08:22 bostic Exp $ (Berke
 
 /*
  * file_gline --
- *	Retrieve a line from the file.
+ *	Look in the text buffers for a line; if it's not there
+ *	call file_rline to retrieve it from the database.
  */
 char *
 file_gline(sp, ep, lno, lenp)
@@ -43,7 +44,6 @@ file_gline(sp, ep, lno, lenp)
 	recno_t lno;				/* Line number. */
 	size_t *lenp;				/* Length store. */
 {
-	DBT data, key;
 	TEXT *tp;
 
 	/*
@@ -74,6 +74,22 @@ file_gline(sp, ep, lno, lenp)
 			*lenp = tp->len;
 		return (tp->lb);
 	}
+	return (file_rline(sp, ep, lno, lenp));
+}
+
+/*
+ * file_rline --
+ *	Look in the cache for a line; if it's not there retrieve
+ *	it from the file.
+ */
+char *
+file_rline(sp, ep, lno, lenp)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;				/* Line number. */
+	size_t *lenp;				/* Length store. */
+{
+	DBT data, key;
 
 	/* Check the cache. */
 	if (lno == ep->c_lno) {
@@ -86,7 +102,7 @@ file_gline(sp, ep, lno, lenp)
 	/* Get the line from the underlying database. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	switch((ep->db->get)(ep->db, &key, &data, 0)) {
+	switch ((ep->db->get)(ep->db, &key, &data, 0)) {
         case -1:
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to get line %u: %s.",
@@ -124,7 +140,7 @@ file_dline(sp, ep, lno)
 #endif
 
 	/* Log change. */
-	log_line(sp, ep, lno, LINE_DELETE);
+	log_line(sp, ep, lno, LOG_LINE_DELETE);
 
 	/* Update file. */
 	key.data = &lno;
@@ -189,7 +205,7 @@ file_aline(sp, ep, lno, p, len)
 	F_SET(ep, F_MODIFIED);
 
 	/* Log change. */
-	log_line(sp, ep, lno + 1, LINE_APPEND);
+	log_line(sp, ep, lno + 1, LOG_LINE_APPEND);
 
 	/*
 	 * Update screen.
@@ -247,7 +263,7 @@ file_iline(sp, ep, lno, p, len)
 	F_SET(ep, F_MODIFIED);
 
 	/* Log change. */
-	log_line(sp, ep, lno, LINE_INSERT);
+	log_line(sp, ep, lno, LOG_LINE_INSERT);
 
 	/* Update screen. */
 	UPDATE_SCREENS(LINE_INSERT);
@@ -272,8 +288,8 @@ file_sline(sp, ep, lno, p, len)
 	TRACE(sp,
 	    "replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
-	/* Log change. */
-	log_line(sp, ep, lno, LINE_RESET);
+	/* Log before change. */
+	log_line(sp, ep, lno, LOG_LINE_RESET_B);
 
 	/* Update file. */
 	key.data = &lno;
@@ -294,8 +310,8 @@ file_sline(sp, ep, lno, p, len)
 	/* File now dirty. */
 	F_SET(ep, F_MODIFIED);
 
-	/* Log change. */
-	log_line(sp, ep, lno, LINE_RESET);
+	/* Log after change. */
+	log_line(sp, ep, lno, LOG_LINE_RESET_F);
 	
 	/* Update screen. */
 	UPDATE_SCREENS(LINE_RESET);
@@ -323,7 +339,7 @@ file_lline(sp, ep)
 	key.data = &lno;
 	key.size = sizeof(lno);
 
-	switch((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
+	switch ((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
         case -1:
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to get last line: %s.",
