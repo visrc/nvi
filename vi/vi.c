@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.27 1995/11/07 08:36:14 bostic Exp $ (Berkeley) $Date: 1995/11/07 08:36:14 $";
+static char sccsid[] = "$Id: vi.c,v 10.28 1995/11/07 20:28:22 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:28:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,6 @@ vi(spp)
 {
 	GS *gp;
 	MARK abs;
-	MSG *mp;
 	SCR *next, *sp;
 	VICMD cmd, *vp;
 	VI_PRIVATE *vip;
@@ -82,21 +81,9 @@ vi(spp)
 	/* Reset strange attraction. */
 	F_SET(vp, VM_RCM_SET);
 
-	/* Initialize and refresh the vi screen.   The refresh is necessary
-	 * so the first vs_resolve() works.  (A side-effect of screen refresh
-	 * is that we can display messages.)
-	 */
-	if (v_init(sp) || vs_refresh(sp))
+	/* Initialize the vi screen. */
+	if (v_init(sp))
 		return (1);
-
-	/* Flush any saved messages. */
-	if (gp->msgq.lh_first != NULL && F_ISSET(sp, S_SCREEN_READY))
-		while ((mp = gp->msgq.lh_first) != NULL) {
-			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
-			LIST_REMOVE(mp, q);
-			free(mp->buf);
-			free(mp);
-		}
 
 	for (vip = VIP(sp), rval = 0;;) {
 		/* Resolve messages. */
