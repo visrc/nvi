@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.84 1994/03/03 11:36:51 bostic Exp $ (Berkeley) $Date: 1994/03/03 11:36:51 $
+ *	$Id: screen.h,v 8.85 1994/03/10 11:03:48 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:03:48 $
  */
 
 /*
@@ -178,10 +178,10 @@ struct _scr {
 	int	(*s_busy) __P((SCR *, char const *));
 					/* Change a screen line. */
 	int	(*s_change) __P((SCR *, EXF *, recno_t, enum operation));
-					/* Return column close to specified. */
-	size_t	(*s_chposition) __P((SCR *, EXF *, recno_t, size_t));
 					/* Clear the screen. */
 	int	(*s_clear) __P((SCR *));
+					/* Return column close to specified. */
+	size_t	(*s_colpos) __P((SCR *, EXF *, recno_t, size_t));
 					/* Return the logical cursor column. */
 	int	(*s_column) __P((SCR *, EXF *, size_t *));
 	enum confirm			/* Confirm an action with the user. */
@@ -215,10 +215,10 @@ struct _scr {
 		   MARK *, u_long, enum position));
 					/* Change the absolute screen size. */
 	int	(*s_rabs) __P((SCR *, long, enum adjust));
+					/* Return column close to selection. */
+	size_t	(*s_rcm) __P((SCR *, EXF *, recno_t));
 					/* Refresh the screen. */
 	int	(*s_refresh) __P((SCR *, EXF *));
-					/* Return column close to last char. */
-	size_t	(*s_relative) __P((SCR *, EXF *, recno_t));
 					/* Split the screen. */
 	int	(*s_split) __P((SCR *, ARGS *[]));
 					/* Suspend the screen. */

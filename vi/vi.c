@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.53 1994/03/09 11:52:49 bostic Exp $ (Berkeley) $Date: 1994/03/09 11:52:49 $";
+static char sccsid[] = "$Id: vi.c,v 8.54 1994/03/10 11:04:43 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:04:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -209,8 +209,7 @@ vi(sp, ep)
 		case VM_RCM_SET:
 			break;
 		case VM_RCM:
-			vp->m_final.cno =
-			    sp->s_relative(sp, ep, vp->m_final.lno);
+			vp->m_final.cno = sp->s_rcm(sp, ep, vp->m_final.lno);
 			break;
 		case VM_RCM_SETLAST:
 			sp->rcmflags = RCM_LAST;
