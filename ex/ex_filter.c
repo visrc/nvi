@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.46 1994/08/31 17:17:36 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:36 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.47 1994/09/12 10:45:40 bostic Exp $ (Berkeley) $Date: 1994/09/12 10:45:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -347,7 +347,7 @@ proc_wait(sp, pid, cmd, okpipe)
 		p = msg_print(sp, cmd, &nf);
 		len = strlen(p);
 		msgq(sp, M_ERR, "%.*s%s: received signal: %s%s",
-		    MIN(len, 20), p, len > 20 ? "..." : "",
+		    MIN(len, 20), p, len > 20 ? " ..." : "",
 		    sys_siglist[WTERMSIG(pstat)],
 		    WCOREDUMP(pstat) ? "; core dumped" : "");
 		if (nf)
@@ -359,7 +359,7 @@ proc_wait(sp, pid, cmd, okpipe)
 		p = msg_print(sp, cmd, &nf);
 		len = strlen(p);
 		msgq(sp, M_ERR, "%.*s%s: exited with status %d",
-		    MIN(len, 20), p, len > 20 ? "..." : "",
+		    MIN(len, 20), p, len > 20 ? " ..." : "",
 		    WEXITSTATUS(pstat));
 		if (nf)
 			FREE_SPACE(sp, p, 0);
