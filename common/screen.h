@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.122 1994/07/15 20:10:33 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:10:33 $
+ *	$Id: screen.h,v 8.123 1994/07/17 00:19:11 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:19:11 $
  */
 
 /*
@@ -59,7 +59,7 @@ struct _fref {
 #define	FR_RECOVER	0x040		/* File is being recovered. */
 #define	FR_TMPFILE	0x080		/* If file has no name. */
 #define	FR_UNLOCKED	0x100		/* File couldn't be locked. */
-	u_int8_t flags;
+	u_int16_t flags;
 };
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
