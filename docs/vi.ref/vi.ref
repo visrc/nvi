@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.5 1994/01/22 20:47:16 bostic Exp $ (Berkeley) $Date: 1994/01/22 20:47:16 $
+.\"     $Id: vi.ref,v 8.6 1994/01/23 17:43:29 bostic Exp $ (Berkeley) $Date: 1994/01/23 17:43:29 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -317,7 +317,7 @@ This man page is woefully incomplete.
 .Pp
 Many and varied.
 See the file
-.Pa nvi/docs/BUGS
+.Pa nvi/docs/bugs.current
 for a list of the known bugs in this version.
 .Sh FILES
 .Bl -tag -width XXXX/var/tmp/vi.recover -compact
