@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.65 1994/04/29 12:41:53 bostic Exp $ (Berkeley) $Date: 1994/04/29 12:41:53 $";
+static char sccsid[] = "$Id: vi.c,v 8.66 1994/05/02 13:57:50 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:57:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,6 +73,15 @@ vi(sp, ep)
 	memset(&cmd, 0, sizeof(VICMDARG));
 
 	for (eval = 0, vp = &cmd;;) {
+		/*
+		 * Check and clear for interrupts; there's an obvious race,
+		 * but I don't want to make a system call to eliminate it.
+		 */
+		if (F_ISSET(sp, S_INTERRUPTED))
+			term_flush(sp, "Interrupted", CH_MAPPED);
+		F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
+
+		/* If not in a map, log the cursor position. */
 		if (!MAPPED_KEYS_WAITING(sp) && log_cursor(sp, ep))
 			goto err;
 
@@ -150,8 +159,7 @@ vi(sp, ep)
 		/* Increment the command count. */
 		++sp->ccnt;
 
-		/* Clear interrupt bits, save the mode and call the function. */
-		F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
+		/* Save the mode and call the function. */
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 		if ((vp->kp->func)(sp, ep, vp))
 			goto err;
@@ -239,10 +247,10 @@ vi(sp, ep)
 		if (!MAPPED_KEYS_WAITING(sp)) {
 			(void)msg_rpt(sp, 1);
 
-			if (0)
-err:				term_map_flush(sp, "Vi error");
+			if (0) {
+err:				term_flush(sp, "Vi error", CH_MAPPED);
+			}
 		}
-
 		/* Refresh the screen. */
 		if (sp->s_refresh(sp, ep)) {
 			eval = 1;
@@ -255,7 +263,6 @@ err:				term_map_flush(sp, "Vi error");
 			(void)sp->s_column(sp, ep, &sp->rcm);
 		}
 	}
-
 	return (v_end(sp) || eval);
 }
 
@@ -777,6 +784,8 @@ getkey(sp, ikeyp, map)
 	case INP_EOF:
 	case INP_ERR:
 		F_SET(sp, S_EXIT_FORCE);
+		/* FALLTHROUGH */
+	case INP_INTR:
 		return (1);
 	}
 	return (ikeyp->value == K_ESCAPE);

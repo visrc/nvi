@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.108 1994/05/01 23:23:03 bostic Exp $ (Berkeley) $Date: 1994/05/01 23:23:03 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.109 1994/05/02 13:58:11 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:58:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,6 +90,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
+	enum input tval;
 	CH ikey;		/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
@@ -280,7 +281,7 @@ nullreplay:
 		 */
 		if (VIP(sp)->rep == NULL)
 			return (0);
-		if (term_push(sp, VIP(sp)->rep, VIP(sp)->rep_cnt, 0, CH_NOMAP))
+		if (term_push(sp, VIP(sp)->rep, VIP(sp)->rep_cnt, CH_NOMAP))
 			return (1);
 		testnr = 0;
 		abb = A_NOTSET;
@@ -309,18 +310,30 @@ nullreplay:
 		}
 
 		/* Get the next character. */
-next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
-		    iflags & ~(TXT_MAPCOMMAND | TXT_MAPINPUT) :
-		    iflags) != INP_OK)
-			goto err;
+next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
+		    iflags & ~(TXT_MAPCOMMAND | TXT_MAPINPUT) : iflags);
 		ch = ikey.ch;
+
+		/*
+		 * !!!
+		 * Historically, <interrupt> exited the user from text input
+		 * mode or cancelled a colon command, and returned to command
+		 * mode.  It also beeped the terminal, but that seems a bit
+		 * excessive.
+		 */
+		if (tval != INP_OK) {
+			if (tval == INP_INTR)
+				goto k_escape;
+			goto err;
+		}
 
 		/* Abbreviation check.  See comment in txt_abbrev(). */
 #define	MAX_ABBREVIATION_EXPANSION	256
 		if (ikey.flags & CH_ABBREVIATED) {
 			if (++ab_cnt > MAX_ABBREVIATION_EXPANSION) {
-				term_ab_flush(sp,
-			"Abbreviation exceeded maximum number of characters");
+				term_flush(sp,
+			"Abbreviation exceeded maximum number of characters",
+				    CH_ABBREVIATED);
 				ab_cnt = 0;
 				continue;
 			}
@@ -393,8 +406,7 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 				 */
 				if (F_ISSET(sp, S_SCRIPT) &&
 				    !LF_ISSET(TXT_INFOLINE))
-					(void)term_push(sp,
-					    "\r", 1, 0, CH_NOMAP);
+					(void)term_push(sp, "\r", 1, CH_NOMAP);
 				goto k_escape;
 			}
 
@@ -696,20 +708,6 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (sp->cno < tp->ai)
 				--tp->ai;
 			break;
-		case K_VINTR:
-			if (F_ISSET(sp, S_INTERRUPTIBLE)) {
-				/*
-				 * !!!
-				 * Historically, <interrupt> exited the user
-				 * from editing, and returned to command mode.
-				 * It also beeped the terminal, but that seems
-				 * excessive.
-				 */
-				F_SET(sp, S_INTERRUPTED);
-				msgq(sp, M_INFO, "Interrupted.");
-				goto k_escape;
-			}
-			goto ins_ch;
 		case K_VWERASE:			/* Skip back one word. */
 			/*
 			 * If at the beginning of the line, try and drop back
@@ -1080,9 +1078,9 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	 * abbreviated character was received would have to be saved.
 	 */
 	ch = *pushcp;
-	if (term_push(sp, &ch, 1, 0, CH_ABBREVIATED))
+	if (term_push(sp, &ch, 1, CH_ABBREVIATED))
 		return (1);
-	if (term_push(sp, qp->output, qp->olen, 0, CH_ABBREVIATED))
+	if (term_push(sp, qp->output, qp->olen, CH_ABBREVIATED))
 		return (1);
 
 	/* Move to the start of the abbreviation, adjust the length. */
