@@ -1,7 +1,10 @@
-/* $Id: acconfig.h,v 8.10 1996/03/03 16:39:47 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:39:47 $ */
+/* $Id: acconfig.h,v 8.11 1996/03/06 17:24:36 bostic Exp $ (Berkeley) $Date: 1996/03/06 17:24:36 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
+
+/* Define if you want a debugging version. */
+#undef DEBUG
 
 /* Define if you have a BSD version of curses. */
 #undef HAVE_BSD_CURSES
@@ -51,6 +54,12 @@
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE
 
+/* Define if you have <sys/mman.h> */
+#undef HAVE_SYS_MMAN_H
+
+/* Define if you have <sys/select.h> */
+#undef HAVE_SYS_SELECT_H
+
 /* Define if you have the System V style pty calls. */
 #undef HAVE_SYS5_PTY
 
@@ -59,7 +68,3 @@
 
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
-
-/* @BOTTOM@ */
-
-#include "port.h"
