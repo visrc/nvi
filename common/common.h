@@ -89,6 +89,11 @@ extern char	origname[256];	/* name of the current file */
 extern char	prevorig[256];	/* name of the preceding file */
 extern long	prevline;	/* line number from preceding file */
 
+void blkflush();
+void blkdirty();
+MARK paste();
+char *parseptrn();
+char *fetchline();
 /*------------------------------------------------------------------------*/
 /* misc housekeeping variables & functions				  */
 
@@ -116,52 +121,7 @@ extern int	force_lnmd;	/* boolean: force a command to work in line mode? */
 #endif
 extern long	rptlines;	/* number of lines affected by a command */
 extern char	*rptlabel;	/* description of how lines were affected */
-extern char	*fetchline();	/* read a given line from tmp file */
-extern char	*parseptrn();	/* isolate a regexp in a line */
-extern MARK	paste();	/* paste from cut buffer to a given point */
-extern char	*wildcard();	/* expand wildcards in filenames */
-extern MARK	input();	/* inserts characters from keyboard */
-extern char	*linespec();	/* finds the end of a /regexp/ string */
 #define		ctrl(ch) ((ch)&037)
-#ifndef NO_RECYCLE
-extern long	allocate();	/* allocate a free block of the tmp file */
-#endif
-extern void	blkdirty();	/* marks a block as being "dirty" */
-extern void	blkflush();	/* writes a single dirty block to the disk */
-extern void	blksync();	/* forces all "dirty" blocks to disk */
-extern void	blkinit();	/* resets the block cache to "empty" state */
-extern void	beep();		/* rings the terminal's bell */
-extern void	exrefresh();	/* writes text to the screen */
-extern void	endmsgs();	/* if "manymsgs" is set, then scroll up 1 line */
-extern void	garbage();	/* reclaims any garbage blocks */
-extern void	redraw();	/* updates the screen after a change */
-extern void	resume_curses();/* puts the terminal in "cbreak" mode */
-extern void	beforedo();	/* saves current revision before a new change */
-extern void	afterdo();	/* marks end of a beforedo() change */
-extern void	abortdo();	/* like "afterdo()" followed by "undo()" */
-extern int	undo();		/* restores file to previous undo() */
-extern void	dumpkey();	/* lists key mappings to the screen */
-extern void	mapkey();	/* defines a new key mapping */
-extern void	savekeys();	/* lists key mappings to a file */
-extern void	redrawrange();	/* records clues from modify.c */
-extern void	cut();		/* saves text in a cut buffer */
-extern void	delete();	/* deletes text */
-extern void	add();		/* adds text */
-extern void	change();	/* deletes text, and then adds other text */
-extern void	cutswitch();	/* updates cut buffers when we switch files */
-extern void	do_abbr();	/* defines or lists abbreviations */
-extern void	do_digraph();	/* defines or lists digraphs */
-extern void	exstring();	/* execute a string as EX commands */
-extern void	dumpopts();
-extern void	setopts();
-extern void	saveopts();
-extern void	savedigs();
-extern void	saveabbr();
-extern void	savecolor();
-extern void	cutname();
-extern void	cutname();
-extern void	initopts();
-extern void	cutend();
 
 /*------------------------------------------------------------------------*/
 /* macros that are used as control structures                             */
@@ -327,30 +287,4 @@ extern MARK	v_start();
 # define QTST(addr)	(((int)((addr) - Qbase) < Qlen && (int)((addr) - Qbase) > 0) ? QCHK(addr) : (abort(), 0))
 #else
 # define QTST(addr)	QCHK(addr)
-#endif
-
-#ifdef notdef
-/* Structure passed around to functions implementing ex commands. */
-typedef struct _cmdarg {
-	int addrcnt;		/* Address count. */
-	CMDLIST *cmd;		/* Command structure. */
-	MARK addr1;		/* 1st address. */
-	MARK addr2;		/* 2nd address. */
-	int force;		/* If command is forced. */
-	int argc;		/* Argument count. */
-	char **argv;		/* Arguments. */
-} CMDARG;
-
-extern char *defcmdarg[2];
-
-/* Macro to set up the structure. */
-#define	SETCMDARG(s, _addrcnt, _addr1, _addr2, _force, _arg) { \
-	s.addrcnt = (_addrcnt); \
-	s.addr1 = (_addr1); \
-	s.addr2 = (_addr2); \
-	s.force = (_force); \
-	s.argc = _arg ? 1 : 0; \
-	s.argv = defcmdarg; \
-	defcmdarg[0] = _arg; \
-}
 #endif
