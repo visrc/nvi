@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.62 1993/05/15 21:26:32 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:26:32 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.63 1993/05/16 21:24:51 bostic Exp $ (Berkeley) $Date: 1993/05/16 21:24:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -530,7 +530,7 @@ svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	char buf[RULERSIZE];
+	char *s, buf[RULERSIZE];
 
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
@@ -554,7 +554,8 @@ svi_modeline(sp, ep)
 	 */
 	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
 		MOVE(sp, INFOLINE(sp), sp->cols - 8);
-		ADDSTR(F_ISSET(sp, S_INPUT) ? "  Input " : "Command ");
+		s = F_ISSET(sp, S_INPUT) ? "  Input " : "Command ";
+		ADDSTR(s);
 	}
 
 	return (0);
