@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.14 1995/09/30 10:39:38 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:39:38 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.15 1995/10/04 12:34:21 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:34:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,13 +57,11 @@ ex_exec_proc(sp, cmdp, cmd, msg)
 {
 	const char *name;
 	pid_t pid;
-	int nf;
-	char *p;
 
 	/* Flush messages and enter canonical mode. */
 	if (F_ISSET(sp, S_VI)) {
 		if (sp->gp->scr_screen(sp, S_EX)) {
-			ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
+			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
 		F_SET(sp, S_SCREEN_READY);
@@ -84,10 +82,7 @@ ex_exec_proc(sp, cmdp, cmd, msg)
 		else
 			++name;
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
-		p = msg_print(sp, O_STR(sp, O_SHELL), &nf);
-		msgq(sp, M_SYSERR, "execl: %s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, O_STR(sp, O_SHELL), "execl: %s");
 		_exit(127);
 		/* NOTREACHED */
 	default:			/* Parent. */
