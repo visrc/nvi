@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.13 1995/02/09 15:49:34 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:49:34 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.14 1995/02/09 16:19:53 bostic Exp $ (Berkeley) $Date: 1995/02/09 16:19:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,9 +90,6 @@ aci(sp, cmdp, cmd)
 
 	NEEDFILE(sp, cmdp->cmd);
 
-	/* Set the line number, so that autoindent works correctly. */
-	sp->lno = cmdp->addr1.lno;
-
 	/*
 	 * If doing a change, replace lines for as long as possible.  Then,
 	 * append more lines or delete remaining lines.  Changes to an empty
@@ -100,32 +97,20 @@ aci(sp, cmdp, cmd)
 	 * line.
 	 *
 	 * !!!
-	 * Adjust the current line number for the commands to match historic
-	 * practice if the user doesn't enter anything, and set the address
-	 * to which we'll append.  This is safe because an address of 0 is
-	 * illegal for change and insert.
+	 * Set the address to which we'll append.  We set sp->lno to this
+	 * address as well so that autoindent works correctly when get text
+	 * from the user.  Eventually set sp->lno to the final m.lno value
+	 * (correcting for a possible 0 value) as that's historically correct
+	 * for the final line value, whether or not the user entered any text.
 	 */
 	m = cmdp->addr1;
-	switch (cmd) {
-	case INSERT:
-		if (m.lno != 0)
-			--m.lno;
-		/* FALLTHROUGH */
-	case APPEND:
-		if (sp->lno == 0)
-			sp->lno = 1;
-		break;
-	case CHANGE:
-		if (m.lno != 0)
-			--m.lno;
-		if (sp->lno != 1)
-			--sp->lno;
-		break;
-	}
+	sp->lno = m.lno;
+	if ((cmd == CHANGE || cmd == INSERT) && m.lno != 0)
+		--m.lno;
 
 	/*
 	 * !!!
-	 * Cut into the unnamed buffer, if the file isn't empty.
+	 * If the file isn't empty, cut changes into the unnamed buffer.
 	 */
 	if (cmd == CHANGE && cmdp->addr1.lno != 0 &&
 	    (cut(sp, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE) ||
@@ -152,17 +137,14 @@ aci(sp, cmdp, cmd)
 					--len;
 					break;
 				}
-				if (file_aline(sp, 1, m.lno, p, t - p))
+				if (file_aline(sp, 1, m.lno++, p, t - p))
 					return (1);
-				sp->lno = ++m.lno;
 			}
 			if (len != 0) {
 				++t;
-				if (--len == 0) {
-					if (file_aline(sp, 1, m.lno, "", 0))
-						return (1);
-					sp->lno = ++m.lno;
-				}
+				if (--len == 0 &&
+				    file_aline(sp, 1, m.lno++, "", 0))
+					return (1);
 			}
 		}
 		/*
@@ -176,8 +158,11 @@ aci(sp, cmdp, cmd)
 			cmdp->aci_text = NULL;
 	}
 
-	if (F_ISSET(sp, S_GLOBAL))
+	if (F_ISSET(sp, S_GLOBAL)) {
+		if ((sp->lno = m.lno) == 0 && file_eline(sp, 1))
+			sp->lno = 1;
 		return (0);
+	}
 
 	/*
 	 * If not in a global command, read from the terminal.
@@ -223,11 +208,11 @@ aci(sp, cmdp, cmd)
 		goto err;
 
 	for (tp = sp->tiqp->cqh_first;
-	    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
-		if (file_aline(sp, 1, m.lno, tp->lb, tp->len))
+	    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next)
+		if (file_aline(sp, 1, m.lno++, tp->lb, tp->len))
 			goto err;
-		sp->lno = ++m.lno;
-	}
+	if ((sp->lno = m.lno) == 0 && file_eline(sp, 1))
+		sp->lno = 1;
 
 	rval = 0;
 	if (0) {
