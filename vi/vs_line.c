@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.6 1993/10/28 17:04:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:49 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.7 1993/11/01 10:50:49 bostic Exp $ (Berkeley) $Date: 1993/11/01 10:50:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -188,12 +188,14 @@ err:			MOVEA(sp, oldy, oldx);
 			count_cols += chlen;
 
 			/*
-			 * If crossed the last skipped screen boundary,
-			 * start displaying the characters.
+			 * If crossed the last skipped screen boundary, start
+			 * displaying the characters.  Reset cols_per_screen
+			 * to second and subsequent line length.
 			 */
 			if (count_cols < cols_per_screen)
 				continue;
 			count_cols -= cols_per_screen;
+			cols_per_screen = sp->cols;
 			if (--skip_screens)
 				continue;
 
@@ -242,10 +244,10 @@ err:			MOVEA(sp, oldy, oldx);
 		/*
 		 * Only display up to the right-hand column.  Set a flag if
 		 * the entire character wasn't displayed for use in setting
-		 * the cursor.  If we filled the screen, set the cache info
-		 * for the next screen.  Don't worry about there not being
-		 * characters to display on the next screen, it's lno/off
-		 * won't match up in that case.
+		 * the cursor.  If reached the end of the line, set the cache
+		 * info for the screen.  Don't worry about there not being
+		 * characters to display on the next screen, its lno/off won't
+		 * match up in that case.
 		 */
 		if (count_cols >= cols_per_screen) {
 			smp->c_ecsize = chlen;
@@ -295,18 +297,25 @@ err:			MOVEA(sp, oldy, oldx);
 		offset_in_char = 0;
 	}
 
-	/*
-	 * If not the info/mode line, and O_LIST set, and at the end of
-	 * the line, and the line ended on this screen, add a trailing $.
-	 */
-	if (listset && offset_in_line == len) {
-		++count_cols;
-		ADDCH('$');
-	}
+	if (count_cols < cols_per_screen) {
+		/* If didn't paint the whole line, update the cache. */
+		smp->c_ecsize = smp->c_eclen =  cname[ch].len;
+		smp->c_eboff = len - 1;
 
-	/* If didn't paint the whole line, clear the rest of it. */
-	if (count_cols < cols_per_screen)
-		clrtoeol();
+		/*
+		 * If not the info/mode line, and O_LIST set, and at the
+		 * end of the line, and the line ended on this screen,
+		 * add a trailing $.
+		 */
+		if (listset) {
+			++count_cols;
+			ADDCH('$');
+		}
+
+		/* If still didn't paint the whole line, clear the rest. */
+		if (count_cols < cols_per_screen)
+			clrtoeol();
+	}
 
 	if (reverse_video)
 		standend();
