@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.17 1993/05/15 10:09:42 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:09:42 $";
+static char sccsid[] = "$Id: log.c,v 5.18 1993/05/16 21:05:07 bostic Exp $ (Berkeley) $Date: 1993/05/16 21:05:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,7 +154,7 @@ log_cursor(sp, ep)
  * log_cursor1 --
  *	Actually push a cursor record out.
  */
-int
+static int
 log_cursor1(sp, ep, type)
 	SCR *sp;
 	EXF *ep;
