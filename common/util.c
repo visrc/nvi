@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.67 1994/07/05 09:50:44 bostic Exp $ (Berkeley) $Date: 1994/07/05 09:50:44 $";
+static char sccsid[] = "$Id: util.c,v 8.68 1994/07/05 14:53:03 bostic Exp $ (Berkeley) $Date: 1994/07/05 14:53:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -204,15 +204,14 @@ set_window_size(sp, set_row, sigwinch)
 	}
 
 	/*
-	 * If it's something completely unreasonable, stop now.  The
-	 * actual error (probably ENOMEM) is likely to be much less
-	 * informative.
+	 * If it's something completely unreasonable, stop now.  The actual
+	 * error (probably ENOMEM) is likely to be much less informative.
 	 */
-	if (row > 1000) {
+	if (row > 1500) {
 		msgq(sp, M_ERR, "%lu rows isn't believable", (u_long)row);
 		return (1);
 	}
-	if (col > 1000) {
+	if (col > 1500) {
 		msgq(sp, M_ERR, "%lu columns isn't believable", (u_long)col);
 		return (1);
 	}
