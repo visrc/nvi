@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.29 1993/04/18 09:32:24 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:32:24 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.30 1993/04/19 15:30:40 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:30:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,9 +170,15 @@ ex_print(sp, ep, fp, tp, flags)
 				}
 			}
 		}
-		if (flags & E_F_LIST)
+		if (flags & E_F_LIST) {
 			WCHECK('$');
-
+		} else if (len == 0) {
+			/*
+			 * If the line is empty, output a space
+			 * to overwrite the colon prompt.
+			 */
+			WCHECK(' ');
+		}
 		(void)putc('\n', sp->stdfp);
 	}
 	return (0);
