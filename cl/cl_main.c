@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.11 1995/09/21 12:05:31 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:31 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.12 1995/09/22 12:54:47 bostic Exp $ (Berkeley) $Date: 1995/09/22 12:54:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,10 +61,6 @@ main(argc, argv)
 	/* Create and initialize the global structure. */
 	__global_list = gp = gs_init(argv[0]);
 
-	/* Figure out how big the screen is. */
-	if (cl_ssize(NULL, 0, &rows, &cols))
-		exit (1);
-
 #ifdef NOT_NEEDED_FOR_CURSES
 	/*
 	 * Strip out any arguments that vi isn't going to understand.  There's
@@ -79,6 +75,10 @@ main(argc, argv)
 		*p_av++ = *t_av++;
 	}
 #endif
+
+	/* Figure out how big the screen is. */
+	if (cl_ssize(NULL, 0, &rows, &cols))
+		exit (1);
 
 	/* Ex wants stdout to be buffered. */
 	(void)setvbuf(stdout, NULL, _IOFBF, 0);
@@ -271,12 +271,6 @@ sig_init(gp)
 	SETSIG(SIGTERM, h_term, INDX_TERM);
 	SETSIG(SIGWINCH, h_winch, INDX_WINCH);
 #undef SETSIG
-
-	/*
-	 * Notify generic code that signals need to be blocked.
-	 * XXX
-	 * This is a kluge -- once DB is fixed, this goes away.
-	 */
 	return (0);
 
 err:	(void)fprintf(stderr, "%s: %s\n", gp->progname, strerror(errno));
