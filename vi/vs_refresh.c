@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.21 1993/02/11 19:52:31 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:52:31 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.22 1993/02/12 10:58:10 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:58:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,7 +91,7 @@ static int	scr_update __P((EXF *));
  *	Initialize curses and the screen.
  */
 int
-scr_init(ep)
+scr_begin(ep)
 	EXF *ep;
 {
 	if (initscr() == NULL) {
@@ -243,8 +243,8 @@ scr_update(ep)
 	 * The actual changing of the row/column values was done by calling
 	 * the ex options code which entered them into the environment.  The
 	 * function scr_end() uses the values from the EXF structure, and
-	 * then scr_init() uses the the new values, from the curses package,
-	 * which got them from the environment.  We hope.
+	 * then scr_begin() uses the the new values, from the curses
+	 * package, which got them from the environment.  We hope.
 	 *
 	 * Once the resize is done, we fall through.  The reason for this is
 	 * that RESIZE or REDRAW might be set along with another movement.
@@ -252,7 +252,7 @@ scr_update(ep)
 	 * and then jump to repaint.
 	 */
 	if (FF_ISSET(ep, F_RESIZE)) {
-		if (scr_end(ep) || scr_init(ep))
+		if (scr_end(ep) || scr_begin(ep))
 			return (1);
 
 		FF_CLR(ep, F_RESIZE);
