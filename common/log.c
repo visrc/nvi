@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 9.1 1994/11/09 18:37:48 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:48 $";
+static char sccsid[] = "$Id: log.c,v 9.2 1994/12/16 12:44:54 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -245,7 +245,7 @@ log_line(sp, lno, action)
 	if (action == LOG_LINE_RESET_B) {
 		if ((lp = file_rline(sp, lno, &len)) == NULL) {
 			if (lno != 1) {
-				GETLINE_ERR(sp, lno);
+				FILE_LERR(sp, lno);
 				return (1);
 			}
 			len = 0;
@@ -253,7 +253,7 @@ log_line(sp, lno, action)
 		}
 	} else
 		if ((lp = file_gline(sp, lno, &len)) == NULL) {
-			GETLINE_ERR(sp, lno);
+			FILE_LERR(sp, lno);
 			return (1);
 		}
 	BINC_RET(sp,

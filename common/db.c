@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.3 1994/12/04 10:00:42 bostic Exp $ (Berkeley) $Date: 1994/12/04 10:00:42 $";
+static char sccsid[] = "$Id: db.c,v 9.4 1994/12/16 12:44:53 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -450,6 +450,21 @@ file_lline(sp, lnop)
 	    ((TEXT *)sp->tiqp->cqh_last)->lno > lno ?
 	    ((TEXT *)sp->tiqp->cqh_last)->lno : lno);
 	return (0);
+}
+
+/*
+ * file_lerr --
+ *	Report a line error.
+ */
+void
+file_lerr(sp, fname, fline, lno)
+	SCR *sp;
+	char *fname;
+	recno_t fline, lno;
+{
+	msgq(sp, M_ERR,
+	    "025|Error: %s/%d: unable to retrieve line %u",
+	    tail(fname), fline, lno);
 }
 
 /*

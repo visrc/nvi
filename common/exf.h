@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 9.2 1994/12/02 12:00:50 bostic Exp $ (Berkeley) $Date: 1994/12/02 12:00:50 $
+ *	$Id: exf.h,v 9.3 1994/12/16 12:44:51 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:51 $
  */
 					/* Undo direction. */
 /*
@@ -61,12 +61,6 @@ struct _exf {
 	u_int8_t flags;
 };
 
-#define	GETLINE_ERR(sp, lno) {						\
-	msgq(sp, M_ERR,							\
-	    "025|Error: %s/%d: unable to retrieve line %u",		\
-	    tail(__FILE__), __LINE__, lno);				\
-}
-
 /* EXF routines. */
 FREF	*file_add __P((SCR *, CHAR_T *));
 int	 file_aw __P((SCR *, int));
@@ -110,3 +104,8 @@ int	 file_iline __P((SCR *, recno_t, char *, size_t));
 int	 file_lline __P((SCR *, recno_t *));
 char	*file_rline __P((SCR *, recno_t, size_t *));
 int	 file_sline __P((SCR *, recno_t, char *, size_t));
+
+/* Line retrieval error. */
+#define	FILE_LERR(sp, lno)						\
+	file_lerr(sp, __FILE__, __LINE__, lno);
+void	 file_lerr __P((SCR *, char *, recno_t, recno_t));

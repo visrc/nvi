@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 9.3 1994/11/20 12:51:07 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:51:07 $";
+static char sccsid[] = "$Id: util.c,v 9.4 1994/12/16 12:44:58 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,7 +91,7 @@ nonblank(sp, lno, cnop)
 			return (1);
 		if (lno == 0)
 			return (0);
-		GETLINE_ERR(sp, lno);
+		FILE_LERR(sp, lno);
 		return (1);
 	}
 

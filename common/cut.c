@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 9.1 1994/11/09 18:37:37 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:37 $";
+static char sccsid[] = "$Id: cut.c,v 9.2 1994/12/16 12:44:48 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -251,7 +251,7 @@ cut_line(sp, lno, fcno, clen, cbp)
 
 	/* Get the line. */
 	if ((p = file_gline(sp, lno, &len)) == NULL) {
-		GETLINE_ERR(sp, lno);
+		FILE_LERR(sp, lno);
 		return (1);
 	}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 9.2 1994/11/13 14:55:17 bostic Exp $ (Berkeley) $Date: 1994/11/13 14:55:17 $";
+static char sccsid[] = "$Id: put.c,v 9.3 1994/12/16 12:44:56 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,7 @@ put(sp, cbp, namep, cp, rp, append)
 	 */
 	lno = cp->lno;
 	if ((p = file_gline(sp, lno, &len)) == NULL) {
-		GETLINE_ERR(sp, lno);
+		FILE_LERR(sp, lno);
 		return (1);
 	}
 

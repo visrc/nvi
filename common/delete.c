@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 9.1 1994/11/09 18:37:40 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:40 $";
+static char sccsid[] = "$Id: delete.c,v 9.2 1994/12/16 12:44:50 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ delete(sp, fm, tm, lmode)
 	if (tm->lno >= lno) {
 		if (tm->lno == lno) {
 			if ((p = file_gline(sp, lno, &len)) == NULL) {
-				GETLINE_ERR(sp, lno);
+				FILE_LERR(sp, lno);
 				return (1);
 			}
 			eof = tm->cno >= len ? 1 : 0;
@@ -75,7 +75,7 @@ delete(sp, fm, tm, lmode)
 				++sp->rptlines[L_DELETED];
 			}
 			if ((p = file_gline(sp, fm->lno, &len)) == NULL) {
-				GETLINE_ERR(sp, fm->lno);
+				FILE_LERR(sp, fm->lno);
 				return (1);
 			}
 			GET_SPACE_RET(sp, bp, blen, fm->cno);
@@ -89,7 +89,7 @@ delete(sp, fm, tm, lmode)
 	/* Case 3 -- delete within a single line. */
 	if (tm->lno == fm->lno) {
 		if ((p = file_gline(sp, fm->lno, &len)) == NULL) {
-			GETLINE_ERR(sp, fm->lno);
+			FILE_LERR(sp, fm->lno);
 			return (1);
 		}
 		GET_SPACE_RET(sp, bp, blen, len);
@@ -109,7 +109,7 @@ delete(sp, fm, tm, lmode)
 	 */
 	if ((tlen = fm->cno) != 0) {
 		if ((p = file_gline(sp, fm->lno, NULL)) == NULL) {
-			GETLINE_ERR(sp, fm->lno);
+			FILE_LERR(sp, fm->lno);
 			return (1);
 		}
 		GET_SPACE_RET(sp, bp, blen, tlen + 256);
@@ -118,7 +118,7 @@ delete(sp, fm, tm, lmode)
 
 	/* Copy the end partial line into place. */
 	if ((p = file_gline(sp, tm->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, tm->lno);
+		FILE_LERR(sp, tm->lno);
 		goto err;
 	}
 	if (len != 0 && tm->cno != len - 1) {
