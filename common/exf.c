@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.62 1993/05/08 12:56:05 bostic Exp $ (Berkeley) $Date: 1993/05/08 12:56:05 $";
+static char sccsid[] = "$Id: exf.c,v 5.63 1993/05/08 13:26:27 bostic Exp $ (Berkeley) $Date: 1993/05/08 13:26:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,14 +212,14 @@ file_start(sp, ep)
 	 * Open a db structure.
 	 *
 	 * XXX
-	 * Assume that we get EAGAIN if the file is already locked, and
-	 * EOPNOTSUPP if the file can't be locked.  There really isn't a
+	 * We need to distinguish the case of a lock not being available
+	 * from the file or file system simply doesn't support locking.
+	 * We assume that EAGAIN is the former.  There really isn't a
 	 * portable way to do this.
 	 */
 	ep->db = dbopen(oname,
 	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
-	if (ep->db == NULL &&
-	    (errno == EAGAIN || errno == EOPNOTSUPP)) {
+	if (ep->db == NULL) {
 		ep->db = dbopen(oname,
 		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
