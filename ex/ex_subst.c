@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.44 1993/05/16 17:57:40 bostic Exp $ (Berkeley) $Date: 1993/05/16 17:57:40 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.45 1993/05/16 18:17:13 bostic Exp $ (Berkeley) $Date: 1993/05/16 18:17:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -341,6 +341,7 @@ skip:		s += sp->match[0].rm_eo;
 					    lb + last, sp->newl[cnt] - last))
 						return (1);
 					last = sp->newl[cnt] + 1;
+					++sp->rptlines[L_ADDED];
 				}
 				lbclen -= last;
 				offset -= last;
@@ -398,6 +399,7 @@ nomatch:	if (len)
 				    lno, lb + last, sp->newl[cnt] - last))
 					return (1);
 				last = sp->newl[cnt] + 1;
+				++sp->rptlines[L_ADDED];
 			}
 			lbclen -= last;
 		}
