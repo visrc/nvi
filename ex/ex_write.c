@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.34 1994/08/04 14:13:05 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:05 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.35 1994/08/04 14:59:25 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:59:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,13 +75,9 @@ ex_wq(sp, ep, cmdp)
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
-	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && sp->cargv != NULL && sp->cargv[1] != NULL) {
-		sp->q_ccnt = sp->ccnt;
-		msgq(sp, M_ERR,
-		    "More files to edit; use \":n\" to go to the next file");
+
+	if (ex_ncheck(sp, force))
 		return (1);
-	}
 
 	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
 	return (0);
@@ -121,13 +117,9 @@ ex_xit(sp, ep, cmdp)
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
-	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && sp->cargv != NULL && sp->cargv[1] != NULL) {
-		sp->q_ccnt = sp->ccnt;
-		msgq(sp, M_ERR,
-		    "More files to edit; use \":n\" to go to the next file");
+
+	if (ex_ncheck(sp, force))
 		return (1);
-	}
 
 	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
 	return (0);

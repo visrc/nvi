@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 8.12 1994/08/04 14:13:00 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:00 $";
+static char sccsid[] = "$Id: ex_quit.c,v 8.13 1994/08/04 14:59:22 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:59:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,21 +44,9 @@ ex_quit(sp, ep, cmdp)
 	if (file_m2(sp, ep, force))
 		return (1);
 
-	/*
-	 * !!!
-	 * Historic practice: quit! or two quit's done in succession
-	 * (where ZZ counts as a quit) didn't check for other files.
-	 *
-	 * Also check for related screens; if they exist, quit, the
-	 * user will get the message on the last screen.
-	 */
-	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && sp->cargv != NULL && sp->cargv[1] != NULL) {
-		sp->q_ccnt = sp->ccnt;
-		msgq(sp, M_ERR,
-	"More files; use \":n\" to go to the next file, \":q!\" to quit");
+	/* Check for more files to edit. */
+	if (ex_ncheck(sp, force))
 		return (1);
-	}
 
 	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.10 1994/07/23 18:10:50 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:10:50 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.11 1994/08/04 14:59:24 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:59:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,4 +136,28 @@ ex_rleave(sp)
 	if (fstat(STDIN_FILENO, &sb) || exp->leave_atime == 0 ||
 	    exp->leave_atime != sb.st_atime || exp->leave_mtime != sb.st_mtime)
 		F_SET(sp, S_REFRESH);
+}
+
+/*
+ * ex_ncheck --
+ *	Check for more files to edit.
+ */
+int
+ex_ncheck(sp, force)
+	SCR *sp;
+	int force;
+{
+	/*
+	 * !!!
+	 * Historic practice: quit! or two quit's done in succession
+	 * (where ZZ counts as a quit) didn't check for other files.
+	 */
+	if (sp->ccnt != sp->q_ccnt + 1 &&
+	    sp->cargv != NULL && sp->cargv[1] != NULL) {
+		sp->q_ccnt = sp->ccnt;
+		msgq(sp, M_ERR,
+    "More files to edit; use n[ext] to go to the next file, q[uit]! to quit");
+		return (1);
+	}
+	return (0);
 }
