@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.15 1993/12/02 18:11:13 bostic Exp $ (Berkeley) $Date: 1993/12/02 18:11:13 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.16 1993/12/23 17:42:05 bostic Exp $ (Berkeley) $Date: 1993/12/23 17:42:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,12 +109,13 @@ svi_line(sp, ep, smp, yp, xp)
 		 * and this is the first screen of a folding line or any left-
 		 * right line, display the line number.
 		 */
-		if (O_ISSET(sp, O_NUMBER) &&
-		    (smp->lno == 1 || p != NULL) && skip_screens == 0) {
+		if (O_ISSET(sp, O_NUMBER)) {
 			cols_per_screen -= O_NUMBER_LENGTH;
-			(void)snprintf(nbuf,
-			    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-			ADDSTR(nbuf);
+			if ((smp->lno == 1 || p != NULL) && skip_screens == 0) {
+				(void)snprintf(nbuf,
+				    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
+				ADDSTR(nbuf);
+			}
 		}
 	}
 
