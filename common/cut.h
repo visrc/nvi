@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.17 1993/04/17 11:43:28 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:43:28 $
+ *	$Id: cut.h,v 5.18 1993/04/19 15:22:58 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:22:58 $
  */
 
 typedef struct _cb {			/* Cut buffer. */
@@ -21,12 +21,16 @@ typedef struct _text {			/* Text: a linked list of lines. */
 	size_t	 lb_len;		/* Line buffer length. */
 	size_t	 len;			/* Line length. */
 
-	/* The rest of the fields are used by the vi text input routine. */
+	/* These fields are used by the vi text input routine. */
 	recno_t	 lno;			/* 1-N: line number. */
 	size_t	 ai;			/* 0-N: autoindent bytes. */
 	size_t	 insert;		/* 0-N: bytes to insert (push). */
 	size_t	 offset;		/* 0-N: initial, unerasable bytes. */
 	size_t	 overwrite;		/* 0-N: bytes to overwrite. */
+
+	/* These fields are used by the ex text input routine. */
+	u_char	*wd;			/* Width buffer. */
+	size_t	 wd_len;		/* Width buffer length. */
 } TEXT;
 
 #define	OOBCB	-1			/* Out-of-band cut buffer name. */
@@ -67,5 +71,6 @@ int	 delete __P((struct _scr *,
 	    struct _exf *, struct _mark *, struct _mark *, int));
 int	 put __P((struct _scr *,
 	    struct _exf *, int, struct _mark *, struct _mark *, int));
-void	 text_free __P((struct _hdr *));
+void	 text_free __P((struct _text *));
+void	 hdr_text_free __P((struct _hdr *));
 TEXT	*text_init __P((struct _scr *, char *, size_t, size_t));
