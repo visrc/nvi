@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.8 1993/11/18 08:17:07 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:07 $";
+static char sccsid[] = "$Id: mark.c,v 8.9 1993/11/23 10:28:19 bostic Exp $ (Berkeley) $Date: 1993/11/23 10:28:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,9 +112,8 @@ mark_get(sp, ep, key)
 	if (key == ABSMARK2)
 		key = ABSMARK1;
 
-	if ((mp = mark_find(sp, ep, key)) == NULL)
-		return (NULL);
-	if (mp->name != key) {
+	mp = mark_find(sp, ep, key);
+	if (mp == NULL || mp->name != key) {
 		msgq(sp, M_BERR, "Mark %s: not set.", sp->cname[key].name);
                 return (NULL);
 	}
@@ -149,20 +148,22 @@ mark_set(sp, ep, key, value, userset)
 	if (key == ABSMARK2)
 		key = ABSMARK1;
 
-	if ((mp = mark_find(sp, ep, key)) == NULL)
-		return (1);
 	/*
 	 * The rules are simple.  If the user is setting a mark (if it's a
 	 * new mark this is always true), it always happens.  If not, it's
 	 * an undo, and we set it if it's not already set or if it was set
 	 * by a previous undo.
 	 */
-	if (mp->name != key) {
+	mp = mark_find(sp, ep, key);
+	if (mp == NULL || mp->name != key) {
 		if ((mt = malloc(sizeof(MARK))) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
-		LIST_INSERT_AFTER(mp, mt, q);
+		if (mp == NULL) {
+			LIST_INSERT_HEAD(&ep->marks, mt, q);
+		} else
+			LIST_INSERT_AFTER(mp, mt, q);
 		mp = mt;
 	} else if (!userset &&
 	    !F_ISSET(mp, MARK_DELETED) && F_ISSET(mp, MARK_USERSET))
@@ -192,8 +193,8 @@ mark_find(sp, ep, key)
 	 * Return the requested mark or the slot immediately before
 	 * where it should go.
 	 */
-	for (lastmp = NULL,
-	    mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
+	for (lastmp = NULL, mp = ep->marks.lh_first;
+	    mp != NULL; lastmp = mp, mp = mp->q.le_next)
 		if (mp->name >= key)
 			return (mp->name == key ? mp : lastmp);
 	return (lastmp);
