@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.22 1996/12/11 13:02:50 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:02:50 $";
+static const char sccsid[] = "$Id: db.c,v 10.23 1996/12/17 14:50:09 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,7 +117,8 @@ db_get(sp, lno, flags, pp, lenp)
 		l2 = ((TEXT *)sp->tiq.cqh_last)->lno;
 		if (l1 <= lno && l2 >= lno) {
 #if defined(DEBUG) && 0
-	trace(sp, "retrieve TEXT buffer line %lu\n", (u_long)lno);
+			vtrace(sp,
+			    "retrieve TEXT buffer line %lu\n", (u_long)lno);
 #endif
 			for (tp = sp->tiq.cqh_first;
 			    tp->lno != lno; tp = tp->q.cqe_next);
@@ -138,7 +139,7 @@ db_get(sp, lno, flags, pp, lenp)
 	/* Look-aside into the cache, and see if the line we want is there. */
 	if (lno == ep->c_lno) {
 #if defined(DEBUG) && 0
-	trace(sp, "retrieve cached line %lu\n", (u_long)lno);
+		vtrace(sp, "retrieve cached line %lu\n", (u_long)lno);
 #endif
 		if (lenp != NULL)
 			*lenp = ep->c_len;
@@ -171,7 +172,7 @@ err3:		if (lenp != NULL)
 	ep->c_lp = data.data;
 
 #if defined(DEBUG) && 0
-	trace(sp, "retrieve DB line %lu\n", (u_long)lno);
+	vtrace(sp, "retrieve DB line %lu\n", (u_long)lno);
 #endif
 	if (lenp != NULL)
 		*lenp = data.size;
@@ -195,7 +196,7 @@ db_delete(sp, lno)
 	EXF *ep;
 
 #if defined(DEBUG) && 0
-	trace(sp, "delete line %lu\n", (u_long)lno);
+	vtrace(sp, "delete line %lu\n", (u_long)lno);
 #endif
 	/* Check for no underlying file. */
 	if ((ep = sp->ep) == NULL) {
@@ -257,7 +258,7 @@ db_append(sp, update, lno, p, len)
 	int rval;
 
 #if defined(DEBUG) && 0
-	trace(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+	vtrace(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	/* Check for no underlying file. */
 	if ((ep = sp->ep) == NULL) {
@@ -330,7 +331,7 @@ db_insert(sp, lno, p, len)
 	int rval;
 
 #if defined(DEBUG) && 0
-	trace(sp, "insert before %lu: len %lu {%.*s}\n",
+	vtrace(sp, "insert before %lu: len %lu {%.*s}\n",
 	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
 	/* Check for no underlying file. */
@@ -394,7 +395,7 @@ db_set(sp, lno, p, len)
 	EXF *ep;
 
 #if defined(DEBUG) && 0
-	trace(sp, "replace line %lu: len %lu {%.*s}\n",
+	vtrace(sp, "replace line %lu: len %lu {%.*s}\n",
 	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
 

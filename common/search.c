@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.26 1996/12/11 13:04:05 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:05 $";
+static const char sccsid[] = "$Id: search.c,v 10.27 1996/12/17 14:50:10 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -236,7 +236,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 		match[0].rm_eo = len;
 
 #if defined(DEBUG) && 0
-		trace(sp, "F search: %lu from %u to %u\n",
+		vtrace(sp, "F search: %lu from %u to %u\n",
 		    lno, coff, len != 0 ? len - 1 : len);
 #endif
 		/* Search the line. */
@@ -257,7 +257,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
-		trace(sp, "F search: %qu to %qu\n",
+		vtrace(sp, "F search: %qu to %qu\n",
 		    match[0].rm_so, match[0].rm_eo);
 #endif
 		rm->lno = lno;
@@ -378,7 +378,8 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 		match[0].rm_eo = len;
 
 #if defined(DEBUG) && 0
-		trace(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
+		vtrace(sp,
+		    "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
 #endif
 		/* Search the line. */
 		eval = regexec(&sp->re_c, l, 1, match,
@@ -402,7 +403,7 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
-		trace(sp, "B found: %qu to %qu\n",
+		vtrace(sp, "B found: %qu to %qu\n",
 		    match[0].rm_so, match[0].rm_eo);
 #endif
 		/*

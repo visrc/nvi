@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: trace.c,v 8.1 1996/12/12 09:16:24 bostic Exp $ (Berkeley) $Date: 1996/12/12 09:16:24 $";
+static const char sccsid[] = "$Id: trace.c,v 8.2 1996/12/17 14:50:10 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:10 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -55,20 +55,20 @@ trace_init(name)
 {
 	if (name == NULL || (tfp = fopen(name, "w")) == NULL)
 		tfp = stderr;
-	trace("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\nTRACE\n");
+	vtrace("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\nTRACE\n");
 }
 
 /*
- * trace --
+ * vtrace --
  *	Debugging trace routine.
  *
- * PUBLIC: void trace __P((const char *, ...));
+ * PUBLIC: void vtrace __P((const char *, ...));
  */
 void
 #ifdef __STDC__
-trace(const char *fmt, ...)
+vtrace(const char *fmt, ...)
 #else
-trace(fmt, va_alist)
+vtrace(fmt, va_alist)
 	char *fmt;
 	va_dcl
 #endif

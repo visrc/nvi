@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.27 1996/12/11 13:04:21 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:21 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.28 1996/12/17 14:50:33 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,7 +154,7 @@ argv_exp2(sp, excp, cmd, cmdlen)
 	len = SHELLOFFSET;
 
 #if defined(DEBUG) && 0
-	trace(sp, "file_argv: {%.*s}\n", (int)cmdlen, cmd);
+	vtrace(sp, "file_argv: {%.*s}\n", (int)cmdlen, cmd);
 #endif
 
 	if (argv_fexp(sp, excp, cmd, cmdlen, p, &len, &bp, &blen, 0)) {
@@ -163,7 +163,7 @@ argv_exp2(sp, excp, cmd, cmdlen)
 	}
 
 #if defined(DEBUG) && 0
-	trace(sp, "before shell: %d: {%s}\n", len, bp);
+	vtrace(sp, "before shell: %d: {%s}\n", len, bp);
 #endif
 
 	/*
@@ -306,7 +306,7 @@ argv_exp3(sp, excp, cmd, cmdlen)
 
 #if defined(DEBUG) && 0
 	for (cnt = 0; cnt < exp->argsoff; ++cnt)
-		trace(sp, "arg %d: {%s}\n", cnt, exp->argv[cnt]);
+		vtrace(sp, "arg %d: {%s}\n", cnt, exp->argv[cnt]);
 #endif
 	return (0);
 }
