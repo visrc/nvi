@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.52 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $";
+static const char sccsid[] = "$Id: main.c,v 10.53 2000/06/24 17:22:26 skimo Exp $ (Berkeley) $Date: 2000/06/24 17:22:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,7 +226,7 @@ editor(gp, argc, argv)
 		goto err;
 	}
 	gp->env->set_errfile(gp->env, stderr);
-	gp->env->open(gp->env, NULL, NULL, 0, 0);
+	gp->env->open(gp->env, NULL, 0, 0);
 	gp->env = NULL;
 
 	/*
