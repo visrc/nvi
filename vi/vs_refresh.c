@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.20 1993/02/11 15:16:42 bostic Exp $ (Berkeley) $Date: 1993/02/11 15:16:42 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.21 1993/02/11 19:52:31 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:52:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,11 +129,11 @@ scr_end(ep)
 		clrtoeol();
 		refresh();
 	}
-	endwin();		/* No delwin(), initscr() does them. */
+	endwin();			/* No delwin(), initscr() does them. */
 
 	if (HMAP != NULL) {
 		free(HMAP);
-		HMAP = NULL;
+		ep->h_smap = NULL;	/* HMAP = NULL; */
 	}
 	return (0);
 }
@@ -817,8 +817,8 @@ scr_sminit(ep)
 		return (1);
 
 	/* Put the map into the EXF structure. */
-	HMAP = p;
-	TMAP = p + BOTLINE(ep, 0);
+	ep->h_smap = p;				/* HMAP = p; */
+	ep->t_smap = p + BOTLINE(ep, 0);	/* TMAP = ... */
 
 	/* Fill in the map. */
 	if (scr_smfill(ep)) {
