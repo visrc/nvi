@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.32 1993/05/07 14:51:42 bostic Exp $ (Berkeley) $Date: 1993/05/07 14:51:42 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.33 1993/05/07 16:24:58 bostic Exp $ (Berkeley) $Date: 1993/05/07 16:24:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,6 +148,12 @@ v_down(sp, ep, vp, fm, tm, rp)
  * large and the screen is small, using physical lines can make it impossible
  * to display parts of the line.  This implementation does the scrolling
  * (^B, ^D, ^F, ^U), ^Y and ^E commands using logical lines, not physical.
+ *
+ * Another minor issue is that historically, page and half-page scrolling
+ * commands moved to the first non-blank character in the new line.  If
+ * the line changes because of the scroll, we do that as well, but if the
+ * line doesn't change because the line is so large that the scroll happened
+ * inside of the line, we leave the cursor alone.
  */
 
 /*
@@ -171,7 +177,12 @@ v_hpageup(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
 
-	return (sp->down(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1));
+	if (sp->down(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
+		return (1);
+
+	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
+		return (1);
+	return (0);
 }
 
 /*
@@ -195,7 +206,12 @@ v_hpagedown(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
 
-	return (sp->up(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1));
+	if (sp->up(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
+		return (1);
+
+	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
+		return (1);
+	return (0);
 }
 
 /*
@@ -213,7 +229,13 @@ v_pageup(sp, ep, vp, fm, tm, rp)
 
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
-	return (sp->down(sp, ep, rp, count, 1));
+
+	if (sp->down(sp, ep, rp, count, 1))
+		return (1);
+
+	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
+		return (1);
+	return (0);
 }
 
 /*
@@ -231,7 +253,13 @@ v_pagedown(sp, ep, vp, fm, tm, rp)
 
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
-	return (sp->up(sp, ep, rp, count, 1));
+
+	if (sp->up(sp, ep, rp, count, 1))
+		return (1);
+
+	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
+		return (1);
+	return (0);
 }
 
 /*
