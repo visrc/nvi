@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.17 1996/07/19 19:47:38 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:47:38 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.18 1996/08/10 13:46:18 bostic Exp $ (Berkeley) $Date: 1996/08/10 13:46:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -205,6 +205,10 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
 		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
 		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
+		sv_magic(gv_fetchpv("STDOUT",TRUE, SVt_PVIO), svcurscr,
+		 	'q', Nullch, 0);
+		sv_magic(gv_fetchpv("STDERR",TRUE, SVt_PVIO), svcurscr,
+		 	'q', Nullch, 0);
 	}
 
 	sv_setiv(svstart, f_lno);
@@ -221,16 +225,6 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	SvROK_off(svcurscr);
 	SvREFCNT_dec(SvRV(svid));
 	SvROK_off(svid);
-	/* Inclusion of the following code produces a segmentation
-	 * fault elsewhere in the code when some special
-	 * sequence of perl commands is issued.
-	 * The above doesn't have that, or I just haven't found that
-	 * special sequence for it yet.
-	SAVETMPS;
-	sv_setiv(svcurscr, 0);
-	sv_setiv(svid, 0);
-	FREETMPS;
-	 */
 
 	err = SvPV(GvSV(errgv), length);
 	if (!length)
@@ -291,23 +285,19 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	ENTER;
 	SAVETMPS;
 	for (i = f_lno; i <= t_lno; i++) {
-		/*api_gline(scrp, i, argv+1, &len);*/
 		api_gline(scrp, i, &str, &len);
-		sv_setpvn(perl_get_sv("_", FALSE),str,len);
+		sv_setpvn(GvSV(defgv),str,len);
 #ifndef HAVE_PERL_5_003_01
 		perl_call_argv("_eval_", G_SCALAR | G_EVAL | G_KEEPERR, argv);
 #else
-                /* perl_call_pv("VI::perldo", G_SCALAR | G_EVAL | G_KEEPERR); */
-		/* the above crashes (on a patched 5.002_01),
-		 * while the next statement appears to work 
-		 */
-		perl_call_argv("VI::perldo", G_SCALAR | G_EVAL | G_KEEPERR, 0);
+		PUSHMARK(sp);
+                perl_call_pv("VI::perldo", G_SCALAR | G_EVAL | G_KEEPERR);
 #endif
 		str = SvPV(GvSV(errgv), length);
 		if (length) break;
 		SPAGAIN;
 		if(SvTRUEx(POPs)) {
-			str = SvPV(perl_get_sv("_", FALSE),len);
+			str = SvPV(GvSV(defgv),len);
 			api_sline(scrp, i, str, len);
 		}
 		PUTBACK;
@@ -378,6 +368,9 @@ Msg(screen, text)
 	VI          screen
 	char *      text
  
+	ALIAS:
+	PRINT = 1
+
 	CODE:
 	api_imessage(screen, text);
 
@@ -986,7 +979,7 @@ FIRSTKEY(screen, ...)
 	PREINIT:
 	struct _mark cursor;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int next, rval;
+	int next;
 	char key[] = {0, 0};
 
 	PPCODE:
@@ -994,8 +987,7 @@ FIRSTKEY(screen, ...)
 		next = 1;
 		*key = *(char *)SvPV(ST(1),na);
 	} else next = 0;
-	api_nextmark(screen, next, key);
-        if (*key) {
+	if (api_nextmark(screen, next, key) != 1) {
 		EXTEND(sp, 1);
         	PUSHs(sv_2mortal(newSVpv(key, 1)));
 	} else ST(0) = &sv_undef;
