@@ -1,33 +1,54 @@
-#	$Id: README,v 8.15 1996/03/29 20:38:17 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:38:17 $
+#	$Id: README,v 8.16 1996/04/30 11:53:00 bostic Exp $ (Berkeley) $Date: 1996/04/30 11:53:00 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
 
-	./configure<carriage-return>
-	make<carriage-return>
+	configure
+	make
 
 and nvi will configure the system and build two binaries: nex and nvi.
+You can use any path to the configure script, e.g., to build for an
+x86 architecture, you might do:
 
-There are options that you can specify to the ./configure command.  See
-the next section  for a description of these options.
+	mkdir build.x86
+	cd build.x86
+	../build/configure
+	make
+
+If you're only building a single version of the system, you can just use
+the path ./configure, and build it in this directory.
+
+There are options that you can specify to the configure command.  See
+the next section for a description of these options.
 
 If you want to rebuild or reconfigure nvi, for example, because you change
 your mind as to the curses library that you want to use, enter:
 
-	make distclean<carriage-return>
+	make distclean
 
-and then reconfigure using "./configure" and whatever options you choose.
+and then reconfigure using "configure" and whatever options you choose.
+
+To install as "nvi", "nex" and "nview", enter:
+
+	make install
+
+To install as "vi", "ex" and "view", enter:
+
+	make install_asvi
+
+See the section below on installation for details.
 
 If you have trouble with this procedure, send email to the addresses
-listed in ../README.  In that email, please provide a complete script of
-the output for all of the above commands that you entered.
+listed in ../README.  In that email, please provide a complete script
+of the output for all of the above commands that you entered.
 
 =-=-=-=-=-=-=
 NVI'S OPTIONS TO THE CONFIGURE PROGRAM
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 There are many options that you can enter to the configuration program.
-Only a few of them are nvi specific.  These options are as follows:
+To see a complete list of the options, enter "configure --help".  Only
+a few of them are nvi specific.  These options are as follows:
 
   --disable-curses        DON'T use the nvi-provided curses routines.
   --disable-db            DON'T use the nvi-provided DB routines.
@@ -220,6 +241,67 @@ environment variable before running configure.  For example:
 would cause the compiler to be passed the -I../foo flag when compiling
 test programs during configuration as well as when building nvi object
 files.
+
+=-=-=-=-=-=-=
+INSTALLING NVI
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+Nvi installs the following files into the following locations, with
+the following default values:
+
+File(s):		Location
+			Default Location
+----------------------------------------
+vi			$(exec_prefix)/$(bindir)/vi
+			/usr/local/bin/vi
+
+vi.0			$(prefix)/$(mandir)/cat1/vi.0
+			/usr/local/man/cat1/vi.0
+
+Message Catalogs	$(prefix)/$(datadir)/vi/catalog/
+			/usr/local/share/vi/catalog/
+
+Perl5 scripts		$(prefix)/$(datadir)/vi/perl/
+			/usr/local/share/vi/perl/
+
+Tcl scripts		$(prefix)/$(datadir)/vi/tcl/
+			/usr/local/share/vi/tcl/
+
+Notes:
+	There are two hard links to the vi program, named ex and view.
+	Similarly, there are two hard links to the vi manual page, named
+	ex.0 and view.0.  These links are created when the program and
+	man pages are installed.
+
+	If you want to install vi, ex, view and the man pages as nvi, nex,
+	nview, use the command "make install_asnvi" instead of the default
+	"make install".
+
+	The default value for both "exec_prefix" and "prefix" is the
+	directory /usr/local.  The default values for "bindir", "datadir"
+	and "mandir" are bin, share and man, respectively.
+
+	To move the entire installation tree somewhere besides /usr/local,
+	change the value of both "exec_prefix" and "prefix".  To move the
+	binaries to a different place in the "exec_prefix" directory tree,
+	change the value of "bindir".  Similarly, to put the datafiles
+	(the message catalogs, Perl5 and Tcl scripts) or the man pages in
+	a different place in the "prefix" directory tree, change the value
+	of "datadir" or "mandir".  These values can be changed as part of
+	configuration:
+
+		configure --exec_prefix=/usr/contrib --prefix=/usr/share
+
+	or when doing the install itself:
+
+		make exec_prefix=/usr/contrib prefix=/usr/contrib install
+
+	The datafile directory (e.g., /usr/local/share/vi by default) is
+	completely removed and then recreated as part of the installation
+	process.
+
+	The mandir directory must have another directory named "cat1"
+	beneath it for the man pages to successfully install.
 
 =-=-=-=-=-=-=
 NVI AND THE CURSES LIBRARY
