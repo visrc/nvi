@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.13 1992/04/18 15:40:18 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:40:18 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.14 1992/04/19 08:57:04 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:57:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,14 +136,14 @@ static struct keystru
 /*  7  part of count	*/	{NO_FUNC,	DIGIT,		PTMV|VIZ},
 /*  8  part of count	*/	{NO_FUNC,	DIGIT,		PTMV|VIZ},
 /*  9  part of count	*/	{NO_FUNC,	DIGIT,		PTMV|VIZ},
-/*  :  run single EX cmd*/	{v_1ex,		CURSOR_TEXT,	NO_FLAGS},
+/*  :  run single EX cmd*/	{v_ex,		CURSOR_TEXT,	NO_FLAGS},
 #ifndef NO_CHARSEARCH
 /*  ;  repeat [fFtT] cmd*/	{m__ch,		CURSOR,		MVMT|INCL|VIZ},
 #else
 /*  ;  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS|VIZ},
 #endif
 /*  <  shift text left	*/	{v_lshift,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
-/*  =  preset filter	*/	{v_reformat,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
+/*  =  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
 /*  >  shift text right	*/	{v_rshift,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
 /*  ?  backward search	*/	{m_bsrch,	CURSOR_TEXT,	MVMT|NREL|VIZ},
 /*  @  execute a cutbuf */	{v_at,		C_C_K_CUT,	NO_FLAGS},
