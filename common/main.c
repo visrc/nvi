@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.2 1993/06/21 09:47:12 bostic Exp $ (Berkeley) $Date: 1993/06/21 09:47:12 $";
+static char sccsid[] = "$Id: main.c,v 8.3 1993/08/05 17:59:06 bostic Exp $ (Berkeley) $Date: 1993/08/05 17:59:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -55,9 +55,10 @@ main(argc, argv)
 	static int reenter;		/* STATIC: Re-entrancy check. */
 	EXCMDARG cmd;
 	GS *gp;
+	FREF *frp;
 	SCR *sp;
 	int ch, flagchk, eval;
-	char *excmdarg, *errf, *myname, *p, *rfname, *tag;
+	char *excmdarg, *errf, *myname, *p, *rfname, *tfname;
 
 	/* Stop if indirecting through a NULL pointer. */
 	if (reenter++)
@@ -123,7 +124,7 @@ main(argc, argv)
 	/* Parse the arguments. */
 	flagchk = 0;
 	F_SET(gp, G_SNAPSHOT);
-	excmdarg = errf = rfname = tag = NULL;
+	excmdarg = errf = rfname = tfname = NULL;
 	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:v")) != EOF)
 		switch(ch) {
 		case 'c':		/* Run the command. */
@@ -160,7 +161,7 @@ main(argc, argv)
 #endif
 		case 't':		/* Tag. */
 			++flagchk;
-			tag = optarg;
+			tfname = optarg;
 			break;
 		case 'v':		/* Vi mode. */
 			F_SET(sp, S_MODE_VI);
@@ -200,11 +201,7 @@ main(argc, argv)
 	if (O_ISSET(sp, O_EXRC))
 		(void)ex_cfile(sp, NULL, _PATH_EXRC, 0);
 
-	/* Any remaining arguments are file names. */
-	if (argc)
-		file_set(sp, argc, argv);
-
-	/* Use an error list file, recovery file or tag file if specified. */
+	/* Use an error list file, tag file or recovery file if specified. */
 #ifndef NO_ERRLIST
 	if (errf != NULL) {
 		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, errf);
@@ -212,26 +209,47 @@ main(argc, argv)
 			goto err1;
 	} else
 #endif
-	if (tag != NULL) {
-		if (ex_tagfirst(sp, tag))
-			goto err1;
-	} else if (rfname != NULL) {
-		if ((sp->ep = rcv_read(sp, rfname)) == NULL)
-			goto err1;
-	} else if ((sp->ep = file_start(sp, file_first(sp, 1), NULL)) == NULL)
+	if (tfname != NULL && ex_tagfirst(sp, tfname))
+		goto err1;
+	else if (rfname != NULL && rcv_read(sp, rfname))
 		goto err1;
 
-	/* Do commands from the command line. */
+	/* Append any remaining arguments as file names. */
+	if (*argv != NULL)
+		for (; *argv != NULL; ++argv)
+			if (file_add(sp, NULL, *argv, 0) == NULL)
+				goto err1;
+
+	/* If no argv, recovery or tag file specified, use a temporary file. */
+	if ((frp = file_first(sp, 1)) == NULL &&
+	    (frp = file_add(sp, NULL, NULL, 0)) == NULL)
+			goto err1;
+	sp->frp = frp;
+	
+	/* If no recover or tag file specified, get an EXF structure. */
+	if (tfname == NULL && rfname == NULL &&
+	    (sp->ep = file_init(sp, NULL, frp, NULL)) == NULL)
+			goto err1;
+
+	/*
+	 * Do commands from the command line, which must all assume
+	 * a starting position of the beginning of the file.
+	 */
+	sp->lno = 1;
+	sp->cno = 0;
 	if (excmdarg != NULL)
 		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
 
 	/*
 	 * The commands we executed probably positioned the file, so we
-	 * want the screen to load the address from the EXF structure.
+	 * want the screen to load the address from the FREF structure.
 	 * This isn't a wonderful test, but it's probably fairly safe.
 	 */
-	if ((sp->lno != 1 || sp->cno != 0) && F_ISSET(sp->ep, F_EADDR_NONE))
-		F_CLR(sp->ep, F_EADDR_NONE);
+	if (sp->lno != 1 || sp->cno != 0) {
+		sp->frp->lno = sp->lno;
+		sp->frp->cno = sp->cno;
+		F_SET(sp->frp, FR_CURSORSET);
+	}
 
 	/* Call a screen. */
 	while (sp != NULL)
