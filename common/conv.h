@@ -28,9 +28,9 @@ struct _conv_win {
 };
 
 struct _conv {
-	int	(*char2int) (struct _conv*, const char *, ssize_t, struct _conv_win *, size_t *);
-	int	(*int2char) (struct _conv*, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
-	int	(*file2int) (struct _conv*, const char *, ssize_t, struct _conv_win *, size_t *);
-	int	(*int2file) (struct _conv*, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
-	int	(*int2disp) (struct _conv*, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
+	int	(*char2int) (SCR *, const char *, ssize_t, struct _conv_win *, size_t *);
+	int	(*int2char) (SCR *, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
+	int	(*file2int) (SCR *, const char *, ssize_t, struct _conv_win *, size_t *);
+	int	(*int2file) (SCR *, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
+	int	(*int2disp) (SCR *, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
 };

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.9 2001/04/23 22:46:55 skimo Exp $ (Berkeley) $Date: 2001/04/23 22:46:55 $";
+static const char sccsid[] = "$Id: conv.c,v 1.10 2001/04/25 23:42:44 skimo Exp $ (Berkeley) $Date: 2001/04/25 23:42:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,10 @@ static const char sccsid[] = "$Id: conv.c,v 1.9 2001/04/23 22:46:55 skimo Exp $ 
 #include <ncurses.h>
 #endif
 
+#include <langinfo.h>
+
 int 
-default_char2int(CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+ascii2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i;
     CHAR_T **tostr = (CHAR_T **)&cw->bp1;
@@ -47,7 +49,39 @@ default_char2int(CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t 
 }
 
 int 
-default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+{
+    int i, j;
+    CHAR_T **tostr = (CHAR_T **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
+    mbstate_t mbs;
+    size_t   n;
+    ssize_t  nlen = len;
+
+    MEMSET(&mbs, 0, 1);
+    BINC_RETW(NULL, *tostr, *blen, nlen);
+
+    for (i = 0, j = 0; j < len; ) {
+	n = mbrtowc((*tostr)+i, str+j, len-j, &mbs);
+	/* NULL character converted */
+	if (n == -1 || n == -2) goto err;
+	if (n == 0) n = 1;
+	j += n;
+	if (++i >= *blen) {
+	    nlen += 256;
+	    BINC_RETW(NULL, *tostr, *blen, nlen);
+	}
+    }
+    *tolen = i;
+
+    return 0;
+err:
+    *tolen = i;
+    return 1;
+}
+
+int 
+int2ascii(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i;
     char **tostr = (char **)&cw->bp1;
@@ -62,10 +96,42 @@ default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_
     return 0;
 }
 
+int 
+default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+{
+    int i, j;
+    char **tostr = (char **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
+    mbstate_t mbs;
+    size_t n;
+    ssize_t  nlen = len + MB_CUR_MAX;
+
+    MEMSET(&mbs, 0, 1);
+    BINC_RET(NULL, *tostr, *blen, nlen);
+
+    for (i = 0, j = 0; i < len; ++i) {
+	n = wcrtomb((*tostr)+j, str[i], &mbs);
+	if (n == -1) goto err;
+	j += n;
+	if (*blen < j + MB_CUR_MAX) {
+	    nlen += 256;
+	    BINC_RET(NULL, *tostr, *blen, nlen);
+	}
+    }
+    n = wcrtomb((*tostr)+j, L'\0', &mbs);
+    j += n - 1;				/* don't count NUL at the end */
+    *tolen = j;
+
+    return 0;
+err:
+    *tolen = j;
+    return 1;
+}
+
 //#ifdef HAVE_NCURSESW
 #ifdef HAVE_ADDNWSTR
 int 
-default_int2disp (CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
     chtype *dest;
@@ -89,7 +155,7 @@ default_int2disp (CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size
 #else
 
 int 
-default_int2disp (CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
     char **tostr = (char **)&cw->bp1;
@@ -110,7 +176,7 @@ default_int2disp (CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size
 #endif
 
 int 
-gb2int (CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+gb2int (SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
     CHAR_T **tostr = (CHAR_T **)&cw->bp1;
@@ -135,7 +201,7 @@ gb2int (CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 }
 
 int
-int2gb(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+int2gb(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
     char **tostr = (char **)&cw->bp1;
@@ -157,7 +223,7 @@ int2gb(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 }
 
 int 
-utf82int (CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+utf82int (SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
     CHAR_T c;
@@ -192,7 +258,7 @@ utf82int (CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 }
 
 int
-int2utf8(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+int2utf8(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     char **tostr = (char **)&cw->bp1;
     size_t  *blen = &cw->blen1;
@@ -204,7 +270,7 @@ int2utf8(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen
 }
 
 
-CONV default_conv = { default_char2int, default_int2char, 
+CONV default_conv = { ascii2int, int2ascii, 
 		      default_char2int, default_int2char, default_int2disp };
 CONV gb_conv = { default_char2int, default_int2char, 
 		      gb2int, int2gb, default_int2disp };
@@ -216,8 +282,11 @@ conv_init (SCR *orig, SCR *sp)
 {
     if (orig != NULL)
 	sp->conv = orig->conv;
-    else
+    else {
+	setlocale(LC_ALL, "");
 	sp->conv = &default_conv;
+	o_set(sp, O_FILEENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
+    }
 }
 
 int

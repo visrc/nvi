@@ -1,11 +1,13 @@
 #ifndef MULTIBYTE_H
 #define MULTIBYTE_H
 
+#include <wchar.h>
+
 #ifdef USE_WIDECHAR
 typedef	int		RCHAR_T;
 #define RCHAR_T_MAX	((1 << 24)-1)
-typedef	u_int		CHAR_T;
-#define	MAX_CHAR_T	0xffffff
+typedef	wchar_t		CHAR_T;
+#define	MAX_CHAR_T	0xffffff    /* XXXX */
 typedef	u_int		UCHAR_T;
 #else
 typedef	char		RCHAR_T;

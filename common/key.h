@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.36 2001/04/23 22:46:56 skimo Exp $ (Berkeley) $Date: 2001/04/23 22:46:56 $
+ *	$Id: key.h,v 10.37 2001/04/25 23:42:44 skimo Exp $ (Berkeley) $Date: 2001/04/25 23:42:44 $
  */
 
 #include "multibyte.h"
@@ -27,19 +27,19 @@ typedef	u_int		ARG_CHAR_T;
 
 #ifdef USE_WIDECHAR
 #define FILE2INT(sp,n,nlen,w,wlen)					    \
-    sp->conv->file2int(sp->conv, n, nlen, &sp->wp->cw, &wlen),     	    \
+    sp->conv->file2int(sp, n, nlen, &sp->wp->cw, &wlen),     	    \
     w = sp->wp->cw.bp1
 #define INT2FILE(sp,w,wlen,n,nlen) 					    \
-    sp->conv->int2file(sp->conv, w, wlen, &sp->wp->cw, &nlen),	    \
+    sp->conv->int2file(sp, w, wlen, &sp->wp->cw, &nlen),	    \
     n = sp->wp->cw.bp1
 #define CHAR2INTB(sp,n,nlen,w,wlen,buf)					    \
-    sp->conv->char2int(sp->conv, n, nlen, &buf, &wlen),     \
+    sp->conv->char2int(sp, n, nlen, &buf, &wlen),     \
     w =  buf.bp1
 #define INT2CHAR(sp,w,wlen,n,nlen) 					    \
-    sp->conv->int2char(sp->conv, w, wlen, &sp->wp->cw, &nlen),	    \
+    sp->conv->int2char(sp, w, wlen, &sp->wp->cw, &nlen),	    \
     n = sp->wp->cw.bp1
 #define INT2DISP(sp,w,wlen,n,nlen) 					    \
-    sp->conv->int2disp(sp->conv, w, wlen, &sp->wp->cw, &nlen),	    \
+    sp->conv->int2disp(sp, w, wlen, &sp->wp->cw, &nlen),	    \
     n = sp->wp->cw.bp1
 #define CONST
 #else

@@ -6,7 +6,24 @@
 #include "gtkviscreen.h"
 #include <gdk/gdkx.h>
 
-#include "../common/conv.h"
+#define F_GB 'A'
+
+#define INT9494(f,r,c)	((f) << 16) | ((r) << 8) | (c)
+#define INTIS9494(c)	!!(((c) >> 16) & 0x7F)
+#define INTISUCS(c)	((c & ~0x7F) && !(((c) >> 16) & 0x7F))
+#define INTUCS(c)	(c)
+#define INT9494F(c)	((c) >> 16) & 0x7F
+#define INT9494R(c)	((c) >> 8) & 0x7F
+#define INT9494C(c)	(c) & 0x7F
+#define INTILL(c)	(1 << 23) | (c)
+#ifdef USE_WIDECHAR
+#define INTISWIDE(c)	(!!(c >> 8))
+#define CHAR_WIDTH(sp, ch)						\
+	(INTISUCS(ch) && ucswidth(ch) > 0 ? ucswidth(ch) : INTISWIDE(ch) ? 2 : 1)
+#else
+#define INTISWIDE(c)	    0
+#define CHAR_WIDTH(sp, ch)  1
+#endif
 
 void * v_strset __P((CHAR_T *s, CHAR_T c, size_t n));
 
