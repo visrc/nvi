@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.21 1993/12/02 18:56:15 bostic Exp $ (Berkeley) $Date: 1993/12/02 18:56:15 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.22 1993/12/02 19:08:43 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:08:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,11 +138,16 @@ ex_substitute(sp, ep, cmdp)
 		}
 
 		/*
-		 * Set saved RE.  Historic practice is that
-		 * substitutes set direction as well as the RE.
+		 * Set saved RE.
+		 *
+		 * !!!
+		 * Historic practice is that substitutes set the search
+		 * direction as well as both substitute and search RE's.
 		 */
-		sp->subre = lre;
 		sp->searchdir = FORWARD;
+		sp->sre = lre;
+		F_SET(sp, S_SRE_SET);
+		sp->subre = lre;
 		F_SET(sp, S_SUBRE_SET);
 
 		re = &lre;
