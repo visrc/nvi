@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.30 1994/07/23 12:05:42 bostic Exp $ (Berkeley) $Date: 1994/07/23 12:05:42 $";
+static char sccsid[] = "$Id: v_search.c,v 8.31 1994/07/23 12:17:18 bostic Exp $ (Berkeley) $Date: 1994/07/23 12:17:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,13 +212,25 @@ search(sp, ep, vp, ptrn, len, flags, dir)
 		case ';':
 			for (++eptrn; --len > 0 && isblank(*eptrn); ++eptrn);
 			ptrn = eptrn;
+			switch (*eptrn) {
+			case '/':
+				dir = FORWARD;
+				break;
+			case '?':
+				dir = BACKWARD;
+				break;
+			default:
+				goto usage;
+			}
+			ptrn = eptrn;
+			vp->m_start = vp->m_stop;
 			continue;
 		case 'z':
 			if (term_push(sp, eptrn, len, CH_NOMAP | CH_QUOTED))
 				return (1);
 			goto ret;
 		default:
-			msgq(sp, M_ERR,
+usage:			msgq(sp, M_ERR,
 			    "Characters after search string and/or delta");
 			return (1);
 		}
