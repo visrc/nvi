@@ -1,25 +1,30 @@
+README.LynxOS
+=============
+
+Written by Ronald F. Guilmette <rfg@monkeys.com>
+
+Last modified Wed Aug 14 23:10:07 PDT 1996
+------------------------------------------
+
 0. Introduction
 ---------------
 
 This file describes how to build and install the Berkeley `nvi' editor for
 the LynxOS 2.4.0 operating system.
 
-Note that even though LynxOS 2.4.0 is available for a variety of different
-hardware platforms, I personally have only tried building nvi on LynxOS/x86
-and LynxOS/PowerPC (using LynxOS 2.4.0 in both cases), so those are the only
-platforms that I am sure that you can build nvi on at the present time, how-
-ever I know of no reason why these procedures should not work also when
-attempting to build nvi on other LynxOS hardware platforms (e.g. Sparc, and
-mc680x0).
+LynxOS 2.4.0 is available for a variety of different hardware platforms, in
+particular, x86, m680x0, Sparc, and PowerPC.  I have successfully built nvi
+on all four of these flavors of LynxOS by following the procedures given in
+this file.
 
-Also note that these procedures may not work on versions of LynxOS prior
+Note that these procedures may not work on versions of LynxOS prior
 to 2.4.0.  (As I understand it, a good deal of work went into making the
 2.4.0 release more POSIX-compliant, and I have no idea what build glitches,
 if any, you might run into if you try to build nvi on a pre-2.4.0 version
 of LynxOS.)
 
 There are basically four steps to configuring, building, and installing nvi
-of your LynxOS, namely:
+on LynxOS, namely:
 
 	1.  Get setup to use the proper C compiler.
 	2.  Replace your installed `tr' program.
@@ -33,67 +38,70 @@ These steps are described in separate sections below.
 
 The most important step when building nvi on LynxOS is your selection of a
 C compiler to use during the build.  DO NOT try to use either the /bin/cc
-or the /bin/gcc compiler (i.e. GCC version 1.42) to build nvi.  These two
+or the /bin/gcc compiler (i.e. GCC version 1.xx) to build nvi.  These two
 compilers are ancient, crusty, buggy, and should probably not be used for
 anything.  Rather than using either of these two C compilers, I strongly
 advise you to use the more up-to-date version of the GNU C compiler which
-is distributed with LynxOS.  The most up-to-date version of GCC distributed
-with LynxOS 2.4.0 for the x86, m680x0, and Sparc processor families is
-normally installed as:
+is distributed with LynxOS.
 
-	/cygnus/94q4-lynxos-x86/bin/gcc
+For LynxOS 2.4.0 on x86 systems, the path to the newer gcc is located in:
 
-In the case of LynxOS 2.4.0 for PowerPC processors, the pathname of the most
-up-to-date version of GCC which is distributed with LynxOS 2.4.0 is actually:
+	/cygnus/94q4-lynxos-x86/bin
 
-	/cygnus/95q2-lynxos-ppc/bin/gcc
+For LynxOS 2.4.0 on m680x0 systems, the path to the newer gcc is in:
 
-so if you are on a PowerPC, use that pathname for GCC instead of the one shown
-above.
+	/cygnus/94q4-lynxos-68k/bin
 
-You can probably just setup your $PATH (*before* you do the configure step
-for nvi) so that the more up-to-date version of the GNU C compiler will
-appear in your path before the /bin/cc and/or /bin/gcc compilers, but I
-personally would take no chances.  What I did when I built nvi was the
-following:
+For LynxOS 2.4.0 on Sparc systems, the path to the newer gcc is in:
 
-	su root
-	cd /bin
-	mv cc cc.save
-	ln -s /cygnus/94q4-lynxos-x86/bin/gcc ./cc
-	mv gcc gcc.save
-	ln -s /cygnus/94q4-lynxos-x86/bin/gcc ./gcc
+	/cygnus/94q4-lynxos-usparc/bin
 
-These steps should work for the x86, sparc, and 680x0 versions of LynxOS 2.4.0,
-however if you are using LynxOS 2.4.0 on a PowerPC, you should do the follow-
-ing steps instead:
+For LynxOS 2.4.0 on PowerPC systems, the path to the newer gcc is in:
 
-	su root
-	cd /bin
-	ln -s /cygnus/95q2-lynxos-ppc/bin/gcc ./cc
-	mv gcc gcc.save
-	ln -s /cygnus/95q2-lynxos-ppc/bin/gcc ./gcc
+	/cygnus/95q2-lynxos-ppc/bin
 
-(Note that on LynxOS 2.4.0 for the PowerPC, there is no pre-existing /bin/cc
-file, so in that case, you don't even have to bother trying to make a backup
-of the /bin/cc compiler, because it won't even be present on your system.)
+It is imperative that you setup your $PATH environment variable (*before*
+you do the configure step for nvi) so that the more up-to-date version of
+the GNU C compiler will appear in your $PATH before the /bin/cc or /bin/gcc
+compilers (if present).  If you fail to do this, your attempts to build nvi
+will most likely fail.
 
-The bottom line is that when you get done setting things up, the most up-to-
-date version of gcc on your system should be available to you as the first
-`cc' program on your path.  (You should verify that this is the case just
-by type `cc -v'.  You should then see the proper version of of gcc print
-out, depending on your system type.  See above.)
+To make absolutely sure that you will be configuring and building nvi with
+the proper C compiler (i.e. the most up-to-date GNU C compiler on your system)
+you should add the directory name listed above for your specific system type
+to your $PATH setting in your $HOME/.profile file.  (For csh/tcsh users, you
+will instead want to add the relevant directory name to the setting of your
+$path variable in your ~/.cshrc file.)  Once you have added the proper direc-
+tory name (from the list given above) to your $HOME/.profile file (or to your
+~/.cshrc file, if you are using csh or tcsh) you should log out completely
+and then log back into the system just to make sure your new $PATH/$path
+setting takes effect properly.
 
-Performing the steps shown above will insure that anything you compile from
-now on will be compiled with the most up-to-date version of GCC which is
-shipped with your Lynx operating system.  (Note that the versions of GCC
-which are currently shipping with LynxOS 2.4.0 are also somewhat out-of-date
-themselves, but they are still quite a bit newer and more bug-free and more
-ANSI conformant that those other two C compilers which currently ship with
-LynxOS.)
+When you finish making this adjustment to your $PATH (or $path), the most
+up-to-date version of gcc on your system should be available to you as the
+first `gcc' program on your $PATH.  You should verify that this is indeed the
+case simply by typing `gcc -v' and then checking the version number reported
+by the compiler.  It should say either "2.6-94q4" or (on PowerPC systems) it
+should say "2.6-95q2".  If you don't get these results, try again to set your
+$PATH (or $path) until you do.  You won't be able to build nvi until you are
+properly setup to use gcc version 2.6 or later.
 
-Anyway, that's the most important thing about building nvi on LynxOS 2.4.0.
-Just make sure that you use a decent C compiler.
+Performing the steps shown above will insure that your subsequent configura-
+tion and build steps for nvi will make use of the most up-to-date version of
+gcc that was shipped with your Lynx operating system.  (Note that the versions
+of gcc which are currently shipping with LynxOS 2.4.0 are also somewhat out-
+of-date themselves, but they are still quite a bit newer and more bug-free
+and ANSI conformant that those other two C compilers which also currently
+ship with LynxOS.)
+
+(Note:  At present, LynxOS version 2.4.0 is the latest officially released
+version of LynxOS, and all of the above information is accurate and correct
+for LynxOS 2.4.0 as of the time of this writing.  However it is rumored that
+future releases of LynxOS may provide a still newer version of gcc, and that
+it may be located in the /usr/bin directory.  Thus, if you are building nvi
+for some LynxOS version later than 2.4.0, you may wish to check and see if
+your system has a program called /usr/bin/gcc, and use that version of gcc,
+if available, rather than the one suggested above.)
 
 2.  Replace Your Installed `tr' Program
 ---------------------------------------
@@ -102,22 +110,24 @@ The `tr' program which comes bundled with LynxOS 2.4.0 (as /bin/tr) has a
 somewhat obscure bug which just happens to be tickled by almost all GNU
 `autoconf' generated `configure' scripts (including the one that nowadays
 comes bundled with nvi).  Using the stock /bin/tr program on LynxOS when
-executing such `configure' scripts can and will cause these scripts to
-malfunction in various ways.  It is therefore strongly suggested that you
-replace you LynxOS /bin/tr program with a working version of `tr' _before_
-you even try to configure nvi.
+executing such `configure' scripts _will_ cause these scripts to malfunction
+in various ways.  It is therefore imperative that you replace your LynxOS
+/bin/tr program with a properly working version of the `tr' command _before_
+you even try to configure nvi.  (You can tell if your `tr' program has the
+bug by executng the command "echo ab- | tr ab- ABC".  If this yields the
+string "Ab-" then you have the bug.  If it yields "ABC" then you don't.)
 
 You can obtain sources for a working version of the `tr' command as part of
 the GNU `textutils' package (the latest version of which, at the time of this
-writing, is 1.17).  The GNU textutils package is available for downloading
+writing, is 1.19).  The GNU textutils package is available for downloading
 from prep.ai.mit.edu in the pub/gnu directory.  Look for the file named
-textutils-1.17.tar.gz, or an even more recent version of textutils, if one
+textutils-1.19.tar.gz, or an even more recent version of textutils, if one
 is available.  Fetch it, gunzip it, untar it, and follow the directions in
 the INSTALL file included in the tar file to build and install the entire
 textutils set of utility programs (which includes a working `tr' program).
 Then just make sure that the GNU version of `tr' appears on your $PATH
 _before_ the LynxOS version of `tr' (i.e. /bin/tr).  Be sure to do this
-step _before_ you configure nvi.
+step _before_ you start to configure nvi.
 
 When building the textutils set of programs, I suggest that you use the most
 up-to-date C compiler available on your system (as described above).  Also,
@@ -133,6 +143,15 @@ just don't use -O when building textutils.  You can avoid using -O by in-
 voking make in the textutils directory as follows:
 
 	make CFLAGS="-g"
+
+(Note:  At present, LynxOS version 2.4.0 is the latest officially released
+version of LynxOS, and all of the above information is accurate and correct
+for LynxOS 2.4.0 as of the time of this writing.  However it is rumored that
+the bug in the /bin/tr program will be fixed in future releases of LynxOS,
+so if you have a version of LynxOS later than 2.4.0, you may wish to check
+and see if your /bin/tr program even has the problematic bug before bothering
+with all of this.)
+
 
 3.  Fix Your System Include Files
 ---------------------------------
@@ -162,6 +181,16 @@ doing the following:
 Where `this-file' is the actual full pathname of the file you are now reading,
 wherever it may reside on your own system.
 
+(Note:  At present, LynxOS version 2.4.0 is the latest officially released
+version of LynxOS, and all of the above information is accurate and correct
+for LynxOS 2.4.0 as of the time of this writing.  However it is rumored that
+future releases of LynxOS may incorporate some or all of the important system
+include file fixes provided below.  Thus, if you are building nvi for some
+LynxOS version later than 2.4.0, you should probably go ahead and try to
+apply the patches given below to your system include files, and then just
+don't worry about it if these patches seem to have already been applied.)
+
+
 4.  A Brief Note about Sendmail
 -------------------------------
 
@@ -180,13 +209,14 @@ serial line hangup or system crash, then you should get the BSD sendmail
 sources (via ftp from ftp.cs.berkeley.edu), build and install sendmail, and
 then reconfigure, rebuild, and reinstall nvi.
 
-Please contact me at the address below if you find any bugs in the LynxOS
-port of NVI.  Thanks.
+Please contact me at the E-mail address below if you experience any problems in
+building or using nvi on LynxOS.  I make no guarrantees, but I may be willing
+to try to help.
 
 Ron Guilmette
 Roseville, California
 <rfg@monkeys.com>
-June 10, 1996
+August 14, 1996
 
 
 cut here for LynxOS 2.4.0 system include files patches

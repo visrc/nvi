@@ -407,7 +407,7 @@ EOF
     i?86:LynxOS:2.*:*)
 	echo i386-unknown-lynxos${UNAME_RELEASE}
 	exit 0 ;;
-    TSUNAMI:LynxOS:2.*:*)
+    TSUNAMI:LynxOS:2.*:* | uSPARC2:LynxOS:2.*:*)
 	echo sparc-unknown-lynxos${UNAME_RELEASE}
 	exit 0 ;;
     PowerPC:LynxOS:2.*:*)
