@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 8.3 1993/08/17 18:45:05 bostic Exp $ (Berkeley) $Date: 1993/08/17 18:45:05 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 8.4 1993/08/31 16:54:03 bostic Exp $ (Berkeley) $Date: 1993/08/31 16:54:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ ex_mkexrc(sp, ep, cmdp)
 {
 	struct stat sb;
 	FILE *fp;
-	int fd;
+	int fd, sverrno;
 	char *fname;
 
 	switch (cmdp->argc) {
@@ -42,7 +42,7 @@ ex_mkexrc(sp, ep, cmdp)
 		fname = _PATH_EXRC;
 		break;
 	case 1:
-		fname = (char *)cmdp->argv[0];
+		fname = cmdp->argv[0];
 		set_alt_fname(sp, fname);
 		break;
 	default:
@@ -58,29 +58,35 @@ ex_mkexrc(sp, ep, cmdp)
 	/* Create with max permissions of rw-r--r--. */
 	if ((fd = open(fname, O_CREAT | O_TRUNC | O_WRONLY,
 	    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-		msgq(sp, M_ERR, "%s: %s%s", fname, strerror(errno));
-		return (1);
-	}
-
-	if ((fp = fdopen(fd, "w")) == NULL) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
-	if (abbr_save(sp, fp) || ferror(fp))
-		goto err;
-	if (map_save(sp, fp) || ferror(fp))
-		goto err;
-	if (opts_save(sp, fp) || ferror(fp))
-		goto err;
-	if (fclose(fp)) {
-err:		msgq(sp, M_ERR,
-		    "%s: incomplete: %s", fname, strerror(errno));
-		return (1);
+	if ((fp = fdopen(fd, "w")) == NULL) {
+		sverrno = errno;
+		(void)close(fd);
+		errno = sverrno;
+		goto e2;
 	}
+
+	if (abbr_save(sp, fp) || ferror(fp))
+		goto e1;
+	if (map_save(sp, fp) || ferror(fp))
+		goto e1;
+	if (opts_save(sp, fp) || ferror(fp))
+		goto e1;
 #ifndef NO_DIGRAPH
 	digraph_save(sp, fd);
 #endif
+	if (fclose(fp))
+		goto e2;
+
 	msgq(sp, M_INFO, "New .exrc file: %s. ", fname);
 	return (0);
+
+e1:	sverrno = errno;
+	(void)fclose(fp);
+	errno = sverrno;
+e2:	msgq(sp, M_ERR, "%s: incomplete: %s", fname, strerror(errno));
+	return (1);
 }
