@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.74 1994/03/22 19:53:22 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:53:22 $";
+static char sccsid[] = "$Id: main.c,v 8.75 1994/03/23 12:25:38 bostic Exp $ (Berkeley) $Date: 1994/03/23 12:25:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -377,9 +377,20 @@ main(argc, argv)
 	 * would be nice in some cases to restart system calls, but SA_RESTART
 	 * is a 4BSD extension so we can't use it.
 	 *
-	 * SIGWINCH, SIGHUP, SIGTERM:
+	 * SIGALRM:
+	 *	Walk structures and call handling routines.
+	 * SIGHUP, SIGTERM, SIGWINCH:
 	 *	Catch and set a global bit.
+	 * SIGQUIT:
+	 *	Always ignore.
 	 */
+	act.sa_handler = h_alrm;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	if (sigaction(SIGALRM, &act, NULL)) {
+		msg(sp, M_SYSERR, "timer: sigaction");
+		goto err;
+	}
 	act.sa_handler = h_hup;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
@@ -392,11 +403,6 @@ main(argc, argv)
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 	(void)sigaction(SIGWINCH, &act, NULL);
-
-	/*
-	 * SIGQUIT:
-	 *	Always ignore.
-	 */
 	act.sa_handler = SIG_IGN;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
