@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.76 1993/12/19 16:06:08 bostic Exp $ (Berkeley) $Date: 1993/12/19 16:06:08 $";
+static char sccsid[] = "$Id: ex.c,v 8.77 1993/12/19 16:39:47 bostic Exp $ (Berkeley) $Date: 1993/12/19 16:39:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1328,8 +1328,25 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		cmd += 2;
 		cmdlen -= 2;
 		break;
+	case '\\':				/* Search. */
+		/*
+		 * XXX
+		 * I can't find any difference between // and \/,
+		 * or between ?? and \?.
+		 */
+		if (cmdlen < 2 || cmd[1] != '/' && cmd[1] != '?') {
+			msgq(sp, M_ERR, "\\ not followed by / or ?.");
+			return (1);
+		}
+		++cmd;
+		--cmdlen;
+		if (cmd[0] == '/')
+			goto forward;
+		if (cmd[0] == '?')
+			goto backward;
+		/* NOTREACHED */
 	case '/':				/* Search forward. */
-		*addr_found = 1;
+forward:	*addr_found = 1;
 		m.lno = sp->lno;
 		m.cno = sp->cno;
 		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
@@ -1341,7 +1358,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		cmd = endp;
 		break;
 	case '?':				/* Search backward. */
-		*addr_found = 1;
+backward:	*addr_found = 1;
 		m.lno = sp->lno;
 		m.cno = sp->cno;
 		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
