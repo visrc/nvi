@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.58 1993/11/26 17:57:09 bostic Exp $ (Berkeley) $Date: 1993/11/26 17:57:09 $";
+static char sccsid[] = "$Id: ex.c,v 8.59 1993/11/27 14:09:28 bostic Exp $ (Berkeley) $Date: 1993/11/27 14:09:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,9 +52,8 @@ ex(sp, ep)
 
 	/* If reading from a file, messages should have line info. */
 	if (!F_ISSET(sp->gp, G_ISFROMTTY)) {
-		F_SET(sp, S_FILEINPUT);
 		sp->if_lno = 1;
-		sp->if_name = "input";
+		sp->if_name = strdup("input");
 	}
 	for (eval = 0;; ++sp->if_lno) {
 		/* Get the next command. */
@@ -92,7 +91,8 @@ ex(sp, ep)
 			break;
 		}
 	}
-ret:	F_CLR(sp, S_FILEINPUT);
+ret:	if (sp->if_name != NULL)
+		FREE(sp->if_name, strlen(sp->if_name) + 1);
 	return (ex_end(sp) || eval);
 }
 
@@ -111,9 +111,8 @@ ex_cfile(sp, ep, filename)
 	char *bp;
 
 	/* Messages should include file/line information. */
-	F_SET(sp, S_FILEINPUT);
 	sp->if_lno = 0;
-	sp->if_name = filename;
+	sp->if_name = strdup(filename);
 
 	if ((fd = open(filename, O_RDONLY, 0)) < 0)
 		goto e1;
@@ -147,13 +146,15 @@ ex_cfile(sp, ep, filename)
 	 */
 	free(bp);
 	(void)close(fd);
-	F_CLR(sp, S_FILEINPUT);
+	if (sp->if_name != NULL)
+		FREE(sp->if_name, strlen(sp->if_name) + 1);
 	return (rval);
 
 e3:	free(bp);
 e2:	(void)close(fd);
 e1:	msgq(sp, M_SYSERR, filename);
-	F_CLR(sp, S_FILEINPUT);
+	if (sp->if_name != NULL)
+		FREE(sp->if_name, strlen(sp->if_name) + 1);
 	return (1);
 }
 
