@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.9 1993/08/29 14:23:03 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:23:03 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.10 1993/09/11 13:58:54 bostic Exp $ (Berkeley) $Date: 1993/09/11 13:58:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,7 +153,12 @@ word_argv(sp, ep, p, argcp, argvp)
 	int cnt, done, off;
 	char *ap, *t;
 
-	for (done = off = 0;; ) {
+	for (done = off = 0;; ++p) {
+		/* Skip any leading whitespace. */
+		for (; isblank(p[0]); ++p);
+		if (*p == '\0')
+			break;
+
 		/*
 		 * ESCAPE CHARACTER NOTE:
 		 *
@@ -226,11 +231,6 @@ mem1:				sp->argscnt = 0;
 		++off;
 
 		if (done)
-			break;
-
-		/* Skip whitespace. */
-		for (++p; isblank(p[0]); ++p);
-		if (!*p)
 			break;
 	}
 	sp->argv[off] = NULL;
