@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.13 1992/11/02 22:21:12 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:21:12 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.14 1992/11/06 10:34:09 bostic Exp $ (Berkeley) $Date: 1992/11/06 10:34:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ ex_unmap(cmdp)
 
 	input = cmdp->argv[0];
 	if (seq_delete(input, cmdp->flags & E_FORCE ? INPUT : COMMAND)) {
-		msg("\"%s\" was never mapped.", input);
+		msg("\"%s\" isn't mapped.", input);
 		return (1);
 	}
 	return (0);
