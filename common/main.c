@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.111 1994/09/02 20:18:49 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:18:49 $";
+static char sccsid[] = "$Id: main.c,v 8.112 1994/09/16 16:59:26 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -502,10 +502,6 @@ gs_init()
 	LIST_INIT(&gp->msgq);
 
 	/* Structures shared by screens so stored in the GS structure. */
-	CALLOC_NOMSG(NULL, gp->tty, IBUF *, 1, sizeof(IBUF));
-	if (gp->tty == NULL)
-		err(1, NULL);
-
 	CIRCLEQ_INIT(&gp->dcb_store.textq);
 	LIST_INIT(&gp->cutq);
 	LIST_INIT(&gp->seqq);

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.49 1994/09/07 11:31:41 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:31:41 $
+ *	$Id: key.h,v 8.50 1994/09/16 16:59:44 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:44 $
  */
 
 /*
@@ -64,22 +64,12 @@ typedef struct _keylist {
 	u_int8_t value;		/* Special value. */
 	CHAR_T	 ch;		/* Key. */
 } KEYLIST;
-
 extern KEYLIST keylist[];
 
-/* Structure for the key input buffer. */
-struct _ibuf {
-	CHAR_T	 *ch;		/* Array of characters. */
-	u_int8_t *chf;		/* Array of character flags (CH_*). */
-
-	size_t	 cnt;		/* Count of remaining characters. */
-	size_t	 nelem;		/* Numer of array elements. */
-	size_t	 next;		/* Offset of next array entry. */
-};
 				/* Return if more keys in queue. */
-#define	KEYS_WAITING(sp)	((sp)->gp->tty->cnt)
+#define	KEYS_WAITING(sp)	((sp)->gp->i_cnt)
 #define	MAPPED_KEYS_WAITING(sp)						\
-	(KEYS_WAITING(sp) && sp->gp->tty->chf[sp->gp->tty->next] & CH_MAPPED)
+	(KEYS_WAITING(sp) && sp->gp->i_chf[sp->gp->i_next] & CH_MAPPED)
 
 /*
  * Routines that return a key as a side-effect return:
@@ -175,6 +165,5 @@ int		 __key_val __P((SCR *, ARG_CHAR_T));
 void		 key_init __P((SCR *));
 void		 term_flush __P((SCR *, char *, u_int));
 enum input	 term_key __P((SCR *, CH *, u_int));
-enum input	 term_user_key __P((SCR *, CH *));
 int		 term_init __P((SCR *));
 int		 term_push __P((SCR *, CHAR_T *, size_t, u_int));

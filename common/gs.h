@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.40 1994/08/31 17:12:01 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:01 $
+ *	$Id: gs.h,v 8.41 1994/09/16 16:59:19 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:19 $
  */
 
 struct _gs {
@@ -29,7 +29,11 @@ struct _gs {
 #endif
 
 /* INFORMATION SHARED BY ALL SCREENS. */
-	IBUF	*tty;			/* Key input buffer. */
+	CHAR_T	 *i_ch;			/* Array of input characters. */
+	u_int8_t *i_chf;		/* Array of character flags (CH_*). */
+	size_t	  i_cnt;		/* Count of characters. */
+	size_t	  i_nelem;		/* Number of array elements. */
+	size_t    i_next;		/* Offset of next array entry. */
 
 	CB	*dcbp;			/* Default cut buffer pointer. */
 	CB	 dcb_store;		/* Default cut buffer storage. */

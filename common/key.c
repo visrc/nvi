@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.84 1994/09/07 11:31:38 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:31:38 $";
+static char sccsid[] = "$Id: key.c,v 8.85 1994/09/16 16:59:35 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,19 +36,19 @@ static char sccsid[] = "$Id: key.c,v 8.84 1994/09/07 11:31:38 bostic Exp $ (Berk
 
 #include "vi.h"
 
-static int	  keycmp __P((const void *, const void *));
-static enum input term_key_queue __P((SCR *));
-static void	  term_key_set __P((GS *, int, int));
-
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.
  * This shouldn't ever happen, other than the first time through, but it's
  * possible if a map is large enough.
  */
-#define	term_read_grow(sp, tty)					\
-	(tty)->nelem - ((tty)->cnt + (tty)->next) >= 20 ?	\
-	0 : __term_read_grow(sp, tty, 64)
-static int __term_read_grow __P((SCR *, IBUF *, int));
+#define	term_read_grow(sp)						\
+	(sp)->gp->i_nelem - ((sp)->gp->i_cnt + (sp)->gp->i_next) >= 20 ?\
+	0 : __term_read_grow(sp, 64)
+
+static int	  keycmp __P((const void *, const void *));
+static enum input term_key_queue __P((SCR *));
+static void	  term_key_set __P((GS *, int, int));
+static int	__term_read_grow __P((SCR *, int));
 
 /*
  * !!!
@@ -206,12 +206,13 @@ void
 key_init(sp)
 	SCR *sp;
 {
+	GS *gp;
 	CHAR_T ch;
 
-	for (ch = 0; ch <= MAX_FAST_KEY; ++ch) {
+	for (gp = sp->gp, ch = 0; ch <= MAX_FAST_KEY; ++ch) {
 		(void)__key_name(sp, ch);
-		(void)memmove(sp->gp->cname[ch].name, sp->cname, sp->clen);
-		sp->gp->cname[ch].len = sp->clen;
+		(void)memmove(gp->cname[ch].name, sp->cname, sp->clen);
+		gp->cname[ch].len = sp->clen;
 	}
 }
 
@@ -315,18 +316,18 @@ term_push(sp, s, nchars, flags)
 	size_t nchars;			/* Number of chars. */
 	u_int flags;			/* CH_* flags. */
 {
-	IBUF *tty;
+	GS *gp;
 	size_t total;
 
 	/* If we have room, stuff the keys into the buffer. */
-	tty = sp->gp->tty;
-	if (nchars <= tty->next ||
-	    (tty->ch != NULL && tty->cnt == 0 && nchars <= tty->nelem)) {
-		if (tty->cnt != 0)
-			tty->next -= nchars;
-		tty->cnt += nchars;
-		MEMMOVE(tty->ch + tty->next, s, nchars);
-		MEMSET(tty->chf + tty->next, flags, nchars);
+	gp = sp->gp;
+	if (nchars <= gp->i_next ||
+	    (gp->i_ch != NULL && gp->i_cnt == 0 && nchars <= gp->i_nelem)) {
+		if (gp->i_cnt != 0)
+			gp->i_next -= nchars;
+		gp->i_cnt += nchars;
+		MEMMOVE(gp->i_ch + gp->i_next, s, nchars);
+		MEMSET(gp->i_chf + gp->i_next, flags, nchars);
 		return (0);
 	}
 
@@ -335,21 +336,21 @@ term_push(sp, s, nchars, flags)
 	 * leaving some extra room.  Get enough space plus a little extra.
 	 */
 #define	TERM_PUSH_SHIFT	30
-	total = tty->cnt + tty->next + nchars + TERM_PUSH_SHIFT;
-	if (total >= tty->nelem && __term_read_grow(sp, tty, MAX(total, 64)))
+	total = gp->i_cnt + gp->i_next + nchars + TERM_PUSH_SHIFT;
+	if (total >= gp->i_nelem && __term_read_grow(sp, MAX(total, 64)))
 		return (1);
-	if (tty->cnt) {
-		MEMMOVE(tty->ch + TERM_PUSH_SHIFT + nchars,
-		    tty->ch + tty->next, tty->cnt);
-		MEMMOVE(tty->chf + TERM_PUSH_SHIFT + nchars,
-		    tty->chf + tty->next, tty->cnt);
+	if (gp->i_cnt) {
+		MEMMOVE(gp->i_ch + TERM_PUSH_SHIFT + nchars,
+		    gp->i_ch + gp->i_next, gp->i_cnt);
+		MEMMOVE(gp->i_chf + TERM_PUSH_SHIFT + nchars,
+		    gp->i_chf + gp->i_next, gp->i_cnt);
 	}
 
 	/* Put the new characters into the queue. */
-	tty->next = TERM_PUSH_SHIFT;
-	tty->cnt += nchars;
-	MEMMOVE(tty->ch + TERM_PUSH_SHIFT, s, nchars);
-	MEMSET(tty->chf + TERM_PUSH_SHIFT, flags, nchars);
+	gp->i_next = TERM_PUSH_SHIFT;
+	gp->i_cnt += nchars;
+	MEMMOVE(gp->i_ch + TERM_PUSH_SHIFT, s, nchars);
+	MEMSET(gp->i_chf + TERM_PUSH_SHIFT, flags, nchars);
 	return (0);
 }
 
@@ -357,25 +358,25 @@ term_push(sp, s, nchars, flags)
  * Remove characters from the queue, simultaneously clearing the flag
  * and map counts.
  */
-#define	QREM_HEAD(q, len) {						\
-	size_t __off = (q)->next;					\
+#define	QREM_HEAD(len) {						\
+	size_t __off = gp->i_next;					\
 	if (len == 1)							\
-		tty->chf[__off] = 0;					\
+		gp->i_chf[__off] = 0;					\
 	else								\
-		MEMSET(tty->chf + __off, 0, len);			\
-	if (((q)->cnt -= len) == 0)					\
-		(q)->next = 0;						\
+		MEMSET(gp->i_chf + __off, 0, len);			\
+	if ((gp->i_cnt -= len) == 0)					\
+		gp->i_next = 0;						\
 	else								\
-		(q)->next += len;					\
+		gp->i_next += len;					\
 }
-#define	QREM_TAIL(q, len) {						\
-	size_t __off = (q)->next + (q)->cnt - 1;			\
+#define	QREM_TAIL(len) {						\
+	size_t __off = gp->i_next + gp->i_cnt - 1;			\
 	if (len == 1)							\
-		tty->chf[__off] = 0;					\
+		gp->i_chf[__off] = 0;					\
 	else								\
-		MEMSET(tty->chf + __off, 0, len);			\
-	if (((q)->cnt -= len) == 0)					\
-		(q)->next = 0;						\
+		MEMSET(gp->i_chf + __off, 0, len);			\
+	if ((gp->i_cnt -= len) == 0)					\
+		gp->i_next = 0;						\
 }
 
 /*
@@ -405,10 +406,15 @@ term_push(sp, s, nchars, flags)
  * user wants it handled.
  *
  * There is one more complication.  Users might map keys to digits, and, as
- * it's described above, the commands "map g 1G|d2g" would return the keys
- * "d2<end-of-digits>1G", when the user probably wanted "d21<end-of-digits>G".
- * So, if a map starts off with a digit we continue as before, otherwise, we
- * pretend that we haven't mapped the character and return <end-of-digits>.
+ * it's described above, the commands:
+ *
+ *	:map g 1G
+ *	d2g
+ *
+ * would return the keys "d2<end-of-digits>1G", when the user probably wanted
+ * "d21<end-of-digits>G".  So, if a map starts off with a digit we continue as
+ * before, otherwise, we pretend we haven't mapped the character, and return
+ * <end-of-digits>.
  *
  * Now that that's out of the way, let's talk about Energizer Bunny macros.
  * It's easy to create macros that expand to a loop, e.g. map x 3x.  It's
@@ -456,7 +462,6 @@ term_key(sp, chp, flags)
 	struct timeval t, *tp;
 	CHAR_T ch;
 	GS *gp;
-	IBUF *tty;
 	SEQ *qp;
 	int init_nomap, ispartial, nr;
 
@@ -464,16 +469,14 @@ term_key(sp, chp, flags)
 	if (INTERRUPTED(sp))
 		return (INP_INTR);
 
-	gp = sp->gp;
-	tty = gp->tty;
-
 	/*
 	 * If the queue is empty, read more keys in.  Since no timeout is
 	 * requested, s_key_read will either return an error or will read
 	 * some number of characters.
 	 */
-loop:	if (tty->cnt == 0) {
-		if (term_read_grow(sp, tty))
+	gp = sp->gp;
+loop:	if (gp->i_cnt == 0) {
+		if (term_read_grow(sp))
 			return (INP_ERR);
 		if ((rval = sp->s_key_read(sp, &nr, NULL)) != INP_OK)
 			return (rval);
@@ -487,7 +490,7 @@ loop:	if (tty->cnt == 0) {
 	}
 
 	/* If the key is mappable and should be mapped, look it up. */
-	if (!(tty->chf[tty->next] & CH_NOMAP) &&
+	if (!(gp->i_chf[gp->i_next] & CH_NOMAP) &&
 	    LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
 		/* Set up timeout value. */
 		if (O_ISSET(sp, O_TIMEOUT)) {
@@ -498,12 +501,12 @@ loop:	if (tty->cnt == 0) {
 			tp = NULL;
 
 		/* Get the next key. */
-newmap:		ch = tty->ch[tty->next];
+newmap:		ch = gp->i_ch[gp->i_next];
 		if (ch < MAX_BIT_SEQ && !bit_test(gp->seqb, ch))
 			goto nomap;
 
 		/* Search the map. */
-remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
+remap:		qp = seq_find(sp, NULL, &gp->i_ch[gp->i_next], gp->i_cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 
@@ -517,7 +520,7 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		 * unmapped.
 		 */
 		if (ispartial) {
-			if (term_read_grow(sp, tty))
+			if (term_read_grow(sp))
 				return (INP_ERR);
 			if ((rval = sp->s_key_read(sp, &nr, tp)) != INP_OK)
 				return (rval);
@@ -540,10 +543,11 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 			goto not_digit_ch;
 
 		/* Find out if the initial segments are identical. */
-		init_nomap = !memcmp(&tty->ch[tty->next], qp->output, qp->ilen);
+		init_nomap =
+		    !memcmp(&gp->i_ch[gp->i_next], qp->output, qp->ilen);
 
 		/* Delete the mapped characters from the queue. */
-		QREM_HEAD(tty, qp->ilen);
+		QREM_HEAD(qp->ilen);
 
 		/* If keys mapped to nothing, go get more. */
 		if (qp->output == NULL)
@@ -571,7 +575,7 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 			return (INP_ERR);
 	}
 
-nomap:	ch = tty->ch[tty->next];
+nomap:	ch = gp->i_ch[gp->i_next];
 	if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(ch)) {
 not_digit_ch:	chp->ch = CH_NOT_DIGIT;
 		chp->value = 0;
@@ -581,11 +585,11 @@ not_digit_ch:	chp->ch = CH_NOT_DIGIT;
 
 	/* Fill in the return information. */
 	chp->ch = ch;
-	chp->flags = tty->chf[tty->next];
+	chp->flags = gp->i_chf[gp->i_next];
 	chp->value = KEY_VAL(sp, ch);
 
 	/* Delete the character from the queue. */
-	QREM_HEAD(tty, 1);
+	QREM_HEAD(1);
 	return (INP_OK);
 }
 
@@ -599,17 +603,25 @@ term_flush(sp, msg, flags)
 	char *msg;
 	u_int flags;
 {
-	IBUF *tty;
+	GS *gp;
 
-	tty = sp->gp->tty;
-	if (!tty->cnt || !(tty->chf[tty->next] & flags))
+	gp = sp->gp;
+	if (!gp->i_cnt || !(gp->i_chf[gp->i_next] & flags))
 		return;
 	do {
-		QREM_HEAD(tty, 1);
-	} while (tty->cnt && tty->chf[tty->next] & flags);
+		QREM_HEAD(1);
+	} while (gp->i_cnt && gp->i_chf[gp->i_next] & flags);
 	msgq(sp, M_ERR, "091|%s: keys flushed", msg);
 }
 
+#ifdef MAKE_THE_USER_ENTER_A_KEY
+Earlier versions of nvi required that a user enter a key when waiting
+for something to happen, e.g. when getting a key to acknowledge that
+the user has seen one or more error messages.   Historic vi just used
+the next character regardless, and users complained.  This routine is
+left in place in case we ever need it again.
+
+enum input	 term_user_key __P((SCR *, CH *));
 /*
  * term_user_key --
  *	Get the next key, but require the user enter one.
@@ -619,8 +631,8 @@ term_user_key(sp, chp)
 	SCR *sp;
 	CH *chp;
 {
+	GS *gp;
 	enum input rval;
-	IBUF *tty;
 	int nr;
 
 	/*
@@ -635,14 +647,15 @@ term_user_key(sp, chp)
 		return (rval);
 
 	/* Fill in the return information. */
-	tty = sp->gp->tty;
-	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
+	gp = sp->gp;
+	chp->ch = gp->i_ch[gp->i_next + (gp->i_cnt - 1)];
 	chp->flags = 0;
 	chp->value = KEY_VAL(sp, chp->ch);
 
-	QREM_TAIL(tty, 1);
+	QREM_TAIL(1);
 	return (INP_OK);
 }
+#endif
 
 /*
  * term_key_queue --
@@ -652,15 +665,15 @@ static enum input
 term_key_queue(sp)
 	SCR *sp;
 {
+	GS *gp;
 	enum input rval;
 	struct timeval t;
-	IBUF *tty;
 	int nr;
 
 	t.tv_sec = 0;
 	t.tv_usec = 0;
-	for (tty = sp->gp->tty;;) {
-		if (term_read_grow(sp, tty))
+	for (gp = sp->gp;;) {
+		if (term_read_grow(sp))
 			return (INP_ERR);
 		if ((rval = sp->s_key_read(sp, &nr, &t)) != INP_OK)
 			return (rval);
@@ -693,21 +706,22 @@ __key_val(sp, ch)
  *	the term_read_grow() macro.
  */
 static int
-__term_read_grow(sp, tty, add)
+__term_read_grow(sp, add)
 	SCR *sp;
-	IBUF *tty;
 	int add;
 {
+	GS *gp;
 	size_t new_nelem, olen;
 
-	new_nelem = tty->nelem + add;
-	olen = tty->nelem * sizeof(tty->ch[0]);
-	BINC_RET(sp, tty->ch, olen, new_nelem * sizeof(tty->ch[0]));
+	gp = sp->gp;
+	new_nelem = gp->i_nelem + add;
+	olen = gp->i_nelem * sizeof(gp->i_ch[0]);
+	BINC_RET(sp, gp->i_ch, olen, new_nelem * sizeof(gp->i_ch[0]));
 
-	olen = tty->nelem * sizeof(tty->chf[0]);
-	BINC_RET(sp, tty->chf, olen, new_nelem * sizeof(tty->chf[0]));
+	olen = gp->i_nelem * sizeof(gp->i_chf[0]);
+	BINC_RET(sp, gp->i_chf, olen, new_nelem * sizeof(gp->i_chf[0]));
 
-	tty->nelem = olen / sizeof(tty->chf[0]);
+	gp->i_nelem = olen / sizeof(gp->i_chf[0]);
 	return (0);
 }
 
