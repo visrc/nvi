@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.6 1993/11/13 18:02:26 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:26 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.7 1993/12/19 18:55:11 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:55:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 
 #include <errno.h>
@@ -19,14 +20,17 @@ static char sccsid[] = "$Id: ex_script.c,v 8.6 1993/11/13 18:02:26 bostic Exp $ 
 
 #include "vi.h"
 #include "excmd.h"
+#include "script.h"
 
+static int sscr_getprompt __P((SCR *, EXF *));
 static int sscr_init __P((SCR *, EXF *));
 static int sscr_matchprompt __P((SCR *, char *, size_t, size_t *));
+static int sscr_setprompt __P((SCR *, char *, size_t));
 
 /*
  * ex_script -- : sc[ript][!] [file]
  *
- *	Switch to visual mode.
+ *	Switch to script mode.
  */
 int
 ex_script(sp, ep, cmdp)
@@ -42,7 +46,7 @@ ex_script(sp, ep, cmdp)
 	}
 
 	/* Switch to the new file. */
-	if (ex_edit(sp, ep, cmdp))
+	if (cmdp->argc != 0 && ex_edit(sp, ep, cmdp))
 		return (1);
 
 	/*
@@ -59,45 +63,60 @@ ex_script(sp, ep, cmdp)
 
 /*
  * sscr_init --
- *	Create a pipe to a shell.
+ *	Create a pty setup for a shell.
  */
 static int
 sscr_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	struct timeval tv;
-	fd_set fdset;
-	recno_t lline;
-	size_t llen, len;
-	int cnt, nr;
-	char *endp, *p, *t, *sh, *sh_path, buf[1024];
+	SCRIPT *sc;
+	char *sh, *sh_path;
+
+	MALLOC_RET(sp, sc, SCRIPT *, sizeof(SCRIPT));
+	sp->script = sc;
+	sc->sh_prompt = NULL;
+	sc->sh_prompt_len = 0;
 
 	/*
 	 * There are two different processes running through this code.
 	 * They are the shell and the parent.
-	 *
-	 * Input and output are named from the shell's point of view.  The
-	 * shell reads from sh_in[0] and the parent writes to sh_in[1].
-	 * The parent reads from sh_out[0] and the shell writes to sh_out[1].
 	 */
-	sp->sh_in[0] = sp->sh_in[1] = sp->sh_out[0] = sp->sh_out[1] = -1;
-	if (pipe(sp->sh_in) < 0 || pipe(sp->sh_out) < 0) {
-		msgq(sp, M_SYSERR, "pipe");
+	sc->sh_master = sc->sh_slave = -1;
+
+	if (tcgetattr(STDIN_FILENO, &sc->sh_term) == -1) {
+		msgq(sp, M_SYSERR, "tcgetattr");
 		goto err;
 	}
 
-	switch (sp->sh_pid = vfork()) {
+	/*
+	 * Turn off output postprocessing and echo.
+	 */
+	sc->sh_term.c_oflag &= ~OPOST;
+	sc->sh_term.c_cflag &= ~(ECHO|ECHOE|ECHONL|ECHOK);
+
+	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &sc->sh_win) == -1) {
+		msgq(sp, M_SYSERR, "tcgetattr");
+		goto err;
+	}
+
+	if (openpty(&sc->sh_master,
+	    &sc->sh_slave, sc->sh_name, &sc->sh_term, &sc->sh_win) == -1) {
+		msgq(sp, M_SYSERR, "openpty");
+		goto err;
+	}
+
+	/*
+	 * Don't use vfork() here, because the signal semantics
+	 * differ from implementation to implementation.
+	 */
+	switch (sc->sh_pid = fork()) {
 	case -1:			/* Error. */
-		msgq(sp, M_SYSERR, "vfork");
-err:		if (sp->sh_in[0] != -1)
-			(void)close(sp->sh_in[0]);
-		if (sp->sh_in[1] != -1)
-			(void)close(sp->sh_in[1]);
-		if (sp->sh_out[0] != -1)
-			(void)close(sp->sh_out[0]);
-		if (sp->sh_out[1] != -1)
-			(void)close(sp->sh_out[1]);
+		msgq(sp, M_SYSERR, "fork");
+err:		if (sc->sh_master != -1)
+			(void)close(sc->sh_master);
+		if (sc->sh_slave != -1)
+			(void)close(sc->sh_slave);
 		return (1);
 	case 0:				/* Utility. */
 		/*
@@ -108,19 +127,20 @@ err:		if (sp->sh_in[0] != -1)
 		(void)signal(SIGQUIT, SIG_DFL);
 
 		/*
-		 * Redirect stdin from the read end of the sh_in pipe,
-		 * and redirect stdout/stderr to the write end of the
-		 * sh_out pipe.
+		 * XXX
+		 * So that shells that do command line editing turn it off.
 		 */
-		(void)dup2(sp->sh_in[0], STDIN_FILENO);
-		(void)dup2(sp->sh_out[1], STDOUT_FILENO);
-		(void)dup2(sp->sh_out[1], STDERR_FILENO);
+		(void)putenv("TERM=emacs");
+		(void)putenv("TERMCAP=emacs:");
+		(void)putenv("EMACS=t");
 
-		/* Close the utility's file descriptors. */
-		(void)close(sp->sh_in[0]);
-		(void)close(sp->sh_in[1]);
-		(void)close(sp->sh_out[0]);
-		(void)close(sp->sh_out[1]);
+		(void)setsid();
+		(void)ioctl(sc->sh_slave, TIOCSCTTY, 0);
+		(void)close(sc->sh_master);
+		(void)dup2(sc->sh_slave, STDIN_FILENO);
+		(void)dup2(sc->sh_slave, STDOUT_FILENO);
+		(void)dup2(sc->sh_slave, STDERR_FILENO);
+		(void)close(sc->sh_slave);
 
 		/* Assumes that all shells have -i. */
 		sh_path = O_STR(sp, O_SHELL);
@@ -133,119 +153,112 @@ err:		if (sp->sh_in[0] != -1)
 		    "Error: execl: %s: %s", sh_path, strerror(errno));
 		_exit(127);
 	default:
-		/* Close the pipe ends the parent won't use. */
-		(void)close(sp->sh_in[0]);
-		(void)close(sp->sh_out[1]);
 		break;
 	}
 
-	/*
-	 * Figure out the prompt.  The scheme here is pretty simple.  Take
-	 * the first three lines, i.e. lines that don't end with a newline,
-	 * and see what they share.  If they don't share anything, we quit.
-	 * Otherwise, we mark what they share and use it for comparison later.
-	 * There are a lot of built-in assumptions about how shells behave.
-	 */
-	FD_ZERO(&fdset);
-	for (endp = buf, len = sizeof(buf), cnt = 0;; ++cnt) {
-		/* Wait up to a second for characters to read. */
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		FD_SET(sp->sh_out[0], &fdset);
-		switch (select(sp->sh_out[0] + 1, &fdset, NULL, NULL, &tv)) {
-		case -1:		/* Error or interrupt. */
-			msgq(sp, M_SYSERR, "select");
-			goto prompterr;
-		case  0:		/* Timeout */
-			msgq(sp, M_ERR, "Error: timed out.");
-			goto prompterr;
-		case  1:		/* Characters to read. */
-			break;
-		}
+	if (sscr_getprompt(sp, ep))
+		return (1);
 
-		/* Read the characters. */
-more:		len = sizeof(buf) - (endp - buf);
-		switch (nr = read(sp->sh_out[0], endp, len)) {
-		case  0:			/* EOF. */
-			msgq(sp, M_ERR, "Error: shell: EOF");
-			goto prompterr;
-		case -1:			/* Error or interrupt. */
-			msgq(sp, M_SYSERR, "shell");
-			goto prompterr;
-		default:
-			endp += nr;
-			break;
-		}
-
-		/* If any complete lines, push them into the file. */
-		for (p = t = buf; t < endp; ++t)
-			if (sp->special[*t] == K_CR ||
-			    sp->special[*t] == K_NL) {
-				if (file_lline(sp, ep, &lline) ||
-				    file_aline(sp, ep, 0, lline, buf, t - p))
-					goto prompterr;
-				p = ++t;
-			}
-		if (p > buf) {
-			memmove(buf, p, endp - p);
-			endp = buf + (endp - p);
-		}
-		if (endp == buf)
-			goto more;
-
-		/* Wait up 1/10 of a second to make sure that we got it all. */
-		tv.tv_sec = 0;
-		tv.tv_usec = 100000;
-		switch (select(sp->sh_out[0] + 1, &fdset, NULL, NULL, &tv)) {
-		case -1:		/* Error or interrupt. */
-			msgq(sp, M_SYSERR, "select");
-			goto prompterr;
-		case  0:		/* Timeout */
-			break;
-		case  1:		/* Characters to read. */
-			goto more;
-		}
-
-		/* Timed out, so theoretically we have a prompt. */
-		llen = endp - buf;
-		endp = buf;
-
-		/* Append the line into the file. */
-		if (file_lline(sp, ep, &lline) ||
-		    file_aline(sp, ep, 0, lline, buf, llen)) {
-prompterr:		sscr_end(sp);
-			return (1);
-		}
-
-		if (cnt == 0) {
-			if ((sp->sh_prompt = malloc(llen)) == NULL) {
-				msgq(sp, M_SYSERR, NULL);
-				goto prompterr;
-			}
-			memmove(sp->sh_prompt, buf, llen);
-			sp->sh_prompt_len = llen;
-		} else {
-			if (sp->sh_prompt_len < llen)
-				llen = sp->sh_prompt_len;
-			else
-				sp->sh_prompt_len = llen;
-			/* Nul's in the prompt are "don't match" characters. */
-			for (t = sp->sh_prompt, p = buf; --llen; ++p, ++t)
-				if (*p != *t)
-					*t = '\0';
-		}
-#define	TESTCNT	3
-		if (cnt == TESTCNT)
-			break;
-
-		/* Write a command to the shell. */
-		(void)write(sp->sh_in[1], "date\n", 5);
-	}
-		
-	/* Turn on the script. */
-	F_SET(sp, S_SCRIPT);
-
+	F_SET(sp, S_REDRAW | S_SCRIPT);
 	return (0);
+
+}
+
+/*
+ * sscr_getprompt --
+ *	Eat lines printed by the shell until a line with no trailing
+ *	carriage return comes; set the prompt from that line.
+ */
+static int
+sscr_getprompt(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	struct timeval tv;
+	SCRIPT *sc;
+	fd_set fdset;
+	recno_t lline;
+	size_t llen, len;
+	u_int value;
+	int nr;
+	char *endp, *p, *t, buf[1024];
+
+	FD_ZERO(&fdset);
+	endp = buf;
+	len = sizeof(buf);
+
+	/* Wait up to a second for characters to read. */
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	sc = sp->script;
+	FD_SET(sc->sh_master, &fdset);
+	switch (select(sc->sh_master + 1, &fdset, NULL, NULL, &tv)) {
+	case -1:		/* Error or interrupt. */
+		msgq(sp, M_SYSERR, "select");
+		goto prompterr;
+	case  0:		/* Timeout */
+		msgq(sp, M_ERR, "Error: timed out.");
+		goto prompterr;
+	case  1:		/* Characters to read. */
+		break;
+	}
+
+	/* Read the characters. */
+more:	len = sizeof(buf) - (endp - buf);
+	switch (nr = read(sc->sh_master, endp, len)) {
+	case  0:			/* EOF. */
+		msgq(sp, M_ERR, "Error: shell: EOF");
+		goto prompterr;
+	case -1:			/* Error or interrupt. */
+		msgq(sp, M_SYSERR, "shell");
+		goto prompterr;
+	default:
+		endp += nr;
+		break;
+	}
+
+	/* If any complete lines, push them into the file. */
+	for (p = t = buf; t < endp; ++t) {
+		value = term_key_val(sp, *t);
+		if (value == K_CR || value == K_NL) {
+			if (file_lline(sp, ep, &lline) ||
+			    file_aline(sp, ep, 0, lline, buf, t - p))
+				goto prompterr;
+			p = ++t;
+		}
+	}
+	if (p > buf) {
+		memmove(buf, p, endp - p);
+		endp = buf + (endp - p);
+	}
+	if (endp == buf)
+		goto more;
+
+	/* Wait up 1/10 of a second to make sure that we got it all. */
+	tv.tv_sec = 0;
+	tv.tv_usec = 100000;
+	switch (select(sc->sh_master + 1, &fdset, NULL, NULL, &tv)) {
+	case -1:		/* Error or interrupt. */
+		msgq(sp, M_SYSERR, "select");
+		goto prompterr;
+	case  0:		/* Timeout */
+		break;
+	case  1:		/* Characters to read. */
+		goto more;
+	}
+
+	/* Timed out, so theoretically we have a prompt. */
+	llen = endp - buf;
+	endp = buf;
+
+	/* Append the line into the file. */
+	if (file_lline(sp, ep, &lline) ||
+	    file_aline(sp, ep, 0, lline, buf, llen)) {
+prompterr:	sscr_end(sp);
+		return (1);
+	}
+
+	return (sscr_setprompt(sp, buf, llen));
 }
 
 /*
@@ -258,9 +271,10 @@ sscr_exec(sp, ep, lno)
 	EXF *ep;
 	recno_t lno;
 {
+	SCRIPT *sc;
 	recno_t last_lno;
 	size_t blen, len, last_len, tlen;
-	int matchprompt, nw;
+	int matchprompt, nw, rval;
 	char *bp, *p;
 
 	/* If there's a prompt on the last line, append the command. */
@@ -272,7 +286,7 @@ sscr_exec(sp, ep, lno)
 	}
 	if (sscr_matchprompt(sp, p, last_len, &tlen) && tlen == 0) {
 		matchprompt = 1;
-		GET_SPACE(sp, bp, blen, 128 + last_len);
+		GET_SPACE_RET(sp, bp, blen, last_len + 128);
 		memmove(bp, p, last_len);
 	} else
 		matchprompt = 0;
@@ -303,9 +317,11 @@ empty:			msgq(sp, M_BERR, "Nothing to execute.");
 	}
 
 	/* Push the line to the shell. */
-	if ((nw = write(sp->sh_in[1], p, len)) != len)
+	sc = sp->script;
+	if ((nw = write(sc->sh_master, p, len)) != len)
 		goto err2;
-	if (write(sp->sh_in[1], "\n", 1) != 1) {
+	rval = 0;
+	if (write(sc->sh_master, "\n", 1) != 1) {
 err2:		if (nw == 0)
 			errno = EIO;
 		msgq(sp, M_SYSERR, "shell");
@@ -313,15 +329,14 @@ err2:		if (nw == 0)
 	}
 
 	if (matchprompt) {
-		ADD_SPACE(sp, bp, blen, last_len + len);
+		ADD_SPACE_RET(sp, bp, blen, last_len + len);
 		memmove(bp + last_len, p, len);
-		if (file_sline(sp, ep, last_lno, bp, last_len + len)) {
-err1:			if (matchprompt)
-				FREE_SPACE(sp, bp, blen);
-			return (1);
-		}
+		if (file_sline(sp, ep, last_lno, bp, last_len + len))
+err1:			rval = 1;
 	}
-	return (0);
+	if (matchprompt)
+		FREE_SPACE(sp, bp, blen);
+	return (rval);
 }
 
 /*
@@ -333,9 +348,11 @@ sscr_input(sp)
 	SCR *sp;
 {
 	struct timeval tv;
+	SCRIPT *sc;
 	EXF *ep;
 	recno_t lno;
 	size_t blen, len, tlen;
+	u_int value;
 	int nr, rval;
 	char *bp, *endp, *p, *t;
 
@@ -345,12 +362,13 @@ sscr_input(sp)
 		return (1);
 
 #define	MINREAD	1024
-	GET_SPACE(sp, bp, blen, MINREAD);
+	GET_SPACE_RET(sp, bp, blen, MINREAD);
 	endp = bp;
 
 	/* Read the characters. */
 	rval = 1;
-more:	switch (nr = read(sp->sh_out[0], endp, MINREAD)) {
+	sc = sp->script;
+more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 	case  0:			/* EOF; shell just exited. */
 		sscr_end(sp);
 		F_CLR(sp, S_SCRIPT);
@@ -365,13 +383,15 @@ more:	switch (nr = read(sp->sh_out[0], endp, MINREAD)) {
 	}
 
 	/* Append the lines into the file. */
-	for (p = t = bp; p < endp; ++p)
-		if (sp->special[*p] == K_CR || sp->special[*p] == K_NL) {
+	for (p = t = bp; p < endp; ++p) {
+		value = term_key_val(sp, *p);
+		if (value == K_CR || value == K_NL) {
 			len = p - t;
 			if (file_aline(sp, ep, 1, lno++, t, len))
 				goto ret;
 			t = p + 1;
 		}
+	}
 	if (p > t) {
 		len = p - t;
 		/*
@@ -384,15 +404,17 @@ more:	switch (nr = read(sp->sh_out[0], endp, MINREAD)) {
 		if (!sscr_matchprompt(sp, t, len, &tlen) || tlen != 0) {
 			tv.tv_sec = 0;
 			tv.tv_usec = 100000;
-			FD_SET(sp->sh_out[0], &sp->rdfd);
+			FD_SET(sc->sh_master, &sp->rdfd);
 			FD_CLR(STDIN_FILENO, &sp->rdfd);
-			if (select(sp->sh_out[0] + 1,
+			if (select(sc->sh_master + 1,
 			    &sp->rdfd, NULL, NULL, &tv) == 1) {
 				memmove(bp, t, len);
 				endp = bp + len;
 				goto more;
 			}
 		}
+		if (sscr_setprompt(sp, t, len))
+			return (1);
 		if (file_aline(sp, ep, 1, lno++, t, len))
 			goto ret;
 	}
@@ -407,6 +429,34 @@ ret:	FREE_SPACE(sp, bp, blen);
 }
 
 /*
+ * sscr_setprompt --
+ *
+ * Set the prompt to the last line we got from the shell.
+ * 
+ */
+static int
+sscr_setprompt(sp, buf, len)
+	SCR *sp;
+	char* buf;
+	size_t len;
+{
+	SCRIPT *sc;
+
+	sc = sp->script;
+	if (sc->sh_prompt)
+		FREE(sc->sh_prompt, sc->sh_prompt_len);
+	MALLOC(sp, sc->sh_prompt, char *, len + 1);
+	if (sc->sh_prompt == NULL) {
+		sscr_end(sp);
+		return (1);
+	}
+	memmove(sc->sh_prompt, buf, len);
+	sc->sh_prompt_len = len;
+	sc->sh_prompt[len] = '\0';
+	return (0);
+}
+
+/*
  * sscr_matchprompt --
  *	Check to see if a line matches the prompt.  Nul's indicate
  *	parts that can change, in both content and size.
@@ -417,13 +467,15 @@ sscr_matchprompt(sp, lp, line_len, lenp)
 	char *lp;
 	size_t line_len, *lenp;
 {
-	char *pp;
+	SCRIPT *sc;
 	size_t prompt_len;
+	char *pp;
 
-	if (line_len < (prompt_len = sp->sh_prompt_len))
+	sc = sp->script;
+	if (line_len < (prompt_len = sc->sh_prompt_len))
 		return (0);
 
-	for (pp = sp->sh_prompt;
+	for (pp = sc->sh_prompt;
 	    prompt_len && line_len; --prompt_len, --line_len) {
 		if (*pp == '\0') {
 			for (; prompt_len && *pp == '\0'; --prompt_len, ++pp);
@@ -452,20 +504,28 @@ int
 sscr_end(sp)
 	SCR *sp;
 {
-	int pstat;
+	SCRIPT *sc;
+	int rval;
 
+	if ((sc = sp->script) == NULL)
+		return (0);
+
+	/* Turn off the script flag. */
+	F_CLR(sp, S_SCRIPT);
+	
 	/* Close down the parent's file descriptors. */
-	(void)close(sp->sh_in[1]);
-	(void)close(sp->sh_out[0]);
+	if (sc->sh_master != -1)
+	    (void)close(sc->sh_master);
+	if (sc->sh_slave != -1)
+	    (void)close(sc->sh_slave);
 
 	/* This should have killed the child. */
-	(void)waitpid(sp->sh_pid, &pstat, 0);
+	rval = proc_wait(sp, (long)sc->sh_pid, "script-shell", 0);
 
 	/* Free memory. */
-	FREE(sp->sh_prompt, sp->sh_prompt_len);
+	FREE(sc->sh_prompt, sc->sh_prompt_len);
+	FREE(sc, sizeof(SCRIPT));
+	sp->script = NULL;
 
-	/* Turn off the script. */
-	F_CLR(sp, S_SCRIPT);
-
-	return (0);
+	return (rval);
 }
