@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.30 2000/09/22 19:59:48 skimo Exp $ (Berkeley) $Date: 2000/09/22 19:59:48 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.31 2001/02/25 17:05:06 skimo Exp $ (Berkeley) $Date: 2001/02/25 17:05:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -329,7 +329,7 @@ display:
 		cno_cnt = (sp->cno - offset_in_line) + 1;
 
 	/* This is the loop that actually displays characters. */
-	ecbp = (cbp = cbuf) + sizeof(cbuf) - 1;
+	ecbp = (cbp = cbuf) + sizeof(cbuf)/sizeof(CHAR_T) - 1;
 	for (is_partial = 0, scno = 0;
 	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
 		if ((ch = *(UCHAR_T *)p++) == '\t' && !list_tab) {
