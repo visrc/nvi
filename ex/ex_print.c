@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.13 1994/05/03 21:40:12 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:12 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.14 1994/08/07 12:40:18 bostic Exp $ (Berkeley) $Date: 1994/08/07 12:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,13 +124,8 @@ ex_print(sp, ep, fp, tp, flags)
 			return (1);
 		}
 
-		/*
-		 * XXX
-		 * Always write a space on empty lines, so we overwrite
-		 * any colon prompt.
-		 */
 		if (len == 0 && !LF_ISSET(E_F_LIST))
-			(void)ex_printf(EXCOOKIE, " \n");
+			(void)ex_printf(EXCOOKIE, "\n");
 		else if (ex_ldisplay(sp, p, len, col, flags))
 			return (1);
 
