@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.10 1994/04/27 20:18:25 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:18:25 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.11 1994/07/15 17:54:00 bostic Exp $ (Berkeley) $Date: 1994/07/15 17:54:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -286,10 +286,10 @@ ret:	vp->m_stop.lno = lno;
 	vp->m_stop.cno = 0;
 
 	/*
-	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_S.
+	 * All commands move to the end of the range.  (We already
+	 * adjusted the start of the range for motion commands).
 	 */
-	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
+	vp->m_final = vp->m_stop;
 	return (0);
 }
 
