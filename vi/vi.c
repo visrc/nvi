@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.3 1994/11/12 11:41:30 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:41:30 $";
+static char sccsid[] = "$Id: vi.c,v 9.4 1994/11/12 16:21:20 bostic Exp $ (Berkeley) $Date: 1994/11/12 16:21:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -576,7 +576,7 @@ esc:	switch (cpart) {
 
 /*
  * getalias --
- *	Get command alias.
+ *	Check for a command alias.
  */
 static VIKEYS const *
 getalias(sp, vp, kp)
@@ -612,8 +612,7 @@ getalias(sp, vp, kp)
 		vp->key = 'y';
 		break;
 	default:
-		abort();
-		/* NOTREACHED */
+		return (kp);
 	}
 	if (term_push(sp, &push, 1, CH_NOMAP | CH_QUOTED))
 		return (NULL);
