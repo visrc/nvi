@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.52 1993/05/13 11:22:21 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:22:21 $
+ *	$Id: common.h,v 5.53 1993/05/13 12:16:27 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:16:27 $
  */
 
 #include <glob.h>			/* Ordered before local includes. */
@@ -100,12 +100,6 @@ int	binc __P((struct _scr *, void *, size_t *, size_t));
 		FREE(bp, blen);						\
 }
 
-/* Filter type. */
-enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
-int	filtercmd __P((struct _scr *, struct _exf *, struct _mark *,
-	    struct _mark *, struct _mark *, char *, enum filtertype));
-
-/* Debugging version of free. */
 #ifdef DEBUG
 #define	FREE(p, sz) {							\
 	memset(p, 0xff, sz);						\
@@ -114,6 +108,11 @@ int	filtercmd __P((struct _scr *, struct _exf *, struct _mark *,
 #else
 #define	FREE(p, sz)	free(p);
 #endif
+
+/* Filter type. */
+enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
+int	filtercmd __P((struct _scr *, struct _exf *, struct _mark *,
+	    struct _mark *, struct _mark *, char *, enum filtertype));
 
 /* Portability stuff. */
 #ifndef DEFFILEMODE			/* Default file permissions. */
