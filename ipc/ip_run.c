@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.1 1996/11/27 10:09:02 bostic Exp $ (Berkeley) $Date: 1996/11/27 10:09:02 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.2 1996/11/27 12:00:44 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,38 +35,69 @@ static const char sccsid[] = "$Id: ip_run.c,v 8.1 1996/11/27 10:09:02 bostic Exp
 #include "ipc_extern.h"
 #include "pathnames.h"
 
-static void arg_format __P((int *, char **[], int, int));
+static void arg_format __P((char *, int *, char **[], int, int));
 #ifdef DEBUG
 static void attach __P((void));
 #endif
+
+extern char *progname;				/* Program name. */
 
 /*
  * run_vi --
  *	Run the vi program.
  *
- * PUBLIC: int run_vi __P((char *, int, char *[], int *, int *));
+ * PUBLIC: int run_vi __P((int, char *[], int *, int *));
  */
 int
-run_vi(name, argc, argv, ip, op)
-	char *name;
+run_vi(argc, argv, ip, op)
 	int argc, *ip, *op;
 	char *argv[];
 {
 	struct stat sb;
 	pid_t pid;
-	int ch, rpipe[2], wpipe[2];
+	int ch, pflag, rpipe[2], wpipe[2];
+	char *execp, **p_av, **t_av;
 
+	pflag = 0;
+	execp = VI;
+
+	/* Strip out any arguments that vi isn't going to understand. */
+	for (p_av = t_av = argv;;) {
+		if (*t_av == NULL) {
+			*p_av = NULL;
+			break;
+		}
+		if (!strcmp(*t_av, "--")) {
+			while ((*p_av++ = *t_av++) != NULL);
+			break;
+		}
 #ifdef DEBUG
-	/* If the first argument is -D, pause and let the debugger attach. */
-	if (argv[1] != NULL && strcmp(argv[1], "-D") == 0) {
-		char **p_av, **t_av;
+		if (!memcmp(*t_av, "-D", sizeof("-D") - 1)) {
+			attach();
 
-		attach();
-		for (p_av = argv + 1, t_av = argv + 2;;)
-			if ((*p_av++ = *t_av++) == NULL)
-				break;
-	}
+			++t_av;
+			--argc;
+			continue;
+		}
 #endif
+		if (!memcmp(*t_av, "-P", sizeof("-P") - 1)) {
+			if (t_av[0][2] != '\0') {
+				pflag = 1;
+				execp = t_av[0] + 2;
+				++t_av;
+				--argc;
+				continue;
+			}
+			if (t_av[1] != NULL) {
+				pflag = 1;
+				execp = t_av[1];
+				t_av += 2;
+				argc -= 2;
+				continue;
+			}
+		}
+		*p_av++ = *t_av++;
+	}
 
 	/*
 	 * Open the communications channels.  The pipes are named from the
@@ -75,7 +106,7 @@ run_vi(name, argc, argv, ip, op)
 	 * rpipe[1].
 	 */
 	if (pipe(rpipe) == -1 || pipe(wpipe) == -1) {
-		(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
+		(void)fprintf(stderr, "%s: %s\n", progname, strerror(errno));
 		exit (1);
 	}
 	*ip = rpipe[0];
@@ -86,22 +117,24 @@ run_vi(name, argc, argv, ip, op)
 	 * descriptor for the -I argument is vi's input, and the second is
 	 * vi's output.
 	 */
-	arg_format(&argc, &argv, wpipe[0], rpipe[1]);
+	arg_format(execp, &argc, &argv, wpipe[0], rpipe[1]);
 
 	/* Run vi. */
 	switch (pid = fork()) {
 	case -1:				/* Error. */
-		perror("ip_cl: fork");
+		(void)fprintf(stderr, "%s: %s\n", progname, strerror(errno));
 		exit (1);
 	case 0:					/* Vi. */
 		/*
-		 * If there's a local (debugging) nvi, run it, otherwise
-		 * run the compiled in path.
+		 * If the user didn't override the path and there's a local
+		 * (debugging) nvi, run it, otherwise run the user's path,
+		 * if specified, else run the compiled in path.
 		 */
-		if (stat("nvi", &sb) == 0)
+		if (!pflag && stat("nvi", &sb) == 0)
 			execv("nvi", argv);
-		execv(VI, argv);
-		(void)fprintf(stderr, "%s: %s %s\n", name, VI, strerror(errno));
+		execv(execp, argv);
+		(void)fprintf(stderr,
+		    "%s: %s %s\n", progname, execp, strerror(errno));
 		exit (1);
 	default:				/* Ip_cl. */
 		break;
@@ -114,23 +147,23 @@ run_vi(name, argc, argv, ip, op)
  *	Reformat our arguments to add the -I argument for vi.
  */
 static void
-arg_format(argcp, argvp, i_fd, o_fd)
+arg_format(execp, argcp, argvp, i_fd, o_fd)
+	char *execp, **argvp[];
 	int *argcp, i_fd, o_fd;
-	char **argvp[];
 {
 	char *iarg, **largv, *p, **p_av, **t_av;
 
 	/* Get space for the argument array and the -I argument. */
 	if ((iarg = malloc(64)) == NULL ||
 	    (largv = malloc((*argcp + 3) * sizeof(char *))) == NULL) {
-		perror("ip_cl");
+		(void)fprintf(stderr, "%s: %s\n", progname, strerror(errno));
 		exit (1);
 	}
 	memcpy(largv + 2, *argvp, *argcp * sizeof(char *) + 1);
 
 	/* Reset argv[0] to be the exec'd program. */
-	if ((p = strrchr(VI, '/')) == NULL)
-		largv[0] = VI;
+	if ((p = strrchr(execp, '/')) == NULL)
+		largv[0] = execp;
 	else
 		largv[0] = p + 1;
 
@@ -163,7 +196,8 @@ attach()
 	(void)fflush(stdout);
 
 	if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
-		perror(_PATH_TTY);
+		(void)fprintf(stderr,
+		    "%s: %s, %s\n", progname, _PATH_TTY, strerror(errno));
 		exit (1);;
 	}
 	do {
