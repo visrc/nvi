@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.18 1992/06/07 15:16:44 bostic Exp $ (Berkeley) $Date: 1992/06/07 15:16:44 $";
+static char sccsid[] = "$Id: vi.c,v 5.19 1992/09/01 15:37:28 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:37:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,7 @@ static int getkeyword __P((VICMDARG *, u_int));
 static int getmotion __P((VICMDARG *, MARK *, MARK *));
 
 static VICMDARG cmd, dot, dotmotion;
+int needexerase;
 
 /*
  * vi --
@@ -58,20 +59,21 @@ vi()
 		}
 
 		/*
-		 * Flush any messages and repaint the screen.
+		 * If ex left a message on the screen, leave the screen alone
+		 * until the next keystroke.  If a vi message is waiting,
+		 * display it.
 		 *
 		 * XXX
 		 * If key already waiting, and it's not a key requiring
 		 * a motion component, should skip repaint.
 		 */
 err:		if (msgcnt) {
-			erase = 1;
 			msg_vflush();
-		} else
-			erase = 0;
-		refresh();
-		if (erase)
+			refresh();
+		} else if (!needexerase) {
 			scr_modeline();
+			refresh();
+		}
 
 		/*
 		 * We get a command, which may or may not have an associated
@@ -129,6 +131,7 @@ err:		if (msgcnt) {
 
 		/* Update the screen. */
 		scr_cchange();
+		refresh();
 
 		/* Set the dot command structure. */
 		if (flags & V_DOT) {
@@ -147,7 +150,12 @@ err:		if (msgcnt) {
 }
 
 #define	KEY(k) {							\
-	if (((k) = getkey(WHEN_VICMD)) < 0 || (k) > MAXVIKEY) {		\
+	(k) = getkey(WHEN_VICMD);					\
+	if (needexerase) {						\
+		scr_modeline();						\
+		refresh();						\
+	}								\
+	if ((k) < 0 || (k) > MAXVIKEY) {				\
 		bell();							\
 		return (NULL);						\
 	}								\
@@ -268,10 +276,16 @@ ebuf:				bell();
 
 		/*
 		 * Special case: '[' and ']' commands.  Doesn't the fact
-		 * that the *single* character doesn't mean anything but
-		 * the *doubled* character does just frost your shorts?
+		 * that the *single* characters don't mean anything but
+		 * the *doubled* characters do just frost your shorts?
 		 */
 		if (vp->key == '[' || vp->key == ']') {
+			KEY(key);
+			if (vp->key != key)
+				goto usage;
+		}
+		/* Special case: 'Z' command. */
+		if (vp->key == 'Z') {
 			KEY(key);
 			if (vp->key != key)
 				goto usage;
