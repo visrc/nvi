@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.54 1996/08/17 10:09:41 bostic Exp $ (Berkeley) $Date: 1996/08/17 10:09:41 $";
+static const char sccsid[] = "$Id: vi.c,v 10.55 1996/08/17 11:53:08 bostic Exp $ (Berkeley) $Date: 1996/08/17 11:53:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,6 @@ vi(spp)
 	SCR *next, *sp;
 	VICMD cmd, *vp;
 	VI_PRIVATE *vip;
-	u_int flags;
 	int comcount, mapped, rval;
 
 	/* Get the first screen. */
@@ -382,8 +381,6 @@ intr:			CLR_INTERRUPT(sp);
 			 * need a new status line.
 			 */
 			F_SET(sp, SC_STATUS);
-			if (vs_resolve(sp, 0))
-				goto ret;
 
 			/* Switch screens, change focus. */
 			sp = sp->nextdisp;
