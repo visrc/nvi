@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 9.7 1995/02/09 15:23:02 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:23:02 $";
+static char sccsid[] = "$Id: ex_visual.c,v 9.8 1995/02/17 11:38:37 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:38:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,12 +109,18 @@ ex_visual(sp, cmdp)
 	 * !!!
 	 * You can call the visual part of the editor from within an ex
 	 * global command.
+	 *
+	 * XXX
+	 * Historically, undoing a visual session was a single undo command,
+	 * i.e. you could undo all of the changes you made in visual mode.
+	 * We don't get this right; I'm waiting for the new logging code to
+	 * be available.
 	 */
 nopush:	rval = 0;
 	F_CLR(sp, S_SCREENS);
 	F_SET(sp, sp->saved_vi_mode);
 
-	if (F_ISSET(sp, S_GLOBAL)) {
+	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		/*
 		 * When the vi screen(s) exit, we don't want to lose our hold
 		 * on this screen or this file, otherwise we're going to fail
