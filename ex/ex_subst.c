@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.13 1995/10/17 08:07:23 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:07:23 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.14 1995/10/19 13:16:04 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:16:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -644,7 +644,7 @@ nextmatch:	match[0].rm_so = 0;
 				vs_update(sp, msg_cat(sp,
 				    "169|Confirm change? [n]", NULL), NULL);
 
-				if (v_event_get(sp, &ev, 0))
+				if (v_event_get(sp, &ev, 0, 0))
 					goto err;
 				switch (ev.e_event) {
 				case E_CHARACTER:
