@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.2 1992/04/04 16:26:32 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:26:32 $
+ *	$Id: options.h,v 5.3 1992/06/07 13:53:23 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:53:23 $
  */
 
 /* Offset macros. */
@@ -54,16 +54,17 @@ typedef struct _option {
 #define	OPT_TYPE	0x00f	/* Type mask. */
 
 #define	OPT_ALLOCATED	0x010	/* Allocated space. */
-#define	OPT_NOSAVE	0x040	/* Option should not be saved by mkexrc. */
-#define	OPT_NOSET	0x080	/* Option can't be set. */
-#define	OPT_REDRAW	0x100	/* Option affects the way text is displayed. */
-#define	OPT_SET		0x200	/* Set (display for the user). */
+#define	OPT_NOSAVE	0x020	/* Option should not be saved by mkexrc. */
+#define	OPT_NOSET	0x040	/* Option can't be set. */
+#define	OPT_REDRAW	0x080	/* Option affects the way text is displayed. */
+#define	OPT_SET		0x100	/* Set (display for the user). */
+#define	OPT_SIZE	0x200	/* Screen resized. */
 	u_int	flags;
 } OPTIONS;
 
 extern OPTIONS opts[];
 
 void	opts_dump __P((int));
-void	opts_init __P((void));
+int	opts_init __P((void));
 void	opts_save __P((FILE *));
 void	opts_set __P((char **));
