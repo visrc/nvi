@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.9 1993/08/15 12:39:03 bostic Exp $ (Berkeley) $Date: 1993/08/15 12:39:03 $";
+static char sccsid[] = "$Id: exf.c,v 8.10 1993/08/16 17:36:42 bostic Exp $ (Berkeley) $Date: 1993/08/16 17:36:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -251,7 +251,7 @@ file_init(sp, ep, frp, rcv_fname)
 		if (sverrno == EAGAIN) {
 			msgq(sp, M_INFO,
 			    "%s already locked, session is read-only", oname);
-			F_SET(sp->frp, FR_RDONLY);
+			F_SET(frp, FR_RDONLY);
 		} else
 			msgq(sp, M_VINFO, "%s cannot be locked", oname);
 	}
@@ -275,7 +275,7 @@ file_init(sp, ep, frp, rcv_fname)
 	 * name (see ex/ex_file.c) however, clears this flag.
 	 */
 	if (O_ISSET(sp, O_READONLY))
-		F_SET(sp->frp, FR_RDONLY);
+		F_SET(frp, FR_RDONLY);
 
 	/* Flush the line caches. */
 	ep->c_lno = ep->c_nlines = OOBLNO;
