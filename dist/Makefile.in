@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.19 1996/02/27 17:41:39 bostic Exp $ (Berkeley) $Date: 1996/02/27 17:41:39 $
+#	$Id: Makefile.in,v 8.20 1996/02/27 18:55:14 bostic Exp $ (Berkeley) $Date: 1996/02/27 18:55:14 $
 
 #GCCF=	-Wall
 #DEBUG=	-g -DDEBUG
@@ -498,6 +498,8 @@ addnstr.o: ../clib/addnstr.c
 	$(CC) $(CFLAGS) $?
 bsearch.o: ../clib/bsearch.c
 	$(CC) $(CFLAGS) $?
+env.o: ../clib/env.c
+	$(CC) $(CFLAGS) $?
 fchmod.o: ../clib/fchmod.c
 	$(CC) $(CFLAGS) $(INC) $?
 gethostname.o: ../clib/gethostname.c
@@ -531,6 +533,4 @@ strsep.o: ../clib/strsep.c
 strtol.o: ../clib/strtol.c
 	$(CC) $(CFLAGS) $?
 strtoul.o: ../clib/strtoul.c
-	$(CC) $(CFLAGS) $?
-unsetenv.o: ../clib/unsetenv.c
 	$(CC) $(CFLAGS) $?
