@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.111 1994/04/10 11:47:45 bostic Exp $ (Berkeley) $Date: 1994/04/10 11:47:45 $";
+static char sccsid[] = "$Id: ex.c,v 8.112 1994/04/10 13:07:04 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:07:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,17 +79,15 @@ ex(sp, ep)
 
 	for (eval = 0;; ++sp->if_lno) {
 		/*
-		 * Get the next command.  Setting the S_INTERRUPTIBLE flag
-		 * here is safe, because it's cleared in ex_icmd().
+		 * Get the next command.  Interrupt flag manipulation is safe
+		 * because ex_icmd clears them all.
 		 */
-		F_CLR(sp, S_INTERRUPTED);
 		F_SET(sp, S_INTERRUPTIBLE);
 		irval = sp->s_get(sp, ep, &sp->tiq, ':', flags);
 		if (F_ISSET(sp, S_INTERRUPTED)) {
 			F_CLR(sp, S_INTERRUPTED);
 			(void)fputc('\n', stdout);
 			(void)fflush(stdout);
-			msgq(sp, M_ERR, "Interrupted.");
 			goto refresh;
 		}
 		switch (irval) {
