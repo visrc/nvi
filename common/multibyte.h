@@ -5,11 +5,13 @@
 typedef	int		RCHAR_T;
 #define RCHAR_T_MAX	((1 << 24)-1)
 typedef	u_int		CHAR_T;
+#define	MAX_CHAR_T	0xffffff
 typedef	u_int		UCHAR_T;
 #else
 typedef	char		RCHAR_T;
 #define RCHAR_T_MAX	CHAR_MAX
 typedef	u_char		CHAR_T;
+#define	MAX_CHAR_T	0xff
 typedef	u_char		UCHAR_T;
 #endif
 

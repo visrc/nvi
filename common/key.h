@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.33 2000/07/23 17:32:16 skimo Exp $ (Berkeley) $Date: 2000/07/23 17:32:16 $
+ *	$Id: key.h,v 10.34 2000/09/01 15:38:22 skimo Exp $ (Berkeley) $Date: 2000/09/01 15:38:22 $
  */
 
 #include "multibyte.h"
@@ -24,9 +24,6 @@
  * If no integral type can hold a character, don't even try the port.
  */
 typedef	u_int		ARG_CHAR_T;
-#define	MAX_CHAR_T	0xff
-#define CHAR_T_BLEN(sp,len)	len
-#define ROOM_FOR(name,len)	CHAR_T	name[len]
 
 #ifdef USE_WIDECHAR
 #define FILE2INT(sp,n,nlen,w,wlen) 					    \
