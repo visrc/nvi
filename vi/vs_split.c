@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.2 1993/08/05 18:05:27 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:05:27 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.3 1993/08/16 10:26:33 bostic Exp $ (Berkeley) $Date: 1993/08/16 10:26:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,6 +96,15 @@ svi_split(sp, argv)
 			sp->parent->child = tsp;
 		sp->parent = tsp;
 		tsp->child = sp;
+	}
+
+	/*
+	 * If the size of the scrolling region hasn't been modified by
+	 * the user, reset it so it's reasonable for the split screen.
+	 */
+	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET)) {
+		O_VAL(sp, O_SCROLL) = sp->t_rows / 2;
+		O_VAL(tsp, O_SCROLL) = sp->t_rows / 2;
 	}
 
 	/* Init support routines. */
