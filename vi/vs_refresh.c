@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.46 1994/03/09 11:44:47 bostic Exp $ (Berkeley) $Date: 1994/03/09 11:44:47 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.47 1994/03/09 12:08:52 bostic Exp $ (Berkeley) $Date: 1994/03/09 12:08:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,7 +135,7 @@ svi_paint(sp, ep)
 	SVI_PRIVATE *svp;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
-	int ch, didpaint;
+	int ch, didpaint, leftright_warp;
 	char *p;
 
 #define	 LNO	sp->lno
@@ -144,7 +144,7 @@ svi_paint(sp, ep)
 #define	OCNO	svp->ocno
 #define	SCNO	svp->sc_col
 
-	didpaint = 0;
+	didpaint = leftright_warp = 0;
 	svp = SVP(sp);
 
 	/*
@@ -488,10 +488,11 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			cwtotal -= cname[ch].len - 1;
 
 		/*
-		 * If the new column moved us out of the current screen,
-		 * calculate a new screen.  Since most files don't have
-		 * more than two screens, optimize moving from screen 2
-		 * to screen 1.
+		 * If the new column moved us off of the current logical line,
+		 * calculate a new one.  If doing leftright scrolling, we've
+		 * moved off of the current screen, as well.  Since most files
+		 * don't have more than two screens, we optimize moving from
+		 * screen 2 to screen 1.
 		 */
 		if (SCNO < cwtotal) {
 lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
@@ -499,6 +500,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 				    svi_screens(sp, ep, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
+				leftright_warp = 1;
 				goto paint;
 			}
 			goto slow;
@@ -531,15 +533,13 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		 */
 		SCNO = cwtotal;
 
-		/*
-		 * If the new column moved us out of the current screen,
-		 * calculate a new screen.
-		 */
+		/* See screen change comment in section 4a. */
 		if (SCNO >= SCREEN_COLS(sp)) {
 			if (O_ISSET(sp, O_LEFTRIGHT)) {
 				cnt = svi_screens(sp, ep, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
+				leftright_warp = 1;
 				goto paint;
 			}
 			goto slow;
@@ -571,9 +571,11 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 		if (cnt != HMAP->off) {
 			if (ISINFOLINE(sp, smp))
 				smp->off = cnt;
-			else
+			else {
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
+				leftright_warp = 1;
+			}
 			goto paint;
 		}
 	}
@@ -663,6 +665,16 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 
 	/* Flush it all out. */
 	refresh();
+
+	/*
+	 * XXX
+	 * Recalculate the "most favorite" cursor position.  Vi doesn't know
+	 * that we've warped the screen and it's going to have a completely
+	 * wrong idea about where the cursor should be.  This is vi's problem,
+	 * and fixing it here is a gross violation of layering.
+	 */
+	if (leftright_warp)
+		(void)svi_column(sp, ep, &sp->rcm);
 
 	return (0);
 }
