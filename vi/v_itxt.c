@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.1 1995/04/13 17:19:07 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:07 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.2 1995/05/05 18:56:25 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,6 +66,8 @@ static void set_txt_std __P((SCR *, VICMD *, u_int));
 /*
  * v_iA -- [count]A
  *	Append text to the end of the line.
+ *
+ * PUBLIC: int v_iA __P((SCR *, VICMD *));
  */
 int
 v_iA(sp, vp)
@@ -86,6 +88,8 @@ v_iA(sp, vp)
  * v_ia -- [count]a
  *	   [count]A
  *	Append text to the cursor position.
+ *
+ * PUBLIC: int v_ia __P((SCR *, VICMD *));
  */
 int
 v_ia(sp, vp)
@@ -127,6 +131,8 @@ v_ia(sp, vp)
 /*
  * v_iI -- [count]I
  *	Insert text at the first nonblank.
+ *
+ * PUBLIC: int v_iI __P((SCR *, VICMD *));
  */
 int
 v_iI(sp, vp)
@@ -146,6 +152,8 @@ v_iI(sp, vp)
  * v_ii -- [count]i
  *	   [count]I
  *	Insert text at the cursor position.
+ *
+ * PUBLIC: int v_ii __P((SCR *, VICMD *));
  */
 int
 v_ii(sp, vp)
@@ -181,6 +189,8 @@ static int io __P((SCR *, VICMD *, enum which));
 /*
  * v_iO -- [count]O
  *	Insert text above this line.
+ *
+ * PUBLIC: int v_iO __P((SCR *, VICMD *));
  */
 int
 v_iO(sp, vp)
@@ -193,6 +203,8 @@ v_iO(sp, vp)
 /*
  * v_io -- [count]o
  *	Insert text after this line.
+ *
+ * PUBLIC: int v_io __P((SCR *, VICMD *));
  */
 int
 v_io(sp, vp)
@@ -254,6 +266,8 @@ insert:		p = "";
  *	       [buffer][count]C
  *	       [buffer][count]S
  *	Change command.
+ *
+ * PUBLIC: int v_change __P((SCR *, VICMD *));
  */
 int
 v_change(sp, vp)
@@ -408,6 +422,8 @@ v_change(sp, vp)
  * replace some number of characters, and then the count appended count-1
  * copies of the replacing chars to the replaced space.  This seems wrong,
  * so this version counts R commands.
+ *
+ * PUBLIC: int v_Replace __P((SCR *, VICMD *));
  */
 int
 v_Replace(sp, vp)
@@ -446,6 +462,8 @@ v_Replace(sp, vp)
 /*
  * v_subst -- [buffer][count]s
  *	Substitute characters.
+ *
+ * PUBLIC: int v_subst __P((SCR *, VICMD *));
  */
 int
 v_subst(sp, vp)
@@ -553,6 +571,8 @@ set_txt_std(sp, vp, init)
 /*
  * v_tcmd_setup --
  *	Fill a buffer from the terminal for vi.
+ *
+ * PUBLIC: int v_tcmd_setup __P((SCR *, VICMD *, ARG_CHAR_T, u_int));
  */
 int
 v_tcmd_setup(sp, vp, prompt, flags)
@@ -627,6 +647,8 @@ v_tcmd_setup(sp, vp, prompt, flags)
 /*
  * v_tcmd_td --
  *	Tear down the v_tcmd_setup routine.
+ *
+ * PUBLIC: int v_tcmd_td __P((SCR *, VICMD *));
  */
 int
 v_tcmd_td(sp, vp)
