@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.23 1995/02/08 16:43:55 bostic Exp $ (Berkeley) $Date: 1995/02/08 16:43:55 $
+.\"     $Id: vi.1,v 8.24 1995/02/08 20:18:49 bostic Exp $ (Berkeley) $Date: 1995/02/08 20:18:49 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -664,7 +664,7 @@ The definition of word is dependent on the
 and
 .Sy ttywerase
 options.
-.It Sy "<control-X>[0-9A-Fa-f]*"
+.It Sy "<control-X>[0-9A-Fa-f]+"
 Insert a character with the specified hexadecimal value into the text.
 .It Sy "<interrupt>"
 Interrupt text input mode, returning to command mode.

@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.44 1995/01/11 19:11:31 bostic Exp $ (Berkeley) $Date: 1995/01/11 19:11:31 $
+.\"	$Id: vi.cmd.roff,v 8.45 1995/02/08 20:18:09 bostic Exp $ (Berkeley) $Date: 1995/02/08 20:18:09 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -3062,8 +3062,11 @@ and
 .OP ttywerase
 options.
 .KY "<control-X>"
-.IP "<control-X>[0-9A-Fa-f]*"
+.IP "<control-X>[0-9A-Fa-f]+"
 Insert a character with the specified hexadecimal value into the text.
+The value is delimited by any non-hexadecimal character or the input
+of the maximum number of characters that can be translated into a single
+character value.
 .KY <interrupt>
 .IP "<interrupt>"
 Interrupt text input mode, returning to command mode.
