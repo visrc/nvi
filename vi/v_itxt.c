@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.6 1993/08/06 11:37:32 bostic Exp $ (Berkeley) $Date: 1993/08/06 11:37:32 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.7 1993/08/16 20:58:15 bostic Exp $ (Berkeley) $Date: 1993/08/16 20:58:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -346,6 +346,25 @@ insert:			p = "";
 }
 
 /*
+ * v_Subst -- [buffer][count]S
+ *	Line substitute command.
+ */
+int
+v_Subst(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+{
+	/*
+	 * The S command is the same as a 'C' command from the beginning
+	 * of the line.  This is hard to do in the parser, so do it here.
+	 */
+	fm->cno = sp->cno = 0;
+	return (v_Change(sp, ep, vp, fm, tm, rp));
+}
+
+/*
  * v_Change -- [buffer][count]C
  *	Change line command.
  */
@@ -374,11 +393,11 @@ v_Change(sp, ep, vp, fm, tm, rp)
 	if (fm->lno != tm->lno) {
 		/* Make sure that the to line is real. */
 		if (file_gline(sp, ep, tm->lno, NULL) == NULL) {
-			GETLINE_ERR(sp, tm->lno);
+			v_eof(sp, ep, fm);
 			return (1);
 		}
 
-		/* Cut the line. */
+		/* Cut the lines. */
 		if (cut(sp, ep, VICB(vp), fm, tm, 1))
 			return (1);
 
@@ -387,15 +406,20 @@ v_Change(sp, ep, vp, fm, tm, rp)
 			return (1);
 		++fm->lno;
 		++tm->lno;
+
+		/* Delete the lines. */
 		if (delete(sp, ep, fm, tm, 1))
 			return (1);
+
+		/* Get the inserted line. */
 		if ((p = file_gline(sp, ep, --fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
+		tm = NULL;
 		sp->lno = fm->lno;
 		sp->cno = 0;
-		tm = NULL;
+		LF_SET(TXT_APPENDEOL);
 	} else { 
 		/* The line may be empty, but that's okay. */
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
@@ -416,25 +440,6 @@ v_Change(sp, ep, vp, fm, tm, rp)
 	}
 	return (v_ntext(sp, ep,
 	    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
-}
-
-/*
- * v_Subst -- [buffer][count]S
- *	Line substitute command.
- */
-int
-v_Subst(sp, ep, vp, fm, tm, rp)
-	SCR *sp;
-	EXF *ep;
-	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
-{
-	/*
-	 * The S command is the same as the 'cc' command.  This is
-	 * hard to do in the parser, so catch it here.
-	 */
-	(void)file_gline(sp, ep, fm->lno, &tm->cno);
-	return (v_change(sp, ep, vp, fm, tm, rp));
 }
 
 /*
