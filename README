@@ -1,4 +1,4 @@
-#	$Id: README,v 8.2 1993/07/06 18:04:42 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:04:42 $
+#	$Id: README,v 8.3 1993/07/07 18:02:17 bostic Exp $ (Berkeley) $Date: 1993/07/07 18:02:17 $
 
 This is the README for version 0.5 of nex/nvi, a freely redistributable
 replacement for the vi/ex text editors.  Please note that this is ALPHA
@@ -54,6 +54,31 @@ will be integrated at the same time it is made fully 8-bit clean.
 
 The directory PORT has a old-style Makefile which builds the entire nvi
 distribution.  See it and the file PORT/README for more information.
+
++ Temporary files and recovery:
+
+Edit sessions are backed by files in /var/tmp/vi.recover, and are named
+"vi.XXX", where "XXX" is a number usually associated with the process id.
+When the file is first modified, a second file, which contains an email
+message for the user, is created, and is named "recover.XXX", where,
+again, "XXX" is associated with the process id.  Both files are removed
+at the end of a normal edit session, but will remain if the edit session
+is abnormally terminated or the user uses the ex/vi "preserve" command.
+The recover file has all of the necessary information in it to enable the
+user to recover the edit session.  In addition, it has all of the
+necessary email headers for sendmail.  When the system is rebooted, all
+of the files in /var/tmp/vi.recover named "recover.XXX" should be emailed,
+using the -t flag of sendmail (or a similar mechanism with other mailers).
+A simple way to do this is to insert the following script into your
+rc.local file:
+
+	for i in /var/tmp/vi.recover/recover.*; do
+		sendmail -t < $i
+	done
+
+There is no "recovery" program with nvi, nor does not run setuid.  Users
+may "recover" any file which they may read, i.e. the superuser can recover
+any edit session.
 
 + A quick tour:
 
