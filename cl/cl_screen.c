@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.41 1996/04/27 17:17:14 bostic Exp $ (Berkeley) $Date: 1996/04/27 17:17:14 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.42 1996/04/29 19:12:05 bostic Exp $ (Berkeley) $Date: 1996/04/29 19:12:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -526,16 +526,26 @@ static void
 cl_freecap(clp)
 	CL_PRIVATE *clp;
 {
-	if (clp->el != NULL)
+	if (clp->el != NULL) {
 		free(clp->el);
-	if (clp->cup != NULL)
+		clp->el = NULL;
+	}
+	if (clp->cup != NULL) {
 		free(clp->cup);
-	if (clp->cuu1 != NULL)
+		clp->cup = NULL;
+	}
+	if (clp->cuu1 != NULL) {
 		free(clp->cuu1);
-	if (clp->rmso != NULL)
+		clp->cuu1 = NULL;
+	}
+	if (clp->rmso != NULL) {
 		free(clp->rmso);
-	if (clp->smso != NULL)
+		clp->rmso = NULL;
+	}
+	if (clp->smso != NULL) {
 		free(clp->smso);
+		clp->smso = NULL;
+	}
 }
 
 /*
