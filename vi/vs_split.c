@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.5 1993/09/10 18:42:12 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:42:12 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.6 1993/09/12 14:51:02 bostic Exp $ (Berkeley) $Date: 1993/09/12 14:51:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,9 @@ svi_split(sp, argv)
 	SCR *sp;
 	char *argv[];
 {
-	EXF *ep;
 	SCR *tsp;
 	size_t half;
+	int nochange;
 
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
@@ -134,11 +134,11 @@ svi_split(sp, argv)
 		for (; *argv != NULL; ++argv)
 			if (file_add(tsp, NULL, *argv, 0) == NULL)
 				goto mem4;
-		ep = NULL;
+		nochange = 0;
 	} else {
 		if (file_add(tsp, NULL, sp->frp->fname, 0) == NULL)
 			goto mem4;
-		ep = sp->ep;
+		nochange = 1;
 	}
 
 	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
@@ -146,8 +146,16 @@ svi_split(sp, argv)
 		goto mem4;
 	}
 
+	/* If the file unchanged, keep the same cursor position. */
+	if (nochange) {
+		tsp->frp->lno = sp->lno;
+		tsp->frp->cno = sp->cno;
+		F_SET(tsp->frp, FR_CURSORSET);
+	}
+
 	/* Start the file. */
-	if ((tsp->ep = file_init(tsp, ep, tsp->frp, NULL)) == NULL)
+	if ((tsp->ep = file_init(tsp,
+	    nochange ? sp->ep : NULL, tsp->frp, NULL)) == NULL)
 		goto mem4;
 
 	/* Fill the child's screen map. */
