@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.19 1993/11/29 14:15:19 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:19 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.20 1993/12/02 10:57:50 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:57:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ ex_substitute(sp, ep, cmdp)
 	 * Skip leading white space.  Historic vi allowed any non-
 	 * alphanumeric to serve as the substitution command delimiter.
 	 */
-	for (p = cmdp->argv[0]; isblank(*p); ++p);
+	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	delim = *p++;
 	if (isalnum(delim))
 		return (substitute(sp, ep,
@@ -224,7 +224,7 @@ ex_subagain(sp, ep, cmdp)
 		msgq(sp, M_ERR, "No previous regular expression.");
 		return (1);
 	}
-	return (substitute(sp, ep, cmdp, cmdp->argv[0], &sp->subre, 0));
+	return (substitute(sp, ep, cmdp, cmdp->argv[0]->bp, &sp->subre, 0));
 }
 
 /*
@@ -243,7 +243,7 @@ ex_subtilde(sp, ep, cmdp)
 		msgq(sp, M_ERR, "No previous regular expression.");
 		return (1);
 	}
-	return (substitute(sp, ep, cmdp, cmdp->argv[0], &sp->sre, 0));
+	return (substitute(sp, ep, cmdp, cmdp->argv[0]->bp, &sp->sre, 0));
 }
 
 /* 
