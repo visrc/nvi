@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 10.7 1995/11/06 09:56:40 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:56:40 $";
+static char sccsid[] = "$Id: ex_visual.c,v 10.8 1995/11/07 20:26:41 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:26:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,7 @@ static char sccsid[] = "$Id: ex_visual.c,v 10.7 1995/11/06 09:56:40 bostic Exp $
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "../common/common.h"
 #include "../vi/vi.h"
@@ -147,6 +148,9 @@ nopush:	/*
 			return (1);
 		F_CLR(sp, S_VI | S_EX_CANON);
 		F_SET(sp, S_EX | S_SCREEN_READY);
+
+		/* Move out of the vi screen. */
+		(void)write(STDOUT_FILENO, "\n", 1);
 	} else {
 		F_CLR(sp, S_EX | S_EX_CANON | S_SCREEN_READY);
 		F_SET(sp, S_VI);
