@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.147 1994/08/08 06:48:58 bostic Exp $ (Berkeley) $Date: 1994/08/08 06:48:58 $";
+static char sccsid[] = "$Id: ex.c,v 8.148 1994/08/08 10:14:30 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:14:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,7 @@ ex(sp, ep)
 
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 		if (ex_icmd(sp, ep,
-		    tp->lb, tp->len) && !F_ISSET(sp->gp, G_STDIN_TTY))
+		    tp->lb, tp->len, 1) && !F_ISSET(sp->gp, G_STDIN_TTY))
 			F_SET(sp, S_EXIT_FORCE);
 		(void)msg_rpt(sp, 0);
 		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
@@ -142,10 +142,11 @@ ret:	if (sp->if_name != NULL) {
  *	Execute ex commands from a file.
  */
 int
-ex_cfile(sp, ep, filename)
+ex_cfile(sp, ep, filename, needsep)
 	SCR *sp;
 	EXF *ep;
 	char *filename;
+	int needsep;
 {
 	struct stat sb;
 	int fd, len, rval;
@@ -184,7 +185,7 @@ err:		rval = 1;
 		sp->if_lno = 1;
 		sp->if_name = strdup(filename);
 		F_SET(sp, S_VLITONLY);
-		rval = ex_icmd(sp, ep, bp, len);
+		rval = ex_icmd(sp, ep, bp, len, needsep);
 		F_CLR(sp, S_VLITONLY);
 		free(sp->if_name);
 		sp->if_name = NULL;
@@ -206,11 +207,12 @@ err:		rval = 1;
  *	Call ex_cmd() after turning off interruptible bits.
  */
 int
-ex_icmd(sp, ep, cmd, len)
+ex_icmd(sp, ep, cmd, len, needsep)
 	SCR *sp;
 	EXF *ep;
 	char *cmd;
 	size_t len;
+	int needsep;
 {
 	int rval;
 
@@ -221,7 +223,7 @@ ex_icmd(sp, ep, cmd, len)
 	 * interruptible flags now.
 	 */
 	CLR_INTERRUPT(sp);
-	rval = ex_cmd(sp, ep, cmd, len);
+	rval = ex_cmd(sp, ep, cmd, len, needsep);
 	if (INTERRUPTED(sp))
 		term_flush(sp, "Interrupted", CH_MAPPED);
 	return (rval);
@@ -246,11 +248,12 @@ static EXCMDLIST const cmd_del2 =
  *	Parse and execute a string containing ex commands.
  */
 int
-ex_cmd(sp, ep, cmd, cmdlen)
+ex_cmd(sp, ep, cmd, cmdlen, needsep)
 	SCR *sp;
 	EXF *ep;
 	char *cmd;
 	size_t cmdlen;
+	int needsep;
 {
 	enum { NOTSET, NEEDSEP_N, NEEDSEP_NR, NONE } sep;
 	EX_PRIVATE *exp;
@@ -267,7 +270,7 @@ ex_cmd(sp, ep, cmd, cmdlen)
 
 	/* Init. */
 	nl = 0;
-	sep = NOTSET;
+	sep = needsep ? NOTSET : NONE;
 loop:	if (nl) {
 		nl = 0;
 		++sp->if_lno;
@@ -1289,7 +1292,7 @@ addr2:	switch (exc.addrcnt) {
 	 * to clean up.  For now, put out enough spaces to overwrite the prompt.
 	 */
 	if (sep != NONE) {
-		if (!F_ISSET(sp, S_GLOBAL) && ep != NULL &&
+		if (ep != NULL &&
 		    IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
 			if (sep == NEEDSEP_NR &&
 			    (uselastcmd || cp == &cmds[C_SCROLL])) {
@@ -1435,7 +1438,7 @@ addr2:	switch (exc.addrcnt) {
 	 * If we haven't put out a separator line, do it now.  For more
 	 * detailed comments, see above.
 	 */
-err:	if (sep != NONE && !F_ISSET(sp, S_GLOBAL) &&
+err:	if (sep != NONE &&
 	    ep != NULL && IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
 		(void)fputc('\n', stdout);
 	/*
