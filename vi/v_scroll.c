@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.6 1993/10/09 12:15:27 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:15:27 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.7 1993/10/10 13:19:00 bostic Exp $ (Berkeley) $Date: 1993/10/10 13:19:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -248,6 +248,11 @@ v_hpagedown(sp, ep, vp, fm, tm, rp)
 /*
  * v_pageup -- [count]^B
  *	Page up full screens.
+ *
+ * !!!
+ * Historic vi did not move to the SOF if the screen couldn't move, i.e.
+ * if SOF was already displayed on the screen.  This implementation does
+ * move to SOF in that case, making ^B more like the the historic ^U.
  */
 int
 v_pageup(sp, ep, vp, fm, tm, rp)
@@ -267,6 +272,10 @@ v_pageup(sp, ep, vp, fm, tm, rp)
 /*
  * v_pagedown -- [count]^F
  *	Page down full screens.
+ * !!!
+ * Historic vi did not move to the EOF if the screen couldn't move, i.e.
+ * if EOF was already displayed on the screen.  This implementation does
+ * move to EOF in that case, making ^F more like the the historic ^D.
  */
 int
 v_pagedown(sp, ep, vp, fm, tm, rp)
