@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.49 1994/08/17 14:33:45 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:33:45 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.50 1994/08/31 17:14:25 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:14:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ svi_split(sp, argv, argc)
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
 	if (half < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Screen must be larger than %d to split",
+		msgq(sp, M_ERR, "221|Screen must be larger than %d to split",
 		     MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -304,7 +304,7 @@ svi_bg(csp)
 		return (1);
 	if (sp == NULL) {
 		msgq(csp, M_ERR,
-		    "You may not background your only displayed screen");
+		    "222|You may not background your only displayed screen");
 		return (1);
 	}
 
@@ -392,16 +392,22 @@ svi_fg(csp, name)
 	CHAR_T *name;
 {
 	SCR *sp;
+	int nf;
+	char *p;
 
 	if (svi_swap(csp, &sp, name))
 		return (1);
 	if (sp == NULL) {
 		if (name == NULL)
-			msgq(csp, M_ERR, "There are no background screens");
-		else
+			msgq(csp, M_ERR, "223|There are no background screens");
+		else {
+			p = msg_print(sp, name, &nf);
 			msgq(csp, M_ERR,
-		    "There's no background screen editing a file named %s",
-			    name);
+		    "224|There's no background screen editing a file named %s",
+			    p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 		return (1);
 	}
 
@@ -568,13 +574,14 @@ svi_rabs(sp, count, adj)
 			s = NULL;
 		if (s == NULL) {
 			if ((s = sp->q.cqe_prev) == (void *)&sp->gp->dq) {
-toobig:				msgq(sp, M_BERR, "The screen cannot %s",
-				    adj == A_DECREASE ? "shrink" : "grow");
+toobig:				msgq(sp, M_BERR, adj == A_DECREASE ?
+				    "225|The screen cannot shrink" :
+				    "226|The screen cannot grow");
 				return (1);
 			}
 			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count) {
 toosmall:			msgq(sp, M_BERR,
-				    "The screen can only shrink to %d rows",
+				    "227|The screen can only shrink to %d rows",
 				    MINIMUM_SCREEN_ROWS);
 				return (1);
 			}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 8.7 1994/08/17 14:33:46 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:33:46 $";
+static char sccsid[] = "$Id: cl_term.c,v 8.8 1994/08/31 17:14:27 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:14:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -231,8 +231,9 @@ svi_fmap(sp, stype, from, flen, to, tlen)
 	CHAR_T *from, *to;
 	size_t flen, tlen;
 {
-	char *t, keyname[64];
 	size_t nlen;
+	int nf;
+	char *p, *t, keyname[64];
 
 	/* If the terminal isn't initialized, there's nothing to do. */
 	if (!F_ISSET(SVP(sp), SVI_CURSES_INIT))
@@ -262,9 +263,11 @@ svi_fmap(sp, stype, from, flen, to, tlen)
 		'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 	  };
 		if ((n = atoi(from + 1)) > 63) {
+			p = msg_print(sp, from, &nf);
 			msgq(sp, M_ERR,
-			     "Termcap has no code for the %s function key",
-			     from);
+		     "228|Termcap has no code for the %s function key", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			return (1);
 		}
 		(void)snprintf(keyname, sizeof(keyname),
@@ -274,7 +277,10 @@ svi_fmap(sp, stype, from, flen, to, tlen)
 	}
 #endif
 	if (t == NULL) {
-		msgq(sp, M_ERR, "This terminal has no %s key", from);
+		p = msg_print(sp, from, &nf);
+		msgq(sp, M_ERR, "229|This terminal has no %s key", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 	nlen = snprintf(keyname,

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.123 1994/08/29 09:56:15 bostic Exp $ (Berkeley) $Date: 1994/08/29 09:56:15 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.124 1994/08/31 17:15:10 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,7 @@ static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *,
 		    TEXT *, CHAR_T *, TEXT *, u_int, int *));
+static void	 txt_nomorech __P((SCR *));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
@@ -712,8 +713,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 
 			/* If nothing to erase, bell the user. */
 			if (sp->cno <= tp->offset) {
-				msgq(sp, M_BERR,
-				    "No more characters to erase");
+				txt_nomorech(sp);
 				break;
 			}
 
@@ -747,8 +747,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * If at offset, nothing to erase so bell the user.
 			 */
 			if (sp->cno <= tp->offset) {
-				msgq(sp, M_BERR,
-				    "No more characters to erase");
+				txt_nomorech(sp);
 				break;
 			}
 
@@ -832,8 +831,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 
 			/* If at offset, nothing to erase so bell the user. */
 			if (sp->cno <= tp->offset) {
-				msgq(sp, M_BERR,
-				    "No more characters to erase");
+				txt_nomorech(sp);
 				break;
 			}
 
@@ -926,7 +924,7 @@ ins_ch:			/*
 			if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(ch) &&
 			    ikey.value != K_FORMFEED && ikey.value != K_TAB) {
 				msgq(sp, M_BERR,
-				    "Illegal character; quote to enter");
+				    "183|Illegal character; quote to enter");
 				break;
 			}
 insq_ch:		/*
@@ -1366,7 +1364,7 @@ txt_backup(sp, ep, tiqh, tp, flagsp)
 
 	/* Get a handle on the previous TEXT structure. */
 	if ((ntp = tp->q.cqe_prev) == (void *)tiqh) {
-		msgq(sp, M_BERR, "Already at the beginning of the insert");
+		msgq(sp, M_BERR, "184|Already at the beginning of the insert");
 		return (tp);
 	}
 
@@ -1875,4 +1873,15 @@ txt_Rcleanup(sp, tiqh, tp, lp, olen)
 		tp->owrite -= tmp;
 		tp->insert += tmp;
 	}
+}
+
+/*
+ * txt_nomorech --
+ *	No more characters message.
+ */
+static void
+txt_nomorech(sp)
+	SCR *sp;
+{
+	msgq(sp, M_BERR, "182|No more characters to erase");
 }

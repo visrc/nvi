@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.34 1994/08/17 14:36:07 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:07 $";
+static char sccsid[] = "$Id: v_search.c,v 8.35 1994/08/31 17:15:20 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,7 +179,7 @@ search(sp, ep, vp, ptrn, len, flags, dir)
 				return (1);
 			break;
 		case NOTSET:
-			msgq(sp, M_ERR, "No previous search pattern");
+			msgq(sp, M_ERR, "187|No previous search pattern");
 			return (1);
 		default:
 			abort();
@@ -231,7 +231,7 @@ search(sp, ep, vp, ptrn, len, flags, dir)
 			goto ret;
 		default:
 usage:			msgq(sp, M_ERR,
-			    "Characters after search string and/or delta");
+			    "188|Characters after search string and/or delta");
 			return (1);
 		}
 	}
@@ -313,7 +313,7 @@ correct(sp, ep, vp, flags)
 	 */
 	if (vp->m_start.lno == vp->m_stop.lno &&
 	    vp->m_start.cno == vp->m_stop.cno) {
-		msgq(sp, M_BERR, "Search wrapped to original position");
+		msgq(sp, M_BERR, "189|Search wrapped to original position");
 		return (1);
 	}
 

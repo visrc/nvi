@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.12 1994/08/17 14:35:52 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:35:52 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.13 1994/08/31 17:15:06 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -247,7 +247,7 @@ v_switch(sp, ep, vp)
 	 * name.  Use the real name, not the user's current name.
 	 */
 	if ((name = sp->alt_name) == NULL) {
-		msgq(sp, M_ERR, "No previous file to edit");
+		msgq(sp, M_ERR, "176|No previous file to edit");
 		return (1);
 	}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.91 1994/08/17 14:36:28 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:28 $";
+static char sccsid[] = "$Id: vi.c,v 8.92 1994/08/31 17:15:25 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -177,7 +177,7 @@ vi(sp, ep)
 		/* Make sure no function left the temporary space locked. */
 		if (F_ISSET(sp->gp, G_TMP_INUSE)) {
 			msgq(sp, M_ERR,
-			    "Error: vi: temporary buffer not released");
+			    "202|vi: temporary buffer not released");
 			return (1);
 		}
 #endif
@@ -374,7 +374,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 		cpart = ISPARTIAL;
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
-			    "Buffers should be specified before the command");
+		    "203|Buffers should be specified before the command");
 			return (1);
 		}
 		KEY(vp->buffer, 0);
@@ -401,12 +401,12 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	if (key == '"') {
 		cpart = ISPARTIAL;
 		if (F_ISSET(vp, VC_BUFFER)) {
-			msgq(sp, M_ERR, "Only one buffer can be specified");
+			msgq(sp, M_ERR, "204|Only one buffer can be specified");
 			return (1);
 		}
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
-			    "Buffers should be specified before the command");
+		    "205|Buffers should be specified before the command");
 			return (1);
 		}
 		KEY(vp->buffer, 0);
@@ -418,7 +418,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	/* Check for an OOB command key. */
 	cpart = ISPARTIAL;
 	if (key > MAXVIKEY) {
-		msgq(sp, M_BERR, "%s isn't a vi command", KEY_NAME(sp, key));
+		msgq(sp, M_BERR,
+		    "206|%s isn't a vi command", KEY_NAME(sp, key));
 		return (1);
 	}
 	kp = &vikeys[vp->key = key];
@@ -439,7 +440,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	if (kp->func == NULL) {
 		if (key != '.') {
 			msgq(sp, ikey.value == K_ESCAPE ? M_BERR : M_ERR,
-			    "%s isn't a vi command", KEY_NAME(sp, key));
+			    "207|%s isn't a vi command", KEY_NAME(sp, key));
 			return (1);
 		}
 
@@ -449,7 +450,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 
 		/* A repeatable command must have been executed. */
 		if (!F_ISSET(dp, VC_ISDOT)) {
-			msgq(sp, M_ERR, "No command to repeat");
+			msgq(sp, M_ERR, "208|No command to repeat");
 			return (1);
 		}
 
@@ -518,7 +519,7 @@ usage:			if (ismotion == NULL)
 				s = tmotion.usage;
 			else
 				s = vikeys[ismotion->key].usage;
-			msgq(sp, M_ERR, "Usage: %s", s);
+			msgq(sp, M_ERR, "209|Usage: %s", s);
 			return (1);
 		}
 	}
@@ -538,7 +539,7 @@ usage:			if (ismotion == NULL)
 	 * imply the current line.
 	 */
 	if (ismotion != NULL && ismotion->key != key && !LF_ISSET(V_MOVE)) {
-		msgq(sp, M_ERR, "%s may not be used as a motion command",
+		msgq(sp, M_ERR, "210|%s may not be used as a motion command",
 		    KEY_NAME(sp, key));
 		return (1);
 	}
@@ -551,7 +552,7 @@ usage:			if (ismotion == NULL)
 
 esc:	switch (cpart) {
 	case COMMANDMODE:
-		msgq(sp, M_BERR, "Already in command mode");
+		msgq(sp, M_BERR, "211|Already in command mode");
 		break;
 	case ISPARTIAL:
 		break;
@@ -812,8 +813,10 @@ getkeyword(sp, ep, kp, flags)
 
 		/* Just a sign isn't a number. */
 		if (end == beg && (p[beg] == '+' || p[beg] == '-')) {
-noword:			msgq(sp, M_BERR, "Cursor not in a %s",
-			    LF_ISSET(V_KEYW) ? "word" : "number");
+noword:			msgq(sp, M_BERR,
+			    LF_ISSET(V_KEYW) ?
+			    "212|Cursor not in a word" :
+			    "213|Cursor not in a number");
 			return (1);
 		}
 		--end;
@@ -867,7 +870,8 @@ getcount(sp, fkey, countp)
 				    TXT_MAPCOMMAND | TXT_MAPNODIGIT))
 					return (1);
 			} while (isdigit(ikey.ch));
-			msgq(sp, M_ERR, "Number larger than %lu", ULONG_MAX);
+			msgq(sp, M_ERR,
+			    "214|Number larger than %lu", ULONG_MAX);
 			return (1);
 		}
 		count = tc;
