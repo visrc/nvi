@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.42 1994/04/05 18:09:09 bostic Exp $ (Berkeley) $Date: 1994/04/05 18:09:09 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.43 1994/04/06 12:19:50 bostic Exp $ (Berkeley) $Date: 1994/04/06 12:19:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -155,12 +155,12 @@ EXCMDLIST const cmds[] = {
 	    "specify digraphs (not implemented)"},
 /* C_EDIT */
 	{"edit",	ex_edit,	E_NOGLOBAL|E_NORC,
-	    "!f1o",
+	    "f1o",
 	    "e[dit][!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EX */
 	{"ex",		ex_edit,	E_NOGLOBAL|E_NORC,
-	    "!f1o",
+	    "f1o",
 	    "ex[!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EXUSAGE */
@@ -380,7 +380,7 @@ EXCMDLIST const cmds[] = {
 	    "enter visual (vi) mode from ex mode"},
 /* C_VISUAL_VI */
 	{"visual",	ex_edit,	E_NOGLOBAL|E_NORC,
-	    "!f1o",
+	    "f1o",
 	    "vi[sual][!] [+cmd] [file]",
 	    "edit another file (from vi mode only)"},
 /* C_VIUSAGE */
