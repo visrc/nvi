@@ -1,18 +1,10 @@
-#	$Id: Makefile,v 8.1 1993/06/08 12:48:55 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:48:55 $
+# $Id: Makefile,v 8.2 1996/06/27 18:48:28 bostic Exp $ (Berkeley) $Date: 1996/06/27 18:48:28 $
 
-DIR=	usd/11.edit
-SRCS=	edittut.ms
-MACROS=	-msU
+ROFF=	groff
+TBL=	tbl
 
-paper.ps: ${SRCS}
-	${TBL} ${SRCS} | ${ROFF} > ${.TARGET}
+edittut.ps: edittut.ms
+	${TBL} edittut.ms | ${ROFF} -ms > $@
 
-# index for versatec is different from the one in edit.tut
-# because the fonts are different and entries reference page
-# rather than section numbers.  if you have a typesetter
-# you should just use the index in edit.tut, and ignore editvindex.
-
-editvindex:
-	${TROFF} ${MACROS} -n22 edit.vindex
-
-.include <bsd.doc.mk>
+clean:
+	rm -f edittut.ps
