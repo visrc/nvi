@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.24 1993/09/27 17:32:11 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:32:11 $";
+static char sccsid[] = "$Id: exf.c,v 8.25 1993/09/27 18:00:04 bostic Exp $ (Berkeley) $Date: 1993/09/27 18:00:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,7 @@ file_init(sp, ep, frp, rcv_fname)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int e_ep, e_tname, e_rcv_path, fd, newfile, sverrno;
+	int e_ep, e_tname, e_rcv_path, fd, sverrno;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	/* If already in play, up the count and return. */
@@ -201,7 +201,8 @@ file_init(sp, ep, frp, rcv_fname)
 		}
 		oname = frp->tname;
 		psize = 4 * 1024;
-		newfile = 1;
+
+		F_SET(frp, FR_NEWFILE);
 	} else {
 		oname = frp->fname;
 
@@ -212,7 +213,6 @@ file_init(sp, ep, frp, rcv_fname)
 			psize = 32 * 1024;
 		else
 			psize = 64 * 1024;
-		newfile = 0;
 	}
 	
 	/* Set up recovery. */
@@ -308,8 +308,8 @@ file_init(sp, ep, frp, rcv_fname)
 	 * probably isn't a problem for vi when it's running standalone.
 	 */
 	F_CLR(frp, FR_RDONLY);
-	if (O_ISSET(sp, O_READONLY) ||
-	    !newfile && (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
+	if (O_ISSET(sp, O_READONLY) || !F_ISSET(frp, FR_NEWFILE) &&
+	    (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
 	    access(frp->fname, W_OK)))
 		F_SET(frp, FR_RDONLY);
 
@@ -553,7 +553,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	}
 
 	msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.", fname,
-	    newfile ? " [New file]" : "", nlno, nlno == 1 ? "" : "s", nch);
+	    newfile ? ": new file" : "", nlno, nlno == 1 ? "" : "s", nch);
 
 	/* If wrote the entire file, clear the modified bit. */
 	if (LF_ISSET(FS_ALL))
