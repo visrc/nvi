@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.28 1993/11/13 18:01:18 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:18 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.29 1993/11/15 10:23:46 bostic Exp $ (Berkeley) $Date: 1993/11/15 10:23:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -724,13 +724,20 @@ svi_modeline(sp, ep)
 	if (sp->child != NULL)
 		svi_divider(sp);
 
-	/* Display the ruler and mode. */
+	/* Display the ruler. */
 	if (O_ISSET(sp, O_RULER) && sp->cols > RULERSIZE + 2) {
 		MOVE(sp, INFOLINE(sp), sp->cols / 2 - RULERSIZE / 2);
 		clrtoeol();
 		(void)snprintf(buf,
 		    sizeof(buf), "%lu,%lu", sp->lno, sp->cno + 1);
 		ADDSTR(buf);
+	}
+
+	/* Show the modified bit. */
+	if (O_ISSET(sp, O_SHOWDIRTY) &&
+	    F_ISSET(ep, F_MODIFIED) && sp->cols > MODESIZE) {
+		MOVE(sp, INFOLINE(sp), sp->cols - 9);
+		ADDSTR("*");
 	}
 
 	/*
