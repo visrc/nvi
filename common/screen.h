@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.36 1993/10/09 12:14:32 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:14:32 $
+ *	$Id: screen.h,v 8.37 1993/10/27 13:35:53 bostic Exp $ (Berkeley) $Date: 1993/10/27 13:35:53 $
  */
 
 /*
@@ -56,7 +56,7 @@ typedef struct _fref {
 #define	FR_NONAME	0x040		/* File has no name. */
 #define	FR_RDONLY	0x080		/* File is read-only. */
 #define	FR_UNLINK_TFILE	0x100		/* Unlink the temporary file. */
-	u_char	 flags;
+	u_int	 flags;
 } FREF;
 
 /*
