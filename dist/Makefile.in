@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.87 1996/12/12 09:06:08 bostic Exp $ (Berkeley) $Date: 1996/12/12 09:06:08 $
+#	$Id: Makefile.in,v 8.88 1996/12/13 11:59:42 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:59:42 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -208,10 +208,9 @@ docs:
 	cd $(srcdir)/docs/USD.doc/vitut && $(MAKE)
 
 clean:
-	-rm -f *.core *.o memcpy.c perl.c
-	-rm -f vi ex vi_motif core
-	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
-	-rm -f $(TKOBJS) $(VIOBJS)
+	-rm -f $(CLOBJS) $(COBJS) $(DBOBJS) $(IPOBJS)
+	-rm -f $(REOBJS) $(VIOBJS) $(MLIB)
+	-rm -f *.o memcpy.c perl.c *.core core vi ex vi_motif libmvi.a
 
 cleandocs:
 	cd $(srcdir)/docs/USD.doc/vi.ref && $(MAKE) clean
