@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.35 1993/02/16 20:08:23 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:23 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.36 1993/02/19 11:13:35 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:13:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -26,10 +26,9 @@ static char sccsid[] = "$Id: v_ex.c,v 5.35 1993/02/16 20:08:23 bostic Exp $ (Ber
 #include "vcmd.h"
 
 static size_t exlinecount, extotalcount;
-static enum { NOTSET, NEXTLINE, THISLINE } continueline;
 
 static int	moveup __P((EXF *, int, int, int *));
-static void	v_leaveex __P((EXF *));
+static int	v_leaveex __P((EXF *));
 static void	v_startex __P((void));
 
 /*
@@ -46,9 +45,8 @@ v_ex(ep, vp, fm, tm, rp)
 	int flags, key;
 	u_char *p;
 
+	v_startex();			/* Reset. */
 	for (flags = GB_BS;;) {
-		v_startex();			/* Reset. */
-
 		/*
 		 * Get an ex command; echo the newline on any prompts after
 		 * the first.
@@ -89,7 +87,7 @@ v_ex(ep, vp, fm, tm, rp)
 	 * Don't trust ANYTHING.
 	 */
 	if (!FF_ISSET(ep, F_NEWSESSION)) {
-		v_leaveex(ep);
+		(void)v_leaveex(ep);
 		ep->olno = OOBLNO;
 		rp->lno = ep->lno;
 		if (file_gline(ep, ep->lno, &len) == NULL &&
@@ -109,17 +107,18 @@ static void
 v_startex()
 {
 	exlinecount = extotalcount = 0;
-	continueline = NOTSET;
 }
 
 /*
  * v_leaveex --
  *	Ex returns to vi.
  */
-static void
+static int
 v_leaveex(ep)
 	EXF *ep;
 {
+	size_t loff;
+
 	/* Don't erase if only a single line. */
 	if (extotalcount <= 1)
 		return;
@@ -130,12 +129,10 @@ v_leaveex(ep)
 		return;
 	}
 
-	/* Repaint the overwritten lines. */
-	do {
-		--extotalcount;
-		(void)ep->scr_change(ep,
-		    BOTLINE(ep, ep->otop) - extotalcount, LINE_RESET);
-	} while (extotalcount);
+	for (loff = TEXTSIZE(ep); extotalcount--; --loff)
+		if (scr_refresh(ep, loff))
+			return (1);
+	return (1);
 }
 
 /*
@@ -150,54 +147,63 @@ v_exwrite(cookie, line, llen)
 {
 	static size_t lcont;
 	EXF *ep;
-	int len, rlen, tlen;
-	char *p;
+	size_t new_lcont;
+	int len, rlen;
+	const char *p;
 
-	for (ep = cookie, rlen = llen; llen;) {
-		/* Newline delimits. */
-		if ((p = memchr(line, '\n', llen)) == NULL) {
+	rlen = llen;
+	for (ep = cookie; llen;) {
+		/* Get the next line. */
+		if ((p = memchr(line, '\n', llen)) == NULL)
 			len = llen;
-			lcont = len;
-			continueline = NEXTLINE;
-		} else
+		else
 			len = p - line;
 
-		/* Fold if past end-of-screen. */
-		if (len > ep->cols) {
-			continueline = NOTSET;
-			len = ep->cols;
-		}
-		llen -= len + (p == NULL ? 0 : 1);
+		/*
+		 * The max is ep->cols characters, and we may have already
+		 * written part of the line.
+		 */
+		if (len + lcont > ep->cols)
+			len = ep->cols - lcont;
 
-		if (continueline != THISLINE && extotalcount != 0)
-			(void)moveup(ep, 0, 0, NULL);
-
-		switch (continueline) {
-		case NEXTLINE:
-			continueline = THISLINE;
-			/* FALLTHROUGH */
-		case NOTSET:
+		/*
+		 * If not a continuation line, and not the first line output,
+		 * move the screen up.  Otherwise, move to the continuation
+		 * point.
+		 */
+		if (lcont == 0) {
+			if (extotalcount != 0)
+				(void)moveup(ep, 0, 0, NULL);
 			MOVE(ep, SCREENSIZE(ep), 0);
 			++extotalcount;
 			++exlinecount;
-			tlen = len;
-			break;
-		case THISLINE:
+		} else
 			MOVE(ep, SCREENSIZE(ep), lcont);
-			tlen = len + lcont;
-			continueline = NOTSET;
-			break;
-		default:
-			abort();
-		}
-		addnstr(line, len);
 
-		/* GCC: tlen cannot be uninitialized here, see switch above. */
-		if (tlen < ep->cols)
+		/* Display the line. */
+		if (len)
+			addnstr(line, len);
+
+		/* Clear to EOL. */
+		if (len + lcont < ep->cols)
 			clrtoeol();
 
-		line += len + (p == NULL ? 0 : 1);
+		/* Set up lcont. */
+		new_lcont = len + lcont;
+		lcont = 0;
+
+		/* Reset for the next line. */
+		line += len;
+		llen -= len;
+		if (p != NULL) {
+			++line;
+			--llen;
+		}
 	}
+
+	/* Set up next continuation line. */
+	if (p == NULL)
+		lcont = new_lcont;
 	return (rlen);
 }
 
