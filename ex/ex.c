@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.43 1996/04/27 11:40:17 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:17 $";
+static const char sccsid[] = "$Id: ex.c,v 10.44 1996/05/02 10:21:37 bostic Exp $ (Berkeley) $Date: 1996/05/02 10:21:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1565,12 +1565,13 @@ err:	/*
 			}
 		}
 	if (ecp->save_cmdlen != 0 || gp->ecq.lh_first != &gp->excmd) {
-		msgq(sp, M_ERR,
+		msgq(sp, M_BERR,
 		    "092|Ex command failed: pending commands discarded");
 		ex_discard(sp);
 	}
 	if (v_event_flush(sp, CH_MAPPED))
-		msgq(sp, M_ERR, "093|Ex command failed: mapped keys discarded");
+		msgq(sp, M_BERR,
+		    "093|Ex command failed: mapped keys discarded");
 
 rfail:	tmp = 1;
 	if (0)
