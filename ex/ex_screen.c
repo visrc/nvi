@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.1 1993/06/09 22:25:40 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:40 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.2 1993/08/05 18:07:24 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:07:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,23 +17,15 @@ static char sccsid[] = "$Id: ex_screen.c,v 8.1 1993/06/09 22:25:40 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
+/*
+ * ex_split --	:sp[lit]! [file ...]
+ *	Split the screen, optionally setting the file list.
+ */
 int
 ex_split(sp, ep, cmdp)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *tep;
-	char *fname;
-
-	if (cmdp->argc) {
-		fname = (char *)cmdp->argv[0];
-		set_altfname(sp, fname);
-	} else
-		fname = NULL;
-
-	if ((tep = file_get(sp, ep, fname, 1)) == NULL)
-		return (1);
-	
-	return (sp->s_split(sp, tep));
+	return (sp->s_split(sp, cmdp->argc ? cmdp->argv : NULL));
 }
