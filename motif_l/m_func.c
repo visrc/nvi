@@ -7,9 +7,27 @@
  * See the LICENSE file for redistribution information.
  */
 
+#include "config.h"
+
 #ifndef lint
-static const char XXsccsid[] = "$Id: m_func.c,v 8.3 1996/12/03 10:12:46 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:46 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.4 1996/12/03 12:07:08 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:07:08 $";
 #endif /* not lint */
+
+#include <sys/types.h>
+#include <sys/queue.h>
+
+#include "Xm/PanedW.h"
+
+#include <bitstring.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../common/common.h"
+#include "../ip_vi/ip.h"
+#include "ipc_motif.h"
+#include "ipc_extern.h"
+#include "ipc_mextern.h"
 
 int
 ipo_addstr(ipbp)
@@ -29,7 +47,7 @@ ipo_addstr(ipbp)
 
 	/* Advance the caret. */
 	move_caret(cur_screen, cur_screen->cury, cur_screen->curx + ipbp->len);
-	return (1);
+	return (0);
 }
 
 int
@@ -44,7 +62,7 @@ ipo_attribute(ipbp)
 		cur_screen->color = ipbp->val2;
 		break;
 	}
-	return (1);
+	return (0);
 }
 
 int
@@ -56,7 +74,7 @@ ipo_bell(ipbp)
 	 * Future... implement visible bell.
 	 */
 	XBell(XtDisplay(cur_screen->area), 0);
-	return (1);
+	return (0);
 }
 
 int
@@ -71,7 +89,7 @@ ipo_busy(ipbp)
 	 */
 	set_cursor(cur_screen, ipbp->len != 0);
 #endif
-	return (1);
+	return (0);
 }
 
 int
@@ -92,7 +110,7 @@ ipo_clrtoeol(ipbp)
 	/* Draw from backing store. */
 	draw_text(cur_screen, cur_screen->cury, cur_screen->curx, len);
 
-	return (1);
+	return (0);
 }
 
 int
@@ -134,7 +152,7 @@ ipo_discard(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
-	return (1);
+	return (0);
 }
 
 int
@@ -194,7 +212,7 @@ ipo_move(ipbp)
 	IP_BUF *ipbp;
 {
 	move_caret(cur_screen, ipbp->val1, ipbp->val2);
-	return (1);
+	return (0);
 }
 
 int
@@ -202,7 +220,7 @@ ipo_redraw(ipbp)
 	IP_BUF *ipbp;
 {
 	expose_func(0, cur_screen, 0);
-	return (1);
+	return (0);
 }
 
 int
@@ -213,14 +231,14 @@ ipo_refresh(ipbp)
 	/* Force synchronous update of the widget. */
 	XmUpdateDisplay(cur_screen->area);
 #endif
-	return (1);
+	return (0);
 }
 
 int
 ipo_rename(ipbp)
 	IP_BUF *ipbp;
 {
-	char *tail;
+	const char *tail;
 
 	/* for the icon, use the tail */
 	if (( tail = strrchr( ipbp->str, '/' )) == NULL || *(tail+1) == '\0' )
@@ -238,7 +256,7 @@ ipo_rename(ipbp)
 		      XmNtitle,		ipbp->str,
 		      0);
 
-	return (1);
+	return (0);
 }
 
 int
@@ -246,7 +264,7 @@ ipo_rewrite(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
-	return (1);
+	return (0);
 }
 
 int
@@ -254,7 +272,7 @@ ipo_split(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
-	return (1);
+	return (0);
 }
 
 int (*iplist[IPO_EVENT_MAX]) __P((IP_BUF *)) = {
