@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 9.4 1995/01/11 15:57:57 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:57:57 $";
+static char sccsid[] = "$Id: cut.c,v 9.5 1995/02/15 16:12:39 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:12:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -280,6 +280,30 @@ cut_line(sp, lno, fcno, clen, cbp)
 }
 
 /*
+ * cut_close --
+ *	Discard all cut buffers.
+ */
+void
+cut_close(gp)
+	GS *gp;
+{
+	CB *cbp;
+
+	/* Free cut buffer list. */
+	while ((cbp = gp->cutq.lh_first) != NULL) {
+		if (cbp->textq.cqh_first != (void *)&cbp->textq)
+			text_lfree(&cbp->textq);
+		LIST_REMOVE(cbp, q);
+		free(cbp);
+	}
+
+	/* Free default cut storage. */
+	cbp = &gp->dcb_store;
+	if (cbp->textq.cqh_first != (void *)&cbp->textq)
+		text_lfree(&cbp->textq);
+}
+
+/*
  * text_init --
  *	Allocate a new TEXT structure.
  */
@@ -294,7 +318,7 @@ text_init(sp, p, len, total_len)
 	CALLOC(sp, tp, TEXT *, 1, sizeof(TEXT));
 	if (tp == NULL)
 		return (NULL);
-	/* ANSI C doesn't define a call to malloc(2) for 0 bytes. */
+	/* ANSI C doesn't define a call to malloc(3) for 0 bytes. */
 	if ((tp->lb_len = total_len) != 0) {
 		MALLOC(sp, tp->lb, CHAR_T *, tp->lb_len);
 		if (tp->lb == NULL) {
