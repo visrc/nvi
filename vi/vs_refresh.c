@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.10 1993/09/10 18:51:49 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:51:49 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.11 1993/09/11 12:57:35 bostic Exp $ (Berkeley) $Date: 1993/09/11 12:57:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -468,7 +468,7 @@ update:	OCNO = CNO;
 	 * to display, and, if there are multiple ones, we're going to get
 	 * the wrong key as a message delimiter.
 	 */
-	if (term_waiting(sp))
+	if (sex_key_wait(sp))
 		return (0);
 
 	/* Ring the bell if scheduled. */
