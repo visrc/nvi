@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.6 1993/04/17 11:51:08 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:51:08 $";
+static char sccsid[] = "$Id: screen.c,v 5.7 1993/04/19 15:24:43 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:24:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,8 +183,8 @@ scr_end(sp)
 		FREE(sp->ibp, sp->ibp_len);
 
 	/* Free text input, command chains. */
-	text_free(&sp->txthdr);
-	text_free(&sp->bhdr);
+	hdr_text_free(&sp->txthdr);
+	hdr_text_free(&sp->bhdr);
 
 	/* Free vi text input memory. */
 	if (sp->rep != NULL)
@@ -202,7 +202,7 @@ scr_end(sp)
 	{ CB *cb; int cnt;
 		for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt)
 			if (cb->txthdr.next != NULL)
-				text_free(&cb->txthdr);
+				hdr_text_free(&cb->txthdr);
 	}
 
 	/* Free up tag information. */
