@@ -1,10 +1,10 @@
 /*-
- * Copyright (c) 1992, 1993
+ * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.21 1994/02/25 18:56:14 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:56:14 $
+ *	$Id: exf.h,v 8.22 1994/03/16 08:05:48 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:48 $
  */
 					/* Undo direction. */
 /*

@@ -1,10 +1,10 @@
 /*-
- * Copyright (c) 1991, 1993
+ * Copyright (c) 1991, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.16 1994/03/14 17:32:34 bostic Exp $ (Berkeley) $Date: 1994/03/14 17:32:34 $
+ *	$Id: options.h,v 8.17 1994/03/16 08:05:53 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:53 $
  */
 
 struct _option {

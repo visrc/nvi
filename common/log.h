@@ -1,10 +1,10 @@
 /*-
- * Copyright (c) 1992, 1993
+ * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: log.h,v 8.4 1994/02/25 18:58:57 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:58:57 $
+ *	$Id: log.h,v 8.5 1994/03/16 08:05:50 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:50 $
  */
 
 #define	LOG_NOTYPE		0
