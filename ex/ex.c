@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.172 1994/10/09 17:25:30 bostic Exp $ (Berkeley) $Date: 1994/10/09 17:25:30 $";
+static char sccsid[] = "$Id: ex.c,v 8.173 1994/10/23 20:44:15 bostic Exp $ (Berkeley) $Date: 1994/10/23 20:44:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -218,19 +218,19 @@ ex_icmd(sp, ep, cmd, len, needsep)
 	size_t len;
 	int needsep;
 {
+	int rval;
+
 	/*
 	 * Ex goes through here for each vi :colon command and for each ex
 	 * command, however, globally executed commands don't go through
 	 * here, instead, they call ex_cmd directly.  So, reset all of the
 	 * interruptible flags now.
-	 *
-	 * !!!
-	 * Previous versions of nvi cleared mapped characters on error.  This
-	 * feature was removed when users complained that it wasn't historic
-	 * practice.
 	 */
 	CLR_INTERRUPT(sp);
-	return (ex_cmd(sp, ep, cmd, len, needsep));
+	rval = ex_cmd(sp, ep, cmd, len, needsep);
+	if (INTERRUPTED(sp))
+		term_flush(sp, "Interrupted", CH_MAPPED);
+	return (rval);
 }
 
 /* Special command structure for :s as a repeat substitution command. */
@@ -1495,12 +1495,7 @@ err:	if (sep != NONE &&
 	if (save_cmdlen != 0)
 		msgq(sp, M_ERR,
 		    "112|Ex command failed: remaining command input discarded");
-	/*
-	 * !!!
-	 * Previous versions of nvi cleared mapped characters on error.  This
-	 * feature was removed when users complained that it wasn't historic
-	 * practice.
-	 */
+	term_flush(sp, "Ex error", CH_MAPPED);
 	return (1);
 }
 
