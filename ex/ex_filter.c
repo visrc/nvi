@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.31 1994/03/23 20:26:37 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:26:37 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.32 1994/04/14 14:12:54 bostic Exp $ (Berkeley) $Date: 1994/04/14 14:12:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -242,7 +242,7 @@ err:		if (input[0] != -1)
 
 		/* NOTREACHED */
 	default:			/* Parent-reader. */
-		(void)close(input[1]);
+		(void)fclose(ifp);
 		if (ftype == FILTER_WRITE)
 			/*
 			 * Read the output from the read end of the output
