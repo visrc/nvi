@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.10 1992/04/28 11:57:12 bostic Exp $ (Berkeley) $Date: 1992/04/28 11:57:12 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.11 1992/05/21 12:53:56 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:53:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: ex_at.c,v 5.10 1992/04/28 11:57:12 bostic Exp $ (Be
 
 #include "vi.h"
 #include "excmd.h"
+#include "cut.h"
 #include "extern.h"
 
 /*
@@ -26,32 +27,41 @@ int
 ex_at(cmdp)
 	EXCMDARG *cmdp;
 {
-	static int lastbuf, recurse;
+	static int lastbuf = OOBCB, recurse;
 	static char rstack[UCHAR_MAX];
-	size_t len;
-	int name, rval;
-	u_char *buf;
+	CB *cb;
+	CBLINE *lp;
+	int buffer, rval;
 
-	if ((name = cmdp->buffer) == '\0' && (name = lastbuf) == '\0') {
-		msg("No previous buffer to execute.");
-		return (1);
-	}
+	if (cmdp->buffer == OOBCB) {
+		if (lastbuf == OOBCB) {
+			msg("No previous buffer to execute.");
+			return (1);
+		}
+		buffer = lastbuf;
+	} else
+		buffer = cmdp->buffer;
+
+	CBNAME(buffer, cb);
+	CBEMPTY(buffer, cb);
 		
 	if (recurse == 0)
 		bzero(rstack, sizeof(rstack));
-	else if (rstack[name]) {
-		msg("Buffer %c already occurs in this command.", name);
+	else if (rstack[buffer]) {
+		msg("Buffer %c already occurs in this command.", buffer);
 		return (1);
 	}
 
-	if ((buf = cb2str(name, &len)) == NULL)
-		rval = 1;
-	else {
-		rstack[name] = 1;
-		++recurse;
-		rval = ex_cstring((char *)buf, len, 1);
-		--recurse;
-		free(buf);
-	} 
-	return (rval);
+	rstack[buffer] = 1;
+	++recurse;
+
+	for (lp = cb->head;;) {
+		if (rval = ex_cstring(lp->lp, lp->len, 1))
+			break;
+		if ((lp = lp->next) == NULL)
+			break;
+	}
+		
+	--recurse;
+	return (0);
 }
