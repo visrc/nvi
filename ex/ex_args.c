@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.1 1992/01/16 13:27:25 bostic Exp $ (Berkeley) $Date: 1992/01/16 13:27:25 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.2 1992/01/17 09:48:37 bostic Exp $ (Berkeley) $Date: 1992/01/17 09:48:37 $";
 #endif /* not lint */
 
 #include <errno.h>
@@ -106,19 +106,25 @@ args_file(frommark, tomark, cmd, bang, extra)
 	int bang;
 	char *extra;
 {
-	int cnt;
 	register char **p, *sep;
+	int cnt, col, len, newline;
 
-	if (s_flist == NULL) {
+	if (current == 0) {
 		msg("No file names");
 		return;
 	}
 
-	/*
-	 * XXX
-	 * Should break the margin at whitespace.
-	 */
-	for (p = s_flist, sep = "", cnt = 1; *p; ++p, sep = " ", ++cnt) {
+	col = len = newline = 0;
+	for (p = s_flist, sep = "", cnt = 1; *p; ++p, ++cnt) {
+		col += len =
+		    strlen(*p) + (*sep ? 1 : 0) + (cnt == current ? 2 : 0);
+		if (col >= COLS - 4) {
+			addch('\n');
+			sep = "";
+			col = len;
+			newline = 1;
+		} else if (cnt != 1)
+			sep = " ";
 		addstr(sep);
 		if (cnt == current)
 			addch('[');
@@ -126,11 +132,7 @@ args_file(frommark, tomark, cmd, bang, extra)
 		if (cnt == current)
 			addch(']');
 	}
-	/*
-	 * XXX
-	 * Shouldn't add newline unless over COLUMN chars in length.
-	 */
-	if (mode == MODE_EX || mode == MODE_COLON)
+	if (newline)
 		addch('\n');
 	exrefresh();
 }
@@ -152,6 +154,10 @@ set_file(argc, argv)
 /*
  * set_file_buf --
  *	Set the file list from a white-space separated buffer.
+ *
+ * XXX
+ * The command parsing routines should have already broken out an
+ * argv before we get here.
  */
 static void
 set_file_buf(buf)
