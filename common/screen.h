@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.41 2001/04/23 22:46:56 skimo Exp $ (Berkeley) $Date: 2001/04/23 22:46:56 $
+ *	$Id: screen.h,v 10.42 2001/05/10 19:28:43 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:28:43 $
  */
 
 /*
@@ -74,8 +74,6 @@ struct _win {
 	u_int32_t flags;
 };
 
-extern CHAR_T RE_WSTART[8];
-extern CHAR_T RE_WSTOP[8];
 /*
  * SCR --
  *	The screen structure.  To the extent possible, all screen information
@@ -154,10 +152,8 @@ struct _scr {
 	CHAR_T	 at_lbuf;		/* Ex/vi: Last executed at buffer. */
 
 					/* Ex/vi: re_compile flags. */
-#if 0
-#define	RE_WSTART	"[[:<:]]"	/* Ex/vi: not-in-word search pattern. */
-#define	RE_WSTOP	"[[:>:]]"
-#endif
+#define	RE_WSTART	L("[[:<:]]")	/* Ex/vi: not-in-word search pattern. */
+#define	RE_WSTOP	L("[[:>:]]")
 #define RE_WSTART_LEN	(sizeof(RE_WSTART)/sizeof(CHAR_T))
 #define RE_WSTOP_LEN	(sizeof(RE_WSTOP)/sizeof(CHAR_T))
 					/* Ex/vi: flags to search routines. */
@@ -262,6 +258,7 @@ struct _scr {
 #define	SC_STATUS_CNT	0x04000000	/* Welcome message plus file count. */
 #define	SC_TINPUT	0x08000000	/* Doing text input. */
 #define	SC_TINPUT_INFO	0x10000000	/* Doing text input on info line. */
+#define SC_CONV_ERROR	0x20000000	/* Met with a conversion error. */
 	u_int32_t flags;
 
 	int	    db_error;		/* Return code from db function. */

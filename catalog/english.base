@@ -310,3 +310,4 @@
 319 "%d screens backgrounded; use :display to list them"
 320 "Unknown cursor position."
 321 "File encoding conversion not supported"
+321 "Conversion error on line %d"

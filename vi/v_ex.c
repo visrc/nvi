@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.50 2000/09/01 16:15:42 skimo Exp $ (Berkeley) $Date: 2000/09/01 16:15:42 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.51 2001/05/10 19:28:43 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:28:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -634,7 +634,7 @@ v_ecl_log(sp, tp)
 		sp->ep = save_ep;
 		return (1);
 	}
-	/* Don't look line that is identical to previous one */
+	/* Don't log line that is identical to previous one */
 	if (lno > 0 &&
 	    !db_get(sp, lno, 0, &p, &len) &&
 	    len == tp->len &&

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.11 2001/05/06 21:10:27 skimo Exp $ (Berkeley) $Date: 2001/05/06 21:10:27 $";
+static const char sccsid[] = "$Id: conv.c,v 1.12 2001/05/10 19:28:42 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:28:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,8 @@ static const char sccsid[] = "$Id: conv.c,v 1.11 2001/05/06 21:10:27 skimo Exp $
 #include <locale.h>
 
 int 
-raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen,
+	CHAR_T **dst)
 {
     int i;
     CHAR_T **tostr = (CHAR_T **)&cw->bp1;
@@ -46,6 +47,8 @@ raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
     *tolen = len;
     for (i = 0; i < len; ++i)
 	(*tostr)[i] = (u_char) str[i];
+
+    *dst = cw->bp1;
 
     return 0;
 }
@@ -69,7 +72,8 @@ raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
     } while (0)
 
 int 
-default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
+		size_t *tolen, CHAR_T **dst)
 {
     int i = 0, j;
     CHAR_T **tostr = (CHAR_T **)&cw->bp1;
@@ -113,16 +117,21 @@ default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *to
     if (id != (iconv_t)-1)
 	iconv_close(id);
 
+    *dst = cw->bp1;
+
     return 0;
 err:
     *tolen = i;
     if (id != (iconv_t)-1)
 	iconv_close(id);
+    *dst = cw->bp1;
+
     return 1;
 }
 
 int 
-int2raw(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+int2raw(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen,
+	char **dst)
 {
     int i;
     char **tostr = (char **)&cw->bp1;
@@ -134,11 +143,14 @@ int2raw(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
     for (i = 0; i < len; ++i)
 	(*tostr)[i] = str[i];
 
+    *dst = cw->bp1;
+
     return 0;
 }
 
 int 
-default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
+		size_t *tolen, char **pdst)
 {
     int i, j, offset = 0;
     char **tostr = (char **)&cw->bp1;
@@ -211,16 +223,22 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *
 	*tolen = offset;
     }
 
+    *pdst = cw->bp1;
+
     return 0;
 err:
     *tolen = j;
+
+    *pdst = cw->bp1;
+
     return 1;
 }
 
 //#ifdef HAVE_NCURSESW
 #ifdef HAVE_ADDNWSTR
 int 
-default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
+		size_t *tolen, char **dst)
 {
     int i, j;
     chtype *dest;
@@ -238,13 +256,16 @@ default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t 
 	    dest[j++] = str[i];
     *tolen = j;
 
+    *dst = cw.bp1;
+
     return 0;
 }
 
 #else
 
 int 
-default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
+default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
+		size_t *tolen, char **dst)
 {
     int i, j;
     char **tostr = (char **)&cw->bp1;
@@ -260,34 +281,12 @@ default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t 
 	    (*tostr)[j++] = str[i];
     *tolen = j;
 
+    *dst = cw->bp1;
+
     return 0;
 }
 #endif
 
-int 
-gb2int (SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
-{
-    int i, j;
-    CHAR_T **tostr = (CHAR_T **)&cw->bp1;
-    size_t  *blen = &cw->blen1;
-
-    BINC_RETW(NULL, *tostr, *blen, len);
-
-    for (i = 0, j = 0; i < len; ++i) {
-	if (str[i] & 0x80) {
-	    if (i+1 < len && str[i+1] & 0x80) {
-		(*tostr)[j++] = INT9494(F_GB,str[i]&0x7F,str[i+1]&0x7F);
-		++i;
-	    } else {
-		(*tostr)[j++] = INTILL(str[i]);
-	    }
-	} else
-	    (*tostr)[j++] = str[i];
-    }
-    *tolen = j;
-
-    return 0;
-}
 
 CONV raw_conv = { raw2int, int2raw, 
 		  raw2int, int2raw, default_int2disp };
@@ -323,6 +322,8 @@ conv_enc (SCR *sp, char *enc)
     if (id == (iconv_t)-1)
 	goto err;
     iconv_close(id);
+
+    F_CLR(sp, SC_CONV_ERROR);
 
     return 0;
 err:
