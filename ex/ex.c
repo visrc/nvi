@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.77 1993/12/19 16:39:47 bostic Exp $ (Berkeley) $Date: 1993/12/19 16:39:47 $";
+static char sccsid[] = "$Id: ex.c,v 8.78 1993/12/20 10:24:31 bostic Exp $ (Berkeley) $Date: 1993/12/20 10:24:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -503,16 +503,18 @@ loop:	if (nl) {
 			 * QUOTING NOTE:
 			 *
 			 * Backslashes quote delimiter characters for RE's.
-			 * The backslashes are NOT reomved since they'll be
-			 * used by the RE code.  Move to the second or third
-			 * delimiter that's not escaped.
+			 * The backslashes are NOT removed since they'll be
+			 * used by the RE code.  Move to the third delimiter
+			 * that's not escaped (or the end of the command).
 			 */
 			delim = *cmd;
 			++cmd;
 			--cmdlen;
-			for (cnt = cp == &cmds[C_SUBSTITUTE] ? 2 : 1;
-			    cmdlen > 0 && cnt; --cmdlen, ++cmd)
-				if (*cmd == delim)
+			for (cnt = 2; cmdlen > 0 && cnt; --cmdlen, ++cmd)
+				if (cmd[0] == '\\' && cmdlen > 1) {
+					++cmd;
+					--cmdlen;
+				} else if (cmd[0] == delim)
 					--cnt;
 		}
 	}
