@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.5 1992/05/22 09:58:45 bostic Exp $ (Berkeley) $Date: 1992/05/22 09:58:45 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.6 1992/05/23 08:50:00 bostic Exp $ (Berkeley) $Date: 1992/05/23 08:50:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <limits.h>
 #include <stddef.h>
 
 #include "vi.h"
@@ -19,13 +20,15 @@ static char sccsid[] = "$Id: v_increment.c,v 5.5 1992/05/22 09:58:45 bostic Exp 
 static int lastch = '+';
 static int lastcnt = 1;
 static char *fmt[] = {
-#define	DECIMAL	0
+#define	DEC	0
 	"%.*ld",
-#define	HEXC	1
+#define	SDEC	1
+	"%+.*ld",
+#define	HEXC	2
 	"%#0.*lX",
-#define	HEXL	2
+#define	HEXL	3
 	"%#0.*lx",
-#define	OCTAL	3
+#define	OCTAL	4
 	"%#0.*lo",
 };
 
@@ -59,14 +62,21 @@ v_increment(vp, cp, rp)
 	}
 	lastch = vp->character;
 
-	/* Figure out the resulting type. */
+	/* Figure out the resulting type and number. */
 	p = vp->keyword;
 	len = vp->klen;
 	if (len > 1 && p[0] == '0') {
-		if (vp->character == '+')
-			ulval = strtoul(vp->keyword, NULL, 0) + lastcnt;
-		else
-			ulval = strtoul(vp->keyword, NULL, 0) - lastcnt;
+		if (vp->character == '+') {
+			ulval = strtoul(vp->keyword, NULL, 0);
+			if (ULONG_MAX - ulval < lastcnt)
+				goto overflow;
+			ulval += lastcnt;
+		} else {
+			ulval = strtoul(vp->keyword, NULL, 0);
+			if (ulval < lastcnt)
+				goto underflow;
+			ulval -= lastcnt;
+		}
 		ntype = fmt[OCTAL];
 		if (len > 2)
 			if (p[1] == 'X')
@@ -75,11 +85,26 @@ v_increment(vp, cp, rp)
 				ntype = fmt[HEXL];
 		len = snprintf(nbuf, sizeof(nbuf), ntype, len, ulval);
 	} else {
-		if (vp->character == '+')
-			lval = strtol(vp->keyword, NULL, 0) + lastcnt;
-		else
-			lval = strtol(vp->keyword, NULL, 0) - lastcnt;
-		len = snprintf(nbuf, sizeof(nbuf), fmt[DECIMAL], len, lval);
+		if (vp->character == '+') {
+			lval = strtol(vp->keyword, NULL, 0);
+			if (LONG_MAX - lval < lastcnt) {
+overflow:			bell();
+				msg("Resulting number too large.");
+				return (1);
+			}
+			lval += lastcnt;
+		} else {
+			lval = strtol(vp->keyword, NULL, 0);
+			if (lval < 0 && -(LONG_MIN - lval) > lastcnt) {
+underflow:			bell();
+				msg("Resulting number too small.");
+				return (1);
+			}
+			lval -= lastcnt;
+		}
+		ntype = *vp->keyword == '+' || *vp->keyword == '-' ?
+			fmt[SDEC] : fmt[DEC];
+		len = snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
 	}
 
 	*rp = *cp;
