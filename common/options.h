@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 10.8 1996/02/20 09:31:47 bostic Exp $ (Berkeley) $Date: 1996/02/20 09:31:47 $
+ *	$Id: options.h,v 10.9 1996/02/20 21:07:02 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:07:02 $
  */
 
 /*
@@ -32,10 +32,11 @@
 /* Global option macros. */
 #define	OG_CLR(gp, o)		((gp)->opts[(o)].o_cur.val) = 0
 #define	OG_SET(gp, o)		((gp)->opts[(o)].o_cur.val) = 1
-#define	OG_ISSET(gp, o)		((gp)->opts[(o)].o_cur.val)
 #define	OG_STR(gp, o)		((gp)->opts[(o)].o_cur.str)
-#define	OG_D_STR(gp, o)		((gp)->opts[(o)].o_def.str)
 #define	OG_VAL(gp, o)		((gp)->opts[(o)].o_cur.val)
+#define	OG_ISSET(gp, o)		OG_VAL(gp, o)
+
+#define	OG_D_STR(gp, o)		((gp)->opts[(o)].o_def.str)
 #define	OG_D_VAL(gp, o)		((gp)->opts[(o)].o_def.val)
 
 struct _option {
@@ -43,21 +44,21 @@ struct _option {
 		u_long	 val;		/* Value or boolean. */
 		char	*str;		/* String. */
 	} o_cur;
-#define	O_CLR(sp, o)		O_V(sp, o, o_cur.val) = 0
-#define	O_SET(sp, o)		O_V(sp, o, o_cur.val) = 1
-#define	O_ISSET(sp, o)		O_V(sp, o, o_cur.val)
+#define	O_CLR(sp, o)		o_set(sp, o, 0, NULL, 0)
+#define	O_SET(sp, o)		o_set(sp, o, 0, NULL, 1)
 #define	O_STR(sp, o)		O_V(sp, o, o_cur.str)
 #define	O_VAL(sp, o)		O_V(sp, o, o_cur.val)
+#define	O_ISSET(sp, o)		O_VAL(sp, o)
 
 	union {
 		u_long	 val;		/* Value or boolean. */
 		char	*str;		/* String. */
 	} o_def;
-#define	O_D_CLR(sp, o)		O_V(sp, o, o_def.val) = 0
-#define	O_D_SET(sp, o)		O_V(sp, o, o_def.val) = 1
-#define	O_D_ISSET(sp, o)	O_V(sp, o, o_def.val)
+#define	O_D_CLR(sp, o)		o_set(sp, o, 1, NULL, 0)
+#define	O_D_SET(sp, o)		o_set(sp, o, 1, NULL, 1)
 #define	O_D_STR(sp, o)		O_V(sp, o, o_def.str)
 #define	O_D_VAL(sp, o)		O_V(sp, o, o_def.val)
+#define	O_D_ISSET(sp, o)	O_D_VAL(sp, o)
 
 #define	OPT_GLOBAL	0x01		/* Option is global. */
 #define	OPT_SELECTED	0x02		/* Selected for display. */
@@ -78,6 +79,12 @@ struct _optlist {
 #define	OPT_NOUNSET	0x08		/* Mkexrc command doesn't save. */
 	u_int8_t flags;
 };
+
+/* Flags to o_set(). */
+#define	OS_DEF		0x01		/* Set the default value. */
+#define	OS_FREE		0x02		/* Free old string if set. */
+#define	OS_STR		0x04		/* Set to the str value. */
+#define	OS_STRDUP	0x08		/* Copy and set to the str value. */
 
 /* Option argument to opts_dump(). */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };

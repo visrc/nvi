@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.11 1996/02/06 11:59:46 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:59:46 $";
+static char sccsid[] = "$Id: options_f.c,v 10.12 1996/02/20 21:07:03 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:07:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,18 +113,24 @@ f_lines(sp, op, str, valp)
 	 * Set the value, and the related scroll value.  If no window
 	 * value set, set a new default window.
 	 */
-	if ((O_VAL(sp, O_LINES) = *valp) == 1) {
+	o_set(sp, O_LINES, 0, NULL, *valp);
+	if (*valp == 1) {
 		sp->defscroll = 1;
 
 		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
-		    O_VAL(sp, O_WINDOW) > *valp)
-			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = 1;
+		    O_VAL(sp, O_WINDOW) > *valp) {
+			o_set(sp, O_WINDOW, 0, NULL, 1);
+			o_set(sp, O_WINDOW, OS_DEF, NULL, 1);
+		}
 	} else {
 		sp->defscroll = (*valp - 1) / 2;
 
 		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
-		    O_VAL(sp, O_WINDOW) > *valp)
-			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = *valp - 1;
+		    O_VAL(sp, O_WINDOW) > *valp) {
+			--*valp;
+			o_set(sp, O_WINDOW, 0, NULL, *valp);
+			o_set(sp, O_WINDOW, OS_DEF, NULL, *valp);
+		}
 	}
 	return (0);
 }

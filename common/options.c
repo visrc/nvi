@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.24 1996/02/20 09:09:14 bostic Exp $ (Berkeley) $Date: 1996/02/20 09:09:14 $";
+static char sccsid[] = "$Id: options.c,v 10.25 1996/02/20 21:06:59 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:06:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -286,14 +286,19 @@ opts_init(sp, oargs)
 	/*
 	 * Indirect global options to global space.  Specifically, set up
 	 * terminal, lines, columns first, they're used by other options.
+	 * Note, don't set the flags until we've set up the indirection.
 	 */
-	O_VAL(sp, O_TERM) = GO_TERM;
+	if (o_set(sp, O_TERM, 0, NULL, GO_TERM))
+		goto err;
 	F_SET(&sp->opts[O_TERM], OPT_GLOBAL);
-	O_VAL(sp, O_LINES) = GO_LINES;
+	if (o_set(sp, O_LINES, 0, NULL, GO_LINES))
+		goto err;
 	F_SET(&sp->opts[O_LINES], OPT_GLOBAL);
-	O_VAL(sp, O_COLUMNS) = GO_COLUMNS;
+	if (o_set(sp, O_COLUMNS, 0, NULL, GO_COLUMNS))
+		goto err;
 	F_SET(&sp->opts[O_COLUMNS], OPT_GLOBAL);
-	O_VAL(sp, O_SECURE) = GO_SECURE;
+	if (o_set(sp, O_SECURE, 0, NULL, GO_SECURE))
+		goto err;
 	F_SET(&sp->opts[O_SECURE], OPT_GLOBAL);
 
 	/* Initialize string values. */
@@ -368,23 +373,14 @@ opts_init(sp, oargs)
 	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
 		switch (op->type) {
 		case OPT_0BOOL:
-			O_CLR(sp, cnt);
-			O_D_CLR(sp, cnt);
-			break;
 		case OPT_1BOOL:
-			O_SET(sp, cnt);
-			O_D_SET(sp, cnt);
-			break;
 		case OPT_NUM:
-			O_D_VAL(sp, cnt) = O_VAL(sp, cnt);
+			o_set(sp, cnt, OS_DEF, NULL, O_VAL(sp, cnt));
 			break;
 		case OPT_STR:
-			if (O_STR(sp, cnt) != NULL &&
-			    (O_D_STR(sp, cnt) =
-			    strdup(O_STR(sp, cnt))) == NULL) {
-				msgq(sp, M_SYSERR, NULL);
+			if (O_STR(sp, cnt) != NULL && o_set(sp,
+			    cnt, OS_DEF | OS_STRDUP, O_STR(sp, cnt), 0))
 				goto err;
-			}
 			break;
 		default:
 			abort();
@@ -596,7 +592,10 @@ badnum:				p = msg_print(sp, name, &nf);
 			 */
 			if (O_VAL(sp, offset) == value)
 				break;
-			O_VAL(sp, offset) = value;
+			if (o_set(sp, offset, 0, NULL, value)) {
+				rval = 1;
+				break;
+			}
 
 			/* Report to subsystems. */
 			if (op->func != NULL &&
@@ -624,15 +623,13 @@ badnum:				p = msg_print(sp, name, &nf);
 			 * Do nothing if the value is unchanged, the underlying
 			 * functions can be expensive.  Otherwise, set it.
 			 */
-			if (!strcmp(O_STR(sp, offset), sep))
+			if (O_STR(sp, offset) != NULL &&
+			    !strcmp(O_STR(sp, offset), sep))
 				break;
-			if ((p = strdup(sep)) == NULL) {
-				msgq(sp, M_SYSERR, NULL);
-				return (1);
+			if (o_set(sp, offset, OS_FREE | OS_STRDUP, sep, 0)) {
+				rval = 1;
+				break;
 			}
-			if (O_STR(sp, offset) != NULL)
-				free(O_STR(sp, offset));
-			O_STR(sp, offset) = p;
 
 			/* Report to subsystems. */
 			if (op->func != NULL &&
@@ -649,6 +646,52 @@ badnum:				p = msg_print(sp, name, &nf);
 	if (disp != NO_DISPLAY)
 		opts_dump(sp, disp);
 	return (rval);
+}
+
+/*
+ * o_set --
+ *	Set an option's value.
+ *
+ * PUBLIC: int o_set __P((SCR *, int, u_int, char *, u_long));
+ */
+int
+o_set(sp, opt, flags, str, val)
+	SCR *sp;
+	int opt;
+	u_int flags;
+	char *str;
+	u_long val;
+{
+	OPTION *op;
+
+	/* Set a pointer to the options area. */
+	op = F_ISSET(&sp->opts[opt], OPT_GLOBAL) ?
+	    &sp->gp->opts[sp->opts[opt].o_cur.val] : &sp->opts[opt];
+
+	/* Copy the string, if requested. */
+	if (LF_ISSET(OS_STRDUP) && (str = strdup(str)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
+
+
+	/* Free the previous string, if requested, and set the value. */
+	if LF_ISSET(OS_DEF) {
+		if (LF_ISSET(OS_FREE) && op->o_def.str != NULL)
+			free(op->o_def.str);
+		if (LF_ISSET(OS_STR | OS_STRDUP))
+			op->o_def.str = str;
+		else
+			op->o_def.val = val;
+	} else {
+		if (LF_ISSET(OS_FREE) && op->o_cur.str != NULL)
+			free(op->o_cur.str);
+		if (LF_ISSET(OS_STR | OS_STRDUP))
+			op->o_cur.str = str;
+		else
+			op->o_cur.val = val;
+	}
+	return (0);
 }
 
 /*
@@ -960,19 +1003,20 @@ opts_copy(orig, sp)
 		 * screens referencing the same memory.
 		 */
 		if (rval || O_STR(sp, cnt) == NULL) {
-			O_STR(sp, cnt) = O_D_STR(sp, cnt) = NULL;
+			o_set(sp, cnt, OS_STR, NULL, 0);
+			o_set(sp, cnt, OS_DEF | OS_STR, NULL, 0);
 			continue;
 		}
 
 		/* Copy the current string. */
-		if ((O_STR(sp, cnt) = strdup(O_STR(sp, cnt))) == NULL) {
-			O_D_STR(sp, cnt) = NULL;
+		if (o_set(sp, cnt, OS_STRDUP, O_STR(sp, cnt), 0)) {
+			o_set(sp, cnt, OS_DEF | OS_STR, NULL, 0);
 			goto nomem;
 		}
 
 		/* Copy the default string. */
 		if (O_D_STR(sp, cnt) != NULL &&
-		    (O_D_STR(sp, cnt) = strdup(O_D_STR(sp, cnt))) == NULL) {
+		    o_set(sp, cnt, OS_DEF | OS_STR, O_D_STR(sp, cnt), 0)) {
 nomem:			msgq(orig, M_SYSERR, NULL);
 			rval = 1;
 		}
