@@ -1,4 +1,4 @@
-/* $Id: pathnames.h.in,v 8.3 1996/04/22 19:36:32 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:36:32 $ */
+/* $Id: pathnames.h.in,v 8.4 1996/06/26 11:08:49 bostic Exp $ (Berkeley) $Date: 1996/06/26 11:08:49 $ */
 
 #ifndef	_PATH_BSHELL
 #define	_PATH_BSHELL	"@vi_cv_path_shell@"
@@ -17,7 +17,7 @@
 #endif
 
 #ifndef	_PATH_PRESERVE
-#define	_PATH_PRESERVE	"@vi_cv_path_preserve@/vi.recover"
+#define	_PATH_PRESERVE	"@vi_cv_path_preserve@"
 #endif
 
 #ifndef _PATH_SYSV_PTY
