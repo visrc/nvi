@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.17 1995/01/31 12:58:55 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:58:55 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.18 1995/02/02 19:05:33 bostic Exp $ (Berkeley) $Date: 1995/02/02 19:05:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -112,9 +112,11 @@ ex_tagfirst(sp, tagarg)
 			tag_msg(sp, TAG_SEARCH, tag);
 		else {
 			sp->lno = m.lno;
-			sp->cno = m.cno;
+			sp->cno = 0;
+			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
 	}
+
 	(void)msg_status(sp, sp->lno, 0);
 
 	/* Might as well make this the default tag. */
@@ -279,7 +281,8 @@ err:		free(tag);
 			tag_msg(sp, TAG_SEARCH, tag);
 		else {
 			sp->lno = m.lno;
-			sp->cno = m.cno;
+			sp->cno = 0;
+			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
 	}
 	free(tag);
