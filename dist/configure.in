@@ -215,6 +215,7 @@ AC_ARG_ENABLE(widechar,
 if test "$vi_cv_widechar" = "yes"; then
 	AC_DEFINE(USE_WIDECHAR)
 fi
+AC_MSG_RESULT($vi_cv_widechar)
 
 dnl If the user wants a Gtk IPC front-end for nvi, build it.
 AC_SUBST(vi_ipc)
@@ -242,6 +243,12 @@ if test "$vi_cv_gtk" = "yes"; then
 		AC_DEFINE(HAVE_ZVT)
 	fi
 	LIBS="$SAVELIBS"
+	AC_PATH_PROG(vi_cv_pango_config, pango-config, no)
+	if test "$vi_cv_pango_config" != "no"; then
+		PANGOLIBS=`$vi_cv_pango_config --libs pangox`
+		GTKLIBS="$PANGOLIBS $GTKLIBS"
+		AC_DEFINE(HAVE_PANGO)
+	fi
 #	AC_PATH_PROG(vi_cv_gnome_config, gnome-config, no)
 #	if test "$vi_cv_gnome_config" != "no"; then
 #		ZVTLIBS=`$vi_cv_gnome_config zvt --libs`

@@ -4,6 +4,11 @@
 #include <gtk/gtkmain.h>
 #include <gtk/gtksignal.h>
 #include "gtkviscreen.h"
+#include <gdk/gdkx.h>
+
+#include <pango/pango.h>
+#include <pango/pangox.h>
+
 #include "../common/conv.h"
 
 void * v_strset __P((CHAR_T *s, CHAR_T c, size_t n));
@@ -59,6 +64,7 @@ static GtkWidgetClass *parent_class = NULL;
 static guint vi_screen_signals[LAST_SIGNAL] = { 0 };
 
 static GdkFont *gb_font;
+static GdkFont *tf;
 
 #define CharAt(scr,y,x)	scr->chars + (y) * scr->cols + x
 #define FlagAt(scr,y,x)	(scr->reverse + (y) * scr->cols + x)
@@ -142,6 +148,7 @@ gtk_vi_screen_addstr(GtkViScreen *vi, const char *str, int len)
 	    vi->curx = 0;
 	}
     } else vi->curx += len;
+    if (x < vi->cols) endcol[x] = vi->cols;
 }
 
 void
@@ -161,7 +168,7 @@ gtk_vi_screen_waddstr(GtkViScreen *vi, const CHAR_T *str, int len)
     x = vi->curx;
     startcol = x ? endcol[x-1] : -1;
     for (col = startcol; x < vi->curx + len; ++x)
-	endcol[x] = col += INTIS9494(*(line+x)) ? 2 : 1;
+	endcol[x] = col += CHAR_WIDTH(NULL, *(line+x));
 
     mark_lines(vi, vi->cury, startcol+1, vi->cury+1, endcol[x-1]+1);
 
@@ -173,6 +180,7 @@ gtk_vi_screen_waddstr(GtkViScreen *vi, const CHAR_T *str, int len)
 	    vi->curx = 0;
 	}
     } else vi->curx += len;
+    if (x < vi->cols) endcol[x] = vi->cols;
 }
 
 void
@@ -298,6 +306,7 @@ gtk_vi_screen_class_init (GtkViScreenClass *class)
   class->resized = NULL;
 
   gb_font = gdk_font_load ("-*-*-*-*-*-*-16-*-*-*-*-*-gb2312.1980-*");
+  tf = gdk_font_load ("-misc-fixed-*-*-*-*-16-*-*-*-*-*-iso10646-*");
 }
 
 static void
@@ -353,6 +362,8 @@ gtk_vi_screen_init (GtkViScreen *vi)
   vi->color = COLOR_STANDARD;
   vi->cols = 0;
   vi->rows = 0;
+
+  vi->conx = NULL;
 
   style = gtk_style_copy(GTK_WIDGET(vi)->style);
   gdk_font_unref(style->font);
@@ -664,12 +675,13 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
     GdkFont *font;
     gchar buf[2];
     gchar *p;
+    gboolean pango;
 
     for (y = ymin, line = vi->chars + y*vi->cols; 
 			     y < ymax; ++y, line += vi->cols) {
 	for (x = 0, xpos = 0; xpos <= xmin; ++x)
-	    xpos += INTIS9494(*(line+x)) ? 2 : 1;
-	xpos -= INTIS9494(*(line+--x)) ? 2 : 1;
+	    xpos += CHAR_WIDTH(NULL, *(line+x));
+	xpos -= CHAR_WIDTH(NULL, *(line+--x));
 	for (; xpos < xmax; x+=len, xpos+= blen) {
 	    gchar inverse;
 	    inverse = Inverse(vi,y,x); 
@@ -684,12 +696,31 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		bg = vi->reverse_gc;
 		fg = vi->gc;
 	    }
+	    pango = 0;
 	    if (INTIS9494(*(line+x))) {
 		font = gb_font;
 		buf[0] = INT9494R(*(line+x));
 		buf[1] = INT9494C(*(line+x));
 		p = buf;
 		blen = 2;
+	    } else if (INTISUCS(*(line+x))) {
+		if (!vi->conx) {
+		    PangoFontDescription font_description;
+
+		    font_description.family_name = g_strdup ("monospace");
+		    font_description.style = PANGO_STYLE_NORMAL;
+		    font_description.variant = PANGO_VARIANT_NORMAL;
+		    font_description.weight = 500;
+		    font_description.stretch = PANGO_STRETCH_NORMAL;
+		    font_description.size = 16000;
+
+		    vi->conx = pango_x_get_context (GDK_DISPLAY ());
+		    pango_context_set_font_description (vi->conx, 
+			&font_description);
+		    vi->alist = pango_attr_list_new();
+		}
+		blen = CHAR_WIDTH(NULL, *(line+x));
+		pango = 1;
 	    } else {
 		font = GTK_WIDGET(vi)->style->font;
 		if (sizeof(CHAR_T) == sizeof(gchar))
@@ -706,11 +737,31 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 	    /* hack to not display half a wide character that wasn't
 	     * removed.
 	     */
-	    if (xpos + blen <= vi->cols)
-	    gdk_draw_text (vi->text_area, font, fg,
-			    xpos * vi->ch_width, 
-			    y * vi->ch_height + vi->ch_ascent, 
-			    p, blen);
+	    if (xpos + blen <= vi->cols) {
+		if (!pango)
+		    gdk_draw_text (vi->text_area, font, fg,
+				    xpos * vi->ch_width, 
+				    y * vi->ch_height + vi->ch_ascent, 
+				    p, blen);
+		else {
+		    PangoGlyphString *gs;
+		    GList *list;
+		    PangoItem *item;
+		    char buf[3];
+		    int len;
+
+		    len = ucs2utf8(line+x, 1, buf);
+		    list = pango_itemize(vi->conx, buf, len, vi->alist);
+		    item = list->data;
+		    gs = pango_glyph_string_new ();
+		    pango_shape(buf, len, &item->analysis, gs);
+
+		    pango_x_render(GDK_DISPLAY (), 
+			GDK_WINDOW_XWINDOW(vi->text_area), GDK_GC_XGC(fg),
+			item->analysis.font, gs, xpos * vi->ch_width, 
+			y * vi->ch_height + vi->ch_ascent);
+		}
+	    }
 	}
     }
 }

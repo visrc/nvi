@@ -4,6 +4,7 @@
 #include "config.h"
 #include "port.h"
 #include "../common/multibyte.h"
+#include <pango/pango.h>
 
 #define GTK_TYPE_VI_SCREEN                  (gtk_vi_screen_get_type ())
 #define GTK_VI_SCREEN(obj)                  (GTK_CHECK_CAST ((obj), GTK_TYPE_VI_SCREEN, GtkViScreen))
@@ -35,6 +36,9 @@ struct _GtkViScreen
   gint  curx, cury;			 /* character position */
   gint  lastx, lasty;
   gint	marked_x, marked_y, marked_maxx, marked_maxy;
+
+  PangoContext *conx;
+  PangoAttrList* alist;
 };
 
 struct _GtkViScreenClass

@@ -26,3 +26,23 @@ v_strset(CHAR_T *s, CHAR_T c, size_t n)
 	return ss;
 }
 
+int
+ucs2utf8(const CHAR_T *src, size_t len, char *dst)
+{
+    int i, j;
+
+    for (i = 0, j = 0; i < len; ++i) {
+	if (src[i] < 0x80)
+	    dst[j++] = src[i];
+	else if (src[i] < 0x800) {
+	    dst[j++] = (src[i] >> 6) | 0xc0;
+	    dst[j++] = (src[i] & 0x3f) | 0x80;
+	} else {
+	    dst[j++] = (src[i] >> 12) | 0xe0;
+	    dst[j++] = ((src[i] >> 6) & 0x3f) | 0x80;
+	    dst[j++] = (src[i] & 0x3f) | 0x80;
+	}
+    }
+
+    return j;
+}

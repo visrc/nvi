@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.6 2000/07/23 17:32:16 skimo Exp $ (Berkeley) $Date: 2000/07/23 17:32:16 $";
+static const char sccsid[] = "$Id: conv.c,v 1.7 2000/08/27 17:15:04 skimo Exp $ (Berkeley) $Date: 2000/08/27 17:15:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ gb2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen,
 
     for (i = 0, j = 0; i < len; ++i) {
 	if (str[i] & 0x80) {
-	    if (i+1 < len && str[i] & 0x80) {
+	    if (i+1 < len && str[i+1] & 0x80) {
 		(*tostr)[j++] = INT9494(F_GB,str[i]&0x7F,str[i+1]&0x7F);
 		++i;
 	    } else {
@@ -116,10 +116,56 @@ int2gb(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen,
     return 0;
 }
 
+int 
+utf82int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
+{
+    int i, j;
+    CHAR_T c;
+
+    BINC_RETW(NULL, *tostr, *blen, len);
+
+    for (i = 0, j = 0; i < len; ++i) {
+	if (str[i] & 0x80) {
+	    if ((str[i] & 0xe0) == 0xc0 && i+1 < len && str[i+1] & 0x80) {
+		c = (str[i] & 0x1f) << 6;
+		c |= (str[i+1] & 0x3f);
+		(*tostr)[j++] = c;
+		++i;
+	    } else if ((str[i] & 0xf0) == 0xe0 && i+2 < len && 
+			str[i+1] & 0x80 && str[i+2] & 0x80) {
+		c = (str[i] & 0xf) << 12;
+		c |= (str[i+1] & 0x3f) << 6;
+		c |= (str[i+2] & 0x3f);
+		(*tostr)[j++] = c;
+		i += 2;
+	    } else {
+		(*tostr)[j++] = INTILL(str[i]);
+	    }
+	} else
+	    (*tostr)[j++] = str[i];
+    }
+    *tolen = j;
+
+    return 0;
+}
+
+int
+int2utf8(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
+{
+    BINC_RET(NULL, *tostr, *blen, len * 3);
+
+    *tolen = ucs2utf8(str, len, *tostr);
+
+    return 0;
+}
+
+
 CONV default_conv = { 0, 0, default_char2int, default_int2char, 
 		      default_char2int, default_int2char, default_int2disp };
 CONV gb_conv = { 0, 0, default_char2int, default_int2char, 
 		      gb2int, int2gb, default_int2disp };
+CONV utf8_conv = { 0, 0, default_char2int, default_int2char, 
+		      utf82int, int2utf8, default_int2disp };
 
 void
 conv_init (SCR *orig, SCR *sp)
@@ -139,6 +185,10 @@ conv_enc (SCR *sp, char *enc)
     }
     if (!strcmp(enc,"GB")) {
 	sp->conv = &gb_conv;
+	return 0;
+    }
+    if (!strcmp(enc,"UTF-8")) {
+	sp->conv = &utf8_conv;
 	return 0;
     }
     return 1;
