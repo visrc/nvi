@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 8.5 1994/03/08 19:39:50 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:50 $";
+static char sccsid[] = "$Id: ex_undo.c,v 8.6 1994/07/23 09:47:14 bostic Exp $ (Berkeley) $Date: 1994/07/23 09:47:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,6 +54,15 @@ ex_undo(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	MARK m;
+
+	/*
+	 * !!!
+	 * Historic undo always set the previous context mark.
+	 */
+	m.lno = sp->lno;
+	m.cno = sp->cno;
+	if (mark_set(sp, ep, ABSMARK1, &m, 1))
+		return (1);
 
 	/*
 	 * !!!
