@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.5 1993/10/31 14:19:51 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:19:51 $";
+static char sccsid[] = "$Id: mark.c,v 8.6 1993/11/03 17:11:19 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:11:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,6 +92,7 @@ mark_end(sp, ep)
 		list_remove(mp, MARK *, q);
 		FREE(mp, sizeof(MARK));
 	}
+	return (0);
 }
 
 /*
