@@ -1,10 +1,10 @@
-#	$Id: Makefile,v 8.20 1996/08/18 10:52:42 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:52:42 $
+#	$Id: Makefile,v 8.21 2001/01/28 15:28:48 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:48 $
 
 MACROS=	-me
 ROFF=	groff
 TBL=	tbl
 
-all: vi.ref.txt vi.ref.ps
+all: vi.ref.txt vi.ref.ps ../html/vi.ref.html
 
 vi.ref.txt: vi.ref index.so
 	soelim vi.ref | ${TBL} | groff ${MACROS} -Tascii > $@
@@ -14,6 +14,12 @@ vi.ref.txt: vi.ref index.so
 vi.ref.ps: vi.ref index.so
 	soelim vi.ref | ${TBL} | ${ROFF} ${MACROS} > $@
 	rm -f index
+	chmod 444 $@
+
+../html/vi.ref.html: vi.ref index.so
+	${TBL} $< | ${ROFF} -ms -Thtml | \
+	    sed 's/<img src="$<.*png">//' > $@
+	rm "$<"*png
 	chmod 444 $@
 
 index.so: vi.ref
@@ -29,4 +35,4 @@ index.so: vi.ref
 	chmod 444 $@
 
 clean:
-	rm -f vi.ref.ps vi.ref.txt index index.so
+	rm -f vi.ref.ps vi.ref.txt index index.so ../html/vi.ref.html

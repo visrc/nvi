@@ -1,11 +1,19 @@
-# $Id: Makefile,v 8.4 1996/08/18 10:48:20 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:48:20 $
+# $Id: Makefile,v 8.5 2001/01/28 15:28:47 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:47 $
 
 ROFF=	groff
 TBL=	tbl
 
-edittut.ps: edittut.ms
-	${TBL} edittut.ms | ${ROFF} -ms > $@
+all: edittut.ps ../html/edittut.html
+
+../html/%.html: %.ms
+	${TBL} $< | ${ROFF} -ms -Thtml | \
+	    sed 's/<img src="$<.*png">//' > $@
+	rm "$<"*png
+	chmod 444 $@
+
+%.ps: %.ms
+	${TBL} $< | ${ROFF} -ms > $@
 	chmod 444 $@
 
 clean:
-	rm -f edittut.ps
+	rm -f edittut.ps ../html/edittut.html

@@ -1,17 +1,31 @@
-# $Id: Makefile,v 8.8 1996/10/10 19:39:00 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:39:00 $
+# $Id: Makefile,v 8.9 2001/01/28 15:28:47 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:47 $
 
 ROFF=	groff
 TBL=	tbl
 
-all: exref.ps summary.ps
+ALL= exref.ps summary.ps ../html/exref.html ../html/ex-summary.html
+
+all: $(ALL)
+
+../html/exref.html: ex.rm
+	${TBL} $< | ${ROFF} -ms -Thtml | \
+	    sed 's/<img src="$<.*png">//' > $@
+	rm "$<"*png
+	chmod 444 $@
+
+../html/ex-summary.html: ex.summary
+	${TBL} $< | ${ROFF} -ms -Thtml | \
+	    sed 's/<img src="$<.*png">//' > $@
+	rm "$<"*png
+	chmod 444 $@
 
 exref.ps: ex.rm
-	${TBL} ex.rm | ${ROFF} -ms > $@
+	${TBL} $< | ${ROFF} -ms > $@
 	chmod 444 $@
 
 summary.ps: ex.summary
-	${TBL} ex.summary | ${ROFF} -ms > $@
+	${TBL} $< | ${ROFF} -ms > $@
 	chmod 444 $@
 
 clean:
-	rm -f exref.ps summary.ps
+	rm -f $(ALL)
