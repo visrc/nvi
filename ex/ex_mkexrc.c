@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 10.3 1995/06/09 12:51:43 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:43 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 10.4 1995/06/14 17:26:45 bostic Exp $ (Berkeley) $Date: 1995/06/14 17:26:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,9 +96,6 @@ ex_mkexrc(sp, cmdp)
 		goto e1;
 	if (opts_save(sp, fp) || ferror(fp))
 		goto e1;
-#ifndef NO_DIGRAPH
-	digraph_save(sp, fd);
-#endif
 	if (fclose(fp)) {
 		sverrno = errno;
 		goto e2;
