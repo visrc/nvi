@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.5 1993/04/13 16:16:01 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:16:01 $";
+static char sccsid[] = "$Id: screen.c,v 5.6 1993/04/17 11:51:08 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:51:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,15 +163,15 @@ scr_end(sp)
 {
 	/* Free the memory map. */
 	if (sp->h_smap != NULL)
-		free(sp->h_smap);
+		FREE(sp->h_smap, sp->w_rows * sizeof(SMAP));
 
 	/* Free the argument list. */
 	{ int cnt;
 		for (cnt = 0; cnt < sp->argscnt; ++cnt)
 			if (F_ISSET(&sp->args[cnt], A_ALLOCATED))
-				free(sp->args[cnt].bp);
-		free(sp->args);
-		free(sp->argv);
+				FREE(sp->args[cnt].bp, sp->args[cnt].len);
+		FREE(sp->args, sp->argscnt * sizeof(ARGS *));
+		FREE(sp->argv, sp->argscnt * sizeof(char *));
 	}
 
 	/* Free globbing information. */
@@ -180,7 +180,7 @@ scr_end(sp)
 
 	/* Free line input buffer. */
 	if (sp->ibp != NULL)
-		free(sp->ibp);
+		FREE(sp->ibp, sp->ibp_len);
 
 	/* Free text input, command chains. */
 	text_free(&sp->txthdr);
@@ -188,15 +188,15 @@ scr_end(sp)
 
 	/* Free vi text input memory. */
 	if (sp->rep != NULL)
-		free(sp->rep);
+		FREE(sp->rep, sp->rep_len);
 
 	/* Free visual bell termcap string. */
 	if (sp->VB != NULL)
-		free(sp->VB);
+		FREE(sp->VB, strlen(sp->VB) + 1);
 
 	/* Free last bang command. */
 	if (sp->lastbcomm != NULL)
-		free(sp->lastbcomm);
+		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
 
 	/* Free cut buffers. */
 	{ CB *cb; int cnt;
@@ -210,41 +210,43 @@ scr_end(sp)
 		if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED) &&
 		    sp->tfhead != NULL) {
 			for (cnt = 0; sp->tfhead[cnt] != NULL; ++cnt)
-				free(sp->tfhead[cnt]->fname);
+				FREE(sp->tfhead[cnt]->fname,
+				    strlen(sp->tfhead[cnt]->fname) + 1);
 			free(sp->tfhead);
 		}
 		if (sp->tlast != NULL)
-			free(sp->tlast);
+			FREE(sp->tlast, strlen(sp->tlast) + 1);
 	}
 
 	/* Free up search information. */
 	if (sp->match != NULL)
-		free(sp->match);
+		FREE(sp->match, sizeof(regmatch_t));
 	if (sp->repl != NULL)
-		free(sp->repl);
+		FREE(sp->repl, sp->repl_len);
 	if (sp->newl != NULL)
-		free(sp->newl);
+		FREE(sp->newl, sp->newl_len);
 
 	/* Free up linked lists of sequences. */
 	{ SEQ *qp, *next;
 		for (qp = sp->seqhdr.next;
 		    qp != (SEQ *)&sp->seqhdr; qp = next) {
 			next = qp->next;
-			free(qp->name);
-			free(qp->output);
-			free(qp->input);
-			free(qp);
+			if (qp->name != NULL)
+				FREE(qp->name, strlen(qp->name) + 1);
+			FREE(qp->output, strlen(qp->output) + 1);
+			FREE(qp->input, strlen(qp->input) + 1);
+			FREE(qp, sizeof(SEQ));
 		}
 	}
 
 	/* Free up executed buffer. */
 	if (sp->atkey_buf)
-		free(sp->atkey_buf);
+		FREE(sp->atkey_buf, sp->atkey_len);
 
 	/*
 	 * Free the message chain last, so previous failures have a place
-	 * to put messages.  If there are any messages remaining, copy
-	 * them to (in order) a related screen, any screen, the global area. 
+	 * to put messages.  Copy messages to (in order) a related screen,
+	 * any screen, the global area. 
 	 */
 	{ SCR *c_sp; MSG *c_mp, *mp, *next;
 		if (sp->parent != NULL) {
@@ -277,15 +279,15 @@ scr_end(sp)
 		for (mp = sp->msgp; mp != NULL; mp = next) {
 			next = mp->next;
 			if (mp->mbuf != NULL)
-				free(mp->mbuf);
-			free(mp);
+				FREE(mp->mbuf, mp->blen);
+			FREE(mp, sizeof(MSG));
 		}
 	}
 
 	/* Remove the screen from the global chain of screens. */
 	HDR_DELETE(sp, next, prev, SCR);
 
-	/* Remove the screen from the chain of window screens. */
+	/* Remove the screen from the chain of related screens. */
 	if (sp->parent != NULL) {
 		sp->parent->child = sp->child;
 		if (sp->child != NULL)
@@ -294,7 +296,7 @@ scr_end(sp)
 		sp->child->parent = NULL;
 
 	/* Free the screen itself. */
-	free(sp);
+	FREE(sp, sizeof(SCR));
 
 	return (0);
 }
@@ -322,7 +324,7 @@ cut_copy(a, b)
 			if ((tp = malloc(sizeof(TEXT))) == NULL)
 				return (1);
 			if ((tp->lb = malloc(atp->len)) == NULL) {
-				free(tp);
+				FREE(tp, sizeof(TEXT));
 				return (1);
 			}
 			memmove(atp->lb, tp->lb, tp->len = atp->len);
@@ -401,18 +403,18 @@ tag_copy(a, b)
 		if ((tp = malloc(sizeof(TAG))) == NULL)
 			goto nomem;
 		if ((tp->tag = strdup(atp->tag)) == NULL) {
-			free(tp);
+			FREE(tp, sizeof(TAG));
 			goto nomem;
 		}
 		if ((tp->fname = strdup(atp->fname)) == NULL) {
-			free(tp);
-			free(tp->tag);
+			FREE(tp, sizeof(TAG));
+			FREE(tp->tag, strlen(tp->tag) + 1);
 			goto nomem;
 		}
 		if ((tp->line = strdup(atp->line)) == NULL) {
-			free(tp);
-			free(tp->tag);
-			free(tp->fname);
+			FREE(tp, sizeof(TAG));
+			FREE(tp->tag, strlen(tp->tag) + 1);
+			FREE(tp->fname, strlen(tp->fname) + 1);
 			goto nomem;
 		}
 		tp->prev = NULL;
@@ -435,7 +437,7 @@ tag_copy(a, b)
 			if ((*btfp = malloc(sizeof(TAGF))) == NULL)
 				goto nomem;
 			if (((*btfp)->fname = strdup((*atfp)->fname)) == NULL) {
-				free(*btfp);
+				FREE(*btfp, sizeof(TAGF));
 				*btfp = NULL;
 				goto nomem;
 			}
