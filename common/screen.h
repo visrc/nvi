@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.30 1993/04/18 09:37:24 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:37:24 $
+ *	$Id: screen.h,v 5.31 1993/04/19 15:25:14 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:25:14 $
  */
 
 /*
@@ -177,7 +177,7 @@ typedef struct _scr {
 
 					/* Ex/vi: mapped chars, abbrevs. */
 	struct _hdr	 seqhdr;	/* Linked list of all sequences. */
-	struct _seq	*seq[UCHAR_MAX];/* Linked character sequences. */
+	struct _hdr	 seq[UCHAR_MAX];/* Linked character sequences. */
 
 					/* Ex/vi: executed buffers. */
 	char	*atkey_buf;		/* At key buffer. */
@@ -258,5 +258,5 @@ typedef struct _scr {
 /* Public interfaces to the screens. */
 int	scr_end __P((struct _scr *));
 int	scr_init __P((struct _scr *, struct _scr *));
-int	sex __P((struct _scr *, struct _exf *));
-int	svi __P((struct _scr *, struct _exf *));
+int	sex __P((struct _scr *, struct _exf *, struct _scr **));
+int	svi __P((struct _scr *, struct _exf *, struct _scr **));
