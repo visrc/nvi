@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.12 1994/03/08 19:39:51 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:51 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.13 1994/03/13 16:10:24 bostic Exp $ (Berkeley) $Date: 1994/03/13 16:10:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,6 +62,7 @@ ex_usage(sp, ep, cmdp)
 {
 	ARGS *ap;
 	EXCMDLIST const *cp;
+	char *name;
 	
 	switch (cmdp->argc) {
 	case 1:
@@ -92,9 +93,16 @@ ex_usage(sp, ep, cmdp)
 		}
 		break;
 	case 0:
-		for (cp = cmds; cp->name != NULL; ++cp)
+		F_SET(sp, S_INTERRUPTIBLE);
+		for (cp = cmds; cp->name != NULL; ++cp) {
+			/* The ^D command has an unprintable name. */
+			if (cp == &cmds[C_SCROLL])
+				name = "^D";
+			else
+				name = cp->name;
 			(void)ex_printf(EXCOOKIE,
-			    "%*s: %s\n", MAXCMDNAMELEN, cp->name, cp->help);
+			    "%*s: %s\n", MAXCMDNAMELEN, name, cp->help);
+		}
 		break;
 	default:
 		abort();
@@ -136,6 +144,7 @@ nokey:			(void)ex_printf(EXCOOKIE,
 			    isblank(*kp->help) ? "" : " ", kp->help, kp->usage);
 		break;
 	case 0:
+		F_SET(sp, S_INTERRUPTIBLE);
 		for (key = 0; key <= MAXVIKEY; ++key) {
 			kp = &vikeys[key];
 			if (kp->help != NULL)
