@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.7 1993/09/13 17:02:08 bostic Exp $ (Berkeley) $Date: 1993/09/13 17:02:08 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.8 1993/09/14 08:54:14 bostic Exp $ (Berkeley) $Date: 1993/09/14 08:54:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,6 +152,10 @@ svi_split(sp, argv)
 		msgq(sp, M_ERR, "No files in the file list.");
 		goto mem4;
 	}
+
+	/* Copy the file state flags. */
+	if (nochange)
+		tsp->frp->flags = sp->frp->flags;
 
 	/* Start the file. */
 	if ((tsp->ep = file_init(tsp,
