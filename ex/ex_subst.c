@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.10 1992/05/07 12:47:13 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:13 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.11 1992/05/21 12:56:01 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:56:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,7 +145,7 @@ substitute(cmdp, cmd)
 	for (l = cmdp->addr1.lno; l <= cmdp->addr2.lno; l++)
 	{
 		/* fetch the line */
-		line = fetchline(l, NULL);
+		line = file_gline(curf, l, NULL);
 
 		/* if it contains the search pattern... */
 		if (regexec(re, line, 1))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.11 1992/05/07 12:46:59 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:59 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.12 1992/05/21 12:55:53 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:55:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,12 +88,11 @@ print(cmdp, flags)
 	EXCMDARG *cmdp;
 	register int flags;
 {
-	register long cur, end;
+	register recno_t cur, end;
 	register int ch, col, rlen;
 	size_t len;
 	int cnt;
-	u_char *p;
-	char buf[10];
+	char *p, buf[10];
 
 	EX_PRSTART(0);
 	for (cur = cmdp->addr1.lno, end = cmdp->addr2.lno; cur <= end; ++cur) {
@@ -118,7 +117,7 @@ print(cmdp, flags)
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
-		p = (u_char *)fetchline(cur, &len);
+		p = file_gline(curf, cur, &len);
 		for (rlen = len; rlen--;) {
 			ch = *p++;
 			if (flags & E_F_LIST)
