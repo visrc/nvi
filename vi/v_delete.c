@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_delete.c,v 10.6 1996/03/06 19:54:15 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:15 $";
+static const char sccsid[] = "$Id: v_delete.c,v 10.7 1996/05/18 12:23:00 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:23:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,12 +76,26 @@ v_delete(sp, vp)
 			return (1);
 		vp->m_final.lno = nlines;
 	}
-	if (vp->m_final.cno >= len)
-		vp->m_final.cno = len ? len - 1 : 0;
 
 	/*
 	 * !!!
-	 * The "dd" command moved to the first non-blank; "d<motion>" didn't.
+	 * Cursor movements, other than those caused by a line mode
+	 * command moving to another line, historically reset the
+	 * relative position.
+	 */  
+	if (!F_ISSET(vp, VM_LMODE)) {
+		F_CLR(vp, VM_RCM_MASK);
+		F_SET(vp, VM_RCM_SET);
+
+		/* Make sure the set cursor position exists. */
+		if (vp->m_final.cno >= len)
+			vp->m_final.cno = len ? len - 1 : 0;
+	}
+
+	/*
+	 * !!!
+	 * The "dd" command moved to the first non-blank; "d<motion>"
+	 * didn't.
 	 */
 	if (F_ISSET(vp, VM_LDOUBLE)) {
 		F_CLR(vp, VM_RCM_MASK);
