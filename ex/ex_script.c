@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.14 1994/05/01 15:19:17 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:19:17 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.15 1994/05/04 19:04:27 bostic Exp $ (Berkeley) $Date: 1994/05/04 19:04:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,13 +195,13 @@ sscr_getprompt(sp, ep)
 	EXF *ep;
 {
 	struct timeval tv;
+	CHAR_T *endp, *p, *t, buf[1024];
 	SCRIPT *sc;
 	fd_set fdset;
 	recno_t lline;
 	size_t llen, len;
 	u_int value;
 	int nr;
-	char *endp, *p, *t, buf[1024];
 
 	FD_ZERO(&fdset);
 	endp = buf;
@@ -368,13 +368,14 @@ sscr_input(sp)
 	SCR *sp;
 {
 	struct timeval tv;
-	SCRIPT *sc;
+	CHAR_T *endp, *p, *t;
 	EXF *ep;
+	SCRIPT *sc;
 	recno_t lno;
 	size_t blen, len, tlen;
 	u_int value;
 	int nr, rval;
-	char *bp, *endp, *p, *t;
+	char *bp;
 
 	/* Find out where the end of the file is. */
 	ep = sp->ep;
