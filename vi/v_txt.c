@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.106 1994/05/01 11:56:00 bostic Exp $ (Berkeley) $Date: 1994/05/01 11:56:00 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.107 1994/05/01 12:35:11 bostic Exp $ (Berkeley) $Date: 1994/05/01 12:35:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -234,9 +234,9 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * know where the cursor is.
 	 *
 	 * !!!
-	 * One more special case.  If appending characters and wrapmargin
-	 * breaks the line, the first character entered is discarded if it
-	 * is a <space> character.
+	 * One more special case.  If an inserted <blank> character causes
+	 * wrapmargin to split the line, the next user entered character is
+	 * discarded if it's a <space> character.
 	 */
 	if (LF_ISSET(TXT_REPLAY) || !LF_ISSET(TXT_WRAPMARGIN))
 		margin = 0;
@@ -503,21 +503,17 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			 * broken a line, there may be additional information
 			 * (i.e. the start of a line) in the wmt structure.
 			 */
-			if (wmset)
-				if (wmt.len == 0)
-					wmskip = 1;
-				else {
-					BINC_GOTO(sp, ntp->lb, ntp->lb_len,
-					    ntp->len + wmt.len + 10);
-					memmove(ntp->lb + sp->cno, wmt.lb,
-					    wmt.len + wmt.insert + wmt.owrite);
-					ntp->len +=
-					    wmt.len + wmt.insert + wmt.owrite;
-					ntp->insert = wmt.insert;
-					ntp->owrite = wmt.owrite;
-					sp->cno += wmt.len;
-					wmskip = 0;
-				}
+			if (wmset && (wmt.len != 0 ||
+			    wmt.insert != 0 || wmt.owrite != 0)) {
+				BINC_GOTO(sp, ntp->lb,
+				    ntp->lb_len, ntp->len + wmt.len + 10);
+				memmove(ntp->lb + sp->cno,
+				    wmt.lb, wmt.len + wmt.insert + wmt.owrite);
+				ntp->len += wmt.len + wmt.insert + wmt.owrite;
+				ntp->insert = wmt.insert;
+				ntp->owrite = wmt.owrite;
+				sp->cno += wmt.len;
+			}
 
 			/* New lines are TXT_APPENDEOL. */
 			if (ntp->owrite == 0 && ntp->insert == 0) {
@@ -928,6 +924,8 @@ insq_ch:		/*
 					    tp, &ch, &wmt, flags, &tmp))
 						goto err;
 					if (tmp) {
+						if (isblank(ch))
+							wmskip = 1;
 						wmset = 1;
 						goto k_cr;
 					}
