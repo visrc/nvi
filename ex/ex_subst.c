@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.3 1993/06/21 15:01:18 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:01:18 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.4 1993/06/21 15:08:40 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:08:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -367,9 +367,9 @@ skipmatch:	eval = regexec(re,
 				/* Set the quit flag. */
 				quit = 1;
 
-				/* If in a global, pass the info back. */
-				if (F_ISSET(sp, S_GLOBAL))
-					F_SET(sp, S_GLOBAL_QUIT);
+				/* If interruptible, pass the info back. */
+				if (F_ISSET(sp, S_INTERRUPTIBLE))
+					F_SET(sp, S_INTERRUPTED);
 				
 				/*
 				 * If any changes, resolve them, otherwise

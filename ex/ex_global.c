@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.1 1993/06/09 22:24:20 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:24:20 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.2 1993/06/21 15:08:39 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:08:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,8 +116,8 @@ global(sp, ep, cmdp, cmd)
 	}
 
 	rval = 0;
-	F_SET(sp, S_GLOBAL);
-	F_CLR(sp, S_GLOBAL_QUIT);
+	F_CLR(sp, S_INTERRUPTED);
+	F_SET(sp, S_INTERRUPTIBLE);
 
 	/* For each line... */
 	for (lno = cmdp->addr1.lno,
@@ -163,7 +163,7 @@ global(sp, ep, cmdp, cmd)
 		}
 
 		/* Someone's unhappy, time to stop. */
-		if (F_ISSET(sp, S_GLOBAL_QUIT))
+		if (F_ISSET(sp, S_INTERRUPTED))
 			goto quit;
 
 		if (file_lline(sp, ep, &last2))
@@ -182,6 +182,6 @@ global(sp, ep, cmdp, cmd)
 		sp->lno = lno;
 	}
 
-quit:	F_CLR(sp, S_GLOBAL | S_GLOBAL_QUIT);
+quit:	F_CLR(sp, S_GLOBAL | S_INTERRUPTED | S_INTERRUPTIBLE);
 	return (rval);
 }
