@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 9.4 1995/01/30 11:59:40 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:59:40 $
+ *	$Id: mark.h,v 10.1 1995/03/17 12:36:40 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:36:40 $
  */
 
 /*

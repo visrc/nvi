@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 9.4 1995/02/15 10:14:03 bostic Exp $ (Berkeley) $Date: 1995/02/15 10:14:03 $";
+static char sccsid[] = "$Id: log.c,v 10.1 1995/03/17 12:36:13 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:36:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: log.c,v 9.4 1995/02/15 10:14:03 bostic Exp $ (Berke
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
+#include "common.h"
 
 /*
  * The log consists of records, each containing a type byte and a variable

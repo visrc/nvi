@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 9.7 1995/01/31 18:39:37 bostic Exp $ (Berkeley) $Date: 1995/01/31 18:39:37 $";
+static char sccsid[] = "$Id: util.c,v 10.1 1995/03/17 12:37:51 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:37:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ static char sccsid[] = "$Id: util.c,v 9.7 1995/01/31 18:39:37 bostic Exp $ (Berk
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
+#include "common.h"
 
 /*
  * binc --
@@ -204,8 +204,7 @@ vi_putchar(ch)
  *      Get an unsigned long, checking for overflow.
  */
 enum nresult
-nget_uslong(sp, valp, p, endp, base)
-	SCR *sp;
+nget_uslong(valp, p, endp, base)
 	u_long *valp;
 	const char *p;
 	char **endp;
@@ -225,8 +224,7 @@ nget_uslong(sp, valp, p, endp, base)
  *      Convert a signed long, checking for overflow and underflow.
  */
 enum nresult
-nget_slong(sp, valp, p, endp, base)
-	SCR *sp;
+nget_slong(valp, p, endp, base)
 	long *valp;
 	const char *p;
 	char **endp;

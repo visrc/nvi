@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 9.11 1995/01/30 11:59:30 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:59:30 $";
+static char sccsid[] = "$Id: mark.c,v 10.1 1995/03/17 12:36:24 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:36:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ static char sccsid[] = "$Id: mark.c,v 9.11 1995/01/30 11:59:30 bostic Exp $ (Ber
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
+#include "common.h"
 
 static LMARK *mark_find __P((SCR *, ARG_CHAR_T));
 
