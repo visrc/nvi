@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.14 1993/09/13 19:33:41 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:33:41 $";
+static char sccsid[] = "$Id: search.c,v 8.15 1993/09/27 10:43:28 bostic Exp $ (Berkeley) $Date: 1993/09/27 10:43:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		if (*p) {
 			if (get_delta(sp, &p, deltap, flagp))
 				return (1);
-			if (LF_ISSET(SEARCH_TERM)) {
+			if (*p && LF_ISSET(SEARCH_TERM)) {
 				msgq(sp, M_ERR,
 			"Characters after search string and/or delta.");
 				return (1);
@@ -622,7 +622,7 @@ ctag_conv(sp, ptrnp, replacedp)
 /*
  * get_delta --
  *	Get a line delta.  The trickiness is that the delta can be pretty
- *	complicated, i.e. "+3-2+3++-" is allowed.
+ *	complicated, i.e. "+3-2+3++- ++" is allowed.
  *
  * !!!
  * In historic vi, if you had a delta on a search pattern which was used as
@@ -638,12 +638,17 @@ get_delta(sp, dp, valp, flagp)
 	long *valp;
 	u_int *flagp;
 {
+	char *p;
 	long val, tval;
 
-	for (tval = 0; **dp != '\0'; *flagp |= SEARCH_DELTA) {
-		if (**dp == '+' || **dp == '-') {
-			if (!isdigit(*(*dp + 1))) {
-				if (**dp == '+') {
+	for (tval = 0, p = *dp; *p != '\0'; *flagp |= SEARCH_DELTA) {
+		if (isblank(*p)) {
+			++p;
+			continue;
+		}
+		if (*p == '+' || *p == '-') {
+			if (!isdigit(*(p + 1))) {
+				if (*p == '+') {
 					if (tval == LONG_MAX)
 						goto overflow;
 					++tval;
@@ -652,15 +657,15 @@ get_delta(sp, dp, valp, flagp)
 						goto underflow;
 					--tval;
 				}
-				++dp;
+				++p;
 				continue;
 			}
 		} else
-			if (!isdigit(**dp))
+			if (!isdigit(*p))
 				break;
 
 		errno = 0;
-		val = strtol(*dp, dp, 10);
+		val = strtol(p, &p, 10);
 		if (errno == ERANGE) {
 			if (val == LONG_MAX)
 overflow:			msgq(sp, M_ERR, "Delta value overflow.");
@@ -678,6 +683,7 @@ underflow:			msgq(sp, M_ERR, "Delta value underflow.");
 				goto underflow;
 		tval += val;
 	}
+	*dp = p;
 	*valp = tval;
 	return (0);
 }
