@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.14 1994/12/02 12:33:08 bostic Exp $ (Berkeley) $Date: 1994/12/02 12:33:08 $";
+static char sccsid[] = "$Id: exf.c,v 9.15 1994/12/16 09:57:31 bostic Exp $ (Berkeley) $Date: 1994/12/16 09:57:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1182,7 +1182,7 @@ file_aw(sp, flags)
 	 */
 	if (F_ISSET(sp->frp, FR_RDONLY)) {
 		msgq(sp, M_INFO,
-		    "268|File readonly, modifications not auto-written");
+		    "059|File readonly, modifications not auto-written");
 		return (0);
 	}
 	return (file_write(sp, NULL, NULL, NULL, flags));
