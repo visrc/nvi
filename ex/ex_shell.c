@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.20 1994/03/23 14:46:19 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:46:19 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.21 1994/03/23 20:25:05 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:25:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -58,7 +58,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 {
 	const char *name;
 	pid_t pid;
-	int isig, rval, teardown;
+	int rval, teardown;
 
 	/* Clear the rest of the screen. */
 	if (sp->s_clear(sp))

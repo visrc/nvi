@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.49 1994/03/23 16:42:06 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:42:06 $";
+static char sccsid[] = "$Id: recover.c,v 8.50 1994/03/23 20:24:26 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:24:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -152,8 +152,6 @@ rcv_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	struct itimerval value;
-	struct sigaction act;
 	recno_t lno;
 	int btear;
 
