@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.1 1993/06/09 22:28:42 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:42 $";
+static char sccsid[] = "$Id: v_word.c,v 8.2 1993/06/28 13:23:54 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:23:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,20 +25,40 @@ static char sccsid[] = "$Id: v_word.c,v 8.1 1993/06/09 22:28:42 bostic Exp $ (Be
  * word.  Otherwise, figure out if the next character is in a different group.
  * If it is, go to the beginning or end of that group, otherwise, go to the
  * beginning or end of the current group.  The historic version of vi didn't
- * get this right.  To get it right you have to resolve the cursor after each
+ * get this right, so, for example, there were cases where "4e" was not the
+ * same as "eeee".  To get it right you have to resolve the cursor after each
  * search so that the look-ahead to figure out what type of "word" the cursor
  * is in will be correct.
  *
- * Empty lines count as a single word, and the beginning and end of the file
- * counts as an infinite number of words.
+ * Empty lines, and lines that consist of only white-space characters count
+ * as a single word, and the beginning and end of the file counts as an
+ * infinite number of words.
+ *
+ * Movements associated with commands are slightly different than movement
+ * commands.  For example, in "abc def ghi", "cw" is from 'a' to 'c', while
+ * "w" is from 'a' to 'd'.  "Bill, it's another ugly tale from BSD's ugliest
+ * city."
+ *
+ * One historic note -- in the original vi, the 'w', 'W' and 'B' commands
+ * would treat groups of empty lines as individual words, i.e. the command
+ * would move the cursor to each new empty line.  The 'e' and 'E' commands
+ * would treat groups of empty lines as a single word, i.e. the first use
+ * would move past the group of lines.  The 'b' command would just beep at
+ * you.  If the lines contained only white-space characters, the 'w' and 'W'
+ * commands will just beep at you, and the 'B', 'b', 'E' and 'e' commands
+ * will treat the group as a single word, and the 'B' and 'b' commands will
+ * treat the lines as individual words.  This implementation treats both
+ * cases as a single white-space word.
  */
 
 #define	FW(test)	for (; len && (test); --len, ++p)
 #define	BW(test)	for (; len && (test); --len, --p)
 
+enum which {BIGWORD, LITTLEWORD};
+
 static int bword __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, int));
 static int eword __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, int));
-static int fword __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, int));
+static int fword __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, enum which));
 
 /*
  * v_wordw -- [count]w
@@ -51,7 +71,7 @@ v_wordw(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (fword(sp, ep, vp, fm, rp, 0));
+	return (fword(sp, ep, vp, fm, rp, LITTLEWORD));
 }
 
 /*
@@ -65,7 +85,7 @@ v_wordW(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (fword(sp, ep, vp, fm, rp, 1));
+	return (fword(sp, ep, vp, fm, rp, BIGWORD));
 }
 
 /*
@@ -73,106 +93,113 @@ v_wordW(sp, ep, vp, fm, tm, rp)
  *	Move forward by words.
  */
 static int
-fword(sp, ep, vp, fm, rp, spaceonly)
+fword(sp, ep, vp, fm, rp, type)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *rp;
-	int spaceonly;
+	enum which type;
 {
-	register char *p;
-	recno_t lno;
-	size_t len, llen;
-	u_long cno, cnt;
-	int empty;
-	char *startp;
+	enum { INWORD, NOTWORD } state;
+	VCS cs;
+	u_long cnt;
 
-	lno = fm->lno;
-	cno = fm->cno;
-
-	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
-		if (file_lline(sp, ep, &lno))
-			return (1);
-		if (lno == 0)
-			v_eof(sp, ep, NULL);
-		else
-			GETLINE_ERR(sp, lno);
+	cs.cs_lno = fm->lno;
+	cs.cs_cno = fm->cno;
+	if (cs_init(sp, ep, &cs)) 
 		return (1);
-	}
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
-	 * Reset the length; the first character is the current cursor
-	 * position.  If no more characters in this line, may already
-	 * be at EOF.
-	 *
-	 * Note, there are several special cases.  Movements associated
-	 * with commands are slightly different than movement commands.
-	 * For example, in "abc def ghi", "cw" is from 'a' to 'c', while
-	 * "w" is from 'a' to 'd'.  "Bill, it's another ugly tale from
-	 * BSD's ugliest city."
+	 * If in white-space, move to the first non-white-space character.
+	 * This counts as a single word move.
 	 */
-	len = llen - cno;
-	empty = llen == 0 || llen == cno + 1;
-	for (startp = p += cno; cnt--; empty = 0) {
-		if (len != 0)
-			if (spaceonly) {
-				FW(!isspace(*p));
-				/* 'c' and 'y' don't skip more space. */
-				if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
-					break;
-				FW(isspace(*p));
-			} else {
-				if (inword(*p))
-					FW(inword(*p));
-				else
-					FW(!isspace(*p) && !inword(*p));
-				/* 'c' and 'y' don't skip more space. */
-				if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
-					break;
-				FW(isspace(*p));
-			}
-		/*
-		 * 'c', 'd' and 'y' don't move into the next line unless
-		 * this line was empty.
-		 */
-		if (cnt == 0 && llen != 0 && F_ISSET(vp, VC_C | VC_D | VC_Y))
-			break;
-		if (len == 0) {
-			/* If we hit EOF, stay there (historic practice). */
-			if ((p = file_gline(sp, ep, ++lno, &llen)) == NULL) {
-				/*
-				 * Complain if were already at eof, unless
-				 * it's a change command.
-				 */
-				if (empty && !F_ISSET(vp, VC_C)) {
-					v_eof(sp, ep, NULL);
-					return (1);
-				}
-				if ((p =
-				    file_gline(sp, ep, --lno, &llen)) == NULL) {
-					GETLINE_ERR(sp, lno);
-					return (1);
-				}
-				rp->lno = lno;
-
-				/* 'c', 'd', and 'y' move 1 past EOF. */
-				rp->cno = llen ?
-				    F_ISSET(vp, VC_C | VC_D | VC_Y) ? 
-				    llen : llen - 1 : 0;
-				return (0);
-			}
-			len = llen;
-			cno = 0;
-			startp = p;
-
-			/* Skip leading space to first word. */
-			FW(isspace(*p));
-		}
+	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isspace(cs.cs_ch)) {
+		if (cs_fblank(sp, ep, &cs))
+			return (1);
+		--cnt;
 	}
-	rp->lno = lno;
-	rp->cno = cno + (p - startp);
+
+	/*
+	 * Cyclically move to the next word -- this involves skipping
+	 * over word characters and then any trailing non-word characters.
+	 * Note, for the 'w' command, the definition of a word keeps
+	 * switching.
+	 */
+	if (type == BIGWORD)
+		while (cnt--) {
+			for (;;) {
+				if (cs_next(sp, ep, &cs))
+					return (1);
+				if (cs.cs_flags == CS_EOF)
+					goto ret;
+				if (cs.cs_flags == 0 && isspace(cs.cs_ch))
+					break;
+			}
+			/* See note below. */
+			if (F_ISSET(vp, VC_C | VC_D | VC_Y)
+			    && cnt == 0 && cs.cs_flags == CS_EOL)
+				break;
+
+			/* Eat any space characters. */
+			if (cs_fblank(sp, ep, &cs))
+				return (1);
+			if (cs.cs_flags == CS_EOF)
+				goto ret;
+		}
+	else
+		while (cnt--) {
+			state = cs.cs_flags == 0 &&
+			    inword(cs.cs_ch) ? INWORD : NOTWORD;
+			for (;;) {
+				if (cs_next(sp, ep, &cs))
+					return (1);
+				if (cs.cs_flags == CS_EOF)
+					goto ret;
+				if (cs.cs_flags != 0 || isspace(cs.cs_ch))
+					break;
+				if (state == INWORD) {
+					if (!inword(cs.cs_ch))
+						break;
+				} else
+					if (inword(cs.cs_ch))
+						break;
+			}
+			/* See note below. */
+			if (F_ISSET(vp, VC_C | VC_D | VC_Y)
+			    && cnt == 0 && cs.cs_flags == CS_EOL)
+				break;
+
+			/* Eat any space characters. */
+			if (cs.cs_flags != 0 || isspace(cs.cs_ch))
+				if (cs_fblank(sp, ep, &cs))
+					return (1);
+			if (cs.cs_flags == CS_EOF)
+				goto ret;
+		}
+
+	/*
+	 * If a motion command, and eating the trailing non-word would
+	 * move us off this line, don't do it.  Move the return cursor
+	 * to one past the EOL instead.
+	 */
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && cs.cs_flags == CS_EOL)
+		++cs.cs_cno;
+
+	/* If we didn't move, we must be at EOF. */
+ret:	if (cs.cs_lno == fm->lno && cs.cs_cno == fm->cno) {
+		v_eof(sp, ep, fm);
+		return (1);
+	}
+	/*
+	 * If at EOF, and it's a motion command, move the return cursor
+	 * one past the EOF.
+	 */
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && cs.cs_flags == CS_EOF)
+		++cs.cs_cno;
+	rp->lno = cs.cs_lno;
+	rp->cno = cs.cs_cno;
 	return (0);
 }
 
