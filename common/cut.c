@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 10.3 1995/09/21 12:05:46 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:46 $";
+static char sccsid[] = "$Id: cut.c,v 10.4 1995/10/15 17:30:47 bostic Exp $ (Berkeley) $Date: 1995/10/15 17:30:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ static char sccsid[] = "$Id: cut.c,v 10.3 1995/09/21 12:05:46 bostic Exp $ (Berk
 
 #include "common.h"
 
-static int	cb_rotate __P((SCR *));
+static void	cb_rotate __P((SCR *));
 
 /*
  * cut --
@@ -187,7 +187,7 @@ cut_line_err:		text_lfree(&cbp->textq);
  * cb_rotate --
  *	Rotate the numbered buffers up one.
  */
-static int
+static void
 cb_rotate(sp)
 	SCR *sp;
 {
@@ -229,7 +229,6 @@ cb_rotate(sp)
 		text_lfree(&del_cbp->textq);
 		FREE(del_cbp, sizeof(CB));
 	}
-	return (0);
 }
 
 /*
@@ -363,6 +362,6 @@ text_free(tp)
 	TEXT *tp;
 {
 	if (tp->lb != NULL)
-		FREE(tp->lb, tp->lb_len);
+		free(tp->lb);
 	FREE(tp, sizeof(TEXT));
 }
