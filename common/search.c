@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.48 1994/08/17 14:28:25 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:25 $";
+static char sccsid[] = "$Id: search.c,v 8.49 1994/09/15 08:15:08 bostic Exp $ (Berkeley) $Date: 1994/09/15 08:15:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,9 @@ static int	ctag_conv __P((SCR *, char **, int *));
 static int	get_delta __P((SCR *, char **, long *, u_int *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
 		    char *, char **, long *, u_int *));
+
+enum smsgtype { S_EMPTY, S_EOF, S_NOTFOUND, S_SOF, S_WRAP };
+static void	smsg __P((SCR *, enum smsgtype));
 
 /*
  * resetup --
@@ -220,12 +223,6 @@ ctag_conv(sp, ptrnp, replacedp)
 	return (0);
 }
 
-#define	EMPTYMSG	"File empty; nothing to search"
-#define	EOFMSG		"Reached end-of-file without finding the pattern"
-#define	NOTFOUND	"Pattern not found"
-#define	SOFMSG		"Reached top-of-file without finding the pattern"
-#define	WRAPMSG		"Search wrapped"
-
 int
 f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	SCR *sp;
@@ -248,7 +245,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	flags = *flagp;
 	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
-			msgq(sp, M_INFO, EMPTYMSG);
+			smsg(sp, S_EMPTY);
 		return (1);
 	}
 
@@ -275,7 +272,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			if (fm->lno == lno) {
 				if (!O_ISSET(sp, O_WRAPSCAN)) {
 					if (LF_ISSET(SEARCH_MSG))
-						msgq(sp, M_INFO, EOFMSG);
+						smsg(sp, S_EOF);
 					return (1);
 				}
 				lno = 1;
@@ -300,12 +297,12 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		    (l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
 				if (LF_ISSET(SEARCH_MSG))
-					msgq(sp, M_INFO, NOTFOUND);
+					smsg(sp, S_NOTFOUND);
 				break;
 			}
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (LF_ISSET(SEARCH_MSG))
-					msgq(sp, M_INFO, EOFMSG);
+					smsg(sp, S_EOF);
 				break;
 			}
 			lno = 0;
@@ -337,7 +334,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
-			msgq(sp, M_VINFO, WRAPMSG);
+			smsg(sp, S_WRAP);
 
 		/*
 		 * If an offset, see if it's legal.  It's possible to match
@@ -397,7 +394,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	flags = *flagp;
 	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
-			msgq(sp, M_INFO, EMPTYMSG);
+			smsg(sp, S_EMPTY);
 		return (1);
 	}
 
@@ -410,7 +407,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		if (fm->lno == 1) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (LF_ISSET(SEARCH_MSG))
-					msgq(sp, M_INFO, SOFMSG);
+					smsg(sp, S_SOF);
 				return (1);
 			}
 		} else
@@ -429,19 +426,19 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		if (wrapped && lno < fm->lno || lno == 0) {
 			if (wrapped) {
 				if (LF_ISSET(SEARCH_MSG))
-					msgq(sp, M_INFO, NOTFOUND);
+					smsg(sp, S_NOTFOUND);
 				break;
 			}
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (LF_ISSET(SEARCH_MSG))
-					msgq(sp, M_INFO, SOFMSG);
+					smsg(sp, S_SOF);
 				break;
 			}
 			if (file_lline(sp, ep, &lno))
 				goto err;
 			if (lno == 0) {
 				if (LF_ISSET(SEARCH_MSG))
-					msgq(sp, M_INFO, EMPTYMSG);
+					smsg(sp, S_EMPTY);
 				break;
 			}
 			++lno;
@@ -475,7 +472,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
-			msgq(sp, M_VINFO, WRAPMSG);
+			smsg(sp, S_WRAP);
 
 		if (delta) {
 			if (check_delta(sp, ep, delta, lno))
@@ -804,4 +801,36 @@ re_error(sp, errcode, preg)
 		msgq(sp, M_ERR, "RE error: %s", oe);
 	}
 	free(oe);
+}
+
+/*
+ * smsg --
+ *	Display one of the search messages.
+ */
+static void
+smsg(sp, msg)
+	SCR *sp;
+	enum smsgtype msg;
+{
+	switch (msg) {
+	case S_EMPTY:
+		msgq(sp, M_INFO, "238|File empty; nothing to search");
+		break;
+	case S_EOF:
+		msgq(sp, M_INFO,
+		    "239|Reached end-of-file without finding the pattern");
+		break;
+	case S_NOTFOUND:
+		msgq(sp, M_INFO, "240|Pattern not found");
+		break;
+	case S_SOF:
+		msgq(sp, M_INFO,
+		    "241|Reached top-of-file without finding the pattern");
+		break;
+	case S_WRAP:
+		msgq(sp, M_VINFO, "242|Search wrapped");
+		break;
+	default:
+		abort();
+	}
 }
