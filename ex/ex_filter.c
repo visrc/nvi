@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.9 1992/04/16 13:49:34 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:49:34 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.10 1992/04/22 08:11:52 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:11:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,9 +27,7 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.9 1992/04/16 13:49:34 bostic Exp $ 
 /*
  * filter --
  *	Run a range of lines through a filter program and replace the original
- *	text with the stdout/stderr output of the filter.  One special case,
- *	if "to" is MARK_UNSET, then it runs the filter program with stdin
- *	coming from /dev/null, and inserts any output lines.
+ *	text with the stdout/stderr output of the filter.
  */
 int
 filter(from, to, cmd, ftype)
