@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.6 1993/10/03 17:32:46 bostic Exp $ (Berkeley) $Date: 1993/10/03 17:32:46 $
+ *	$Id: options.h,v 8.7 1993/10/11 22:02:34 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:34 $
  */
 
 typedef struct _option {
@@ -49,6 +49,7 @@ int	opts_save __P((struct _scr *, FILE *));
 int	opts_set __P((struct _scr *, char **));
 
 /* Per-option change routines. */
+int	f_altwerase __P((struct _scr *, struct _option *, char *, u_long));
 int	f_columns __P((struct _scr *, struct _option *, char *, u_long));
 int	f_keytime __P((struct _scr *, struct _option *, char *, u_long));
 int	f_leftright __P((struct _scr *, struct _option *, char *, u_long));
@@ -69,8 +70,9 @@ int	f_sidescroll __P((struct _scr *, struct _option *, char *, u_long));
 int	f_tabstop __P((struct _scr *, struct _option *, char *, u_long));
 int	f_tags __P((struct _scr *, struct _option *, char *, u_long));
 int	f_term __P((struct _scr *, struct _option *, char *, u_long));
-int	f_w300 __P((struct _scr *, struct _option *, char *, u_long));
+int	f_ttywerase __P((struct _scr *, struct _option *, char *, u_long));
 int	f_w1200 __P((struct _scr *, struct _option *, char *, u_long));
+int	f_w300 __P((struct _scr *, struct _option *, char *, u_long));
 int	f_w9600 __P((struct _scr *, struct _option *, char *, u_long));
 int	f_window __P((struct _scr *, struct _option *, char *, u_long));
 int	f_wrapmargin __P((struct _scr *, struct _option *, char *, u_long));

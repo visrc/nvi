@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.28 1993/10/09 12:15:35 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:15:35 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.29 1993/10/11 22:02:58 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -573,16 +573,25 @@ k_escape:		if (tp->insert && tp->overwrite)
 			if (sp->cno == max)
 				break;
 			/*
-			 * The 4.4BSD tty driver has two types of word erase.
-			 * In the traditional mode words are delimited by
-			 * whitespace characters.  In the newer mode words
-			 * are divided into two classes of characters, and
-			 * are delimited by each other and by white space.
-			 * The latter mode is the mode implemented by the
-			 * historical version of vi.  This implementation of
-			 * vi offers both.
+			 * There are three types of word erase found on UNIX
+			 * systems.  They can be identified by how the string
+			 * /a/b/c is treated -- as 1, 3, or 6 words.  Historic
+			 * vi had two classes of characters, and strings were
+			 * delimited by them and <blank>'s, so, 6 words.  The
+			 * historic tty interface used <blank>'s to delimit
+			 * strings, so, 1 word.  The algorithm offered in the
+			 * 4.4BSD tty interface (as stty altwerase) treats it
+			 * as 3 words -- there are two classes of characters,
+			 * and strings are delimited by them and <blank>'s.
+			 * The difference is that the type of the first erased
+			 * character erased is ignored, which is exactly right
+			 * when erasing pathname components.  Here, the options
+			 * TXT_ALTWERASE and TXT_TTYWERASE specify the 4.4BSD
+			 * tty interface and the historic tty driver behavior,
+			 * respectively, and the default is the same as the
+			 * historic vi behavior.
 			 */ 
-			if (LF_ISSET(TXT_ALTWERASE))
+			if (LF_ISSET(TXT_TTYWERASE))
 				while (sp->cno > max) {
 					--sp->cno;
 					++tp->overwrite;
@@ -590,7 +599,12 @@ k_escape:		if (tp->insert && tp->overwrite)
 						break;
 				}
 			else {
-				tmp = inword(tp->lb[sp->cno - 1]);
+				if (LF_ISSET(TXT_ALTWERASE)) {
+					--sp->cno;
+					++tp->overwrite;
+				}
+				if (sp->cno > max)
+					tmp = inword(tp->lb[sp->cno - 1]);
 				while (sp->cno > max) {
 					--sp->cno;
 					++tp->overwrite;

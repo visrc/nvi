@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.18 1993/10/05 18:08:04 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:08:04 $";
+static char sccsid[] = "$Id: options_f.c,v 8.19 1993/10/11 22:02:41 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,28 @@ static int	opt_putenv __P((char *));
 #define	turnoff	val
 
 static int ps_list __P((SCR *));
+
+DECL(f_altwerase)
+{
+	if (turnoff)
+		O_CLR(sp, O_ALTWERASE);
+	else {
+		O_SET(sp, O_ALTWERASE);
+		O_CLR(sp, O_TTYWERASE);
+	}
+	return (0);
+}
+
+DECL(f_ttywerase)
+{
+	if (turnoff)
+		O_CLR(sp, O_TTYWERASE);
+	else {
+		O_SET(sp, O_TTYWERASE);
+		O_CLR(sp, O_ALTWERASE);
+	}
+	return (0);
+}
 
 DECL(f_columns)
 {

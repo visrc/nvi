@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.19 1993/10/10 10:24:21 bostic Exp $ (Berkeley) $Date: 1993/10/10 10:24:21 $";
+static char sccsid[] = "$Id: options.c,v 8.20 1993/10/11 22:02:05 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static int	 	 opts_print __P((SCR *, OPTLIST const *, OPTION *));
 
 static OPTLIST const optlist[] = {
 /* O_ALTWERASE */
-	{"altwerase",	NULL,		OPT_0BOOL,	0},
+	{"altwerase",	f_altwerase,	OPT_0BOOL,	0},
 /* O_AUTOINDENT */
 	{"autoindent",	NULL,		OPT_0BOOL,	0},
 /* O_AUTOPRINT */
@@ -128,6 +128,8 @@ static OPTLIST const optlist[] = {
 	{"terse",	NULL,		OPT_0BOOL,	0},
 /* O_TIMEOUT */
 	{"timeout",	NULL,		OPT_0BOOL,	0},
+/* O_TTYWERASE */
+	{"ttywerase",	f_ttywerase,	OPT_0BOOL,	0},
 /* O_VERBOSE */
 	{"verbose",	NULL,		OPT_0BOOL,	0},
 /* O_W300 */

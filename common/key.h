@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.11 1993/10/04 19:43:09 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:43:09 $
+ *	$Id: key.h,v 8.12 1993/10/11 22:02:25 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:25 $
  */
 
 /* Structure for a key input buffer. */
@@ -115,7 +115,8 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 #define	TXT_REPLAY	0x020000	/* Replay the last input. */
 #define	TXT_RESOLVE	0x040000	/* Resolve the text into the file. */
 #define	TXT_SHOWMATCH	0x080000	/* Option: showmatch. */
-#define	TXT_WRAPMARGIN	0x100000	/* Option: wrapmargin. */
+#define	TXT_TTYWERASE	0x100000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x200000	/* Option: wrapmargin. */
 
 #define	TXT_VALID_EX							\
 	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
