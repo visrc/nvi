@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.25 1993/04/12 14:32:00 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:32:00 $";
+static char sccsid[] = "$Id: search.c,v 5.26 1993/04/13 16:18:59 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:18:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,7 +157,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		GETLINE_ERR(sp, fm->lno);
 		return (1);
 	}
-	if (fm->cno == len ? len - 1 : 0) {
+	if (fm->cno + 1 >= len) {
 		if (fm->lno == lno) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
@@ -167,11 +167,14 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			lno = 1;
 		} else
 			lno = fm->lno + 1;
-	} else
+		coff = 0;
+	} else {
 		lno = fm->lno;
+		coff = fm->cno + 1;
+	}
 
 	wrapped = 0;
-	for (coff = fm->cno ? fm->cno + 1 : 0;; ++lno, coff = 0) {
+	for (;; ++lno, coff = 0) {
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
 				if (flags & SEARCH_MSG)
@@ -197,7 +200,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		match[0].rm_eo = len;
 
 #if defined(DEBUG) && defined(SEARCHDEBUG)
-		TRACE(sp, "F search: %lu from %u to %u\n", lno, coff, len - 1);
+		TRACE(sp, "F search: %lu from %u to %u\n",
+		    lno, coff, len ? len - 1 : len);
 #endif
 		/* Search the line. */
 		eval = regexec(re, (char *)l, 1, match,
