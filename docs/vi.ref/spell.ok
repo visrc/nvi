@@ -104,6 +104,7 @@ carat
 cd
 cdpath
 cdy
+cedit
 changelog
 chd
 cmd
@@ -256,6 +257,8 @@ scr
 screeen
 screenId
 se
+searchci
+searchincr
 sendmail
 set.opt.roff
 settable
