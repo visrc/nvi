@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.31 1996/06/30 16:13:58 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:13:58 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.32 1996/06/30 18:41:01 bostic Exp $ (Berkeley) $Date: 1996/06/30 18:41:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1360,10 +1360,10 @@ re_sub(sp, ip, lbp, lbclenp, lblenp, match)
 	 * Otherwise, since this is the lowest level of replacement, discard
 	 * all escape characters.  This (hopefully) follows historic practice.
 	 */
-#define	OUTCH(ch) {							\
+#define	OUTCH(ch, nltrans) {						\
 	CHAR_T __ch = (ch);						\
 	u_int __value = KEY_VAL(sp, __ch);				\
-	if (__value == K_CR || __value == K_NL) {			\
+	if (nltrans && (__value == K_CR || __value == K_NL)) {		\
 		NEEDNEWLINE(sp);					\
 		sp->newl[sp->newl_cnt++] = lbclen;			\
 	} else if (conv != C_NOTSET) {					\
@@ -1419,7 +1419,7 @@ subzero:			if (match[no].rm_so == -1 ||
 					break;
 				mlen = match[no].rm_eo - match[no].rm_so;
 				for (t = ip + match[no].rm_so; mlen--; ++t)
-					OUTCH(*t);
+					OUTCH(*t, 0);
 				continue;
 			case 'e':
 			case 'E':
@@ -1447,7 +1447,7 @@ subzero:			if (match[no].rm_so == -1 ||
 				break;
 			}
 		}
-		OUTCH(ch);
+		OUTCH(ch, 1);
 	}
 
 	*lbp = lb;			/* Update caller's information. */
