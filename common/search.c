@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.36 1993/05/12 17:10:53 bostic Exp $ (Berkeley) $Date: 1993/05/12 17:10:53 $";
+static char sccsid[] = "$Id: search.c,v 5.37 1993/05/13 11:43:28 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,10 +136,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 
 	/* Free up any extra memory. */
 	if (replaced)
-		if (ptrn == sp->gp->tmp_bp)
-			F_CLR(sp->gp, G_TMP_INUSE);
-		else
-			free(ptrn);
+		FREE_SPACE(sp, ptrn, 0);
 	return (eval);
 }
 
@@ -415,10 +412,9 @@ check_word(sp, ptrnp, replacedp, wordoffsetp)
 	char **ptrnp;
 	int *replacedp, *wordoffsetp;
 {
-	GS *gp;
-	size_t needspace;
+	size_t blen, needspace;
 	int cnt;
-	char *p, *t, *mp;
+	char *bp, *p, *t;
 
 	/* Count up the "word" patterns. */
 	*replacedp = *wordoffsetp = 0;
@@ -435,19 +431,9 @@ check_word(sp, ptrnp, replacedp, wordoffsetp)
 
 	/* Get enough memory to hold the final pattern. */
 	needspace = strlen(*ptrnp) + cnt * sizeof(RE_NOTINWORD) * 2;
-	gp = sp->gp;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		if ((mp = malloc(needspace)) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-			return (1);
-		}
-	} else {
-		BINC(sp, gp->tmp_bp, gp->tmp_blen, needspace);
-		mp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	GET_SPACE(sp, bp, blen, needspace);
 
-	for (p = *ptrnp, t = mp; *p;)
+	for (p = *ptrnp, t = bp; *p;)
 		if (p[0] == '\\' && p[1] &&
 		    p[1] == '<' || p[1] == '>') {
 			memmove(t, RE_NOTINWORD, sizeof(RE_NOTINWORD) - 1);
@@ -457,7 +443,7 @@ check_word(sp, ptrnp, replacedp, wordoffsetp)
 			*t++ = *p++;
 	*t = '\0';
 
-	*ptrnp = mp;
+	*ptrnp = bp;
 	*replacedp = 1;
 	return (0);
 }
@@ -482,16 +468,7 @@ ctag_conv(sp, ptrnp, replacedp)
 	len = strlen(p = *ptrnp);
 
 	/* Max memory usage is 2 times the length of the string. */
-	gp = sp->gp;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		bp = NULL;
-		blen = 0;
-		BINC(sp, bp, blen, len * 2);
-	} else {
-		BINC(sp, gp->tmp_bp, gp->tmp_blen, len * 2);
-		bp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	GET_SPACE(sp, bp, blen, len * 2);
 
 	t = bp;
 

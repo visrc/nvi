@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.26 1993/05/09 13:15:26 bostic Exp $ (Berkeley) $Date: 1993/05/09 13:15:26 $";
+static char sccsid[] = "$Id: delete.c,v 5.27 1993/05/13 11:43:27 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,6 @@ delete(sp, ep, fm, tm, lmode)
 	MARK *fm, *tm;
 	int lmode;
 {
-	GS *gp;
 	recno_t lno;
 	size_t blen, len, tlen;
 	char *bp, *p;
@@ -82,17 +81,7 @@ delete(sp, ep, fm, tm, lmode)
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
-		/* Get some space. */
-		gp = sp->gp;
-		if (F_ISSET(gp, G_TMP_INUSE)) {
-			bp = NULL;
-			blen = 0;
-			BINC(sp, bp, blen, len);
-		} else {
-			BINC(sp, gp->tmp_bp, gp->tmp_blen, len);
-			bp = gp->tmp_bp;
-			F_SET(gp, G_TMP_INUSE);
-		}
+		GET_SPACE(sp, bp, blen, len);
 		memmove(bp, p, fm->cno);
 		memmove(bp + fm->cno, p + tm->cno, len - tm->cno);
 		if (file_sline(sp, ep, fm->lno, bp, len - (tm->cno - fm->cno)))
@@ -120,17 +109,7 @@ delete(sp, ep, fm, tm, lmode)
 	}
 	tlen += len;
 
-	/* Get some space. */
-	gp = sp->gp;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		bp = NULL;
-		blen = 0;
-		BINC(sp, bp, blen, tlen);
-	} else {
-		BINC(sp, gp->tmp_bp, gp->tmp_blen, tlen);
-		bp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	GET_SPACE(sp, bp, blen, tlen);
 
 	/* Copy the start partial line into place. */
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
@@ -160,11 +139,8 @@ delete(sp, ep, fm, tm, lmode)
 	/* Update the marks. */
 done:	mark_delete(sp, ep, fm, tm, lmode);
 
-	/* Free memory. */
-	if (bp == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else if (bp != NULL)
-		FREE(bp, blen);
+	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
 
 	/*
 	 * Reporting.
@@ -177,10 +153,7 @@ done:	mark_delete(sp, ep, fm, tm, lmode);
 	return (0);
 
 	/* Free memory. */
-err:	if (bp == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else
-		FREE(bp, blen);
+err:	FREE_SPACE(sp, bp, blen);
 
 	return (1);
 }

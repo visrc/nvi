@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.22 1993/04/17 12:06:13 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:06:13 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.23 1993/05/13 11:43:43 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,22 +33,14 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	GS *gp;
 	recno_t lno;
-	size_t bplen, lcnt, len;
+	size_t blen, lcnt, len;
 	u_long cnt;
 	int ch, change, rval;
 	char *bp, *p;
 
 	/* Figure out what memory to use. */
-	gp = sp->gp;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		bp = NULL;
-		bplen = 0;
-	} else {
-		bp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	GET_SPACE(sp, bp, blen, 256);
 
 	/*
 	 * Historic vi didn't permit ~ to cross newline boundaries.
@@ -84,11 +76,7 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 		}
 
 		/* Get a copy of the line. */
-		if (bp == gp->tmp_bp) {
-			BINC(sp, gp->tmp_bp, gp->tmp_blen, len);
-			bp = gp->tmp_bp;
-		} else
-			BINC(sp, bp, bplen, len);
+		ADD_SPACE(sp, bp, blen, len);
 		memmove(bp, p, len);
 
 		/* Set starting pointer. */
@@ -135,9 +123,6 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 	}
 	*rp = *fm;
 
-	if (bp == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else
-		free(bp);
+	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.24 1993/05/10 11:35:40 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:35:40 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.25 1993/05/13 11:43:40 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,8 @@ v_replace(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	GS *gp;
 	TEXT *tp;
-	size_t len;
+	size_t blen, len;
 	u_long cnt;
 	int rval;
 	char *bp, *p;
@@ -105,17 +104,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		return (0);
 	}
 
-	gp = sp->gp;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		if ((bp = malloc(len)) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-			return (1);
-		}
-	} else {
-		BINC(sp, gp->tmp_bp, gp->tmp_blen, len);
-		bp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	GET_SPACE(sp, bp, blen, len);
 
 	memmove(bp, p, len);
 	memset(bp + fm->cno, vp->character, cnt);
@@ -124,10 +113,6 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 	rp->lno = fm->lno;
 	rp->cno = fm->cno + cnt - 1;
 
-	if (bp == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else
-		free(bp);
-
+	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }

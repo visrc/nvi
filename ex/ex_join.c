@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.26 1993/05/09 10:25:27 bostic Exp $ (Berkeley) $Date: 1993/05/09 10:25:27 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.27 1993/05/13 11:43:53 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,6 @@ ex_join(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	GS *gp;
 	recno_t from, to;
 	size_t blen, clen, len, tlen;
 	int echar, first;
@@ -43,15 +42,7 @@ ex_join(sp, ep, cmdp)
 		return (1);
 	}
 
-	/* Get temp space. */
-	gp = sp->gp;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		bp = NULL;
-		blen = 0;
-	} else {
-		bp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	GET_SPACE(sp, bp, blen, 256);
 
 	clen = tlen = 0;
         for (first = 1, from = cmdp->addr1.lno,
@@ -73,13 +64,7 @@ ex_join(sp, ep, cmdp)
 		 * tbp - bp is the length of the new line.
 		 */
 		tlen += len + 2;
-		if (bp == gp->tmp_bp) {
-			F_CLR(gp, G_TMP_INUSE);
-			BINC(sp, gp->tmp_bp, gp->tmp_blen, tlen);
-			bp = gp->tmp_bp;
-			F_SET(gp, G_TMP_INUSE);
-		} else
-			BINC(sp, bp, blen, tlen);
+		ADD_SPACE(sp, bp, blen, tlen);
 		tbp = bp + clen;
 
 		/*
@@ -143,16 +128,10 @@ ex_join(sp, ep, cmdp)
 		
 	/* Reset the original line. */
 	if (file_sline(sp, ep, from, bp, tbp - bp)) {
-err:		if (bp == gp->tmp_bp)
-			F_CLR(gp, G_TMP_INUSE);
-		else
-			FREE(bp, blen);
+err:		FREE_SPACE(sp, bp, blen);
 		return (1);
 	}
-	if (bp == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else
-		FREE(bp, blen);
+	FREE_SPACE(sp, bp, blen);
 
 	sp->rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
 	sp->rptlabel = "joined";

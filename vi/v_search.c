@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.38 1993/05/11 16:11:27 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:27 $";
+static char sccsid[] = "$Id: v_search.c,v 5.39 1993/05/13 11:43:41 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,32 +93,18 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	GS *gp;
-	size_t blen;
+	size_t blen, len;
 	int rval;
 	char *bp;
 
-	gp = sp->gp;
-	blen = vp->kbuflen + sizeof(RE_NOTINWORD) * 2;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		if ((bp = malloc(blen)) == NULL) {
-			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
-			return (1);
-		}
-	} else {
-		BINC(sp, gp->tmp_bp, gp->tmp_blen, blen);
-		bp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	len = vp->kbuflen + sizeof(RE_NOTINWORD) * 2;
+	GET_SPACE(sp, bp, blen, len);
 	(void)snprintf(bp, blen,
 	    "%s%s%s", RE_NOTINWORD, vp->keyword, RE_NOTINWORD);
 		
 	rval = f_search(sp, ep, fm, rp, bp, NULL, SEARCH_MSG | SEARCH_TERM);
 
-	if (bp == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else
-		free(bp);
+	FREE_SPACE(sp, bp, blen);
 
 	++rp->cno;			/* Offset by one. */
 	return (rval);

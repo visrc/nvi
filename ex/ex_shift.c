@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.26 1993/05/09 11:44:46 bostic Exp $ (Berkeley) $Date: 1993/05/09 11:44:46 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.27 1993/05/13 11:43:56 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,6 @@ shift(sp, ep, cmdp, rl)
 	EXCMDARG *cmdp;
 	enum which rl;
 {
-	GS *gp;
 	recno_t from, to;
 	size_t blen, len, newcol, newidx, oldcol, oldidx, sw;
 	int curset;
@@ -70,15 +69,8 @@ shift(sp, ep, cmdp, rl)
 	for (p = cmdp->string, sw = 0;
 	    *p && (*p == '>' || *p == '<'); ++p, sw += O_VAL(sp, O_SHIFTWIDTH));
 
-	/* Get temp space. */
-	gp = sp->gp;
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		bp = NULL;
-		blen = 0;
-	} else {
-		bp = gp->tmp_bp;
-		F_SET(gp, G_TMP_INUSE);
-	}
+	GET_SPACE(sp, bp, blen, 256);
+
 	curset = 0;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
 		if ((p = file_gline(sp, ep, from, &len)) == NULL)
@@ -109,13 +101,7 @@ shift(sp, ep, cmdp, rl)
 		}
 
 		/* Get a buffer that will hold the new line. */
-		if (bp == gp->tmp_bp) {
-			F_CLR(gp, G_TMP_INUSE);
-			BINC(sp, gp->tmp_bp, gp->tmp_blen, newcol + len);
-			bp = gp->tmp_bp;
-			F_SET(gp, G_TMP_INUSE);
-		} else
-			BINC(sp, bp, blen, newcol + len);
+		ADD_SPACE(sp, bp, blen, newcol + len);
 
 		/*
 		 * Build a new indent string and count the number of
@@ -134,10 +120,7 @@ shift(sp, ep, cmdp, rl)
 
 		/* Set the replacement line. */
 		if (file_sline(sp, ep, from, bp, (tbp + (len - oldidx)) - bp)) {
-err:			if (bp == gp->tmp_bp)
-				F_CLR(gp, G_TMP_INUSE);
-			else
-				FREE(bp, blen);
+err:			FREE_SPACE(sp, bp, blen);
 			return (1);
 		}
 
@@ -167,10 +150,7 @@ err:			if (bp == gp->tmp_bp)
 			sp->cno = 0;
 	}
 
-	if (bp == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else
-		FREE(bp, blen);
+	FREE_SPACE(sp, bp, blen);
 
 	/* Reporting. */
 	sp->rptlines = cmdp->addr2.lno - cmdp->addr1.lno + 1;

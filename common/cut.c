@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.40 1993/05/09 13:14:51 bostic Exp $ (Berkeley) $Date: 1993/05/09 13:14:51 $";
+static char sccsid[] = "$Id: cut.c,v 5.41 1993/05/13 11:43:25 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -193,7 +193,6 @@ put(sp, ep, buffer, cp, rp, append)
 	MARK *cp, *rp;
 {
 	CB *cb;
-	GS *gp;
 	TEXT *ltp, *tp;
 	recno_t lno;
 	size_t blen, clen, len;
@@ -251,17 +250,7 @@ put(sp, ep, buffer, cp, rp, append)
 			return (1);
 		}
 
-		/* Get some space. */
-		gp = sp->gp;
-		if (F_ISSET(gp, G_TMP_INUSE)) {
-			bp = NULL;
-			blen = 0;
-			BINC(sp, bp, blen, tp->len);
-		} else {
-			BINC(sp, gp->tmp_bp, gp->tmp_blen, tp->len);
-			bp = gp->tmp_bp;
-			F_SET(gp, G_TMP_INUSE);
-		}
+		GET_SPACE(sp, bp, blen, tp->len);
 
 		/* Original line, left of the split. */
 		t = bp;
@@ -310,14 +299,7 @@ put(sp, ep, buffer, cp, rp, append)
 			 * Last part of original line; check for space.
 			 */
 			ltp = cb->txthdr.prev;
-			if (bp == gp->tmp_bp) {
-				F_CLR(gp, G_TMP_INUSE);
-				BINC(sp,
-				    gp->tmp_bp, gp->tmp_blen, ltp->len + clen);
-				bp = gp->tmp_bp;
-				F_SET(gp, G_TMP_INUSE);
-			} else
-				BINC(sp, bp, blen, ltp->len + clen);
+			ADD_SPACE(sp, bp, blen, ltp->len + clen);
 
 			/* Add in last part of the CB. */
 			memmove(t, ltp->lb, ltp->len);
@@ -357,18 +339,11 @@ put(sp, ep, buffer, cp, rp, append)
 					goto mem;
 
 			if (file_aline(sp, ep, lno, t, clen)) {
-mem:				if (bp == gp->tmp_bp)
-					F_CLR(gp, G_TMP_INUSE);
-				else
-					FREE(bp, blen);
+mem:				FREE_SPACE(sp, bp, blen);
 				return (1);
 			}
 		}
-		/* Free memory. */
-		if (bp == gp->tmp_bp)
-			F_CLR(gp, G_TMP_INUSE);
-		else
-			FREE(bp, blen);
+		FREE_SPACE(sp, bp, blen);
 	}
 
 	/* Shift any marks in the range. */
