@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.59 1993/04/17 12:07:48 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:07:48 $";
+static char sccsid[] = "$Id: vi.c,v 5.60 1993/04/19 15:38:48 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:38:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,14 +179,14 @@ err:			if (sp->refresh(sp, ep)) {
 	return (v_end(sp) || eval);
 }
 
-#define	KEY(sp, k, flags) {						\
-	(k) = getkey(sp, flags);					\
+#define	KEY(sp, k) {							\
+	(k) = getkey(sp, TXT_MAPCOMMAND);				\
 	if (F_ISSET(sp, S_UPDATE_MODE)) {				\
 		F_CLR(sp, S_UPDATE_MODE);				\
 		sp->refresh(sp, ep);					\
 	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
-		(k) = getkey(sp, 0);					\
+		(k) = getkey(sp, TXT_MAPCOMMAND);			\
 	if (sp->special[(k)] == K_ESCAPE) {				\
 		if (esc_bell)						\
 		    msgq(sp, M_BERR, "Already in command mode");	\
@@ -199,12 +199,12 @@ err:			if (sp->refresh(sp, ep)) {
 	do {								\
 		hold = count * 10 + key - '0';				\
 		if (count > hold) {					\
-			msgq(sp, M_ERR,				\
+			msgq(sp, M_ERR,					\
 			    "Number larger than %lu", ULONG_MAX);	\
 			return (NULL);					\
 		}							\
 		count = hold;						\
-		KEY(sp, key, 0);					\
+		KEY(sp, key);						\
 	} while (isdigit(key));						\
 }
 
@@ -238,7 +238,7 @@ getcmd(sp, ep, dp, vp, ismotion)
 
 	/* An escape bells the user only if already in command mode. */
 	esc_bell = ismotion == NULL ? 1 : 0;
-	KEY(sp, key, TXT_MAPCOMMAND)
+	KEY(sp, key)
 	esc_bell = 0;
 	if (key < 0 || key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
@@ -247,11 +247,11 @@ getcmd(sp, ep, dp, vp, ismotion)
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		KEY(sp, key, 0);
+		KEY(sp, key);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(sp, key, 0);
+		KEY(sp, key);
 	} else
 		vp->buffer = OOBCB;
 
@@ -271,11 +271,11 @@ getcmd(sp, ep, dp, vp, ismotion)
 			    "Only one buffer can be specified.");
 			return (1);
 		}
-		KEY(sp, key, 0);
+		KEY(sp, key);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(sp, key, 0);
+		KEY(sp, key);
 	}
 
 	/* Find the command. */
@@ -315,10 +315,10 @@ getcmd(sp, ep, dp, vp, ismotion)
 
 		/* Required buffer. */
 		if (LF_ISSET(V_RBUF)) {
-			KEY(sp, key, 0);
+			KEY(sp, key);
 			if (key != '"')
 				goto usage;
-			KEY(sp, key, 0);
+			KEY(sp, key);
 			if (key > UCHAR_MAX) {
 ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
 				return (1);
@@ -332,19 +332,19 @@ ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
 		 * the *doubled* characters do just frost your shorts?
 		 */
 		if (vp->key == '[' || vp->key == ']') {
-			KEY(sp, key, 0);
+			KEY(sp, key);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'Z' command. */
 		if (vp->key == 'Z') {
-			KEY(sp, key, 0);
+			KEY(sp, key);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
-			KEY(sp, key, 0);
+			KEY(sp, key);
 			if (isdigit(key)) {
 				GETCOUNT(sp, vp->count2);
 				F_SET(vp, VC_C2SET);
@@ -365,7 +365,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", ismotion != NULL ?
 
 	/* Required character. */
 	if (LF_ISSET(V_CHAR))
-		KEY(sp, vp->character, 0);
+		KEY(sp, vp->character);
 
 	return (0);
 }
