@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.38 1993/05/05 10:57:48 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:48 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.39 1993/05/08 17:40:20 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:40:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -482,7 +482,7 @@ sub:			if (sp->match[no].rm_so != -1 &&
 		}
 	}
 	*lbclenp = lbclen;
-	*lblenp = lblenp;
+	*lblenp = lblen;
 	return (0);
 }
 
