@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.22 1992/10/17 16:10:54 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:10:54 $";
+static char sccsid[] = "$Id: vi.c,v 5.23 1992/10/24 14:24:37 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:24:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: vi.c,v 5.22 1992/10/17 16:10:54 bostic Exp $ (Berke
 #include "vcmd.h"
 #include "options.h"
 #include "screen.h"
+#include "term.h"
 #include "extern.h"
 
 static int getcmd __P((VICMDARG *, VICMDARG *));
@@ -45,9 +46,7 @@ vi()
 	u_int flags;
 	int erase;
 
-	scr_init();
-	scr_ref();
-	refresh();
+	scr_ref(curf);
 	for (;;) {
 		/* Report any changes from the previous command. */
 		if (rptlines) {
@@ -68,12 +67,11 @@ vi()
 		 * a motion component, should skip repaint.
 		 */
 err:		if (msgcnt) {
-			msg_vflush();
-			refresh();
-		} else if (!needexerase) {
-			scr_modeline(curf);
-			refresh();
-		}
+			msg_vflush(curf);
+			needexerase = 1;
+		} else if (!needexerase)
+			scr_modeline(curf, 0);
+		refresh();
 
 		/*
 		 * We get a command, which may or may not have an associated
@@ -107,13 +105,16 @@ err:		if (msgcnt) {
 
 		/* Do any required motion. */
 		if (flags & V_MOTION) {
-			if (getmotion(vp, &fm, &tm)) {
-				bell();
+			if (getmotion(vp, &fm, &tm))
 				goto err;
-			}
 		} else {
 			fm.lno = curf->lno;
 			fm.cno = curf->cno;
+		}
+
+		if (flags & V_INPUT && ISSET(O_SHOWMODE)) {
+			scr_modeline(curf, 1);
+			refresh();
 		}
 
 		/* Call the function, update the cursor. */
@@ -147,10 +148,9 @@ err:		if (msgcnt) {
 		else if (flags & V_RCM_SETLAST)
 			curf->rcmflags = RCM_LAST;
 			
+		/* Update the cursor. */
 		curf->lno = m.lno;
 		curf->cno = m.cno;
-
-		/* Update the screen. */
 		scr_cchange(curf);
 
 		if (flags & V_RCM_SET) {
@@ -171,24 +171,20 @@ err:		if (msgcnt) {
 				dot.flags |= VC_C1SET;
 		}
 	}
-	scr_end();
+	(void)scr_end(curf);
 }
 
-#define	KEY(k) {							\
-	(k) = getkey(WHEN_VICMD);					\
+#define	KEY(k, flags) {							\
+	(k) = getkey(flags);						\
 	if (needexerase) {						\
-		scr_modeline(curf);					\
+		scr_modeline(curf, 0);					\
+		needexerase = 0;					\
 		refresh();						\
 	}								\
-	if ((k) < 0 || (k) > MAXVIKEY) {				\
-		bell();							\
-		return (NULL);						\
-	}								\
-	if ((k) == ESCAPE) {						\
-		if (!ismotion)						\
-			bell();						\
-		return (NULL);						\
-	}								\
+	if (special[(k)] == K_VLNEXT)					\
+		(k) = getkey(0);					\
+	else if (special[(k)] == K_ESCAPE)				\
+		return (1);						\
 }
 
 #define	GETCOUNT(count) {						\
@@ -200,7 +196,7 @@ err:		if (msgcnt) {
 			return (NULL);					\
 		}							\
 		count = hold;						\
-		KEY(key);						\
+		KEY(key, 0);						\
 	} while (isdigit(key));						\
 }
 
@@ -231,17 +227,22 @@ getcmd(vp, ismotion)
 	bzero(&vp->vpstartzero,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
-	KEY(key);
+	KEY(key, GB_MAPCOMMAND);
+	if (key < 0 || key > MAXVIKEY) {
+		bell();
+		return (1);
+	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		KEY(key);
+		KEY(key, 0);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(key);
+		KEY(key, 0);
 	} else
 		vp->buffer = OOBCB;
+
 	/*
 	 * Pick up optional count.  Special case, a leading 0 is not
 	 * a count, it's a command.
@@ -287,11 +288,11 @@ getcmd(vp, ismotion)
 
 		/* Required buffer. */
 		if (flags & V_RBUF) {
-			KEY(key);
+			KEY(key, 0);
 			if (key != '"')
 				goto usage;
-			KEY(key);
-			if (vp->buffer > UCHAR_MAX) {
+			KEY(key, 0);
+			if (key > UCHAR_MAX) {
 ebuf:				bell();
 				msg("Invalid buffer name.");
 				return (1);
@@ -305,19 +306,19 @@ ebuf:				bell();
 		 * the *doubled* characters do just frost your shorts?
 		 */
 		if (vp->key == '[' || vp->key == ']') {
-			KEY(key);
+			KEY(key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'Z' command. */
 		if (vp->key == 'Z') {
-			KEY(key);
+			KEY(key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
-			KEY(key);
+			KEY(key, 0);
 			if (isdigit(key)) {
 				GETCOUNT(vp->count2);
 				vp->flags |= VC_C2SET;
@@ -339,7 +340,7 @@ usage:		bell();
 
 	/* Required character. */
 	if (flags & V_CHAR)
-		KEY(vp->character);
+		KEY(vp->character, 0);
 
 	return (0);
 }
@@ -445,7 +446,7 @@ getmotion(vp, fm, tm)
 	 * If a dot command save motion structure.  Note that the motion count
 	 * was changed above and needs to be reset.
 	 */
-	if (vp->flags & V_DOT) {
+	if (vp->kp->flags & V_DOT) {
 		dotmotion = motion;
 		dotmotion.count = cnt;
 	}
