@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.8 1993/08/20 09:30:12 bostic Exp $ (Berkeley) $Date: 1993/08/20 09:30:12 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.9 1993/08/25 16:49:45 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:49:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,7 +175,7 @@ v_iI(sp, ep, vp, fm, tm, rp)
 			lno = 1;
 			len = 0;
 		} else {
-			for (t = p, wlen = len; wlen-- && isspace(*t); ++t);
+			for (t = p, wlen = len; wlen-- && isblank(*t); ++t);
 			sp->cno = t - p;
 		}
 		if (len == 0)
@@ -591,7 +591,6 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 
-	*rp = *fm;
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	if ((p = file_gline(sp, ep, rp->lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
