@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.12 1995/10/16 15:25:39 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:39 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.13 1995/10/18 10:36:01 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:36:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -343,78 +343,5 @@ ex_g_insdel(sp, op, lno)
 		 */
 		ecp->range_lno = lno;
 	}
-	return (0);
-}
-
-/*
- * ex_load --
- *	Load up the next command, which may be an @ buffer or global command.
- *
- * PUBLIC: int ex_load __P((SCR *));
- */
-int
-ex_load(sp)
-	SCR *sp;
-{
-	GS *gp;
-	EXCMD *ecp;
-	RANGE *rp;
-
-	F_CLR(sp, S_EX_GLOBAL);
-
-	/*
-	 * Lose any exhausted commands.  We know that the first command
-	 * can't be an AGV command, which makes things a bit easier.
-	 */
-	for (gp = sp->gp;;) {
-		if ((ecp = gp->ecq.lh_first) == &gp->excmd)
-			return (0);
-		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
-			/* Discard any exhausted ranges. */
-			while ((rp = ecp->rq.cqh_first) != (void *)&ecp->rq)
-				if (rp->start > rp->stop) {
-					CIRCLEQ_REMOVE(&ecp->rq, rp, q);
-					free(rp);
-				} else
-					break;
-
-			/* If there's another range, continue with it. */
-			if (rp != (void *)&ecp->rq)
-				break;
-
-			/* If it's a global/v command, fix up the last line. */
-			if (FL_ISSET(ecp->agv_flags,
-			    AGV_GLOBAL | AGV_V) && ecp->range_lno != OOBLNO)
-				if (db_exist(sp, ecp->range_lno))
-					sp->lno = ecp->range_lno;
-				else {
-					if (db_last(sp, &sp->lno))
-						return (1);
-					if (sp->lno == 0)
-						sp->lno = 1;
-				}
-			free(ecp->cp);
-		} else
-			if (ecp->clen != 0)
-				return (0);
-
-		/* Discard the EXCMD. */
-		LIST_REMOVE(ecp, q);
-		free(ecp);
-	}
-
-	/*
-	 * We only get here if it's an active @, global or v command.  Set
-	 * the current line number, and get a new copy of the command for
-	 * the parser.  Note, the original pointer almost certainly moved,
-	 * so we have play games.
-	 */
-	ecp->cp = ecp->o_cp;
-	memmove(ecp->cp, ecp->cp + ecp->o_clen, ecp->o_clen);
-	ecp->clen = ecp->o_clen;
-	ecp->range_lno = sp->lno = rp->start++;
-
-	if (FL_ISSET(ecp->agv_flags, AGV_GLOBAL | AGV_V))
-		F_SET(sp, S_EX_GLOBAL);
 	return (0);
 }
