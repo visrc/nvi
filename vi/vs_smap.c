@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.29 1993/05/20 20:56:49 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:56:49 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.30 1993/05/21 10:38:25 bostic Exp $ (Berkeley) $Date: 1993/05/21 10:38:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,7 +200,7 @@ svi_sm_delete(sp, ep, lno)
 	recno_t lno;
 {
 	SMAP *p, *t;
-	size_t cnt_orig, cnt;
+	size_t cnt_orig;
 
 	/*
 	 * Find the line in the map, and count the number of screen lines
@@ -214,9 +214,8 @@ svi_sm_delete(sp, ep, lno)
 
 	/* Delete that many lines from the screen. */
 	MOVE(sp, p - HMAP, 0);
-	for (cnt = cnt_orig; cnt--;)
-		if (svi_deleteln(sp))
-			return (1);
+	if (svi_deleteln(sp, cnt_orig))
+		return (1);
 		
 	/* Shift the screen map up. */
 	memmove(p, p + cnt_orig, (((TMAP - p) - cnt_orig) + 1) * sizeof(SMAP));
@@ -269,9 +268,8 @@ svi_sm_insert(sp, ep, lno)
 
 	/* Push down that many lines. */
 	MOVE(sp, p - HMAP, 0);
-	for (cnt = cnt_orig; cnt--;)
-		if (svi_insertln(sp))
-			return (1);
+	if (svi_insertln(sp, cnt_orig))
+		return (1);
 
 	/* Shift the screen map down. */
 	memmove(p + cnt_orig, p, (((TMAP - p) - cnt_orig) + 1) * sizeof(SMAP));
@@ -332,9 +330,9 @@ svi_sm_reset(sp, ep, lno)
 
 		/* Push down the extra lines. */
 		MOVE(sp, p - HMAP, 0);
-		for (cnt = diff; cnt--;)
-			if (svi_insertln(sp))
-				return (1);
+		if (svi_insertln(sp, diff))
+			return (1);
+
 		/*
 		 * Clear the last line on the screen,
 		 * it's going to have been corrupted.
@@ -361,9 +359,8 @@ svi_sm_reset(sp, ep, lno)
 
 		/* Delete that many lines from the screen. */
 		MOVE(sp, p - HMAP, 0);
-		for (cnt = diff; cnt--;)
-			if (svi_deleteln(sp))
-				return (1);
+		if (svi_deleteln(sp, diff))
+			return (1);
 		
 		/* Shift the screen map up. */
 		memmove(p, p + diff, (((TMAP - p) - diff) + 1) * sizeof(SMAP));
@@ -520,7 +517,7 @@ svi_sm_1up(sp, ep)
 	 * Display a new line at the bottom of the screen.
 	 */
 	MOVE(sp, 0, 0);
-	if (svi_deleteln(sp))
+	if (svi_deleteln(sp, 1))
 		return (1);
 
 	/* One-line screens can fail. */
@@ -543,12 +540,19 @@ svi_sm_1up(sp, ep)
  *	line and other screens back.
  */
 int
-svi_deleteln(sp)
+svi_deleteln(sp, cnt)
 	SCR *sp;
+	int cnt;
 {
-	deleteln();
-	MOVE(sp, INFOLINE(sp) - 1, 0);
-	insertln();
+	size_t oldy, oldx;
+
+	getyx(stdscr, oldy, oldx);
+	while (cnt--) {
+		deleteln();
+		MOVE(sp, INFOLINE(sp) - 1, 0);
+		insertln();
+		MOVEA(sp, oldy, oldx);
+	}
 	return (0);
 }
 
@@ -668,7 +672,7 @@ svi_sm_1down(sp, ep)
 	MOVE(sp, sp->t_rows, 0);
 	clrtoeol();
 	MOVE(sp, 0, 0);
-	if (svi_insertln(sp))
+	if (svi_insertln(sp, 1))
 		return (1);
 	memmove(HMAP + 1, HMAP, sp->rows * sizeof(SMAP));
 	if (svi_sm_prev(sp, ep, HMAP + 1, HMAP))
@@ -684,16 +688,19 @@ svi_sm_1down(sp, ep)
  *	line and other screens back.
  */
 int
-svi_insertln(sp)
+svi_insertln(sp, cnt)
 	SCR *sp;
+	int cnt;
 {
 	size_t oldy, oldx;
 
 	getyx(stdscr, oldy, oldx);
-	MOVE(sp, INFOLINE(sp) - 1, 0);
-	deleteln();
-	MOVEA(sp, oldy, oldx);
-	insertln();
+	while (cnt--) {
+		MOVE(sp, INFOLINE(sp) - 1, 0);
+		deleteln();
+		MOVEA(sp, oldy, oldx);
+		insertln();
+	}
 	return (0);
 }
 
