@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.20 1993/10/11 22:02:05 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:05 $";
+static char sccsid[] = "$Id: options.c,v 8.21 1993/10/28 08:52:36 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:52:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -470,7 +470,7 @@ change:			if (sp->s_optchange != NULL)
 }
 
 /*
- * opt_dump --
+ * opts_dump --
  *	List the current values of selected options.
  */
 void
@@ -632,6 +632,24 @@ opts_save(sp, fp)
 		}
 	}
 	return (0);
+}
+
+/*
+ * opts_free --
+ *	Free all option strings
+ */
+void
+opts_free(sp)
+	SCR *sp;
+{
+	int cnt;
+	char *p;
+
+	for (cnt = 0; cnt < O_OPTIONCOUNT; ++cnt)
+		if (F_ISSET(&sp->opts[cnt], OPT_ALLOCATED)) {
+			p = O_STR(sp, cnt);
+			FREE(p, strlen(p) + 1);
+		}
 }
 
 /*
