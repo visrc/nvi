@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.33 1994/08/17 14:28:27 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:27 $";
+static char sccsid[] = "$Id: seq.c,v 8.34 1994/09/07 11:51:59 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:51:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,6 +54,8 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 	 * Just replace the output field if the string already set.
 	 */
 	if ((qp = seq_find(sp, &lastqp, input, ilen, stype, NULL)) != NULL) {
+		if (LF_ISSET(SEQ_NOOVERWRITE))
+			return (0);
 		if (output == NULL || olen == 0) {
 			p = NULL;
 			olen = 0;

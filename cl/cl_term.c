@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 8.9 1994/09/02 12:41:51 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:41:51 $";
+static char sccsid[] = "$Id: cl_term.c,v 8.10 1994/09/07 11:51:44 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:51:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,8 @@ svi_term_init(sp)
 			continue;
 #endif
 		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
-		    tkp->output, strlen(tkp->output), SEQ_COMMAND, SEQ_SCREEN))
+		    tkp->output, strlen(tkp->output), SEQ_COMMAND,
+		    SEQ_NOOVERWRITE | SEQ_SCREEN))
 			return (1);
 	}
 
@@ -143,8 +144,8 @@ svi_term_init(sp)
 				break;
 		if (kp == NULL)
 			continue;
-		if (seq_set(sp, tkp->name, strlen(tkp->name),
-		    t, strlen(t), &kp->ch, 1, SEQ_INPUT, SEQ_SCREEN))
+		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
+		    &kp->ch, 1, SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 			return (1);
 	}
 
@@ -169,12 +170,13 @@ svi_term_init(sp)
 			continue;
 		if (tkp->output == NULL) {
 			if (seq_set(sp, tkp->name, strlen(tkp->name),
-			    t, strlen(t), NULL, 0, SEQ_INPUT, SEQ_SCREEN))
+			    t, strlen(t), NULL, 0,
+			    SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 				return (1);
 		} else
 			if (seq_set(sp, tkp->name, strlen(tkp->name),
 			    t, strlen(t), tkp->output, strlen(tkp->output),
-			    SEQ_INPUT, SEQ_SCREEN))
+			    SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 				return (1);
 	}
 
@@ -283,8 +285,9 @@ svi_fmap(sp, stype, from, flen, to, tlen)
 			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
+
 	nlen = snprintf(keyname,
 	    sizeof(keyname), "function key %d", atoi(from + 1));
 	return (seq_set(sp, keyname, nlen, t, strlen(t),
-	    to, tlen, stype, SEQ_SCREEN | SEQ_USERDEF));
+	    to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN | SEQ_USERDEF));
 }
