@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.26 1996/02/06 17:53:55 bostic Exp $ (Berkeley) $Date: 1996/02/06 17:53:55 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.27 1996/02/23 10:39:14 bostic Exp $ (Berkeley) $Date: 1996/02/23 10:39:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -343,5 +343,5 @@ err:		msgq_str(sp, M_SYSERR, name, "%s");
 
 	if (!silent)
 		gp->scr_busy(sp, NULL, BUSY_OFF);
-	return (1);
+	return (rval);
 }
