@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.68 1993/05/11 16:11:30 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:30 $";
+static char sccsid[] = "$Id: vi.c,v 5.69 1993/05/12 09:16:30 bostic Exp $ (Berkeley) $Date: 1993/05/12 09:16:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -394,6 +394,7 @@ getmotion(sp, ep, dm, vp, fm, tm)
 {
 	MARK m;
 	VICMDARG motion;
+	size_t len;
 	u_long cnt;
 
 	/* If '.' command, use the dot motion, else get the motion command. */
@@ -431,21 +432,23 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	if (vp->key == motion.key) {
 		F_SET(vp, VC_LMODE);
 
-		/* Set the end of the command. */
-		tm->lno = sp->lno + motion.count - 1;
-		tm->cno = 1;
-
 		/*
+		 * Set the end of the command; the column is after the
+		 * last line.
+		 *
 		 * If the current line is missing, i.e. the file is empty,
 		 * historic vi permitted a "cc" command to change it.
 		 */
-		if (!F_ISSET(vp->kp, VC_C) &&
-		    file_gline(sp, ep, tm->lno, NULL) == NULL) {
+		tm->lno = sp->lno + motion.count - 1;
+		len = 0;
+		if (file_gline(sp, ep, tm->lno, &len) == NULL &&
+		    (!F_ISSET(vp->kp, VC_C) || tm->lno != 1)) {
 			m.lno = sp->lno;
 			m.cno = sp->cno;
 			v_eof(sp, ep, &m);
 			return (1);
 		}
+		tm->cno = len;
 
 		/*
 		 * Set the origin of the command.  Don't set the cursor column
