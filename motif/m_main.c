@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.27 1996/12/13 11:38:42 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:42 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.28 1996/12/14 09:04:30 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,6 +64,10 @@ String	fallback_rsrcs[] = {
     /* layout for the tag stack dialog */
     "*Tags*visibleItemCount:			5",
 
+    /* for the text ruler */
+    "*rulerFont:		-*-helvetica-medium-r-normal--14-*-*-*-*-*-*-*",
+    "*rulerBorder:		5",
+
     /* layout for the new, temporary preferences page */
     "*toggleOptions.numColumns:			6",	/* also used by Find */
     "*Preferences*tabWidthPercentage:		0",
@@ -78,7 +82,6 @@ String	fallback_rsrcs[] = {
      * (e.g. VUE on HPUX). The result is that you don't look
      * like a normal desktop application
      */
-    "?highlightColor:			red",
     "?background:			gray75",
     "?screen.background:		wheat",
     "?highlightColor:			red",

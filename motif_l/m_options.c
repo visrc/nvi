@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.6 1996/12/11 20:58:24 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:24 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.7 1996/12/14 09:04:12 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:12 $";
 #endif /* not lint */
 
 #include <X11/X.h>
@@ -287,6 +287,14 @@ static	void	change_toggle( w, option )
 
     sprintf( buffer, ":set %s%s", (set) ? "" : "no", option->name );
     option->value = (void *) set;
+
+#if 1
+    if ( strcmp( option->name, "ruler" ) == 0 )
+	if ( set )
+	    __vi_show_text_ruler_dialog( __vi_screen->area, "Ruler" );
+	else
+	    __vi_clear_text_ruler_dialog();
+#endif
 
 #if defined(SelfTest)
     printf( "sending command <<%s>>\n", buffer );

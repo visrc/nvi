@@ -10,10 +10,11 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_tags.c,v 8.2 1996/12/11 20:58:25 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:25 $";
+static const char sccsid[] = "$Id: m_tags.c,v 8.3 1996/12/14 09:04:12 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:12 $";
 #endif /* not lint */
 
-/* This module implements a dialog for navigating the tag stack
+/*
+ * This module implements a dialog for navigating the tag stack
  *
  * Interface:
  * void	__vi_show_tags_dialog( Widget parent, String title )
@@ -180,7 +181,8 @@ static	Widget	create_push_buttons( parent, data, count )
 
 /* callbacks */
 
-void cancel_cb()
+static void
+cancel_cb()
 {
 #if defined(SelfTest)
     puts( "cancelled" );

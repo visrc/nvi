@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.15 1996/12/13 11:38:20 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:20 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.16 1996/12/14 09:04:11 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -239,6 +239,9 @@ vi_refresh(ipbp)
 	 * Note that this really ought to be done by core due to wrapping issues
 	 */
 	__vi_set_word_at_caret( __vi_screen );
+
+	/* similarly, the text ruler... */
+	__vi_set_text_ruler( __vi_screen->cury, __vi_screen->curx );
 
 	return (0);
 }
