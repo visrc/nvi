@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 9.4 1995/02/12 18:27:13 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:27:13 $";
+static char sccsid[] = "$Id: ex_map.c,v 9.5 1995/02/12 18:37:31 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:37:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,8 @@ ex_map(sp, cmdp)
 			goto nofunc;
 
 		if (seq_set(sp, NULL, 0, input, cmdp->argv[0]->len,
-		    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, SEQ_FUNCMAP))
+		    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype,
+		    SEQ_FUNCMAP | SEQ_USERDEF))
 			return (1);
 		return (sp->e_fmap == NULL ? 0 :
 		    sp->e_fmap(sp, stype, input, cmdp->argv[0]->len,
