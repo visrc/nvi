@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.6 1992/04/05 15:48:19 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:48:19 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.7 1992/04/05 19:24:31 bostic Exp $ (Berkeley) $Date: 1992/04/05 19:24:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,10 +64,6 @@ err:		msg("%s: incomplete: %s", name, strerror(errno));
 #ifndef NO_DIGRAPH
 	digraph_save(fd);
 #endif
-#ifndef NO_COLOR
-	color_save(fd);
-#endif
-
 	(void)close(fd);
 	msg("New .exrc file: %s. ", name);
 	return (0);
