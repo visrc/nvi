@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.26 1993/11/03 17:18:50 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:50 $
+ *	$Id: ex.h,v 8.27 1993/11/04 16:16:56 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:56 $
  */
 
 struct _excmdarg;
@@ -20,26 +20,27 @@ typedef struct _excmdlist {
 #define	E_ADDR2_ALL	0x0000004	/* Zero/two addresses; zero == all. */
 #define	E_ADDR2_NONE	0x0000008	/* Zero/two addresses; zero == none. */
 #define	E_ADDRDEF	0x0000010	/* Default addresses used. */
-#define	E_COUNT		0x0000020	/* Count supplied. */
-#define	E_FORCE		0x0000040	/*  ! */
+#define	E_BUFFER	0x0000020	/* Buffer name supplied. */
+#define	E_COUNT		0x0000040	/* Count supplied. */
+#define	E_FORCE		0x0000080	/*  ! */
 
-#define	E_F_CARAT	0x0000080	/*  ^ flag. */
-#define	E_F_DASH	0x0000100	/*  - flag. */
-#define	E_F_DOT		0x0000200	/*  . flag. */
-#define	E_F_EQUAL	0x0000400	/*  = flag. */
-#define	E_F_HASH	0x0000800	/*  # flag. */
-#define	E_F_LIST	0x0001000	/*  l flag. */
-#define	E_F_PLUS	0x0002000	/*  + flag. */
-#define	E_F_PRINT	0x0004000	/*  p flag. */
+#define	E_F_CARAT	0x0000100	/*  ^ flag. */
+#define	E_F_DASH	0x0000200	/*  - flag. */
+#define	E_F_DOT		0x0000400	/*  . flag. */
+#define	E_F_EQUAL	0x0000800	/*  = flag. */
+#define	E_F_HASH	0x0001000	/*  # flag. */
+#define	E_F_LIST	0x0002000	/*  l flag. */
+#define	E_F_PLUS	0x0004000	/*  + flag. */
+#define	E_F_PRINT	0x0008000	/*  p flag. */
 
-#define	E_F_PRCLEAR	0x0008000	/* Clear the print (#, l, p) flags. */
-#define	E_MODIFY	0x0010000	/* File name expansion modified arg. */
-#define	E_NOGLOBAL	0x0020000	/* Not in a global. */
-#define	E_NOPERM	0x0040000	/* Permission denied for now. */
-#define	E_NORC		0x0080000	/* Not from a .exrc or EXINIT. */
-#define	E_SETLAST	0x0100000	/* Reset last command. */
-#define	E_ZERO		0x0200000	/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x0400000	/* 0 is default addr1 of empty files. */
+#define	E_F_PRCLEAR	0x0010000	/* Clear the print (#, l, p) flags. */
+#define	E_MODIFY	0x0020000	/* File name expansion modified arg. */
+#define	E_NOGLOBAL	0x0040000	/* Not in a global. */
+#define	E_NOPERM	0x0080000	/* Permission denied for now. */
+#define	E_NORC		0x0100000	/* Not from a .exrc or EXINIT. */
+#define	E_SETLAST	0x0200000	/* Reset last command. */
+#define	E_ZERO		0x0400000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x0800000	/* 0 is default addr1 of empty files. */
 	u_int	 flags;
 	char	*syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
@@ -51,12 +52,12 @@ extern EXCMDLIST const cmds[];		/* List of ex commands. */
 /* Structure passed around to functions implementing ex commands. */
 typedef struct _excmdarg {
 	EXCMDLIST const *cmd;	/* Command entry in command table. */
+	CHAR_T	buffer;		/* Named buffer. */
+	recno_t	lineno;		/* Line number. */
+	u_long	count;		/* Specified count. */
 	int	addrcnt;	/* Number of addresses (0, 1 or 2). */
 	MARK	addr1;		/* 1st address. */
 	MARK	addr2;		/* 2nd address. */
-	recno_t	lineno;		/* Line number. */
-	u_long	count;		/* Specified count. */
-	int	buffer;		/* Named buffer. */
 	int	argc;		/* Count of file/word arguments. */
 	char  **argv;		/* List of file/word arguments. */
 	u_int	flags;		/* Selected flags from EXCMDLIST. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 8.1 1993/06/09 22:25:04 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:04 $";
+static char sccsid[] = "$Id: ex_put.c,v 8.2 1993/11/04 16:16:54 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,11 @@ static char sccsid[] = "$Id: ex_put.c,v 8.1 1993/06/09 22:25:04 bostic Exp $ (Be
 #include "vi.h"
 #include "excmd.h"
 
+/*
+ * ex_put -- [line] pu[t] [buffer]
+ *
+ *	Append a cut buffer into the file.
+ */
 int
 ex_put(sp, ep, cmdp)
 	SCR *sp;
@@ -28,7 +33,8 @@ ex_put(sp, ep, cmdp)
 	m.lno = sp->lno;
 	m.cno = sp->cno;
 	if (put(sp, ep,
-	    cmdp->buffer == OOBCB ? DEFCB : cmdp->buffer, &cmdp->addr1, &m, 1))
+	    F_ISSET(cmdp, E_BUFFER) ? DEFCB : cmdp->buffer,
+	    &cmdp->addr1, &m, 1))
 		return (1);
 
 	F_SET(sp, S_AUTOPRINT);

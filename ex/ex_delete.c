@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 8.2 1993/08/20 14:01:53 bostic Exp $ (Berkeley) $Date: 1993/08/20 14:01:53 $";
+static char sccsid[] = "$Id: ex_delete.c,v 8.3 1993/11/04 16:16:54 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,7 +23,8 @@ ex_delete(sp, ep, cmdp)
 	recno_t lno;
 
 	/* Yank the lines. */
-	if (cut(sp, ep, cmdp->buffer != OOBCB ? cmdp->buffer : DEFCB,
+	if (cut(sp, ep,
+	    F_ISSET(cmdp, E_BUFFER) ? cmdp->buffer : DEFCB,
 	    &cmdp->addr1, &cmdp->addr2, 1))
 		return (1);
 

@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.33 1993/11/02 14:46:53 bostic Exp $ (Berkeley) $Date: 1993/11/02 14:46:53 $";
+static char sccsid[] = "$Id: main.c,v 8.34 1993/11/04 16:16:07 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -92,10 +92,6 @@ main(argc, argv)
 	if ((gp->tty = malloc(sizeof(IBUF))) == NULL)
 		err(1, NULL);
 	memset(gp->tty, 0, sizeof(IBUF));
-
-	if ((gp->cuts = malloc((UCHAR_MAX + 2) * sizeof(CB))) == NULL)
-		err(1, NULL);
-	memset(gp->cuts, 0, (UCHAR_MAX + 2) * sizeof(CB));
 
 	/* Set a flag if we're reading from the tty. */
 	if (isatty(STDIN_FILENO))

@@ -4,13 +4,13 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.12 1993/10/31 14:21:07 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:21:07 $
+ *	$Id: vi.h,v 8.13 1993/11/04 16:17:29 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:29 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
 typedef struct _vicmdarg {
 				/* ZERO OUT. */
-	int	buffer;		/* Buffer. */
+	CHAR_T	buffer;		/* Buffer. */
 	CHAR_T	character;	/* Character. */
 	u_long	count;		/* Count. */
 	u_long	count2;		/* Second count (only used by z). */
@@ -36,17 +36,18 @@ typedef struct _vicmdarg {
  * Note, the VC_COMMASK flags are set per command, and therefore must have
  * values not used the set of flags used by the VIKEYS structure below.
  */
-#define	VC_C		0x001	/* The 'c' command. */
-#define	VC_D		0x002	/* The 'd' command. */
-#define	VC_SH		0x004	/* The '>' command. */
-#define	VC_Y		0x008	/* The 'y' command. */
-#define	VC_COMMASK	0x00f	/* Mask for special flags. */
+#define	VC_C		0x0001	/* The 'c' command. */
+#define	VC_D		0x0002	/* The 'd' command. */
+#define	VC_SH		0x0004	/* The '>' command. */
+#define	VC_Y		0x0008	/* The 'y' command. */
+#define	VC_COMMASK	0x000f	/* Mask for special flags. */
 
-#define	VC_C1SET	0x010	/* Count 1 set. */
-#define	VC_C1RESET	0x020	/* Reset the C1SET flag for dot commands. */
-#define	VC_C2SET	0x040	/* Count 2 set. */
-#define	VC_LMODE	0x080	/* Motion is line oriented. */
-#define	VC_ISDOT	0x100	/* Command was the dot command. */
+#define	VC_BUFFER	0x0010	/* Buffer set. */
+#define	VC_C1SET	0x0020	/* Count 1 set. */
+#define	VC_C1RESET	0x0040	/* Reset the C1SET flag for dot commands. */
+#define	VC_C2SET	0x0080	/* Count 2 set. */
+#define	VC_LMODE	0x0100	/* Motion is line oriented. */
+#define	VC_ISDOT	0x0200	/* Command was the dot command. */
 
 	u_int flags;
 				/* DO NOT ZERO OUT. */
@@ -54,8 +55,8 @@ typedef struct _vicmdarg {
 	size_t kbuflen;		/* Keyword buffer length. */
 } VICMDARG;
 
-#define	vpstartzero	buffer
-#define	vpendzero	keyword
+#define	vp_startzero	buffer
+#define	vp_endzero	keyword
 
 /* Vi command structure. */
 typedef struct _vikeys {	/* Underlying function. */
@@ -64,8 +65,8 @@ typedef struct _vikeys {	/* Underlying function. */
 
 #define	V_DONTUSE1	0x000001	/* VC_C */
 #define	V_DONTUSE2	0x000002	/* VC_D */
-#define	V_DONTUSE3	0x000004	/* VC_Y */
-#define	V_DONTUSE4	0x000008	/* VC_SH */
+#define	V_DONTUSE3	0x000004	/* VC_SH */
+#define	V_DONTUSE4	0x000008	/* VC_Y */
 #define	V_ABS		0x000010	/* Absolute movement, set '' mark. */
 #define	V_CHAR		0x000020	/* Character (required, trailing). */
 #define	V_CNT		0x000040	/* Count (optional, leading). */

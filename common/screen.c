@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.30 1993/11/03 15:34:08 bostic Exp $ (Berkeley) $Date: 1993/11/03 15:34:08 $";
+static char sccsid[] = "$Id: screen.c,v 8.31 1993/11/04 16:16:09 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,6 +128,7 @@ screen_init(orig, sp)
 		memmove(sp->special, orig->special, sizeof(sp->special));
 
 		sp->at_lbuf = orig->at_lbuf;
+		sp->at_lbuf_set = orig->at_lbuf_set;
 
 		if (opt_copy(orig, sp)) {
 mem:			msgq(orig, M_ERR,
@@ -149,7 +150,7 @@ mem:			msgq(orig, M_ERR,
 
 		sp->cname = asciiname;			/* XXX */
 
-		sp->at_lbuf = OOBCB;
+		sp->at_lbuf_set = 0;
 
 		sp->flags = 0;
 	}

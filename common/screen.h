@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.50 1993/11/03 10:13:59 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:13:59 $
+ *	$Id: screen.h,v 8.51 1993/11/04 16:16:10 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:10 $
  */
 
 /*
@@ -137,7 +137,8 @@ typedef struct _scr {
 					/* FWOPEN_NOT_AVAILABLE */
 	int	 trapped_fd;		/* Ex/vi trapped file descriptor. */
 
-	char	 at_lbuf;		/* Last at buffer executed. */
+	CHAR_T	 at_lbuf;		/* Last executed at buffer's name. */
+	int	 at_lbuf_set;		/* If at_lbuf is set. */
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 

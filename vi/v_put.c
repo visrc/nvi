@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 8.3 1993/10/31 14:20:34 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:20:34 $";
+static char sccsid[] = "$Id: v_put.c,v 8.4 1993/11/04 16:17:24 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,8 @@ v_Put(sp, ep, vp, fm, tm, rp)
 {
 	if (F_ISSET(vp, VC_ISDOT))
 		inc_buf(sp, vp);
-	return (put(sp, ep, VICB(vp), fm, rp, 0));
+	return (put(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, rp, 0));
 }
 
 /*
@@ -46,7 +47,8 @@ v_put(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp, VC_ISDOT))
 		inc_buf(sp, vp);
 
-	return (put(sp, ep, VICB(vp), fm, rp, 1));
+	return (put(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, rp, 1));
 }
 
 /*
@@ -68,7 +70,7 @@ inc_buf(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	int v;
+	CHAR_T v;
 
 	switch (vp->buffer) {
 	case '1':

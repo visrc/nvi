@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.26 1993/11/02 18:47:29 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:47:29 $";
+static char sccsid[] = "$Id: vi.c,v 8.27 1993/11/04 16:17:31 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -279,8 +279,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	CHAR_T key;
 
 	/* Clean up the command structure. */
-	memset(&vp->vpstartzero, 0,
-	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
+	memset(&vp->vp_startzero, 0,
+	    (char *)&vp->vp_endzero - (char *)&vp->vp_startzero);
 
 	/* An escape bells the user only if already in command mode. */
 	if (ismotion == NULL) {
@@ -302,9 +302,9 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
+		F_SET(vp, VC_BUFFER);
 		KEY(key);
-	} else
-		vp->buffer = OOBCB;
+	}
 
 	/*
 	 * Pick up optional count, where a leading 0 is not a count,
@@ -320,7 +320,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		if (vp->buffer != OOBCB) {
+		if (F_ISSET(vp, VC_BUFFER)) {
 			msgq(sp, M_ERR,
 			    "Only one buffer can be specified.");
 			return (1);
@@ -329,6 +329,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
+		F_SET(vp, VC_BUFFER);
 		KEY(key);
 	}
 
@@ -359,7 +360,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 			F_SET(dp, VC_C1SET);
 			dp->count = vp->count;
 		}
-		if (vp->buffer != OOBCB)
+		if (F_ISSET(vp, VC_BUFFER))
 			dp->buffer = vp->buffer;
 		*vp = *dp;
 		return (0);
@@ -374,7 +375,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	/* Illegal motion command. */
 	if (ismotion == NULL) {
 		/* Illegal buffer. */
-		if (!LF_ISSET(V_OBUF) && vp->buffer != OOBCB)
+		if (!LF_ISSET(V_OBUF) && F_ISSET(vp, VC_BUFFER))
 			goto usage;
 
 		/* Required buffer. */

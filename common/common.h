@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.21 1993/11/04 13:47:17 bostic Exp $ (Berkeley) $Date: 1993/11/04 13:47:17 $
+ *	$Id: common.h,v 8.22 1993/11/04 16:16:11 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:11 $
  */
 
 /* System includes. */
@@ -49,7 +49,9 @@ struct _text;
  *
  * CHAR_T	An integral type that can hold any character.
  * ARG_CHAR_T	The type of a CHAR_T when passed as an argument using
- *		traditional promotion rules.
+ *		traditional promotion rules.  It should also be able
+ *		to be compared against any CHAR_T for equality without
+ *		problems.
  * MAX_CHAR_T	The maximum value of any character.
  *
  * If no integral type can hold a character, don't even try the port.
@@ -65,19 +67,19 @@ typedef	u_int		ARG_CHAR_T;
  */
 #include "link.h"
 
-#include "gs.h"				
-
 #include <db.h>			/* Required by exf.h; includes compat.h. */
 
-#include "mark.h"		/* Required by cut.h, exf.h. */
-#include "cut.h"
+#include "mark.h"		/* Required by most everybody. */
 
 #include "search.h"		/* Required by screen.h. */
 #include "options.h"		/* Required by screen.h. */
 #include "term.h"		/* Required by screen.h. */
+
+#include "gs.h"			/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 
-#include "exf.h"
+#include "exf.h"		
+#include "cut.h"
 #include "log.h"
 #include "msg.h"
 #include "seq.h"

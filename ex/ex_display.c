@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.6 1993/11/02 18:46:48 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:48 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.7 1993/11/04 16:16:53 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,10 +17,11 @@ static char sccsid[] = "$Id: ex_display.c,v 8.6 1993/11/02 18:46:48 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 
-static void db __P((SCR *, char *, CB *));
+static void db __P((SCR *, CB *));
 
 /*
  * ex_bdisplay -- :bdisplay
+ *
  *	Display cut buffer contents.
  */
 int
@@ -29,32 +30,29 @@ ex_bdisplay(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	CB *cb;
+	CB *cbp;
 	GS *gp;
 	int cnt, displayed;
 	char *p;
 
-#define	NUMERICBUFS	"987654321"
 	displayed = 0;
-	for (cb = (gp = sp->gp)->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
-		if (strchr(NUMERICBUFS, cnt))
+	for (cbp = sp->gp->cutq.le_next; cbp != NULL; cbp = cbp->q.qe_next) {
+		if (isdigit(cbp->name))
 			continue;
-		if (cb->txthdr.next != NULL && cb->txthdr.next != &cb->txthdr) {
+		if (cbp->txthdr.next != NULL &&
+		    cbp->txthdr.next != &cbp->txthdr) {
 			displayed = 1;
-			db(sp, charname(sp, cnt), cb);
+			db(sp, cbp);
 		}
 	}
-
-	for (p = NUMERICBUFS; *p; ++p)
-		if (gp->cuts[*p].txthdr.next != NULL &&
-		    gp->cuts[*p].txthdr.next != &gp->cuts[*p].txthdr) {
+	for (cbp = sp->gp->cutq.le_next; cbp != NULL; cbp = cbp->q.qe_next) {
+		if (!isdigit(cbp->name))
+			continue;
+		if (cbp->txthdr.next != NULL &&
+		    cbp->txthdr.next != &cbp->txthdr) {
 			displayed = 1;
-			db(sp, charname(sp, *p), &gp->cuts[*p]);
+			db(sp, cbp);
 		}
-	if (gp->cuts[DEFCB].txthdr.next != NULL &&
-	    gp->cuts[DEFCB].txthdr.next != &gp->cuts[DEFCB].txthdr) {
-		displayed = 1;
-		db(sp, "default buffer", &gp->cuts[DEFCB]);
 	}
 	if (!displayed)
 		msgq(sp, M_VINFO, "No buffers to display.");
@@ -62,18 +60,18 @@ ex_bdisplay(sp, ep, cmdp)
 }
 
 static void
-db(sp, name, cb)
+db(sp, cbp)
 	SCR *sp;
-	char *name;
-	CB *cb;
+	CB *cbp;
 {
 	TEXT *tp;
 	size_t len;
 	char *p;
 
-	(void)ex_printf(EXCOOKIE, "================ %s%s\n", name,
-	    F_ISSET(cb, CB_LMODE) ? " (line mode)" : "");
-	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next) {
+	(void)ex_printf(EXCOOKIE,
+	    "================ %s%s\n", charname(sp, cbp->name),
+	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : "");
+	for (tp = cbp->txthdr.next; tp != (TEXT *)&cbp->txthdr; tp = tp->next) {
 		for (len = tp->len, p = tp->lb; len--;)
 			(void)ex_printf(EXCOOKIE, "%s", charname(sp, *p++));
 		(void)ex_printf(EXCOOKIE, "\n");

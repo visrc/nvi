@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.17 1993/10/27 17:37:39 bostic Exp $ (Berkeley) $Date: 1993/10/27 17:37:39 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.18 1993/11/04 16:17:25 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -443,7 +443,8 @@ v_CS(sp, ep, vp, fm, tm, rp, iflags)
 		}
 
 		/* Cut the lines. */
-		if (cut(sp, ep, VICB(vp), fm, tm, 1))
+		if (cut(sp, ep,
+		    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, 1))
 			return (1);
 
 		/* Insert a line while we still can... */
@@ -477,7 +478,9 @@ v_CS(sp, ep, vp, fm, tm, rp, iflags)
 			len = 0;
 			LF_SET(TXT_APPENDEOL);
 		} else {
-			if (cut(sp, ep, VICB(vp), fm, tm, 1))
+			if (cut(sp, ep,
+			    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB,
+			    fm, tm, 1))
 				return (1);
 			tm->cno = len;
 			if (len == 0)
@@ -546,7 +549,9 @@ v_change(sp, ep, vp, fm, tm, rp)
 			len = 0;
 			LF_SET(TXT_APPENDEOL);
 		} else {
-			if (cut(sp, ep, VICB(vp), fm, tm, lmode))
+			if (cut(sp, ep,
+			    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB,
+			    fm, tm, lmode))
 				return (1);
 			if (len == 0)
 				LF_SET(TXT_APPENDEOL);
@@ -566,7 +571,8 @@ v_change(sp, ep, vp, fm, tm, rp)
 	 *
 	 * Copy the text.
 	 */
-	if (cut(sp, ep, VICB(vp), fm, tm, lmode))
+	if (cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, lmode))
 		return (1);
 
 	/* If replacing entire lines and there's leading text. */
@@ -734,7 +740,8 @@ v_subst(sp, ep, vp, fm, tm, rp)
 	if (tm->cno > len)
 		tm->cno = len;
 
-	if (p != NULL && cut(sp, ep, VICB(vp), fm, tm, 0))
+	if (p != NULL && cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, 0))
 		return (1);
 
 	return (v_ntext(sp, ep,

@@ -4,14 +4,17 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.3 1993/09/30 12:01:42 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:42 $
+ *	$Id: cut.h,v 8.4 1993/11/04 16:16:06 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:06 $
  */
 
-typedef struct _cb {			/* Cut buffer. */
+/* Cut buffers. */
+typedef struct _cb {
+	struct queue_entry q;		/* Linked list of all cut buffers. */
+	CHAR_T	name;			/* Cut buffer name. */
 	struct _hdr	txthdr;		/* Linked list of TEXT structures. */
-	u_long	 len;			/* Total length of cut text. */
+	size_t	len;			/* Total length of cut text. */
 
-#define	CB_LMODE	0x01		/* Line mode. */
+#define	CB_LMODE	0x01		/* Cut was in line mode. */
 	u_char	 flags;
 } CB;
 		
@@ -33,47 +36,37 @@ typedef struct _text {			/* Text: a linked list of lines. */
 	size_t	 wd_len;		/* Width buffer length. */
 } TEXT;
 
-#define	OOBCB	-1			/* Out-of-band cut buffer name. */
-#define	DEFCB	UCHAR_MAX + 1		/* Default cut buffer. */
+#define	DEFCB	'1'			/* Buffer '1' is the default buffer. */
 
-					/* Vi: cut buffer to use. */
-#define	VICB(vp)	((vp)->buffer == OOBCB ? DEFCB : (vp)->buffer)
+/*
+ * Get named buffer 'name'.
+ * Translate upper-case buffer names to lower-case buffer names.
+ */
+#define	CBNAME(sp, cbp, name) {						\
+	name = isupper(name) ? tolower(name) : (name);			\
+	for (cbp = sp->gp->cutq.le_next;				\
+	    cbp != NULL; cbp = cbp->q.qe_next)				\
+		if (cbp->name == name)					\
+			break;						\
+}
 
-/* Check to see if a cut buffer has contents. */
-#define	CBEMPTY(sp, buf, cb) {						\
-	if ((cb)->txthdr.next == NULL ||				\
-	    (cb)->txthdr.next == &(cb)->txthdr) {			\
-		if (buf == DEFCB)					\
+/* Get a cut buffer, and check to see if it's empty. */
+#define	CBEMPTY(sp, cbp, name) {					\
+	CBNAME(sp, cbp, name);						\
+	if (cbp == NULL) {						\
+		if ((name) == '1')					\
 			msgq(sp, M_ERR,					\
 			    "The default buffer is empty.");		\
 		else							\
 			msgq(sp, M_ERR,					\
-			    "Buffer %s is empty.", charname(sp, buf));	\
+			    "Buffer %s is empty.", charname(sp, name));	\
 		return (1);						\
 	}								\
 }
 
-/*
- * Check a buffer name for validity.
- * Translate upper-case buffer names to lower-case buffer names.
- */
-#define	CBNAME(sp, bname, cb) {						\
-	if ((bname) > UCHAR_MAX + 1) {					\
-		msgq(sp, M_ERR, "Invalid cut buffer name.");		\
-		return (1);						\
-	}								\
-	if (isupper(bname))						\
-		(bname) = tolower(bname);				\
-	cb = &sp->gp->cuts[bname];					\
-}
-
-/* Cut routines. */
-int	 cut __P((struct _scr *,
-	    struct _exf *, int, struct _mark *, struct _mark *, int));
-int	 delete __P((struct _scr *,
-	    struct _exf *, struct _mark *, struct _mark *, int));
-int	 put __P((struct _scr *,
-	    struct _exf *, int, struct _mark *, struct _mark *, int));
+int	 cut __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
+int	 delete __P((SCR *, EXF *, MARK *, MARK *, int));
+void	 hdr_text_free __P((HDR *));
+int	 put __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
 void	 text_free __P((TEXT *));
-void	 hdr_text_free __P((struct _hdr *));
-TEXT	*text_init __P((struct _scr *, char *, size_t, size_t));
+TEXT	*text_init __P((SCR *, char *, size_t, size_t));

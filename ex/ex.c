@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.47 1993/11/03 17:18:41 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:41 $";
+static char sccsid[] = "$Id: ex.c,v 8.48 1993/11/04 16:16:49 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -352,7 +352,6 @@ ex_cmd(sp, ep, exc, arg1_len)
 	sp->ex_argv[1] = NULL;
 	cmd.argc = 0;
 	cmd.argv = sp->ex_argv;
-	cmd.buffer = OOBCB;
 
 	/*
 	 * Parse line specifiers if the command uses addresses.
@@ -658,6 +657,7 @@ end1:			break;
 end2:			break;
 		case 'b':				/* buffer */
 			cmd.buffer = *exc++;
+			F_SET(&cmd, E_BUFFER);
 			break;
 		case 'C':				/* count */
 		case 'c':				/* count (address) */
@@ -863,7 +863,7 @@ addr2:	switch (cmd.addrcnt) {
 		TRACE(sp, "\tlineno %d", cmd.lineno);
 	if (cmd.flags)
 		TRACE(sp, "\tflags %0x", cmd.flags);
-	if (cmd.buffer != OOBCB)
+	if (F_ISSET(&cmd, E_BUFFER))
 		TRACE(sp, "\tbuffer %c", cmd.buffer);
 	TRACE(sp, "\n");
 	if (cmd.argc) {

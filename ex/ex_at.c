@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.7 1993/09/30 12:02:27 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:27 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.8 1993/11/04 16:16:51 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,33 +30,36 @@ ex_at(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	CB *cb;
+	CB *cbp;
 	TEXT *tp;
-	int buffer, lmode;
+	int name, lmode;
 
-	buffer = cmdp->buffer;
-	if (buffer == cmdp->cmd->name[0]) {
-		if (sp->at_lbuf == OOBCB) {
+	name = cmdp->buffer;
+
+	/* Historically, @@ and ** execute the last buffer. */
+	if (name == cmdp->cmd->name[0]) {
+		if (!sp->at_lbuf_set) {
 			msgq(sp, M_ERR, "No previous buffer to execute.");
 			return (1);
 		}
-		buffer = sp->at_lbuf;
+		name = sp->at_lbuf;
 	}
 
-	CBNAME(sp, buffer, cb);
-	CBEMPTY(sp, buffer, cb);
+	CBEMPTY(sp, cbp, name);
 
-	sp->at_lbuf = buffer;
+	/* Save for reuse. */
+	sp->at_lbuf = name;
+	sp->at_lbuf_set = 1;
 		
 	/*
 	 * If the buffer was cut in line mode or had portions of more
 	 * than one line, <newlines> are appended to each line as it
 	 * is executed.
 	 */
-	tp = cb->txthdr.prev;
-	lmode = F_ISSET(cb, CB_LMODE) || tp->prev != (TEXT *)&cb->txthdr;
-	for (; tp != (TEXT *)&cb->txthdr; tp = tp->prev)
-		if ((lmode || tp->prev != (TEXT *)&cb->txthdr) &&
+	tp = cbp->txthdr.prev;
+	lmode = F_ISSET(cbp, CB_LMODE) || tp->prev != (TEXT *)&cbp->txthdr;
+	for (; tp != (TEXT *)&cbp->txthdr; tp = tp->prev)
+		if ((lmode || tp->prev != (TEXT *)&cbp->txthdr) &&
 		    term_push(sp, sp->gp->key, "\n", 1) ||
 		    term_push(sp, sp->gp->key, tp->lb, tp->len))
 			return (1);

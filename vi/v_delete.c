@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 8.4 1993/09/01 16:28:22 bostic Exp $ (Berkeley) $Date: 1993/09/01 16:28:22 $";
+static char sccsid[] = "$Id: v_delete.c,v 8.5 1993/11/04 16:17:23 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,10 @@ v_Delete(sp, ep, vp, fm, tm, rp)
 	tm->lno = fm->lno;
 	tm->cno = len;
 
-	if (cut(sp, ep, VICB(vp), fm, tm, 0) || delete(sp, ep, fm, tm, 0))
+	if (cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, 0))
+		return (1);
+	if (delete(sp, ep, fm, tm, 0))
 		return (1);
 
 	rp->lno = fm->lno;
@@ -67,8 +70,10 @@ v_delete(sp, ep, vp, fm, tm, rp)
 	int lmode;
 	
 	lmode = F_ISSET(vp, VC_LMODE);
-	if (cut(sp, ep, VICB(vp), fm, tm, lmode) ||
-	    delete(sp, ep, fm, tm, lmode))
+	if (cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, lmode))
+		return (1);
+	if (delete(sp, ep, fm, tm, lmode))
 		return (1);
 
 	/* Check for deleting the file. */
