@@ -1,6 +1,6 @@
-#	$Id: README,v 5.8 1993/05/06 01:37:56 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:37:56 $
+#	$Id: README,v 5.9 1993/05/10 17:14:07 bostic Exp $ (Berkeley) $Date: 1993/05/10 17:14:07 $
 
-This is the README for version 0.2 of nex/nvi.  It can be retrieved by
+This is the README for version 0.2.1 of nex/nvi.  It's retrievable by
 anonymous ftp from vangogh.cs.berkeley.edu, in ~ftp/hidden/nvi.tar.Z.
 It is an ALPHA version of the nvi which will be distributed in 4.4BSD.
 
@@ -40,8 +40,6 @@ will be integrated at the same time it is made fully 8-bit clean.
 	o The ex/vi recovery on system crash has not yet been implemented.
 	  (This isn't difficult, only requiring some extensions to the
 	  current logging interface.)
-	o Speaking of which, undo has been implemented, but is not
-	  yet working.
 	o Word search (\<\> patterns aren't right).
 	o Nvi uses POSIX 1003.2 basic and extended RE's.  The historic
 	  hacks will be put in soon.
