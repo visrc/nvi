@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.7 1993/08/06 11:36:43 bostic Exp $ (Berkeley) $Date: 1993/08/06 11:36:43 $";
+static char sccsid[] = "$Id: vi.c,v 8.8 1993/08/06 11:48:02 bostic Exp $ (Berkeley) $Date: 1993/08/06 11:48:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,6 +125,13 @@ vi(sp, ep)
 				if (F_ISSET(vp, VC_C1SET)) {
 					tm.lno = sp->lno + vp->count - 1;
 					tm.cno = sp->cno;
+					if (file_gline(sp,
+					    ep, tm.lno, NULL) == NULL) {
+						m.lno = sp->lno;
+						m.cno = sp->cno;
+						v_eof(sp, ep, &m);
+						goto err;
+					}
 				}
 			}
 		}
