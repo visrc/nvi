@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.60 1993/05/05 22:00:14 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:00:14 $";
+static char sccsid[] = "$Id: key.c,v 5.61 1993/05/06 01:06:52 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:06:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -260,7 +260,7 @@ ttyread(sp, buf, len, timeout)
 	}
 
 	/* Compute the timeout value. */
-	if (time) {
+	if (timeout) {
 		t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
 		t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
 		tp = &t;
