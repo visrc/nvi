@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.9 1996/12/17 10:47:39 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:47:39 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.10 1996/12/17 15:39:53 bostic Exp $ (Berkeley) $Date: 1996/12/17 15:39:53 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -47,7 +47,6 @@ static	save_dialog	*dialogs = NULL;
 
 typedef struct	{
     String	name;
-    Boolean	is_default;
     void	(*cb)();
 } ButtonData;
 
@@ -73,9 +72,9 @@ static void prev_func __P((Widget));
 static void search __P((Widget, int));
 
 static	ButtonData button_data[] = {
-    { "Next",		True,	next_func	},
-    { "Previous", 	False,	prev_func	},
-    { "Cancel", 	False,	done_func	}
+    { "Next",		next_func	},
+    { "Previous", 	prev_func	},
+    { "Cancel", 	done_func	}	/* always last */
 };
 
 
@@ -164,10 +163,26 @@ search(w, flags)
 {
 	IP_BUF ipb;
 	optData *opt;
+	Widget shell;
 
-	/* Get current data from the root of the widget tree? */
-	if (w != NULL)
+	shell = w;
+	while ( ! XtIsShell(shell) ) shell = XtParent(shell);
+
+	/* Get current data from the root of the widget tree?
+	 * Do it if we are a child of a dialog shell (assume we
+	 * are a 'Find' dialog).  Otherwise don't (we are the child
+	 * of a menu and being invoked via accelerator)
+	 */
+	if (XmIsDialogShell(shell))
 		get_state(w);
+
+	/* no pattern? probably, we haven't posted a search dialog yet.
+	 * there ought to be a better thing to do here.
+	 */
+	if ( pattern == NULL ) {
+	    vi_info_message( w, "No previous string specified" );
+	    return;
+	}
 
 	ipb.str1 = pattern;
 	ipb.len1 = strlen(pattern);
@@ -246,18 +261,18 @@ static	Widget	create_push_buttons( parent, data, count )
 				    XmNbottomAttachment,XmATTACH_FORM,
 				    XmNleftAttachment,	XmATTACH_POSITION,
 				    XmNleftPosition,	pos,
-				    XmNshowAsDefault,	data->is_default,
-				    XmNdefaultButtonShadowThickness,	data->is_default,
+				    XmNshowAsDefault,	False,
 				    XmNrightAttachment,	XmATTACH_POSITION,
 				    XmNrightPosition,	pos+SpacingRatio-1,
 				    0
 				    );
-	if ( data->is_default )
-	    XtVaSetValues( form, XmNdefaultButton, w, 0 );
 	XtAddCallback( w, XmNactivateCallback, data->cb, 0 );
 	pos += SpacingRatio;
 	data++;
     }
+
+    /* last button is 'cancel' */
+    XtVaSetValues( XtParent(form), XmNcancelButton, w, 0 );
 
     return form;
 }
@@ -496,12 +511,13 @@ String	title;
 /*
  * __vi_search --
  *
- * PUBLIC: void __vi_search __P((void));
+ * PUBLIC: void __vi_search __P((Widget));
  */
 void
-__vi_search()
+__vi_search( w )
+Widget	w;
 {
-    next_func( NULL );
+    next_func( w );
 }
 
 
@@ -558,5 +574,4 @@ main( int argc, char *argv[] )
     XtRealizeWidget(top_level);
     XtAppMainLoop(ctx);
 }
-
 #endif
