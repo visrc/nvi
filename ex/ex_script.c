@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.9 1993/12/20 19:48:13 bostic Exp $ (Berkeley) $Date: 1993/12/20 19:48:13 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.10 1993/12/22 15:44:39 bostic Exp $ (Berkeley) $Date: 1993/12/22 15:44:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -140,7 +140,15 @@ err:		if (sc->sh_master != -1)
 		(void)putenv("EMACS=t");
 
 		(void)setsid();
+#ifdef TIOCSCTTY
+		/*
+		 * 4.4BSD allocates a controlling terminal using the TIOCSCTTY
+		 * ioctl, not by opening a terminal device file.  POSIX 1003.1
+		 * doesn't define a portable way to do this.  If TIOCSCTTY is
+		 * not available, hope that the open does it.
+		 */
 		(void)ioctl(sc->sh_slave, TIOCSCTTY, 0);
+#endif
 		(void)close(sc->sh_master);
 		(void)dup2(sc->sh_slave, STDIN_FILENO);
 		(void)dup2(sc->sh_slave, STDOUT_FILENO);
