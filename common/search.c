@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.11 1993/09/13 13:55:14 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:55:14 $";
+static char sccsid[] = "$Id: search.c,v 8.12 1993/09/13 18:03:01 bostic Exp $ (Berkeley) $Date: 1993/09/13 18:03:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -692,13 +692,22 @@ check_delta(sp, ep, delta, lno)
 	long delta;
 	recno_t lno;
 {
-	if (delta < 0 && (recno_t)delta >= lno) {
-		msgq(sp, M_ERR, "Search offset before line 1.");
-		return (1);
-	}
-	if (file_gline(sp, ep, lno + delta, NULL) == NULL) {
-		msgq(sp, M_ERR, "Search offset past end-of-file.");
-		return (1);
+	/*
+	 * Since a 
+	if (delta < 0) {
+		if (lno < LONG_MAX && delta >= (long)lno) {
+			msgq(sp, M_ERR, "Search offset before line 1.");
+			return (1);
+		}
+	} else {
+		if (ULONG_MAX - lno < delta) {
+			msgq(sp, M_ERR, "Delta value overflow.");
+			return (1);
+		}
+		if (file_gline(sp, ep, lno + delta, NULL) == NULL) {
+			msgq(sp, M_ERR, "Search offset past end-of-file.");
+			return (1);
+		}
 	}
 	return (0);
 }
