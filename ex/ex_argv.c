@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.32 2000/07/19 20:31:58 skimo Exp $ (Berkeley) $Date: 2000/07/19 20:31:58 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.33 2000/07/21 17:33:58 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:33:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ argv_exp0(sp, excp, cmd, cmdlen)
 
 	exp = EXP(sp);
 	argv_alloc(sp, cmdlen);
-	MEMCPYW(exp->args[exp->argsoff]->bp, cmd, cmdlen);
+	MEMCPY(exp->args[exp->argsoff]->bp, cmd, cmdlen);
 	exp->args[exp->argsoff]->bp[cmdlen] = '\0';
 	exp->args[exp->argsoff]->len = cmdlen;
 	++exp->argsoff;
@@ -341,6 +341,8 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 	char *t;
 	size_t blen, len, off, tlen;
 	CHAR_T *bp;
+	CHAR_T *wp;
+	size_t wlen;
 
 	/* Replace file name characters. */
 	for (bp = *bpp, blen = *blenp, len = *lenp; cmdlen > 0; --cmdlen, ++cmd)
@@ -358,7 +360,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			off = p - bp;
 			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
-			MEMCPYW(p, exp->lastbcomm, tlen);
+			MEMCPY(p, exp->lastbcomm, tlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
 			break;
@@ -373,7 +375,8 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			off = p - bp;
 			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
-			MEMCPYW(p, t, tlen);
+			CHAR2INT(sp, t, tlen, wp, wlen);
+			MEMCPY(p, wp, wlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
 			break;
@@ -387,7 +390,8 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			off = p - bp;
 			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
-			MEMCPYW(p, t, tlen);
+			CHAR2INT(sp, t, tlen, wp, wlen);
+			MEMCPY(p, wp, wlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
 			break;
@@ -585,13 +589,13 @@ argv_lexp(SCR *sp, EXCMD *excp, char *path)
 		n = exp->args[exp->argsoff]->bp;
 		if (dlen != 0) {
 			CHAR2INT(sp, dname, dlen, wp, wlen);
-			MEMCPYW(n, wp, wlen);
+			MEMCPY(n, wp, wlen);
 			n += dlen;
 			if (dlen > 1 || dname[0] != '/')
 				*n++ = '/';
 		}
 		CHAR2INT(sp, dp->d_name, len + 1, wp, wlen);
-		MEMCPYW(n, wp, wlen);
+		MEMCPY(n, wp, wlen);
 		exp->args[exp->argsoff]->len = dlen + len + 1;
 		++exp->argsoff;
 		excp->argv = exp->args;
