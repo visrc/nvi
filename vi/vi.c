@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.28 1992/11/04 10:42:53 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:42:53 $";
+static char sccsid[] = "$Id: vi.c,v 5.29 1992/11/06 11:22:11 bostic Exp $ (Berkeley) $Date: 1992/11/06 11:22:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,6 +249,8 @@ getcmd(vp, ismotion)
 	KEY(key, GB_MAPCOMMAND);
 	if (key < 0 || key > MAXVIKEY) {
 		bell();
+		if (ISSET(O_VERBOSE))
+			msg("%s isn't a command.", charname(key));
 		return (1);
 	}
 
@@ -273,8 +275,11 @@ getcmd(vp, ismotion)
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		if (vp->buffer != OOBCB)
-			goto usage;
+		if (vp->buffer != OOBCB) {
+			bell();
+			msg("Only one buffer can be specified.");
+			return (1);
+		}
 		KEY(key, 0);
 		if (!isalnum(key))
 			goto ebuf;
@@ -509,29 +514,51 @@ noword:		bell();
 	}
 
 	/* Find the beginning/end of the keyword. */
-	if (beg != 0) {
+	if (beg != 0)
 		if (flags & V_KEYW) {
-			do {
+			for (;;) {
 				--beg;
-			} while (inword(p[beg]) && beg > 0);
+				if (!inword(p[beg])) {
+					++beg;
+					break;
+				}
+				if (beg == 0)
+					break;
+			}
 		} else {
-			do {
+			for (;;) {
 				--beg;
-			} while (innum(p[beg]) && beg > 0);
+				if (!innum(p[beg])) {
+					if (beg > 0 && p[beg - 1] == '0' &&
+					    (p[beg] == 'X' || p[beg] == 'x'))
+						--beg;
+					else
+						++beg;
+					break;
+				}
+				if (beg == 0)
+					break;
+			}
 
 			/* Skip possible leading sign. */
-			if (beg != 0 && p[beg] == '+' || p[beg] == '-')
+			if (beg != 0 && p[beg] != '0' &&
+			    (p[beg - 1] == '+' || p[beg - 1] == '-'))
 				--beg;
 		}
-		if (beg != 0)
-			++beg;
-	}
 
 	if (flags & V_KEYW) {
 		for (end = curf->cno; ++end < len && inword(p[end]););
 		--end;
 	} else {
-		for (end = curf->cno; ++end < len && innum(p[end]););
+		for (end = curf->cno; ++end < len;) {
+			if (p[end] == 'X' || p[end] == 'x') {
+				if (end != beg + 1 || p[beg] != '0')
+					break;
+				continue;
+			}
+			if (!innum(p[end]))
+				break;
+		}
 
 		/* Just a sign isn't a number. */
 		if (end == beg && (p[beg] == '+' || p[beg] == '-'))
@@ -567,6 +594,6 @@ noword:		bell();
 		}
 	}
 	bcopy(p + beg, kp->keyword, kp->klen);
-	kp->keyword[len - 1] = '\0';			/* XXX */
+	kp->keyword[kp->klen] = '\0';			/* XXX */
 	return (0);
 }
