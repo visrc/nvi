@@ -1,6 +1,6 @@
-#	$Id: README,v 8.81 1994/08/11 13:01:06 bostic Exp $ (Berkeley) $Date: 1994/08/11 13:01:06 $
+#	$Id: README,v 8.82 1994/08/14 13:13:26 bostic Exp $ (Berkeley) $Date: 1994/08/14 13:13:26 $
 
-This is the README for version 1.30 of nex/nvi, a freely redistributable
+This is the README for version 1.31 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed or
 gzip'd archive, for this and future versions, can be retrieved by using
 anonymous ftp to ftp.cs.berkeley.edu, from the file ucb/4bsd/nvi.tar.Z,
@@ -101,24 +101,23 @@ you might like.  The "Additional Features" section of the reference page
 =-=-=-=-=-=-=-=-=-=-=
 o Porting information:
 
-The directory port has directories per OS/machine combination, with V7-style
-Makefiles, for building nex/nvi on various machines.  The port/README file
-has detailed information.
+The directory "port" has directories for specific OS/machine combinations,
+including V7-style Makefiles, for building nex/nvi on different machines.
+See the file port/README for detailed information.
 
 =-=-=-=-=-=-=-=-=-=-=
 o Debugging:
 
 Code fixes are appreciated, of course, but if you can't provide them,
 please email me as much information as you can as to how to reproduce
-the bug, and I'll try to fix it locally.  In particular, the screen
-routines are nasty stuff, and you probably don't want to mess with them.
-Stack traces of core dumps are only rarely helpful -- an example file
-with a set of keystrokes that causes the problem is far better.
+the bug, and I'll try to fix it locally.  Stack traces of core dumps
+are only rarely helpful -- an example file with a set of keystrokes that
+causes the problem is almost invariably necessary.
 
 Please include the following in the bug report;
 
 	o The version of nvi you're running (use :version to get it).
-	o The dimensions of the screen (80 x 32).
+	o The row/column dimensions of the screen (80 x 32).
 	o Unless you're confident that they're not part of the problem,
 	  your startup files (.exrc, .nexrc) and the environment variable
 	  (EXININT, NEXINIT) values.  (Cutting and pasting the output
@@ -148,11 +147,10 @@ nvi/USD.doc:
 			of the document distributed with 4.4BSD-Lite.
 
 nvi/common:
-	Source files for pieces of code that are shared by all the
-	editors, like searching and logging code or code translating
-	line numbers into requests to the dbopen(3) database code.
-	It also has the code for adding, deleting, and changing "records"
-	in the underlying database.
+	Source files for pieces of code that are shared by all the editors,
+	like searching and logging code or code translating line numbers
+	into requests to the dbopen(3) database code.  It also has the
+	interface code for modifying "records" in the underlying database.
 
 nvi/docs:
 	Random nvi documentation:
