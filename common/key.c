@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.65 1994/04/21 10:45:21 bostic Exp $ (Berkeley) $Date: 1994/04/21 10:45:21 $";
+static char sccsid[] = "$Id: key.c,v 8.66 1994/05/02 07:42:25 bostic Exp $ (Berkeley) $Date: 1994/05/02 07:42:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -441,6 +441,10 @@ term_push(sp, s, nchars, cmap, flags)
 {
 	IBUF *tty;
 
+	/* Cap the cmap value. */
+	if (cmap > 255)
+		cmap = 255;
+
 	/* If we have room, stuff the keys into the buffer. */
 	tty = sp->gp->tty;
 	if (nchars <= tty->next ||
@@ -566,8 +570,10 @@ term_push(sp, s, nchars, cmap, flags)
  * what was going on, the user was usually tossed into ex mode.  Finally, any
  * changes made before vi realized that the macro was recursing were left in
  * place.  This implementation counts how many times each input character has
- * been mapped.  If it reaches some arbitrary value, we flush all mapped keys
- * and return an error.
+ * been mapped.  If it reaches some arbitrary value, we turn on interrupts so
+ * the user can stop it.  (We don't always turn on interrupts because it's an
+ * expensive operation per character.)  When interrupted, we flush the mapped
+ * keys and return an error.
  *
  * XXX
  * The final issue is recovery.  It would be possible to undo all of the work
@@ -590,6 +596,7 @@ term_key(sp, chp, flags)
 	SEQ *qp;
 	int cmap, ispartial, nr, itear;
 
+	itear = 0;
 	gp = sp->gp;
 	tty = gp->tty;
 
@@ -611,9 +618,6 @@ loop:	if (tty->cnt == 0) {
 		if (F_ISSET(sp, S_UPDATE_MODE))
 			F_CLR(sp, S_UPDATE_MODE);
 	}
-
-	/* If no limit on remaps, set it up so the user can interrupt. */
-	itear = O_ISSET(sp, O_REMAPMAX) ? 0 : !intr_init(sp);
 
 	/* If the key is mappable and should be mapped, look it up. */
 	if (!(tty->chf[tty->next] & CH_NOMAP) &&
@@ -667,14 +671,15 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 			goto not_digit_ch;
 
 		/*
-		 * Only permit a character to be remapped a certain number
-		 * of times before we figure that it's not going to finish.
+		 * Once a character has been remapped a sufficient number
+		 * of times, turn on interrupts so that the user can stop
+		 * it if they choose.
 		 */
-		if (O_ISSET(sp, O_REMAPMAX)) {
-			if ((cmap = tty->cmap[tty->next]) > MAX_MAP_COUNT)
-				goto flush;
+		if (!itear) {
+			if ((cmap = tty->cmap[tty->next]) > 100)
+				itear = !intr_init(sp);
 		} else if (F_ISSET(sp, S_INTERRUPTED)) {
-flush:			term_map_flush(sp, "Character remapped too many times");
+flush:			term_map_flush(sp, "Interrupted");
 			rval = INP_ERR;
 			goto ret;
 		} else
@@ -689,7 +694,7 @@ flush:			term_map_flush(sp, "Character remapped too many times");
 
 		/* If remapping characters, push the character on the queue. */
 		if (O_ISSET(sp, O_REMAP)) {
-			if (term_push(sp, qp->output, qp->olen, ++cmap, 0)) {
+			if (term_push(sp, qp->output, qp->olen, cmap + 1, 0)) {
 				rval = INP_ERR;
 				goto ret;
 			}

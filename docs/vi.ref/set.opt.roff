@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.14 1994/05/01 12:21:15 bostic Exp $ (Berkeley) $Date: 1994/05/01 12:21:15 $
+.\"     $Id: set.opt.roff,v 8.15 1994/05/02 07:42:49 bostic Exp $ (Berkeley) $Date: 1994/05/02 07:42:49 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -709,16 +709,6 @@ if
 is set, and to
 .Dq \&B
 if it is not set.
-#endif
-.SP
-.It Sy "remapmax [on]"
-#ifdef MANUAL
-Limit the number of times a key may be remapped.
-#endif
-#ifdef REFERENCE
-If this option is set, a key may only be remapped 50 times.
-If it is not set, a key may be remapped an infinite number of times,
-and the editor can be placed into infinite loops.
 #endif
 .SP
 .It Sy "report [5]"
