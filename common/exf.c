@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.57 1993/12/16 15:12:14 bostic Exp $ (Berkeley) $Date: 1993/12/16 15:12:14 $";
+static char sccsid[] = "$Id: exf.c,v 8.58 1993/12/16 19:00:32 bostic Exp $ (Berkeley) $Date: 1993/12/16 19:00:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,13 +55,18 @@ file_add(sp, frp_append, name, ignore)
 	/*
 	 * Return it if it already exists.  Note that we test against the
 	 * user's current name, whatever that happens to be, including if
-	 * it's a temporary file.
+	 * it's a temporary file.  If the user is trying to set an argument
+	 * list, the ignore argument will be on -- if we're ignoring the
+	 * file turn off the ignore bit, so it's back in the argument list.
 	 */
 	if (name != NULL)
 		for (frp = sp->frefq.cqh_first;
 		    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
-			if ((p = FILENAME(frp)) != NULL && !strcmp(p, name))
+			if ((p = FILENAME(frp)) != NULL && !strcmp(p, name)) {
+				if (!ignore)
+					F_CLR(frp, FR_IGNORE);
 				return (frp);
+			}
 
 	/* Allocate and initialize the FREF structure. */
 	CALLOC(sp, frp, FREF *, 1, sizeof(FREF));
