@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.112 1994/05/04 18:38:18 bostic Exp $ (Berkeley) $Date: 1994/05/04 18:38:18 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.113 1994/05/08 10:33:42 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:33:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -351,9 +351,10 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			ab_cnt = 0;
 
 		/* Wrapmargin check. */
-		if (wmskip && ch == ' ') {
+		if (wmskip) {
 			wmskip = 0;
-			goto next_ch;
+			if (ch == ' ')
+				goto next_ch;
 		}
 			
 		/*
