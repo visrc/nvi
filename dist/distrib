@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.10 1996/10/10 20:21:19 bostic Exp $ (Berkeley) $Date: 1996/10/10 20:21:19 $
+# $Id: distrib,v 8.11 1996/10/23 09:40:49 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:40:49 $
 
 # Clean
 #make -f Makefile.in clean
@@ -40,6 +40,7 @@ chmod 444 $f
 
 if [ -d ../ip ]; then
 	f=../include/ip_extern.h
+	echo "Building $f"
 	rm -f $f
 	sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ip/*.c > $f
 	chmod 444 $f
