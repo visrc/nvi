@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.40 1995/01/11 16:09:10 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:09:10 $
+.\"     $Id: set.opt.roff,v 8.41 1995/01/31 12:30:32 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:30:32 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -568,8 +568,11 @@ edit option).
 Precede each line displayed with its current line number.
 .KY octal
 .IP "octal [off]"
-Display unknown characters as octal numbers, instead of the default
-hexadecimal.
+Display unknown characters as octal numbers
+.PQ "\e###" ,
+instead of the default
+hexadecimal
+.PQ "\ex##" .
 .KY open
 .IP "open [on]"
 .CO Ex
