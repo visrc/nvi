@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.8 1993/09/08 14:48:43 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:48:43 $
+ *	$Id: exf.h,v 8.9 1993/09/27 16:18:13 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:18:13 $
  */
 
 					/* Undo direction. */
@@ -31,12 +31,11 @@ typedef struct _exf {
 	size_t	 l_len;			/* Log buffer length. */
 	recno_t	 l_high;		/* Log last + 1 record number. */
 	recno_t	 l_cur;			/* Log current record number. */
-	struct _mark	l_cursor;	/* Log cursor position. */
+	MARK	 l_cursor;		/* Log cursor position. */
 	enum udirection lundo;		/* Last undo direction. */
 
-	struct _mark	absmark;	/* Saved absolute mark. */
-					/* File marks. */
-	struct _mark	marks[UCHAR_MAX + 1];
+	MARK	 absmark;		/* Saved absolute mark. */
+	HDR	 marks;			/* Linked list of file MARK's. */
 
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
