@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.10 1995/10/16 15:25:53 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:53 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.11 1995/10/17 08:09:04 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:09:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,7 +136,7 @@ exwr(sp, cmdp, cmd)
 	enum which cmd;
 {
 	MARK rm;
-	int flags, nf;
+	int flags;
 	char *name, *p;
 
 	NEEDFILE(sp, cmdp);

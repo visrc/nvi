@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 10.7 1995/10/16 15:33:34 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:34 $";
+static char sccsid[] = "$Id: getc.c,v 10.8 1995/10/17 08:09:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:09:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,6 @@ cs_init(sp, csp)
 	SCR *sp;
 	VCS *csp;
 {
-	recno_t lno;
 	int isempty;
 
 	if (db_eget(sp, csp->cs_lno, &csp->cs_bp, &csp->cs_len, &isempty)) {

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.14 1995/10/16 15:25:45 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:45 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.15 1995/10/17 08:08:40 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:08:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,7 @@ static char sccsid[] = "$Id: ex_read.c,v 10.14 1995/10/16 15:25:45 bostic Exp $ 
 #include <string.h>
 
 #include "../common/common.h"
+#include "../vi/vi.h"
 
 /*
  * ex_read --	:read [file]
@@ -51,7 +52,7 @@ ex_read(sp, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t arglen;
-	int argc, nf, rval;
+	int argc, rval;
 	char *p;
 
 	gp = sp->gp;
@@ -247,7 +248,7 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 	recno_t lcnt, lno;
 	size_t len;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
-	int nf, sv_errno;
+	int nf;
 	char *p;
 
 	exp = EXP(sp);

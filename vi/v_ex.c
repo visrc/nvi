@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.15 1995/10/16 15:33:39 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:39 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.16 1995/10/17 08:10:45 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:10:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -421,7 +421,6 @@ v_ex_done(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
 	size_t len;
 
 	/*
