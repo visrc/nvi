@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.5 1992/04/05 09:23:28 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:28 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.6 1992/04/15 09:12:41 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:12:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,7 +122,7 @@ ex_args(cmdp)
 	}
 	if (newline)
 		addch('\n');
-	exrefresh();
+	ex_refresh();
 	return (0);
 }
 
