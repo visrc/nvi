@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.18 1993/12/19 12:59:19 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:59:19 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.19 1993/12/28 17:24:01 bostic Exp $ (Berkeley) $Date: 1993/12/28 17:24:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,9 +127,7 @@ ex_read(sp, ep, cmdp)
 	if (nlines)
 		++sp->lno;
 	
-	/* Set autoprint. */
 	F_SET(sp, S_AUTOPRINT);
-
 	return (rval);
 }
 
