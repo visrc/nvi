@@ -716,7 +716,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		    font_description.variant = PANGO_VARIANT_NORMAL;
 		    font_description.weight = 500;
 		    font_description.stretch = PANGO_STRETCH_NORMAL;
-		    font_description.size = 16000;
+		    font_description.size = 15000;
 
 		    vi->conx = pango_x_get_context (GDK_DISPLAY ());
 		    pango_context_set_font_description (vi->conx, 
