@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.40 1993/04/19 15:35:09 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:35:09 $
+ *	$Id: vi.h,v 5.41 1993/05/08 16:10:09 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:10:09 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -134,6 +134,7 @@ VIPROTO(int, v_exit);
 VIPROTO(int, v_exmode);
 VIPROTO(int, v_filter);
 VIPROTO(int, v_first);
+VIPROTO(int, v_gomark);
 VIPROTO(int, v_home);
 VIPROTO(int, v_hpagedown);
 VIPROTO(int, v_hpageup);
@@ -150,8 +151,6 @@ VIPROTO(int, v_lgoto);
 VIPROTO(int, v_linedown);
 VIPROTO(int, v_lineup);
 VIPROTO(int, v_mark);
-VIPROTO(int, v_markbt);
-VIPROTO(int, v_marksq);
 VIPROTO(int, v_match);
 VIPROTO(int, v_middle);
 VIPROTO(int, v_ncol);
