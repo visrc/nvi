@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.57 1993/05/06 17:12:26 bostic Exp $ (Berkeley) $Date: 1993/05/06 17:12:26 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.58 1993/05/08 21:03:48 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:03:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -477,8 +477,15 @@ lcont:		/* Move to the message line and clear it. */
 		if (F_ISSET(mp, M_INV_VIDEO) || sp->child != NULL)
 			standout();
 
-		/* Print up to the "more" message. */
-		for (len = sp->cols - (sizeof(MCONTMSG) /* - 1 */);; ++p) {
+		/*
+		 * Print up to the "more" message.  Avoid the last character
+		 * in the last line, some hardware doesn't like it.
+		 */
+		if (svi_ncols(sp, p, mp->len, NULL) < sp->cols - 1)
+			len = sp->cols - 1;
+		else
+			len = (sp->cols - sizeof(MCONTMSG)) - 1;
+		for (;; ++p) {
 			if (!mp->len)
 				break;
 			ch = *p;
