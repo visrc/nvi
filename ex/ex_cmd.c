@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.2 1992/04/05 09:47:14 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:47:14 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.3 1992/04/05 15:46:48 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:46:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ CMDLIST cmds[] = {
 	    "!",	"[line] a[ppend][!]",
 #define	C_ABBR		8
 	"abbreviate", 	ex_abbr,	E_EXRCOK,
-	    "w2r",	"ab[brev] word replace",
+	    "s",	"ab[brev] word replace",
 #define	C_ARGS		9
 	"args",		ex_args,	E_EXRCOK,
 	    "",		"ar[gs]",
@@ -238,7 +238,7 @@ CMDLIST cmds[] = {
 	"undo",		ex_undo,	0,
 	    "", 	"u[ndo]",
 #define	C_UNABBREVIATE	49
-	"unabbreviate",	ex_abbr,	E_EXRCOK,
+	"unabbreviate",	ex_unabbr,	E_EXRCOK,
 	    "w1r", 	"una[bbrev] word",
 #define	C_UNMAP		50
 	"unmap",	ex_unmap,	E_EXRCOK,
