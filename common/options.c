@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.61 1994/07/22 17:18:08 bostic Exp $ (Berkeley) $Date: 1994/07/22 17:18:08 $";
+static char sccsid[] = "$Id: options.c,v 8.62 1994/07/22 19:20:20 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:20:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,6 +102,8 @@ static OPTLIST const optlist[] = {
 	{"matchtime",	NULL,		OPT_NUM,	0},
 /* O_MESG	    4BSD */
 	{"mesg",	f_mesg,		OPT_1BOOL,	0},
+/* O_META	  4.4BSD */
+	{"meta",	NULL,		OPT_STR,	0},
 /* O_MODELINE	    4BSD */
 	{"modeline",	f_modeline,	OPT_0BOOL,	0},
 /* O_NUMBER	    4BSD */
@@ -285,6 +287,7 @@ opts_init(sp)
 	SET_DEF(O_DIRECTORY, b1);
 	SET_DEF(O_KEYTIME, "keytime=6");
 	SET_DEF(O_MATCHTIME, "matchtime=7");
+	SET_DEF(O_META, "meta=~{[*?$`'\"\\");
 	SET_DEF(O_REPORT, "report=5");
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
 	(void)snprintf(b1, sizeof(b1), "recdir=%s", _PATH_PRESERVE);
@@ -367,32 +370,21 @@ opts_set(sp, argv)
 			continue;
 		}
 
-		/*
-		 * Find equals sign, question mark or end of set, skipping
-		 * backquoted chars.
-		 */
+		/* Find equals sign or question mark. */
 		for (sep = NULL, equals = qmark = 0,
 		    p = name = argv[0]->bp; (ch = *p) != '\0'; ++p)
-			switch (ch) {
-			case '=':
+			if (ch == '=' || ch == '?') {
 				sep = p;
-				equals = 1;
-				break;
-			case '?':
-				sep = p;
-				qmark = 1;
-				break;
-			case '\\':
-				/* Historic vi just used the backslash. */
-				if (p[1] == '\0')
-					break;
-				++p;
+				if (ch == '=')
+					equals = 1;
+				else
+					qmark = 1;
 				break;
 			}
 
 		turnoff = 0;
 		op = NULL;
-		if (sep)
+		if (sep != NULL)
 			*sep++ = '\0';
 
 		/* Check list of abbreviations. */
@@ -755,13 +747,13 @@ opts_save(sp, fp)
 		case OPT_STR:
 			(void)fprintf(fp, "set ");
 			for (p = op->name; (ch = *p) != '\0'; ++p) {
-				if (isblank(ch))
+				if (isblank(ch) || ch == '\\')
 					(void)putc('\\', fp);
 				(void)putc(ch, fp);
 			}
 			(void)putc('=', fp);
 			for (p = O_STR(sp, cnt); (ch = *p) != '\0'; ++p) {
-				if (isblank(ch))
+				if (isblank(ch) || ch == '\\')
 					(void)putc('\\', fp);
 				(void)putc(ch, fp);
 			}
