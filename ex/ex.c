@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.41 1992/11/06 18:05:35 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:05:35 $";
+static char sccsid[] = "$Id: ex.c,v 5.42 1992/11/07 12:43:36 bostic Exp $ (Berkeley) $Date: 1992/11/07 12:43:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -295,6 +295,7 @@ ex_cmd(exc)
 			cmd.addr1.cno = 0;
 			cmd.addr2.lno = file_lline(curf);
 			cmd.addr2.cno = 0;
+			cmd.flags |= E_ADDR2_ALL;
 			break;
 		}
 		/* FALLTHROUGH */
