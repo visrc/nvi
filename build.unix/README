@@ -1,4 +1,4 @@
-#	$Id: README,v 8.23 1996/06/11 20:04:13 bostic Exp $ (Berkeley) $Date: 1996/06/11 20:04:13 $
+#	$Id: README,v 8.24 1996/06/20 14:54:30 bostic Exp $ (Berkeley) $Date: 1996/06/20 14:54:30 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -8,15 +8,12 @@ should enter:
 
 and nvi will configure the system and build one or two binaries:  nvi and
 tknvi.  You can use any path to the configure script, e.g., to build for
-an x86 architecture, you might do:
+an x86 architecture, I suggest that you do:
 
 	mkdir build.x86
 	cd build.x86
 	../build/configure
 	make
-
-If you're only building nvi for a single architecture, you can just use
-the path ./configure, and build it in this directory.
 
 There are options that you can specify to the configure command.  See
 the next section for a description of these options.
@@ -34,9 +31,9 @@ For example, to install them as "nvi", "nex" and "nview", use:
 
 See the section below on installation for details.
 
-Note that if you are building nvi on a LynxOS system, you should read the
-README.LynxOS file in this directory for additional build instructions that
-are specific to that operating system.
+Note, if you're building nvi on a LynxOS system, you should read the
+README.LynxOS file in this directory for additional build instructions
+that are specific to that operating system.
 
 If you have trouble with this procedure, send email to the addresses
 listed in ../README.  In that email, please provide a complete script
