@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.137 1994/08/02 10:21:57 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:21:57 $";
+static char sccsid[] = "$Id: ex.c,v 8.138 1994/08/03 11:43:15 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:43:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,12 +75,18 @@ ex(sp, ep)
 	 * the input, a message "^H discarded" was displayed.  We don't bother.
 	 */
 	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR | TXT_EXSUSPEND);
-	if (O_ISSET(sp, O_BEAUTIFY))
-		LF_SET(TXT_BEAUTIFY);
-	if (O_ISSET(sp, O_PROMPT))
-		LF_SET(TXT_PROMPT);
 
 	for (eval = 0;; ++sp->if_lno) {
+		/* Set the flags that the user can change. */
+		if (O_ISSET(sp, O_BEAUTIFY))
+			LF_SET(TXT_BEAUTIFY);
+		else
+			LF_CLR(TXT_BEAUTIFY);
+		if (O_ISSET(sp, O_PROMPT))
+			LF_SET(TXT_PROMPT);
+		else
+			LF_CLR(TXT_PROMPT);
+
 		/*
 		 * Get the next command.  Interrupt flag manipulation is safe
 		 * because ex_icmd clears them all.
