@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.19 1992/04/28 13:47:48 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:47:48 $
+ *	$Id: common.h,v 5.20 1992/05/02 09:11:05 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:11:05 $
  */
 
 #ifndef TRUE
@@ -98,7 +98,6 @@ extern long	lnum[MAXBLKS];	/* last line# of each block */
 extern long	nlines;		/* number of lines in the file */
 extern long	changes;	/* counts changes, to prohibit short-cuts */
 extern BLK	tmpblk;		/* a block used to accumulate changes */
-extern int	exwrote;	/* used to detect verbose ex commands */
 extern int	doingdot;	/* boolean: are we doing the "." command? */
 extern int	doingglobal;	/* boolean: are doing a ":g" command? */
 extern int	force_lnmd;	/* boolean: force a command to work in line mode? */
