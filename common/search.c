@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.44 1994/05/13 07:21:28 bostic Exp $ (Berkeley) $Date: 1994/05/13 07:21:28 $";
+static char sccsid[] = "$Id: search.c,v 8.45 1994/05/21 09:44:35 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:44:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 		if (epp != NULL)
 			*epp = ptrn + 2;
 prev:		if (!F_ISSET(sp, S_SRE_SET)) {
-			msgq(sp, M_ERR, "No previous search pattern.");
+			msgq(sp, M_ERR, "No previous search pattern");
 			return (1);
 		}
 		*rep = &sp->sre;
@@ -120,7 +120,7 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 				return (1);
 			if (*p && LF_ISSET(SEARCH_TERM)) {
 				msgq(sp, M_ERR,
-			"Characters after search string and/or delta.");
+			"Characters after search string and/or delta");
 				return (1);
 			}
 		}
@@ -219,11 +219,11 @@ ctag_conv(sp, ptrnp, replacedp)
 	return (0);
 }
 
-#define	EMPTYMSG	"File empty; nothing to search."
-#define	EOFMSG		"Reached end-of-file without finding the pattern."
-#define	NOTFOUND	"Pattern not found."
-#define	SOFMSG		"Reached top-of-file without finding the pattern."
-#define	WRAPMSG		"Search wrapped."
+#define	EMPTYMSG	"File empty; nothing to search"
+#define	EOFMSG		"Reached end-of-file without finding the pattern"
+#define	NOTFOUND	"Pattern not found"
+#define	SOFMSG		"Reached top-of-file without finding the pattern"
+#define	WRAPMSG		"Search wrapped"
 
 int
 f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
@@ -732,9 +732,9 @@ get_delta(sp, dp, valp, flagp)
 		val = strtol(p, &p, 10);
 		if (errno == ERANGE) {
 			if (val == LONG_MAX)
-overflow:			msgq(sp, M_ERR, "Delta value overflow.");
+overflow:			msgq(sp, M_ERR, "Delta value overflow");
 			else if (val == LONG_MIN)
-underflow:			msgq(sp, M_ERR, "Delta value underflow.");
+underflow:			msgq(sp, M_ERR, "Delta value underflow");
 			else
 				msgq(sp, M_SYSERR, NULL);
 			return (1);
@@ -766,16 +766,16 @@ check_delta(sp, ep, delta, lno)
 	/* A delta can overflow a record number. */
 	if (delta < 0) {
 		if (lno < LONG_MAX && delta >= (long)lno) {
-			msgq(sp, M_ERR, "Search offset before line 1.");
+			msgq(sp, M_ERR, "Search offset before line 1");
 			return (1);
 		}
 	} else {
 		if (ULONG_MAX - lno < delta) {
-			msgq(sp, M_ERR, "Delta value overflow.");
+			msgq(sp, M_ERR, "Delta value overflow");
 			return (1);
 		}
 		if (file_gline(sp, ep, lno + delta, NULL) == NULL) {
-			msgq(sp, M_ERR, "Search offset past end-of-file.");
+			msgq(sp, M_ERR, "Search offset past end-of-file");
 			return (1);
 		}
 	}

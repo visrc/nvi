@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.59 1994/05/19 11:54:47 bostic Exp $ (Berkeley) $Date: 1994/05/19 11:54:47 $";
+static char sccsid[] = "$Id: recover.c,v 8.60 1994/05/21 09:44:34 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:44:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -114,7 +114,7 @@ rcv_tmp(sp, ep, name)
 	for (p = name; *p; ++p)
 		if (*p == '\n') {
 			msgq(sp, M_ERR,
-		    "Files with newlines in the name are unrecoverable.");
+		    "Files with newlines in the name are unrecoverable");
 			goto err;
 		}
 
@@ -127,7 +127,7 @@ rcv_tmp(sp, ep, name)
 		msgq(sp, M_SYSERR, NULL);
 		(void)unlink(path);
 err:		msgq(sp, M_ERR,
-		    "Modifications not recoverable if the session fails.");
+		    "Modifications not recoverable if the session fails");
 		return (1);
 	}
 
@@ -181,7 +181,7 @@ rcv_init(sp, ep)
 
 	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp, ep)) {
 err:		msgq(sp, M_ERR,
-		    "Modifications not recoverable if the session fails.");
+		    "Modifications not recoverable if the session fails");
 		return (1);
 	}
 
@@ -291,7 +291,7 @@ rcv_mailfile(sp, ep, iscopy, cp_path)
 	char *dp, *p, *t, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
-		msgq(sp, M_ERR, "Information on user id %u not found.", uid);
+		msgq(sp, M_ERR, "Information on user id %u not found", uid);
 		return (1);
 	}
 
@@ -513,7 +513,7 @@ rcv_read(sp, frp)
 		    strncmp(path, VI_PHEADER, sizeof(VI_PHEADER) - 1) ||
 		    (t = strchr(path, '\n')) == NULL) {
 			msgq(sp, M_ERR,
-			    "%s: malformed recovery file.", recpath);
+			    "%s: malformed recovery file", recpath);
 			goto next;
 		}
 		++found;
@@ -565,16 +565,16 @@ next:			(void)fclose(fp);
 
 	if (recp == NULL) {
 		msgq(sp, M_INFO,
-		    "No files named %s, readable by you, to recover.", name);
+		    "No files named %s, readable by you, to recover", name);
 		return (1);
 	}
 	if (found) {
 		if (requested > 1)
 			msgq(sp, M_INFO,
-		   "There are older versions of this file for you to recover.");
+		   "There are older versions of this file for you to recover");
 		if (found > requested)
 			msgq(sp, M_INFO,
-			    "There are other files for you to recover.");
+			    "There are other files for you to recover");
 	}
 
 	/* Create the FREF structure, start the btree file. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.57 1994/05/07 14:49:28 bostic Exp $ (Berkeley) $Date: 1994/05/07 14:49:28 $";
+static char sccsid[] = "$Id: options.c,v 8.58 1994/05/21 09:44:29 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:44:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -559,7 +559,7 @@ opts_dump(sp, type)
 	 */
 	if (sp->stdfp == NULL) {
 		msgq(sp, M_ERR,
-		    "Option display requires that the screen be initialized.");
+		    "Option display requires that the screen be initialized");
 		return;
 	}
 
