@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.11 1994/03/14 10:45:03 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:03 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.12 1994/03/15 09:58:43 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:58:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,7 +200,7 @@ v_sentenceb(sp, ep, vp)
 	recno_t slno;
 	size_t len, scno;
 	u_long cnt;
-	int last1, last2;
+	int last;
 
 	/*
 	 * !!!
@@ -244,14 +244,13 @@ v_sentenceb(sp, ep, vp)
 				break;
 		}
 
-	for (last1 = last2 = 0;;) {
+	for (last = 0;;) {
 		if (cs_prev(sp, ep, &cs))
 			return (1);
 		if (cs.cs_flags == CS_SOF)	/* SOF is a movement sink. */
 			break;
 		if (cs.cs_flags == CS_EOL) {
-			last2 = last1;
-			last1 = 1;
+			last = 1;
 			continue;
 		}
 		if (cs.cs_flags == CS_EMP) {
@@ -259,15 +258,15 @@ v_sentenceb(sp, ep, vp)
 				goto ret;
 			if (cs_bblank(sp, ep, &cs))
 				return (1);
-			last1 = last2 = 0;
+			last = 0;
 			continue;
 		}
 		switch (cs.cs_ch) {
 		case '.':
 		case '?':
 		case '!':
-			if (!last1 || --cnt != 0) {
-				last2 = last1 = 0;
+			if (!last || --cnt != 0) {
+				last = 0;
 				continue;
 			}
 
@@ -318,14 +317,13 @@ ret:			slno = cs.cs_lno;
 			++cnt;
 			cs.cs_lno = slno;
 			cs.cs_cno = scno;
-			last2 = last1 = 0;
+			last = 0;
 			break;
 		case '\t':
-			last1 = last2 = 1;
+			last = 1;
 			break;
 		default:
-			last2 = last1;
-			last1 =
+			last =
 			    cs.cs_flags == CS_EOL || isblank(cs.cs_ch) ||
 			    cs.cs_ch == ')' || cs.cs_ch == ']' ||
 			    cs.cs_ch == '"' || cs.cs_ch == '\'' ? 1 : 0;
