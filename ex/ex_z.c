@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 8.3 1993/11/02 18:46:53 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:53 $";
+static char sccsid[] = "$Id: ex_z.c,v 8.4 1993/12/02 14:02:39 bostic Exp $ (Berkeley) $Date: 1993/12/02 14:02:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ ex_z(sp, ep, cmdp)
 	 * I'm using the window size as it means that the entire screen
 	 * is used instead of losing a line to roundoff.  Note, we drop
 	 * a line from the cnt if using the window size to leave room for
-	 * the next prompt.
+	 * the next ex prompt.
 	 */
 	if (F_ISSET(cmdp, E_COUNT))
 		cnt = cmdp->count;
