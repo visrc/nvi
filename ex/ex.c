@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.35 1992/10/18 13:07:43 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:43 $";
+static char sccsid[] = "$Id: ex.c,v 5.36 1992/10/20 18:25:29 bostic Exp $ (Berkeley) $Date: 1992/10/20 18:25:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,7 +47,8 @@ ex()
 	u_char *p;
 
 	while (mode == MODE_EX) {
-		if (gb(ISSET(O_PROMPT) ? ':' : 0, &p, &len, 0) || !p)
+		if (gb(ISSET(O_PROMPT) ? ':' : 0,
+		    &p, &len, GB_MAPCOMMAND) || !p)
 			continue;
 		if (*p)
 			ex_cstring(p, len, 0);
