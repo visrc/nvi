@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.8 1996/12/10 21:01:01 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:01:01 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.9 1996/12/13 11:25:11 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:25:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -361,7 +361,7 @@ ip_refresh(sp, repaint)
 	ipb.val1 = HMAP->lno;
 	ipb.val2 = TMAP->lno - HMAP->lno;
 	(void)db_last(sp, &total);
-	ipb.val3 = total;
+	ipb.val3 = total == 0 ? 1 : total;
 	if (ipb.val1 != ipp->sb_top ||
 	    ipb.val2 != ipp->sb_num || ipb.val3 != ipp->sb_total) {
 		ipb.code = SI_SCROLLBAR;
