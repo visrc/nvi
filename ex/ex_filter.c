@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.34 1994/05/01 15:19:37 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:19:37 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.35 1994/05/02 18:26:19 bostic Exp $ (Berkeley) $Date: 1994/05/02 18:26:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,7 +104,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	 * Save ex/vi terminal settings, and restore the original ones.
 	 * Restoration so that users can do things like ":r! cat /dev/tty".
 	 */
-	teardown = !ex_sleave(sp);
+	teardown = ftype != FILTER_WRITE && !ex_sleave(sp);
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
@@ -344,32 +344,30 @@ proc_wait(sp, pid, cmd, okpipe)
 
 /*
  * filter_ldisplay --
- *	Display a line output from a utility.
+ *	Display output from a utility.
  *
- * XXX
- * This should probably be combined with some of the ex_print()
- * routines into a single display routine.
+ * !!!
+ * Historically, the characters were passed unmodified to the terminal.
+ * We use the ex print routines to make sure they're printable.
  */
 static int
 filter_ldisplay(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
-	EX_PRIVATE *exp;
 	size_t len;
 
-	exp = EXP(sp);
-	while (!ex_getline(sp, fp, &len)) {
-		(void)ex_printf(EXCOOKIE, "%.*s\n", (int)len, exp->ibp);
-		if (ferror(sp->stdfp)) {
-			msgq(sp, M_SYSERR, NULL);
-			(void)fclose(fp);
-			return (1);
-		}
+	EX_PRIVATE *exp;
+
+	F_SET(sp, S_INTERRUPTIBLE);
+	for (exp = EXP(sp); !ex_getline(sp, fp, &len);) {
+		if (ex_ldisplay(sp, exp->ibp, len, 0, 0))
+			break;
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
-	if (fclose(fp)) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
+	if (ferror(fp))
+		msgq(sp, M_SYSERR, "filter input");
+	(void)fclose(fp);
 	return (0);
 }
