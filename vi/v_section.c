@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.8 1994/07/16 15:04:37 bostic Exp $ (Berkeley) $Date: 1994/07/16 15:04:37 $";
+static char sccsid[] = "$Id: v_section.c,v 8.9 1994/07/18 17:57:56 bostic Exp $ (Berkeley) $Date: 1994/07/18 17:57:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,8 @@ v_sectionf(sp, ep, vp)
 			continue;
 		for (lp = list; *lp != '\0'; lp += 2 * sizeof(*lp))
 			if (lp[0] == p[1] &&
-			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
+			    (lp[1] == ' ' && len == 2 || lp[1] == p[2]) &&
+			    !--cnt) {
 				/*
 				 * !!!
 				 * If not cutting this line, adjust to the end
@@ -214,7 +215,8 @@ v_sectionb(sp, ep, vp)
 			continue;
 		for (lp = list; *lp != '\0'; lp += 2 * sizeof(*lp))
 			if (lp[0] == p[1] &&
-			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
+			    (lp[1] == ' ' && len == 2 || lp[1] == p[2]) &&
+			    !--cnt) {
 adjust1:			vp->m_stop.lno = lno;
 				vp->m_stop.cno = 0;
 				goto ret1;
