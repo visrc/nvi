@@ -6,22 +6,19 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.3 1992/06/07 17:53:53 bostic Exp $ (Berkeley) $Date: 1992/06/07 17:53:53 $";
+static char sccsid[] = "$Id: v_match.c,v 5.4 1992/06/08 09:27:10 bostic Exp $ (Berkeley) $Date: 1992/06/08 09:27:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
-#include <stddef.h>
 
 #include "vi.h"
-#include "options.h"
 #include "vcmd.h"
+#include "getc.h"
+#include "options.h"
 #include "extern.h"
 
 static int	findmatchc __P((MARK *, char *, size_t, MARK *));
-static int	getc_init __P((MARK *, enum direction));
-static int	getc_next __P((int *));
-static void	getc_set __P((MARK *));
 
 /*
  * v_match -- %
@@ -77,9 +74,9 @@ nomatch:		bell();
 		return (0);
 	}
 
-	if (getc_init(fm, dir))
+	if (getc_init(fm, &ch))
 		return (1);
-	for (cnt = 1; getc_next(&ch);)
+	for (cnt = 1; getc_next(dir, &ch);)
 		if (ch == matchc) {
 			if (--cnt == 0) {
 				getc_set(rp);
@@ -144,59 +141,4 @@ findmatchc(fm, p, len, rp)
 	else
 		return (1);
 	return (0);
-}
-
-static enum direction getc_dir;
-static MARK getc_m;
-static char *getc_p;
-static size_t getc_len;
-
-static int
-getc_init(fm, dir)
-	MARK *fm;
-	enum direction dir;
-{
-	getc_m = *fm;
-	getc_dir = dir;
-	EGETLINE(getc_p, fm->lno, getc_len);
-	return (0);
-}
-
-static int
-getc_next(chp)
-	int *chp;
-{
-	if (getc_dir == FORWARD)
-		if (getc_m.cno == getc_len) {
-			for (;;) {
-				GETLINE(getc_p, ++getc_m.lno, getc_len);
-				if (getc_p == NULL)
-					return (0);
-				if (getc_len != 0)
-					break;
-			}
-			getc_m.cno = 0;
-		} else
-			++getc_m.cno;
-	else /* if (getc_dir == BACKWARD) */
-		if (getc_m.cno == 0) {
-			for (;;) {
-				GETLINE(getc_p, --getc_m.lno, getc_len);
-				if (getc_p == NULL)
-					return (0);
-				if (getc_len != 0)
-					break;
-			}
-			getc_m.cno = getc_len - 1;
-		} else
-			--getc_m.cno;
-	*chp = getc_p[getc_m.cno];
-	return (1);
-}
-
-static void
-getc_set(rp)
-	MARK *rp;
-{
-	*rp = getc_m;
 }
