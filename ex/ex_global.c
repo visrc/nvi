@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.28 1993/05/08 21:23:54 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:23:54 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.29 1993/05/15 10:10:09 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	recno_t elno, last1, last2, lno, nchanged;
+	recno_t elno, last1, last2, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t len;
@@ -116,7 +116,6 @@ global(sp, ep, cmdp, cmd)
 	}
 
 	rval = 0;
-	nchanged = 0;
 	F_SET(sp, S_IN_GLOBAL);
 
 	/* For each line... */
@@ -152,7 +151,6 @@ global(sp, ep, cmdp, cmd)
 		 * Execute the command, keeping track of the lines that
 		 * change, and adjusting for inserted/deleted lines.
 		 */
-		sp->rptlines = 0;
 		last1 = file_lline(sp, ep);
 
 		sp->lno = lno;
@@ -175,16 +173,8 @@ global(sp, ep, cmdp, cmd)
 
 		/* Cursor moves to last line sent to command. */
 		sp->lno = lno;
-
-		/* Cumulative line change count. */
-		nchanged += sp->rptlines;
-		sp->rptlines = 0;
 	}
 
-	/* Report statistics. */
-err:	sp->rptlines += nchanged;
-	sp->rptlabel = "changed";
-
-	F_CLR(sp, S_IN_GLOBAL);
+err:	F_CLR(sp, S_IN_GLOBAL);
 	return (rval);
 }

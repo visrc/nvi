@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.33 1993/05/12 14:15:24 bostic Exp $ (Berkeley) $Date: 1993/05/12 14:15:24 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.34 1993/05/15 10:08:42 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:08:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	pid_t pid;
 	sig_ret_t intsave, quitsave;
 	sigset_t bmask, omask;
-	recno_t dlines, ilines, lno;
+	recno_t lno;
 	size_t len;
 	int input[2], output[2], pstat, rval;
 	char *name;
@@ -138,7 +138,6 @@ err:		if (input[0] != -1)
 	 * Write the selected lines to the write end of the input pipe.
 	 * Ifp is closed by ex_writefp.
 	 */
-	dlines = 0;
 	rval = 0;
 	if (ftype != NOINPUT)
 		if (ex_writefp(sp, ep, "filter", ifp, fm, tm, 0))
@@ -148,7 +147,7 @@ err:		if (input[0] != -1)
 			for (lno = tm->lno; lno >= fm->lno; --lno)
 				if (file_dline(sp, ep, lno))
 					rval = 1;
-			dlines = tm->lno - fm->lno;
+			sp->rptlines[L_DELETED] += tm->lno - fm->lno;
 		}
 
 	if (rval == 0) {
@@ -161,30 +160,11 @@ err:		if (input[0] != -1)
 		if (ftype != NOOUTPUT) {
 			rp->lno = fm->lno;
 			--fm->lno;
-			rval = ex_readfp(sp, ep, "filter", ofp, fm, &ilines);
-		}
-
-		/* Reporting. */
-		if (ilines == dlines) {
-			if (ilines != 0) {
-				sp->rptlines = ilines;
-				sp->rptlabel = "modified";
-			}
-		} else if (dlines == 0) {
-			sp->rptlines = ilines;
-			sp->rptlabel = "added";
-		} else if (ilines == 0) {
-			sp->rptlines = dlines;
-			sp->rptlabel = "deleted";
-		} else if (ilines > dlines) {
-			sp->rptlines = ilines - dlines;
-			sp->rptlabel = "added";
-		} else {
-			sp->rptlines = dlines - ilines;
-			sp->rptlabel = "deleted";
+			rval = ex_readfp(sp, ep,
+			    "filter", ofp, fm, &sp->rptlines[L_ADDED]);
 		}
 	}
-			
+
 	/* Wait for the child to finish. */
 	intsave = signal(SIGINT, SIG_IGN);
 	quitsave = signal(SIGQUIT, SIG_IGN);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.25 1993/04/12 14:37:03 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:03 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.26 1993/05/15 10:10:21 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,9 +92,7 @@ cm(sp, ep, cmdp, cmd)
 	}
 
 	/* Reporting. */
-	if ((sp->rptlines = fm2.lno - fm1.lno) == 0)
-		sp->rptlines = 1;
-	sp->rptlabel = (cmd == MOVE ? "moved" : "copied");
+	sp->rptlines[cmd == COPY ? L_COPIED : L_MOVED] += fm2.lno - fm1.lno;
 
 	F_SET(sp, S_AUTOPRINT);
 	return (0);

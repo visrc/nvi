@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.35 1993/05/11 17:14:11 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:11 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.36 1993/05/15 10:10:27 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,7 +103,7 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		return (1);
 	}
 
-	if (ex_readfp(sp, ep, fname, fp, &cmdp->addr1, &sp->rptlines))
+	if (ex_readfp(sp, ep, fname, fp, &cmdp->addr1, &sp->rptlines[L_READ]))
 		return (1);
 
 	/* Set the cursor. */
@@ -112,8 +112,6 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 	/* Set autoprint. */
 	F_SET(sp, S_AUTOPRINT);
 
-	/* Set reporting. */
-	sp->rptlabel = "read";
 	return (0);
 }
 
@@ -172,8 +170,8 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 		return (1);
 
 	/* Return the number of lines read in. */
-	if (cntp)
-		*cntp = lno - fm->lno;
+	if (cntp != NULL)
+		*cntp += lno - fm->lno;
 
 	return (0);
 }

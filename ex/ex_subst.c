@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.41 1993/05/11 16:10:50 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:50 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.42 1993/05/15 10:10:55 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -251,8 +251,6 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	/* For each line... */
 	lb = NULL;
 	lbclen = lblen = 0;
-	sp->rptlines = 0;
-	sp->rptlabel = "changed";
 	lastline = OOBLNO;
 	for (lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
@@ -356,7 +354,7 @@ skip:		s += sp->match[0].rm_eo;
 
 			/* Update counters. */
 			if (lastline != lno) {
-				++sp->rptlines;
+				++sp->rptlines[L_CHANGED];
 				lastline = lno;
 			}
 
@@ -378,7 +376,7 @@ nomatch:	if (len)
 
 		/* Update counters. */
 		if (lastline != lno) {
-			++sp->rptlines;
+			++sp->rptlines[L_CHANGED];
 			lastline = lno;
 		}
 
@@ -420,7 +418,7 @@ nomatch:	if (len)
 	 * Note if nothing found.  Else, if nothing displayed to the
 	 * screen, put something up.
 	 */
-	if (sp->rptlines == 0 && !F_ISSET(sp, S_IN_GLOBAL))
+	if (sp->rptlines[L_CHANGED] == 0 && !F_ISSET(sp, S_IN_GLOBAL))
 		msgq(sp, M_INFO, "No match found.");
 	else if (!lflag && !nflag && !pflag)
 		F_SET(sp, S_AUTOPRINT);
