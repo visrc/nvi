@@ -1,7 +1,9 @@
 /* This file contains movement functions which are screen-relative */
 
 #include <sys/types.h>
+
 #include <curses.h>
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
