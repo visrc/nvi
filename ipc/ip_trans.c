@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.8 1996/12/10 18:01:51 bostic Exp $ (Berkeley) $Date: 1996/12/10 18:01:51 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.9 1996/12/10 21:03:56 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:03:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static const char sccsid[] = "$Id: ip_trans.c,v 8.8 1996/12/10 18:01:51 bostic E
 
 #include <bitstring.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef __STDC__
 #include <stdarg.h>
@@ -28,17 +29,17 @@ static const char sccsid[] = "$Id: ip_trans.c,v 8.8 1996/12/10 18:01:51 bostic E
 #include "ipc_extern.h"
 
 /*
- * ip_trans --
+ * __vi_trans --
  *	Translate vi messages into function calls.
  *
- * PUBLIC: int ip_trans __P((char *, size_t *));
+ * PUBLIC: int __vi_trans __P((char *, size_t *));
  */
 int
-ip_trans(bp, lenp)
+__vi_trans(bp, lenp)
 	char *bp;
 	size_t *lenp;
 {
-	extern int (*_vi_iplist[IPO_EVENT_MAX - 1]) __P((IP_BUF *));
+	extern int (*__vi_iplist[SI_EVENT_MAX - 1]) __P((IP_BUF *));
 	IP_BUF ipb;
 	size_t len, needlen;
 	u_int32_t *vp;
@@ -47,21 +48,21 @@ ip_trans(bp, lenp)
 
 	for (s_bp = bp, len = *lenp; len > 0;) {
 		switch (foff = bp[0]) {
-		case IPO_ADDSTR:
-		case IPO_RENAME:
+		case SI_ADDSTR:
+		case SI_RENAME:
 			fmt = "s";
 			break;
-		case IPO_ATTRIBUTE:
-		case IPO_MOVE:
+		case SI_ATTRIBUTE:
+		case SI_MOVE:
 			fmt = "12";
 			break;
-		case IPO_BUSY_ON:
+		case SI_BUSY_ON:
 			fmt = "s1";
 			break;
-		case IPO_REWRITE:
+		case SI_REWRITE:
 			fmt = "1";
 			break;
-		case IPO_SCROLLBAR:
+		case SI_SCROLLBAR:
 			fmt = "123";
 			break;
 		default:
@@ -105,7 +106,7 @@ value:				needlen += IPO_INT_LEN;
 		len -= needlen;
 
 		/* Call the underlying routine. */
-		if (foff <= IPO_EVENT_MAX && _vi_iplist[foff - 1](&ipb))
+		if (foff <= SI_EVENT_MAX && __vi_iplist[foff - 1](&ipb))
 			break;
 	}
 partial:
