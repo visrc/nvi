@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.13 1993/09/30 12:01:37 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:37 $
+ *	$Id: common.h,v 8.14 1993/10/02 16:15:00 bostic Exp $ (Berkeley) $Date: 1993/10/02 16:15:00 $
  */
 
 /* System includes. */
@@ -62,7 +62,7 @@ typedef	u_int	ARG_CHAR_T;
  *
  * Required by everybody; include before any local includes.
  */
-#include "hdr.h"
+#include "link.h"
 
 #include "gs.h"				
 
