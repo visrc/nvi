@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: ref.so,v 8.3 1994/05/25 22:30:10 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:30:10 $
+.\"     $Id: ref.so,v 8.4 1994/05/26 00:01:13 bostic Exp $ (Berkeley) $Date: 1994/05/26 00:01:13 $
 .\"
 .\"
 .\" indented paragraph, with spaces between the items, bold font
@@ -43,7 +43,6 @@
 .ns
 .ip "\\$1" 9n
 .nr ps \\n(PS
-.br
 ..
 .\" typewriter font
 .de LI
