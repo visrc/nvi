@@ -1,4 +1,4 @@
-#	$Id: README,v 8.18 1996/05/10 12:04:15 bostic Exp $ (Berkeley) $Date: 1996/05/10 12:04:15 $
+#	$Id: README,v 8.19 1996/05/10 12:05:29 bostic Exp $ (Berkeley) $Date: 1996/05/10 12:05:29 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -272,7 +272,9 @@ Notes:
 	man pages are installed.
 
 	If you want to install vi, ex, view and the man pages as nvi, nex,
-	nview, use the configure option --program-prefix=n.
+	nview, use the configure option --program-prefix=n.  Other, more
+	complex transformations are possible -- use configure --help to
+	see more options.
 
 	The default value for both "exec_prefix" and "prefix" is the
 	directory /usr/local.  The default values for "bindir", "datadir"
