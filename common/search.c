@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.18 1993/10/04 15:58:25 bostic Exp $ (Berkeley) $Date: 1993/10/04 15:58:25 $";
+static char sccsid[] = "$Id: search.c,v 8.19 1993/10/05 12:05:00 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -299,7 +299,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		match[0].rm_so = coff;
 		match[0].rm_eo = len;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 		TRACE(sp, "F search: %lu from %u to %u\n",
 		    lno, coff, len ? len - 1 : len);
 #endif
@@ -327,7 +327,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			rm->lno = delta + lno;
 			rm->cno = 0;
 		} else {
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 			TRACE(sp, "found: %qu to %qu\n",
 			    match[0].rm_so, match[0].rm_eo);
 #endif
@@ -441,7 +441,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		match[0].rm_so = 0;
 		match[0].rm_eo = coff ? coff : len;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 		TRACE(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
 #endif
 		/* Search the line. */
@@ -464,7 +464,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			rm->lno = delta + lno;
 			rm->cno = 0;
 		} else {
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 			TRACE(sp, "found: %qu to %qu\n",
 			    match[0].rm_so, match[0].rm_eo);
 #endif

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.38 1993/10/04 19:33:02 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:33:02 $";
+static char sccsid[] = "$Id: ex.c,v 8.39 1993/10/05 12:05:38 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -308,7 +308,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 	int ch, cmdlen, esc, flags, uselastcmd;
 	char *p, *t, *endp;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp, "ex: {%s}\n", exc);
 #endif
 	/*
@@ -823,7 +823,7 @@ addr2:	switch (cmd.addrcnt) {
 		sp->lastcmd = cp;
 
 	cmd.cmd = cp;
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 {
 	int __cnt;
 

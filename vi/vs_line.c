@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.2 1993/09/10 18:46:15 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:46:15 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.3 1993/10/05 12:06:04 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:06:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: vs_line.c,v 8.2 1993/09/10 18:46:15 bostic Exp $ (B
 #include "vi.h"
 #include "svi_screen.h"
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 #define	TABCH	'-'
 #define	TABSTR	"--------------------"
 #else
@@ -48,7 +48,7 @@ svi_line(sp, ep, smp, yp, xp)
 	int ch, is_tab, listset, is_partial, reverse_video;
 	char *p, nbuf[10];
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp, "svi_line: row %u: line: %u off: %u\n",
 	    smp - HMAP, smp->lno, smp->off);
 #endif

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.15 1993/10/04 17:58:08 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:58:08 $";
+static char sccsid[] = "$Id: util.c,v 8.16 1993/10/05 12:05:03 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -475,11 +475,11 @@ baud_from_bval(sp)
 		 * are almost certainly the same as some of the above
 		 * values, so they can't be part of the case statement.
 		 */
-#if EXTA
+#ifdef EXTA
 		if (v == EXTA)
 			return (19200);
 #endif
-#if EXTB
+#ifdef EXTB
 		if (v == EXTB)
 			return (38400);
 #endif

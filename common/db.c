@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.9 1993/10/04 08:47:30 bostic Exp $ (Berkeley) $Date: 1993/10/04 08:47:30 $";
+static char sccsid[] = "$Id: db.c,v 8.10 1993/10/05 12:04:56 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:04:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,7 +122,7 @@ file_dline(sp, ep, lno)
 {
 	DBT key;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", lno);
 #endif
 	/* Delete any marks in the line. */
@@ -172,7 +172,7 @@ file_aline(sp, ep, update, lno, p, len)
 	DBT data, key;
 	recno_t lline;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	/*
@@ -249,7 +249,7 @@ file_iline(sp, ep, lno, p, len)
 	DBT data, key;
 	recno_t lline;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp,
 	    "insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
@@ -309,7 +309,7 @@ file_sline(sp, ep, lno, p, len)
 {
 	DBT data, key;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp,
 	    "replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif

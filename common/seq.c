@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.6 1993/10/03 10:41:06 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:41:06 $";
+static char sccsid[] = "$Id: seq.c,v 8.7 1993/10/05 12:05:02 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ seq_set(sp, name, input, output, stype, userdef)
 	int ilen;
 	char *p;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp, "seq_set: name {%s} input {%s} output {%s}\n",
 	    name ? name : "", input, output);
 #endif

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.5 1993/10/04 09:30:28 bostic Exp $ (Berkeley) $Date: 1993/10/04 09:30:28 $";
+static char sccsid[] = "$Id: log.c,v 8.6 1993/10/05 12:04:57 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:04:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ static char sccsid[] = "$Id: log.c,v 8.5 1993/10/04 09:30:28 bostic Exp $ (Berke
  */
 
 static int	log_cursor1 __P((SCR *, EXF *, int));
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 static void	log_trace __P((SCR *, char *, recno_t, u_char *));
 #endif
 
@@ -173,7 +173,7 @@ log_cursor1(sp, ep, type)
 	if (ep->log->put(ep->log, &key, &data, 0) == -1)
 		LOG_ERR;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	TRACE(sp, "%lu: %s: %u/%u\n", ep->l_cur,
 	    type == LOG_CURSOR_INIT ? "log_cursor_init" : "log_cursor_end",
 	    sp->lno, sp->cno);
@@ -248,7 +248,7 @@ log_line(sp, ep, lno, action)
 	if (ep->log->put(ep->log, &key, &data, 0) == -1)
 		LOG_ERR;
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 	switch (action) {
 	case LOG_LINE_APPEND:
 		TRACE(sp, "%u: log_line: append: %lu {%u}\n",
@@ -355,7 +355,7 @@ log_backward(sp, ep, rp)
 		--ep->l_cur;
 		if (ep->log->get(ep->log, &key, &data, 0))
 			LOG_ERR;
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 		log_trace(sp, "log_backward", ep->l_cur, data.data);
 #endif
 		switch (*(p = (u_char *)data.data)) {
@@ -459,7 +459,7 @@ log_setline(sp, ep, rp)
 		--ep->l_cur;
 		if (ep->log->get(ep->log, &key, &data, 0))
 			LOG_ERR;
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 		log_trace(sp, "log_setline", ep->l_cur, data.data);
 #endif
 		switch (*(p = (u_char *)data.data)) {
@@ -540,7 +540,7 @@ log_forward(sp, ep, rp)
 		++ep->l_cur;
 		if (ep->log->get(ep->log, &key, &data, 0))
 			LOG_ERR;
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 		log_trace(sp, "log_forward", ep->l_cur, data.data);
 #endif
 		switch (*(p = (u_char *)data.data)) {
@@ -597,7 +597,7 @@ err:	F_CLR(ep, F_NOLOG);
 	return (1);
 }
 
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 static void
 log_trace(sp, msg, rno, p)
 	SCR *sp;

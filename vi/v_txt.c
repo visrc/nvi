@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.24 1993/10/05 10:46:12 bostic Exp $ (Berkeley) $Date: 1993/10/05 10:46:12 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.25 1993/10/05 12:05:53 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ static void	 txt_showmatch __P((SCR *, EXF *));
 static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 
 /* Cursor character (space is hard to track on the screen). */
-#if DEBUG && 0
+#if defined(DEBUG) && 0
 #define	CURSOR_CHAR	'+'
 #else
 #define	CURSOR_CHAR	' '
@@ -702,7 +702,7 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 				quoted = Q_THISCHAR;
 			break;
 		}
-#if DEBUG && 1
+#if defined(DEBUG) && 1
 		if (sp->cno + tp->insert + tp->overwrite != tp->len)
 			msgq(sp, M_ERR,
 			    "len %u != cno: %u ai: %u insert %u overwrite %u",
