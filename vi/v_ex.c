@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.57 2001/08/29 11:02:16 skimo Exp $ (Berkeley) $Date: 2001/08/29 11:02:16 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.58 2003/07/18 23:16:46 skimo Exp $ (Berkeley) $Date: 2003/07/18 23:16:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -645,6 +645,7 @@ v_ecl_init(SCR *sp)
 	conv_enc(wp->ccl_sp, O_FILEENCODING, "WCHAR_T");
 	if (file_init(wp->ccl_sp, frp, NULL, 0)) {
 		(void)screen_end(wp->ccl_sp);
+		wp->ccl_sp = 0;
 		return (1);
 	}
 
