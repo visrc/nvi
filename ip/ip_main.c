@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.13 2000/06/28 20:20:37 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:37 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.14 2000/06/30 20:11:28 skimo Exp $ (Berkeley) $Date: 2000/06/30 20:11:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,7 @@ GS *__global_list;				/* GLOBAL: List of screens. */
 static void	   ip_func_std __P((GS *));
 static IP_PRIVATE *ip_init __P((WIN *wp, int i_fd, int o_fd, int argc, char *argv[]));
 static void	   perr __P((char *, char *));
+static int	   get_fds __P((char *ip_arg, int *i_fd, int *o_fd));
 static void run_editor __P((void * vp));
 
 /*
@@ -54,7 +55,6 @@ main(argc, argv)
 	GS *gp;
 	WIN *wp;
 	int i_fd, o_fd, main_ifd, main_ofd;
-	char *ep;
 
 	/* Create and initialize the global structure. */
 	__global_list = gp = gs_init(argv[0]);
@@ -91,21 +91,8 @@ main(argc, argv)
 		*p_av++ = *t_av++;
 	}
 
-	/*
-	 * Crack ip_arg -- it's of the form #.#, where the first number is the
-	 * file descriptor from the screen, the second is the file descriptor
-	 * to the screen.
-	 */
-	if (!isdigit(ip_arg[0]))
-		goto usage;
-	i_fd = strtol(ip_arg, &ep, 10);
-	if (ep[0] != '.' || !isdigit(ep[1]))
-		goto usage;
-	o_fd = strtol(++ep, &ep, 10);
-	if (ep[0] != '\0') {
-usage:		ip_usage();
-		return (NULL);
-	}
+	if (get_fds(ip_arg, &i_fd, &o_fd))
+		return 1;
 
 		/* Create new window */
 		wp = gs_new_win(gp);
@@ -201,6 +188,30 @@ ip_init(WIN *wp, int i_fd, int o_fd, int argc, char *argv[])
 	ip_func_std(wp->gp);
 
 	return (ipp);
+}
+
+static int
+get_fds(char *ip_arg, int *i_fd, int *o_fd)
+{
+	char *ep;
+
+	/*
+	 * Crack ip_arg -- it's of the form #.#, where the first number is the
+	 * file descriptor from the screen, the second is the file descriptor
+	 * to the screen.
+	 */
+	if (!ip_arg || !isdigit(ip_arg[0]))
+		goto usage;
+	*i_fd = strtol(ip_arg, &ep, 10);
+	if (ep[0] != '.' || !isdigit(ep[1]))
+		goto usage;
+	*o_fd = strtol(++ep, &ep, 10);
+	if (ep[0] != '\0') {
+usage:		ip_usage();
+		return 1;
+	}
+
+	return 0;
 }
 
 /*
