@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_version.c,v 10.24 1996/03/27 08:38:31 bostic Exp $ (Berkeley) $Date: 1996/03/27 08:38:31 $";
+static const char sccsid[] = "$Id: ex_version.c,v 10.25 1996/04/12 10:48:11 bostic Exp $ (Berkeley) $Date: 1996/04/12 10:48:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@ static const char sccsid[] = "$Id: ex_version.c,v 10.24 1996/03/27 08:38:31 bost
 #include <stdio.h>
 
 #include "../common/common.h"
+#include "version.h"
 
 /*
  * ex_version -- :version
@@ -33,6 +34,6 @@ ex_version(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	(void)ex_printf(sp, "%s\n", EX_VERSION);
+	(void)ex_printf(sp, "%s\n", VI_VERSION);
 	return (0);
 }
