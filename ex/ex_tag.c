@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.37 1994/03/15 09:41:50 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:41:50 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.38 1994/03/17 15:41:38 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:41:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -538,7 +538,8 @@ ex_tagfree(sp)
 		FREETAG(tp);
 	while ((tfp = exp->tagfq.tqh_first) != NULL)
 		FREETAGF(tfp);
-	FREE(exp->tlast, strlen(exp->tlast) + 1);
+	if (exp->tlast != NULL)
+		free(exp->tlast);
 	return (0);
 }
 
