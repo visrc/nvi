@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.38 1993/10/27 23:36:37 bostic Exp $ (Berkeley) $Date: 1993/10/27 23:36:37 $
+ *	$Id: screen.h,v 8.39 1993/10/28 10:34:13 bostic Exp $ (Berkeley) $Date: 1993/10/28 10:34:13 $
  */
 
 /*
@@ -203,7 +203,7 @@ typedef struct _scr {
 
 	char const *time_msg;		/* ITIMER_REAL message. */
 	struct itimerval time_value;	/* ITIMER_REAL saved value. */
-	sig_ret_t time_handler;		/* ITIMER_REAL saved handler. */
+	struct sigaction time_handler;	/* ITIMER_REAL saved handler. */
 
 	OPTION	 opts[O_OPTIONCOUNT];	/* Ex/vi: options. */
 
