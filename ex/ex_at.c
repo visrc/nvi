@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.5 1992/04/05 10:04:26 bostic Exp $ (Berkeley) $Date: 1992/04/05 10:04:26 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.6 1992/04/15 09:12:52 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:12:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ex_at(cmdp)
 	}
 	if (cp != copy)
 		free(cp);
-	rval = exstring(cp, len);
+	rval = ex_cstring(cp, len);
 	--recurse;
 	return (rval);
 }
