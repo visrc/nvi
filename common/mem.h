@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  *
- *	$Id: mem.h,v 10.4 1995/10/17 11:42:13 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:42:13 $
+ *	$Id: mem.h,v 10.5 1996/03/06 19:50:37 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:37 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that

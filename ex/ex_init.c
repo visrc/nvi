@@ -1,14 +1,16 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  */
 
+#include "config.h"
+
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.12 1996/02/29 10:44:05 bostic Exp $ (Berkeley) $Date: 1996/02/29 10:44:05 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.13 1996/03/06 19:52:22 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,6 +27,7 @@ static char sccsid[] = "$Id: ex_init.c,v 10.12 1996/02/29 10:44:05 bostic Exp $ 
 
 #include "../common/common.h"
 #include "tag.h"
+#include "pathnames.h"
 
 enum rc { NOEXIST, NOPERM, RCOK };
 static enum rc	exrc_isok __P((SCR *, struct stat *, char *, int, int));

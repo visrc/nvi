@@ -1,22 +1,24 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995, 1996
+ * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  */
 
+#include "config.h"
+
 #ifndef lint
-static char copyright[] =
+static const char copyright[] =
 "%Z% Copyright (c) 1992, 1993, 1994\n\
 	The Regents of the University of California.  All rights reserved.\n\
-%Z% Copyright (c) 1994, 1995, 1996\n\
+%Z% Copyright (c) 1992, 1993, 1994, 1995, 1996\n\
 	Keith Bostic.  All rights reserved.\n";
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.28 1996/03/03 16:22:16 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:22:16 $";
+static const char sccsid[] = "$Id: main.c,v 10.29 1996/03/06 19:50:32 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,6 +38,7 @@ static char sccsid[] = "$Id: main.c,v 10.28 1996/03/03 16:22:16 bostic Exp $ (Be
 #include "common.h"
 #include "../ex/tag.h"
 #include "../vi/vi.h"
+#include "pathnames.h"
 
 static void	 v_estr __P((char *, int, char *));
 static int	 v_obsolete __P((char *, char *[]));

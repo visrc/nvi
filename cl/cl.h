@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.9 1996/02/06 10:44:05 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:44:05 $
+ *	$Id: cl.h,v 10.10 1996/03/06 19:49:25 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:49:25 $
  */
 
 typedef struct _cl_private {

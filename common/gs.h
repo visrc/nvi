@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.23 1996/03/03 16:21:58 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:21:58 $
+ *	$Id: gs.h,v 10.24 1996/03/06 19:50:19 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:19 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */

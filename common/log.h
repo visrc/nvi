@@ -1,12 +1,12 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  *
- *	$Id: log.h,v 10.1 1995/06/08 19:00:00 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:00:00 $
+ *	$Id: log.h,v 10.2 1996/03/06 19:50:31 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:31 $
  */
 
 #define	LOG_NOTYPE		0

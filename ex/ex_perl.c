@@ -1,20 +1,21 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  * Copyright (c) 1995
  *	George V. Neville-Neil. All rights reserved.
  * Copyright (c) 1996
  *	Sven Verdoolaege. All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  */
 
-#ifndef lint
-static char sccsid[] = "$Id: ex_perl.c,v 8.1 1996/03/03 20:04:41 bostic Exp $ (Berkeley) $Date: 1996/03/03 20:04:41 $";
-#endif /* not lint */
+#include "config.h"
 
+#ifndef lint
+static const char sccsid[] = "$Id: ex_perl.c,v 8.2 1996/03/06 19:52:30 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:30 $";
+#endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>

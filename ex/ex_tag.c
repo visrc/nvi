@@ -1,17 +1,19 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
  * This code is derived from software contributed to Berkeley by
  * David Hitz of Auspex Systems, Inc.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  */
 
+#include "config.h"
+
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.17 1996/02/29 19:16:40 bostic Exp $ (Berkeley) $Date: 1996/02/29 19:16:40 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.18 1996/03/06 19:52:46 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>

@@ -1,12 +1,14 @@
 /*-
- * Copyright (c) 1995
+ * Copyright (c) 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  */
 
+#include "config.h"
+
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.21 1996/02/29 19:03:34 bostic Exp $ (Berkeley) $Date: 1996/02/29 19:03:34 $";
+static const char sccsid[] = "$Id: cl_bsd.c,v 8.22 1996/03/06 19:49:26 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:49:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>

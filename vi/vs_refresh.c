@@ -1,14 +1,16 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  */
 
+#include "config.h"
+
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.17 1995/11/11 12:34:18 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:34:18 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.18 1996/03/06 19:55:05 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -687,7 +689,7 @@ static void
 vs_modeline(sp)
 	SCR *sp;
 {
-	static const char *modes[] = {
+	static char * const modes[] = {
 		"215|Append",			/* SM_APPEND */
 		"216|Change",			/* SM_CHANGE */
 		"217|Command",			/* SM_COMMAND */

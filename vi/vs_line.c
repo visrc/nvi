@@ -1,14 +1,16 @@
 /*-
  * Copyright (c) 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  */
 
+#include "config.h"
+
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.12 1996/02/28 15:46:15 bostic Exp $ (Berkeley) $Date: 1996/02/28 15:46:15 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.13 1996/03/06 19:55:02 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>

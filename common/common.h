@@ -1,20 +1,25 @@
 /*-
  * Copyright (c) 1991, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1991, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
- * %sccs.include.redist.c%
+ * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.9 1996/02/22 11:48:40 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:48:40 $
+ *	$Id: common.h,v 10.10 1996/03/06 19:50:08 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:08 $
  */
+
+/*
+ * Porting information built at configuration time.  Included before
+ * any of nvi's include files.
+ */
+#include "port.h"
 
 /*
  * Pseudo-local includes.  These are files that are unlikely to exist
  * on most machines to which we're porting vi, and we want to include
  * them in a very specific order, regardless.
  */
-#include "config.h"
 #include <db.h>
 #include <regex.h>
 
