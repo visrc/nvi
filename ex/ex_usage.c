@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_usage.c,v 10.9 1996/03/06 19:52:50 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:50 $";
+static const char sccsid[] = "$Id: ex_usage.c,v 10.10 1996/03/27 20:44:14 bostic Exp $ (Berkeley) $Date: 1996/03/27 20:44:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,17 +61,26 @@ ex_usage(sp, cmdp)
 {
 	ARGS *ap;
 	EXCMDLIST const *cp;
-	char *name;
+	int newscreen;
+	char *name, *p, nb[MAXCMDNAMELEN + 5];
 
 	switch (cmdp->argc) {
 	case 1:
 		ap = cmdp->argv[0];
+		if (isupper(ap->bp[0])) {
+			newscreen = 1;
+			ap->bp[0] = tolower(ap->bp[0]);
+		} else
+			newscreen = 0;
 		for (cp = cmds; cp->name != NULL &&
 		    memcmp(ap->bp, cp->name, ap->len); ++cp);
-		if (cp->name == NULL)
+		if (cp->name == NULL ||
+		    newscreen && !F_ISSET(cp, E_NEWSCREEN)) {
+			if (newscreen)
+				ap->bp[0] = toupper(ap->bp[0]);
 			(void)ex_printf(sp, "The %.*s command is unknown\n",
 			    (int)ap->len, ap->bp);
-		else {
+		} else {
 			(void)ex_printf(sp,
 			    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
 			/*
@@ -92,10 +101,25 @@ ex_usage(sp, cmdp)
 		break;
 	case 0:
 		for (cp = cmds; cp->name != NULL && !INTERRUPTED(sp); ++cp) {
-			/* The ^D command has an unprintable name. */
+			/*
+			 * The ^D command has an unprintable name.
+			 *
+			 * XXX
+			 * We display both capital and lower-case versions of
+			 * the appropriate commands -- no need to add in extra
+			 * room, they're all short names.
+			 */
 			if (cp == &cmds[C_SCROLL])
 				name = "^D";
-			else
+			else if (F_ISSET(cp, E_NEWSCREEN)) {
+				nb[0] = '[';
+				nb[1] = toupper(cp->name[0]);
+				nb[2] = cp->name[0];
+				nb[3] = ']';
+				for (name = cp->name + 1,
+				    p = nb + 4; (*p++ = *name++) != '\0';);
+				name = nb;
+			} else
 				name = cp->name;
 			(void)ex_printf(sp,
 			    "%*s: %s\n", MAXCMDNAMELEN, name, cp->help);
