@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.39 1996/11/27 12:02:27 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:02:27 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.40 1996/11/27 12:04:31 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:04:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,7 +187,6 @@ static GS *
 gs_init(name)
 	char *name;
 {
-	CL_PRIVATE *clp;
 	GS *gp;
 	char *p;
 
