@@ -1,6 +1,6 @@
-#	$Id: README,v 8.1 1993/06/09 22:19:22 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:19:22 $
+#	$Id: README,v 8.2 1993/07/06 18:04:42 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:04:42 $
 
-This is the README for version 0.4 of nex/nvi, a freely redistributable
+This is the README for version 0.5 of nex/nvi, a freely redistributable
 replacement for the vi/ex text editors.  Please note that this is ALPHA
 software at the time of its release with 4.4BSD, and that it is not yet
 ready for prime time!
@@ -11,6 +11,9 @@ ftp.cs.berkeley.edu, in the file ucb/4bsd/nvi.tar.Z, or from ftp.uu.net.
 This software is derived from software contributed to UC Berkeley by
 Steve Kirkendall, the author of the vi clone elvis.  Without his work,
 this work would have been far more difficult.
+
+Regular expressions support is courtesy of Henry Spencer, for which I
+am *very* grateful.
 
 Email questions may be addressed to Keith Bostic at bostic@cs.berkeley.edu.
 
@@ -24,7 +27,8 @@ ready for prime time.  Code fixes are, of course, very much appreciated,
 but if you don't have time, please send me as much information as you can
 as to how to reproduce the bug, and I'll fix it here.  In particular, the
 screen routines are nasty stuff, and you probably don't want to mess with
-them.
+them.  Stack traces of core dumps are helpful, but even more helpful is
+an example file with a set of keystrokes.
 
 Nvi is mostly 8-bit clean.  This isn't difficult to fix, and was left in
 during initial development to make things easier.  Wide character support
@@ -35,7 +39,6 @@ will be integrated at the same time it is made fully 8-bit clean.
 	o Characters input using the 'R' command cannot be erased.
 	o Several options have not been implemented: wrapmargin,
 	  showmatch, remap, and a few others.
-	o Word search (\<\> patterns aren't right).
 	o Nvi uses POSIX 1003.2 basic and extended RE's.  The historic
 	  hacks will be put in soon.
 
