@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.4 1994/11/12 12:30:09 bostic Exp $ (Berkeley) $Date: 1994/11/12 12:30:09 $
+ *	$Id: screen.h,v 9.5 1994/11/12 14:14:25 bostic Exp $ (Berkeley) $Date: 1994/11/12 14:14:25 $
  */
 
 /*
@@ -258,7 +258,9 @@ struct _scr {
  *	setting S_SCR_REDRAW in the current window causes *all* windows to
  *	be repainted.
  *
- * There are three additional flags:
+ * There are four additional flags:
+ * S_SCR_CENTER
+ *	If the current line isn't already on the screen, center it.
  * S_SCR_EXWROTE
  *	The ex part of the editor wrote to the screen.
  * S_SCR_REFRESH
@@ -270,21 +272,22 @@ struct _scr {
 #define	S_SCR_REFORMAT	0x0000080	/* Reformat (refresh). */
 #define	S_SCR_REDRAW	0x0000100	/* Refresh. */
 
-#define	S_SCR_EXWROTE	0x0000200	/* Ex wrote the screen. */
-#define	S_SCR_REFRESH	0x0000400	/* Repaint. */
-#define	S_SCR_UMODE	0x0000800	/* Don't repaint modeline. */
+#define	S_SCR_CENTER	0x0000200	/* Center the line if not visible. */
+#define	S_SCR_EXWROTE	0x0000400	/* Ex wrote the screen. */
+#define	S_SCR_REFRESH	0x0000800	/* Repaint. */
+#define	S_SCR_UMODE	0x0001000	/* Don't repaint modeline. */
 
-#define	S_ARGNOFREE	0x0001000	/* Argument list wasn't allocated. */
-#define	S_ARGRECOVER	0x0002000	/* Argument list is recovery files. */
-#define	S_BELLSCHED	0x0004000	/* Bell scheduled. */
-#define	S_CONTINUE	0x0008000	/* Need to ask the user to continue. */
-#define	S_EXSILENT	0x0010000	/* Ex batch script. */
-#define	S_GLOBAL	0x0020000	/* Doing a global command. */
-#define	S_INPUT		0x0040000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0080000	/* If have been interrupted. */
-#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0200000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0400000	/* The substitute RE has been set. */
+#define	S_ARGNOFREE	0x0002000	/* Argument list wasn't allocated. */
+#define	S_ARGRECOVER	0x0004000	/* Argument list is recovery files. */
+#define	S_BELLSCHED	0x0008000	/* Bell scheduled. */
+#define	S_CONTINUE	0x0010000	/* Need to ask the user to continue. */
+#define	S_EXSILENT	0x0020000	/* Ex batch script. */
+#define	S_GLOBAL	0x0040000	/* Doing a global command. */
+#define	S_INPUT		0x0080000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0100000	/* If have been interrupted. */
+#define	S_SCRIPT	0x0200000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0400000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0800000	/* The substitute RE has been set. */
 	u_int32_t flags;
 };
 
