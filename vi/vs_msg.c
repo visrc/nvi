@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.30 1995/11/06 19:32:56 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:32:56 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.31 1995/11/06 20:30:25 bostic Exp $ (Berkeley) $Date: 1995/11/06 20:30:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -521,6 +521,7 @@ vs_ex_resolve(sp, continuep)
 	EVENT ev;
 	GS *gp;
 	VI_PRIVATE *vip;
+	int cancontinue;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -531,15 +532,21 @@ vs_ex_resolve(sp, continuep)
 	/* Flush ex messages. */
 	(void)ex_fflush(sp);
 
-	/* Don't continue by default. */
-	if (continuep != NULL)
-		*continuep = 0;
+	/*
+	 * If the user interrupted the command or is leaving (or trying to
+	 * leave) the screen, don't bother asking if they want to continue.
+	 */
+	cancontinue = !(INTERRUPTED(sp) ||
+	    F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH));
+	*continuep = 0;
 
 	/* If we switched into ex mode, return into vi mode. */
 	if (F_ISSET(sp, S_EX_CANON)) {
+		if (!cancontinue)
+			F_CLR(sp, S_EX_WROTE);
 		if (vs_ex_to_vi(sp, continuep))
 			return (1);
-		if (continuep != NULL && *continuep == 1)
+		if (*continuep == 1)
 			return (0);
 	} else {
 		/* If 0 or 1 lines of output, simply continue. */
@@ -550,10 +557,9 @@ vs_ex_resolve(sp, continuep)
 		 * If not interrupted, put up the return-to-continue message
 		 * and wait.
 		 */
-		if (!INTERRUPTED(sp)) {
-			vs_scroll(sp, &ch,
-			    continuep == NULL ? SCROLL_WAIT : SCROLL_EXWAIT);
-			if (continuep != NULL && ch == ':') {
+		if (cancontinue) {
+			vs_scroll(sp, &ch, SCROLL_EXWAIT);
+			if (ch == ':') {
 				*continuep = 1;
 				return (0);
 			}
