@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 8.6 1993/11/18 13:50:56 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:56 $";
+static char sccsid[] = "$Id: v_screen.c,v 8.7 1993/11/19 08:33:06 bostic Exp $ (Berkeley) $Date: 1993/11/19 08:33:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,6 @@ v_screen(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	SCR *p;
-
 	/*
 	 * Try for the next lower screen, or, go back to the first
 	 * screen on the stack.
