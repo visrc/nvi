@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.61 1994/04/13 15:20:35 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:20:35 $";
+static char sccsid[] = "$Id: key.c,v 8.62 1994/04/14 10:18:23 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,6 +187,7 @@ term_init(sp)
 	}
 
 	/* Set key sequences found in the termcap entry. */
+#ifndef SYSV_CURSES
 	switch (tgetent(buf, O_STR(sp, O_TERM))) {
 	case -1:
 		msgq(sp, M_ERR,
@@ -197,21 +198,32 @@ term_init(sp)
 		    "%s: unknown terminal type.", O_STR(sp, O_TERM));
 		return (0);
 	}
+#endif
 
 	/* Command mappings. */
 	for (tkp = c_tklist; tkp->name != NULL; ++tkp) {
+#ifdef SYSV_CURSES
+		if ((t = tigetstr(tkp->ts)) == (char *)-1)
+			continue;
+#else
 		sbp = sbuf;
 		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
 			continue;
+#endif
 		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
 		    tkp->output, strlen(tkp->output), SEQ_COMMAND, 0))
 			return (1);
 	}
 	/* Input mappings needing to be looked up. */
 	for (tkp = m1_tklist; tkp->name != NULL; ++tkp) {
+#ifdef SYSV_CURSES
+		if ((t = tigetstr(tkp->ts)) == (char *)-1)
+			continue;
+#else
 		sbp = sbuf;
 		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
 			continue;
+#endif
 		for (kp = keylist;; ++kp)
 			if (kp->value == tkp->value)
 				break;
@@ -223,9 +235,14 @@ term_init(sp)
 	}
 	/* Input mappings that are already set or are text deletions. */
 	for (tkp = m2_tklist; tkp->name != NULL; ++tkp) {
+#ifdef SYSV_CURSES
+		if ((t = tigetstr(tkp->ts)) == (char *)-1)
+			continue;
+#else
 		sbp = sbuf;
 		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
 			continue;
+#endif
 		if (tkp->output == NULL) {
 			if (seq_set(sp, tkp->name, strlen(tkp->name),
 			    t, strlen(t), NULL, 0, SEQ_INPUT, 0))

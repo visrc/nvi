@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.47 1994/04/13 09:13:59 bostic Exp $ (Berkeley) $Date: 1994/04/13 09:13:59 $";
+static char sccsid[] = "$Id: util.c,v 8.48 1994/04/14 10:18:10 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -412,12 +412,21 @@ set_window_size(sp, set_row, ign_env)
 			s = O_STR(sp, O_TERM);
 		else
 			s = getenv("TERM");
+#ifdef SYSV_CURSES
+		if (s != NULL) {
+			if (row == 0)
+				row = tigetnum("li");
+			if (col == 0)
+				col = tigetnum("co");
+		}
+#else
 		if (s != NULL && tgetent(buf, s) == 1) {
 			if (row == 0)
 				row = tgetnum("li");
 			if (col == 0)
 				col = tgetnum("co");
 		}
+#endif
 	}
 	/* If nothing else, well, it's probably a VT100. */
 	if (row == 0)

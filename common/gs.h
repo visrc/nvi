@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.31 1994/04/09 18:22:41 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:41 $
+ *	$Id: gs.h,v 8.32 1994/04/14 10:18:16 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:16 $
  */
 
 struct _gs {
@@ -14,8 +14,6 @@ struct _gs {
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios
 		 original_termios;	/* Original terminal values. */
-	struct termios
-		 s5_curses_botch;	/* System V curses workaround. */
 
 	MSGH	 msgq;			/* User message list. */
 
@@ -59,18 +57,17 @@ struct _gs {
 #define	G_ABBREV	0x00001		/* If have abbreviations. */
 #define	G_BELLSCHED	0x00002		/* Bell scheduled. */
 #define	G_CURSES_INIT	0x00004		/* Curses: initialized. */
-#define	G_CURSES_S5CB	0x00008		/* Curses: s5_curses_botch set. */
-#define	G_RECOVER_SET	0x00010		/* Recover system initialized. */
-#define	G_SETMODE	0x00020		/* Tty mode changed. */
-#define	G_SIGALRM	0x00040		/* SIGALRM arrived. */
-#define	G_SIGHUP	0x00080		/* SIGHUP arrived. */
-#define	G_SIGTERM	0x00100		/* SIGTERM arrived. */
-#define	G_SIGWINCH	0x00200		/* SIGWINCH arrived. */
-#define	G_SLEEPING	0x00400		/* Asleep (die on signal). */
-#define	G_SNAPSHOT	0x00800		/* Always snapshot files. */
-#define	G_STDIN_TTY	0x01000		/* Standard input is a tty. */
-#define	G_TERMIOS_SET	0x02000		/* Termios structure is valid. */
-#define	G_TMP_INUSE	0x04000		/* Temporary buffer in use. */
+#define	G_RECOVER_SET	0x00008		/* Recover system initialized. */
+#define	G_SETMODE	0x00010		/* Tty mode changed. */
+#define	G_SIGALRM	0x00020		/* SIGALRM arrived. */
+#define	G_SIGHUP	0x00040		/* SIGHUP arrived. */
+#define	G_SIGTERM	0x00080		/* SIGTERM arrived. */
+#define	G_SIGWINCH	0x00100		/* SIGWINCH arrived. */
+#define	G_SLEEPING	0x00200		/* Asleep (die on signal). */
+#define	G_SNAPSHOT	0x00400		/* Always snapshot files. */
+#define	G_STDIN_TTY	0x00800		/* Standard input is a tty. */
+#define	G_TERMIOS_SET	0x01000		/* Termios structure is valid. */
+#define	G_TMP_INUSE	0x02000		/* Temporary buffer in use. */
 
 	u_int	 flags;
 };

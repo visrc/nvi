@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.29 1994/04/09 17:44:56 bostic Exp $ (Berkeley) $Date: 1994/04/09 17:44:56 $";
+static char sccsid[] = "$Id: options_f.c,v 8.30 1994/04/14 10:18:31 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -396,6 +396,10 @@ DECL(f_term)
 	(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
 	if (opt_putenv(buf))
 		return (1);
+
+#ifdef SYSV_CURSES
+	(void)setterm(O_STR(sp, O_TERM));
+#endif
 
 	if (set_window_size(sp, 0, 0))
 		return (1);

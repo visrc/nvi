@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.78 1994/04/13 10:41:52 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:41:52 $";
+static char sccsid[] = "$Id: main.c,v 8.79 1994/04/14 10:18:01 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -493,24 +493,6 @@ err:		eval = 1;
 	 */
 	gs_end(gp);
 
-	/*
-	 * XXX
-	 * Make absolutely sure that the modes are restored correctly.
-	 *
-	 * This should no longer be needed, and it's here to handle what I
-	 * believe are SunOS/Solaris curses problems.  The problem is that
-	 * for some unknown reason, when endwin() is called in the svi
-	 * routines, it isn't resetting the terminal correctly.  I have not
-	 * been able to figure it out, so this resets the terminal to the
-	 * right modes regardless.  The problem is that, in most tty driver
-	 * implementations, you can only reset the terminal modes once
-	 * (changing from !ICANON to ICANON) without losing the re-parsing
-	 * effect on the pending input.  This means that this "fix" will make
-	 * other systems mess up characters typed after the quit command to
-	 * vi but before vi actually exits.
-	 */
-	if (F_ISSET(gp, G_TERMIOS_SET))
-		(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios);
 	exit(eval);
 }
 
