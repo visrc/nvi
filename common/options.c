@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.37 1994/03/06 10:44:00 bostic Exp $ (Berkeley) $Date: 1994/03/06 10:44:00 $";
+static char sccsid[] = "$Id: options.c,v 8.38 1994/03/07 15:52:07 bostic Exp $ (Berkeley) $Date: 1994/03/07 15:52:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -528,11 +528,11 @@ opts_dump(sp, type)
 	 *
 	 * Find a column width we can live with.
 	 */
-#define	BOUND	6
 	for (cnt = 6; cnt > 1; --cnt) {
-		colwidth = (sp->cols - 1) / cnt & ~(BOUND - 1);
+		colwidth = (sp->cols - 1) / cnt & ~(STANDARD_TAB - 1);
 		if (colwidth >= 10) {
-			colwidth = (colwidth + BOUND) & ~(BOUND - 1);
+			colwidth =
+			    (colwidth + STANDARD_TAB) & ~(STANDARD_TAB - 1);
 			break;
 		}
 		colwidth = 0;
