@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.26 1993/02/16 20:10:02 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:02 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.27 1993/02/21 18:30:15 bostic Exp $ (Berkeley) $Date: 1993/02/21 18:30:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,6 +126,7 @@ ex_bang(ep, cmdp)
 		free(lastcom);
 	lastcom = com;
 
+	AUTOWRITE(ep);
 	MODIFY_WARN(ep);
 
 	/* If modified, echo the new command. */
