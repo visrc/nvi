@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 10.7 1995/11/06 09:58:32 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:58:32 $
+ *	$Id: screen.h,v 10.8 1995/11/10 10:19:19 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:19:19 $
  */
 
 /*
@@ -125,13 +125,22 @@ struct _scr {
  *
  * Editor screens.
  */
-#define	S_EX		0x00000001	/* Ex screen. */
-#define	S_VI		0x00000002	/* Vi screen. */
-#define	S_SCREEN_READY	0x00000004	/* Screen is fully initialized. */
+#define	S_EX		0x00000001	/* Ex editor. */
+#define	S_VI		0x00000002	/* Vi editor. */
 
 /*
  * Screen formatting flags, first major, then minor.
  *
+ * S_SCR_EX
+ *	Ex screen, i.e. cooked mode.
+ * S_SCR_VI
+ *	Vi screen, i.e. raw mode.
+ * S_SCR_EXWROTE
+ *	The editor had to write on the screen behind curses' back, and we can't
+ *	let curses change anything until the user agrees, e.g. entering the
+ *	commands :!utility followed by :set.  We have to switch back into the
+ *	vi "editor" to read the user's command input, but we can't touch the
+ *	rest of the screen because it's known to be wrong.
  * S_SCR_REFORMAT
  *	The expected presentation of the lines on the screen have changed,
  *	requiring that the intended screen lines be recalculated.  Implies
@@ -140,37 +149,38 @@ struct _scr {
  *	The screen doesn't correctly represent the file; repaint it.  Note,
  *	setting S_SCR_REDRAW in the current window causes *all* windows to
  *	be repainted.
- *
  * S_SCR_CENTER
  *	If the current line isn't already on the screen, center it.
  * S_SCR_TOP
  *	If the current line isn't already on the screen, put it at the top.
  */
-#define	S_SCR_REFORMAT	0x00000008	/* Reformat (refresh). */
-#define	S_SCR_REDRAW	0x00000010	/* Refresh. */
+#define	S_SCR_EX	0x00000004	/* Screen is in ex mode. */
+#define	S_SCR_VI	0x00000008	/* Screen is in vi mode. */
+#define	S_SCR_EXWROTE	0x00000010	/* Ex overwrite: see comment above. */
+#define	S_SCR_REFORMAT	0x00000020	/* Reformat (refresh). */
+#define	S_SCR_REDRAW	0x00000040	/* Refresh. */
 
-#define	S_SCR_CENTER	0x00000020	/* Center the line if not visible. */
-#define	S_SCR_TOP	0x00000040	/* Top the line if not visible. */
+#define	S_SCR_CENTER	0x00000080	/* Center the line if not visible. */
+#define	S_SCR_TOP	0x00000100	/* Top the line if not visible. */
 
 /* Screen/file changes. */
-#define	S_EXIT		0x00000080	/* Exiting (not forced). */
-#define	S_EXIT_FORCE	0x00000100	/* Exiting (forced). */
-#define	S_FSWITCH	0x00000200	/* Switch underlying files. */
-#define	S_SSWITCH	0x00000400	/* Switch screens. */
+#define	S_EXIT		0x00000200	/* Exiting (not forced). */
+#define	S_EXIT_FORCE	0x00000400	/* Exiting (forced). */
+#define	S_FSWITCH	0x00000800	/* Switch underlying files. */
+#define	S_SSWITCH	0x00001000	/* Switch screens. */
 
-#define	S_ARGNOFREE	0x00000800	/* Argument list wasn't allocated. */
-#define	S_ARGRECOVER	0x00001000	/* Argument list is recovery files. */
-#define	S_AT_SET	0x00002000	/* Last at buffer set. */
-#define	S_EX_CANON	0x00004000	/* Ex: temporary switch into ex mode. */
-#define	S_EX_GLOBAL	0x00008000	/* Ex: executing a global command. */
-#define	S_EX_SILENT	0x00010000	/* Ex: batch script. */
-#define	S_EX_WROTE	0x00020000	/* Ex: did output to canonical tty. */
-#define	S_INPUT		0x00040000	/* Doing text input. */
-#define	S_INPUT_INFO	0x00080000	/* Doing text input on info line. */
-#define	S_RE_RECOMPILE	0x00100000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x00200000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x00400000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x00800000	/* Window is a shell script. */
-#define	S_STATUS	0x01000000	/* Schedule welcome message. */
+#define	S_ARGNOFREE	0x00002000	/* Argument list wasn't allocated. */
+#define	S_ARGRECOVER	0x00004000	/* Argument list is recovery files. */
+#define	S_AT_SET	0x00008000	/* Last at buffer set. */
+#define	S_EX_DONTWAIT	0x00010000	/* Ex: don't wait for the user. */
+#define	S_EX_GLOBAL	0x00020000	/* Ex: executing a global command. */
+#define	S_EX_SILENT	0x00040000	/* Ex: batch script. */
+#define	S_INPUT		0x00080000	/* Doing text input. */
+#define	S_INPUT_INFO	0x00100000	/* Doing text input on info line. */
+#define	S_RE_RECOMPILE	0x00200000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x00400000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x00800000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x01000000	/* Window is a shell script. */
+#define	S_STATUS	0x02000000	/* Schedule welcome message. */
 	u_int32_t flags;
 };
