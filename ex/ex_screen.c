@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 5.3 1993/05/11 16:10:48 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:48 $";
+static char sccsid[] = "$Id: ex_screen.c,v 5.4 1993/05/11 17:14:12 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,10 +24,16 @@ ex_split(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	EXF *tep;
+	char *fname;
 
-	/* Get a new file. */
-	if ((tep = file_get(sp, ep,
-	    cmdp->argc ? (char *)cmdp->argv[0] : NULL, 1)) == NULL)
+	if (cmdp->argc) {
+		fname = (char *)cmdp->argv[0];
+		if (ex_set_altfname(sp, fname))
+			return (1);
+	} else
+		fname = NULL;
+
+	if ((tep = file_get(sp, ep, fname, 1)) == NULL)
 		return (1);
 	
 	return (sp->s_split(sp, tep));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.26 1993/05/05 10:41:22 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:41:22 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.27 1993/05/11 17:14:14 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,37 @@ static char sccsid[] = "$Id: ex_write.c,v 5.26 1993/05/05 10:41:22 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
+enum which {WQ, WRITE};
+
+static int exwr __P((SCR *, EXF *, EXCMDARG *, enum which));
+
+/*
+ * ex_wq --	:wq[!] [>>] [file]
+ *	Write to a file.
+ */
+int
+ex_wq(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	int force;
+
+	force = F_ISSET(cmdp, E_FORCE);
+
+	if (exwr(sp, ep, cmdp, WQ))
+		return (1);
+
+	if (!force && ep->refcnt <= 1 && file_next(sp, ep, 0)) {
+		msgq(sp, M_ERR,
+		    "More files to edit; use \":n\" to go to the next file");
+		return (1);
+	}
+
+	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
+	return (0);
+}
+
 /*
  * ex_write --	:write[!] [>>] [file]
  *		:write [!] [cmd]
@@ -32,8 +63,21 @@ ex_write(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	return (exwr(sp, ep, cmdp, WRITE));
+}
+
+/*
+ * exwr --
+ *	The guts of the ex write commands.
+ */
+static int
+exwr(sp, ep, cmdp, cmd)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+	enum which cmd;
+{
 	register char *p;
-	struct stat sb;
 	MARK rm;
 	int flags;
 	char *fname;
@@ -59,7 +103,7 @@ ex_write(sp, ep, cmdp)
 	}
 
 	/* If "write !" it's a pipe to a utility. */
-	if (*p == '!') {
+	if (cmd == WRITE && *p == '!') {
 		for (; *p && isspace(*p); ++p);
 		if (*p == '\0') {
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
@@ -90,6 +134,8 @@ ex_write(sp, ep, cmdp)
 		break;
 	case 1:
 		fname = (char *)cmdp->argv[0];
+		if (ex_set_altfname(sp, fname))
+			return (1);
 		break;
 	default:
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);

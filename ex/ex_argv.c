@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.9 1993/05/08 18:56:38 bostic Exp $ (Berkeley) $Date: 1993/05/08 18:56:38 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.10 1993/05/11 17:14:07 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,6 +139,10 @@ mem1:				sp->argscnt = 0;
 	return (0);
 }
 
+/*
+ * fileexpand --
+ *	Expand file names.
+ */
 static int
 fileexpand(sp, ep, globp, word, wordlen)
 	SCR *sp;
@@ -185,13 +189,16 @@ fileexpand(sp, ep, globp, word, wordlen)
 			len += ep->nlen;
 			break;
 		case '#':
-			if (sp->eprev == NULL ||
-			    F_ISSET(sp->eprev, F_NONAME)) {
+			if (sp->altfname != NULL)
+				len += strlen(sp->altfname);
+			else if (sp->eprev != NULL &&
+			     !F_ISSET(sp->eprev, F_NONAME))
+				len += sp->eprev->nlen;
+			else {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for #.");
 				return (1);
 			}
-			len += sp->eprev->nlen;
 			break;
 		case '\\':
 			if (p[1] != '\0')
@@ -236,9 +243,9 @@ fileexpand(sp, ep, globp, word, wordlen)
 				p += ep->nlen;
 				break;
 			case '#':
-				memmove(p,
-				    sp->eprev->name, sp->eprev->nlen);
-				p += sp->eprev->nlen;
+				len = strlen(sp->altfname);
+				memmove(p, sp->altfname, len);
+				p += len;
 				break;
 			case '\\':
 				if (p[1] != '\0')

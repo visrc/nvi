@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.32 1993/05/10 11:33:14 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:33:14 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.33 1993/05/11 17:14:14 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,10 +225,10 @@ EXCMDLIST cmds[] = {
 	    "w1r",	"[viu]sage key"},
 /* C_WRITE */
 	{"write",	ex_write,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC|E_ZERODEF,
-	    "s",	"[line [,line]] w[rite] [!cmd | [>>] [file]]"},
+	    "s",	"[line [,line]] w[rite][!] [!cmd | [>>] [file]]"},
 /* C_WQ */
 	{"wq",		ex_wq,		E_ADDR2_ALL|E_NOGLOBAL|E_NORC|E_ZERODEF,
-	    "!>f1o",	"[line [,line]] wq[!] [>>] [file]"},
+	    "s",	"[line [,line]] wq[!] [>>] [file]"},
 /* C_XIT */
 	{"xit",		ex_xit,		E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "!f1o",	"[line [,line]] x[it][!] [file]"},

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.34 1993/05/03 13:44:58 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:44:58 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.35 1993/05/11 17:14:11 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,12 +76,14 @@ ex_read(sp, ep, cmdp)
 	if (buildargv(sp, ep, p, 1, &cmdp->argc, &cmdp->argv))
 		return (1);
 
-	switch(cmdp->argc) {
+	switch (cmdp->argc) {
 	case 0:
 		fname = ep->name;
 		break;
 	case 1:
 		fname = (char *)cmdp->argv[0];
+		if (ex_set_altfname(sp, fname))
+			return (1);
 		break;
 	default:
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);

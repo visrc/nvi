@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.23 1993/05/04 18:51:57 bostic Exp $ (Berkeley) $Date: 1993/05/04 18:51:57 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.24 1993/05/11 17:14:09 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,8 +40,11 @@ ex_file(sp, ep, cmdp)
 		}
 		if (F_ISSET(ep, F_NONAME))
 			F_CLR(ep, F_NONAME);
-		else
+		else {
+			if (ex_set_altfname(sp, ep->name))
+				return (1);
 			free(ep->name);
+		}
 		ep->name = p;
 		F_SET(ep, F_NAMECHANGED);
 		break;
