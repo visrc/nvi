@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.54 1993/11/12 16:41:16 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:41:16 $
+ *	$Id: screen.h,v 8.55 1993/11/12 16:47:49 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:47:49 $
  */
 
 /*
@@ -128,14 +128,7 @@ typedef struct _scr {
 	char	*ex_argv[3];		/* Special purpose 2 slots. */
 	int	 argscnt;		/* Argument count. */
 	
-					/* Ex/vi: interface between ex/vi. */
 	FILE	*stdfp;			/* Ex output file pointer. */
-	size_t	 exlinecount;		/* Ex/vi overwrite count. */
-	size_t	 extotalcount;		/* Ex/vi overwrite count. */
-	size_t	 exlcontinue;		/* Ex/vi line continue value. */
-
-					/* FWOPEN_NOT_AVAILABLE */
-	int	 trapped_fd;		/* Ex/vi trapped file descriptor. */
 
 	CHAR_T	 at_lbuf;		/* Last executed at buffer's name. */
 	int	 at_lbuf_set;		/* If at_lbuf is set. */
