@@ -1,4 +1,4 @@
-#	$Id: README,v 8.13 1996/03/20 19:35:43 bostic Exp $ (Berkeley) $Date: 1996/03/20 19:35:43 $
+#	$Id: README,v 8.14 1996/03/20 20:30:09 bostic Exp $ (Berkeley) $Date: 1996/03/20 20:30:09 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -123,10 +123,10 @@ places on your system, you will need to specify the directory path where
 they can be found.
 
 If you want to specify additional library paths or additional libraries,
-specify the LDFLAGS environment variable before running configure.  For
+specify the LIBS environment variable before running configure.  For
 example:
 
-	env LDFLAGS="-L/a/b -L/e/f -ldb" ./configure
+	env LIBS="-L/a/b -L/e/f -ldb" ./configure
 
 would specify two additional directories to search for libraries, /a/b
 and /e/f, and one additional library to load, "db".
@@ -134,7 +134,7 @@ and /e/f, and one additional library to load, "db".
 If you want to specify additional include paths, specify the CPPFLAGS
 environment variable before running configure.  For example:
 
-	env CPPFLAGS="-I/usr/local/include" LDFLAGS="-ldb" ./configure
+	env CPPFLAGS="-I/usr/local/include" LIBS="-ldb" ./configure
 
 would search /usr/local/include for include files, as well as load the db
 library as described above.
@@ -144,7 +144,7 @@ and you've built it in a directory named ncurses which is at the same
 level in the filesystem hierarchy as nvi.  You would enter something like:
 
 	env CPPFLAGS="-I../../ncurses/include" \
-	    LDFLAGS="-L../../ncurses/libraries" ./configure
+	    LIBS="-L../../ncurses/libraries" ./configure
 
 to cause nvi to look for the curses include files and the curses library
 in the ncurses environment.
@@ -154,7 +154,7 @@ Notes:
 	that you prepend -I to any include file directory names!  Also,
 	make sure that you quote the paths as shown above, i.e. with
 	single or double quotes around the values you're specifying for
-	CPPFLAGS and LDFLAGS.
+	CPPFLAGS and LIBS.
 
 	=-=-=-=-=-=
 	You should NOT need to add any libraries or include files to load
@@ -191,14 +191,35 @@ Notes:
 	variables in your shell before running configure.  For example,
 	in sh or ksh, you could do:
 
-		LDFLAGS="-L/a/b -L/e/f -ldb" ./configure
+		LIBS="-L/a/b -L/e/f -ldb" ./configure
 
 	and in csh or tcsh, you could do:
 
-		setenv LDFLAGS "-L/a/b -L/e/f -ldb"
+		setenv LIBS "-L/a/b -L/e/f -ldb"
 		./configure
 
 	See your shell manual page for further information.
+
+=-=-=-=-=-=-=
+ADDING COMPILE OR LOAD LINE FLAGS
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+If you want to specify additional load line flags, specify the LDFLAGS
+environment variable before running configure.  For example:
+
+	env LDFLAGS="-Q" ./configure
+
+would specify the -Q flag in the load line when the nvi programs are
+loaded.
+
+If you want to specify additional compile line flags, specify the CPPFLAGS
+environment variable before running configure.  For example:
+
+	env CPPFLAGS="-I../foo" ./configure
+
+would cause the compiler to be passed the -I../foo flag when compiling
+test programs during configuration as well as when building nvi object
+files.
 
 =-=-=-=-=-=-=
 NVI AND THE CURSES LIBRARY
