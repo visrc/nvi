@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.57 1996/10/10 18:49:45 bostic Exp $ (Berkeley) $Date: 1996/10/10 18:49:45 $";
+static const char sccsid[] = "$Id: ex.c,v 10.58 1996/10/31 09:29:02 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:29:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -629,7 +629,8 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 	arg1_len = 0;
 	ecp->save_cmd = ecp->cp;
 	if (ecp->cmd == &cmds[C_EDIT] || ecp->cmd == &cmds[C_EX] ||
-	    ecp->cmd == &cmds[C_NEXT] || ecp->cmd == &cmds[C_VISUAL_VI]) {
+	    ecp->cmd == &cmds[C_NEXT] || ecp->cmd == &cmds[C_VISUAL_VI] ||
+	    ecp->cmd == &cmds[C_VSPLIT]) {
 		/*
 		 * Move to the next non-whitespace character.  A '!'
 		 * immediately following the command is eaten as a
