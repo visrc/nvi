@@ -10,10 +10,9 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.11 1996/02/20 21:17:51 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:17:51 $";
+static char sccsid[] = "$Id: api.c,v 8.12 1996/02/28 19:23:14 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:23:14 $";
 #endif /* not lint */
 
-#ifdef HAVE_TCL_INTERP
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/time.h>
@@ -436,4 +435,3 @@ api_opts_set(sp, name)
 	ex_cadd(&cmd, &a, name, strlen(name));
 	return (cmd.cmd->fn(sp, &cmd));
 }
-#endif /* HAVE_TCL_INTERP */
