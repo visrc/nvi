@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.69 1993/12/22 13:03:42 bostic Exp $ (Berkeley) $Date: 1993/12/22 13:03:42 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.70 1993/12/22 16:16:56 bostic Exp $ (Berkeley) $Date: 1993/12/22 16:16:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,8 +120,9 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	 */
 	F_SET(sp, S_INPUT);
 
-	/* Set return value. */
+	/* Local initialization. */
 	eval = 0;
+	gp = sp->gp;
 
 	/*
 	 * Get one TEXT structure with some initial buffer space, reusing
@@ -244,7 +245,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		margin = sp->cols - margin;
 
 	/* Initialize abbreviations checks. */
-	if (F_ISSET(sp, S_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
+	if (F_ISSET(gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
 		abb = A_NOTSPACE;
 		ab_cnt = 0;
 	} else
@@ -288,7 +289,7 @@ nullreplay:
 		testnr = 1;
 
 	iflags = LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT);
-	for (gp = sp->gp, showmatch = 0,
+	for (gp, showmatch = 0,
 	    carat_st = C_NOTSET, hex = H_NOTSET, quoted = Q_NOTSET;;) {
 		/*
 		 * Reset the line and update the screen.  (The txt_showmatch()
