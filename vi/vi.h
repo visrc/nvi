@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.28 1992/12/27 19:18:38 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:18:38 $
+ *	$Id: vi.h,v 5.29 1993/01/30 17:28:23 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:28:23 $
  */
 
 #include "exf.h"
@@ -20,12 +20,6 @@ typedef struct {
 	struct _vikeys *kp;	/* VIKEYS structure. */
 	size_t klen;		/* Keyword length. */
 
-#define	VC_C1SET	0x001	/* Count 1 set. */
-#define	VC_C1RESET	0x002	/* Reset the C1SET flag for dot commands. */
-#define	VC_C2SET	0x004	/* Count 2 set. */
-#define	VC_LMODE	0x008	/* Motion is line oriented. */
-#define	VC_ISDOT	0x010	/* Command was the dot command. */
-
 /*
  * Historic vi allowed "dl" when the cursor was on the last column, deleting
  * the last character, and similarly allowed "dw" when the cursor was on the
@@ -39,10 +33,21 @@ typedef struct {
  * interface to the extent possible, there are many special cases that can't
  * be fixed.  This is implemented by setting special flags per command so that
  * the motion routines know what's really going on.
+ *
+ * Note, the VC_C flags and VC_D flags are set per command, and therefore
+ * must have values not used the set of flags used by the VIKEYS structure
+ * below.
  */
-#define	VC_C		0x020	/* The 'c' command. */
-#define	VC_D		0x040	/* The 'd' command. */
-#define	VC_COMMASK	0x060	/* Mask for special flags. */
+#define	VC_C		0x001	/* The 'c' command. */
+#define	VC_D		0x002	/* The 'd' command. */
+#define	VC_COMMASK	0x003	/* Mask for special flags VC_C and VC_D. */
+
+#define	VC_C1SET	0x004	/* Count 1 set. */
+#define	VC_C1RESET	0x008	/* Reset the C1SET flag for dot commands. */
+#define	VC_C2SET	0x010	/* Count 2 set. */
+#define	VC_LMODE	0x020	/* Motion is line oriented. */
+#define	VC_ISDOT	0x040	/* Command was the dot command. */
+
 	u_int flags;
 				/* DO NOT ZERO OUT. */
 	char *keyword;		/* Keyword. */
@@ -57,22 +62,24 @@ typedef struct _vikeys {	/* Underlying function. */
 	int (*func) __P((VICMDARG *, MARK *, MARK *, MARK *));
 
 /* XXX Check to see if these are all needed. */
-#define	V_ABS		0x00001	/* Absolute movement, sets the '' mark. */
-#define	V_CHAR		0x00002	/* Character (required, trailing). */
-#define	V_CNT		0x00004	/* Count (optional, leading). */
-#define	V_DOT		0x00008	/* Successful command sets dot command. */
-#define	V_KEYNUM	0x00010	/* Cursor referenced number. */
-#define	V_KEYW		0x00020	/* Cursor referenced word. */
-#define	V_INPUT		0x00040	/* Input command. */
-#define	V_LMODE		0x00080	/* Motion is line oriented. */
-#define	V_MOTION	0x00100	/* Motion (required, trailing). */
-#define	V_MOVE		0x00200	/* Command defines movement. */
-#define	V_OBUF		0x00400	/* Buffer (optional, leading). */
-#define	V_RBUF		0x00800	/* Buffer (required, trailing). */
-#define	V_RCM		0x01000	/* Use relative cursor movment (RCM). */
-#define	V_RCM_SET	0x02000	/* Set RCM absolutely. */
-#define	V_RCM_SETFNB	0x04000	/* Set RCM to first non-blank character. */
-#define	V_RCM_SETLAST	0x08000	/* Set RCM to last character. */
+#define	V_DONTUSE1	0x00001	/* VC_C */
+#define	V_DONTUSE2	0x00002	/* VC_D */
+#define	V_ABS		0x00004	/* Absolute movement, sets the '' mark. */
+#define	V_CHAR		0x00008	/* Character (required, trailing). */
+#define	V_CNT		0x00010	/* Count (optional, leading). */
+#define	V_DOT		0x00020	/* Successful command sets dot command. */
+#define	V_KEYNUM	0x00040	/* Cursor referenced number. */
+#define	V_KEYW		0x00080	/* Cursor referenced word. */
+#define	V_INPUT		0x00100	/* Input command. */
+#define	V_LMODE		0x00200	/* Motion is line oriented. */
+#define	V_MOTION	0x00400	/* Motion (required, trailing). */
+#define	V_MOVE		0x00800	/* Command defines movement. */
+#define	V_OBUF		0x01000	/* Buffer (optional, leading). */
+#define	V_RBUF		0x02000	/* Buffer (required, trailing). */
+#define	V_RCM		0x04000	/* Use relative cursor movment (RCM). */
+#define	V_RCM_SET	0x08000	/* Set RCM absolutely. */
+#define	V_RCM_SETFNB	0x10000	/* Set RCM to first non-blank character. */
+#define	V_RCM_SETLAST	0x20000	/* Set RCM to last character. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
