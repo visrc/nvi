@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.8 1992/04/27 16:04:18 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:04:18 $";
+static char sccsid[] = "$Id: seq.c,v 5.9 1992/04/28 13:41:34 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:41:34 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -222,7 +222,7 @@ seq_dump(stype, isname)
 	if (seqhead.lnext == (SEQ *)&seqhead)
 		return (0);
 
-	EX_VISTART;
+	EX_PRSTART(1);
 	cnt = 0;
 	for (sp = seqhead.lnext; sp != (SEQ *)&seqhead; sp = sp->lnext) {
 		if (stype != sp->stype)
@@ -254,8 +254,7 @@ seq_dump(stype, isname)
 				} else
 					(void)putchar(ch);
 		}
-
-		(void)putchar('\n');
+		EX_PRTRAIL;
 	}
 	return (cnt);
 }
