@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.26 2000/07/20 19:21:54 skimo Exp $ (Berkeley) $Date: 2000/07/20 19:21:54 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.27 2000/08/27 09:49:42 skimo Exp $ (Berkeley) $Date: 2000/08/27 09:49:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -425,7 +425,7 @@ display:
 			else
 				for (kp = KEY_NAME(sp, ch) + offset_in_char; 
 				     chlen--;)
-					*cbp++ = *kp++;
+					*cbp++ = (u_char)*kp++;
 		}
 	}
 
