@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.66 1993/05/10 11:12:56 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:12:56 $";
+static char sccsid[] = "$Id: exf.c,v 5.67 1993/05/10 19:10:41 bostic Exp $ (Berkeley) $Date: 1993/05/10 19:10:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -172,7 +172,7 @@ file_start(sp, ep)
 	EXF *ep;
 {
 	struct stat sb;
-	int fd;
+	int fd, sverrno;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	/* If not a specific file, create one. */
@@ -225,20 +225,19 @@ file_start(sp, ep)
 	ep->db = dbopen(oname,
 	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
 	if (ep->db == NULL) {
+		sverrno = errno;
 		ep->db = dbopen(oname,
 		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
-		if (ep->db != NULL)
-			if (errno == EAGAIN) {
-				msgq(sp, M_INFO,
-				    "%s already locked, session is read-only",
-				    oname);
-				F_SET(ep, F_RDONLY);
-			} else
-				msgq(sp, M_VINFO, "%s cannot be locked", oname);
-	}
-	if (ep->db == NULL) {
-		msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
-		return (NULL);
+		if (ep->db == NULL) {
+			msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
+			return (NULL);
+		}
+		if (sverrno == EAGAIN) {
+			msgq(sp, M_INFO,
+			    "%s already locked, session is read-only", oname);
+			F_SET(ep, F_RDONLY);
+		} else
+			msgq(sp, M_VINFO, "%s cannot be locked", oname);
 	}
 
 	/* Flush the line caches. */
