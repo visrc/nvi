@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.20 1994/03/14 10:44:44 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:44:44 $";
+static char sccsid[] = "$Id: v_search.c,v 8.21 1994/03/15 09:56:22 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:56:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,13 +59,15 @@ v_searchN(sp, ep, vp)
 {
 	enum direction dir;
 
-	switch (dir) {
+	switch (sp->searchdir) {
 	case BACKWARD:
 		dir = FORWARD;
 		break;
 	case FORWARD:
-	default:			/* NOTSET handled in search(). */
 		dir = BACKWARD;
+		break;
+	default:			/* NOTSET handled in search(). */
+		dir = sp->searchdir;
 		break;
 	}
 	return (search(sp, ep, vp, NULL, SEARCH_MSG, dir));
