@@ -1,28 +1,67 @@
-#	$Id: README,v 8.2 1996/02/20 20:48:41 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:48:41 $
+#	$Id: README,v 8.3 1996/02/21 12:53:17 bostic Exp $ (Berkeley) $Date: 1996/02/21 12:53:17 $
 
-Vi uses the GNU autoconf program for configuration and compilation.
+Nvi uses the GNU autoconf program for configuration and compilation.
 You should enter:
 
 	./configure<carriage-return>
 	make<carriage-return>
 
-and vi should configure the system and build two binaries, named
-"ex" and "vi" for you.
+and nvi should configure the system and build two binaries, named
+"nex" and "nvi" for you.  There are options that you can specify
+to the ./configure command.  The most common of these are:
 
-If you've want to rebuild vi, for example, you change your mind about
+	--with-curses=XXXX
+
+	See the next section of this README for information about
+	nvi and the curses library.
+
+If you have trouble with this procedure, send email to the addresses
+listed in ../README.  In that email, please provide a complete script
+of the output for all of the above commands that you entered.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+If you want to rebuild nvi, for example, you change your mind about
 what curses library implementation that you want to use, enter:
 
 	make distclean<carriage-return>
 
 and then follow the above instructions.
 
-There is only one part of vi's configuration that is interactive:
-selecting the curses library that you want to use.
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+The major portability problem for nvi is selecting a curses library.
+Unfortunately, it is not at all uncommon to find broken versions of
+curses -- the original System V curses was broken, resulting in all
+vendors whose implementations are derived from System V having broken
+implementations in turn.
 
-Where possible, vi uses the local curses library.  The problem is that
-there are lots of systems where the local curses library is sufficiently
-broken that it cannot support vi.  Symptoms of curses implementations
-that can't handle vi include:
+For this reason, BY DEFAULT, nvi uses the stripped-down curses library
+that's included in its distribution.  Of course, it would be preferable
+to use the vendor's curses library, or one of the newer implementations
+of curses, e.g., ncurses.
+
+To use the vendor's curses library, configure nvi as follows:
+
+	./configure --with-curses=system<carriage-return>
+	
+To have the configure script prompt you for the path of the curses library
+and the path of the <curses.h> include file, configure nvi as follows:
+
+	./configure --with-curses=ask<carriage-return>
+	
+In this case, you will be prompted:
+
+	Type in the pathname of the curses library:
+
+You should enter the path of the curses library you want to use, e.g.,
+"/usr/local/lib/libcurses.a".  You will then be prompted:
+
+	Type in the pathname of the directory holding <curses.h>:
+
+You should enter the path of the DIRECTORY where the compiler can find
+the <curses.h> include file, e.g., "/usr/local/include/".
+
+If you use the vendor's or other curses library, and you see any of the
+following symptoms:
 
 	+ Core dumps in curses routines.
 	+ Line-by-line screen repainting instead of scrolling.
@@ -30,69 +69,21 @@ that can't handle vi include:
 	+ Repainting the wrong characters on the screen.
 	+ Displaying inverse video in the wrong places.
 
-If you see any of the above symptoms, then you should find another curses
-library to use.  Unfortunately, it is not at all uncommon to find broken
-versions of curses -- the original System V curses was broken, resulting
-in all vendors with implementations deriving from System V having broken
-implementations.
+you have a broken curses implementation, and you should reconfigure nvi
+to use another curses library or the curses library provided with nvi.
+To use the curses library provided with nvi, configure nvi as follows:
 
-Systems known to have broken curses implementations:
+	./configure --with-curses=vi<carriage-return>
 
-	AIX:	  versions 3.2.4 and 4.1 (3.2 and 3.2.5 reportedly work)
-	AUX:	  version 3.1
-	BSDI:	  BSD/OS, versions 1.0, 1.1 and 2.0
-	DGUX:	  version 5.4
-	FreeBSD:  version 1.1, 2.0
-	HP:	  HP/UX, versions 8.07, 9.01, 9.03
-	Linux:	  all versions
-	Machten:  version 2.1.1
-	OSF/1:	  reference releases 1.0, 1.02, 1.04, 1.2, 1.3
-	SGI:	  IRIX, versions 4.05F, 5.2, 5.3
-	Solaris:  some, but not all, versions of Solaris.
-	SunOS:	  all versions
-	Ultrix:	  version 4.2, 4.3, 4.4
-	Unixware: version 1.1
-	WGS6386:  all versions
+There are two alternative sources for curses libraries:
 
-There are three alternative curses libraries:
+#1: Compile the 4BSD curses library from any of the recent BSD
+    releases: FreeBSD, NetBSD or 4.4BSD-Lite release 2.  These
+    libraries should be able to support nvi.
 
-    #1: Compile the 4BSD curses library from any of the recent BSD
-	releases: FreeBSD, NetBSD or 4.4BSD-Lite release 2.  These
-	libraries should be able to support vi.
-
-    #2: Compile the curses library included with vi (in ../curses).
-	This is a stripped-down copy of the 4.4BSD-Lite2 curses library.
-
-    #3: Retrieve and build the ncurses library.  This library is not
-	really recommended, at least for now, for two reasons.  First, it
-	can't be built on any system where the compiler doesn't support
-	function prototypes.  Second, it currently has a few bugs in its
-	support for vi.  It mostly works, but it's still not quite right.
-
-When you enter "./configure" for the FIRST time, you will be prompted:
-
-	Do you want to use the system curses library? (y/n)
-
-If you enter yes<carriage-return>, then vi will compile using the loader
-option -lcurses to find the curses library, and will assume that the
-curses include file <curses.h> will be found by the compiler without any
-additional action on vi's part.
-
-If you enter anything other than yes, then you will be prompted:
-
-	Do you want to use the vi supplied curses library? (y/n)
-
-If you enter yes<carriage-return>, then vi will compile using the curses
-source code supplied with the vi distribution.  
-
-If you enter anything other than yes, then you will be prompted:
-
-	Type in the pathname of the curses library:
-
-You should enter the path of the curses library you want to use,
-e.g., "/usr/lib/libcurses.a".  You will then be prompted:
-
-	Type in the pathname of the directory holding <curses.h>:
-
-You should enter the path of the directory where the compiler can
-find the <curses.h> include file, e.g., "/usr/include".
+#2: Retrieve and build the ncurses library.  This library is not
+    recommended unreservedly, at least for now, for two reasons.
+    First, it can't be built on any system where the compiler
+    doesn't support function prototypes.  Second, it currently has
+    a few bugs in its support for nvi.  It mostly works, but it's
+    still not quite right.
