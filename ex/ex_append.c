@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.5 1995/06/09 13:41:47 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:41:47 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.6 1995/06/15 14:48:17 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:48:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,18 +213,16 @@ ex_aci(sp, cmdp, cmd)
 	 * be possible.
 	 */
 	if (F_ISSET(sp, S_VI)) {
+		/* Push out any waiting messages. */
+		(void)vs_msgflush(sp, 1, NULL, NULL);
+		(void)ex_fflush(sp);
+
 		/* Go into canonical mode. */
 		if (gp->scr_canon(sp, 1)) {
 			msgq(sp, M_ERR,
 		    "110|Cannot enter ex text input mode from current mode");
 			return (1);
 		}
-
-		/* Push out any waiting messages. */
-		(void)ex_fflush(sp);
-
-		/* Set the canonical bit AFTER pushing out messages. */
-		F_SET(sp, S_EX_CANON);
 
 		/*
 		 * !!!
