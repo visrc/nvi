@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.35 1996/03/14 09:26:45 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:26:45 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.36 1996/04/10 20:06:47 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:06:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -246,10 +246,10 @@ cl_deleteln(sp)
 	 * character following.
 	 */
 	if (!F_ISSET(sp, S_SCR_EXWROTE) && IS_SPLIT(sp)) {
+		getyx(stdscr, oldy, oldx);
 #ifdef mvchgat
 		mvchgat(RLNO(sp, LASTLINE(sp)), 0, -1, A_NORMAL, 0, NULL);
 #else
-		getyx(stdscr, oldy, oldx);
 		for (lno = RLNO(sp, LASTLINE(sp)), col = spcnt = 0;;) {
 			(void)move(lno, col);
 			ch = winch(stdscr);
@@ -264,8 +264,8 @@ cl_deleteln(sp)
 			if (++col >= sp->cols)
 				break;
 		}
-		(void)move(oldy, oldx);
 #endif
+		(void)move(oldy, oldx);
 	}
 
 	/*
