@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.14 1993/05/10 17:03:37 bostic Exp $ (Berkeley) $Date: 1993/05/10 17:03:37 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.15 1993/05/11 12:59:59 bostic Exp $ (Berkeley) $Date: 1993/05/11 12:59:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -529,7 +529,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 			sp->cno = max;
 			break;
 		case K_CNTRLZ:
-			if (kill(0, SIGTSTP))
+			if (kill(getpid(), SIGTSTP))
 				msgq(sp, M_ERR,
 				    "Error: SIGTSTP: %s", strerror(errno));
 			/* FALLTHROUGH */
