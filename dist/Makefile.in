@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.65 1996/07/13 13:36:08 bostic Exp $ (Berkeley) $Date: 1996/07/13 13:36:08 $
+#	$Id: Makefile.in,v 8.66 1996/07/14 10:17:45 bostic Exp $ (Berkeley) $Date: 1996/07/14 10:17:45 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -60,7 +60,7 @@ clean:
 	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
 	-rm -f $(TKOBJS) $(VIOBJS)
 
-realclean maintainer-clean: clean
+distclean maintainer-clean realclean: clean
 	-rm -f Makefile config.cache config.h config.log config.status
 	-rm -f pathnames.h port.h
 
