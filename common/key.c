@@ -6,92 +6,82 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.2 1991/12/17 12:11:45 bostic Exp $ (Berkeley) $Date: 1991/12/17 12:11:45 $";
+static char sccsid[] = "$Id: key.c,v 5.3 1991/12/17 16:22:45 bostic Exp $ (Berkeley) $Date: 1991/12/17 16:22:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include "config.h"
 #include "vi.h"
+#include "extern.h"
 
-/*
- * For BSD, we use select() to wait for characters to become available,
- * and then do a read() to actually get the characters.  We also try to
- * handle SIGWINCH -- if the signal arrives during the select() call, then
- * we adjust the o_columns and o_lines variables, and fake a control-L.
- */
 int
 ttyread(buf, len, time)
-	char	*buf;	/* where to store the gotten characters */
-	int	len;	/* maximum number of characters to read */
-	int	time;	/* maximum time to allow for reading */
+	u_char *buf;		/* where to store the characters */
+	int len;		/* max characters to read */
+	int time;		/* max tenth seconds to read */
 {
-	fd_set	rd;	/* the file descriptors that we want to read from */
-	static	tty;	/* 'y' if reading from tty, or 'n' if not a tty */
-	int	i;
-	struct timeval t;
-	struct timeval *tp;
+	static enum { NOTSET, YES, NO } isfromtty = NOTSET;
+	static fd_set rd;
+	struct timeval t, *tp;
 
-
-	/* do we know whether this is a tty or not? */
-	if (!tty)
-	{
-		tty = (isatty(0) ? 'y' : 'n');
+	/*
+	 * Set if reading from a tty or not on the first entry.  Zero out
+	 * the file descriptor array.
+	 */
+	if (isfromtty == NOTSET) {
+		FD_ZERO(&rd);
+		isfromtty = isatty(STDIN_FILENO) ? YES : NO;
 	}
 
-	/* compute the timeout value */
-	if (time)
-	{
+	/*
+	 * If reading from a file or pipe, never timeout.  (This also affects
+	 * the way that EOF is detected.)
+	 */
+	if (isfromtty == NO)
+		return (read(STDIN_FILENO, buf, len));
+
+	/* Compute the timeout value. */
+	if (time) {
 		t.tv_sec = time / 10;
 		t.tv_usec = (time % 10) * 100000L;
 		tp = &t;
-	}
-	else
-	{
-		tp = (struct timeval *)0;
-	}
+	} else
+		tp = NULL;
 
-	/* loop until we get characters or a definite EOF */
+	/*
+	 * Select until characters become available, and then read them.  Try
+	 * to handle SIGWINCH -- if a signal arrives during the select call,
+	 * adjust the o_columns and o_lines variables, and fake a control-L.
+	 */
+	FD_SET(STDIN_FILENO, &rd);
 	for (;;)
-	{
-		if (tty == 'y')
-		{
-			/* wait until timeout or characters are available */
-			FD_ZERO(&rd);
-			FD_SET(0, &rd);
-			i = select(1, &rd, (fd_set *)0, (fd_set *)0, tp);
-		}
-		else
-		{
-			/* if reading from a file or pipe, never timeout!
-			 * (This also affects the way that EOF is detected)
+		switch (select(1, &rd, NULL, NULL, tp)) {
+		case -1:
+			/*
+			 * Assume we got an EINTR because of SIGWINCH, and
+			 * pretend the user hit ^L.
+			 *
+			 * XXX
+			 * Should check EINTR, not just make the assumption.
 			 */
-			i = 1;
-		}
-	
-		/* react accordingly... */
-		switch (i)
-		{
-		  case -1:	/* assume we got an EINTR because of SIGWINCH */
-			if (*o_lines != LINES || *o_columns != COLS)
-			{
+			if (*o_lines != LINES || *o_columns != COLS) {
 				*o_lines = LINES;
 				*o_columns = COLS;
-				if (mode != MODE_EX)
-				{
-					/* pretend the user hit ^L */
+				if (mode != MODE_EX) {
 					*buf = ctrl('L');
-					return 1;
+					return (1);
 				}
 			}
 			break;
-	
-		  case 0:	/* timeout */
-			return 0;
-	
-		  default:	/* characters available */
-			return read(0, buf, len);
+		case 0:
+			/* Timeout. */
+			return (0);
+		default:
+			/* Read it. */
+			return (read(STDIN_FILENO, buf, len));
 		}
-	}
 }
