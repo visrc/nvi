@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.8 1994/05/21 10:33:16 bostic Exp $ (Berkeley) $Date: 1994/05/21 10:33:16 $
+.\"	$Id: vi.cmd.roff,v 8.9 1994/05/22 12:22:52 bostic Exp $ (Berkeley) $Date: 1994/05/22 12:22:52 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -671,7 +671,8 @@ None.
 #endif
 .SP
 .It Sy "<control-W>"
-Switch to the next lower window in the screen.
+Switch to the next lower screen in the window, or, to the first
+screen if there are no lower screens in the window.
 #ifdef REFERENCE
 .Pp
 .Bl -tag -width "XOptions:" -compact
