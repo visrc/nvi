@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.60 1993/04/19 15:38:48 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:38:48 $";
+static char sccsid[] = "$Id: vi.c,v 5.61 1993/05/01 18:15:08 bostic Exp $ (Berkeley) $Date: 1993/05/01 18:15:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,8 +162,11 @@ vi(sp, ep)
 				sp->rptlines = 0;
 			}
 
+			if (0)
+err:				flush_mappedkey(sp);
+
 			/* Refresh the screen. */
-err:			if (sp->refresh(sp, ep)) {
+			if (sp->refresh(sp, ep)) {
 				eval = 1;
 				break;
 			}
