@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.36 1996/06/10 20:59:11 bostic Exp $ (Berkeley) $Date: 1996/06/10 20:59:11 $";
+static const char sccsid[] = "$Id: exf.c,v 10.37 1996/06/12 15:16:57 bostic Exp $ (Berkeley) $Date: 1996/06/12 15:16:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1355,8 +1355,11 @@ file_lock(sp, name, fdp, fd, iswrite)
 	 * as returning EACCESS and EAGAIN; add EWOULDBLOCK for good measure,
 	 * and assume they are the former.  There's no portable way to do this.
 	 */
-	return (errno == EACCES || errno == EAGAIN || errno == EWOULDBLOCK ?
-	    LOCK_UNAVAIL : LOCK_FAILED);
+	return (errno == EACCES || errno == EAGAIN
+#ifdef EWOULDBLOCK
+	|| errno == EWOULDBLOCK
+#endif
+	?  LOCK_UNAVAIL : LOCK_FAILED);
 }
 #endif
 #if !defined(HAVE_LOCK_FLOCK) && !defined(HAVE_LOCK_FCNTL)
