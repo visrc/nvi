@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.31 1993/02/19 11:14:29 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:14:29 $
+ *	$Id: vi.h,v 5.32 1993/02/24 13:02:44 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:02:44 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -89,7 +89,6 @@ extern VIKEYS vikeys[MAXVIKEY + 1];
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
 void	status __P((EXF *, recno_t));
-int	set_window_size __P((EXF *, u_int));
 
 int	v_again __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_at __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
@@ -113,6 +112,7 @@ void	v_eof __P((EXF *, MARK *));
 void	v_eol __P((EXF *, MARK *));
 int	v_errlist __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ex __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
+int	v_exmode __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_exwrite __P((void *, const char *, int));
 int	v_exit __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_filter __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
@@ -146,7 +146,6 @@ int	v_paragraphb __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_paragraphf __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Put __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_put __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_quit __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_redraw __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Replace __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_replace __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
