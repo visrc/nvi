@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.16 1993/09/28 10:53:16 bostic Exp $ (Berkeley) $Date: 1993/09/28 10:53:16 $
+ *	$Id: ex.h,v 8.17 1993/09/28 13:53:41 bostic Exp $ (Berkeley) $Date: 1993/09/28 13:53:41 $
  */
 
 struct _excmdarg;
@@ -74,30 +74,22 @@ typedef struct _excmdarg {
 	s.argv = sp->ex_argv;						\
 }
 
-#define	AUTOWRITE(sp, ep) {						\
-	if (F_ISSET((ep), F_MODIFIED) && O_ISSET((sp), O_AUTOWRITE) &&	\
-	    file_write((sp), (ep), NULL, NULL, NULL, FS_ALL))		\
-		return (1);						\
-}
-
+/*
+ * :next, :prev, :rewind, :tag, :tagpush, :tagpop modifications check.
+ * If force is set, the autowrite is skipped.
+ */
 #define	MODIFY_CHECK(sp, ep, force) {					\
 	if (F_ISSET((ep), F_MODIFIED))					\
 		if (O_ISSET((sp), O_AUTOWRITE)) {			\
-			if (file_write((sp), (ep), NULL, NULL, NULL,	\
-			    FS_ALL | FS_POSSIBLE |			\
-			    (force ? FS_FORCE : 0)))			\
+			if (!(force) &&					\
+			    file_write((sp), (ep), NULL, NULL, NULL,	\
+			    FS_ALL | FS_POSSIBLE))			\
 				return (1);				\
 		} else if (ep->refcnt <= 1 && !(force)) {		\
 			msgq(sp, M_ERR,					\
 	"Modified since last write; write or use ! to override.");	\
 			return (1);					\
 		}							\
-}
-
-#define	MODIFY_WARN(sp, ep) {						\
-	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_WARN))		\
-		(void)fprintf(sp->stdfp,				\
-		    "Modified since last write.\n");			\
 }
 
 /* Ex function prototypes. */
