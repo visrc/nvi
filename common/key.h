@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.22 1993/12/02 09:02:07 bostic Exp $ (Berkeley) $Date: 1993/12/02 09:02:07 $
+ *	$Id: key.h,v 8.23 1993/12/19 18:58:08 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:58:08 $
  */
 
 /* Structure to return a character and associated information. */
@@ -121,19 +121,20 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	TXT_CR		0x000080	/* CR returns the buffer. */
 #define	TXT_EMARK	0x000100	/* End of replacement mark. */
 #define	TXT_ESCAPE	0x000200	/* Escape returns the buffer. */
-#define	TXT_MAPCOMMAND	0x000400	/* Apply the command map. */
-#define	TXT_MAPINPUT	0x000800	/* Apply the input map. */
-#define	TXT_MAPNODIGIT	0x001000	/* Return to a digit. */
-#define	TXT_NLECHO	0x002000	/* Echo the newline. */
-#define	TXT_OVERWRITE	0x004000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x008000	/* Display a prompt. */
-#define	TXT_RECORD	0x010000	/* Record for replay. */
-#define	TXT_REPLACE	0x020000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x040000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x080000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x100000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x200000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x400000	/* Option: wrapmargin. */
+#define	TXT_INFOLINE	0x000400	/* Editing the info line. */
+#define	TXT_MAPCOMMAND	0x000800	/* Apply the command map. */
+#define	TXT_MAPINPUT	0x001000	/* Apply the input map. */
+#define	TXT_MAPNODIGIT	0x002000	/* Return to a digit. */
+#define	TXT_NLECHO	0x004000	/* Echo the newline. */
+#define	TXT_OVERWRITE	0x008000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x010000	/* Display a prompt. */
+#define	TXT_RECORD	0x020000	/* Record for replay. */
+#define	TXT_REPLACE	0x040000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x080000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x100000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x200000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x400000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x800000	/* Option: wrapmargin. */
 
 #define	TXT_VALID_EX							\
 	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
