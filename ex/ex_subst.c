@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.46 1993/05/16 19:31:51 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:31:51 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.47 1993/05/16 20:18:22 bostic Exp $ (Berkeley) $Date: 1993/05/16 20:18:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -313,6 +313,8 @@ skipmatch:	eval = regexec(re,
 				goto skip;
 			case QUIT:
 				quit = 1;
+				if (F_ISSET(sp, S_GLOBAL))
+					F_SET(sp, S_GLOBAL_QUIT);
 				if (lbclen != 0)
 					goto nomatch;
 				continue;
@@ -444,7 +446,7 @@ nomatch:	if (len)
 	 * Note if nothing found.  Else, if nothing displayed to the
 	 * screen, put something up.
 	 */
-	if (sp->rptlines[L_CHANGED] == 0 && !F_ISSET(sp, S_IN_GLOBAL))
+	if (sp->rptlines[L_CHANGED] == 0 && !F_ISSET(sp, S_GLOBAL))
 		msgq(sp, M_INFO, "No match found.");
 	else if (!lflag && !nflag && !pflag)
 		F_SET(sp, S_AUTOPRINT);

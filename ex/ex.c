@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.97 1993/05/16 12:15:56 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:15:56 $";
+static char sccsid[] = "$Id: ex.c,v 5.98 1993/05/16 20:17:50 bostic Exp $ (Berkeley) $Date: 1993/05/16 20:17:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -269,7 +269,7 @@ ex_cmd(sp, ep, exc)
 		}
 
 		/* Some commands aren't okay in globals. */
-		if (F_ISSET(sp, S_IN_GLOBAL) && F_ISSET(cp, E_NOGLOBAL)) {
+		if (F_ISSET(sp, S_GLOBAL) && F_ISSET(cp, E_NOGLOBAL)) {
 			msgq(sp, M_ERR,
 "The %.*s command can't be used as part of a global command.", cmdlen, p);
 			return (1);
@@ -634,7 +634,7 @@ addr2:	switch(cmd.addrcnt) {
 	 * If file state and not doing a global command, log the start of
 	 * an action.
 	 */
-	if (ep != NULL && !F_ISSET(sp, S_IN_GLOBAL))
+	if (ep != NULL && !F_ISSET(sp, S_GLOBAL))
 		(void)log_cursor(sp, ep);
 
 	/* Save the current mode. */
