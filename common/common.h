@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 10.2 1995/06/08 18:57:30 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:30 $
+ *	$Id: common.h,v 10.3 1995/06/12 19:16:56 bostic Exp $ (Berkeley) $Date: 1995/06/12 19:16:56 $
  */
 
 /*
@@ -50,7 +50,7 @@ typedef enum { NOTSET, FORWARD, BACKWARD } dir_t;
 typedef enum { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET } lnop_t;
 
 /* Lock return values. */
-typedef enum { LOCK_FAILED, LOCK_SUCCESS, LOCK_UNAVAIL } lock_t;
+typedef enum { LOCK_FAILED, LOCK_SUCCESS, LOCK_UNAVAIL } lockr_t;
 
 /* Sequence types. */
 typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.5 1995/06/09 12:47:38 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:38 $";
+static char sccsid[] = "$Id: exf.c,v 10.6 1995/06/12 19:16:57 bostic Exp $ (Berkeley) $Date: 1995/06/12 19:16:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1312,9 +1312,9 @@ set_alt_name(sp, name)
  * files opened for writing are flushed back to disk when the DB session
  * is ended. So, in that case we have to acquire an extra file descriptor.
  *
- * PUBLIC: lock_t file_lock __P((SCR *, char *, int *, int, int));
+ * PUBLIC: lockr_t file_lock __P((SCR *, char *, int *, int, int));
  */
-lock_t
+lockr_t
 file_lock(sp, name, fdp, fd, iswrite)
 	SCR *sp;
 	char *name;
