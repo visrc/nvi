@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.59 2001/06/09 18:26:28 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:28 $";
+static const char sccsid[] = "$Id: options.c,v 10.60 2001/06/09 18:53:18 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:53:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -517,8 +517,7 @@ opts_set(sp, argv, usage)
 			op = opts_search(name);
 		}
 		if (op == NULL) {
-			INT2CHAR(sp, name, STRLEN(name) + 1, np, nlen);
-			opts_nomatch(sp, np);
+			opts_nomatch(sp, name);
 			rval = 1;
 			continue;
 		}
@@ -1080,14 +1079,12 @@ opts_search(name)
  * opts_nomatch --
  *	Standard nomatch error message for options.
  *
- * PUBLIC: void opts_nomatch __P((SCR *, char *));
+ * PUBLIC: void opts_nomatch __P((SCR *, CHAR_T *));
  */
 void
-opts_nomatch(sp, name)
-	SCR *sp;
-	char *name;
+opts_nomatch(SCR *sp, CHAR_T *name)
 {
-	msgq_str(sp, M_ERR, name,
+	msgq_wstr(sp, M_ERR, name,
 	    "033|set: no %s option: 'set all' gives all option values");
 }
 

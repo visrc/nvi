@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.36 2001/06/09 18:26:27 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:27 $";
+static const char sccsid[] = "$Id: api.c,v 8.37 2001/06/09 18:53:18 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:53:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -475,9 +475,9 @@ api_opts_get(SCR *sp, CHAR_T *name, char **value, int *boolvalue)
 	switch (op->type) {
 	case OPT_0BOOL:
 	case OPT_1BOOL:
-		MALLOC_RET(sp, *value, char *, strlen(op->name) + 2 + 1);
+		MALLOC_RET(sp, *value, char *, STRLEN(op->name) + 2 + 1);
 		(void)sprintf(*value,
-		    "%s%s", O_ISSET(sp, offset) ? "" : "no", op->name);
+		    "%s"WS, O_ISSET(sp, offset) ? "" : "no", op->name);
 		if (boolvalue != NULL)
 			*boolvalue = O_ISSET(sp, offset);
 		break;
@@ -526,15 +526,15 @@ api_opts_set(SCR *sp, CHAR_T *name,
 	case OPT_0BOOL:
 	case OPT_1BOOL:
 		GET_SPACE_RET(sp, bp, blen, 64);
-		a.len = snprintf(bp, 64, "%s%s", bool_value ? "" : "no", name);
+		a.len = snprintf(bp, 64, "%s"WS, bool_value ? "" : "no", name);
 		break;
 	case OPT_NUM:
 		GET_SPACE_RET(sp, bp, blen, 64);
-		a.len = snprintf(bp, 64, "%s=%lu", name, num_value);
+		a.len = snprintf(bp, 64, WS"=%lu", name, num_value);
 		break;
 	case OPT_STR:
 		GET_SPACE_RET(sp, bp, blen, 1024);
-		a.len = snprintf(bp, 1024, "%s=%s", name, str_value);
+		a.len = snprintf(bp, 1024, WS"=%s", name, str_value);
 		break;
 	}
 
