@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.7 1992/04/04 16:27:35 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:27:35 $";
+static char sccsid[] = "$Id: ex.c,v 5.8 1992/04/05 09:32:42 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:32:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,7 +59,7 @@ ex()
 		refresh();
 
 		/* Parse & execute the command. */
-		excmd(cmdbuf);
+		(void)excmd(cmdbuf);
 
 		/* Handle autoprint. */
 		if (significant || markline(cursor) != oldline) {
@@ -78,19 +78,19 @@ ex()
  * exfile --
  *	Execute EX commands from a file.
  */
-void
+int
 exfile(filename, noexisterr)
 	char *filename;
 	int noexisterr;
 {
 	struct stat sb;
-	int fd, len;
+	int fd, len, rval;
 	char *bp;
 
 	if ((fd = open(filename, O_RDONLY, 0)) < 0) {
 		if (noexisterr)
 			goto e1;
-		return;
+		return (0);
 	}
 	if (fstat(fd, &sb))
 		goto e2;
@@ -106,14 +106,15 @@ exfile(filename, noexisterr)
 	}
 	bp[sb.st_size] = '\0';
 
-	exstring(bp, len, 0);
+	rval = exstring(bp, len);
 	free(bp);
 	(void)close(fd);
-	return;
+	return (rval);
 
 e3:	free(bp);
 e2:	(void)close(fd);
 e1:	msg("%s: %s.", filename, strerror(errno));
+	return (1);
 }
 
 /*
@@ -122,28 +123,17 @@ e1:	msg("%s: %s.", filename, strerror(errno));
  *	by newlines or by | characters, and may be quoted.  The string is
  *	expected to be EOS terminated.
  */
-void
-exstring(cmd, len, copy)
+int
+exstring(cmd, len)
 	register char *cmd;
 	register int len;
-	int copy;
 {
 	register char *p, *t;
 	char *start;
 
 	/* Maybe an empty string. */
 	if (len == 0)
-		return;
-
-	/* Make a copy if necessary. */
-	if (copy) {
-		if ((start = malloc(len)) == NULL) {
-			msg("Error: %s.", strerror(errno));
-			return;
-		}
-		bcopy(cmd, start, len);
-		cmd = start;
-	}
+		return (0);
 
 	/*
 	 * Walk the command, checking for ^V quotes.  The string "^V\n" is
@@ -160,7 +150,8 @@ exstring(cmd, len, copy)
 		case '\0':
 			if (p > cmd) {
 				QEND();
-				excmd(cmd);
+				if (excmd(cmd))
+					return (1);
 			}
 			cmd = t = ++p;
 			QSTART(cmd);
@@ -177,15 +168,14 @@ exstring(cmd, len, copy)
 			break;
 		}
 
-	if (copy)
-		free(start);
+	return (0);
 }
 
 /*
  * excmd --
  *    Parse and execute an ex command.
  */
-void
+int
 excmd(exc)
 	register char *exc;
 {
@@ -214,7 +204,7 @@ excmd(exc)
 
 	/* Ignore command lines that start with a double-quote. */
 	if (*exc == '"')
-		return;
+		return (0);
 
 	/* Skip whitespace. */
 	for (; isspace(*exc); ++exc);
@@ -227,7 +217,7 @@ excmd(exc)
 	 * or NULL on error.
 	 */
 	if ((exc = linespec(exc, &cmd)) == NULL)
-		return;
+		return (1);
 
 	/* Skip whitespace. */
 	for (; isspace(*exc); ++exc);
@@ -254,21 +244,21 @@ excmd(exc)
 	for (cp = cmds; cp->name && strncmp(p, cp->name, cmdlen); ++cp);
 	if (cp->name == NULL) {
 		msg("The %.*s command is unknown.", cmdlen, p);
-		return;
+		return (1);
 	}
 	cmd.cmd = cp;
 
 	/* Some commands aren't permitted in .exrc files. */
 	if (reading_exrc && !(cp->flags & E_EXRCOK)) {
 		msg("Can't use the %s command in a .exrc file.", cp->name);
-		return;
+		return (1);
 	}
 
 	/* Some commands are turned off. */
 	if (cp->flags & E_NOPERM) {
 		msg("This version doesn't support the %.*s command.",
 		    cmdlen, p);
-		return;
+		return (1);
 	}
 
 	/* Some commands have a syntax so twisted we can't handle it. */
@@ -343,7 +333,7 @@ end2:			break;
 				count = strtol(exc, &ep, 10);
 				if (count == 0) {
 					msg("Count may not be zero.");
-					return;
+					return (1);
 				}
 				exc = ep;
 			}
@@ -357,7 +347,7 @@ end2:			break;
 				cmd.lineno = strtol(exc, &ep, 10);
 				if (cmd.lineno == 0) {
 					msg("Line number may not be zero.");
-					return;
+					return (1);
 				}
 				exc = ep;
 			}
@@ -367,11 +357,11 @@ end2:			break;
 			goto address;
 		case 'f':				/* file */
 			if (buildargv(exc, 1, &cmd))
-				return;
+				return (1);
 			goto countchk;
 		case 'w':				/* word */
 			if (buildargv(exc, 0, &cmd))
-				return;
+				return (1);
 countchk:		if (*++p != 'N') {		/* N */
 				/*
 				 * If a number is specified, must either be
@@ -405,11 +395,11 @@ address:
 	case 0:
 		if (cmd.addrcnt) {
 			msg("Illegal address; usage: %s.", cp->usage);
-			return;
+			return (1);
 		}
 		if (count) {
 usage:			msg("Usage: %s.", cp->usage);
-			return;
+			return (1);
 		}
 		break;
 	case E_ADDR1:
@@ -451,11 +441,11 @@ usage:			msg("Usage: %s.", cp->usage);
 		num = markline(cmd.addr2);
 		if (num < 0) {
 			msg("%lu is an invalid address.", num);
-			return;
+			return (1);
 		}
 		if (num > nlines) {
 			msg("Less than %lu lines in the file.", num);
-			return;
+			return (1);
 		}
 		/* FALLTHROUGH */
 	case 1:
@@ -463,15 +453,15 @@ oneaddr:	num = markline(cmd.addr1);
 		if (num == 0 && !(flags & E_ZERO)) {
 			msg("The %s command doesn't permit an address of 0.",
 			    cp->name);
-			return;
+			return (1);
 		}
 		if (num < 0) {
 			msg("%lu is an invalid address.", num);
-			return;
+			return (1);
 		}
 		if (num > nlines) {
 			msg("Less than %lu lines in the file.", num);
-			return;
+			return (1);
 		}
 		break;
 	}
@@ -506,7 +496,7 @@ oneaddr:	num = markline(cmd.addr1);
 }
 #endif
 	/* Do the command. */
-	(*cp->fn)(&cmd);
+	return ((*cp->fn)(&cmd));
 }
 
 /*
