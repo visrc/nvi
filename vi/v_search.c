@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.25 1994/04/13 10:34:39 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:34:39 $";
+static char sccsid[] = "$Id: v_search.c,v 8.26 1994/05/16 19:57:24 bostic Exp $ (Berkeley) $Date: 1994/05/16 19:57:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,8 @@ static char sccsid[] = "$Id: v_search.c,v 8.25 1994/04/13 10:34:39 bostic Exp $ 
 
 static int correct __P((SCR *, EXF *, VICMDARG *, u_int));
 static int getptrn __P((SCR *, EXF *, ARG_CHAR_T, char **));
-static int search __P((SCR *, EXF *, VICMDARG *, char *, int, enum direction));
+static int search __P((SCR *,
+    EXF *, VICMDARG *, char *, u_int, enum direction));
 
 /*
  * v_searchn -- n
@@ -153,7 +154,7 @@ search(sp, ep, vp, ptrn, flags, dir)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	int flags;
+	u_int flags;
 	char *ptrn;
 	enum direction dir;
 {
