@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.141 1994/08/05 09:29:31 bostic Exp $ (Berkeley) $Date: 1994/08/05 09:29:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.142 1994/08/05 10:14:31 bostic Exp $ (Berkeley) $Date: 1994/08/05 10:14:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,7 +238,7 @@ static EXCMDLIST const cmd_subagain =
 static EXCMDLIST const cmd_del2 = 
 	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "1bca1",
-	    "[line [,line]] d[elete] [buffer] [count] [flags]",
+	    "[line [,line]] d[elete][flags] [buffer] [count] [flags]",
 	    "delete lines from the file"};
 
 /*
@@ -262,7 +262,7 @@ ex_cmd(sp, ep, cmd, cmdlen)
 	u_int saved_mode;
 	int blank, ch, cnt, delim, flags, namelen, nl;
 	int osepline, uselastcmd, tmp, vi_address;
-	char *arg1, *save_cmd, *p, *t;
+	char *arg1, *save_cmd, *p, *s, *t;
 
 	/* Init. */
 	osepline = nl = 0;
@@ -393,6 +393,33 @@ loop:	if (nl) {
 		}
 
 		/*
+		 * !!!
+		 * Historic vi permitted flags to immediately follow any
+		 * subset of the 'delete' command, but then did not permit
+		 * further arguments (flag, buffer, count).  Make it work.
+		 * Permit further arguments for the few shreds of dignity
+		 * it offers.
+		 */
+		if (p[0] == 'd' && (namelen == 1 || p[1] == 'e')) {
+			for (s = p,
+			    t = cmds[C_DELETE].name; *s == *t; ++s, ++t);
+			switch(s[0]) {
+			case 'l':
+			case 'p':
+				cmd -= s - p;
+				cmdlen += s - p;
+				/* FALLTHROUGH */
+			case '+':
+			case '-':
+			case '#':
+				cp = &cmd_del2;
+				goto skip;
+			default:
+				break;
+			}
+		}
+
+		/*
 		 * Search the table for the command.
 		 *
 		 * !!!
@@ -400,27 +427,17 @@ loop:	if (nl) {
 		 * 'k' in the 'k' command.  Make it work.
 		 *
 		 * !!!
-		 * Historic vi permitted flags to immediately follow the 'd'
-		 * in the 'delete' command, but then did not permit further
-		 * arguments (flag, buffer, count).  Make it work, but permit
-		 * further arguments for the shreds of consistency it offers.
-		 *
-		 * !!!
 		 * Historic vi permitted pretty much anything to follow the
 		 * substitute command, e.g. "s/e/E/|s|sgc3p" was fine.  Make
 		 * the command "sgc" work.
 		 */
-		if (p[0] == 'd' && p[1] == '#' ||
-		    (cp = ex_comm_search(p, namelen)) == NULL)
+		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
-			case 'd':
-				if (index("+-#lp", p[1]) != NULL) {
-					cmd -= namelen - 1;
-					cmdlen += namelen - 1;
-					cp = &cmd_del2;
-					break;
-				}
-				goto unknown;
+			case 's':
+				cmd -= namelen - 1;
+				cmdlen += namelen - 1;
+				cp = &cmd_subagain;
+				break;
 			case 'k':
 				if (p[1] && !p[2]) {
 					cmd -= namelen - 1;
@@ -428,20 +445,15 @@ loop:	if (nl) {
 					cp = &cmds[C_K];
 					break;
 				}
-				goto unknown;
-			case 's':
-				cmd -= namelen - 1;
-				cmdlen += namelen - 1;
-				cp = &cmd_subagain;
-				break;
+				/* FALLTHROUGH */
 			default:
-unknown:				msgq(sp, M_ERR,
+				msgq(sp, M_ERR,
 				    "The %.*s command is unknown", namelen, p);
 				goto err;
 			}
 
 		/* Some commands are either not implemented or turned off. */
-		if (F_ISSET(cp, E_NOPERM)) {
+skip:		if (F_ISSET(cp, E_NOPERM)) {
 			msgq(sp, M_ERR,
 			    "The %s command is not currently supported",
 			    cp->name);
@@ -1369,20 +1381,7 @@ addr2:	switch (exc.addrcnt) {
 			exc.addrcnt = 2;
 			exc.addr1.lno = exc.addr2.lno = sp->lno;
 			exc.addr1.cno = exc.addr2.cno = sp->cno;
-			switch (LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT)) {
-			case E_F_HASH:
-				exc.cmd = &cmds[C_HASH];
-				ex_number(sp, ep, &exc);
-				break;
-			case E_F_LIST:
-				exc.cmd = &cmds[C_LIST];
-				ex_list(sp, ep, &exc);
-				break;
-			case E_F_PRINT:
-				exc.cmd = &cmds[C_PRINT];
-				ex_pr(sp, ep, &exc);
-				break;
-			}
+			(void)ex_print(sp, ep, &exc.addr1, &exc.addr2, flags);
 		}
 	}
 
