@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.14 1994/04/09 18:22:15 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:15 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.15 1994/04/26 14:48:42 bostic Exp $ (Berkeley) $Date: 1994/04/26 14:48:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -253,7 +253,7 @@ svi_cm_private(sp, ep, lno, off, cno)
 
 	/* Discard screen (logical) lines. */
 	for (scno = 0, p = lp, len = llen; --off;) {
-		while (len-- && scno < sp->cols)
+		for (; len && scno < sp->cols; --len)
 			scno += (ch = *(u_char *)p++) == '\t' &&
 			    !listset ? TAB_OFF(sp, scno) : KEY_LEN(sp, ch);
 
