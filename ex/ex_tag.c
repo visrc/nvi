@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.32 1996/05/16 18:40:20 bostic Exp $ (Berkeley) $Date: 1996/05/16 18:40:20 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.33 1996/06/03 14:09:57 bostic Exp $ (Berkeley) $Date: 1996/06/03 14:09:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -817,7 +817,8 @@ tag_msg(sp, msg, tag)
 {
 	switch (msg) {
 	case TAG_BADLNO:
-		msgq_str(sp, M_ERR, tag, "164|%s: the tag line doesn't exist");
+		msgq_str(sp, M_ERR, tag,
+	    "164|%s: the tag's line number is past the end of the file");
 		break;
 	case TAG_EMPTY:
 		msgq(sp, M_INFO, "165|The tags stack is empty");
