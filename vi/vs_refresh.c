@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.15 1995/01/30 09:18:26 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:18:26 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.16 1995/01/30 10:21:48 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:21:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -324,7 +324,7 @@ small_fill:			(void)svp->scr_move(sp,
 		 * the line is the first line on the screen.  Special check so
 		 * that if the screen has been emptied, we refill it.
 		 */
-		if (file_gline(sp, HMAP->lno, &len) != NULL) {
+		if (file_eline(sp, HMAP->lno)) {
 			while (lcnt--)
 				if (svi_sm_1down(sp))
 					return (1);
