@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.5 1996/12/04 09:58:46 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:58:46 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.6 1996/12/04 19:08:06 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:08:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ extern GS *__global_list;
 typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_TIMEOUT } input_t;
 
 static input_t	ip_read __P((SCR *, IP_PRIVATE *, struct timeval *));
-static int	ip_resize __P((SCR *, size_t, size_t));
+static int	ip_resize __P((SCR *, u_int32_t, u_int32_t));
 static int	ip_trans __P((SCR *, IP_PRIVATE *, EVENT *));
 
 /*
@@ -282,11 +282,10 @@ string:		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN)
 static int
 ip_resize(sp, lines, columns)
 	SCR *sp;
-	size_t lines, columns;
+	u_int32_t lines, columns;
 {
 	GS *gp;
-	ARGS *argv[2], a, b;
-	char b1[1024];
+	int rval;
 
 	/*
 	 * XXX
@@ -301,19 +300,8 @@ ip_resize(sp, lines, columns)
 		return (0);
 	}
 
-	a.bp = b1;
-	b.bp = NULL;
-	a.len = b.len = 0;
-	argv[0] = &a;
-	argv[1] = &b;
-
-	(void)snprintf(b1, sizeof(b1), "lines=%lu", (u_long)lines);
-	a.len = strlen(b1);
-	if (opts_set(sp, argv, NULL))
-		return (1);
-	(void)snprintf(b1, sizeof(b1), "columns=%lu", (u_long)columns);
-	a.len = strlen(b1);
-	if (opts_set(sp, argv, NULL))
-		return (1);
-	return (0);
+	rval = api_opts_set(sp, "lines", NULL, lines, 0);
+	if (api_opts_set(sp, "columns", NULL, columns, 0))
+		rval = 1;
+	return (rval);
 }
