@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.79 1994/07/27 11:42:58 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:42:58 $";
+static char sccsid[] = "$Id: vi.c,v 8.80 1994/07/28 12:36:58 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:36:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -192,11 +192,8 @@ vi(sp, ep)
 			if (F_ISSET(vp, VC_C1RESET))
 				F_SET(DOT, VC_C1SET);
 
-			/* Motion flags aren't retained. */
-			F_CLR(DOT, VM_LDOUBLE | VM_LMODE | VM_NOMOTION);
-
-			/* RCM flags aren't retained. */
-			F_CLR(DOT, VM_RCM_MASK);
+			/* VM flags aren't retained. */
+			F_CLR(DOT, VM_COMMASK | VM_RCM_MASK);
 		}
 
 		/*
@@ -532,7 +529,7 @@ getmotion(sp, ep, dm, vp)
 	if (F_ISSET(vp, VC_ISDOT)) {
 		motion = *dm;
 		F_SET(&motion, VC_ISDOT);
-		F_CLR(&motion, VM_LDOUBLE | VM_LMODE | VM_NOMOTION);
+		F_CLR(&motion, VM_COMMASK);
 	} else if (getcmd(sp, ep, NULL, &motion, vp, &notused))
 		return (1);
 
@@ -619,13 +616,13 @@ getmotion(sp, ep, dm, vp)
 			return (1);
 
 		/*
-		 * Copy line mode and cursor position information from the
-		 * motion command structure.  The commands can flag the
+		 * Copy cut buffer, line mode and cursor position information
+		 * from the motion command structure, i.e. anything that the
+		 * motion command can set for us.  The commands can flag the
 		 * movement as a line motion (see v_sentence) as well as set
 		 * the VM_RCM_* flags explicitly.
 		 */
-		F_SET(vp,
-		    F_ISSET(&motion, VM_LMODE | VM_NOMOTION | VM_RCM_MASK));
+		F_SET(vp, F_ISSET(&motion, VM_COMMASK | VM_RCM_MASK));
 
 		/*
 		 * Motion commands can reset all of the cursor information.
