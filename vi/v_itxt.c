@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.18 1992/11/03 19:31:43 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:31:43 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.19 1992/11/06 18:25:46 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:25:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -206,9 +206,10 @@ v_iO(vp, fm, tm, rp)
 	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
-		if (fm->lno == 1 && file_lline(curf) == 0)
+		if (fm->lno == 1 && file_lline(curf) == 0) {
+			p = NULL;
 			len = 0;
-		else {
+		} else {
 			if (file_iline(curf, fm->lno, (u_char *)"", 0))
 				return (1);
 			if ((p = file_gline(curf, curf->lno, &len)) == NULL) {
@@ -242,9 +243,10 @@ v_io(vp, fm, tm, rp)
 	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
-		if (curf->lno == 1 && file_lline(curf) == 0)
+		if (curf->lno == 1 && file_lline(curf) == 0) {
+			p = NULL;
 			len = 0;
-		else {
+		} else {
 			if (file_aline(curf, curf->lno, (u_char *)"", 0))
 				return (1);
 			if ((p = file_gline(curf, ++curf->lno, &len)) == NULL) {
