@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.7 1994/01/23 17:49:36 bostic Exp $ (Berkeley) $Date: 1994/01/23 17:49:36 $
+.\"     $Id: vi.ref,v 8.8 1994/01/24 07:56:44 bostic Exp $ (Berkeley) $Date: 1994/01/24 07:56:44 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -36,7 +36,7 @@
 .Op Fl w Ar size
 .Op Fl x Ar aw
 .Sh DESCRIPTION
-.Nm "Ex"
+.Nm \&Ex
 is a line-oriented text editor.
 .Nm Vi
 is a screen oriented text editor, based on
@@ -46,7 +46,7 @@ is the same as using the
 .Fl R
 (read-only) option of
 .Nm vi .
-.Nm "Ex"
+.Nm \&Ex
 and
 .Nm vi
 are really different interfaces to the same program,
@@ -57,7 +57,7 @@ This manual page is the one provided with the
 and
 .Nm nvi
 versions of the vi text editors.
-.Nm Nex
+.Nm \&Nex
 and
 .Nm nvi
 are intended as bug-for-bug compatible replacements for the original
@@ -79,7 +79,7 @@ is not limited to positioning commands.
 This is the POSIX 1003.2 interface for the historic
 .Dq "+command"
 syntax.
-.Nm Nex/nvi
+.Nm \&Nex/nvi
 supports both the old and new syntax.
 .It Fl e
 Start editing in ex mode, as if the command name was
@@ -96,7 +96,7 @@ option of
 This is the new interface for the historic
 .Fl r
 without a file argument syntax.
-.Nm Nex/nvi
+.Nm \&Nex/nvi
 supports both the old and new syntax.
 .It Fl R
 Start editing in read-only mode, as if the command name was
@@ -115,7 +115,7 @@ turned off.
 This is the POSIX 1003.2 interface for the historic
 .Fl \-
 syntax.
-.Nm Nex/nvi
+.Nm \&Nex/nvi
 supports both the old and new syntax.
 .It Fl t
 Start editing at the specified tag.
@@ -142,7 +142,7 @@ There are a few additional features in
 .Nm nex/nvi .
 .Bl -tag -width indent
 .It "8-bit clean data, large lines, files"
-.Nm Nvi/nex
+.Nm \&Nvi/nex
 will edit any format file.
 Line lengths are limited by available memory,
 and file sizes are limited by available disk space.
@@ -348,7 +348,7 @@ found in the
 found in the
 .Dq "UNIX User's Manual Supplementary Documents" .
 .Pp
-.Nm Nroff/troff
+.Nm \&Nroff/troff
 source for the previous three documents are distributed with
 .Nm nex/nvi
 in the
@@ -374,6 +374,6 @@ replacements for
 .Nm ex/vi
 first appeared in 4.4BSD.
 .Sh STANDARDS
-.Nm Nex/nvi
+.Nm \&Nex/nvi
 is fairly close to IEEE Std1003.2 (``POSIX''), but it's
 not there yet.
