@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.13 1993/11/01 17:12:48 bostic Exp $ (Berkeley) $Date: 1993/11/01 17:12:48 $";
+static char sccsid[] = "$Id: v_search.c,v 8.14 1993/11/07 16:17:30 bostic Exp $ (Berkeley) $Date: 1993/11/07 16:17:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -229,15 +229,26 @@ getptrn(sp, ep, prompt, storep)
 }
 
 /*
+ * !!!
+ * Historically, commands didn't affect the line searched to if the motion
+ * command was a search and the pattern match was the start or end of the
+ * line.  There were some special cases, however, concerning search to the
+ * start of end of a line.
+ *
+ * Vi was not, however, consistent, and it was fairly easy to confuse it.
+ * For example, given the two lines:
+ *
+ *	abcdefghi
+ *	ABCDEFGHI
+ *
+ * placing the cursor on the 'A' and doing y?$ would so confuse it that 'h'
+ * 'k' and put would no longer work correctly.  In any case, we try to do
+ * the right thing, but it's not likely exactly match historic practice.
+ */
+
+/*
  * bcorrect --
  *	Handle command with a backward search as the motion.
- *
- * !!!
- * Historically, commands didn't affect the line searched to if the pattern
- * match was the start or end of the line.  It did, however, become a line
- * mode operation, even if it ended up affecting only a single line, if the
- * cursor started at the beginning of the line or any delta was specified
- * to the search pattern.
  */
 static int
 bcorrect(sp, ep, vp, fm, rp, flags)
@@ -250,20 +261,32 @@ bcorrect(sp, ep, vp, fm, rp, flags)
 	size_t len;
 	char *p;
 
+	/*
+	 * !!!
+	 * Correct backward searches which start at column 0 to be one
+	 * past the last column of the previous line.
+	 *
+	 * Backward searches become line mode operations if they start
+	 * at column 0 and end at column 0 of another line.
+	 */
+	if (fm->lno > rp->lno && fm->cno == 0) {
+		if ((p = file_gline(sp, ep, --fm->lno, &len)) == NULL) {
+			GETLINE_ERR(sp, rp->lno);
+			return (1);
+		}
+		if (rp->cno == 0)
+			F_SET(vp, VC_LMODE);
+		fm->cno = len;
+	}
+
+	/*
+	 * !!!
+	 * Commands would become line mode operations if there was a delta
+	 * specified to the search pattern.
+	 */
 	if (LF_ISSET(SEARCH_DELTA)) {
 		F_SET(vp, VC_LMODE);
 		return (0);
-	}
-
-	if ((p = file_gline(sp, ep, rp->lno + 1, &len)) == NULL) {
-		GETLINE_ERR(sp, rp->lno);
-		return (1);
-	}
-	if (len == 0 || rp->cno >= len) {
-		if (fm->cno == 0)
-			F_SET(vp, VC_LMODE);
-		++rp->lno;
-		rp->cno = 0;
 	}
 	return (0);
 }
@@ -283,20 +306,33 @@ fcorrect(sp, ep, vp, fm, rp, flags)
 	size_t len;
 	char *p;
 
+	/*
+	 * !!!
+	 * Correct forward searches which end at column 0 to be one
+	 * past the last column of the previous line.
+	 *
+	 * Forward searches become line mode operations if they start
+	 * at column 0 and end at column 0 of another line.
+	 */
+	if (fm->lno < rp->lno && rp->cno == 0) {
+		if ((p = file_gline(sp, ep, --rp->lno, &len)) == NULL) {
+			GETLINE_ERR(sp, rp->lno);
+			return (1);
+		}
+		if (fm->cno == 0)
+			F_SET(vp, VC_LMODE);
+		rp->cno = len;
+	}
+
+	/*
+	 * !!!
+	 * Commands would become line mode operations if there was a delta
+	 * specified to the search pattern.
+	 */
 	if (LF_ISSET(SEARCH_DELTA)) {
 		F_SET(vp, VC_LMODE);
 		return (0);
 	}
 
-	if (rp->cno != 0)
-		return (0);
-
-	if ((p = file_gline(sp, ep, --rp->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, rp->lno);
-		return (1);
-	}
-	if (fm->cno == 0)
-		F_SET(vp, VC_LMODE);
-	rp->cno = len;
 	return (0);
 }
