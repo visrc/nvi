@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.57 1994/03/18 13:31:20 bostic Exp $ (Berkeley) $Date: 1994/03/18 13:31:20 $";
+static char sccsid[] = "$Id: vi.c,v 8.58 1994/03/25 15:25:40 bostic Exp $ (Berkeley) $Date: 1994/03/25 15:25:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -312,11 +312,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		return (1);
 	}
 
+	/* Get the next key. */
 	key = ikey.ch;
-	if (key > MAXVIKEY) {
-		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
-		return (1);
-	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
@@ -347,6 +344,12 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
 		KEY(key, TXT_MAPCOMMAND);
+	}
+
+	/* Check for an OOB command key. */
+	if (key > MAXVIKEY) {
+		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
+		return (1);
 	}
 
 	/*
