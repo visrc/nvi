@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.8 1993/09/10 11:00:03 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:00:03 $";
+static char sccsid[] = "$Id: search.c,v 8.9 1993/09/10 12:17:48 bostic Exp $ (Berkeley) $Date: 1993/09/10 12:17:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,9 +20,9 @@ static char sccsid[] = "$Id: search.c,v 8.8 1993/09/10 11:00:03 bostic Exp $ (Be
 static int	check_delta __P((SCR *, EXF *, long, recno_t));
 static int	check_word __P((SCR *, char **, int *));
 static int	ctag_conv __P((SCR *, char **, int *));
-static int	get_delta __P((SCR *, char **, long *));
+static int	get_delta __P((SCR *, char **, long *, u_int *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
-		    char *, char **, long *, u_int));
+		    char *, char **, long *, u_int *));
 static void	search_intr __P((int));
 
 /*
@@ -30,14 +30,15 @@ static void	search_intr __P((int));
  *	Set up a search for a regular expression.
  */
 static int
-resetup(sp, rep, dir, ptrn, epp, deltap, flags)
+resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 	SCR *sp;
 	regex_t **rep;
 	enum direction dir;
 	char *ptrn, **epp;
 	long *deltap;
-	u_int flags;
+	u_int *flagp;
 {
+	u_int flags;
 	int delim, eval, re_flags, replaced;
 	char *p, *t;
 
@@ -58,12 +59,13 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		return (0);
 	}
 
-	re_flags = 0;				/* Set flags. */
+	re_flags = 0;				/* Set RE flags. */
 	if (O_ISSET(sp, O_EXTENDED))
 		re_flags |= REG_EXTENDED;
 	if (O_ISSET(sp, O_IGNORECASE))
 		re_flags |= REG_ICASE;
 
+	flags = *flagp;
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/* Set delimiter. */
 		delim = *ptrn++;
@@ -89,7 +91,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		 * whack the string, in case it's text space.
 		 */
 		if (*p) {
-			if (get_delta(sp, &p, deltap))
+			if (get_delta(sp, &p, deltap, flagp))
 				return (1);
 			if (LF_ISSET(SEARCH_TERM)) {
 				msgq(sp, M_ERR,
@@ -147,12 +149,12 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 #define	WRAPMSG		"Search wrapped."
 
 int
-f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
+f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	SCR *sp;
 	EXF *ep;
 	MARK *fm, *rm;
 	char *ptrn, **eptrn;
-	u_int flags;
+	u_int *flagp;
 {
 	struct termios term;
 	MARK m;
@@ -161,11 +163,13 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	recno_t lno;
 	size_t coff, len;
 	long delta;
+	u_int flags;
 	int eval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
 		return (1);
+	flags = *flagp;
 	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, EMPTYMSG);
@@ -173,7 +177,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, flags))
+	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, flagp))
 		return (1);
 
 	/*
@@ -308,12 +312,12 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 }
 
 int
-b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
+b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	SCR *sp;
 	EXF *ep;
 	MARK *fm, *rm;
 	char *ptrn, **eptrn;
-	u_int flags;
+	u_int *flagp;
 {
 	struct termios term;
 	MARK m;
@@ -322,11 +326,13 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	recno_t lno;
 	size_t coff, len, last;
 	long delta;
+	u_int flags;
 	int eval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
 		return (1);
+	flags = *flagp;
 	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, EMPTYMSG);
@@ -334,7 +340,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, &delta, flags))
+	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, &delta, flagp))
 		return (1);
 
 	/* If in the first column, start searching on the previous line. */
@@ -573,16 +579,24 @@ ctag_conv(sp, ptrnp, replacedp)
  * get_delta --
  *	Get a line delta.  The trickiness is that the delta can be pretty
  *	complicated, i.e. "+3-2+3++-" is allowed.
+ *
+ * !!!
+ * In historic vi, if you had a delta on a search pattern which was used as
+ * a motion command, the command became a line mode command regardless of the
+ * cursor positions.  A fairly common trick is to use a delta of "+0" to make
+ * the command a line mode command.  This is the only place that knows about
+ * delta's, so we set the return flag information here.
  */
 static int
-get_delta(sp, dp, valp)
+get_delta(sp, dp, valp, flagp)
 	SCR *sp;
 	char **dp;
 	long *valp;
+	u_int *flagp;
 {
 	long val, tval;
 
-	for (tval = 0; **dp != '\0';) {
+	for (tval = 0; **dp != '\0'; *flagp |= SEARCH_DELTA) {
 		if (**dp == '+' || **dp == '-') {
 			if (!isdigit(*(*dp + 1))) {
 				if (**dp == '+') {
