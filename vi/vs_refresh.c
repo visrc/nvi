@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.48 1994/03/10 11:21:35 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:21:35 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.49 1994/03/11 12:08:53 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:08:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,8 +57,8 @@ svi_refresh(sp, ep)
 		if (svi_curses_end(sp) || svi_curses_init(sp))
 			return (1);
 
-		/* Lose any svi_opt_screens() cached information. */
-		SVP(sp)->ss_lno = OOBLNO;
+		/* Invalidate the line size cache. */
+		SVI_SCR_CFLUSH(SVP(sp));
 
 		/*
 		 * Fill the map, incidentally losing any svi_line()
@@ -155,8 +155,8 @@ svi_paint(sp, ep)
 	 * displayed if the leftright flag is set.
 	 */
 	if (F_ISSET(sp, S_REFORMAT)) {
-		/* Toss svi_opt_screens() cached information. */
-		SVP(sp)->ss_lno = OOBLNO;
+		/* Invalidate the line size cache. */
+		SVI_SCR_CFLUSH(SVP(sp));
 
 		/* Toss svi_line() cached information. */
 		if (svi_sm_fill(sp, ep, HMAP->lno, P_TOP))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.34 1994/03/10 13:06:33 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:06:33 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.35 1994/03/11 12:09:03 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:09:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,12 +92,12 @@ svi_change(sp, ep, lno, op)
 
 	F_SET(SVP(sp), SVI_SCREENDIRTY);
 
-	/* Flush cached information from svi_opt_screens(). */
-	SVP(sp)->ss_lno = OOBLNO;
-
 	/* Invalidate the cursor, if it's on this line. */
 	if (sp->lno == lno)
 		F_SET(SVP(sp), SVI_CUR_INVALID);
+
+	/* Invalidate the line size cache. */
+	SVI_SCR_CFLUSH(SVP(sp));
 
 	getyx(stdscr, oldy, oldx);
 
