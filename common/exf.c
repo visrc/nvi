@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.88 1994/07/19 13:18:24 bostic Exp $ (Berkeley) $Date: 1994/07/19 13:18:24 $";
+static char sccsid[] = "$Id: exf.c,v 8.89 1994/07/23 13:39:15 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:39:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -673,7 +673,8 @@ file_lock(name, fdp, fd, iswrite)
 	char *name;
 	int fd, *fdp, iswrite;
 {
-#ifdef LOCK_EX				/* Hurrah!  We've got flock(2). */
+#if !defined(USE_FCNTL) && defined(LOCK_EX)
+					/* Hurrah!  We've got flock(2). */
 	/*
 	 * !!!
 	 * We need to distinguish a lock not being available for the file
