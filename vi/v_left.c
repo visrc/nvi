@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 5.14 1993/04/12 14:50:40 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:50:40 $";
+static char sccsid[] = "$Id: v_left.c,v 5.15 1993/05/27 22:57:38 bostic Exp $ (Berkeley) $Date: 1993/05/27 22:57:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,9 @@ v_first(sp, ep, vp, fm, tm, rp)
 
 /*
  * v_ncol -- [count]|
- *	Move to column count, or the first non-blank column on this line.
+ *	Move to column count or the first column on this line.  If the
+ *	requested column is past EOL, move to EOL.  The nasty part is
+ *	that we have to know character column widths to make this work.
  */
 int
 v_ncol(sp, ep, vp, fm, tm, rp)
@@ -68,11 +70,12 @@ v_ncol(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	rp->lno = fm->lno;
-	if (F_ISSET(vp, VC_C1SET))
-		rp->cno = vp->count;
-	else if (nonblank(sp, ep, fm->lno, &rp->cno))
+	if (F_ISSET(vp, VC_C1SET) && vp->count > 1)
+		rp->cno =
+		    sp->s_chposition(sp, ep, fm->lno, (size_t)--vp->count);
+	else
 		rp->cno = 0;
+	rp->lno = fm->lno;
 	return (0);
 }
 
