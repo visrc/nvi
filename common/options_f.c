@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.6 1993/08/20 17:36:46 bostic Exp $ (Berkeley) $Date: 1993/08/20 17:36:46 $";
+static char sccsid[] = "$Id: options_f.c,v 8.7 1993/08/25 16:43:40 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:43:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -378,7 +378,7 @@ DECL(f_tags)
 	F_SET(&sp->opts[O_TAGS], OPT_ALLOCATED);
 
 	for (p = t = str, cnt = 0;; ++p) {	/* Count new entries. */
-		if (*p == '\0' || isspace(*p)) {
+		if (*p == '\0' || isblank(*p)) {
 			if ((len = p - t) > 1)
 				++cnt;
 			t = p + 1;
@@ -391,7 +391,7 @@ DECL(f_tags)
 		goto mem2;
 	sp->tfhead[cnt] = NULL;
 	for (p = t = str, cnt = 0;; ++p) {	/* Fill in new array. */
-		if (*p == '\0' || isspace(*p)) {
+		if (*p == '\0' || isblank(*p)) {
 			if ((len = p - t) > 1) {
 				if ((sp->tfhead[cnt] =
 				    malloc(sizeof(TAGF))) == NULL)
