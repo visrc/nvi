@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cd.c,v 10.8 1996/03/06 19:52:11 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:11 $";
+static const char sccsid[] = "$Id: ex_cd.c,v 10.9 1996/03/30 13:45:07 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -113,8 +113,9 @@ err:	msgq_str(sp, M_SYSERR, dir, "%s");
 #define	FREE_CDPATH(cdp) {						\
 	TAILQ_REMOVE(&exp->cdq, (cdp), q);				\
 	free((cdp)->path);						\
-	FREE((cdp), sizeof(CDPATH));					\
+	free(cdp);							\
 }
+
 /*
  * ex_cdalloc --
  *	Create a new list of cd paths.

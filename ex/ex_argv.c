@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.18 1996/03/06 19:52:07 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:07 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.19 1996/03/30 13:45:07 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -461,9 +461,9 @@ argv_free(sp)
 				continue;
 			if (F_ISSET(exp->args[off], A_ALLOCATED))
 				free(exp->args[off]->bp);
-			FREE(exp->args[off], sizeof(ARGS));
+			free(exp->args[off]);
 		}
-		FREE(exp->args, exp->argscnt * sizeof(ARGS *));
+		free(exp->args);
 	}
 	exp->args = NULL;
 	exp->argscnt = 0;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.16 1996/03/29 19:40:11 bostic Exp $ (Berkeley) $Date: 1996/03/29 19:40:11 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.17 1996/03/30 13:45:08 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -104,7 +104,7 @@ ex_screen_end(sp)
 		rval = 1;
 
 	/* Free private memory. */
-	FREE(exp, sizeof(EX_PRIVATE));
+	free(exp);
 	sp->ex_private = NULL;
 
 	return (rval);

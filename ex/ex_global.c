@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.16 1996/03/06 19:52:20 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:20 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.17 1996/03/30 13:45:08 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,44 +132,28 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 
 	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
-		if (!F_ISSET(sp, S_RE_SEARCH)) {
+		if (sp->re == NULL) {
 			ex_emsg(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
-		re = &sp->sre;
+
+		/* Compile the RE if necessary. */
+		if (!F_ISSET(sp, S_RE_SEARCH) &&
+		    re_compile(sp, sp->re, NULL, NULL, &sp->re_c, RE_C_SEARCH))
+			return (1);
 	} else {
-		/* Set RE flags. */
-		reflags = 0;
-		if (O_ISSET(sp, O_EXTENDED))
-			reflags |= REG_EXTENDED;
-		if (O_ISSET(sp, O_IGNORECASE))
-			reflags |= REG_ICASE;
-
-		/* Convert vi-style RE's to POSIX 1003.2 RE's. */
-		if (re_conv(sp, &ptrn, &replaced))
-			return (1);
-
 		/* Compile the RE. */
-		re = &lre;
-		eval = regcomp(re, ptrn, reflags);
-
-		/* Free up any allocated memory. */
-		if (replaced)
-			FREE_SPACE(sp, ptrn, 0);
-
-		if (eval) {
-			re_error(sp, eval, re);
+		if (re_compile(sp,
+		    ptrn, &sp->re, &sp->re_len, &sp->re_c, RE_C_SEARCH))
 			return (1);
-		}
 
 		/*
-		 * Set saved RE.  Historic practice is that
-		 * globals set direction as well as the RE.
+		 * Set saved RE.  Historic practice is that globals set
+		 * direction as well as the RE.
 		 */
-		sp->sre = lre;
 		sp->searchdir = FORWARD;
-		F_SET(sp, S_RE_SEARCH);
 	}
+	re = &sp->re_c;
 
 	/* The global commands always set the previous context mark. */
 	abs.lno = sp->lno;
@@ -231,7 +215,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
 		match[0].rm_so = 0;
 		match[0].rm_eo = len;
-		switch (eval = regexec(&sp->sre, p, 0, match, REG_STARTEND)) {
+		switch (eval = regexec(&sp->re_c, p, 0, match, REG_STARTEND)) {
 		case 0:
 			if (cmd == V)
 				continue;
@@ -241,7 +225,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 				continue;
 			break;
 		default:
-			re_error(sp, eval, &sp->sre);
+			re_error(sp, eval, &sp->re_c);
 			break;
 		}
 

@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.19 1996/03/18 08:49:32 bostic Exp $ (Berkeley) $Date: 1996/03/18 08:49:32 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.20 1996/03/30 13:45:10 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -103,12 +103,12 @@ ex_tagfirst(sp, tagarg)
 	TAILQ_REMOVE(&exp->tagq, (tp), q);				\
 	if ((tp)->search != NULL)					\
 		free((tp)->search);					\
-	FREE((tp), sizeof(TAGF));					\
+	free(tp);							\
 }
 #define	FREETAGF(tfp) {							\
 	TAILQ_REMOVE(&exp->tagfq, (tfp), q);				\
 	free((tfp)->name);						\
-	FREE((tfp), sizeof(TAGF));					\
+	free(tfp);							\
 }
 
 /*
@@ -143,7 +143,7 @@ ex_tagpush(sp, cmdp)
 	switch (cmdp->argc) {
 	case 1:
 		if (exp->tlast != NULL)
-			FREE(exp->tlast, strlen(exp->tlast) + 1);
+			free(exp->tlast);
 		if ((exp->tlast = strdup(cmdp->argv[0]->bp)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
@@ -534,6 +534,13 @@ tag_search(sp, search, tag)
 notfound:			tag_msg(sp, TAG_SEARCH, tag);
 				return (1);
 			}
+		/*
+		 * !!!
+		 * Historically, tags set the search direction if it wasn't
+		 * already set.
+		 */
+		if (sp->searchdir == NOTSET)
+			sp->searchdir = FORWARD;
 	}
 
 	/*
@@ -574,7 +581,7 @@ ex_tagalloc(sp, str)
 				MALLOC_RET(sp, tp, TAGF *, sizeof(TAGF));
 				MALLOC(sp, tp->name, char *, len + 1);
 				if (tp->name == NULL) {
-					FREE(tp, sizeof(TAGF));
+					free(tp);
 					return (1);
 				}
 				memmove(tp->name, t, len);

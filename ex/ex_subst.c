@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.18 1996/03/20 09:23:33 bostic Exp $ (Berkeley) $Date: 1996/03/20 09:23:33 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.19 1996/03/30 13:45:09 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,8 +32,10 @@ static const char sccsid[] = "$Id: ex_subst.c,v 10.18 1996/03/20 09:23:33 bostic
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
-static int regsub
+static int re_conv __P((SCR *, char **, int *));
+static int re_sub
     __P((SCR *, char *, char **, size_t *, size_t *, regmatch_t [10]));
+static int re_tag_conv __P((SCR *, char **, int *));
 static int s __P((SCR *, EXCMD *, char *, regex_t *, u_int));
 
 /*
@@ -78,7 +80,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 
 	delim = *p++;
 	if (isalnum(delim) || delim == '\\')
-		return (s(sp, cmdp, p, &sp->subre, SUB_MUSTSETR));
+		return (s(sp, cmdp, p, &sp->subre_c, SUB_MUSTSETR));
 
 	/*
 	 * !!!
@@ -131,59 +133,42 @@ subagain:	return (ex_subagain(sp, cmdp));
 	 * last substitution RE).
 	 */
 	if (*ptrn == '\0') {
-		if (!F_ISSET(sp, S_RE_SEARCH)) {
+		if (sp->re == NULL) {
 			ex_emsg(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
-		re = &sp->sre;
+
+		/* Compile the RE if necessary. */
+		if (!F_ISSET(sp, S_RE_SEARCH) &&
+		    re_compile(sp, sp->re, NULL, NULL, &sp->re_c, RE_C_SEARCH))
+			return (1);
 		flags = 0;
 	} else {
-		/* Set RE flags. */
-		reflags = 0;
-		if (O_ISSET(sp, O_EXTENDED))
-			reflags |= REG_EXTENDED;
-		if (O_ISSET(sp, O_IGNORECASE))
-			reflags |= REG_ICASE;
-
-		/* Convert vi-style RE's to POSIX 1003.2 RE's. */
-		if (re_conv(sp, &ptrn, &replaced))
-			return (1);
-
-		/* Compile the RE. */
-		eval = regcomp(&lre, (char *)ptrn, reflags);
-
-		/* Free up any allocated memory. */
-		if (replaced)
-			FREE_SPACE(sp, ptrn, 0);
-
-		if (eval) {
-			re_error(sp, eval, &lre);
-			return (1);
-		}
-
 		/*
-		 * Set saved RE.
-		 *
 		 * !!!
-		 * Historic practice is that substitutes set the search
-		 * direction as well as both substitute and search RE's.
+		 * Compile the RE.  Historic practice is that substitutes set
+		 * the search direction as well as both substitute and search
+		 * RE's.  We compile the RE twice, as we don't want to bother
+		 * ref counting the pattern string and (opaque) structure.
 		 */
-		sp->searchdir = FORWARD;
-		sp->sre = lre;
-		F_SET(sp, S_RE_SEARCH);
-		sp->subre = lre;
-		F_SET(sp, S_RE_SUBST);
-
-		re = &lre;
+		if (re_compile(sp,
+		    ptrn, &sp->re, &sp->re_len, &sp->re_c, RE_C_SEARCH))
+			return (1);
+		if (re_compile(sp,
+		    ptrn, &sp->subre, &sp->subre_len, &sp->subre_c, RE_C_SUBST))
+			return (1);
+		
 		flags = SUB_FIRST;
+		sp->searchdir = FORWARD;
 	}
+	re = &sp->re_c;
 
 	/*
 	 * Get the replacement string.
 	 *
 	 * The special character & (\& if O_MAGIC not set) matches the
 	 * entire RE.  No handling of & is required here, it's done by
-	 * regsub().
+	 * re_sub().
 	 *
 	 * The special character ~ (\~ if O_MAGIC not set) inserts the
 	 * previous replacement string into this replacement string.
@@ -206,7 +191,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 		if (p[0] == delim)
 			++p;
 		if (sp->repl != NULL)
-			FREE(sp->repl, sp->repl_len);
+			free(sp->repl);
 		sp->repl = NULL;
 		sp->repl_len = 0;
 	} else if (p[0] == '%' && (p[1] == '\0' || p[1] == delim))
@@ -272,12 +257,15 @@ ex_subagain(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	if (!F_ISSET(sp, S_RE_SUBST)) {
+	if (sp->subre == NULL) {
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
+	if (!F_ISSET(sp, S_RE_SUBST) &&
+	    re_compile(sp, sp->subre, NULL, NULL, &sp->subre_c, RE_C_SUBST))
+		return (1);
 	return (s(sp,
-	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->subre, 0));
+	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->subre_c, 0));
 }
 
 /*
@@ -293,20 +281,28 @@ ex_subtilde(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	if (!F_ISSET(sp, S_RE_SEARCH)) {
+	if (sp->re == NULL) {
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
+	if (!F_ISSET(sp, S_RE_SEARCH) &&
+	    re_compile(sp, sp->re, NULL, NULL, &sp->re_c, RE_C_SEARCH))
+		return (1);
 	return (s(sp,
-	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->sre, 0));
+	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->re_c, 0));
 }
 
 /*
+ * s --
+ * Do the substitution.  This stuff is *really* tricky.  There are lots of
+ * special cases, and general nastiness.  Don't mess with it unless you're
+ * pretty confident.
+ * 
  * The nasty part of the substitution is what happens when the replacement
  * string contains newlines.  It's a bit tricky -- consider the information
  * that has to be retained for "s/f\(o\)o/^M\1^M\1/".  The solution here is
  * to build a set of newline offsets which we use to break the line up later,
- * when the replacement is done.  Don't change it unless you're pretty damned
+ * when the replacement is done.  Don't change it unless you're *damned*
  * confident.
  */
 #define	NEEDNEWLINE(sp) {						\
@@ -346,12 +342,6 @@ ex_subtilde(sp, cmdp)
 	}								\
 }
 
-/*
- * substitute --
- *	Do the substitution.  This stuff is *really* tricky.  There are
- *	lots of special cases, and general nastiness.  Don't mess with it
- * 	unless you're pretty confident.
- */
 static int
 s(sp, cmdp, s, re, flags)
 	SCR *sp;
@@ -477,7 +467,7 @@ s(sp, cmdp, s, re, flags)
 				return (1);
 			}
 			rflag = 1;
-			re = &sp->sre;
+			re = &sp->re_c;
 			break;
 		default:
 			goto usage;
@@ -704,7 +694,7 @@ lquit:				quit = 1;
 
 		/* Substitute the matching bytes. */
 		didsub = 1;
-		if (regsub(sp, s + offset, &lb, &lbclen, &lblen, match))
+		if (re_sub(sp, s + offset, &lb, &lbclen, &lblen, match))
 			goto err;
 
 		/* Set the change flag so we know this line was modified. */
@@ -891,11 +881,335 @@ err:		rval = 1;
 }
 
 /*
- * regsub --
+ * re_compile --
+ *	Compile the RE.
+ *
+ * PUBLIC: int re_compile __P((SCR *,
+ * PUBLIC:     char *, char **, size_t *, regex_t *, u_int));
+ */
+int
+re_compile(sp, ptrn, ptrnp, lenp, rep, flags)
+	SCR *sp;
+	char *ptrn, **ptrnp;
+	size_t *lenp;
+	regex_t *rep;
+	u_int flags;
+{
+	size_t len;
+	int reflags, replaced, rval;
+
+	/* Set RE flags. */
+	reflags = 0;
+	if (!LF_ISSET(RE_C_TAG)) {
+		if (O_ISSET(sp, O_EXTENDED))
+			reflags |= REG_EXTENDED;
+		if (O_ISSET(sp, O_IGNORECASE))
+			reflags |= REG_ICASE;
+	}
+
+	/* If we're replacing a saved value, clear the old one. */
+	if (LF_ISSET(RE_C_SEARCH) && F_ISSET(sp, S_RE_SEARCH)) {
+		regfree(&sp->re_c);
+		F_CLR(sp, S_RE_SEARCH);
+	}
+	if (LF_ISSET(RE_C_SUBST) && F_ISSET(sp, S_RE_SUBST)) {
+		regfree(&sp->subre_c);
+		F_CLR(sp, S_RE_SUBST);
+	}
+
+	/*
+	 * If we're saving the string, it's a pattern we haven't seen before,
+	 * so convert the vi-style RE's to POSIX 1003.2 RE's.  Save a copy for
+	 * later recompilation.   Free any previously saved value.
+	 */
+	replaced = 0;
+	if (ptrnp != NULL) {
+		if (*ptrnp != NULL) {
+			free(*ptrnp);
+			*ptrnp = NULL;
+		}
+		if (LF_ISSET(RE_C_TAG) ? re_tag_conv(sp, &ptrn, &replaced) :
+		    re_conv(sp, &ptrn, &replaced))
+			return (1);
+		len = strlen(ptrn);
+		if (lenp != NULL)
+			*lenp = len;
+		if ((*ptrnp = v_strdup(sp, ptrn, len)) == NULL)
+			return (1);
+	}
+
+	rval = regcomp(rep, ptrn, reflags);
+
+	/* Free up any allocated memory. */
+	if (replaced)
+		FREE_SPACE(sp, ptrn, 0);
+
+	if (rval) {
+		re_error(sp, rval, rep); 
+		return (1);
+	}
+
+	if (LF_ISSET(RE_C_SEARCH))
+		F_SET(sp, S_RE_SEARCH);
+	if (LF_ISSET(RE_C_SUBST))
+		F_SET(sp, S_RE_SUBST);
+
+	return (0);
+}
+
+/*
+ * re_conv --
+ *	Convert vi's regular expressions into something that the
+ *	the POSIX 1003.2 RE functions can handle.
+ *
+ * There are three conversions we make to make vi's RE's (specifically
+ * the global, search, and substitute patterns) work with POSIX RE's.
+ *
+ * 1: If O_MAGIC is not set, strip backslashes from the magic character
+ *    set (.[*~) that have them, and add them to the ones that don't.
+ * 2: If O_MAGIC is not set, the string "\~" is replaced with the text
+ *    from the last substitute command's replacement string.  If O_MAGIC
+ *    is set, it's the string "~".
+ * 3: The pattern \<ptrn\> does "word" searches, convert it to use the
+ *    new RE escapes.
+ *
+ * !!!/XXX
+ * This doesn't exactly match the historic behavior of vi because we do
+ * the ~ substitution before calling the RE engine, so magic characters
+ * in the replacement string will be expanded by the RE engine, and they
+ * weren't historically.  It's a bug.
+ */
+static int
+re_conv(sp, ptrnp, replacedp)
+	SCR *sp;
+	char **ptrnp;
+	int *replacedp;
+{
+	size_t blen, needlen;
+	int magic;
+	char *bp, *p, *t;
+
+	/*
+	 * First pass through, we figure out how much space we'll need.
+	 * We do it in two passes, on the grounds that most of the time
+	 * the user is doing a search and won't have magic characters.
+	 * That way we can skip the malloc and memmove's.
+	 */
+	for (p = *ptrnp, magic = 0, needlen = 0; *p != '\0'; ++p)
+		switch (*p) {
+		case '\\':
+			switch (*++p) {
+			case '<':
+				magic = 1;
+				needlen += sizeof(RE_WSTART);
+				break;
+			case '>':
+				magic = 1;
+				needlen += sizeof(RE_WSTOP);
+				break;
+			case '~':
+				if (!O_ISSET(sp, O_MAGIC)) {
+					magic = 1;
+					needlen += sp->repl_len;
+				}
+				break;
+			case '.':
+			case '[':
+			case '*':
+				if (!O_ISSET(sp, O_MAGIC)) {
+					magic = 1;
+					needlen += 1;
+				}
+				break;
+			default:
+				needlen += 2;
+			}
+			break;
+		case '~':
+			if (O_ISSET(sp, O_MAGIC)) {
+				magic = 1;
+				needlen += sp->repl_len;
+			}
+			break;
+		case '.':
+		case '[':
+		case '*':
+			if (!O_ISSET(sp, O_MAGIC)) {
+				magic = 1;
+				needlen += 2;
+			}
+			break;
+		default:
+			needlen += 1;
+			break;
+		}
+
+	if (!magic) {
+		*replacedp = 0;
+		return (0);
+	}
+
+	/*
+	 * Get enough memory to hold the final pattern.
+	 *
+	 * XXX
+	 * It's nul-terminated, for now.
+	 */
+	GET_SPACE_RET(sp, bp, blen, needlen + 1);
+
+	for (p = *ptrnp, t = bp; *p != '\0'; ++p)
+		switch (*p) {
+		case '\\':
+			switch (*++p) {
+			case '<':
+				memmove(t, RE_WSTART, sizeof(RE_WSTART) - 1);
+				t += sizeof(RE_WSTART) - 1;
+				break;
+			case '>':
+				memmove(t, RE_WSTOP, sizeof(RE_WSTOP) - 1);
+				t += sizeof(RE_WSTOP) - 1;
+				break;
+			case '~':
+				if (O_ISSET(sp, O_MAGIC))
+					*t++ = '~';
+				else {
+					memmove(t, sp->repl, sp->repl_len);
+					t += sp->repl_len;
+				}
+				break;
+			case '.':
+			case '[':
+			case '*':
+				if (O_ISSET(sp, O_MAGIC))
+					*t++ = '\\';
+				*t++ = *p;
+				break;
+			default:
+				*t++ = '\\';
+				*t++ = *p;
+			}
+			break;
+		case '~':
+			if (O_ISSET(sp, O_MAGIC)) {
+				memmove(t, sp->repl, sp->repl_len);
+				t += sp->repl_len;
+			} else
+				*t++ = '~';
+			break;
+		case '.':
+		case '[':
+		case '*':
+			if (!O_ISSET(sp, O_MAGIC))
+				*t++ = '\\';
+			*t++ = *p;
+			break;
+		default:
+			*t++ = *p;
+			break;
+		}
+	*t = '\0';
+
+	*ptrnp = bp;
+	*replacedp = 1;
+	return (0);
+}
+
+/*
+ * re_tag_conv --
+ *	Convert a tags search path into something that the POSIX
+ *	1003.2 RE functions can handle.
+ */
+static int
+re_tag_conv(sp, ptrnp, replacedp)
+	SCR *sp;
+	char **ptrnp;
+	int *replacedp;
+{
+	size_t blen, len;
+	int lastdollar;
+	char *bp, *p, *t;
+
+	*replacedp = 0;
+
+	len = strlen(p = *ptrnp);
+
+	/* Max memory usage is 2 times the length of the string. */
+	GET_SPACE_RET(sp, bp, blen, len * 2);
+
+	t = bp;
+
+	/* The last character is a '/' or '?', we just strip it. */
+	if (p[len - 1] == '/' || p[len - 1] == '?')
+		p[len - 1] = '\0';
+
+	/* The next-to-last character is a '$', and it's magic. */
+	if (p[len - 2] == '$') {
+		lastdollar = 1;
+		p[len - 2] = '\0';
+	} else
+		lastdollar = 0;
+
+	/* The first character is a '/' or '?', we just strip it. */
+	if (p[0] == '/' || p[0] == '?')
+		++p;
+
+	/* The second character is a '^', and it's magic. */
+	if (p[0] == '^')
+		*t++ = *p++;
+
+	/*
+	 * Escape every other magic character we can find, stripping the
+	 * backslashes ctags inserts to escape the search delimiter
+	 * characters.
+	 */
+	while (p[0]) {
+		/* Ctags escapes the search delimiter characters. */
+		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?'))
+			++p;
+		else if (strchr("^.[]$*", p[0]))
+			*t++ = '\\';
+		*t++ = *p++;
+	}
+	if (lastdollar)
+		*t++ = '$';
+	*t++ = '\0';
+
+	*ptrnp = bp;
+	*replacedp = 1;
+	return (0);
+}
+
+/*
+ * re_error --
+ *	Report a regular expression error.
+ *
+ * PUBLIC: void re_error __P((SCR *, int, regex_t *));
+ */
+void
+re_error(sp, errcode, preg)
+	SCR *sp;
+	int errcode;
+	regex_t *preg;
+{
+	size_t s;
+	char *oe;
+
+	s = regerror(errcode, preg, "", 0);
+	if ((oe = malloc(s)) == NULL)
+		msgq(sp, M_SYSERR, NULL);
+	else {
+		(void)regerror(errcode, preg, oe, s);
+		msgq(sp, M_ERR, "RE error: %s", oe);
+		free(oe);
+	}
+}
+
+/*
+ * re_sub --
  * 	Do the substitution for a regular expression.
  */
 static int
-regsub(sp, ip, lbp, lbclenp, lblenp, match)
+re_sub(sp, ip, lbp, lbclenp, lblenp, match)
 	SCR *sp;
 	char *ip;			/* Input line. */
 	char **lbp;

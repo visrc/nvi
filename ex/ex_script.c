@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.20 1996/03/28 20:28:00 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:28:00 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.21 1996/03/30 13:45:09 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -522,7 +522,7 @@ sscr_setprompt(sp, buf, len)
 
 	sc = sp->script;
 	if (sc->sh_prompt)
-		FREE(sc->sh_prompt, sc->sh_prompt_len);
+		free(sc->sh_prompt);
 	MALLOC(sp, sc->sh_prompt, char *, len + 1);
 	if (sc->sh_prompt == NULL) {
 		sscr_end(sp);
@@ -604,8 +604,8 @@ sscr_end(sp)
 	rval = proc_wait(sp, (long)sc->sh_pid, "script-shell", 0, 0);
 
 	/* Free memory. */
-	FREE(sc->sh_prompt, sc->sh_prompt_len);
-	FREE(sc, sizeof(SCRIPT));
+	free(sc->sh_prompt);
+	free(sc);
 	sp->script = NULL;
 
 	return (rval);
