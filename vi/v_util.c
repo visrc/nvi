@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.29 1993/03/28 19:05:52 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:52 $";
+static char sccsid[] = "$Id: v_util.c,v 5.30 1993/04/12 14:57:13 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:57:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,13 +34,13 @@ v_eof(sp, ep, mp)
 	u_long lno;
 
 	if (mp == NULL)
-		msgq(sp, M_BELL, "Already at end-of-file.");
+		msgq(sp, M_BERR, "Already at end-of-file.");
 	else {
 		lno = file_lline(sp, ep);
 		if (mp->lno >= lno)
-			msgq(sp, M_BELL, "Already at end-of-file.");
+			msgq(sp, M_BERR, "Already at end-of-file.");
 		else
-			msgq(sp, M_BELL,
+			msgq(sp, M_BERR,
 			    "Movement past the end-of-file.");
 	}
 }
@@ -58,16 +58,16 @@ v_eol(sp, ep, mp)
 	size_t len;
 
 	if (mp == NULL)
-		msgq(sp, M_BELL, "Already at end-of-line.");
+		msgq(sp, M_BERR, "Already at end-of-line.");
 	else {
 		if (file_gline(sp, ep, mp->lno, &len) == NULL) {
 			GETLINE_ERR(sp, mp->lno);
 			return;
 		}
 		if (mp->cno == len - 1)
-			msgq(sp, M_BELL, "Already at end-of-line.");
+			msgq(sp, M_BERR, "Already at end-of-line.");
 		else
-			msgq(sp, M_BELL, "Movement past the end-of-line.");
+			msgq(sp, M_BERR, "Movement past the end-of-line.");
 	}
 }
 
@@ -81,7 +81,7 @@ v_sof(sp, mp)
 	MARK *mp;
 {
 	if (mp == NULL || mp->lno == 1)
-		msgq(sp, M_BELL, "Already at the beginning of the file.");
+		msgq(sp, M_BERR, "Already at the beginning of the file.");
 	else
-		msgq(sp, M_BELL, "Movement past the beginning of the file.");
+		msgq(sp, M_BERR, "Movement past the beginning of the file.");
 }
