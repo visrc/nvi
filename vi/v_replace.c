@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.1 1993/06/09 22:27:43 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:43 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.2 1993/08/16 11:03:19 bostic Exp $ (Berkeley) $Date: 1993/08/16 11:03:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,7 @@ static char sccsid[] = "$Id: v_replace.c,v 8.1 1993/06/09 22:27:43 bostic Exp $ 
  *	For example, "r<erase>" and "r<word erase>" beeped the terminal
  *	and deleted a single character.  "Nr<carriage return>", where N
  *	was greater than 1, inserted a single carriage return.  This may
- *	not be "right", but at least it's not insane.
+ *	not be right, but at least it's not insane.
  */
 int
 v_replace(sp, ep, vp, fm, tm, rp)
@@ -38,13 +38,18 @@ v_replace(sp, ep, vp, fm, tm, rp)
 	size_t blen, len;
 	recno_t lno;
 	u_long cnt;
-	int rval;
+	int rval, ch;
 	char *bp, *p;
 
 	/*
 	 * If the line doesn't exist, or it's empty, replacement isn't
-	 * allowed.  It's not hard to implement, but replacing "nothing"
-	 * has odd semantics.
+	 * allowed.  It's not hard to implement, but:
+	 *
+	 *	1: It's historic practice.
+	 *	2: For consistency, this change would require that the more
+	 *	   general case, "Nr", when the user is < N characters from
+	 *	   the end of the line, also work.
+	 *	3: Replacing a newline has somewhat odd semantics.
 	 */
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
@@ -64,7 +69,8 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 	 * Figure out how many characters to be replace; for no particular
 	 * reason other than that the semantics of replacing the newline
 	 * are confusing, only permit the replacement of the characters in
-	 * the current line.
+	 * the current line.  I suppose we could simply append the replacement
+	 * characters to the line, but I see no compelling reason to do so.
 	 */
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	rp->cno = fm->cno + cnt - 1;
@@ -73,13 +79,15 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		return (1);
 	}
 
+	/* Get the character. */
+	ch = term_key(sp, 0);
+
 	/* Copy the line. */
 	GET_SPACE(sp, bp, blen, len);
 	memmove(bp, p, len);
 	p = bp;
 
-	if (sp->special[vp->character] == K_CR ||
-	    sp->special[vp->character] == K_NL) {
+	if (sp->special[ch] == K_CR || sp->special[ch] == K_NL) {
 		/* Set return line. */
 		rp->lno = fm->lno + cnt;
 
@@ -112,7 +120,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		return (0);
 	}
 
-	memset(bp + fm->cno, vp->character, cnt);
+	memset(bp + fm->cno, ch, cnt);
 	rval = file_sline(sp, ep, fm->lno, bp, len);
 
 	rp->lno = fm->lno;
