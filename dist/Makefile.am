@@ -145,7 +145,7 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/regex/cname.h \
 	$(visrcdir)/regex/regex.h \
 	$(visrcdir)/regex/regex2.h \
-	$(visrcdir)/regex/utils.h
+	$(visrcdir)/regex/utils.h \
 	$(visrcdir)/common/dldb.c \
 	$(visrcdir)/perl_api/perl.xs \
 	$(visrcdir)/perl_api/perlsfio.c \
