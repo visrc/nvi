@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.3 1993/09/30 19:00:35 bostic Exp $ (Berkeley) $Date: 1993/09/30 19:00:35 $
+ *	$Id: options.h,v 8.4 1993/10/03 10:43:07 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:43:07 $
  */
 
 typedef struct _option {
@@ -25,7 +25,8 @@ typedef struct _optlist {
 					/* Type of object. */	
 	enum { OPT_0BOOL, OPT_1BOOL, OPT_NUM, OPT_STR } type;
 
-#define	OPT_NOSAVE	0x01		/* Option not saved by mkexrc. */
+#define	OPT_NODISPLAY	0x01		/* Option never displayed. */
+#define	OPT_NOSAVE	0x02		/* Option not saved by mkexrc. */
 	u_int	 flags;
 } OPTLIST;
 
