@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.67 1996/06/08 14:41:10 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:41:10 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.68 1996/06/09 10:16:44 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:16:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -237,7 +237,7 @@ vs_msg(sp, mtype, line, len)
 {
 	GS *gp;
 	VI_PRIVATE *vip;
-	size_t oldx, oldy, padding;
+	size_t maxcols, oldx, oldy, padding;
 	const char *e, *s, *t;
 
 	gp = sp->gp;
@@ -347,8 +347,9 @@ vs_msg(sp, mtype, line, len)
 		padding = 0;
 	padding += 2;
 
+	maxcols = sp->cols - 1;
 	if (vip->lcontinue != 0)
-		if (len + vip->lcontinue + padding >= sp->cols)
+		if (len + vip->lcontinue + padding > maxcols)
 			vs_output(sp, vip->mtype, ".\n", 2);
 		else  {
 			vs_output(sp, vip->mtype, ";", 1);
@@ -359,11 +360,11 @@ vs_msg(sp, mtype, line, len)
 		for (; isblank(*s) && --len != 0; ++s);
 		if (len == 0)
 			break;
-		if (len + vip->lcontinue > sp->cols) {
-			for (e = s + (sp->cols - vip->lcontinue);
+		if (len + vip->lcontinue > maxcols) {
+			for (e = s + (maxcols - vip->lcontinue);
 			    e > s && !isblank(*e); --e);
 			if (e == s)
-				 e = t = s + (sp->cols - vip->lcontinue);
+				 e = t = s + (maxcols - vip->lcontinue);
 			else
 				for (t = e; isblank(e[-1]); --e);
 		} else {
