@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 8.13 1994/08/31 17:11:56 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:11:56 $";
+static char sccsid[] = "$Id: delete.c,v 8.14 1994/09/02 09:36:42 bostic Exp $ (Berkeley) $Date: 1994/09/02 09:36:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,7 +131,7 @@ delete(sp, ep, fm, tm, lmode)
 		 */
 		nlen = (len - (tm->cno + 1)) + tlen;
 		if (tlen > nlen) {
-			msgq(sp, M_ERR, "001|line length overflow");
+			msgq(sp, M_ERR, "231|line length overflow");
 			goto err;
 		}
 		if (tlen == 0) {
