@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.64 1994/04/29 11:41:57 bostic Exp $ (Berkeley) $Date: 1994/04/29 11:41:57 $";
+static char sccsid[] = "$Id: vi.c,v 8.65 1994/04/29 12:41:53 bostic Exp $ (Berkeley) $Date: 1994/04/29 12:41:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -540,8 +540,12 @@ getmotion(sp, ep, dm, vp)
 		 */
 		F_SET(&motion, vp->kp->flags & VC_COMMASK);
 
-		/* Copy the key flags into the local structure. */
-		F_SET(&motion, motion.kp->flags);
+		/*
+		 * Copy the key flags into the local structure, except for
+		 * the RCM flags, the motion command will set the RCM flags
+		 * in the vp structure as necessary.
+		 */
+		F_SET(&motion, motion.kp->flags & ~VM_RCM_MASK);
 
 		/*
 		 * Set the three cursor locations to the current cursor.  This
