@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.10 1995/10/16 15:24:47 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:47 $";
+static char sccsid[] = "$Id: recover.c,v 10.11 1995/10/28 09:41:49 bostic Exp $ (Berkeley) $Date: 1995/10/28 09:41:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -782,7 +782,7 @@ rcv_gets(buf, len, fd)
 	size_t len;
 	int fd;
 {
-	ssize_t nr;
+	int nr;
 	char *p;
 
 	if ((nr = read(fd, buf, len - 1)) == -1)
