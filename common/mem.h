@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 8.5 1994/03/16 08:05:52 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:52 $
+ *	$Id: mem.h,v 8.6 1994/06/20 17:01:45 bostic Exp $ (Berkeley) $Date: 1994/06/20 17:01:45 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -132,8 +132,13 @@
 		return (1);						\
 	}								\
 }
+/*
+ * XXX
+ * Don't depend on realloc(NULL, size) working.
+ */
 #define	REALLOC(sp, p, cast, size) {					\
-	if ((p = (cast)realloc(p, size)) == NULL)			\
+	if ((p = (cast)(p == NULL ?					\
+	    malloc(size) : realloc(p, size))) == NULL)			\
 		msgq(sp, M_SYSERR, NULL);				\
 }
 
