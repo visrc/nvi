@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.19 1994/01/11 22:17:59 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:17:59 $";
+static char sccsid[] = "$Id: cut.c,v 8.20 1994/01/23 16:42:37 bostic Exp $ (Berkeley) $Date: 1994/01/23 16:42:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,8 @@ cut(sp, ep, cbp, namep, fm, tm, flags)
 	    LF_ISSET(CUT_LINEMODE) ? " LINE MODE" : "");
 #endif
 	if (cbp == NULL) {
-		if (LF_ISSET(CUT_DELETE) && fm->lno != tm->lno) {
+		if (LF_ISSET(CUT_DELETE) &&
+		    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
 			(void)cb_rotate(sp);
 			name = '1';
 			goto defcb;
