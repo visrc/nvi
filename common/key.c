@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.24 1993/11/22 10:01:25 bostic Exp $ (Berkeley) $Date: 1993/11/22 10:01:25 $";
+static char sccsid[] = "$Id: key.c,v 8.25 1993/11/27 15:52:11 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:52:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,7 @@ static char sccsid[] = "$Id: key.c,v 8.24 1993/11/22 10:01:25 bostic Exp $ (Berk
 #include <unistd.h>
 
 #include "vi.h"
+#include "seq.h"
 
 /*
  * There are two sets of input buffers used by ex/vi.  The first is the input
@@ -291,7 +292,7 @@ loop:	if (keyp->cnt) {
 newmap:		ch = ttyp->buf[ttyp->next];
 		if (ch < MAX_BIT_SEQ && !bit_test(gp->seqb, ch))
 			goto nomap;
-remap:		qp = seq_find(sp, &ttyp->buf[ttyp->next], ttyp->cnt,
+remap:		qp = seq_find(sp, NULL, &ttyp->buf[ttyp->next], ttyp->cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 
