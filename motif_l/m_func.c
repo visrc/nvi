@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.6 1996/12/03 18:39:05 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:39:05 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.7 1996/12/05 23:05:33 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:05:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -269,6 +269,14 @@ ipo_rewrite(ipbp)
 }
 
 int
+ipo_scrollbar(ipbp)
+	IP_BUF *ipbp;
+{
+	/* XXX: Nothing. */
+	return (0);
+}
+
+int
 ipo_split(ipbp)
 	IP_BUF *ipbp;
 {
@@ -291,5 +299,6 @@ int (*iplist[IPO_EVENT_MAX]) __P((IP_BUF *)) = {
 	ipo_refresh,
 	ipo_rename,
 	ipo_rewrite,
+	ipo_scrollbar,
 	ipo_split
 };

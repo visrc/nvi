@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.6 1996/12/03 18:38:33 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:38:33 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.7 1996/12/05 23:06:28 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:06:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -337,9 +337,41 @@ ip_refresh(sp, repaint)
 	int repaint;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp;
+	SMAP *smp;
+	recno_t total;
 
+	ipp = IPP(sp);
+
+	/*
+	 * If the scroll bar information has changed since we last sent
+	 * it, resend it.  Currently, we send three values:
+	 *
+	 * top		The line number of the first line in the screen.
+	 * num		The number of lines visible on the screen.
+	 * total	The number of lines in the file.
+	 *
+	 * XXX
+	 * This is a gross violation of layering... we're looking at data
+	 * structures at which we have absolutely no business whatsoever
+	 * looking...
+	 */
+
+	ipb.val1 = HMAP->lno;
+	ipb.val2 = TMAP->lno - HMAP->lno;
+	(void)db_last(sp, &total);
+	ipb.val3 = total;
+	if (ipb.val1 != ipp->sb_top ||
+	    ipb.val2 != ipp->sb_num || ipb.val3 != ipp->sb_total) {
+		ipb.code = IPO_SCROLLBAR;
+		(void)ip_send(sp, "123", &ipb);
+		ipp->sb_top = ipb.val1;
+		ipp->sb_num = ipb.val2;
+		ipp->sb_total = ipb.val3;
+	}
+
+	/* Refresh/repaint the screen. */
 	ipb.code = repaint ? IPO_REDRAW : IPO_REFRESH;
-
 	return (ip_send(sp, NULL, &ipb));
 }
 
@@ -438,6 +470,9 @@ ip_send(sp, fmt, ipbp)
 				goto value;
 			case '2':			/* Value 2. */
 				ilen = htonl(ipbp->val2);
+				goto value;
+			case '3':			/* Value 3. */
+				ilen = htonl(ipbp->val3);
 value:				nlen += IPO_INT_LEN;
 				off = p - bp;
 				ADD_SPACE_RET(sp, bp, blen, nlen);

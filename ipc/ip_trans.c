@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.6 1996/12/03 18:38:38 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:38:38 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.7 1996/12/05 23:05:53 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:05:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,6 +41,7 @@ ip_trans(bp, lenp)
 	extern int (*iplist[IPO_EVENT_MAX - 1]) __P((IP_BUF *));
 	IP_BUF ipb;
 	size_t len, needlen;
+	u_int32_t *vp;
 	int foff;
 	char *fmt, *p, *s_bp;
 
@@ -50,15 +51,18 @@ ip_trans(bp, lenp)
 		case IPO_RENAME:
 			fmt = "s";
 			break;
-		case IPO_BUSY_ON:
-			fmt = "s1";
-			break;
 		case IPO_ATTRIBUTE:
 		case IPO_MOVE:
 			fmt = "12";
 			break;
+		case IPO_BUSY_ON:
+			fmt = "s1";
+			break;
 		case IPO_REWRITE:
 			fmt = "1";
+			break;
+		case IPO_SCROLLBAR:
+			fmt = "123";
 			break;
 		default:
 			fmt = "";
@@ -69,19 +73,18 @@ ip_trans(bp, lenp)
 		for (; *fmt != '\0'; ++fmt)
 			switch (*fmt) {
 			case '1':
-				needlen += IPO_INT_LEN;
-				if (len < needlen)
-					goto partial;
-				memcpy(&ipb.val1, p, IPO_INT_LEN);
-				ipb.val1 = ntohl(ipb.val1);
-				p += IPO_INT_LEN;
-				break;
+				vp = &ipb.val1;
+				goto value;
 			case '2':
-				needlen += IPO_INT_LEN;
+				vp = &ipb.val2;
+				goto value;
+			case '3':
+				vp = &ipb.val3;
+value:				needlen += IPO_INT_LEN;
 				if (len < needlen)
 					goto partial;
-				memcpy(&ipb.val2, p, IPO_INT_LEN);
-				ipb.val2 = ntohl(ipb.val2);
+				memcpy(vp, p, IPO_INT_LEN);
+				*vp = ntohl(*vp);
 				p += IPO_INT_LEN;
 				break;
 			case 's':

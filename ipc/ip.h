@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.9 1996/12/05 22:03:56 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:03:56 $
+ *	$Id: ip.h,v 8.10 1996/12/05 23:06:11 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:06:11 $
  */
 
 typedef struct _ip_private {
@@ -13,6 +13,10 @@ typedef struct _ip_private {
 
 	size_t	 row;		/* Current row. */
 	size_t	 col;		/* Current column. */
+
+	recno_t	 sb_total;	/* scrollbar: total lines in file. */
+	recno_t	 sb_top;	/* scrollbar: top line on screen. */
+	size_t	 sb_num;	/* scrollbar: number of lines on screen. */
 
 	size_t	 iblen;		/* Input buffer length. */
 	size_t	 iskip;		/* Returned input buffer. */
@@ -51,6 +55,7 @@ typedef struct _ip_buf {
 	size_t len;		/* String length. */
 	u_int32_t val1;		/* First value. */
 	u_int32_t val2;		/* Second value. */
+	u_int32_t val3;		/* Third value. */
 } IP_BUF;
 
 /*
@@ -98,7 +103,7 @@ typedef struct _ip_buf {
  * IP events sent from vi to the screen.
  */
 #define	IPO_ADDSTR	 1	/* Add a string: IPO_STR. */
-#define	IPO_ATTRIBUTE	 2	/* Set screen attribute: IPO_INT, IPO_INT. */
+#define	IPO_ATTRIBUTE	 2	/* Set screen attribute: 2 * IPO_INT. */
 #define	IPO_BELL	 3	/* Beep/bell/flash the terminal. */
 #define	IPO_BUSY_OFF	 4	/* Display a busy message: IPO_STR. */
 #define	IPO_BUSY_ON	 5	/* Display a busy message: IPO_STR. */
@@ -106,12 +111,13 @@ typedef struct _ip_buf {
 #define	IPO_DELETELN	 7	/* Delete a line. */
 #define	IPO_DISCARD	 8	/* Discard the screen. */
 #define	IPO_INSERTLN	 9	/* Insert a line. */
-#define	IPO_MOVE	10	/* Move the cursor: IPO_INT, IPO_INT. */
+#define	IPO_MOVE	10	/* Move the cursor: 2 * IPO_INT. */
 #define	IPO_REDRAW	11	/* Redraw the screen. */
 #define	IPO_REFRESH	12	/* Refresh the screen. */
 #define	IPO_RENAME	13	/* Rename the screen: IPO_STR. */
 #define	IPO_REWRITE	14	/* Rewrite a line: IPO_INT. */
-#define	IPO_SPLIT	15	/* Split the screen. */
-#define	IPO_EVENT_MAX	15
+#define	IPO_SCROLLBAR	15	/* Reset the scrollbar: 3 * IPO_INT. */
+#define	IPO_SPLIT	16	/* Split the screen. */
+#define	IPO_EVENT_MAX	16
 
 #include "ip_extern.h"
