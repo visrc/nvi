@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.54 1993/04/12 14:32:36 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:32:36 $";
+static char sccsid[] = "$Id: key.c,v 5.55 1993/04/13 16:19:50 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:19:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,32 +58,36 @@ key_special(sp)
 }
 
 /*
- * gb_inc
- *	Increase the size of the gb buffers.
+ * txt_new --
+ *	Allocate a new TEXT structure, and append it into a hdr
+ *	structure.
  */
-int
-gb_inc(sp)
+TEXT *
+txt_new(sp, hdrp, p, len, total_len)
 	SCR *sp;
+	HDR *hdrp;
+	char *p;
+	size_t len, total_len;
 {
-	sp->gb_len += 256;
-	if ((sp->gb_cb = realloc(sp->gb_cb, sp->gb_len)) == NULL ||
-	    (sp->gb_qb = realloc(sp->gb_qb, sp->gb_len)) == NULL ||
-	    (sp->gb_wb = realloc(sp->gb_wb, sp->gb_len)) == NULL) {
-			msgq(sp, M_ERR,
-			    "Input too long: %s.", strerror(errno));
-			if (sp->gb_cb != NULL)
-				free(sp->gb_cb);
-			if (sp->gb_qb != NULL)
-				free(sp->gb_qb);
-			if (sp->gb_wb != NULL)
-				free(sp->gb_wb);
-			sp->gb_cb = NULL;
-			sp->gb_qb = NULL;
-			sp->gb_wb = NULL;
-			sp->gb_len = 0;
-			return (1);
-		}
-	return (0);
+	TEXT *tp;
+
+	if ((tp = malloc(sizeof(TEXT))) == NULL)
+		goto mem;
+	if ((tp->lb = malloc(tp->lb_len = total_len)) == NULL) {
+		free(tp);
+mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (NULL);
+	}
+#ifdef DEBUG
+	memset(tp->lb, 0, total_len - 1);
+#endif
+
+	if (tp->len = len)
+		memmove(tp->lb, p, len);
+	tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
+
+	HDR_INSERT(tp, hdrp, next, prev, TEXT);
+	return (tp);
 }
 
 /*
@@ -94,7 +98,7 @@ gb_inc(sp)
 int
 getkey(sp, flags)
 	SCR *sp;
-	u_int flags;			/* GB_MAPCOMMAND, GB_MAPINPUT */
+	u_int flags;			/* TXT_MAPCOMMAND, TXT_MAPINPUT */
 {
 	int ch;
 	SEQ *qp;
@@ -141,10 +145,10 @@ getkey(sp, flags)
 	 * to read more keys to complete the map.  Max map is sizeof(keybuf)
 	 * and probably not worth fixing.
 	 */
-	if (flags & (GB_MAPINPUT | GB_MAPCOMMAND) &&
+	if (LF_ISSET(TXT_MAPINPUT | TXT_MAPCOMMAND) &&
 	    sp->seq[sp->keybuf[sp->nextkey]]) {
 retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
-		    flags & GB_MAPCOMMAND ? SEQ_COMMAND : SEQ_INPUT,
+		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 		if (ispartial) {
 			if (sizeof(sp->keybuf) == sp->nkeybuf)
@@ -185,7 +189,7 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 	 * O_BEAUTIFY eliminates all control characters except tab,
 	 * newline, form-feed and escape.
 	 */
-ret:	if (flags & GB_BEAUTIFY && O_ISSET(sp, O_BEAUTIFY)) {
+ret:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
 		if (isprint(ch) || sp->special[ch] == K_ESCAPE ||
 		    sp->special[ch] == K_FORMFEED || sp->special[ch] == K_NL ||
 		    sp->special[ch] == K_TAB)
