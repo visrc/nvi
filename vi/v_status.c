@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 9.2 1995/01/11 16:22:26 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:26 $";
+static char sccsid[] = "$Id: v_status.c,v 9.3 1995/02/22 00:06:38 bostic Exp $ (Berkeley) $Date: 1995/02/22 00:06:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,11 +38,5 @@ v_status(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-
-	/*
-	 * ^G in historic vi reset the cursor column to the first
-	 * non-blank character in the line.  This doesn't seem of
-	 * any usefulness whatsoever, so I don't bother.
-	 */
 	return (msg_status(sp, vp->m_start.lno, 1));
 }
