@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.77 1994/04/11 19:58:52 bostic Exp $ (Berkeley) $Date: 1994/04/11 19:58:52 $";
+static char sccsid[] = "$Id: main.c,v 8.78 1994/04/13 10:41:52 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:41:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -141,8 +141,6 @@ main(argc, argv)
 			rec_f = optarg;
 			break;
 		case 's':
-			if (!LF_ISSET(S_EX))
-				errx(1, "-s only applicable to ex.");
 			silent = 1;
 			break;
 		case 'T':		/* Trace. */
@@ -181,15 +179,26 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
+	/* Silent is only applicable to ex. */
+	if (silent && !LF_ISSET(S_EX))
+		errx(1, "-s only applicable to ex.");
+
 	/* Build and initialize the GS structure. */
 	__global_list = gp = gs_init();
 
-	/* If not reading from a terminal, it's like -s was specified. */
-	if (!F_ISSET(gp, G_STDIN_TTY))
+	/*
+	 * If not reading from a terminal, it's like -s was specified.
+	 * Vi always reads from the terminal, so fail if it's not a
+	 * terminal.
+	 */
+	if (!F_ISSET(gp, G_STDIN_TTY)) {
 		silent = 1;
-
-	if (snapshot)
-		F_SET(gp, G_SNAPSHOT);
+		if (!LF_ISSET(S_EX)) {
+			msgq(NULL, M_ERR,
+			    "Vi's standard input must be a terminal.");
+			goto err;
+		}
+	}
 
 	/*
 	 * Build and initialize the first/current screen.  This is a bit
@@ -230,7 +239,8 @@ main(argc, argv)
 	}
 	if (wsizearg != NULL) {
 		ARGS *av[2], a, b;
-		if (strtol(optarg, &p, 10) < 0 || *p)
+		errno = 0;
+		if (strtol(optarg, &p, 10) < 0 || errno || *p)
 			errx(1, "illegal window size -- %s", optarg);
 		(void)snprintf(path, sizeof(path), "window=%s", optarg);
 		a.bp = (CHAR_T *)path;
@@ -241,7 +251,7 @@ main(argc, argv)
 		av[1] = &b;
 		if (opts_set(sp, av))
 			 msgq(sp, M_ERR,
-			     "Unable to set command line window option");
+			     "Unable to set command line window size option.");
 	}
 
 	/* Keymaps, special keys, must follow option initializations. */
@@ -283,7 +293,7 @@ main(argc, argv)
 	 *
 	 * !!!
 	 * If the user started the historic of vi in $HOME, vi read the user's
-	 * .exrc file twice, as $HOME/.exrc and as ./.exrc.  We don't since
+	 * .exrc file twice, as $HOME/.exrc and as ./.exrc.  We avoid this, as
 	 * it's going to make some commands behave oddly, and I can't imagine
 	 * anyone depending on it.
 	 */
@@ -348,6 +358,10 @@ main(argc, argv)
 	if (flagchk == 'l')
 		exit(rcv_list(sp));
 
+	/* Set the file snapshot flag. */
+	if (snapshot)
+		F_SET(gp, G_SNAPSHOT);
+
 	/* Use a tag file or recovery file if specified. */
 	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
 		goto err;
@@ -374,6 +388,24 @@ main(argc, argv)
 
 	/* Set up the argument pointer. */
 	sp->a_frp = sp->frp;
+
+	/*
+	 * If there's an initial command, push it on the command stack.
+	 * Historically, it was always an ex command, not vi in vi mode
+	 * or ex in ex mode.  So, make it look like an ex command to vi.
+	 */
+	if (excmdarg != NULL)
+		if (IN_EX_MODE(sp)) {
+			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
+				goto err;
+		} else if (IN_VI_MODE(sp)) {
+			if (term_push(sp, "\n", 1, 0, 0))
+				goto err;
+			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
+				goto err;
+			if (term_push(sp, ":", 1, 0, 0))
+				goto err;
+		}
 
 	/*
 	 * Initialize the signals.  Use sigaction(2), not signal(3), because
@@ -411,30 +443,6 @@ main(argc, argv)
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 	(void)sigaction(SIGQUIT, &act, NULL);
-
-	/*
-	 * If there's an initial command, push it on the command stack.
-	 * Historically, it was always an ex command, not vi in vi mode
-	 * or ex in ex mode.  So, make it look like an ex command to vi.
-	 */
-	if (excmdarg != NULL)
-		if (IN_EX_MODE(sp)) {
-			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
-				goto err;
-		} else if (IN_VI_MODE(sp)) {
-			if (term_push(sp, "\n", 1, 0, 0))
-				goto err;
-			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
-				goto err;
-			if (term_push(sp, ":", 1, 0, 0))
-				goto err;
-		}
-
-	/* Vi reads from the terminal. */
-	if (!F_ISSET(gp, G_STDIN_TTY) && !F_ISSET(sp, S_EX)) {
-		msgq(sp, M_ERR, "Vi's standard input must be a terminal.");
-		goto err;
-	}
 
 	for (;;) {
 		if (sp->s_edit(sp, sp->ep))
