@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.21 1993/02/11 12:07:53 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:07:53 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.22 1993/02/11 12:26:04 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:26:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,7 +38,7 @@ filter(fm, tm, cmd, ftype)
 {
 	FILE *ifp, *ofp;			/* Can't be uninitialized. */
 	pid_t pid;
-	sig_t intsave, quitsave;
+	sig_ret_t intsave, quitsave;
 	sigset_t bmask, omask;
 	recno_t dlines, ilines, lno;
 	int input[2], output[2], pstat, rval;
