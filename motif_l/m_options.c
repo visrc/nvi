@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.16 1996/12/20 10:29:10 bostic Exp $ (Berkeley) $Date: 1996/12/20 10:29:10 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.17 1996/12/20 10:35:46 bostic Exp $ (Berkeley) $Date: 1996/12/20 10:35:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,6 @@ static optData display[] = {
 	{ optToggle,	"showmode",	},
 	{ optToggle,	"slowopen",	},
 	{ optToggle,	"verbose",	},
-	{ optToggle,	"window",	},
 	{ optToggle,	"windowname",	},
 	{ optTerminator,		},
 }, display_int[] = {
@@ -76,6 +75,7 @@ static optData display[] = {
 	{ optInteger,	"shiftwidth",	},
 	{ optInteger,	"sidescroll",	},
 	{ optInteger,	"tabstop",	},
+	{ optInteger,	"window",	},
 	{ optTerminator,		},
 }, display_str[] = {
 	{ optString,	"noprint",	},
@@ -150,41 +150,40 @@ static optData display[] = {
  * ********* NOTE ***********
  */
 static	optSheet sheets[] = {
-	{	"Editor",
-		"These options control the general configuration\n\
-and the editor as a whole",
-		NULL,
-		general,
-		general_int,
-		general_str,
-	},
 	{	"Display",
-		"These options control the way things are displayed on the screen",
+		"These options control how text is displayed on the screen",
 		NULL,
 		display,
 		display_int,
 		display_str,
 	},
 	{	"Files",
-		"These options globally modify how the editor handles files",
+		"These options control how the editor handles files",
 		NULL,
 		files,
 		NULL,
 		files_str,
 	},
 	{	"Input",
-		"These options modify how text input behaves",
+		"These options control text input behavior",
 		NULL,
 		input,
 		input_int,
 		input_str,
 	},
 	{	"Search/RE",
-		"These options modify searches and regular expression",
+	"These options control searching and Regular Expression behavior",
 		NULL,
 		search,
 		NULL,
 		search_str,
+	},
+	{	"Editor",
+		"These options control general editor configuration",
+		NULL,
+		general,
+		general_int,
+		general_str,
 	},
 };
 
