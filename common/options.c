@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.63 2001/07/03 17:20:48 skimo Exp $ (Berkeley) $Date: 2001/07/03 17:20:48 $";
+static const char sccsid[] = "$Id: options.c,v 10.64 2001/07/08 13:26:49 skimo Exp $ (Berkeley) $Date: 2001/07/08 13:26:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,12 @@ static const char sccsid[] = "$Id: options.c,v 10.63 2001/07/03 17:20:48 skimo E
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
 static int	 	 opts_print __P((SCR *, OPTLIST const *));
+
+#ifdef USE_WIDECHAR
+#define OPT_WC	    0
+#else
+#define OPT_WC	    (OPT_NOSAVE | OPT_NDISP)
+#endif
 
 /*
  * O'Reilly noted options and abbreviations are from "Learning the VI Editor",
@@ -62,6 +68,8 @@ OPTLIST const optlist[] = {
 	{L("cedit"),	NULL,		OPT_STR,	0},
 /* O_COLUMNS	  4.4BSD */
 	{L("columns"),	f_columns,	OPT_NUM,	OPT_NOSAVE},
+/* O_COMBINED */
+	{L("combined"),	NULL,		OPT_0BOOL,	OPT_NOSET|OPT_WC},
 /* O_COMMENT	  4.4BSD */
 	{L("comment"),	NULL,		OPT_0BOOL,	0},
 /* O_DIRECTORY	    4BSD */
@@ -79,7 +87,7 @@ OPTLIST const optlist[] = {
 /* O_FILEC	  4.4BSD */
 	{L("filec"),	NULL,		OPT_STR,	0},
 /* O_FILEENCODING */
-	{L("fileencoding"),f_encoding,	OPT_STR,	0},
+	{L("fileencoding"),f_encoding,	OPT_STR,	OPT_WC},
 /* O_FLASH	    HPUX */
 	{L("flash"),	NULL,		OPT_1BOOL,	0},
 /* O_HARDTABS	    4BSD */
@@ -89,7 +97,7 @@ OPTLIST const optlist[] = {
 /* O_IGNORECASE	    4BSD */
 	{L("ignorecase"),	f_recompile,	OPT_0BOOL,	0},
 /* O_INPUTENCODING */
-	{L("inputencoding"),f_encoding,	OPT_STR,	0},
+	{L("inputencoding"),f_encoding,	OPT_STR,	OPT_WC},
 /* O_KEYTIME	  4.4BSD */
 	{L("keytime"),	NULL,		OPT_NUM,	0},
 /* O_LEFTRIGHT	  4.4BSD */
