@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.13 1995/01/24 09:56:50 bostic Exp $ (Berkeley) $Date: 1995/01/24 09:56:50 $";
+static char sccsid[] = "$Id: options.c,v 9.14 1995/01/24 10:10:45 bostic Exp $ (Berkeley) $Date: 1995/01/24 10:10:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -480,7 +480,7 @@ prefix:		op = opts_prefix(name);
 found:		if (op == NULL) {
 			p = msg_print(sp, name, &nf);
 			msgq(sp, M_ERR,
-		    "054|no %s option: 'set all' gives all option values",
+		    "054|set: no %s option: 'set all' gives all option values",
 			    p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
@@ -559,11 +559,12 @@ found:		if (op == NULL) {
 				t = msg_print(sp, sep, &nf2);
 				switch (nret) {
 				case NUM_ERR:
-					msgq(sp, M_SYSERR, "%s: %s", p, t);
+					msgq(sp, M_SYSERR,
+					    "269|set: %s option: %s", p, t);
 					break;
 				case NUM_OVER:
 					msgq(sp, M_ERR,
-				    "268|%s: %s: option value overflow", p, t);
+			    "268|set: %s option: %s: value overflow", p, t);
 					break;
 				case NUM_UNDER:
 					abort();
@@ -580,7 +581,7 @@ found:		if (op == NULL) {
 badnum:				p = msg_print(sp, name, &nf);
 				t = msg_print(sp, sep, &nf2);
 				msgq(sp, M_ERR,
-				    "057|%s: %s: illegal number", p, t);
+		    "057|set: %s option: %s is an illegal number", p, t);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 				if (nf2)
