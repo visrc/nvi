@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.63 1996/03/18 18:52:47 bostic Exp $ (Berkeley) $Date: 1996/03/18 18:52:47 $
+dnl	$Id: configure.in,v 8.64 1996/03/18 19:30:44 bostic Exp $ (Berkeley) $Date: 1996/03/18 19:30:44 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -144,7 +144,8 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	if test "X$perllib" != "X"; then
 		LIBS="$LIBS -L$perllib"
 	else
-		echo "Fatal error: no perl5 library."
+		echo "Fatal error: no perl5 library; see the section"
+		echo "ADDING LIBRARIES AND INCLUDE FILES in the README file."
 		exit 1
 	fi
 	LIBOBJS="perl.o $LIBOBJS"
@@ -188,7 +189,8 @@ if test "$vi_cv_tknvi" = "yes" || test "$vi_cv_tclinterp" = "yes"; then
 	AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
 		[vi_cv_tkfatal="no"], [vi_cv_tkfatal="yes"])
 	if test "$vi_cv_tkfatal" = "yes"; then
-		echo "Fatal error: no Tk/Tcl library."
+		echo "Fatal error: no Tk/Tcl library; see the section"
+		echo "ADDING LIBRARIES AND INCLUDE FILES in the README file."
 		exit 1
 	fi
 	if test "$vi_cv_tknvi" != yes; then
