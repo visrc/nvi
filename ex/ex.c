@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.162 1994/09/15 11:18:56 bostic Exp $ (Berkeley) $Date: 1994/09/15 11:18:56 $";
+static char sccsid[] = "$Id: ex.c,v 8.163 1994/09/16 17:14:43 bostic Exp $ (Berkeley) $Date: 1994/09/16 17:14:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1737,8 +1737,8 @@ search:		F_SET(exp, EX_ABSMARK);
 		/*
 		 * !!!
 		 * Historically, .<number> was the same as .+<number>, i.e.
-		 * the '+' was understood.  I've never found documentation
-		 * for this, so it may be incorrect.
+		 * the '+' could be omitted.  (This feature is found in ed
+		 * as well.)
 		 */
 		if (cmdlen > 1 && isdigit(cmd[1]))
 			*cmd = '+';
