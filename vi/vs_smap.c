@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.6 1993/08/30 09:40:25 bostic Exp $ (Berkeley) $Date: 1993/08/30 09:40:25 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.7 1993/08/31 16:35:32 bostic Exp $ (Berkeley) $Date: 1993/08/31 16:35:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,6 +42,9 @@ svi_change(sp, ep, lno, op)
 	/* Ignore the change if the line is after the map. */
 	if (lno > TMAP->lno)
 		return (0);
+
+	/* Flush cached information from svi_screens(). */
+	((SVI_PRIVATE *)(sp->svi_private))->ss_lno = OOBLNO;
 
 	/*
 	 * If the line is before the map, and it's a decrement, decrement
@@ -106,6 +109,10 @@ svi_sm_fill(sp, ep, lno, pos)
 {
 	SMAP *p, tmp;
 	
+	/* Flush all cached information from the SMAP. */
+	for (p = HMAP; p <= TMAP; ++p)
+		SMAP_FLUSH(p);	
+
 	switch (pos) {
 	case P_FILL:
 		tmp.lno = 1;
@@ -315,7 +322,8 @@ svi_sm_reset(sp, ep, lno)
 	 */
         for (p = HMAP; p->lno != lno; ++p);
 	for (cnt_orig = 0, t = p;
-	    t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
+	    t <= TMAP && t->lno == lno; ++cnt_orig, ++t)
+		SMAP_FLUSH(t);
 	cnt_new = svi_screens(sp, ep, lno, NULL);
 
 	TOO_WEIRD;
@@ -715,6 +723,7 @@ svi_sm_next(sp, ep, p, t)
 {
 	size_t lcnt;
 
+	SMAP_FLUSH(t);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		t->lno = p->lno + 1;
 		t->off = p->off;
@@ -741,6 +750,7 @@ svi_sm_prev(sp, ep, p, t)
 	EXF *ep;
 	SMAP *p, *t;
 {
+	SMAP_FLUSH(t);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		t->lno = p->lno - 1;
 		t->off = p->off;
