@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.43 2001/07/29 19:07:30 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:30 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.44 2001/07/29 19:39:35 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:39:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,13 +63,14 @@ static const char sccsid[] = "$Id: perl.xs,v 8.43 2001/07/29 19:07:30 skimo Exp 
 
 static void msghandler __P((SCR *, mtype_t, char *, size_t));
 
-static char *errmsg = 0;
-
 typedef struct _perl_data {
     	PerlInterpreter*	interp;
 	SV 	*svcurscr, *svstart, *svstop, *svid;
 	CONVWIN	 cw;
+	char 	*errmsg;
 } perl_data_t;
+
+#define PERLP(sp)   ((perl_data_t *)sp->wp->perl_private)
 
 #define CHAR2INTP(sp,n,nlen,w,wlen)					    \
     CHAR2INT5(sp,((perl_data_t *)sp->wp->perl_private)->cw,n,nlen,w,wlen)
@@ -80,10 +81,10 @@ typedef struct _perl_data {
  */
 #define	INITMESSAGE(sp)							\
 	scr_msg = sp->wp->scr_msg;					\
-	sp->gp->scr_msg = msghandler;
+	sp->wp->scr_msg = msghandler;
 #define	ENDMESSAGE(sp)							\
 	sp->wp->scr_msg = scr_msg;					\
-	if (rval) croak(errmsg);
+	if (rval) croak(PERLP(sp)->errmsg);
 
 void xs_init __P((pTHXo));
 
@@ -202,6 +203,7 @@ perl_init(scrp)
 #else
 	pp->interp = gp->perl_interp;
 #endif
+	pp->errmsg = 0;
 	{
 		dTHXs
 
@@ -457,12 +459,17 @@ msghandler(sp, mtype, msg, len)
 	char *msg;
 	size_t len;
 {
+	char 	*errmsg;
+
+	errmsg = PERLP(sp)->errmsg;
+
 	/* Replace the trailing <newline> with an EOS. */
 	/* Let's do that later instead */
 	if (errmsg) free (errmsg);
 	errmsg = malloc(len + 1);
 	memcpy(errmsg, msg, len);
 	errmsg[len] = '\0';
+	PERLP(sp)->errmsg = errmsg;
 }
 
 
