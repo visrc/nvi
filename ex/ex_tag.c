@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.22 1993/11/21 15:27:55 bostic Exp $ (Berkeley) $Date: 1993/11/21 15:27:55 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.23 1993/11/22 20:28:20 bostic Exp $ (Berkeley) $Date: 1993/11/22 20:28:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -439,15 +439,16 @@ ex_tagdisplay(sp, ep)
 				    "%2d %s\n", cnt, name);
 			else
 				(void)ex_printf(EXCOOKIE,
-				     "%2d %s\n** %*.*s %s\n",
-				     cnt, name, maxlen, maxlen, "", tp->search);
+				     "%2d %s\n** %*.*s %s\n", cnt, name,
+				     (int)maxlen, (int)maxlen, "", tp->search);
 		else
 			if (tp == NULL || tp->search == NULL)
 				(void)ex_printf(EXCOOKIE, "%2d %*.*s\n",
-				    maxlen, len, name);
+				    (int)maxlen, (int)len, name);
 			else
 				(void)ex_printf(EXCOOKIE, "%2d %-*.*s %s\n",
-				    cnt, maxlen, len, name, tp->search);
+				    cnt, (int)maxlen, (int)len, name,
+				    tp->search);
 	}
 	return (0);
 }
