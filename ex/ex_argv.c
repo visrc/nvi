@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.28 1994/03/14 11:04:16 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:04:16 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.29 1994/05/03 21:39:14 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:39:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -502,6 +502,9 @@ err:		(void)close(output[0]);
 		(void)close(output[1]);
 		return (1);
 	case 0:				/* Utility. */
+		/* The utility has default signal behavior. */
+		sig_end();
+
 		/* Redirect stdout/stderr to the write end of the pipe. */
 		(void)dup2(output[1], STDOUT_FILENO);
 		(void)dup2(output[1], STDERR_FILENO);
@@ -556,5 +559,5 @@ binc_err:	rval = 1;
 	*bpp = bp;		/* *blenp is already updated. */
 
 	/* Wait for the process. */
-	return (proc_wait(sp, (long)pid, sh, 0) | rval);
+	return (proc_wait(sp, (long)pid, sh, 0) || rval);
 }
