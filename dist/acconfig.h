@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.3 1996/02/19 19:32:13 bostic Exp $ (Berkeley) $Date: 1996/02/19 19:32:13 $ */
+/* $Id: acconfig.h,v 8.4 1996/02/20 19:15:48 bostic Exp $ (Berkeley) $Date: 1996/02/20 19:15:48 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -41,6 +41,9 @@
 
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE
+
+/* Define if you have a <sys/select.h> include file. */
+#undef HAVE_SYS_SELECT_H
 
 /* Define if you have the System V style pty calls. */
 #undef HAVE_SYS5_PTY
