@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.12 1996/11/27 12:23:39 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:23:39 $
+# $Id: distrib,v 8.13 1996/12/03 12:12:37 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:12:37 $
 
 # Clean
 #make -f Makefile.in clean
@@ -48,6 +48,12 @@ f=../include/ipc_extern.h
 echo "Building $f"
 rm -f $f
 sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ipc/*.c > $f
+chmod 444 $f
+
+f=../include/ipc_mextern.h
+echo "Building $f"
+rm -f $f
+sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ipc_motif/*.c > $f
 chmod 444 $f
 
 f=../include/options_def.h
