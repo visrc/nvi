@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.11 1993/05/05 20:08:11 bostic Exp $ (Berkeley) $Date: 1993/05/05 20:08:11 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.12 1993/05/05 23:47:06 bostic Exp $ (Berkeley) $Date: 1993/05/05 23:47:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,6 +46,9 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	/* Move to the line. */
 	MOVE(sp, smp - HMAP, 0);
 
+	/* Get the character map. */
+	cname = sp->cname;
+
 	/*
 	 * Special case if we're printing the info/mode line.  Skip printing
 	 * the leading number, as well as other minor setup.  If painting the
@@ -65,6 +68,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		}
 		listset = 0;
 		skip_screens = 0;
+		cols_per_screen = sp->cols;
 		goto iline;
 	}
 
@@ -97,14 +101,14 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 			*xp = 0;
 			*yp = smp - HMAP;
 		}
-		if (smp->lno > file_lline(sp, ep))
-			addch(smp->lno == 1 ?
+		if (smp->lno > file_lline(sp, ep)) {
+			ADDCH(smp->lno == 1 ?
 			    listset && skip_screens == 0 ? '$' : ' ' : '~');
-		else if (p == NULL) {
+		} else if (p == NULL) {
 			GETLINE_ERR(sp, smp->lno);
 			return (1);
 		} else if (listset && skip_screens == 0)
-			addch('$');
+			ADDCH('$');
 		clrtoeol();
 		return (0);
 	}
@@ -118,7 +122,6 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 iline:	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
 
 	/* This is the loop that actually displays lines. */
-	cname = sp->cname;
 	for (count_cols = 0; len; --len) {
 		/* Get the next character and figure out its length. */
 		if ((ch = *(u_char *)p++) == '\t' && !listset)
@@ -172,17 +175,17 @@ iline:	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
 #endif
 		if (ch == '\t' && !listset) {
 			chlen -= offset_in_char;
-			if (chlen <= sizeof(BLANKS) - 1)
-				addnstr(BLANKS, chlen);
-			else
+			if (chlen <= sizeof(BLANKS) - 1) {
+				ADDNSTR(BLANKS, chlen);
+			} else
 				while (chlen--)
 #if DEBUG && 0
-					addch('-');
+					ADDCH('-');
 #else
-					addch(' ');
+					ADDCH(' ');
 #endif
 		} else
-			addnstr(cname[ch].name + offset_in_char, chlen);
+			ADDNSTR(cname[ch].name + offset_in_char, chlen);
 
 		/*
 		 * If the caller wants the cursor value, and this was the
@@ -201,7 +204,7 @@ iline:	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
 	if (listset && len == 0 &&
 	    skip_screens == 0 && count_cols < cols_per_screen) {
 		++count_cols;
-		addch('$');
+		ADDCH('$');
 	}
 
 	/* If didn't paint the whole line, clear the rest of it. */
