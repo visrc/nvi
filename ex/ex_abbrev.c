@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.6 1992/04/05 17:01:02 bostic Exp $ (Berkeley) $Date: 1992/04/05 17:01:02 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.7 1992/04/16 13:44:53 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:44:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,12 +36,12 @@ ex_abbr(cmdp)
 	}
 
 	/*
-	 * Input is the first word, output is everything else, i.e. any
-	 * space characters are included.  This is why we can't parse
-	 * this command in the ex parser itself.
+	 * Abbreviations can't be parsed by the upper-level parser because
+	 * input is the first word and output is everything else, i.e. any
+	 * space characters are included.
 	 */
-	for (input = output = cmdp->string;
-	    *output && !isspace(*output); ++output);
+	for (input = cmdp->string; isspace(*input); ++input);
+	for (output = input; *output && !isspace(*output); ++output);
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
 	if (*output == '\0') {
