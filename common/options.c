@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.25 1992/11/01 22:56:02 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:56:02 $";
+static char sccsid[] = "$Id: options.c,v 5.26 1992/11/03 19:30:23 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:30:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -449,7 +449,7 @@ opts_dump(all)
 {
 	OPTIONS *op;
 	int base, b_num, chcnt, cnt, col, colwidth, curlen, endcol, s_num;
-	int numcols, numrows, row, termwidth;
+	int numcols, numrows, row, tablen, termwidth;
 	int b_op[O_OPTIONCOUNT], s_op[O_OPTIONCOUNT];
 	char nbuf[20];
 
@@ -463,7 +463,8 @@ opts_dump(all)
 	 * and the full line length later on.
 	 */
 	colwidth = -1;
-	termwidth = (curf->cols - 1) / 2 & ~(TAB - 1);
+	tablen = LVAL(O_TABSTOP);
+	termwidth = (curf->cols - 1) / 2 & ~(tablen - 1);
 	for (b_num = s_num = 0, op = opts; op->name; ++op) {
 		if (!all && !ISFSETP(op, OPT_SET))
 			continue;
@@ -491,7 +492,7 @@ opts_dump(all)
 			b_op[b_num++] = cnt;
 	}
 
-	colwidth = (colwidth + TAB) & ~(TAB - 1);
+	colwidth = (colwidth + tablen) & ~(tablen - 1);
 	termwidth = curf->cols - 1;
 	numcols = termwidth / colwidth;
 	if (s_num > numcols) {
@@ -507,7 +508,8 @@ opts_dump(all)
 			chcnt += opts_print(&opts[s_op[base]]);
 			if ((base += numrows) >= s_num)
 				break;
-			while ((cnt = (chcnt + TAB & ~(TAB - 1))) <= endcol) {
+			while ((cnt =
+			    (chcnt + tablen & ~(tablen - 1))) <= endcol) {
 				(void)putc('\t', curf->stdfp);
 				chcnt = cnt;
 			}

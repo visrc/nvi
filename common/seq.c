@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.16 1992/11/02 22:29:25 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:29:25 $";
+static char sccsid[] = "$Id: seq.c,v 5.17 1992/11/03 19:30:10 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:30:10 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -215,13 +215,14 @@ seq_dump(stype, isname)
 	int isname;
 {
 	register SEQ *sp;
-	register int ch, cnt, len;
+	register int ch, cnt, len, tablen;
 	register u_char *p;
 
 	if (seqhead.lnext == (SEQ *)&seqhead)
 		return (0);
 
 	cnt = 0;
+	tablen = LVAL(O_TABSTOP);
 	for (sp = seqhead.lnext; sp != (SEQ *)&seqhead; sp = sp->lnext) {
 		if (stype != sp->stype)
 			continue;
@@ -232,7 +233,7 @@ seq_dump(stype, isname)
 				(void)putc(ch + 0x40, curf->stdfp);
 			} else
 				(void)putc(ch, curf->stdfp);
-		for (len = TAB - len % TAB; len; --len)
+		for (len = tablen - len % tablen; len; --len)
 			(void)putc(' ', curf->stdfp);
 
 		for (p = sp->output; (ch = *p); ++p)
@@ -243,7 +244,7 @@ seq_dump(stype, isname)
 				(void)putc(ch, curf->stdfp);
 
 		if (isname && sp->name) {
-			for (len = TAB - len % TAB; len; --len)
+			for (len = tablen - len % tablen; len; --len)
 				(void)putc(' ', curf->stdfp);
 			for (p = sp->name, len = 0; (ch = *p); ++p, ++len)
 				if (iscntrl(ch)) {
