@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.42 1993/05/08 13:57:53 bostic Exp $ (Berkeley) $Date: 1993/05/08 13:57:53 $";
+static char sccsid[] = "$Id: util.c,v 5.43 1993/05/10 11:13:39 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:13:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,9 +226,6 @@ cursor_check(sp, ep, lnop, cnop)
 		}
 	} else if (*cnop >= len)
 		*cnop = len ? len - 1 : 0;
-
-	/* Always invalidate the cursor -- well-known side effect. */
-	F_SET(sp, S_CUR_INVALID);
 }
 
 /*
