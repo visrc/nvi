@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.23 1996/12/10 21:06:35 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:06:35 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.24 1996/12/11 13:09:15 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:09:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -221,7 +221,7 @@ static	Boolean		process_pipe_input( pread )
     (void)__vi_trans(bp, &len);
 
     if (len > 0) {
-#ifdef TR
+#ifdef TRACE
 	    trace("pipe_input_func: abort with %d in the buffer\n", len);
 #endif
 	    /* call me again later */
@@ -250,7 +250,7 @@ vi_pipe_input_func(client_data, source, id)
     /* Read waiting vi messags and translate to X calls. */
     switch (nr = read( *source, bp + len, blen - len)) {
     case 0:
-#ifdef TR
+#ifdef TRACE
 	    trace("pipe_input_func:  empty input from vi\n");
 #endif
 	    return;
@@ -258,7 +258,7 @@ vi_pipe_input_func(client_data, source, id)
 	    perror("ip_cl: read");
 	    exit (1);
     default:
-#ifdef TR
+#ifdef TRACE
 	    trace("input from vi, %d bytes read\n", nr);
 #endif
 	    break;
@@ -287,7 +287,7 @@ xvi_screen	*this_screen;
     ipb.val2 = this_screen->cols;
     ipb.code = VI_RESIZE;
 
-#ifdef TR
+#ifdef TRACE
     trace("resize_func ( %d x %d )\n", this_screen->rows, this_screen->cols);
 #endif
 
@@ -479,7 +479,7 @@ __vi_expose_func(wid, client_data, call_data)
     if ( call_data == NULL ) {
 
 	/* vi core calls this when it wants a full refresh */
-#ifdef TR
+#ifdef TRACE
 	trace("expose_func:  full refresh\n");
 #endif
 
@@ -500,7 +500,7 @@ __vi_expose_func(wid, client_data, call_data)
 			     );
 
 		/* X calls here when XCopyArea exposes new bits */
-#ifdef TR
+#ifdef TRACE
 		trace("expose_func (X):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
 			     gev->x, gev->y,
 			     gev->width, gev->height,
@@ -524,7 +524,7 @@ __vi_expose_func(wid, client_data, call_data)
 			     );
 
 		/* Motif calls here when DrawingArea is exposed */
-#ifdef TR
+#ifdef TRACE
 		trace("expose_func (Motif):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
 			     xev->x, xev->y,
 			     xev->width, xev->height,
@@ -690,7 +690,7 @@ Cardinal        *cardinal;
 	__vi_send("s", &ipb);
     }
 
-#ifdef TR
+#ifdef TRACE
     trace("insert_string {%.*s}\n", strlen( *str ), *str );
 #endif
 }
@@ -718,7 +718,7 @@ Cardinal        *cardinal;
     if ( ipb.len != 0 ) {
 	ipb.code = VI_STRING;
 	ipb.str = bp;
-#ifdef TR
+#ifdef TRACE
 	trace("key_press {%.*s}\n", ipb.len, bp );
 #endif
 	__vi_send("s", &ipb);
@@ -1273,7 +1273,7 @@ static	void	f_copy( buffer, len )
 	int	*len;
 #endif
 {
-#ifdef TR
+#ifdef TRACE
     trace("f_copy() called");
 #endif
     *buffer	= clipboard;
@@ -1288,7 +1288,7 @@ static	void	f_paste( widget, buffer, length )
     /* NOTE:  when multiple panes are implemented, we need to find
      * the correct screen.  For now, there is only one.
      */
-#ifdef TR
+#ifdef TRACE
     trace("f_paste() called with '%*.*s'\n", length, length, buffer);
 #endif
 }
@@ -1303,7 +1303,7 @@ Widget	widget;
 {
     xvi_screen	*cur_screen;
 
-#ifdef TR
+#ifdef TRACE
     trace("f_clear() called");
 #endif
 
