@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.15 1993/10/04 12:45:51 bostic Exp $ (Berkeley) $Date: 1993/10/04 12:45:51 $";
+static char sccsid[] = "$Id: options.c,v 8.16 1993/10/04 17:34:32 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:34:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,6 +28,7 @@ static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
 static OPTLIST const	*opts_prefix __P((char *));
 static int	 	 opts_print __P((SCR *, OPTLIST const *, OPTION *));
+static u_long		 window_from_baud __P((SCR *));
 
 static OPTLIST const optlist[] = {
 /* O_ALTWERASE */
@@ -212,8 +213,6 @@ opts_init(sp)
 	SCR *sp;
 {
 	OPTLIST const *op;
-	speed_t speed;
-	u_long sval;
 	int cnt;
 	char *s, *argv[2], b1[1024];
 
@@ -260,21 +259,7 @@ opts_init(sp)
 	(void)snprintf(b1, sizeof(b1),
 	    "term=%s", (s = getenv("TERM")) == NULL ? "unknown" : s);
 	SET_DEF(O_TERM, b1);
-
-	/*
-	 * The default window option value is:
-	 *		8 if baud rate <=  600
-	 *	       16 if baud rate <= 1200
-	 *	LINES - 1 if baud rate  > 1200
-	 */
-	speed = cfgetospeed(&sp->gp->original_termios);
-	if (speed <= 600)
-		sval = 8;
-	else if (speed <= 1200)
-		sval = 16;
-	else
-		sval = O_VAL(sp, O_LINES) - 1;
-	(void)snprintf(b1, sizeof(b1), "window=%lu", sval);
+	(void)snprintf(b1, sizeof(b1), "window=%lu", window_from_baud(sp));
 	SET_DEF(O_WINDOW, b1);
 	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
 
@@ -724,4 +709,57 @@ opts_cmp(a, b)
         const void *a, *b;
 {
         return(strcmp(((OPTLIST *)a)->name, ((OPTLIST *)b)->name));
+}
+
+static u_long
+window_from_baud(sp)
+	SCR *sp;
+{
+	speed_t v;
+
+	/*
+	 * The default window option values are:
+	 *		8 if baud rate <=  600
+	 *	       16 if baud rate <= 1200
+	 *	LINES - 1 if baud rate  > 1200
+	 */
+	switch (v = cfgetospeed(&sp->gp->original_termios)) {
+	case B50:
+	case B75:
+	case B110:
+	case B134:
+	case B150:
+	case B200:
+	case B300:
+	case B600:
+		return (8);
+		break;
+	case B1200:
+		return (16);
+		break;
+	case B0:				/* Hangup -- ignore. */
+	case B1800:
+	case B2400:
+	case B4800:
+	case B9600:
+	case B19200:
+	case B38400:
+		return (O_VAL(sp, O_LINES) - 1);
+	default:
+		/*
+		 * EXTA and EXTB aren't required by POSIX 1003.1, and
+		 * are almost certainly the same as some of the above
+		 * values, so they can't be part of the case statement.
+		 */
+#if EXTA
+		if (v == EXTA)
+			return (O_VAL(sp, O_LINES) - 1);
+#endif
+#if EXTB
+		if (v == EXTB)
+			return (O_VAL(sp, O_LINES) - 1);
+#endif
+		msgq(sp, M_ERR, "Unknown terminal baud rate %u.\n", v);
+		return (O_VAL(sp, O_LINES) - 1);
+	}
 }
