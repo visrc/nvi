@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_delete.c,v 10.7 1996/05/18 12:23:00 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:23:00 $";
+static const char sccsid[] = "$Id: v_delete.c,v 10.8 1996/05/19 12:02:04 bostic Exp $ (Berkeley) $Date: 1996/05/19 12:02:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,9 +79,11 @@ v_delete(sp, vp)
 
 	/*
 	 * !!!
-	 * Cursor movements, other than those caused by a line mode
-	 * command moving to another line, historically reset the
-	 * relative position.
+	 * Cursor movements, other than those caused by a line mode command
+	 * moving to another line, historically reset the relative position.
+	 *
+	 * This currently matches the check made in v_yank(), I'm hoping that
+	 * they should be consistent...
 	 */  
 	if (!F_ISSET(vp, VM_LMODE)) {
 		F_CLR(vp, VM_RCM_MASK);
