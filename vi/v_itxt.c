@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.44 1994/09/16 14:17:58 bostic Exp $ (Berkeley) $Date: 1994/09/16 14:17:58 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.45 1994/10/11 18:24:57 bostic Exp $ (Berkeley) $Date: 1994/10/11 18:24:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -876,7 +876,7 @@ set_txt_std(sp, vp, init)
 	 * For compatibility reasons, we try and make it all work here.  I
 	 * offer no hope that this is right, but it's probably pretty close.
 	 */
-	if (O_ISSET(sp, O_WRAPMARGIN) &&
+	if ((O_ISSET(sp, O_WRAPLEN) || O_ISSET(sp, O_WRAPMARGIN)) &&
 	    (!MAPPED_KEYS_WAITING(sp) || !F_ISSET(vp, VC_C1SET)))
 		LF_SET(TXT_WRAPMARGIN);
 	return (flags);
