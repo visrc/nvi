@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.1 1993/06/09 22:26:09 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:09 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.2 1993/08/16 12:18:17 bostic Exp $ (Berkeley) $Date: 1993/08/16 12:18:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,8 +53,12 @@ ex_viusage(sp, ep, cmdp)
 	VIKEYS const *kp;
 	int key;
 
-	key = *cmdp->argv[0];
+	key = cmdp->argv[0][0];
 	if (key > MAXVIKEY)
+		goto nokey;
+
+	/* Special case: '[' and ']' commands. */
+	if ((key == '[' || key == ']') && cmdp->argv[0][1] != key)
 		goto nokey;
 
 	kp = &vikeys[key];
