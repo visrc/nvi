@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.19 1992/11/04 10:42:38 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:42:38 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.20 1992/11/07 18:48:00 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:48:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 
+#include <ctype.h>
 #include <curses.h>
 #include <limits.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@ static char sccsid[] = "$Id: v_ex.c,v 5.19 1992/11/04 10:42:38 bostic Exp $ (Ber
 #include "extern.h"
 
 static size_t exlinecount, extotalcount;
+static enum { NOTSET, NEXTLINE, THISLINE } continueline;
 
 /*
  * v_ex --
@@ -79,7 +81,7 @@ v_ex(vp, fm, tm, rp)
 	 * trust anything.  This section of code has been a remarkably
 	 * fertile place for bugs.  Don't trust ANYTHING.
 	 */
-	if (!(curf->flags & F_NEWSESSION)) {
+	if (!FF_ISSET(curf, F_NEWSESSION)) {
 		v_leaveex();
 		curf->olno = OOBLNO;
 		rp->lno = curf->lno;
@@ -103,6 +105,7 @@ void
 v_startex()
 {
 	exlinecount = extotalcount = 0;
+	continueline = NOTSET;
 }
 
 /*
@@ -133,28 +136,33 @@ v_exwrite(cookie, line, llen)
 	const char *line;
 	int llen;
 {
+	static size_t lcont;
 	EXF *ep;
 	int ch, len, rlen;
 	char *p;
 
 	for (ep = cookie, rlen = llen; llen;) {
 		/* Newline delimits. */
-		if ((p = memchr(line, '\n', llen)) == NULL)
+		if ((p = memchr(line, '\n', llen)) == NULL) {
 			len = llen;
-		else
+			lcont = len;
+			continueline = NEXTLINE;
+		} else
 			len = p - line;
 
 		/* Fold if past end-of-screen. */
-		if (len > ep->cols)
+		if (len > ep->cols) {
+			continueline = NOTSET;
 			len = ep->cols;
+		}
 		llen -= len + (p == NULL ? 0 : 1);
-		
-		/* First line is a special case. */
-		if (extotalcount != 0) {
+
+		if (continueline != THISLINE && extotalcount != 0) {
 			/*
-			 * Scroll the screen.  Instead of scrolling the entire
-			 * screen, delete the line above the first line output
-			 * so that we preserve the maximum amount of the screen.
+			 * First line is a special case.  Scroll the screen.
+			 * Instead of scrolling the entire screen, delete the
+			 * line above the first line output so that we preserve
+			 * the maximum amount of the screen.
 			 */
 			if (extotalcount >= SCREENSIZE(ep)) {
 				MOVE(0, 0);
@@ -174,10 +182,21 @@ v_exwrite(cookie, line, llen)
 				exlinecount = 0;
 			}
 		}
-		++extotalcount;
-		++exlinecount;
 
-		MOVE(SCREENSIZE(ep), 0);
+		switch(continueline) {
+		case NEXTLINE:
+			continueline = THISLINE;
+			/* FALLTHROUGH */
+		case NOTSET:
+			MOVE(SCREENSIZE(ep), 0);
+			++extotalcount;
+			++exlinecount;
+			break;
+		case THISLINE:
+			MOVE(SCREENSIZE(ep), lcont);
+			continueline = NOTSET;
+			break;
+		}
 		addbytes(line, len);
 
 		if (len < ep->cols)
