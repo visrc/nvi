@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.14 1995/11/01 19:07:42 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:07:42 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.15 1995/11/01 19:10:18 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:10:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -731,16 +731,14 @@ vs_modeline(sp)
 	}
 
 	/*
-	 * If more than one file displayed on the screen, display the file name
-	 * and clear the rest of the line.  I changed it to always show the file
-	 * name once, but people objected.
+	 * Move to the last line on the screen.  If more than one screen in
+	 * the display, show the file name.  Clear the rest of the line.
 	 */
 	(void)gp->scr_move(sp, LASTLINE(sp), 0);
-	if (IS_SPLIT(sp)) {
+	if (IS_SPLIT(sp))
 		for (; *p != '\0'; ++p)
 			(void)gp->scr_addstr(sp,
 			    KEY_NAME(sp, *p), KEY_LEN(sp, *p));
-	}
 	(void)gp->scr_clrtoeol(sp);
 
 	/*
