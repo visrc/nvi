@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 8.2 1993/12/19 17:24:56 bostic Exp $ (Berkeley) $Date: 1993/12/19 17:24:56 $
+ *	$Id: mem.h,v 8.3 1994/03/07 17:48:52 bostic Exp $ (Berkeley) $Date: 1994/03/07 17:48:52 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -136,5 +136,12 @@
 	if ((p = (cast)realloc(p, size)) == NULL)			\
 		msgq(sp, M_SYSERR, NULL);				\
 }
+
+/* 
+ * Versions of memmove(3) and memset(3) that use the size of the
+ * initial pointer to figure out how much memory to manipulate.
+ */
+#define	MEMMOVE(p, t, len)	memmove(p, t, (len) * sizeof(*(p)))
+#define	MEMSET(p, value, len)	memset(p, value, (len) * sizeof(*(p)))
 
 int	binc __P((SCR *, void *, size_t *, size_t));
