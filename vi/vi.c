@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.4 1993/07/06 07:33:04 bostic Exp $ (Berkeley) $Date: 1993/07/06 07:33:04 $";
+static char sccsid[] = "$Id: vi.c,v 8.5 1993/07/06 15:16:26 bostic Exp $ (Berkeley) $Date: 1993/07/06 15:16:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,8 +48,9 @@ vi(sp, ep)
 		return (v_end(sp));
 
 	/* Command initialization. */
-	cmd.keyword = dot.keyword = dotmotion.keyword = NULL;
-	cmd.kbuflen = dot.kbuflen = dotmotion.kbuflen = 0;
+	memset(&cmd, 0, sizeof(VICMDARG));
+	memset(&dot, 0, sizeof(VICMDARG));
+	memset(&dotmotion, 0, sizeof(VICMDARG));
 
 	for (eval = 0;;) {
 		if (!term_more_pseudo(sp) && log_cursor(sp, ep))
@@ -240,6 +241,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	u_long hold;
 	int esc_bell, key;
 
+	/* Clean up the command structure. */
 	memset(&vp->vpstartzero, 0,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
