@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.24 1994/07/17 11:45:37 bostic Exp $ (Berkeley) $Date: 1994/07/17 11:45:37 $
+.\"	$Id: ex.cmd.roff,v 8.25 1994/09/02 19:02:10 bostic Exp $ (Berkeley) $Date: 1994/09/02 19:02:10 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -374,13 +374,70 @@ None.
 .KY abbrev
 .IP "ab[brev] lhs rhs"
 Add an abbreviation to the current abbreviation list.
-In
+When inserting text in
 .CO vi ,
-if
-.LI lhs
-is entered such that it is preceded and followed by characters
-that cannot be part of a word, it is replaced by the string
+each time a non-word character is entered after a word character,
+a set of characters ending at the word character are checked for
+a match with
+.LI lhs .
+If a match is found, they are replaced with
 .LI rhs .
+The set of characters that are checked for a match are defined as follows,
+for inexplicable historical reasons.
+If only one or two characters were entered before the non-word character
+that triggered the check,
+and after the beginning of the insertion,
+or the beginning of the line or the file,
+or the last
+.LI <blank>
+character that was entered,
+then the one or the both characters are checked for a match.
+Otherwise, the set includes both characters,
+as well as the characters that precede them that are the same word
+class (i.e. word or non-word) as the
+.b second
+to last character entered before the non-word character that triggered
+the check,
+back to the first
+.LI <blank> character,
+the beginning of the insertion,
+or the beginning of the line or the file.
+.sp
+For example, the abbreviations:
+.sp
+.ne 3v
+.ft C
+.TS
+r r r.
+:abbreviate	abc	ABC
+:abbreviate	#i	#include
+:abbreviate	/*#i	/*#include
+.TE
+.ft R
+will all work, while the abbreviations:
+.sp
+.ne 2v
+.ft C
+.TS
+r r r.
+:abbreviate	a#i	A#include
+:abbreviate	/*	/********************
+.TE
+.ft R
+will not work, and are not be permitted by
+.CO nvi .
+.sp
+To keep the abbreviation expansion from happening,
+the character immediately following the
+.LI lhs
+characters should be quoted with a
+.LI <literal-next>
+character.
+.sp
+The replacement
+.LI rhs
+is itself subject to both further abbreviation expansion and further
+map expansion.
 .SS
 .SP Line:
 Unchanged.
@@ -837,7 +894,7 @@ to have two different macro definitions at the same time: one for command
 mode and one for input mode.
 .sp
 Whitespace characters require escaping with a
-.LI <literal next>
+.LI <literal-next>
 character to be entered in the
 .LI lhs
 string in visual mode.
