@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.11 1995/09/21 12:07:30 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:30 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.12 1995/09/28 10:38:57 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:38:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,7 +57,7 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 {
 	const char *name;
 	pid_t pid;
-	int nf, rval;
+	int nf;
 	char *p;
 
 	/* Flush messages and enter canonical mode. */
@@ -84,8 +84,7 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
 		msgq(sp, M_SYSERR, "vfork");
-		rval = 1;
-		break;
+		return (1);
 	case 0:				/* Utility. */
 		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
 			name = O_STR(sp, O_SHELL);
@@ -99,10 +98,7 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 		_exit(127);
 		/* NOTREACHED */
 	default:			/* Parent. */
-		rval = 0;
-		if (proc_wait(sp, (long)pid, cmd, 0))
-			rval = 1;
-		break;
+		return (proc_wait(sp, (long)pid, cmd, 0, 0));
 	}
-	return (rval);
+	/* NOTREACHED */
 }

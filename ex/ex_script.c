@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.6 1995/09/21 12:07:28 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:28 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.7 1995/09/28 10:39:14 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:39:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -595,7 +595,7 @@ sscr_end(sp)
 	    (void)close(sc->sh_slave);
 
 	/* This should have killed the child. */
-	rval = proc_wait(sp, (long)sc->sh_pid, "script-shell", 0);
+	rval = proc_wait(sp, (long)sc->sh_pid, "script-shell", 0, 0);
 
 	/* Free memory. */
 	FREE(sc->sh_prompt, sc->sh_prompt_len);

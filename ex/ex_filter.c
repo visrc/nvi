@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.11 1995/09/25 11:11:31 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:11:31 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.12 1995/09/28 10:39:07 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:39:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -258,7 +258,7 @@ err:		if (input[0] != -1)
 
 		/* Wait for the parent-writer. */
 		rval |= proc_wait(sp,
-		    (long)parent_writer_pid, "parent-writer", 1);
+		    (long)parent_writer_pid, "parent-writer", 0, 1);
 
 		/* Delete any lines written to the utility. */
 		if (rval == 0 && ftype == FILTER_BANG &&
@@ -279,7 +279,7 @@ err:		if (input[0] != -1)
 	}
 	F_CLR(sp->ep, F_MULTILOCK);
 
-uwait:	return (proc_wait(sp, (long)utility_pid, cmd, 0) || rval);
+uwait:	return (proc_wait(sp, (long)utility_pid, cmd, 0, 0) || rval);
 }
 
 /*
@@ -292,24 +292,21 @@ uwait:	return (proc_wait(sp, (long)utility_pid, cmd, 0) || rval);
  * rules get you.  I'm using a long based on the belief that nobody is
  * going to make it unsigned and it's unlikely to be a quad.
  *
- * PUBLIC: int proc_wait __P((SCR *, long, const char *, int));
+ * PUBLIC: int proc_wait __P((SCR *, long, const char *, int, int));
  */
 int
-proc_wait(sp, pid, cmd, okpipe)
+proc_wait(sp, pid, cmd, silent, okpipe)
 	SCR *sp;
 	long pid;
 	const char *cmd;
-	int okpipe;
+	int silent, okpipe;
 {
 	extern const char *const sys_siglist[];
 	size_t len;
 	int nf, pstat;
 	char *p;
 
-	/*
-	 * Wait for the utility to finish.  We can get interrupted
-	 * by SIGALRM, just ignore it.
-	 */
+	/* Wait for the utility, ignoring interruptions. */
 	for (;;) {
 		errno = 0;
 		if (waitpid((pid_t)pid, &pstat, 0) != -1)
@@ -337,15 +334,23 @@ proc_wait(sp, pid, cmd, okpipe)
 			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
+
 	if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
-		for (; isblank(*cmd); ++cmd);
-		p = msg_print(sp, cmd, &nf);
-		len = strlen(p);
-		msgq(sp, M_ERR, "%.*s%s: exited with status %d",
-		    MIN(len, 20), p, len > 20 ? " ..." : "",
-		    WEXITSTATUS(pstat));
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		/*
+		 * Remain silent for "normal" errors when doing shell file
+		 * name expansions, they almost certainly indicate nothing
+		 * more than a failure to match.
+		 */
+		if (!silent) {
+			for (; isblank(*cmd); ++cmd);
+			p = msg_print(sp, cmd, &nf);
+			len = strlen(p);
+			msgq(sp, M_ERR, "%.*s%s: exited with status %d",
+			    MIN(len, 20), p, len > 20 ? " ..." : "",
+			    WEXITSTATUS(pstat));
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 		return (1);
 	}
 	return (0);
