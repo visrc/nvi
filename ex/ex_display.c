@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 5.8 1993/04/12 14:35:29 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:35:29 $";
+static char sccsid[] = "$Id: ex_display.c,v 5.9 1993/04/20 18:41:49 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:41:49 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -30,7 +30,7 @@ ex_bdisplay(sp, ep, cmdp)
 	int cnt;
 
 	for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
-		if (cb->txthdr.next == NULL || cb->txthdr.next != &cb->txthdr)
+		if (cb->txthdr.next == NULL || cb->txthdr.next == &cb->txthdr)
 			continue;
 		db(sp, charname(sp, cnt), cb);
 	}
