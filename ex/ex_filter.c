@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.15 1993/09/14 08:24:23 bostic Exp $ (Berkeley) $Date: 1993/09/14 08:24:23 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.16 1993/09/27 17:32:34 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:32:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,7 +226,7 @@ err:		if (input[0] != -1)
 		 * input pipe.  Ifp is closed by ex_writefp.
 		 */
 		(void)close(output[0]);
-		_exit(ex_writefp(sp, ep, "filter", ifp, fm, tm, 0));
+		_exit(ex_writefp(sp, ep, "filter", ifp, fm, tm, NULL, NULL));
 
 		/* NOTREACHED */
 	default:			/* Parent-reader. */
