@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.43 1995/01/11 16:09:11 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:09:11 $
+.\"	$Id: vi.cmd.roff,v 8.44 1995/01/11 19:11:31 bostic Exp $ (Berkeley) $Date: 1995/01/11 19:11:31 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -2978,14 +2978,14 @@ the previous input is replayed, as if just entered.
 .IP "<control-D>"
 If the previous character on the line was an autoindent character,
 erase characters to move the cursor back to the column immediately
-after the previous (1-based) column which is an even multiple of the
+after the previous (1-based) column which is a multiple of the
 .OP shiftwidth
 edit option.
 This may result in any number of
 .LI <tab>
 and
 .LI <space>
-characters preceding the cursor to be changed.
+characters preceding the cursor being changed.
 .sp
 Otherwise, if the
 .OP autoindent
@@ -3012,14 +3012,14 @@ Insert sufficient
 and
 .LI <space>
 characters to move the cursor forward to the column immediately
-after the next (1-based) column which is an even multiple of the
+after the next (1-based) column which is a multiple of the
 .OP shiftwidth
 edit option.
 This may result in any number of
 .LI <tab>
 and
 .LI <space>
-characters preceding the cursor to be changed.
+characters preceding the cursor being changed.
 .sp
 Historically,
 .CO vi
