@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.165 1994/09/18 17:23:31 bostic Exp $ (Berkeley) $Date: 1994/09/18 17:23:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.166 1994/09/18 18:28:44 bostic Exp $ (Berkeley) $Date: 1994/09/18 18:28:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -453,7 +453,11 @@ loop:	if (nl) {
 		 * !!!
 		 * Historic vi permitted pretty much anything to follow the
 		 * substitute command, e.g. "s/e/E/|s|sgc3p" was fine.  Make
-		 * the command "sgc" work.
+		 * the command "sgc" work.  Since the following characters
+		 * all have to be flags, i.e. alphabetics, we can let the
+		 * substitute command routine return errors if it was some
+		 * illegal command string.  This code will break if an "sg"
+		 * or similar command is ever added.
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
@@ -475,7 +479,10 @@ loop:	if (nl) {
 				goto err;
 			}
 
-		/* Some commands are either not implemented or turned off. */
+		/*
+		 * Hook for commands that are either not yet implemented
+		 * or turned off.
+		 */
 skip:		if (F_ISSET(cp, E_NOPERM)) {
 			msgq(sp, M_ERR,
 			    "101|The %s command is not currently supported",
