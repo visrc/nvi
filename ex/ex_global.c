@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.8 1995/02/01 09:16:14 bostic Exp $ (Berkeley) $Date: 1995/02/01 09:16:14 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.9 1995/02/02 15:09:23 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:09:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -272,6 +272,14 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 
 		/* Someone's unhappy, time to stop. */
 		if (INTERRUPTED(sp))
+			break;
+		/*
+		 * If we've exited or switched to a new file/screen, the rest of
+		 * the global command is discarded.  This is historic practice,
+		 * and changing it would be difficult.
+		 */
+		if (F_ISSET(sp,
+		    S_EXIT | S_EXIT_FORCE | S_GLOBAL_ABORT | S_SSWITCH))
 			break;
 	}
 
