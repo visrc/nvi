@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.69 1996/06/09 10:37:05 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:37:05 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.70 1996/06/09 11:04:18 bostic Exp $ (Berkeley) $Date: 1996/06/09 11:04:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -374,11 +374,11 @@ vs_msg(sp, mtype, line, len)
 		 * If the message ends in a period, discard it, we want to
 		 * gang messages where possible.
 		 */
+		len -= t - s;
 		if (len == 0 && (e - s) > 1 && s[(e - s) - 1] == '.')
 			--e;
 		vs_output(sp, mtype, s, e - s);
 
-		len -= t - s;
 		if (len != 0)
 			vs_output(sp, M_NONE, "\n", 1);
 
