@@ -33,6 +33,7 @@ Nvi
 OS
 POSIX
 PostScript
+QQ
 RE's
 README
 RECDIR
@@ -157,6 +158,7 @@ mkexrc
 modeful
 modeline
 modelines
+ms
 msgcat
 ndo
 nex
@@ -260,9 +262,11 @@ viusage
 wa
 whitespace
 wi
+wl
 wm
 wn
 wq
+wraplen
 wrapmargin
 wrapscan
 writeany
