@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.74 2001/12/16 18:18:54 skimo Exp $ (Berkeley) $Date: 2001/12/16 18:18:54 $";
+static const char sccsid[] = "$Id: ex.c,v 10.75 2004/03/16 14:13:35 skimo Exp $ (Berkeley) $Date: 2004/03/16 14:13:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -912,7 +912,7 @@ two_addr:	switch (ecp->addrcnt) {
 			ecp->addr1.cno = ecp->addr2.cno = sp->cno;
 			break;
 		case 1:				/* Default to first address. */
-			ecp->addrcnt = 2;
+			//ecp->addrcnt = 2;	/* XXX Was this needed ??? */
 			ecp->addr2 = ecp->addr1;
 			break;
 		case 2:
