@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.1 1995/04/13 17:18:41 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:41 $
+ *	$Id: key.h,v 10.2 1995/05/05 18:46:07 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:46:07 $
  */
 
 /*
@@ -194,14 +194,3 @@ extern KEYLIST keylist[];
 #define	TXT_SHOWMATCH	0x01000000	/* Option: showmatch. */
 #define	TXT_TTYWERASE	0x02000000	/* Option: ttywerase. */
 #define	TXT_WRAPMARGIN	0x04000000	/* Option: wrapmargin. */
-
-/* Support event/key routines. */
-int	   v_event_flush __P((SCR *, u_int));
-int	   v_event_handler __P((SCR *, EVENT *, u_int32_t *));
-int	   v_event_pull __P((SCR *, EVENT **));
-int	   v_event_push __P((SCR *, CHAR_T *, size_t, u_int));
-void	   v_key_ilookup __P((SCR *));
-int	   v_key_init __P((SCR *));
-size_t	 __v_key_len __P((SCR *, ARG_CHAR_T));
-CHAR_T	*__v_key_name __P((SCR *, ARG_CHAR_T));
-int	 __v_key_val __P((SCR *, ARG_CHAR_T));

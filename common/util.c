@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 10.3 1995/04/13 17:18:42 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:42 $";
+static char sccsid[] = "$Id: util.c,v 10.4 1995/05/05 18:46:16 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:46:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,8 @@ static char sccsid[] = "$Id: util.c,v 10.3 1995/04/13 17:18:42 bostic Exp $ (Ber
 /*
  * binc --
  *	Increase the size of a buffer.
+ *
+ * PUBLIC: void *binc __P((SCR *, void *, size_t *, size_t));
  */
 void *
 binc(sp, bp, bsizep, min)
@@ -72,6 +74,8 @@ binc(sp, bp, bsizep, min)
  *	Set the column number of the first non-blank character
  *	including or after the starting column.  On error, set
  *	the column to 0, it's safest.
+ *
+ * PUBLIC: int nonblank __P((SCR *, recno_t, size_t *));
  */
 int
 nonblank(sp, lno, cnop)
@@ -111,6 +115,8 @@ nonblank(sp, lno, cnop)
 /*
  * tail --
  *	Return tail of a path.
+ *
+ * PUBLIC: char *tail __P((char *));
  */
 char *
 tail(path)
@@ -126,6 +132,8 @@ tail(path)
 /*
  * v_strdup --
  *	Strdup for wide character strings with an associated length.
+ *
+ * PUBLIC: CHAR_T *v_strdup __P((SCR *, const CHAR_T *, size_t));
  */
 CHAR_T *
 v_strdup(sp, str, len)
@@ -144,8 +152,10 @@ v_strdup(sp, str, len)
 }
 
 /*
- * get_uslong --
+ * nget_uslong --
  *      Get an unsigned long, checking for overflow.
+ *
+ * PUBLIC: enum nresult nget_uslong __P((u_long *, const char *, char **, int));
  */
 enum nresult
 nget_uslong(valp, p, endp, base)
@@ -164,8 +174,10 @@ nget_uslong(valp, p, endp, base)
 }
 
 /*
- * get_slong --
+ * nget_slong --
  *      Convert a signed long, checking for overflow and underflow.
+ *
+ * PUBLIC: enum nresult nget_slong __P((long *, const char *, char **, int));
  */
 enum nresult
 nget_slong(valp, p, endp, base)
@@ -194,6 +206,12 @@ nget_slong(valp, p, endp, base)
 #include <varargs.h>
 #endif
 
+/*
+ * TRACE --
+ *	debugging trace routine.
+ *
+ * PUBLIC: void TRACE __P((SCR *, const char *, ...));
+ */
 void
 #ifdef __STDC__
 TRACE(SCR *sp, const char *fmt, ...)

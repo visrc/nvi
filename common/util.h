@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 10.1 1995/04/13 17:18:44 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:44 $
+ *	$Id: util.h,v 10.2 1995/05/05 18:46:22 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:46:22 $
  */
 
 /* Macros to init/set/clear/test flags. */
@@ -63,18 +63,3 @@ enum nresult { NUM_ERR, NUM_OK, NUM_OVER, NUM_UNDER };
 	 NUM_OK)
 #define	NADD_USLONG(sp, v1, v2)						\
 	(NPFITS(ULONG_MAX, (v1), (v2)) ? NUM_OK : NUM_OVER)
-enum nresult nget_slong __P((long *, const char *, char **, int));
-enum nresult nget_uslong __P((u_long *, const char *, char **, int));
-
-/* Function prototypes that don't seem to belong anywhere else. */
-int	 nonblank __P((SCR *, recno_t, size_t *));
-char	*tail __P((char *));
-
-/* Digraphs (not currently real). */
-int	digraph __P((SCR *, int, int));
-int	digraph_init __P((SCR *));
-void	digraph_save __P((SCR *, int));
-
-#ifdef DEBUG
-void	TRACE __P((SCR *, const char *, ...));
-#endif

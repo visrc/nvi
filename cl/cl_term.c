@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 9.7 1995/04/13 17:19:53 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:53 $";
+static char sccsid[] = "$Id: cl_term.c,v 9.8 1995/05/05 18:47:01 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:47:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,6 +105,8 @@ static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
 /*
  * cl_term_init --
  *	Initialize the special keys defined by the termcap/terminfo entry.
+ *
+ * PUBLIC: int cl_term_init __P((SCR *));
  */
 int
 cl_term_init(sp)
@@ -207,6 +209,8 @@ cl_term_init(sp)
 /*
  * cl_term_end --
  *	End the special keys defined by the termcap/terminfo entry.
+ *
+ * PUBLIC: int cl_term_end __P((SCR *));
  */
 int
 cl_term_end(sp)
@@ -230,6 +234,8 @@ cl_term_end(sp)
 /*
  * cl_fmap --
  *	Map a function key.
+ *
+ * PUBLIC: int cl_fmap __P((SCR *, seq_t, CHAR_T *, size_t, CHAR_T *, size_t));
  */
 int
 cl_fmap(sp, stype, from, flen, to, tlen)
@@ -298,6 +304,8 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 /*
  * cl_keypad --
  *	Put the keypad/cursor arrows into or out of application mode.
+ *
+ * PUBLIC: int cl_keypad __P((int));
  */
 int
 cl_keypad(on)
@@ -320,6 +328,8 @@ cl_keypad(on)
 /*
  * cl_optchange --
  *	Curses screen specific "option changed" routine.
+ *
+ * PUBLIC: int cl_optchange __P((SCR *, int));
  */
 int
 cl_optchange(sp, opt)
@@ -389,6 +399,8 @@ cl_optchange(sp, opt)
 /*
  * cl_ssize --
  *	Return the terminal size.
+ *
+ * PUBLIC: int cl_ssize __P((SCR *, int, recno_t *, size_t *));
  */
 int
 cl_ssize(sp, sigwinch, rowp, colp)
@@ -543,6 +555,8 @@ cl_putenv(s)
 /*
  * cl_putchar --
  *	Functional version of putchar, for tputs.
+ *
+ * PUBLIC: void cl_putchar __P((int));
  */
 void
 cl_putchar(ch)

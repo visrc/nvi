@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 10.1 1995/04/13 17:18:37 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:37 $
+ *	$Id: seq.h,v 10.2 1995/05/05 18:45:53 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:45:53 $
  */
 
 /*
@@ -42,13 +42,3 @@ struct _seq {
 #define	SEQ_USERDEF	0x08		/* If user defined. */
 	u_int8_t flags;
 };
-
-void	 seq_close __P((GS *));
-int	 seq_delete __P((SCR *, CHAR_T *, size_t, seq_t));
-int	 seq_dump __P((SCR *, seq_t, int));
-SEQ	*seq_find __P((SCR *, SEQ **, EVENT *, CHAR_T *, size_t, seq_t, int *));
-void	 seq_init __P((SCR *));
-int	 seq_mdel __P((SEQ *));
-int	 seq_save __P((SCR *, FILE *, char *, seq_t));
-int	 seq_set __P((SCR *, CHAR_T *, size_t,
-	    CHAR_T *, size_t, CHAR_T *, size_t, seq_t, int));
