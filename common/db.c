@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.2 1993/06/29 16:53:04 bostic Exp $ (Berkeley) $Date: 1993/06/29 16:53:04 $";
+static char sccsid[] = "$Id: db.c,v 8.3 1993/07/06 08:55:05 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:55:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -188,6 +188,7 @@ file_aline(sp, ep, update, lno, p, len)
 	size_t len;
 {
 	DBT data, key;
+	recno_t lline;
 
 #if DEBUG && 0
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
@@ -203,9 +204,9 @@ file_aline(sp, ep, update, lno, p, len)
 	 * to an empty file.
 	 */
 	if (lno == 0) {
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, ep, &lline))
 			return (1);
-		if (lno == 0)
+		if (lline == 0)
 			F_SET(sp, S_REDRAW);
 	}
 
@@ -263,6 +264,7 @@ file_iline(sp, ep, lno, p, len)
 	size_t len;
 {
 	DBT data, key;
+	recno_t lline;
 
 #if DEBUG && 0
 	TRACE(sp,
@@ -271,9 +273,9 @@ file_iline(sp, ep, lno, p, len)
 
 	/* Very nasty special case.  See comment in file_aline(). */
 	if (lno == 1) {
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, ep, &lline))
 			return (1);
-		if (lno == 0)
+		if (lline == 0)
 			F_SET(sp, S_REDRAW);
 	}
 
