@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.13 1993/10/03 10:44:16 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:44:16 $";
+static char sccsid[] = "$Id: options_f.c,v 8.14 1993/10/03 15:22:42 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:22:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,10 +91,6 @@ DECL(f_columns)
 
 DECL(f_keytime)
 {
-#define	BIGKEYTIME	20
-	if (val > BIGKEYTIME)
-		msgq(sp, M_VINFO,
-		    "A keytime of %lu tenths of a second is quite large.", val);
 	O_VAL(sp, O_KEYTIME) = val;
 	return (0);
 }
@@ -146,6 +142,12 @@ DECL(f_lines)
 	return (0);
 }
 
+DECL(f_lisp)
+{
+	msgq(sp, M_ERR, "The lisp option is not implemented.");
+	return (0);
+}
+
 DECL(f_list)
 {
 	if (turnoff)
@@ -154,6 +156,12 @@ DECL(f_list)
 		O_SET(sp, O_LIST);
 
 	F_SET(sp, S_REFORMAT | S_REDRAW);
+	return (0);
+}
+
+DECL(f_matchtime)
+{
+	O_VAL(sp, O_MATCHTIME) = val;
 	return (0);
 }
 
@@ -196,6 +204,14 @@ DECL(f_mesg)
 	return (0);
 }
 
+/*
+ * f_modelines --
+ *	This has been documented in historical systems as both "modeline"
+ *	and as "modelines".  Regardless of the name, this option represents
+ *	a security problem of mammoth proportions, not to mention a stunning
+ *	example of what your intro CS professor referred to as the perils of
+ *	mixing code and data.  Don't add it, or I will kill you.
+ */
 DECL(f_modelines)
 {
 	if (!turnoff)
@@ -211,6 +227,12 @@ DECL(f_number)
 		O_SET(sp, O_NUMBER);
 
 	F_SET(sp, S_REFORMAT | S_REDRAW);
+	return (0);
+}
+
+DECL(f_optimize)
+{
+	msgq(sp, M_ERR, "The optimize option is not implemented.");
 	return (0);
 }
 

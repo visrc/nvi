@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.4 1993/10/03 10:43:07 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:43:07 $
+ *	$Id: options.h,v 8.5 1993/10/03 15:22:59 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:22:59 $
  */
 
 typedef struct _option {
@@ -50,10 +50,13 @@ int	f_columns __P((struct _scr *, struct _option *, char *, u_long));
 int	f_keytime __P((struct _scr *, struct _option *, char *, u_long));
 int	f_leftright __P((struct _scr *, struct _option *, char *, u_long));
 int	f_lines __P((struct _scr *, struct _option *, char *, u_long));
+int	f_lisp __P((struct _scr *, struct _option *, char *, u_long));
 int	f_list __P((struct _scr *, struct _option *, char *, u_long));
+int	f_matchtime __P((struct _scr *, struct _option *, char *, u_long));
 int	f_mesg __P((struct _scr *, struct _option *, char *, u_long));
 int	f_modelines __P((struct _scr *, struct _option *, char *, u_long));
 int	f_number __P((struct _scr *, struct _option *, char *, u_long));
+int	f_optimize __P((struct _scr *, struct _option *, char *, u_long));
 int	f_paragraph __P((struct _scr *, struct _option *, char *, u_long));
 int	f_readonly __P((struct _scr *, struct _option *, char *, u_long));
 int	f_ruler __P((struct _scr *, struct _option *, char *, u_long));
