@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.summary,v 8.1 1993/06/08 12:51:48 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:51:48 $
+.\"	$Id: ex.summary,v 8.2 1996/06/27 19:33:20 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:33:20 $
 .\"
 .ds p \v'-0.2'.\v'+0.2'
 .ds U \s-2UNIX\s+2
@@ -376,7 +376,7 @@ be added prior to line 1.
 \&.
 \fR:
 .fi
-T}	\^
+T}
 .SP
 \fR(.,.+1)\fBjoin	j	T{
 Join lines together, adjusting white space (spaces
@@ -387,7 +387,7 @@ T}	T{
 Resulting line is printed
 :
 .fi
-T}	\^
+T}
 .TE
 .bp
 .TS
