@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: options.h,v 10.15 1996/05/04 18:53:05 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:53:05 $
+ *	$Id: options.h,v 10.16 1996/05/16 08:07:20 bostic Exp $ (Berkeley) $Date: 1996/05/16 08:07:20 $
  */
 
 /*
@@ -95,4 +95,4 @@ enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
 /* Options array. */
 extern OPTLIST const optlist[];
 
-#include "options_define.h"
+#include "options_def.h"
