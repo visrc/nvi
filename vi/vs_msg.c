@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.39 1995/11/11 11:12:15 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:12:15 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.40 1995/11/11 12:34:16 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:34:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -534,8 +534,11 @@ vs_ex_resolve(sp, continuep)
 	}
 
 	/* If ex changed the underlying screen, redraw from scratch. */
-	if (F_ISSET(sp, S_SCR_EXWROTE) || F_ISSET(vip, VIP_N_REDRAW))
+	if (F_ISSET(sp, S_SCR_EXWROTE) || F_ISSET(vip, VIP_N_EX_REDRAW)) {
 		F_SET(sp, S_SCR_REDRAW);
+		if (F_ISSET(sp, S_SCR_EXWROTE))
+			F_SET(vip, VIP_N_EX_PAINT);
+	}
 
 	/*
 	 * Whew.  We're finally back home, after what feels like years.

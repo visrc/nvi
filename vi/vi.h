@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.12 1995/10/03 12:25:21 bostic Exp $ (Berkeley) $Date: 1995/10/03 12:25:21 $
+ *	$Id: vi.h,v 10.13 1995/11/11 12:34:00 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:34:00 $
  */
 
 /* Definition of a vi "word". */
@@ -292,13 +292,14 @@ typedef struct _vi_private {
 
 #define	VIP_CUR_INVALID	0x0001	/* Cursor position is unknown. */
 #define	VIP_DIVIDER	0x0002	/* Divider line was displayed. */
-#define	VIP_N_REDRAW	0x0004	/* Screen needs to be redrawn. */
-#define	VIP_N_REFRESH	0x0008	/* Screen needs refreshing. */
-#define	VIP_N_RENUMBER	0x0010	/* Screen needs to be renumbered. */
-#define	VIP_RCM_LAST	0x0020	/* Cursor drawn to the last column. */
-#define	VIP_S_MODELINE	0x0040	/* Skip next modeline refresh. */
-#define	VIP_S_REFRESH	0x0080	/* Skip next refresh. */
-	u_int8_t flags;
+#define	VIP_N_EX_PAINT	0x0004	/* Clear and repaint when ex finishes. */
+#define	VIP_N_EX_REDRAW	0x0008	/* Schedule an S_SCR_REDRAW when ex finishes. */
+#define	VIP_N_REFRESH	0x0010	/* Repaint (from SMAP) on the next refresh. */
+#define	VIP_N_RENUMBER	0x0020	/* Renumber screen on the next refresh. */
+#define	VIP_RCM_LAST	0x0040	/* Cursor drawn to the last column. */
+#define	VIP_S_MODELINE	0x0080	/* Skip next modeline refresh. */
+#define	VIP_S_REFRESH	0x0100	/* Skip next refresh. */
+	u_int16_t flags;
 } VI_PRIVATE;
 
 /* Vi private area. */

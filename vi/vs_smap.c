@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.15 1995/11/10 10:25:42 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:25:42 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.16 1995/11/11 12:34:21 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:34:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ vs_change(sp, lno, op)
 	 */
 	if (!F_ISSET(sp, S_INPUT_INFO) &&
 	    (F_ISSET(sp, S_SCR_EXWROTE) || VIP(sp)->totalcount > 1)) {
-		F_SET(vip, VIP_N_REDRAW);
+		F_SET(vip, VIP_N_EX_REDRAW);
 		return (0);
 	}
 
