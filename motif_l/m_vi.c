@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.31 1996/12/17 10:46:19 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:46:19 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.32 1996/12/17 14:53:06 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:53:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,7 +249,7 @@ static	Boolean		process_pipe_input( pread )
 
     if (len > 0) {
 #ifdef TRACE
-	    trace("pipe_input_func: abort with %d in the buffer\n", len);
+	    vtrace("vi_input_func: abort with %d in the buffer\n", len);
 #endif
 	    /* call me again later */
 	    return False;
@@ -278,7 +278,7 @@ vi_input_func(client_data, source, id)
     switch (nr = read( *source, bp + len, blen - len)) {
     case 0:
 #ifdef TRACE
-	    trace("pipe_input_func:  empty input from vi\n");
+	    vtrace("vi_input_func:  empty input from vi\n");
 #endif
 	    return;
     case -1:
@@ -286,7 +286,7 @@ vi_input_func(client_data, source, id)
 	    exit (1);
     default:
 #ifdef TRACE
-	    trace("input from vi, %d bytes read\n", nr);
+	    vtrace("input from vi, %d bytes read\n", nr);
 #endif
 	    break;
     }
@@ -315,7 +315,7 @@ xvi_screen	*this_screen;
     ipb.code = VI_RESIZE;
 
 #ifdef TRACE
-    trace("resize_func ( %d x %d )\n", this_screen->rows, this_screen->cols);
+    vtrace("resize_func ( %d x %d )\n", this_screen->rows, this_screen->cols);
 #endif
 
     /* send up the pipe */
@@ -507,7 +507,7 @@ __vi_expose_func(wid, client_data, call_data)
 
 	/* vi core calls this when it wants a full refresh */
 #ifdef TRACE
-	trace("expose_func:  full refresh\n");
+	vtrace("expose_func:  full refresh\n");
 #endif
 
 	XClearWindow( XtDisplay(this_screen->area),
@@ -528,7 +528,7 @@ __vi_expose_func(wid, client_data, call_data)
 
 		/* X calls here when XCopyArea exposes new bits */
 #ifdef TRACE
-		trace("expose_func (X):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
+		vtrace("expose_func (X):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
 			     gev->x, gev->y,
 			     gev->width, gev->height,
 			     gev->count);
@@ -552,7 +552,7 @@ __vi_expose_func(wid, client_data, call_data)
 
 		/* Motif calls here when DrawingArea is exposed */
 #ifdef TRACE
-		trace("expose_func (Motif):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
+		vtrace("expose_func (Motif): (x=%d,y=%d,w=%d,h=%d), count=%d\n",
 			     xev->x, xev->y,
 			     xev->width, xev->height,
 			     xev->count);
@@ -718,7 +718,7 @@ Cardinal        *cardinal;
     }
 
 #ifdef TRACE
-    trace("insert_string {%.*s}\n", strlen( *str ), *str );
+    vtrace("insert_string {%.*s}\n", strlen( *str ), *str );
 #endif
 }
 
@@ -746,7 +746,7 @@ Cardinal        *cardinal;
 	ipb.code = VI_STRING;
 	ipb.str1 = bp;
 #ifdef TRACE
-	trace("key_press {%.*s}\n", ipb.len1, bp );
+	vtrace("key_press {%.*s}\n", ipb.len1, bp );
 #endif
 	vi_send("a", &ipb);
     }
@@ -775,7 +775,7 @@ static	void				scrollbar_moved( widget, ptr, cbs )
      */
     if ( scroll_block ) {
 #ifdef TRACE
-	trace( "punting scroll request with %d in buffer\n", len );
+	vtrace( "punting scroll request with %d in buffer\n", len );
 #endif
 	return;
     }
@@ -784,16 +784,16 @@ static	void				scrollbar_moved( widget, ptr, cbs )
 #ifdef TRACE
     switch ( cbs->reason ) {
 	case XmCR_VALUE_CHANGED:
-	    trace( "scrollbar VALUE_CHANGED %d\n", cbs->value );
+	    vtrace( "scrollbar VALUE_CHANGED %d\n", cbs->value );
 	    break;
 	case XmCR_DRAG:
-	    trace( "scrollbar DRAG %d\n", cbs->value );
+	    vtrace( "scrollbar DRAG %d\n", cbs->value );
 	    break;
 	default:
-	    trace( "scrollbar <default> %d\n", cbs->value );
+	    vtrace( "scrollbar <default> %d\n", cbs->value );
 	    break;
     }
-    trace("scrollto {%d}\n", cbs->value );
+    vtrace("scrollto {%d}\n", cbs->value );
 #endif
 
     /* Send the new cursor position. */
@@ -1365,7 +1365,7 @@ static	void	f_copy( buffer, len )
 #endif
 {
 #ifdef TRACE
-    trace("f_copy() called");
+    vtrace("f_copy() called");
 #endif
     *buffer	= clipboard;
     *len	= clipboard_length;
@@ -1380,7 +1380,7 @@ static	void	f_paste( widget, buffer, length )
      * the correct screen.  For now, there is only one.
      */
 #ifdef TRACE
-    trace("f_paste() called with '%*.*s'\n", length, length, buffer);
+    vtrace("f_paste() called with '%*.*s'\n", length, length, buffer);
 #endif
 }
 
@@ -1395,7 +1395,7 @@ Widget	widget;
     xvi_screen	*cur_screen;
 
 #ifdef TRACE
-    trace("f_clear() called");
+    vtrace("f_clear() called");
 #endif
 
     XtVaGetValues( widget, XmNuserData, &cur_screen, 0 );

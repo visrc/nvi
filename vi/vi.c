@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.63 1996/12/11 13:06:25 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:06:25 $";
+static const char sccsid[] = "$Id: vi.c,v 10.64 1996/12/17 14:53:30 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:53:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1261,13 +1261,13 @@ v_comlog(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	trace(sp, "vcmd: %c", vp->key);
+	vtrace(sp, "vcmd: %c", vp->key);
 	if (F_ISSET(vp, VC_BUFFER))
-		trace(sp, " buffer: %c", vp->buffer);
+		vtrace(sp, " buffer: %c", vp->buffer);
 	if (F_ISSET(vp, VC_C1SET))
-		trace(sp, " c1: %lu", vp->count);
+		vtrace(sp, " c1: %lu", vp->count);
 	if (F_ISSET(vp, VC_C2SET))
-		trace(sp, " c2: %lu", vp->count2);
-	trace(sp, " flags: 0x%x\n", vp->flags);
+		vtrace(sp, " c2: %lu", vp->count2);
+	vtrace(sp, " flags: 0x%x\n", vp->flags);
 }
 #endif

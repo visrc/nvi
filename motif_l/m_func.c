@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.17 1996/12/14 14:04:00 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:04:00 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.18 1996/12/17 14:53:06 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:53:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ vi_addstr(ipbp)
 	IP_BUF *ipbp;
 {
 #ifdef TRACE
-	trace("addstr() {%.*s}\n", ipbp->len1, ipbp->str1);
+	vtrace("addstr() {%.*s}\n", ipbp->len1, ipbp->str1);
 #endif
 	/* Add to backing store. */
 	memcpy(CharAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
