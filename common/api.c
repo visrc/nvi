@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.2 1995/02/16 13:09:06 bostic Exp $ (Berkeley) $Date: 1995/02/16 13:09:06 $";
+static char sccsid[] = "$Id: api.c,v 8.3 1995/04/13 17:13:43 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:13:43 $";
 #endif /* not lint */
 
 #include "api.h"
@@ -194,7 +194,7 @@ api_iscreen(sp, nspp)
 {
 	SCR *bot, *top;
 
-	if (svi_split(sp, &top, &bot))
+	if (vs_split(sp, &top, &bot))
 		return (1);
 	*nspp = sp == top ? bot : top;
 	return (0);
