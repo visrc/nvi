@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.32 1996/03/18 19:19:02 bostic Exp $ (Berkeley) $Date: 1996/03/18 19:19:02 $
+#	$Id: Makefile.in,v 8.33 1996/03/21 19:38:38 bostic Exp $ (Berkeley) $Date: 1996/03/21 19:38:38 $
 
 CC=	@CC@
 CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
@@ -329,7 +329,7 @@ v_sentence.o: ../vi/v_sentence.c
 v_status.o: ../vi/v_status.c
 	 $(CC) $(CFLAGS) $?
 v_txt.o: ../vi/v_txt.c
-	 $(CC) `echo '$(CFLAGS)' | sed 's/-O[^ 	]*//'` $?
+	 $(CC) -c @v_txt_CFLAGS@ -I. -I../include @CPPFLAGS@ $?
 v_ulcase.o: ../vi/v_ulcase.c
 	 $(CC) $(CFLAGS) $?
 v_undo.o: ../vi/v_undo.c
