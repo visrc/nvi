@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.13 1993/11/22 19:03:10 bostic Exp $ (Berkeley) $Date: 1993/11/22 19:03:10 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.14 1993/12/02 10:58:30 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:58:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -34,7 +34,7 @@ ex_shell(sp, ep, cmdp)
 	char buf[MAXPATHLEN];
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	return (ex_exec_proc(sp, O_STR(sp, O_SHELL), buf, "\n", NULL));
+	return (ex_exec_proc(sp, buf, "\n", NULL));
 }
 
 /*
@@ -42,10 +42,9 @@ ex_shell(sp, ep, cmdp)
  *	Run a separate process.
  */
 int
-ex_exec_proc(sp, shell, cmd, p1, p2)
+ex_exec_proc(sp, cmd, p1, p2)
 	SCR *sp;
-	const u_char *shell, *cmd;
-	char *p1, *p2;
+	char *cmd, *p1, *p2;
 {
 	struct sigaction act, oact;
 	struct termios term;
@@ -105,13 +104,13 @@ ex_exec_proc(sp, shell, cmd, p1, p2)
 		(void)signal(SIGINT, SIG_DFL);
 		(void)signal(SIGQUIT, SIG_DFL);
 
-		if ((name = strrchr((char *)shell, '/')) == NULL)
-			name = (char *)shell;
+		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
+			name = O_STR(sp, O_SHELL);
 		else
 			++name;
-		execl((char *)shell, name, "-c", cmd, NULL);
-		msgq(sp, M_ERR,
-		    "Error: execl: %s: %s", shell, strerror(errno));
+		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
+		msgq(sp, M_ERR, "Error: execl: %s: %s",
+		    O_STR(sp, O_SHELL), strerror(errno));
 		_exit(127);
 		/* NOTREACHED */
 	}
