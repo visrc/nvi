@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.18 1992/10/26 09:06:44 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:06:44 $";
+static char sccsid[] = "$Id: cut.c,v 5.19 1992/10/29 14:35:40 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:35:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -311,8 +311,8 @@ put(buffer, cp, rp, append)
 	mark_insert(cp, rp);
 
 	/* Reporting... */
-	rptlabel = "put";
-	rptlines = lno - cp->lno;
+	curf->rptlabel = "put";
+	curf->rptlines = lno - cp->lno;
 
 	return (0);
 }

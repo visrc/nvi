@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.11 1992/10/26 17:44:14 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:14 $";
+static char sccsid[] = "$Id: delete.c,v 5.12 1992/10/29 14:36:32 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:36:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <errno.h>
 #include <limits.h>
-#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "vi.h"
@@ -35,8 +36,8 @@ delete(ep, fm, tm, lmode)
 	int eof;
 
 #if DEBUG && 1
-	TRACE("delete: from %lu/%d to %lu/%d\n",
-	    fm->lno, fm->cno, tm->lno, tm->cno);
+	TRACE("delete: from %lu/%d to %lu/%d%s\n",
+	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " (LINE MODE)" : "");
 #endif
 	/* Case 1 -- delete in line mode. */
 	if (lmode) {
@@ -152,8 +153,8 @@ done:	mark_delete(fm, tm, lmode);
  	 * XXX
 	 * Wrong, if deleting characters.
 	 */
-	rptlines = tm->lno - fm->lno + 1;
-	rptlabel = "deleted";
+	curf->rptlines = tm->lno - fm->lno + 1;
+	curf->rptlabel = "deleted";
 
 	return (0);
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.13 1992/10/26 17:44:22 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:22 $
+ *	$Id: exf.h,v 5.14 1992/10/29 14:36:18 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:36:18 $
  */
 
 #ifndef _EXF_H_
@@ -40,6 +40,11 @@ typedef struct exf {
 	size_t c_len;			/* Cached line length. */
 	recno_t c_lno;			/* Cached line number. */
 	recno_t c_nlines;		/* Lines in the file. */
+
+	FILE *stdfp;			/* Ex/vi output function. */
+
+	recno_t	rptlines;		/* Lines modified by command. */
+	char *rptlabel;			/* How lines modified. */
 
 	DB *sdb;			/* Shadow db structure. */
 
