@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.7 1993/11/18 10:55:04 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:04 $
+ *	$Id: msg.h,v 8.8 1993/11/18 13:47:39 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:47:39 $
  */
 
 /*
@@ -27,13 +27,13 @@ LIST_HEAD(_msgh, _msg);
 
 struct _msg {
 	LIST_ENTRY(_msg) q;	/* Linked list of messages. */
-	char *mbuf;		/* Message. */
-	size_t blen;		/* Message buffer length. */
-	size_t len;		/* Message length. */
+	char	*mbuf;		/* Message buffer. */
+	size_t	 blen;		/* Message buffer length. */
+	size_t	 len;		/* Message length. */
 
 #define	M_EMPTY		0x01	/* No message. */
 #define	M_INV_VIDEO	0x02	/* Inverse video. */
-	u_int flags;		/* Flags. */
+	u_int	 flags;		/* Flags. */
 };
 
 /* Messages. */
