@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.14 1994/03/14 10:44:29 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:44:29 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.15 1994/04/24 14:18:57 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:18:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,10 +49,6 @@ static void goto_adjust __P((VICMDARG *));
  * M commands -- for large lines, they may all refer to the same line and
  * will result in no movement at all.
  *
- * This implementation does the scrolling (^B, ^D, ^F, ^U, ^Y, ^E), and the
- * cursor positioning commands (H, L, M) commands using logical lines, not
- * physical.
- *
  * Another issue is that page and half-page scrolling commands historically
  * moved to the first non-blank character in the new line.  If the line is
  * approximately the same size as the screen, this loses because the cursor
@@ -60,6 +56,10 @@ static void goto_adjust __P((VICMDARG *));
  * this implementation, scrolling commands set the cursor to the first non-
  * blank character if the line changes because of the scroll.  Otherwise,
  * the cursor is left alone.
+ *
+ * This implementation does the scrolling (^B, ^D, ^F, ^U, ^Y, ^E), and the
+ * cursor positioning commands (H, L, M) commands using logical lines, not
+ * physical.
  */
 
 /*
@@ -259,15 +259,13 @@ v_hpageup(sp, ep, vp)
 	 * Half screens always succeed unless already at SOF.
 	 *
 	 * !!!
-	 * Half screens set the scroll value, even if the command ultimately
-	 * failed, in historic vi.  Probably a don't care.
+	 * Half screens set the scroll value, even if the command
+	 * ultimately failed, in historic vi.  Probably a don't care.
 	 */
 	if (F_ISSET(vp, VC_C1SET))
-		O_VAL(sp, O_SCROLL) = vp->count;
-	else
-		vp->count = O_VAL(sp, O_SCROLL);
+		sp->defscroll = vp->count;
 
-	if (sp->s_down(sp, ep, &vp->m_stop, (recno_t)O_VAL(sp, O_SCROLL), 1))
+	if (sp->s_down(sp, ep, &vp->m_stop, sp->defscroll, 1))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -287,15 +285,13 @@ v_hpagedown(sp, ep, vp)
 	 * Half screens always succeed unless already at EOF.
 	 *
 	 * !!!
-	 * Half screens set the scroll value, even if the command ultimately
-	 * failed, in historic vi.  Probably a don't care.
+	 * Half screens set the scroll value, even if the command
+	 * ultimately failed, in historic vi.  Probably a don't care.
 	 */
 	if (F_ISSET(vp, VC_C1SET))
-		O_VAL(sp, O_SCROLL) = vp->count;
-	else
-		vp->count = O_VAL(sp, O_SCROLL);
+		sp->defscroll = vp->count;
 
-	if (sp->s_up(sp, ep, &vp->m_stop, (recno_t)O_VAL(sp, O_SCROLL), 1))
+	if (sp->s_up(sp, ep, &vp->m_stop, sp->defscroll, 1))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
