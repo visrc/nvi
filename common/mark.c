@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: mark.c,v 10.12 1996/03/30 13:46:54 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:54 $";
+static const char sccsid[] = "$Id: mark.c,v 10.13 1996/07/19 19:11:37 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:11:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ static LMARK *mark_find __P((SCR *, ARG_CHAR_T));
  * if we've given the line to v_ntext.c:v_ntext() for editing.  Historic vi
  * would move to the first non-blank on the line when the mark location was
  * past the end of the line.  This can be complicated by deleting to a mark
- * that has disappeared using the ` command.  Historic vi vi treated this as
+ * that has disappeared using the ` command.  Historic vi treated this as
  * a line-mode motion and deleted the line.  This implementation complains to
  * the user.
  *
