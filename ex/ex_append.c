@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.10 1995/02/01 12:29:32 bostic Exp $ (Berkeley) $Date: 1995/02/01 12:29:32 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.11 1995/02/02 11:28:12 bostic Exp $ (Berkeley) $Date: 1995/02/02 11:28:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,9 +90,8 @@ aci(sp, cmdp, cmd)
 
 	NEEDFILE(sp, cmdp->cmd);
 
-	rval = 0;
 	if (F_ISSET(sp, S_GLOBAL)) {
-		if (cmdp->argc == 0 || cmdp->argv[0]->len == 0)
+		if (cmdp->aci_len == 0)
 			return (0);
 	} else {
 		/*
@@ -180,45 +179,62 @@ aci(sp, cmdp, cmd)
 	/*
 	 * !!!
 	 * Input lines specified on the ex command line (see the comment in
-	 * ex.c:ex_cmd()) lines are separated by <backslash><newline> pairs.
-	 * If there is a trailing delimiter pair an empty line is inserted.
-	 * There may also be a leading delimiter pair, which is ignored unless
-	 * it's also a trailing delimiter pair.
+	 * ex.c:ex_cmd()) lines are separated by <newline>s.  If there is a
+	 * trailing delimiter an empty line is inserted.  There may also be
+	 * a leading delimiter, which is ignored unless it's also a trailing
+	 * delimiter.  It is possible to encounter a termination line, i.e.
+	 * a single '.', in a global command, but not necessary if the text
+	 * insert command was the last of the global commands.
 	 */
-	if (cmdp->argc != 0)
-		for (p = cmdp->argv[0]->bp,
-		    len = cmdp->argv[0]->len; len > 0; p = t) {
-			for (t = p; len > 0; ++t, --len)
-				if (t[0] == '\\' && len > 1 && t[1] == '\n')
+	if (cmdp->aci_len != 0) {
+		for (p = cmdp->aci_text, len = cmdp->aci_len; len > 0; p = t) {
+			for (t = p; len > 0 && t[0] != '\n'; ++t, --len);
+			if (t != p || len == 0) {
+				if (F_ISSET(sp, S_GLOBAL) &&
+				    t - p == 1 && p[0] == '.') {
+					++t;
+					--len;
 					break;
-			if (len == 0 || t != p) {
+				}
 				if (file_aline(sp, 1, m.lno, p, t - p))
 					goto err;
 				sp->lno = ++m.lno;
 			}
 			if (len != 0) {
-				t += 2;
-				if ((len -= 2) == 0) {
+				++t;
+				if (--len == 0) {
 					if (file_aline(sp, 1, m.lno, "", 0))
 						goto err;
 					sp->lno = ++m.lno;
 				}
 			}
 		}
+		/*
+		 * If there's any remaining text, we're in a global, and
+		 * there's more command to parse.
+		 */
+		if (len != 0) {
+			cmdp->aci_text = t;
+			cmdp->aci_len = len;
+		} else
+			cmdp->aci_text = NULL;
+	}
+	if (F_ISSET(sp, S_GLOBAL))
+		return (0);
 
-	if (!F_ISSET(sp, S_GLOBAL))
-		for (tp = sp->tiqp->cqh_first;
-		    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
-			if (file_aline(sp, 1, m.lno, tp->lb, tp->len))
-				goto err;
-			sp->lno = ++m.lno;
-		}
+	for (tp = sp->tiqp->cqh_first;
+	    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
+		if (file_aline(sp, 1, m.lno, tp->lb, tp->len))
+			goto err;
+		sp->lno = ++m.lno;
+	}
 
+	rval = 0;
 	if (0) {
 err:		rval = 1;
 	}
 
-	if (!F_ISSET(sp, S_GLOBAL) && F_ISSET(sp, S_VI)) {
+	if (F_ISSET(sp, S_VI)) {
 		sp->tiqp = sv_tiqp;
 		text_lfree(&tiq);
 
