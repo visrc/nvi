@@ -10,8 +10,8 @@ cd $S/docs/USD.doc/vi.ref && \
 cd $S/docs/USD.doc/vi.man && make clean vi.0 vi.0.ps && chmod 444 vi.0 vi.0.ps
 
 # increment the version numbers
-setenv X VERSION
-cd $S && sco $X && echo "go to $VERSION" | sccs delget $X
+setenv X version.h
+cd $S/ex && sco $X && echo "go to $VERSION" | sccs delget $X
 setenv X README
 cd $S && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
 cd $S/docs && vi changelog
