@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.2 1993/07/06 15:02:13 bostic Exp $ (Berkeley) $Date: 1993/07/06 15:02:13 $";
+static char sccsid[] = "$Id: search.c,v 8.3 1993/07/06 18:00:47 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:00:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,24 +18,23 @@ static char sccsid[] = "$Id: search.c,v 8.2 1993/07/06 15:02:13 bostic Exp $ (Be
 #include "vi.h"
 
 static int	check_delta __P((SCR *, EXF *, long, recno_t));
-static int	check_word __P((SCR *, char **, int *, int *));
+static int	check_word __P((SCR *, char **, int *));
 static int	ctag_conv __P((SCR *, char **, int *));
 static int	get_delta __P((SCR *, char **, long *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
-		    char *, char **, long *, int *, u_int));
+		    char *, char **, long *, u_int));
 
 /*
  * resetup --
  *	Set up a search for a regular expression.
  */
 static int
-resetup(sp, rep, dir, ptrn, epp, deltap, wordoffsetp, flags)
+resetup(sp, rep, dir, ptrn, epp, deltap, flags)
 	SCR *sp;
 	regex_t **rep;
 	enum direction dir;
 	char *ptrn, **epp;
 	long *deltap;
-	int *wordoffsetp;
 	u_int flags;
 {
 	int delim, eval, re_flags, replaced;
@@ -43,7 +42,6 @@ resetup(sp, rep, dir, ptrn, epp, deltap, wordoffsetp, flags)
 
 	/* Set return information the default. */
 	*deltap = 0;
-	*wordoffsetp = 0;
 
 	/*
 	 * Use saved pattern if no pattern supplied, or if only a delimiter
@@ -118,7 +116,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		}
 
 		/* Replace any word search pattern. */
-		if (check_word(sp, &ptrn, &replaced, wordoffsetp))
+		if (check_word(sp, &ptrn, &replaced))
 			return (1);
 	} else if (LF_ISSET(SEARCH_TAG)) {
 		if (ctag_conv(sp, &ptrn, &replaced))
@@ -160,7 +158,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	recno_t lastlno, lno;
 	size_t coff, len;
 	long delta;
-	int eval, wordoffset, wrapped;
+	int eval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -172,7 +170,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, &wordoffset, flags))
+	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, flags))
 		return (1);
 
 	/*
@@ -285,9 +283,6 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			rm->lno = lno;
 			rm->cno = match[0].rm_so;
 
-			if (wordoffset)
-				++rm->cno;
-
 			if (rm->cno >= len)
 				rm->cno = len ? len - 1 : 0;
 		}
@@ -309,7 +304,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	recno_t firstlno, lno;
 	size_t coff, len, last;
 	long delta;
-	int eval, wordoffset, wrapped;
+	int eval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -321,7 +316,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, &delta, &wordoffset, flags))
+	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, &delta, flags))
 		return (1);
 
 	/* If in the first column, start searching on the previous line. */
@@ -427,9 +422,6 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			}
 			rm->lno = lno;
 			rm->cno = last;
-
-			if (wordoffset)
-				++rm->cno;
 		}
 		return (0);
 	}
@@ -441,37 +433,37 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
  *	Vi special cases the pattern "\<ptrn\>", doing "word" searches.
  */
 static int
-check_word(sp, ptrnp, replacedp, wordoffsetp)
+check_word(sp, ptrnp, replacedp)
 	SCR *sp;
 	char **ptrnp;
-	int *replacedp, *wordoffsetp;
+	int *replacedp;
 {
 	size_t blen, needspace;
 	int cnt;
 	char *bp, *p, *t;
 
 	/* Count up the "word" patterns. */
-	*replacedp = *wordoffsetp = 0;
+	*replacedp = 0;
 	for (p = *ptrnp, cnt = 0; *p; ++p)
 		if (p[0] == '\\' && p[1] && p[1] == '<')
 			++cnt;
 	if (cnt == 0)
 		return (0);
 
-	/* Report back if altered the start of the search pattern. */
-	p = *ptrnp;
-	if (p[0] == '\\' && p[1] == '<')
-		*wordoffsetp = 1;
-
 	/* Get enough memory to hold the final pattern. */
-	needspace = strlen(*ptrnp) + cnt * sizeof(RE_NOTINWORD) * 2;
+	needspace =
+	    strlen(*ptrnp) + cnt * (sizeof(RE_WSTART) + sizeof(RE_WSTOP));
 	GET_SPACE(sp, bp, blen, needspace);
 
 	for (p = *ptrnp, t = bp; *p;)
-		if (p[0] == '\\' && p[1] &&
-		    p[1] == '<' || p[1] == '>') {
-			memmove(t, RE_NOTINWORD, sizeof(RE_NOTINWORD) - 1);
-			t += sizeof(RE_NOTINWORD) - 1;
+		if (p[0] == '\\' && p[1] && p[1] == '<' || p[1] == '>') {
+			if (p[1] == '<') {
+				memmove(t, RE_WSTART, sizeof(RE_WSTART) - 1);
+				t += sizeof(RE_WSTART) - 1;
+			} else {
+				memmove(t, RE_WSTOP, sizeof(RE_WSTOP) - 1);
+				t += sizeof(RE_WSTOP) - 1;
+			}
 			p += 2;
 		} else
 			*t++ = *p++;
