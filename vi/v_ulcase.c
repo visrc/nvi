@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 8.1 1993/06/09 22:28:30 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:30 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 8.2 1993/11/04 09:16:58 bostic Exp $ (Berkeley) $Date: 1993/11/04 09:16:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,10 +21,12 @@ static char sccsid[] = "$Id: v_ulcase.c,v 8.1 1993/06/09 22:28:30 bostic Exp $ (
 
 /*
  * v_ulcase -- [count]~
- *	This function toggles upper & lower case letters.  In historic
- *	vi, the count was ignored.  It would have been better if there
- *	had been an associated motion, but it's too late to change it
- *	now.
+ *	Toggle upper & lower case letters.
+ *
+ * !!!
+ * In historic vi, the count was ignored.  It would have been better
+ * if there had been an associated motion, but it's too late to change
+ * it now.
  */
 int
 v_ulcase(sp, ep, vp, fm, tm, rp)
@@ -43,6 +45,7 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 	GET_SPACE(sp, bp, blen, 256);
 
 	/*
+	 * !!!
 	 * Historic vi didn't permit ~ to cross newline boundaries.
 	 * I can think of no reason why it shouldn't, which at least
 	 * lets you auto-repeat through a paragraph.
