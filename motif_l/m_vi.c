@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.30 1996/12/14 14:03:39 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:03:39 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.31 1996/12/17 10:46:19 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:46:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,6 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.30 1996/12/14 14:03:39 bostic Exp 
 #include "../common/common.h"
 #include "../ip/ip.h"
 #include "m_motif.h"
-#include "m_util.h"
 #include "m_extern.h"
 #include "vi_mextern.h"
 #include "ipc_extern.h"
@@ -246,7 +245,7 @@ static	Boolean		process_pipe_input( pread )
     len += (pread) ? *((int *)pread) : 0;
 
     /* Parse to data end or partial message. */
-    (void)__vi_trans(bp, &len);
+    (void)vi_translate(bp, &len);
 
     if (len > 0) {
 #ifdef TRACE
@@ -320,7 +319,7 @@ xvi_screen	*this_screen;
 #endif
 
     /* send up the pipe */
-    __vi_send("12", &ipb);
+    vi_send("12", &ipb);
 }
 
 
@@ -686,7 +685,7 @@ command(widget, event, str, cardinal)
 		if (table[i].name[6] == (*str)[6] &&
 		    strcmp(table[i].name, *str) == 0) {
 			ipb.code = table[i].code;
-			__vi_send(table[i].count ? "1" : NULL, &ipb);
+			vi_send(table[i].count ? "1" : NULL, &ipb);
 			return;
 		}
 
@@ -715,7 +714,7 @@ Cardinal        *cardinal;
     if ( ipb.len1 != 0 ) {
 	ipb.code = VI_STRING;
 	ipb.str1 = *str;
-	__vi_send("a", &ipb);
+	vi_send("a", &ipb);
     }
 
 #ifdef TRACE
@@ -749,7 +748,7 @@ Cardinal        *cardinal;
 #ifdef TRACE
 	trace("key_press {%.*s}\n", ipb.len1, bp );
 #endif
-	__vi_send("a", &ipb);
+	vi_send("a", &ipb);
     }
 
 }
@@ -800,7 +799,7 @@ static	void				scrollbar_moved( widget, ptr, cbs )
     /* Send the new cursor position. */
     ipb.code = VI_C_SETTOP;
     ipb.val1 = cbs->value;
-    (void)__vi_send("1", &ipb);
+    (void)vi_send("1", &ipb);
 }
 
 
@@ -1034,7 +1033,7 @@ vi_create_editor(name, parent, exitp)
 	multi_click_length = XtGetMultiClickTime( display );
 
 	/* check the resource database for interesting resources */
-	XutConvertResources( parent,
+	__XutConvertResources( parent,
 			     vi_progname,
 			     resource,
 			     XtNumber(resource)
@@ -1243,7 +1242,7 @@ Cardinal        *cardinal;
     ipb.code = VI_MOUSE_MOVE;
     ipb.val1 = ypos;
     ipb.val2 = xpos;
-    (void)__vi_send("12", &ipb);
+    (void)vi_send("12", &ipb);
 
     /* click-click, and we go for words, lines, etc */
     if ( ev->time - last_click < multi_click_length )

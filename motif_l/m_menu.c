@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.20 1996/12/14 14:04:55 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:04:55 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.21 1996/12/17 10:46:45 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:46:45 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -36,7 +36,7 @@ static	Widget	main_widget = NULL;
 
 /* This module defines the menu structure for vi.  Each menu
  * item has an action routine associated with it.  For the most
- * part, those actions will simply call __vi_send with vi commands.
+ * part, those actions will simply call vi_send with vi commands.
  * others will pop up file selection dialogs and use them for
  * vi commands, and other will have to have special actions.
  *
@@ -97,7 +97,7 @@ String	str;
     ipb.code = VI_STRING;
     ipb.str1 = buffer;
     ipb.len1 = strlen(buffer);
-    __vi_send("a", &ipb);
+    vi_send("a", &ipb);
 }
 
 
@@ -228,7 +228,7 @@ file_command(w, code, prompt)
 		ipb.code = code;
 		ipb.str1 = file;
 		ipb.len1 = strlen(file);
-		__vi_send("a", &ipb);
+		vi_send("a", &ipb);
 	}
 }
 
@@ -262,7 +262,7 @@ ma_save(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_WRITE;
-	(void)__vi_send(NULL, &ipb);
+	(void)vi_send(NULL, &ipb);
 }
 
 static void
@@ -281,7 +281,7 @@ ma_wq(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_WQ;
-	(void)__vi_send(NULL, &ipb);
+	(void)vi_send(NULL, &ipb);
 }
 
 static void
@@ -292,7 +292,7 @@ ma_quit(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_QUIT;
-	(void)__vi_send(NULL, &ipb);
+	(void)vi_send(NULL, &ipb);
 }
 
 static void
@@ -303,7 +303,7 @@ ma_undo(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_UNDO;
-	(void)__vi_send(NULL, &ipb);
+	(void)vi_send(NULL, &ipb);
 }
 
 #if defined(__STDC__)

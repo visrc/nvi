@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_ruler.c,v 8.2 1996/12/16 17:24:03 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:24:03 $";
+static const char sccsid[] = "$Id: m_ruler.c,v 8.3 1996/12/17 10:47:44 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:47:44 $";
 #endif /* not lint */
 
 /* This module implements a dialog for the text ruler
@@ -41,7 +41,6 @@ static const char sccsid[] = "$Id: m_ruler.c,v 8.2 1996/12/16 17:24:03 bostic Ex
 #include <stdio.h>
 
 #include "../common/common.h"
-#include "m_util.h"
 #include "m_motif.h"
 #include "vi_mextern.h"
 
@@ -164,7 +163,7 @@ static	Widget	create_text_ruler_dialog( parent, title )
     ruler_font = XLoadQueryFont( XtDisplay(parent), "9x15" );
 #else
     /* check the resource database for interesting resources */
-    XutConvertResources( parent,
+    __XutConvertResources( parent,
 			 vi_progname,
 			 resource,
 			 XtNumber(resource)

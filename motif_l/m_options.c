@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.11 1996/12/16 18:36:57 bostic Exp $ (Berkeley) $Date: 1996/12/16 18:36:57 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.12 1996/12/17 10:46:36 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:46:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -284,7 +284,7 @@ set_opt(w, closure, call_data)
 		ipb.len2 = strlen(ipb.str2);
 		break;
 	}
-	__vi_send("ab1", &ipb);
+	vi_send("ab1", &ipb);
 }
 
 
