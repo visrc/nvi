@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.7 1996/02/28 19:19:38 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:19:38 $ */
+/* $Id: acconfig.h,v 8.8 1996/02/28 19:32:00 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:32:00 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -50,6 +50,9 @@
 
 /* Define if you have the System V style pty calls. */
 #undef HAVE_SYS5_PTY
+
+/* Define if you want to compile in the Tcl interpreter. */
+#undef HAVE_TCL_INTERP
 
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
