@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.61 1996/03/18 15:35:04 bostic Exp $ (Berkeley) $Date: 1996/03/18 15:35:04 $
+dnl	$Id: configure.in,v 8.62 1996/03/18 16:06:53 bostic Exp $ (Berkeley) $Date: 1996/03/18 16:06:53 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -177,6 +177,23 @@ if test "$vi_cv_tclinterp" = "yes"; then
 	LIBOBJS="tcl.o $LIBOBJS"
 	LIBS="$LIBS -ltk -ltcl -lm $XLIBS"
 	AC_DEFINE(HAVE_TCL_INTERP)
+fi
+
+dnl Make sure that we found a Tk/Tcl library.
+if test "$vi_cv_tknvi" = "yes" || test "$vi_cv_tclinterp" = "yes"; then
+	if test "$vi_cv_tknvi" != yes; then
+		SAVE_LIBS="$LIBS"
+		LIBS=$TKLIBS
+	fi
+	AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
+		[vi_cv_tkfatal="no"], [vi_cv_tkfatal="yes"])
+	if test "$vi_cv_tkfatal" = "yes"; then
+		echo "Fatal error: no Tk/Tcl library."
+		exit 1
+	fi
+	if test "$vi_cv_tknvi" != yes; then
+		LIBS="$SAVE_LIBS"
+	fi
 fi
 
 dnl Both Tcl/Tk and Perl interpreters need the vi api code.
