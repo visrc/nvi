@@ -144,8 +144,8 @@ REOBJS=	regcomp.lo regerror.lo regexec.lo regfree.lo
 libvi_la_DEPENDENCIES = @LTLIBOBJS@
 libvi_la_LIBADD = @LTLIBOBJS@
 
-bin_PROGRAMS = vi vi-ipc @vi_motif@
-EXTRA_PROGRAMS = vi-motif
+bin_PROGRAMS = vi vi-ipc @vi_motif@ @vi_gtk@
+EXTRA_PROGRAMS = vi-motif vi-gtk
 
 vi_SOURCES = \
 	$(visrcdir)/cl/cl_bsd.c \
@@ -166,6 +166,18 @@ vi_ipc_SOURCES = \
 	$(visrcdir)/ip/ip_term.c 
 vi_ipc_LDADD = libvi.la @perllibs@
 vi_ipc_LDFLAGS = @perlldflags@
+
+vi_gtk_SOURCES = \
+	$(visrcdir)/ipc/ip_run.c \
+	$(visrcdir)/ipc/ip_send.c \
+	$(visrcdir)/ipc/ip_trans.c \
+	$(visrcdir)/ipc/ipc_cmd.c \
+	$(visrcdir)/ipc/ipc_method.c \
+	$(visrcdir)/gtk/gtk_main.c \
+	$(visrcdir)/gtk/gtkvi.c \
+	$(visrcdir)/gtk/gtkviscreen.c \
+	$(visrcdir)/gtk/gtkviwindow.c
+vi_gtk_LDADD = @GTKLIBS@ @LIBOBJS@
 
 vi_motif_SOURCES = \
 	$(visrcdir)/ipc/ip_run.c \
@@ -191,7 +203,7 @@ vi_motif_LDADD = @MOTIFLIBS@ @LIBOBJS@
 
 VI=-DVI=\"$(bindir)/`echo vi-ipc | sed '$(transform)'`\"
 CFLAGS=	 -D__REGEX_PRIVATE $(OPTFLAG) @CFLAGS@ -I. -I$(visrcdir)/include \
-	    @CPPFLAGS@ $(VI) @XINCS@
+	    @CPPFLAGS@ @GTKINCS@ $(VI) @XINCS@
 PERL=	@vi_cv_path_perl@
 PERLLIB=@vi_cv_perllib@
 SHRPENV=@shrpenv@

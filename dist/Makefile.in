@@ -70,6 +70,11 @@ CXX = @CXX@
 CXXCPP = @CXXCPP@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+GTKINCS = @GTKINCS@
+GTKLIBS = @GTKLIBS@
+GTK_CFLAGS = @GTK_CFLAGS@
+GTK_CONFIG = @GTK_CONFIG@
+GTK_LIBS = @GTK_LIBS@
 LD = @LD@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
@@ -100,6 +105,7 @@ u_int8_decl = @u_int8_decl@
 u_int_decl = @u_int_decl@
 u_long_decl = @u_long_decl@
 u_short_decl = @u_short_decl@
+vi_cv_gnome_config = @vi_cv_gnome_config@
 vi_cv_path_ar = @vi_cv_path_ar@
 vi_cv_path_chmod = @vi_cv_path_chmod@
 vi_cv_path_cp = @vi_cv_path_cp@
@@ -114,6 +120,7 @@ vi_cv_path_sendmail = @vi_cv_path_sendmail@
 vi_cv_path_shell = @vi_cv_path_shell@
 vi_cv_path_strip = @vi_cv_path_strip@
 vi_cv_perllib = @vi_cv_perllib@
+vi_gtk = @vi_gtk@
 vi_motif = @vi_motif@
 
 
@@ -265,8 +272,8 @@ REOBJS = regcomp.lo regerror.lo regexec.lo regfree.lo
 libvi_la_DEPENDENCIES = @LTLIBOBJS@
 libvi_la_LIBADD = @LTLIBOBJS@
 
-bin_PROGRAMS = vi vi-ipc @vi_motif@
-EXTRA_PROGRAMS = vi-motif
+bin_PROGRAMS = vi vi-ipc @vi_motif@ @vi_gtk@
+EXTRA_PROGRAMS = vi-motif vi-gtk
 
 vi_SOURCES = \
 	$(visrcdir)/cl/cl_bsd.c \
@@ -289,6 +296,19 @@ vi_ipc_SOURCES = \
 
 vi_ipc_LDADD = libvi.la @perllibs@
 vi_ipc_LDFLAGS = @perlldflags@
+
+vi_gtk_SOURCES = \
+	$(visrcdir)/ipc/ip_run.c \
+	$(visrcdir)/ipc/ip_send.c \
+	$(visrcdir)/ipc/ip_trans.c \
+	$(visrcdir)/ipc/ipc_cmd.c \
+	$(visrcdir)/ipc/ipc_method.c \
+	$(visrcdir)/gtk/gtk_main.c \
+	$(visrcdir)/gtk/gtkvi.c \
+	$(visrcdir)/gtk/gtkviscreen.c \
+	$(visrcdir)/gtk/gtkviwindow.c
+
+vi_gtk_LDADD = @GTKLIBS@ @LIBOBJS@
 
 vi_motif_SOURCES = \
 	$(visrcdir)/ipc/ip_run.c \
@@ -315,7 +335,7 @@ vi_motif_LDADD = @MOTIFLIBS@ @LIBOBJS@
 
 VI = -DVI=\"$(bindir)/`echo vi-ipc | sed '$(transform)'`\"
 CFLAGS = -D__REGEX_PRIVATE $(OPTFLAG) @CFLAGS@ -I. -I$(visrcdir)/include \
-	    @CPPFLAGS@ $(VI) @XINCS@
+	    @CPPFLAGS@ @GTKINCS@ $(VI) @XINCS@
 
 PERL = @vi_cv_path_perl@
 PERLLIB = @vi_cv_perllib@
@@ -357,6 +377,11 @@ am_vi_OBJECTS =  cl_bsd.o cl_funcs.o cl_main.o cl_read.o cl_screen.o \
 cl_term.o
 vi_OBJECTS =  $(am_vi_OBJECTS)
 vi_DEPENDENCIES =  libvi.la
+am_vi_gtk_OBJECTS =  ip_run.o ip_send.o ip_trans.o ipc_cmd.o \
+ipc_method.o gtk_main.o gtkvi.o gtkviscreen.o gtkviwindow.o
+vi_gtk_OBJECTS =  $(am_vi_gtk_OBJECTS)
+vi_gtk_DEPENDENCIES =  @LIBOBJS@
+vi_gtk_LDFLAGS = 
 am_vi_ipc_OBJECTS =  ip_funcs.o ip_main.o ip_read.o ip_screen.o \
 ip_send.o ip_term.o
 vi_ipc_OBJECTS =  $(am_vi_ipc_OBJECTS)
@@ -373,7 +398,7 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 DIST_SOURCES =  $(libvi_la_SOURCES) $(EXTRA_libvi_la_SOURCES) \
-$(vi_SOURCES) $(vi_ipc_SOURCES) $(vi_motif_SOURCES)
+$(vi_SOURCES) $(vi_gtk_SOURCES) $(vi_ipc_SOURCES) $(vi_motif_SOURCES)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 DEP_FILES =  @AMDEP@ $(DEPDIR)/api.Plo $(DEPDIR)/bsearch.Plo \
 $(DEPDIR)/bsearch.Po $(DEPDIR)/cl_bsd.Po $(DEPDIR)/cl_funcs.Po \
@@ -399,43 +424,44 @@ $(DEPDIR)/ex_version.Plo $(DEPDIR)/ex_visual.Plo $(DEPDIR)/ex_write.Plo \
 $(DEPDIR)/ex_yank.Plo $(DEPDIR)/ex_z.Plo $(DEPDIR)/exf.Plo \
 $(DEPDIR)/getc.Plo $(DEPDIR)/gethostname.Plo $(DEPDIR)/gethostname.Po \
 $(DEPDIR)/getopt.Plo $(DEPDIR)/getopt.Po $(DEPDIR)/gs.Plo \
-$(DEPDIR)/ip_funcs.Po $(DEPDIR)/ip_main.Po $(DEPDIR)/ip_read.Po \
-$(DEPDIR)/ip_run.Po $(DEPDIR)/ip_screen.Po $(DEPDIR)/ip_send.Po \
-$(DEPDIR)/ip_term.Po $(DEPDIR)/ip_trans.Po $(DEPDIR)/ipc_cmd.Po \
-$(DEPDIR)/ipc_method.Po $(DEPDIR)/key.Plo $(DEPDIR)/log.Plo \
-$(DEPDIR)/m_cde.Po $(DEPDIR)/m_copypaste.Po $(DEPDIR)/m_func.Po \
-$(DEPDIR)/m_main.Po $(DEPDIR)/m_menu.Po $(DEPDIR)/m_options.Po \
-$(DEPDIR)/m_prompt.Po $(DEPDIR)/m_ruler.Po $(DEPDIR)/m_search.Po \
-$(DEPDIR)/m_tags.Po $(DEPDIR)/m_util.Po $(DEPDIR)/m_vi.Po \
-$(DEPDIR)/main.Plo $(DEPDIR)/mark.Plo $(DEPDIR)/memchr.Plo \
-$(DEPDIR)/memchr.Po $(DEPDIR)/memcpy.Plo $(DEPDIR)/memcpy.Po \
-$(DEPDIR)/memmove.Plo $(DEPDIR)/memmove.Po $(DEPDIR)/memset.Plo \
-$(DEPDIR)/memset.Po $(DEPDIR)/mkstemp.Plo $(DEPDIR)/mkstemp.Po \
-$(DEPDIR)/mmap.Plo $(DEPDIR)/mmap.Po $(DEPDIR)/msg.Plo \
-$(DEPDIR)/options.Plo $(DEPDIR)/options_f.Plo $(DEPDIR)/perl.Plo \
-$(DEPDIR)/perlsfio.Plo $(DEPDIR)/perlxsi.Plo $(DEPDIR)/pthread.Plo \
-$(DEPDIR)/put.Plo $(DEPDIR)/recover.Plo $(DEPDIR)/regcomp.Plo \
-$(DEPDIR)/regerror.Plo $(DEPDIR)/regexec.Plo $(DEPDIR)/regfree.Plo \
-$(DEPDIR)/screen.Plo $(DEPDIR)/search.Plo $(DEPDIR)/seq.Plo \
-$(DEPDIR)/snprintf.Plo $(DEPDIR)/snprintf.Po $(DEPDIR)/strdup.Plo \
-$(DEPDIR)/strdup.Po $(DEPDIR)/strerror.Plo $(DEPDIR)/strerror.Po \
-$(DEPDIR)/strpbrk.Plo $(DEPDIR)/strpbrk.Po $(DEPDIR)/strsep.Plo \
-$(DEPDIR)/strsep.Po $(DEPDIR)/strtol.Plo $(DEPDIR)/strtol.Po \
-$(DEPDIR)/strtoul.Plo $(DEPDIR)/strtoul.Po $(DEPDIR)/tcl.Plo \
-$(DEPDIR)/tcl.Po $(DEPDIR)/trace.Plo $(DEPDIR)/trace.Po \
-$(DEPDIR)/util.Plo $(DEPDIR)/v_at.Plo $(DEPDIR)/v_ch.Plo \
-$(DEPDIR)/v_cmd.Plo $(DEPDIR)/v_delete.Plo $(DEPDIR)/v_event.Plo \
-$(DEPDIR)/v_ex.Plo $(DEPDIR)/v_increment.Plo $(DEPDIR)/v_init.Plo \
-$(DEPDIR)/v_itxt.Plo $(DEPDIR)/v_left.Plo $(DEPDIR)/v_mark.Plo \
-$(DEPDIR)/v_match.Plo $(DEPDIR)/v_paragraph.Plo $(DEPDIR)/v_put.Plo \
-$(DEPDIR)/v_redraw.Plo $(DEPDIR)/v_replace.Plo $(DEPDIR)/v_right.Plo \
-$(DEPDIR)/v_screen.Plo $(DEPDIR)/v_scroll.Plo $(DEPDIR)/v_search.Plo \
-$(DEPDIR)/v_section.Plo $(DEPDIR)/v_sentence.Plo $(DEPDIR)/v_status.Plo \
-$(DEPDIR)/v_txt.Plo $(DEPDIR)/v_ulcase.Plo $(DEPDIR)/v_undo.Plo \
-$(DEPDIR)/v_util.Plo $(DEPDIR)/v_word.Plo $(DEPDIR)/v_xchar.Plo \
-$(DEPDIR)/v_yank.Plo $(DEPDIR)/v_z.Plo $(DEPDIR)/v_zexit.Plo \
-$(DEPDIR)/vi.Plo $(DEPDIR)/vs_line.Plo $(DEPDIR)/vs_msg.Plo \
-$(DEPDIR)/vs_refresh.Plo $(DEPDIR)/vs_relative.Plo \
+$(DEPDIR)/gtk_main.Po $(DEPDIR)/gtkvi.Po $(DEPDIR)/gtkviscreen.Po \
+$(DEPDIR)/gtkviwindow.Po $(DEPDIR)/ip_funcs.Po $(DEPDIR)/ip_main.Po \
+$(DEPDIR)/ip_read.Po $(DEPDIR)/ip_run.Po $(DEPDIR)/ip_screen.Po \
+$(DEPDIR)/ip_send.Po $(DEPDIR)/ip_term.Po $(DEPDIR)/ip_trans.Po \
+$(DEPDIR)/ipc_cmd.Po $(DEPDIR)/ipc_method.Po $(DEPDIR)/key.Plo \
+$(DEPDIR)/log.Plo $(DEPDIR)/m_cde.Po $(DEPDIR)/m_copypaste.Po \
+$(DEPDIR)/m_func.Po $(DEPDIR)/m_main.Po $(DEPDIR)/m_menu.Po \
+$(DEPDIR)/m_options.Po $(DEPDIR)/m_prompt.Po $(DEPDIR)/m_ruler.Po \
+$(DEPDIR)/m_search.Po $(DEPDIR)/m_tags.Po $(DEPDIR)/m_util.Po \
+$(DEPDIR)/m_vi.Po $(DEPDIR)/main.Plo $(DEPDIR)/mark.Plo \
+$(DEPDIR)/memchr.Plo $(DEPDIR)/memchr.Po $(DEPDIR)/memcpy.Plo \
+$(DEPDIR)/memcpy.Po $(DEPDIR)/memmove.Plo $(DEPDIR)/memmove.Po \
+$(DEPDIR)/memset.Plo $(DEPDIR)/memset.Po $(DEPDIR)/mkstemp.Plo \
+$(DEPDIR)/mkstemp.Po $(DEPDIR)/mmap.Plo $(DEPDIR)/mmap.Po \
+$(DEPDIR)/msg.Plo $(DEPDIR)/options.Plo $(DEPDIR)/options_f.Plo \
+$(DEPDIR)/perl.Plo $(DEPDIR)/perlsfio.Plo $(DEPDIR)/perlxsi.Plo \
+$(DEPDIR)/pthread.Plo $(DEPDIR)/put.Plo $(DEPDIR)/recover.Plo \
+$(DEPDIR)/regcomp.Plo $(DEPDIR)/regerror.Plo $(DEPDIR)/regexec.Plo \
+$(DEPDIR)/regfree.Plo $(DEPDIR)/screen.Plo $(DEPDIR)/search.Plo \
+$(DEPDIR)/seq.Plo $(DEPDIR)/snprintf.Plo $(DEPDIR)/snprintf.Po \
+$(DEPDIR)/strdup.Plo $(DEPDIR)/strdup.Po $(DEPDIR)/strerror.Plo \
+$(DEPDIR)/strerror.Po $(DEPDIR)/strpbrk.Plo $(DEPDIR)/strpbrk.Po \
+$(DEPDIR)/strsep.Plo $(DEPDIR)/strsep.Po $(DEPDIR)/strtol.Plo \
+$(DEPDIR)/strtol.Po $(DEPDIR)/strtoul.Plo $(DEPDIR)/strtoul.Po \
+$(DEPDIR)/tcl.Plo $(DEPDIR)/tcl.Po $(DEPDIR)/trace.Plo \
+$(DEPDIR)/trace.Po $(DEPDIR)/util.Plo $(DEPDIR)/v_at.Plo \
+$(DEPDIR)/v_ch.Plo $(DEPDIR)/v_cmd.Plo $(DEPDIR)/v_delete.Plo \
+$(DEPDIR)/v_event.Plo $(DEPDIR)/v_ex.Plo $(DEPDIR)/v_increment.Plo \
+$(DEPDIR)/v_init.Plo $(DEPDIR)/v_itxt.Plo $(DEPDIR)/v_left.Plo \
+$(DEPDIR)/v_mark.Plo $(DEPDIR)/v_match.Plo $(DEPDIR)/v_paragraph.Plo \
+$(DEPDIR)/v_put.Plo $(DEPDIR)/v_redraw.Plo $(DEPDIR)/v_replace.Plo \
+$(DEPDIR)/v_right.Plo $(DEPDIR)/v_screen.Plo $(DEPDIR)/v_scroll.Plo \
+$(DEPDIR)/v_search.Plo $(DEPDIR)/v_section.Plo $(DEPDIR)/v_sentence.Plo \
+$(DEPDIR)/v_status.Plo $(DEPDIR)/v_txt.Plo $(DEPDIR)/v_ulcase.Plo \
+$(DEPDIR)/v_undo.Plo $(DEPDIR)/v_util.Plo $(DEPDIR)/v_word.Plo \
+$(DEPDIR)/v_xchar.Plo $(DEPDIR)/v_yank.Plo $(DEPDIR)/v_z.Plo \
+$(DEPDIR)/v_zexit.Plo $(DEPDIR)/vi.Plo $(DEPDIR)/vs_line.Plo \
+$(DEPDIR)/vs_msg.Plo $(DEPDIR)/vs_refresh.Plo $(DEPDIR)/vs_relative.Plo \
 $(DEPDIR)/vs_smap.Plo $(DEPDIR)/vs_split.Plo $(DEPDIR)/vsnprintf.Plo \
 $(DEPDIR)/vsnprintf.Po $(DEPDIR)/xtabbed.Po
 DIST_COMMON =  ./stamp-h.in INSTALL Makefile.am Makefile.in acconfig.h \
@@ -447,8 +473,8 @@ pathnames.h.in port.h.in recover.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 
 GZIP_ENV = --best
-SOURCES = $(libvi_la_SOURCES) $(EXTRA_libvi_la_SOURCES) $(vi_SOURCES) $(vi_ipc_SOURCES) $(vi_motif_SOURCES)
-OBJECTS = $(am_libvi_la_OBJECTS) $(am_vi_OBJECTS) $(am_vi_ipc_OBJECTS) $(am_vi_motif_OBJECTS)
+SOURCES = $(libvi_la_SOURCES) $(EXTRA_libvi_la_SOURCES) $(vi_SOURCES) $(vi_gtk_SOURCES) $(vi_ipc_SOURCES) $(vi_motif_SOURCES)
+OBJECTS = $(am_libvi_la_OBJECTS) $(am_vi_OBJECTS) $(am_vi_gtk_OBJECTS) $(am_vi_ipc_OBJECTS) $(am_vi_motif_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
@@ -725,20 +751,28 @@ cl_term.o: $(visrcdir)/cl/cl_term.c
 vi: $(vi_OBJECTS) $(vi_DEPENDENCIES)
 	@rm -f vi
 	$(LINK) $(vi_LDFLAGS) $(vi_OBJECTS) $(vi_LDADD) $(LIBS)
+ip_run.o: $(visrcdir)/ipc/ip_run.c
+ip_send.o: $(visrcdir)/ipc/ip_send.c
+ip_trans.o: $(visrcdir)/ipc/ip_trans.c
+ipc_cmd.o: $(visrcdir)/ipc/ipc_cmd.c
+ipc_method.o: $(visrcdir)/ipc/ipc_method.c
+gtk_main.o: $(visrcdir)/gtk/gtk_main.c
+gtkvi.o: $(visrcdir)/gtk/gtkvi.c
+gtkviscreen.o: $(visrcdir)/gtk/gtkviscreen.c
+gtkviwindow.o: $(visrcdir)/gtk/gtkviwindow.c
+
+vi-gtk: $(vi_gtk_OBJECTS) $(vi_gtk_DEPENDENCIES)
+	@rm -f vi-gtk
+	$(LINK) $(vi_gtk_LDFLAGS) $(vi_gtk_OBJECTS) $(vi_gtk_LDADD) $(LIBS)
 ip_funcs.o: $(visrcdir)/ip/ip_funcs.c
 ip_main.o: $(visrcdir)/ip/ip_main.c
 ip_read.o: $(visrcdir)/ip/ip_read.c
 ip_screen.o: $(visrcdir)/ip/ip_screen.c
-ip_send.o: $(visrcdir)/ipc/ip_send.c
 ip_term.o: $(visrcdir)/ip/ip_term.c
 
 vi-ipc: $(vi_ipc_OBJECTS) $(vi_ipc_DEPENDENCIES)
 	@rm -f vi-ipc
 	$(LINK) $(vi_ipc_LDFLAGS) $(vi_ipc_OBJECTS) $(vi_ipc_LDADD) $(LIBS)
-ip_run.o: $(visrcdir)/ipc/ip_run.c
-ip_trans.o: $(visrcdir)/ipc/ip_trans.c
-ipc_cmd.o: $(visrcdir)/ipc/ipc_cmd.c
-ipc_method.o: $(visrcdir)/ipc/ipc_method.c
 m_main.o: $(visrcdir)/motif/m_main.c
 m_cde.o: $(visrcdir)/motif/m_cde.c
 trace.o: $(visrcdir)/common/trace.c
@@ -862,6 +896,10 @@ maintainer-clean-tags:
 @AMDEP@include $(DEPDIR)/getopt.Plo
 @AMDEP@include $(DEPDIR)/getopt.Po
 @AMDEP@include $(DEPDIR)/gs.Plo
+@AMDEP@include $(DEPDIR)/gtk_main.Po
+@AMDEP@include $(DEPDIR)/gtkvi.Po
+@AMDEP@include $(DEPDIR)/gtkviscreen.Po
+@AMDEP@include $(DEPDIR)/gtkviwindow.Po
 @AMDEP@include $(DEPDIR)/ip_funcs.Po
 @AMDEP@include $(DEPDIR)/ip_main.Po
 @AMDEP@include $(DEPDIR)/ip_read.Po
@@ -1109,6 +1147,21 @@ maintainer-clean-depend:
 
 @AMDEP@CCDEPMODE = @CCDEPMODE@
 
+%.o: $(visrcdir)/ip/%.c
+@AMDEP@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
+@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(COMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
+
+%.lo: $(visrcdir)/ip/%.c
+@AMDEP@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
+@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LTCOMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
+
+
+@AMDEP@CCDEPMODE = @CCDEPMODE@
+
 %.o: $(visrcdir)/ex/%.c
 @AMDEP@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
@@ -1139,13 +1192,13 @@ maintainer-clean-depend:
 
 @AMDEP@CCDEPMODE = @CCDEPMODE@
 
-%.o: $(visrcdir)/ip/%.c
+%.o: $(visrcdir)/gtk/%.c
 @AMDEP@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
 @AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(COMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
 
-%.lo: $(visrcdir)/ip/%.c
+%.lo: $(visrcdir)/gtk/%.c
 @AMDEP@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
 @AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@

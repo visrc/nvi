@@ -1,4 +1,4 @@
-dnl	@(#)configure.in	8.149 (Berkeley) 03/08/00
+dnl	@(#)configure.in	8.148 (Berkeley) 8/3/97
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -204,6 +204,27 @@ if test "$no_x" != yes; then
 	XLIBS="$XLIBS -lX11"
 	if test "X$x_includes" != "X"; then
 		XINCS="-I$x_includes"
+	fi
+fi
+
+dnl If the user wants a Gtk IPC front-end for nvi, build it.
+AC_SUBST(vi_gtk)
+AC_SUBST(GTKLIBS)
+AC_SUBST(GTKINCS)
+AC_MSG_CHECKING(if --enable-gtk option specified)
+AC_ARG_ENABLE(gtk,
+	[  --enable-gtk          Build a Gtk front-end for vi.],
+	[vi_cv_gtk="yes"], [vi_cv_gtk="no"])
+AC_MSG_RESULT($vi_cv_gtk)
+if test "$vi_cv_gtk" = "yes"; then
+	vi_gtk=vi-gtk
+	AM_PATH_GTK(1.2.0)
+	GTKINCS="$GTK_CFLAGS"
+	GTKLIBS="$GTK_LIBS $LIBS"
+	AC_PATH_PROG(vi_cv_gnome_config, gnome-config, bo)
+	if test "$vi_cv_gnome_config" != "no"; then
+		ZVTLIBS=`$vi_cv_gnome_config zvt --libs`
+		GTKLIBS="$ZVTLIBS $GTKLIBS"
 	fi
 fi
 
@@ -774,6 +795,7 @@ else
 	LIBS="-ldb $LIBS"
 	LDFLAGS="-L$with_db3/lib $LDFLAGS"
 fi
+
 
 dnl We compile in nvi's RE routines unless the user specifies otherwise.
 AC_MSG_CHECKING(if --disable-re option specified)
