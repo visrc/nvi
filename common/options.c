@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.14 1993/10/04 10:14:24 bostic Exp $ (Berkeley) $Date: 1993/10/04 10:14:24 $";
+static char sccsid[] = "$Id: options.c,v 8.15 1993/10/04 12:45:51 bostic Exp $ (Berkeley) $Date: 1993/10/04 12:45:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -264,7 +264,7 @@ opts_init(sp)
 	/*
 	 * The default window option value is:
 	 *		8 if baud rate <=  600
-	 *	       16 if baud rate == 1200
+	 *	       16 if baud rate <= 1200
 	 *	LINES - 1 if baud rate  > 1200
 	 */
 	speed = cfgetospeed(&sp->gp->original_termios);
