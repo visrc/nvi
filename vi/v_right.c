@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.5 1992/10/10 14:02:28 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:02:28 $";
+static char sccsid[] = "$Id: v_right.c,v 5.6 1992/10/18 13:09:51 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:09:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,8 +41,14 @@ v_right(vp, fm, tm, rp)
 	size_t len;
 	u_char *p;
 
-	EGETLINE(p, fm->lno, len);
-
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			v_eol();
+		else
+			GETLINE_ERR(fm->lno);
+		return (1);
+	}
+		
 	rp->lno = fm->lno;
 	if (len == 0 || fm->cno == len - 1) {
 		if (vp->flags & (VC_C|VC_D)) {
@@ -63,22 +69,28 @@ v_right(vp, fm, tm, rp)
 }
 
 /*
- * v_eol -- $
+ * v_dollar -- $
  *	Move to the last column.
  *
  *	One of places that you are allowed to move beyond the end of
  *	the line.
  */
 int
-v_eol(vp, fm, tm, rp)
+v_dollar(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
 	u_char *p;
 
-	EGETLINE(p, fm->lno, len);
-
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			v_eol();
+		else
+			GETLINE_ERR(fm->lno);
+		return (1);
+	}
+		
 	if (len == 0)
 		EOLERR;
 
