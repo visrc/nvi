@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.9 1996/11/27 10:09:32 bostic Exp $ (Berkeley) $Date: 1996/11/27 10:09:32 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.10 1996/11/27 12:19:50 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:19:50 $";
 #endif /* not lint */
 
 #include "config.h"
@@ -52,18 +52,13 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.9 1996/11/27 10:09:32 bostic Exp $
 
 #include "nvi.xbm"
 
+char *progname = "vi_curses";			/* Program name. */
+
 int	i_fd, o_fd;				/* Input/output fd's. */
 
-void	arg_format __P((int *, char **[], int, int));
-void	attach __P((void));
-void	ip_cur_end __P((void));
-void	ip_cur_init __P((void));
-void	ip_read __P((void));
 void	ip_siginit __P((void));
-int	ip_trans __P((char *, size_t, size_t *));
 void	onchld __P((int));
 void	onintr __P((int));
-void	usage __P((void));
 static	void	f_copy();
 static	void	f_paste();
 static	void	f_clear();
@@ -230,13 +225,6 @@ nomem()
 
 #define REALLOC( ptr, size )	\
 	((ptr == NULL) ? malloc(size) : realloc(ptr,size))
-
-void
-usage()
-{
-	(void)fprintf(stderr, "usage: vi_motif [-D] [vi arguments]\n");
-	exit(1);
-}
 
 
 /* X windows routines.
@@ -457,7 +445,6 @@ XtPointer	client_data;
 XtPointer	call_data;
 {
     xvi_screen			*this_screen = (xvi_screen *) client_data;
-    XConfigureEvent		*ev;
     Dimension			height, width;
 
     XtVaGetValues( wid, XmNheight, &height, XmNwidth, &width, 0 );
@@ -757,7 +744,6 @@ Cardinal        *cardinal;
 {
     IP_BUF	ipb;
     char	bp[BufferSize];
-    int		i, sym;
 
     ipb.len = XLookupString( event, bp, BufferSize, NULL, NULL );
     if ( ipb.len != 0 ) {
@@ -964,8 +950,6 @@ char	**argv;
 {
     char	*ptr;
     Widget	main_w, menu_b, pane_w;
-    Dimension	h, w;
-    Pixel	fg, bg;
     Display	*display;
 
 #if XtSpecificationRelease == 4
@@ -1370,6 +1354,7 @@ static	void	f_copy( buffer, len )
 
 
 static	void	f_paste( widget, buffer, length )
+	int widget, buffer, length;
 {
     /* NOTE:  when multiple panes are implemented, we need to find
      * the correct screen.  For now, there is only one.
@@ -1477,7 +1462,7 @@ main(argc, argv)
 	ip_x_init(&argc, argv );
 
 	/* Run vi: the child returns. */
-	run_vi("vi_motif", argc, argv, &i_fd, &o_fd);
+	(void)run_vi(argc, argv, &i_fd, &o_fd);
 
 	/* Initialize signals. */
 	ip_siginit();
@@ -1493,6 +1478,9 @@ main(argc, argv)
 
 	/* Main loop. */
 	XtAppMainLoop( ctx );
+
+	/* NOTREACHED */
+	abort();
 }
 
 /*
@@ -1533,4 +1521,16 @@ onintr(signo)
 {
 	(void)signal(SIGINT, SIG_DFL);
 	kill(getpid(), SIGINT);
+}
+
+/*
+ * usage --
+ *	Usage message.
+ */
+void
+usage()
+{
+	(void)fprintf(stderr,
+	    "usage: vi_curses [-D] [-P vi_program] [vi arguments]\n");
+	exit(1);
 }
