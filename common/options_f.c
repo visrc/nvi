@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.13 1996/02/25 16:31:58 bostic Exp $ (Berkeley) $Date: 1996/02/25 16:31:58 $";
+static char sccsid[] = "$Id: options_f.c,v 10.14 1996/02/25 18:21:23 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:21:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,9 +127,8 @@ f_lines(sp, op, str, valp)
 
 		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
 		    O_VAL(sp, O_WINDOW) > *valp) {
-			*valp;
 			o_set(sp, O_WINDOW, 0, NULL, *valp - 1);
-			o_set(sp, O_WINDOW, OS_DEF, NULL, *valp - -1);
+			o_set(sp, O_WINDOW, OS_DEF, NULL, *valp - 1);
 		}
 	}
 	return (0);
