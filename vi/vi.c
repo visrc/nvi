@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.72 1993/05/16 12:14:07 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:14:07 $";
+static char sccsid[] = "$Id: vi.c,v 5.73 1993/05/17 16:56:04 bostic Exp $ (Berkeley) $Date: 1993/05/17 16:56:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,12 @@ vi(sp, ep)
 				tm = fm;
 		}
 
-		/* Call the function, update the cursor. */
+		/*
+		 * Call the function.  Set the return cursor first for
+		 * purely defensive reasons.  Sometimes the underlying
+		 * routines forget.
+		 */
+		m = fm;
 		if ((vp->kp->func)(sp, ep, vp, &fm, &tm, &m))
 			goto err;
 		
