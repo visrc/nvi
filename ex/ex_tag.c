@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.26 1996/04/10 20:31:49 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:31:49 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.27 1996/04/26 09:00:23 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:00:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -412,6 +412,9 @@ ex_tag_Nswitch(sp, tp, force)
 		(void)screen_end(new);
 		return (1);
 	}
+
+	/* Create the argument list. */
+	new->cargv = new->argv = ex_buildargv(sp, NULL, tp->frp->name);
 
 	/* Display tags in the center of the screen. */
 	F_CLR(new, S_SCR_TOP);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_edit.c,v 10.8 1996/03/18 08:49:31 bostic Exp $ (Berkeley) $Date: 1996/03/18 08:49:31 $";
+static const char sccsid[] = "$Id: ex_edit.c,v 10.9 1996/04/26 09:00:22 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:00:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -141,6 +141,9 @@ ex_N_edit(sp, cmdp, frp, attach)
 		(void)screen_end(new);
 		return (1);
 	}
+
+	/* Create the argument list. */
+	new->cargv = new->argv = ex_buildargv(sp, NULL, frp->name);
 
 	/* Set up the switch. */
 	sp->nextdisp = new;

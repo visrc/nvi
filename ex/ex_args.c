@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_args.c,v 10.12 1996/03/18 08:49:31 bostic Exp $ (Berkeley) $Date: 1996/03/18 08:49:31 $";
+static const char sccsid[] = "$Id: ex_args.c,v 10.13 1996/04/26 09:00:22 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:00:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,16 +127,7 @@ ex_N_next(sp, cmdp)
 	EXCMD *cmdp;
 {
 	SCR *new;
-	ARGS **argv;
 	FREF *frp;
-	char **ap, **s_argv;
-
-	/* Any arguments are a replacement file list. */
-	CALLOC_RET(sp, s_argv, char **, cmdp->argc + 1, sizeof(char *));
-	for (ap = s_argv, argv = cmdp->argv; argv[0]->len != 0; ++ap, ++argv)
-		if ((*ap = v_strdup(sp, argv[0]->bp, argv[0]->len)) == NULL)
-			return (1);
-	*ap = NULL;
 
 	/* Get a new screen. */
 	if (screen_init(sp->gp, sp, &new))
@@ -147,14 +138,16 @@ ex_N_next(sp, cmdp)
 	}
 
 	/* Get a backing file. */
-	new->cargv = new->argv = s_argv;
-	if ((frp = file_add(new, *new->cargv)) == NULL ||
+	if ((frp = file_add(new, cmdp->argv[0]->bp)) == NULL ||
 	    file_init(new, frp, NULL,
 	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
 		(void)vs_discard(new, NULL);
 		(void)screen_end(new);
 		return (1);
 	}
+
+	/* The arguments are a replacement file list. */
+	new->cargv = new->argv = ex_buildargv(sp, cmdp, NULL);
 
 	/* Set up the switch. */
 	sp->nextdisp = new;
@@ -289,4 +282,38 @@ ex_args(sp, cmdp)
 	}
 	(void)ex_puts(sp, "\n");
 	return (0);
+}
+
+/*
+ * ex_buildargv --
+ *	Build a new file argument list.
+ *
+ * PUBLIC: char **ex_buildargv __P((SCR *, EXCMD *, char *));
+ */
+char **
+ex_buildargv(sp, cmdp, name)
+	SCR *sp;
+	EXCMD *cmdp;
+	char *name;
+{
+	ARGS **argv;
+	int argc;
+	char **ap, **s_argv;
+
+	argc = cmdp == NULL ? 1 : cmdp->argc;
+	CALLOC(sp, s_argv, char **, argc + 1, sizeof(char *));
+	if ((ap = s_argv) == NULL)
+		return (NULL);
+
+	if (cmdp == NULL) {
+		if ((*ap = v_strdup(sp, name, strlen(name))) == NULL)
+			return (NULL);
+		++ap;
+	} else
+		for (argv = cmdp->argv; argv[0]->len != 0; ++ap, ++argv)
+			if ((*ap =
+			    v_strdup(sp, argv[0]->bp, argv[0]->len)) == NULL)
+				return (NULL);
+	*ap = NULL;
+	return (s_argv);
 }
