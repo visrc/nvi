@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.9 1993/12/02 10:53:04 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:53:04 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.10 1993/12/02 15:14:14 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:14:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,7 +68,7 @@ ex_resize(sp, ep, cmdp)
 {
 	if (!F_ISSET(cmdp, E_COUNT))
 		cmdp->count = 1;
-	return (sp->s_resize(sp, cmdp->count));
+	return (sp->s_rabs(sp, cmdp->count));
 }
 
 /*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.22 1993/12/02 12:47:26 bostic Exp $ (Berkeley) $Date: 1993/12/02 12:47:26 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.23 1993/12/02 15:14:42 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:14:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -460,11 +460,11 @@ svi_swap(csp, nsp, name)
 }
 
 /*
- * svi_resize --
- *	Change the size of the current screen.
+ * svi_rabs --
+ *	Change the absolute size of the current screen.
  */
 int
-svi_resize(sp, count)
+svi_rabs(sp, count)
 	SCR *sp;
 	long count;
 {
