@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.75 1994/05/02 13:50:02 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:50:02 $";
+static char sccsid[] = "$Id: exf.c,v 8.76 1994/05/03 21:45:45 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:45:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -688,7 +688,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 		F_CLR(ep, F_MODIFIED);
 
 	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters.",
-	    F_ISSET(sp, S_INTERRUPTED) ? "Interrupted write: " : "",
+	    INTERRUPTED(sp) ? "Interrupted write: " : "",
 	    name, msg, nlno, nlno == 1 ? "" : "s", nch);
 
 	return (0);

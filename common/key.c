@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.69 1994/05/02 16:30:58 bostic Exp $ (Berkeley) $Date: 1994/05/02 16:30:58 $";
+static char sccsid[] = "$Id: key.c,v 8.70 1994/05/03 21:45:51 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:45:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -580,7 +580,7 @@ term_key(sp, chp, flags)
 	int init_nomap, ispartial, nr;
 
 	/* If we've been interrupted, return an error. */
-	if (F_ISSET(sp, S_INTERRUPTED))
+	if (INTERRUPTED(sp))
 		return (INP_INTR);
 
 	gp = sp->gp;
@@ -627,7 +627,7 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		    &ispartial);
 
 		/* If we've been interrupted, return an error. */
-		if (F_ISSET(sp, S_INTERRUPTED))
+		if (INTERRUPTED(sp))
 			return (INP_INTR);
 
 		/*

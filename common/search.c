@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.42 1994/05/02 13:51:09 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:51:09 $";
+static char sccsid[] = "$Id: search.c,v 8.43 1994/05/03 21:45:48 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:45:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -291,7 +291,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
-		if (F_ISSET(sp, S_INTERRUPTED)) {
+		if (INTERRUPTED(sp)) {
 			msgq(sp, M_INFO, "Interrupted.");
 			break;
 		}
@@ -421,7 +421,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
-		if (F_ISSET(sp, S_INTERRUPTED)) {
+		if (INTERRUPTED(sp)) {
 			msgq(sp, M_INFO, "Interrupted.");
 			break;
 		}
