@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.10 1993/09/10 18:34:46 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:34:46 $";
+static char sccsid[] = "$Id: options_f.c,v 8.11 1993/09/11 11:09:57 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:09:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -378,6 +378,8 @@ mem2:					msgq(sp, M_ERR,
 
 DECL(f_term)
 {
+	char buf[256];
+
 	if (F_ISSET(&sp->opts[O_TERM], OPT_ALLOCATED))
 		free(O_STR(sp, O_TERM));
 	if ((O_STR(sp, O_TERM) = strdup(str)) == NULL) {
@@ -386,12 +388,15 @@ DECL(f_term)
 	}
 	F_SET(&sp->opts[O_TERM], OPT_ALLOCATED | OPT_SET);
 
-	/* Change the flash value if it's set. */
-	if (O_ISSET(sp, O_FLASH) && f_flash(sp, op, NULL, 0))
-		msgq(sp, M_ERR,
-		    "Term value %s; unable to set flash option.", str);
+	/* Set the terminal value in the environment for curses. */
+	(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
+	(void)putenv(buf);
 
-	(void)set_window_size(sp, 0, 0);
+	if (sp->s_term != NULL && sp->s_term(sp))
+		return (1);
+
+	if (set_window_size(sp, 0, 0))
+		return (1);
 	return (0);
 }
 
