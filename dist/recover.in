@@ -1,4 +1,4 @@
-#	$Id: recover.in,v 8.3 1994/08/12 09:02:19 bostic Exp $ (Berkeley) $Date: 1994/08/12 09:02:19 $
+#	$Id: recover.in,v 8.4 1994/08/13 17:28:54 bostic Exp $ (Berkeley) $Date: 1994/08/13 17:28:54 $
 #
 # Recover nvi editor files:
 RECDIR=/var/tmp/vi.recover
@@ -17,10 +17,8 @@ if [ "$vibackup" != "$RECDIR/vi.*" ]; then
 fi
 
 # It is possible to get incomplete recovery files, if the editor
-# crashes at the right time.  Since the recovery file is created
-# before the backup file is used, and deleted after it is deleted,
-# check for a corresponding editor backup file.  If it exists,
-# send mail to the user, else delete the recovery file.
+# crashes at the right time.  Delete any recovery files without
+# corresponding backup files, otherwise send mail to the user.
 virecovery=`echo $RECDIR/recover.*`
 if [ "$virecovery" != "$RECDIR/recover.*" ]; then
 	for i in $virecovery; do
