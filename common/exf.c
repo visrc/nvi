@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.22 1993/09/27 16:17:35 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:17:35 $";
+static char sccsid[] = "$Id: exf.c,v 8.23 1993/09/27 17:01:25 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:01:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -478,20 +478,21 @@ file_write(sp, ep, fm, tm, fname, flags)
 			return (1);
 		}
 
-		/* Don't write part of any existing file. */
-		if (!LF_ISSET(FS_ALL))
-			if (fname != NULL) {
-				if (!stat(fname, &sb))
-					goto partial;
-			} else if (!stat(sp->frp->fname, &sb)) {
-partial:			if (LF_ISSET(FS_POSSIBLE))
-					msgq(sp, M_ERR,
-					    "Use ! to write a partial file.");
-				else
-					msgq(sp, M_ERR,
-					    "Partial file, not written.");
-				return (1);
-			}
+		/*
+		 * Don't write part of any existing file.  Only test for
+		 * the original file, the previous test catches anything
+		 * else.
+		 */
+		if (!LF_ISSET(FS_ALL) && fname == NULL &&
+		    !F_ISSET(sp->frp, FR_NAMECHANGED) &&
+		    !stat(sp->frp->fname, &sb)) {
+			if (LF_ISSET(FS_POSSIBLE))
+				msgq(sp, M_ERR,
+				    "Use ! to write a partial file.");
+			else
+				msgq(sp, M_ERR, "Partial file, not written.");
+			return (1);
+		}
 	}
 
 	if (fname == NULL)
