@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.25 1995/11/08 10:03:50 bostic Exp $ (Berkeley) $Date: 1995/11/08 10:03:50 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.26 1995/11/10 12:43:56 bostic Exp $ (Berkeley) $Date: 1995/11/10 12:43:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -434,12 +434,13 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		return (1);
 
 	/*
-	 * If file completion overwrote part of the screen, clean up.  We
-	 * don't do this as part of the normal message resolution because
-	 * we know the user is on the colon command line and there's no
-	 * reason to make them enter an explicit character to continue.
+	 * If file completion overwrote part of the screen and nothing else has
+	 * been displayed, clean up.  We don't do this as part of the normal
+	 * message resolution because we know the user is on the colon command
+	 * line and there's no reason to enter explicit characters to continue.
 	 */
-	if (filec_redraw) {
+	if (filec_redraw &&
+	    !F_ISSET(sp, S_SCR_EXWROTE) && vip->totalcount == 0 ) {
 		filec_redraw = 0;
 
 		fc.e_event = E_REPAINT;
