@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.7 1992/11/01 22:47:58 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:47:58 $";
+static char sccsid[] = "$Id: search.c,v 5.8 1992/11/04 09:17:09 bostic Exp $ (Berkeley) $Date: 1992/11/04 09:17:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,7 @@ static char sccsid[] = "$Id: search.c,v 5.7 1992/11/01 22:47:58 bostic Exp $ (Be
 enum direction searchdir = NOTSET;	/* Search direction. */
 
 static regex_t sre;			/* Saved RE. */
-static regmatch_t *match;		/* Match table. */
-static size_t matchnsub;		/* Match table size. */
+static regmatch_t match[1];		/* Match table. */
 
 static int	checkdelta __P((EXF *, recno_t, recno_t));
 static int	resetup __P((regex_t **, enum direction,
@@ -90,15 +89,6 @@ noprev:		msg("No previous search pattern.");
 		}
 	} else
 		*rep = &sre;
-	if (matchnsub < (*rep)->re_nsub + 1) {
-		matchnsub = (*rep)->re_nsub + 1;
-		if ((match =
-		    realloc(match, matchnsub * sizeof(regmatch_t))) == NULL) {
-			msg("Error: %s", strerror(errno));
-			matchnsub = 0;
-			return (1);
-		}
-	}
 	return (0);
 }
 
@@ -176,7 +166,7 @@ f_search(ep, fm, ptrn, eptrn, flags)
 		TRACE("F search: %lu from %u to %u\n", lno, coff, len - 1);
 #endif
 		/* Search the line. */
-		eval = regexec(re, (char *)l, re->re_nsub + 1, match,
+		eval = regexec(re, (char *)l, 1, match,
 		    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) | REG_STARTEND);
 		if (eval == REG_NOMATCH)
 			continue;
@@ -277,7 +267,7 @@ b_search(ep, fm, ptrn, eptrn, flags)
 		TRACE("B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
 #endif
 		/* Search the line. */
-		eval = regexec(re, (char *)l, re->re_nsub + 1, match,
+		eval = regexec(re, (char *)l, 1, match,
 		    (match[0].rm_eo == len ? 0 : REG_NOTEOL) | REG_STARTEND);
 		if (eval == REG_NOMATCH)
 			continue;
@@ -311,8 +301,8 @@ b_search(ep, fm, ptrn, eptrn, flags)
 				if (match[0].rm_so >= len)
 					break;
 				match[0].rm_eo = coff ? coff : len;
-				eval = regexec(re, (char *)l,
-				    re->re_nsub + 1, match, REG_STARTEND);
+				eval = regexec(re,
+				    (char *)l, 1, match, REG_STARTEND);
 				if (eval == REG_NOMATCH)
 					break;
 				if (eval != 0) {
