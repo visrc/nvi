@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.33 1993/10/27 11:37:11 bostic Exp $ (Berkeley) $Date: 1993/10/27 11:37:11 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.34 1993/10/27 11:40:50 bostic Exp $ (Berkeley) $Date: 1993/10/27 11:40:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -718,6 +718,15 @@ k_escape:		if (tp->insert && tp->overwrite)
 			showmatch = LF_ISSET(TXT_SHOWMATCH);
 			goto ins_ch;
 		case K_VLNEXT:			/* Quote the next character. */
+			/* If in hex mode, see if we've entered a hex value. */
+			if (hex == H_INHEX) {
+				if (txt_hex(sp, tp, &tmp, ch))
+					ERR;
+				if (tmp) {
+					hex = H_NOTSET;
+					goto next_ch;
+				}
+			}
 			ch = '^';
 			quoted = Q_NEXTCHAR;
 			/* FALLTHROUGH */
