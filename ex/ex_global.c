@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.8 1992/05/15 11:08:48 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:48 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.9 1992/05/21 12:55:17 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:55:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,7 @@ global(cmdp, cmd)
 		     l--, lqty--)
 		{
 			/* fetch the line */
-			line = fetchline(nlines - l, NULL);
+			line = file_gline(curf, nlines - l, NULL);
 
 			/* if it contains the search pattern... */
 			if ((!regexec(re, line, 1)) == isv)
