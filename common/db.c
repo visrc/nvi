@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.38 2001/06/25 15:19:09 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:09 $";
+static const char sccsid[] = "$Id: db.c,v 10.39 2001/08/18 21:52:00 skimo Exp $ (Berkeley) $Date: 2001/08/18 21:52:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -196,7 +196,7 @@ err3:		if (lenp != NULL)
 	if (FILE2INT(sp, data.data, data.size, wp, wlen)) {
 	    if (!F_ISSET(sp, SC_CONV_ERROR)) {
 		F_SET(sp, SC_CONV_ERROR);
-		msgq(sp, M_ERR, "321|Conversion error on line %d", lno);
+		msgq(sp, M_ERR, "324|Conversion error on line %d", lno);
 	    }
 	    goto err3;
 	}

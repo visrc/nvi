@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.28 2001/08/01 18:29:13 skimo Exp $ (Berkeley) $Date: 2001/08/01 18:29:13 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.29 2001/08/18 21:51:59 skimo Exp $ (Berkeley) $Date: 2001/08/18 21:51:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,7 +122,7 @@ read:
 		} else if (rc == 0)
 		    clp->skip = 0;
 		else
-		    msgq(sp, M_ERR, "323|Invalid input");
+		    msgq(sp, M_ERR, "323|Invalid input. Truncated.");
 		break;
 	case INP_ERR:
 		evp->e_event = E_ERR;
