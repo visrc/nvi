@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 8.1 1993/06/09 22:28:45 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:45 $";
+static char sccsid[] = "$Id: v_xchar.c,v 8.2 1993/08/25 16:50:44 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:50:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,6 @@ v_xchar(sp, ep, vp, fm, tm, rp)
 		NODEL(sp);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	fm->lno = tm->lno = fm->lno;
 
 	/*
 	 * Deleting from the cursor toward the end of line, w/o moving the
