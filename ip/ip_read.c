@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.14 1996/12/16 09:41:06 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:41:06 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.15 1996/12/17 20:15:22 bostic Exp $ (Berkeley) $Date: 1996/12/17 20:15:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -265,6 +265,8 @@ ip_trans(sp, ipp, evp)
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
 	case VI_MOUSE_MOVE:
+	case VI_SEL_END:
+	case VI_SEL_START:
 		evp->e_event = E_IPCOMMAND;
 		evp->e_ipcom = ipp->ibuf[0];
 		fmt = "12";
