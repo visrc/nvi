@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.84 1994/08/12 09:56:17 bostic Exp $ (Berkeley) $Date: 1994/08/12 09:56:17 $";
+static char sccsid[] = "$Id: vi.c,v 8.85 1994/08/12 10:35:52 bostic Exp $ (Berkeley) $Date: 1994/08/12 10:35:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,13 +31,13 @@ static char sccsid[] = "$Id: vi.c,v 8.84 1994/08/12 09:56:17 bostic Exp $ (Berke
 #include "vcmd.h"
 
 static int getcmd __P((SCR *, EXF *,
-		VICMDARG *, VICMDARG *, VICMDARG *, int *));
+		VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
 static __inline int
 	   getcount __P((SCR *, ARG_CHAR_T, u_long *));
 static __inline int
 	   getkey __P((SCR *, CH *, u_int));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
-static int getmotion __P((SCR *, EXF *, VICMDARG *, VICMDARG *));
+static int getmotion __P((SCR *, EXF *, VICMDARG *, VICMDARG *, int *));
 
 /*
  * Side-effect:
@@ -59,7 +59,7 @@ vi(sp, ep)
 	MARK abs;
 	VICMDARG cmd, *vp;
 	u_int flags, saved_mode;
-	int comcount, eval;
+	int comcount, eval, mapped;
 
 	/* Start vi and paint the screen. */
 	if (v_init(sp, ep))
@@ -82,7 +82,7 @@ vi(sp, ep)
 			(void)sp->s_column(sp, ep, &sp->rcm);
 		}
 
-		/* If not in a map, log the cursor position. */
+		/* If not currently in a map, log the cursor position. */
 		if (!MAPPED_KEYS_WAITING(sp) && log_cursor(sp, ep))
 			goto err;
 
@@ -92,7 +92,8 @@ vi(sp, ep)
 		 * function to get the resulting mark.  We then call the
 		 * command setting the cursor to the resulting mark.
 		 */
-		if (getcmd(sp, ep, DOT, vp, NULL, &comcount))
+		mapped = 0;
+		if (getcmd(sp, ep, DOT, vp, NULL, &comcount, &mapped))
 			goto err;
 
 		/*
@@ -136,7 +137,7 @@ vi(sp, ep)
 		if (F_ISSET(vp, V_MOTION)) {
 			flags = F_ISSET(vp, VM_RCM_MASK);
 			F_CLR(vp, VM_RCM_MASK);
-			if (getmotion(sp, ep, DOTMOTION, vp))
+			if (getmotion(sp, ep, DOTMOTION, vp, &mapped))
 				goto err;
 			if (F_ISSET(vp, VM_NOMOTION))
 				goto err;
@@ -179,8 +180,14 @@ vi(sp, ep)
 		 if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
-		/* Set the dot command structure. */
-		if (F_ISSET(vp, V_DOT)) {
+		/*
+		 * Set the dot command structure.
+		 *
+		 * !!!
+		 * Historically, no command which used any mapped keys became
+		 * the dot command.
+		 */
+		if (F_ISSET(vp, V_DOT) && !mapped) {
 			*DOT = cmd;
 			F_SET(DOT, VC_ISDOT);
 
@@ -282,6 +289,8 @@ err:				term_flush(sp, "Vi error", CH_MAPPED);
 		return (1);						\
 	if (ikey.value == K_ESCAPE)					\
 		goto esc;						\
+	if (F_ISSET(&ikey, CH_MAPPED))					\
+		*mappedp = 1;						\
 	key = ikey.ch;							\
 }
 
@@ -314,13 +323,14 @@ VIKEYS const tmotion = {
  *	[count] key [character]
  */
 static int
-getcmd(sp, ep, dp, vp, ismotion, comcountp)
+getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *dp, *vp;
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
-	int *comcountp;
+	int *comcountp, *mappedp;
 {
+	enum { COMMANDMODE, ISPARTIAL, NOTPARTIAL } cpart;
 	VIKEYS const *kp;
 	u_int flags;
 	CH ikey;
@@ -332,34 +342,26 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	memset(&vp->vp_startzero, 0,
 	    (char *)&vp->vp_endzero - (char *)&vp->vp_startzero);
 
-	/* Get a key. */
-	if (getkey(sp, &ikey, TXT_MAPCOMMAND))
-		return (1);
-
 	/*
+	 * Get a key.
+	 *
 	 * <escape> cancels partial commands, i.e. a command where at least
 	 * one non-numeric character has been entered.  Otherwise, it beeps
-	 * the terminal.  So, the following code is littered with tests for
-	 * <escape> characters.
+	 * the terminal.
 	 *
 	 * !!!
-	 * Why can't we cancel commands where all that's been entered is a
-	 * number?  (POSIX 1003.2-1992 explicitly disallows this.)
+	 * POSIX 1003.2-1992 explicitly disallows cancelling commands where
+	 * all that's been entered is a number, requiring that the terminal
+	 * be alerted.
 	 */
-	cpartial = 0;
-	if (ikey.value == K_ESCAPE) {
-		/* If already in command mode, it's an error. */
-		if (ismotion == NULL) {
-			msgq(sp, M_BERR, "Already in command mode");
-			return (1);
-		}
-		return (1);
-	}
+	cpart = ismotion == NULL ? COMMANDMODE : ISPARTIAL;
+	KEY(key, TXT_MAPCOMMAND);
+	if (ismotion == NULL)
+		cpart = NOTPARTIAL;
 
 	/* Pick up optional buffer. */
-	key = ikey.ch;
 	if (key == '"') {
-		cpartial = 1;
+		cpart = ISPARTIAL;
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
 			    "Buffers should be specified before the command");
@@ -387,7 +389,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		cpartial = 1;
+		cpart = ISPARTIAL;
 		if (F_ISSET(vp, VC_BUFFER)) {
 			msgq(sp, M_ERR, "Only one buffer can be specified");
 			return (1);
@@ -404,7 +406,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	}
 
 	/* Check for an OOB command key. */
-	cpartial = 1;
+	cpart = ISPARTIAL;
 	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", KEY_NAME(sp, key));
 		return (1);
@@ -537,8 +539,16 @@ usage:			if (ismotion == NULL)
 
 	return (0);
 
-esc:	if (!cpartial)
+esc:	switch (cpart) {
+	case COMMANDMODE:
+		msgq(sp, M_BERR, "Already in command mode");
+		break;
+	case ISPARTIAL:
+		break;
+	case NOTPARTIAL:
 		(void)sp->s_bell(sp);
+		break;
+	}
 	return (1);
 }
 
@@ -548,10 +558,11 @@ esc:	if (!cpartial)
  * Get resulting motion mark.
  */
 static int
-getmotion(sp, ep, dm, vp)
+getmotion(sp, ep, dm, vp, mappedp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *dm, *vp;
+	int *mappedp;
 {
 	MARK m;
 	VICMDARG motion;
@@ -568,7 +579,7 @@ getmotion(sp, ep, dm, vp)
 		motion = *dm;
 		F_SET(&motion, VC_ISDOT);
 		F_CLR(&motion, VM_COMMASK);
-	} else if (getcmd(sp, ep, NULL, &motion, vp, &notused))
+	} else if (getcmd(sp, ep, NULL, &motion, vp, &notused, mappedp))
 		return (1);
 
 	/*
