@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.19 1995/10/17 08:29:54 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:29:54 $";
+static char sccsid[] = "$Id: ex.c,v 10.20 1995/10/17 08:32:17 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:32:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,7 @@ ex(spp)
 		/* Display status line and flush. */
 		if (F_ISSET(sp, S_STATUS)) {
 			F_CLR(sp, S_STATUS);
-			msg_status(sp, sp->lno, 0);
+			msgq_status(sp, sp->lno, 0);
 		}
 		(void)ex_fflush(sp);
 
