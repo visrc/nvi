@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_version.c,v 10.29 1996/08/17 12:36:35 bostic Exp $ (Berkeley) $Date: 1996/08/17 12:36:35 $";
+static const char sccsid[] = "$Id: ex_version.c,v 10.30 1996/08/17 18:55:16 bostic Exp $ (Berkeley) $Date: 1996/08/17 18:55:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ ex_version(sp, cmdp)
 	EXCMD *cmdp;
 {
 	msgq(sp, M_INFO,
-	    "This program is shareware: see the LICENSE file for details.");
+	    "Vi is shareware: see the LICENSE file for details.");
 	msgq(sp, M_INFO, VI_VERSION);
 	return (0);
 }
