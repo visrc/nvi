@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.68 1996/04/27 13:26:25 bostic Exp $ (Berkeley) $Date: 1996/04/27 13:26:25 $
+.\"     $Id: vi.ref,v 8.69 1996/04/30 20:50:19 bostic Exp $ (Berkeley) $Date: 1996/04/30 20:50:19 $
 .\"
 .\"
 .so ref.so
@@ -592,7 +592,7 @@ are displayed using the local character set.
 .pp
 Non-printable characters, for which
 .XR iscntrl 3
-returns true, and which are less than octal \e076,
+returns true, and which are less than octal \e040,
 are displayed as the string
 .QT ^<character> ,
 where
