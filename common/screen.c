@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.43 1993/12/02 10:34:15 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:34:15 $";
+static char sccsid[] = "$Id: screen.c,v 8.44 1993/12/02 12:44:42 bostic Exp $ (Berkeley) $Date: 1993/12/02 12:44:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,7 +241,7 @@ screen_end(sp)
 		}
 	}
 
-	/* Remove the screen from the global screen chain. */
+	/* Remove the screen from the displayed queue. */
 	CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
 
 	/* Free the screen itself. */
