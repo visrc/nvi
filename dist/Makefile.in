@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.91 1997/01/14 11:18:56 bostic Exp $ (Berkeley) $Date: 1997/01/14 11:18:56 $
+#	$Id: Makefile.in,v 8.92 1997/04/13 15:22:21 bostic Exp $ (Berkeley) $Date: 1997/04/13 15:22:21 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -127,7 +127,7 @@ install: all install_common
 	    ($(mkdir) $(mandir)/cat1 && $(chmod) $(dmode) $(mandir)/cat1)
 	@echo "Installing man pages: $(mandir) ..."
 	@cd $(mandir)/cat1 && $(rm) -f `echo vi.0 | sed '$(transform)'`
-	@$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.0 \
+	@$(cp) $(srcdir)/docs/vi.man/vi.0 \
 	    $(mandir)/cat1/`echo vi.0 | sed '$(transform)'`
 	@cd $(mandir)/cat1 && $(chmod) $(fmode) `echo vi.0 | sed '$(transform)'`
 	@cd $(mandir)/cat1 && $(rm) -f `echo ex.0 | sed '$(transform)'`
@@ -139,7 +139,7 @@ install: all install_common
 	@[ -d $(mandir)/man1 ] || \
 	    ($(mkdir) $(mandir)/man1 && $(chmod) $(dmode) $(mandir)/man1)
 	@cd $(mandir)/man1 && $(rm) -f `echo vi.1 | sed '$(transform)'`
-	@$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.1 \
+	@$(cp) $(srcdir)/docs/vi.man/vi.1 \
 	    $(mandir)/man1/`echo vi.1 | sed '$(transform)'`
 	@cd $(mandir)/man1 && $(chmod) $(fmode) `echo vi.1 | sed '$(transform)'`
 	@cd $(mandir)/man1 && $(rm) -f `echo ex.1 | sed '$(transform)'`
@@ -202,11 +202,11 @@ uninstall:
 	cd $(mandir)/man1 && $(rm) -f `echo view.1 | sed '$(transform)'`
 
 docs:
-	cd $(srcdir)/docs/USD.doc/vi.ref && $(MAKE)
-	cd $(srcdir)/docs/USD.doc/vi.man && $(MAKE)
-	cd $(srcdir)/docs/USD.doc/edit && $(MAKE)
-	cd $(srcdir)/docs/USD.doc/exref && $(MAKE)
-	cd $(srcdir)/docs/USD.doc/vitut && $(MAKE)
+	cd $(srcdir)/docs/vi.ref && $(MAKE)
+	cd $(srcdir)/docs/vi.man && $(MAKE)
+	cd $(srcdir)/docs/edit && $(MAKE)
+	cd $(srcdir)/docs/exref && $(MAKE)
+	cd $(srcdir)/docs/vitut && $(MAKE)
 
 clean:
 	-rm -f $(CLOBJS) $(COBJS) $(DBOBJS)
@@ -215,11 +215,11 @@ clean:
 	-rm -f *.o memcpy.c perl.c *.core core vi ex vi_motif libmvi.a
 
 cleandocs:
-	cd $(srcdir)/docs/USD.doc/vi.ref && $(MAKE) clean
-	cd $(srcdir)/docs/USD.doc/vi.man && $(MAKE) clean
-	cd $(srcdir)/docs/USD.doc/edit && $(MAKE) clean
-	cd $(srcdir)/docs/USD.doc/exref && $(MAKE) clean
-	cd $(srcdir)/docs/USD.doc/vitut && $(MAKE) clean
+	cd $(srcdir)/docs/vi.ref && $(MAKE) clean
+	cd $(srcdir)/docs/vi.man && $(MAKE) clean
+	cd $(srcdir)/docs/edit && $(MAKE) clean
+	cd $(srcdir)/docs/exref && $(MAKE) clean
+	cd $(srcdir)/docs/vitut && $(MAKE) clean
 
 distclean maintainer-clean realclean: clean cleandocs
 	-rm -f Makefile config.cache config.h config.log config.status
