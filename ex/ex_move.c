@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.1 1993/06/09 22:24:47 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:24:47 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.2 1993/07/21 09:00:31 bostic Exp $ (Berkeley) $Date: 1993/07/21 09:00:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ cm(sp, ep, cmdp, cmd)
 		if (delete(sp, ep, &fm1, &fm2, 1))
 			return (1);
 		if (tm.lno >= fm1.lno)
-			tm.lno -= fm2.lno - fm1.lno;
+			tm.lno -= (fm2.lno - fm1.lno) + 1;
 	}
 
 	/* Add the new text. */
@@ -93,7 +93,8 @@ cm(sp, ep, cmdp, cmd)
 	}
 
 	/* Reporting. */
-	sp->rptlines[cmd == COPY ? L_COPIED : L_MOVED] += fm2.lno - fm1.lno;
+	sp->rptlines[cmd ==
+	    COPY ? L_COPIED : L_MOVED] += (fm2.lno - fm1.lno) + 1;
 
 	F_SET(sp, S_AUTOPRINT);
 	return (0);
