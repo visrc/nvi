@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.26 1994/03/08 19:38:09 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:09 $";
+static char sccsid[] = "$Id: options_f.c,v 8.27 1994/03/14 17:32:35 bostic Exp $ (Berkeley) $Date: 1994/03/14 17:32:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -262,12 +262,6 @@ DECL(f_number)
 		O_SET(sp, O_NUMBER);
 
 	F_SET(sp, S_REFORMAT | S_REDRAW);
-	return (0);
-}
-
-DECL(f_optimize)
-{
-	msgq(sp, M_ERR, "The optimize option is not implemented.");
 	return (0);
 }
 
