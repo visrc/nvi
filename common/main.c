@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.8 1993/08/25 16:36:27 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:36:27 $";
+static char sccsid[] = "$Id: main.c,v 8.9 1993/08/27 11:42:11 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:42:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,6 +40,7 @@ static char sccsid[] = "$Id: main.c,v 8.8 1993/08/25 16:36:27 bostic Exp $ (Berk
 
 static void msgflush __P((GS *));
 static void obsolete __P((char *[]));
+static void rcv_winch __P((int, int, struct sigcontext *));
 static void reset __P((GS *));
 static void usage __P((void));
 
@@ -53,6 +54,7 @@ main(argc, argv)
 	extern int optind;
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
+	struct sigaction act;
 	struct stat sb;
 	EXCMDARG cmd;
 	GS *gp;
@@ -93,7 +95,7 @@ main(argc, argv)
 				/* No need to block SIGALRM yet. */
 	HDR_APPEND(sp, &gp->scrhdr, next, prev, SCR);
 
-	if (set_window_size(sp, 0))	/* Set the window size. */
+	if (set_window_size(sp, 0, 0))	/* Set the window size. */
 		goto err1;
 
 	if (opts_init(sp))		/* Options initialization. */
@@ -231,6 +233,15 @@ main(argc, argv)
 	if (flagchk == 'l')
 		exit(rcv_list(sp));
 
+	/*
+	 * Initialize the window change size handler.  Use sigaction(2),
+	 * not signal(3) since don't want read system calls restarted.
+	 */
+	act.sa_handler = rcv_winch;
+	act.sa_mask = sigmask(SIGWINCH);
+	act.sa_flags = 0;
+	(void)sigaction(SIGWINCH, &act, NULL);
+
 	/* Initialize the about-to-die handlers. */
 	(void)signal(SIGHUP, rcv_hup);
 	(void)signal(SIGTERM, rcv_term);
@@ -364,6 +375,18 @@ msgflush(gp)
 	for (mp = gp->msgp;
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->next) 
 		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
+}
+
+/*
+ * rcv_winch --
+ *	Handle SIGWINCH.
+ */
+static void
+rcv_winch(signo, code, scp)
+	int signo, code;
+	struct sigcontext *scp;
+{
+	F_SET(__global_list, G_SIGWINCH);
 }
 
 static void
