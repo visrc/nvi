@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.28 1993/11/28 19:31:36 bostic Exp $ (Berkeley) $Date: 1993/11/28 19:31:36 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.29 1993/12/02 10:50:12 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:50:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,7 +128,7 @@ ex_tagpush(sp, ep, cmdp)
 	case 1:
 		if (exp->tlast != NULL)
 			FREE(exp->tlast, strlen(exp->tlast) + 1);
-		if ((exp->tlast = strdup((char *)cmdp->argv[0])) == NULL) {
+		if ((exp->tlast = strdup(cmdp->argv[0]->bp)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
@@ -300,7 +300,7 @@ ex_tagpop(sp, ep, cmdp)
 		FREETAG(tp);
 		break;
 	case 1:
-		arg = cmdp->argv[0];
+		arg = cmdp->argv[0]->bp;
 		off = strtol(arg, &p, 10);
 		if (*p == '\0') {
 			if (off < 1)
@@ -441,8 +441,7 @@ ex_tagdisplay(sp, ep)
 #define	MNOC	15
 	for (maxlen = 0,
 	    tp = exp->tagq.tqh_first; tp != NULL; tp = tp->q.tqe_next) {
-		len = tp->frp->nlen;		/* The original name. */
-		name = tp->frp->name;
+		len = strlen(name = tp->frp->name);	/* The original name. */
 		if (maxlen < len && len < MNOC)
 			maxlen = len;
 	}
@@ -450,8 +449,7 @@ ex_tagdisplay(sp, ep)
 	for (cnt = 1,
 	    tp = exp->tagq.tqh_first; tp != NULL;
 	    ++cnt, tp = tp->q.tqe_next) {
-		len = tp->frp->nlen;		/* The original name. */
-		name = tp->frp->name;
+		len = strlen(name = tp->frp->name);	/* The original name. */
 		if (len > maxlen || len + tp->slen > sp->cols)
 			if (tp == NULL || tp->search == NULL)
 				(void)ex_printf(EXCOOKIE,
