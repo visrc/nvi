@@ -4,59 +4,19 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.23 1992/05/15 11:03:08 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:03:08 $
+ *	$Id: common.h,v 5.24 1992/06/07 13:59:40 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:59:40 $
  */
 
-#ifndef TRUE					/* XXX -- Delete. */
-#define TRUE	1
-#endif
-#ifndef FALSE
-#define FALSE	0
-#endif
+#define	ESCAPE	'\033'			/* Escape character. */
+#define	TAB	8			/* XXX -- Settable? */
 
-#define	ESCAPE		'\033'			/* Escape character. */
-
-#define	TAB	8				/* XXX -- Settable? */
-#define	REG	register			/* XXX -- Delete. */
-
-#define	inword(ch)	(isalnum(ch) || (ch) == '_')
-
-#define INFINITY	2000000001L	/* a very large integer */
-
-/*------------------------------------------------------------------------*/
 /* misc housekeeping variables & functions				  */
 
 extern long	nlines;		/* number of lines in the file */
 extern long	changes;	/* counts changes, to prohibit short-cuts */
-extern int	doingdot;	/* boolean: are we doing the "." command? */
 extern int	doingglobal;	/* boolean: are doing a ":g" command? */
-extern int	force_lnmd;	/* boolean: force a command to work in line mode? */
 extern long	rptlines;	/* number of lines affected by a command */
 extern char	*rptlabel;	/* description of how lines were affected */
-#define		ctrl(ch) ((ch)&037)
-
-/*------------------------------------------------------------------------*/
-/* macros that are used as control structures                             */
-
-#ifdef NOTDEF
-#define BeforeAfter(before, after) for((before),bavar=1;bavar;(after),bavar=0)
-#define ChangeText	BeforeAfter(beforedo(FALSE),afterdo())
-#else
-#define BeforeAfter(before, after) for((before),bavar=1;bavar;(after),bavar=0)
-#define ChangeText	BeforeAfter(bavar=1,bavar=0)
-#endif
-
-extern int	bavar;		/* used only in BeforeAfter macros */
-
-/* These are used to minimize calls to fetchline() */
-#ifdef NOTDEF
-extern int	plen;	/* length of the line */
-extern long	pline;	/* line number that len refers to */
-extern long	pchgs;	/* "changes" level that len refers to */
-extern char	*ptext;	/* text of previous line, if valid */
-extern void	pfetch();
-#endif
-extern char	digraph();
 
 /* Describe the current state. */
 #define WHEN_VICMD	0x0001	/* getkey: reading a VI command */
