@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.68 1993/05/08 19:19:41 bostic Exp $ (Berkeley) $Date: 1993/05/08 19:19:41 $";
+static char sccsid[] = "$Id: main.c,v 5.69 1993/05/12 16:47:43 bostic Exp $ (Berkeley) $Date: 1993/05/12 16:47:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -159,20 +159,10 @@ main(argc, argv)
 	argv += optind;
 
 	/*
-	 * Source the system, ~user and local .exrc files.
-	 *
-	 * XXX
-	 * Check the correct order for these.
+	 * Source the system, environment, ~user and local .exrc values.
+	 * If the environment exists, vi historically doesn't check ~user.
 	 */
 	(void)ex_cfile(sp, NULL, _PATH_SYSEXRC, 0);
-	if ((p = getenv("HOME")) != NULL && *p) {
-		char path[MAXPATHLEN];
-
-		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
-		(void)ex_cfile(sp, NULL, path, 0);
-	}
-	if (O_ISSET(sp, O_EXRC))
-		(void)ex_cfile(sp, NULL, _PATH_EXRC, 0);
 
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
@@ -182,6 +172,14 @@ main(argc, argv)
 			(void)ex_cstring(sp, NULL, p, strlen(p));
 			free(p);
 		}
+	else if ((p = getenv("HOME")) != NULL && *p) {
+		char path[MAXPATHLEN];
+
+		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
+		(void)ex_cfile(sp, NULL, path, 0);
+	}
+	if (O_ISSET(sp, O_EXRC))
+		(void)ex_cfile(sp, NULL, _PATH_EXRC, 0);
 
 	/* Any remaining arguments are file names. */
 	if (argc)
