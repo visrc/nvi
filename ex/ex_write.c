@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.24 1996/05/03 09:00:54 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:00:54 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.25 1996/05/08 18:07:55 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:07:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,8 +252,7 @@ exwr(sp, cmdp, cmd)
 			set_alt_name(sp, name);
 		break;
 	default:
-		msgq_str(sp, M_ERR, p,
-		    "176|%s expanded into too many file names");
+		ex_emsg(sp, p, EXM_FILECOUNT);
 		return (1);
 	}
 
