@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.5 1993/08/19 15:01:20 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:01:20 $";
+static char sccsid[] = "$Id: v_init.c,v 8.6 1993/08/21 13:48:16 bostic Exp $ (Berkeley) $Date: 1993/08/21 13:48:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,9 @@ v_init(sp, ep)
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL)
 		return (1);
 #endif
+#ifdef MAKE_EX_OUTPUT_LINE_BUFFERED
 	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
+#endif
 
 	/*
 	 * The default address is line 1, column 0.  If the address set
