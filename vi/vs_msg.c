@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.22 1995/10/17 08:30:17 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:30:17 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.23 1995/10/17 08:50:04 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:50:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -502,7 +502,7 @@ vs_ex_resolve(sp, continuep)
 		*continuep = 0;
 
 	/* Report on line modifications. */
-	(void)msg_rpt(sp);
+	msgq_rpt(sp);
 
 	/* Flush ex messages. */
 	(void)ex_fflush(sp);
@@ -592,11 +592,11 @@ vs_resolve(sp)
 	/* Display new file status line. */
 	if (F_ISSET(sp, S_STATUS)) {
 		F_CLR(sp, S_STATUS);
-		msg_status(sp, sp->lno, 0);
+		msgq_status(sp, sp->lno, 0);
 	}
 
 	/* Report on line modifications. */
-	msg_rpt(sp);
+	msgq_rpt(sp);
 
 	vip = VIP(sp);
 	switch (vip->totalcount) {
