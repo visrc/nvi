@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.149 1994/08/08 14:57:09 bostic Exp $ (Berkeley) $Date: 1994/08/08 14:57:09 $";
+static char sccsid[] = "$Id: ex.c,v 8.150 1994/08/08 22:29:15 bostic Exp $ (Berkeley) $Date: 1994/08/08 22:29:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -265,7 +265,7 @@ ex_cmd(sp, ep, cmd, cmdlen, needsep)
 	long flagoff;
 	u_int saved_mode;
 	int blank, ch, cnt, delim, flags, namelen, nl;
-	int uselastcmd, tmp, vi_address;
+	int optnum, uselastcmd, tmp, vi_address;
 	char *arg1, *save_cmd, *p, *s, *t;
 
 	/* Init. */
@@ -516,10 +516,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			exp->fdef = E_F_LIST;
 		else if (cp == &cmds[C_PRINT])
 			exp->fdef = E_F_PRINT;
-		else
-			exp->fdef = 0;
 		uselastcmd = 0;
-
 	} else {
 		/* Print is the default command. */
 		cp = &cmds[C_PRINT];
@@ -541,6 +538,19 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 
 		uselastcmd = 1;
 	}
+
+	/*
+	 * !!!
+	 * Historically, the number option applied to both ex and vi.  One
+	 * strangeness was that ex didn't switch display formats until a
+	 * command was entered, e.g. <CR>'s after the set didn't change to
+	 * the new format, but :1p would.
+	 */
+	if (O_ISSET(sp, O_NUMBER)) {
+		optnum = 1;
+		F_SET(&exc, E_F_HASH);
+	} else
+		optnum = 0;
 
 	/* Initialize local flags to the command flags. */
 	LF_INIT(cp->flags);
@@ -930,6 +940,7 @@ two:		switch (exc.addrcnt) {
 					--flagoff;
 					break;
 				case '#':
+					optnum = 0;
 					F_SET(&exc, E_F_HASH);
 					exp->fdef |= E_F_HASH;
 					break;
@@ -1407,6 +1418,10 @@ addr2:	switch (exc.addrcnt) {
 		 */
 		if (LF_ISSET(E_F_PRCLEAR))
 			F_CLR(&exc, E_F_HASH | E_F_LIST | E_F_PRINT);
+
+		/* If hash only set because of the number option, discard it. */
+		if (optnum)
+			F_CLR(&exc, E_F_HASH);
 
 		/*
 		 * If there was an explicit flag to display the new cursor
