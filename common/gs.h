@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 5.4 1993/05/16 12:32:17 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:32:17 $
+ *	$Id: gs.h,v 5.5 1993/05/21 10:58:15 bostic Exp $ (Berkeley) $Date: 1993/05/21 10:58:15 $
  */
 
 #include <termios.h>
@@ -28,8 +28,9 @@ typedef struct _gs {
 #endif
 
 #define	G_SETMODE	0x01		/* Tty mode changed. */
-#define	G_TMP_INUSE	0x02		/* Temporary buffer in use. */
-#define	G_RECOVER_SET	0x04		/* Recover system initialized. */
+#define	G_SNAPSHOT	0x02		/* Always snapshot files. */
+#define	G_TMP_INUSE	0x04		/* Temporary buffer in use. */
+#define	G_RECOVER_SET	0x08		/* Recover system initialized. */
 	u_int	 flags;
 } GS;
 
