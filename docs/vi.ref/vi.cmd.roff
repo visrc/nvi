@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.32 1994/08/31 19:31:27 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:31:27 $
+.\"	$Id: vi.cmd.roff,v 8.33 1994/08/31 22:22:57 bostic Exp $ (Berkeley) $Date: 1994/08/31 22:22:57 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -183,9 +183,9 @@ A second
 .CO vi
 command can be used as an optional trailing argument to the
 .CO vi
-.CO \&! ,
 .CO \&< ,
 .CO \&> ,
+.CO \&! ,
 .CO \&c ,
 .CO \&d ,
 .CO \&y ,
@@ -942,10 +942,8 @@ The first line of the replaced text.
 The first column of the replaced text.
 .SP Options:
 Affected by the
-.OP meta
-and
 .OP shell
-options.
+option.
 .SE
 .KY #
 .IP "[count] # +|-|#"
