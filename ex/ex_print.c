@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.16 1996/03/29 13:53:50 bostic Exp $ (Berkeley) $Date: 1996/03/29 13:53:50 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.17 1996/04/30 20:22:07 bostic Exp $ (Berkeley) $Date: 1996/04/30 20:22:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ ex_pr(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	if (ex_print(sp, cmdp, &cmdp->addr1, &cmdp->addr2, cmdp->flags))
+	if (ex_print(sp, cmdp, &cmdp->addr1, &cmdp->addr2, cmdp->iflags))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
