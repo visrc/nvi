@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.60 1994/07/15 16:46:42 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:46:42 $";
+static char sccsid[] = "$Id: options.c,v 8.61 1994/07/22 17:18:08 bostic Exp $ (Berkeley) $Date: 1994/07/22 17:18:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -353,11 +353,11 @@ opts_set(sp, argv)
 	OPTLIST otmp;
 	OPTION *spo;
 	u_long value, turnoff;
-	int ch, offset, rval;
-	char *endp, *equals, *name, *p;
+	int ch, equals, offset, qmark, rval;
+	char *endp, *name, *p, *sep; 
 
 	disp = NO_DISPLAY;
-	for (rval = 0; (*argv)->len != 0; ++argv) {
+	for (rval = 0; argv[0]->len != 0; ++argv) {
 		/*
 		 * The historic vi dumped the options for each occurrence of
 		 * "all" in the set list.  Puhleeze.
@@ -367,12 +367,20 @@ opts_set(sp, argv)
 			continue;
 		}
 
-		/* Find equals sign or end of set, skipping backquoted chars. */
-		for (equals = NULL,
+		/*
+		 * Find equals sign, question mark or end of set, skipping
+		 * backquoted chars.
+		 */
+		for (sep = NULL, equals = qmark = 0,
 		    p = name = argv[0]->bp; (ch = *p) != '\0'; ++p)
 			switch (ch) {
 			case '=':
-				equals = p;
+				sep = p;
+				equals = 1;
+				break;
+			case '?':
+				sep = p;
+				qmark = 1;
 				break;
 			case '\\':
 				/* Historic vi just used the backslash. */
@@ -384,8 +392,8 @@ opts_set(sp, argv)
 
 		turnoff = 0;
 		op = NULL;
-		if (equals)
-			*equals++ = '\0';
+		if (sep)
+			*sep++ = '\0';
 
 		/* Check list of abbreviations. */
 		atmp.name = name;
@@ -440,6 +448,17 @@ found:		if (op == NULL) {
 		offset = op - optlist;
 		spo = sp->opts + offset;
 
+		/*
+		 * !!!
+		 * Historically, the question mark could be a separate
+		 * argument.
+		 */
+		if (!equals && !qmark &&
+		    argv[1]->len == 1 && argv[1]->bp[0] == '?') {
+			++argv;
+			qmark = 1;
+		}
+
 		/* Set name, value. */
 		switch (op->type) {
 		case OPT_0BOOL:
@@ -448,6 +467,12 @@ found:		if (op == NULL) {
 				msgq(sp, M_ERR,
 				    "set: [no]%s option doesn't take a value",
 				    name);
+				break;
+			}
+			if (qmark) {
+				if (!disp)
+					disp = SELECT_DISPLAY;
+				F_SET(spo, OPT_SELECTED);
 				break;
 			}
 			if (op->func != NULL) {
@@ -477,20 +502,20 @@ found:		if (op == NULL) {
 				    "set: %s option isn't a boolean", name);
 				break;
 			}
-			if (!equals) {
+			if (qmark || !equals) {
 				if (!disp)
 					disp = SELECT_DISPLAY;
 				F_SET(spo, OPT_SELECTED);
 				break;
 			}
-			value = strtol(equals, &endp, 10);
+			value = strtol(sep, &endp, 10);
 			if (*endp && !isblank(*endp)) {
 				msgq(sp, M_ERR,
-				    "set %s: illegal number %s", name, equals);
+				    "set %s: illegal number %s", name, sep);
 				break;
 			}
 nostr:			if (op->func != NULL) {
-				if (op->func(sp, spo, equals, value)) {
+				if (op->func(sp, spo, sep, value)) {
 					rval = 1;
 					break;
 				}
@@ -503,22 +528,21 @@ nostr:			if (op->func != NULL) {
 				    "set: %s option isn't a boolean", name);
 				break;
 			}
-			if (!equals) {
+			if (qmark || !equals) {
 				if (!disp)
 					disp = SELECT_DISPLAY;
 				F_SET(spo, OPT_SELECTED);
 				break;
 			}
 			if (op->func != NULL) {
-				if (op->func(sp, spo, equals, (u_long)0)) {
+				if (op->func(sp, spo, sep, (u_long)0)) {
 					rval = 1;
 					break;
 				}
 			} else {
 				if (F_ISSET(&sp->opts[offset], OPT_ALLOCATED))
 					free(O_STR(sp, offset));
-				if ((O_STR(sp, offset) =
-				    strdup(equals)) == NULL) {
+				if ((O_STR(sp, offset) = strdup(sep)) == NULL) {
 					msgq(sp, M_SYSERR, NULL);
 					rval = 1;
 					break;
