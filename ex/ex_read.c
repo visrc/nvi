@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.37 1994/08/08 10:20:02 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:20:02 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.38 1994/08/09 08:48:13 bostic Exp $ (Berkeley) $Date: 1994/08/09 08:48:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,6 +119,9 @@ ex_read(sp, ep, cmdp)
 		    NULL, &rm, cmdp->argv[farg]->bp, FILTER_READ))
 			return (1);
 
+		/* The filter version of read set the autoprint flag. */
+		F_SET(EXP(sp), EX_AUTOPRINT);
+
 		/* If in vi mode, move to the first nonblank. */
 		sp->lno = rm.lno;
 		if (IN_VI_MODE(sp)) {
@@ -200,7 +203,6 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	if (nlines)
 		++sp->lno;
 
-	F_SET(EXP(sp), EX_AUTOPRINT);
 	return (rval);
 }
 
