@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.28 1996/03/27 18:50:09 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:50:09 $
+ *	$Id: gs.h,v 10.29 1996/04/15 20:31:22 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:22 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -26,16 +26,15 @@ struct _fref {
 	recno_t	 lno;			/* 1-N: file cursor line. */
 	size_t	 cno;			/* 0-N: file cursor column. */
 
-#define	FR_CURSORSET	0x001		/* If lno/cno values valid. */
-#define	FR_DONTDELETE	0x002		/* Don't delete the temporary file. */
-#define	FR_EXNAMED	0x004		/* Read/write renamed the file. */
-#define	FR_NAMECHANGE	0x008		/* If the name changed. */
-#define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
-#define	FR_RDONLY	0x020		/* File is read-only. */
-#define	FR_RECOVER	0x040		/* File is being recovered. */
-#define	FR_TMPEXIT	0x080		/* Modified temporary file, no exit. */
-#define	FR_TMPFILE	0x100		/* If file has no name. */
-#define	FR_UNLOCKED	0x200		/* File couldn't be locked. */
+#define	FR_CURSORSET	0x0001		/* If lno/cno values valid. */
+#define	FR_DONTDELETE	0x0002		/* Don't delete the temporary file. */
+#define	FR_EXNAMED	0x0004		/* Read/write renamed the file. */
+#define	FR_NAMECHANGE	0x0008		/* If the name changed. */
+#define	FR_NEWFILE	0x0010		/* File doesn't really exist yet. */
+#define	FR_RECOVER	0x0020		/* File is being recovered. */
+#define	FR_TMPEXIT	0x0040		/* Modified temporary file, no exit. */
+#define	FR_TMPFILE	0x0080		/* If file has no name. */
+#define	FR_UNLOCKED	0x0100		/* File couldn't be locked. */
 	u_int16_t flags;
 };
 

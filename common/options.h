@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: options.h,v 10.11 1996/03/06 19:50:46 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:46 $
+ *	$Id: options.h,v 10.12 1996/04/15 20:31:23 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:23 $
  */
 
 /*
@@ -79,10 +79,11 @@ struct _optlist {
 					/* Type of object. */
 	enum { OPT_0BOOL, OPT_1BOOL, OPT_NUM, OPT_STR } type;
 
-#define	OPT_ADISP	0x01		/* Always display the option. */
-#define	OPT_NDISP	0x02		/* Never display the option. */
-#define	OPT_NOSAVE	0x04		/* Option may not be unset. */
-#define	OPT_NOUNSET	0x08		/* Mkexrc command doesn't save. */
+#define	OPT_ADISP	0x001		/* Always display the option. */
+#define	OPT_ALWAYS	0x002		/* Always call the support function. */
+#define	OPT_NDISP	0x004		/* Never display the option. */
+#define	OPT_NOSAVE	0x008		/* Option may not be unset. */
+#define	OPT_NOUNSET	0x010		/* Mkexrc command doesn't save. */
 	u_int8_t flags;
 };
 

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.15 1996/04/10 11:28:51 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:28:51 $
+ *	$Id: screen.h,v 10.16 1996/04/15 20:31:24 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:24 $
  */
 
 /*
@@ -190,6 +190,7 @@ struct _scr {
 #define	S_EX_SILENT	0x00080000	/* Ex: batch script. */
 #define	S_INPUT		0x00100000	/* Doing text input. */
 #define	S_INPUT_INFO	0x00200000	/* Doing text input on info line. */
+#define	S_READONLY	0x00400000	/* Persistent readonly state. */
 #define	S_RE_SEARCH	0x00800000	/* Search RE has been compiled. */
 #define	S_RE_SUBST	0x01000000	/* Substitute RE has been compiled. */
 #define	S_SCRIPT	0x02000000	/* Shell script window. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.34 1996/04/15 12:32:13 bostic Exp $ (Berkeley) $Date: 1996/04/15 12:32:13 $";
+static const char sccsid[] = "$Id: options.c,v 10.35 1996/04/15 20:31:23 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,7 +135,7 @@ OPTLIST const optlist[] = {
 /* O_PROMPT	    4BSD */
 	{"prompt",	NULL,		OPT_1BOOL,	0},
 /* O_READONLY	    4BSD (undocumented) */
-	{"readonly",	f_readonly,	OPT_0BOOL,	0},
+	{"readonly",	f_readonly,	OPT_0BOOL,	OPT_ALWAYS},
 /* O_RECDIR	  4.4BSD */
 	{"recdir",	NULL,		OPT_STR,	0},
 /* O_REDRAW	    4BSD */
@@ -528,15 +528,16 @@ opts_set(sp, argv, usage)
 			 * Do nothing if the value is unchanged, the underlying
 			 * functions can be expensive.
 			 */
-			if (turnoff) {
-				if (!O_ISSET(sp, offset))
-					break;
-				O_CLR(sp, offset);
-			} else {
-				if (O_ISSET(sp, offset))
-					break;
-				O_SET(sp, offset);
-			}
+			if (!F_ISSET(op, OPT_ALWAYS))
+				if (turnoff) {
+					if (!O_ISSET(sp, offset))
+						break;
+					O_CLR(sp, offset);
+				} else {
+					if (O_ISSET(sp, offset))
+						break;
+					O_SET(sp, offset);
+				}
 
 			/* Report to subsystems. */
 			if (op->func != NULL &&
@@ -611,7 +612,8 @@ badnum:				p = msg_print(sp, name, &nf);
 			 * Do nothing if the value is unchanged, the underlying
 			 * functions can be expensive.
 			 */
-			if (O_VAL(sp, offset) == value)
+			if (!F_ISSET(op, OPT_ALWAYS) &&
+			    O_VAL(sp, offset) == value)
 				break;
 
 			/* Report to subsystems. */
@@ -646,7 +648,8 @@ badnum:				p = msg_print(sp, name, &nf);
 			 * Do nothing if the value is unchanged, the underlying
 			 * functions can be expensive.
 			 */
-			if (O_STR(sp, offset) != NULL &&
+			if (!F_ISSET(op, OPT_ALWAYS) &&
+			    O_STR(sp, offset) != NULL &&
 			    !strcmp(O_STR(sp, offset), sep))
 				break;
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.30 1996/04/11 11:40:51 bostic Exp $ (Berkeley) $Date: 1996/04/11 11:40:51 $";
+static const char sccsid[] = "$Id: msg.c,v 10.31 1996/04/15 20:31:22 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -573,7 +573,7 @@ msgq_status(sp, lno, showlast)
 		p += len;
 		needsep = 1;
 	}
-	if (F_ISSET(sp->frp, FR_RDONLY)) {
+	if (O_ISSET(sp, O_READONLY)) {
 		if (needsep) {
 			*p++ = ',';
 			*p++ = ' ';

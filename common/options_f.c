@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.18 1996/04/10 11:27:48 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:27:48 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.19 1996/04/15 20:31:24 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -231,12 +231,14 @@ f_readonly(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
-	if (sp->frp == NULL)
-		return (0);
+	/*
+	 * !!!
+	 * See the comment in exf.c.
+	 */
 	if (*valp)
-		F_CLR(sp->frp, FR_RDONLY);
+		F_CLR(sp, S_READONLY);
 	else
-		F_SET(sp->frp, FR_RDONLY);
+		F_SET(sp, S_READONLY);
 	return (0);
 }
 

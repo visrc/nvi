@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.29 1996/03/30 13:46:53 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:53 $";
+static const char sccsid[] = "$Id: exf.c,v 10.30 1996/04/15 20:31:21 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -132,10 +132,10 @@ file_init(sp, frp, rcv_name, flags)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int fd, open_err;
+	int fd, open_err, readonly;
 	char *oname, tname[MAXPATHLEN];
 
-	open_err = 0;
+	open_err = readonly = 0;
 
 	/*
 	 * If the file is a recovery file, let the recovery code handle it.
@@ -327,19 +327,23 @@ file_init(sp, frp, rcv_name, flags)
 			F_SET(frp, FR_UNLOCKED);
 			break;
 		case LOCK_UNAVAIL:
+			readonly = 1;
 			msgq_str(sp, M_INFO, oname,
 			    "239|%s already locked, session is read-only");
-			F_SET(frp, FR_RDONLY);
 			break;
 		case LOCK_SUCCESS:
 			break;
 		}
 
 	/*
-	 * The -R flag, or doing a "set readonly" during a session causes
-	 * all files edited during the session (using an edit command, or
-	 * even using tags) to be marked read-only.  Changing the file name
-	 * (see ex/ex_file.c), clears this flag.
+         * Historically, the readonly edit option was set per edit buffer in
+         * vi, unless the -R command-line option was specified or the program
+         * was executed as "view".  (Well, to be truthful, if the letter 'w'
+         * occurred anywhere in the program name, but let's not get into that.)
+	 * So, the persistant readonly state has to be stored in the screen
+	 * structure, and the edit option value toggles with the contents of
+	 * the edit buffer.  If the persistant readonly flag is set, set the
+	 * readonly edit option.
 	 *
 	 * Otherwise, try and figure out if a file is readonly.  This is a
 	 * dangerous thing to do.  The kernel is the only arbiter of whether
@@ -374,10 +378,13 @@ file_init(sp, frp, rcv_name, flags)
 	 * Access(2) doesn't consider the effective uid/gid values.  This
 	 * probably isn't a problem for vi when it's running standalone.
 	 */
-	if (O_ISSET(sp, O_READONLY) || !F_ISSET(frp, FR_NEWFILE) &&
+	if (readonly || F_ISSET(sp, S_READONLY) ||
+	    !F_ISSET(frp, FR_NEWFILE) &&
 	    (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
 	    access(frp->name, W_OK)))
-		F_SET(frp, FR_RDONLY);
+		O_SET(sp, O_READONLY);
+	else
+		O_CLR(sp, O_READONLY);
 
 	/* Switch... */
 	++ep->refcnt;
@@ -670,7 +677,7 @@ file_write(sp, fm, tm, name, flags)
 		noname = 0;
 
 	/* Can't write files marked read-only, unless forced. */
-	if (!LF_ISSET(FS_FORCE) && noname && F_ISSET(frp, FR_RDONLY)) {
+	if (!LF_ISSET(FS_FORCE) && noname && O_ISSET(sp, O_READONLY)) {
 		msgq(sp, M_ERR, LF_ISSET(FS_POSSIBLE) ?
 		    "244|Read-only file, not written; use ! to override" :
 		    "245|Read-only file, not written");
@@ -1195,7 +1202,7 @@ file_aw(sp, flags)
 	 * me (e.g. the principle of least surprise is violated if readonly is
 	 * set and vi writes the file), so I'm compatible with System V.
 	 */
-	if (F_ISSET(sp->frp, FR_RDONLY)) {
+	if (O_ISSET(sp, O_READONLY)) {
 		msgq(sp, M_INFO,
 		    "266|File readonly, modifications not auto-written");
 		return (0);
