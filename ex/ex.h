@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.24 1992/12/20 15:07:09 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:07:09 $
+ *	$Id: ex.h,v 5.25 1993/01/31 10:26:21 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:26:21 $
  */
 
 #include "exf.h"
@@ -101,10 +101,12 @@ int	ex_debug __P((EXCMDARG *));
 int	ex_delete __P((EXCMDARG *));
 int	ex_digraph __P((EXCMDARG *));
 int	ex_edit __P((EXCMDARG *));
+int	ex_end __P((EXF *));
 int	ex_equal __P((EXCMDARG *));
 int	ex_errlist __P((EXCMDARG *));
 int	ex_file __P((EXCMDARG *));
 int	ex_global __P((EXCMDARG *));
+int	ex_init __P((EXF *));
 int	ex_join __P((EXCMDARG *));
 int	ex_list __P((EXCMDARG *));
 int	ex_make __P((EXCMDARG *));
