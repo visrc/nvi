@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.16 1993/01/24 18:45:50 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:45:50 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.17 1993/01/25 20:13:46 bostic Exp $ (Berkeley) $Date: 1993/01/25 20:13:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -444,16 +444,17 @@ cursor:	/* If line has changed. */
 	 * screen, and therefore, how many screen positions to move.
 	 */
 	if (ep->cno < ep->ocno) {
-		/* Point to the old character. */
+		/*
+		 * Point to the old character.  The old cursor position can
+		 * be past EOL if, for example, we just deleted the rest of
+		 * the line.  In this case, since we don't know the width of
+		 * the characters we traversed, we have to do it slowly.
+		 */
 		p += ep->ocno;
 		cnt = (ep->ocno - ep->cno) + 1;
-#ifdef DEBUG
-		if (ep->ocno >= len) {
-			msg("Error: %s/%d: ep->ocno (%u) >= len (%u)",
-			     tail(__FILE__), __LINE__, ep->ocno, len);
-			return (1);
-		}
-#endif
+		if (ep->ocno >= len)
+			goto slow;
+
 		/*
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, just do it the the slow way.
