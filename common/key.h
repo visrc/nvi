@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.6 1992/05/27 10:28:38 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:28:38 $
+ *	$Id: key.h,v 5.7 1992/08/22 19:14:59 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:14:59 $
  */
 
 #define	K_CR		1
@@ -44,12 +44,6 @@ void	gb_init __P((void));
  * first column.  (We could theoretically lose if the command line has already
  * wrapped, but this should only result in additional characters being sent to
  * the terminal.)  All other initial output lines are preceded by a '\n'.
- *
- * XXX
- * Currently, there's a bug.  The msg line isn't getting erased when the line
- * is used again without an intervening repaint, so there can be garbage on
- * the end of the line.  The fix is to change curses to support a "force this
- * line to be written" semantic.
  */
 /* Start the sequence. */
 #define	EX_PRSTART(overwrite) {						\
