@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.23 1992/10/22 18:06:33 bostic Exp $ (Berkeley) $Date: 1992/10/22 18:06:33 $";
+static char sccsid[] = "$Id: options.c,v 5.24 1992/10/29 14:42:39 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -457,7 +457,7 @@ opts_dump(all)
 	 * and the full line length later on.
 	 */
 	colwidth = -1;
-	termwidth = (COLS - 1) / 2 & ~(TAB - 1);
+	termwidth = (curf->cols - 1) / 2 & ~(TAB - 1);
 	for (b_num = s_num = 0, op = opts; op->name; ++op) {
 		if (!all && !ISFSETP(op, OPT_SET))
 			continue;
@@ -486,7 +486,7 @@ opts_dump(all)
 	}
 
 	colwidth = (colwidth + TAB) & ~(TAB - 1);
-	termwidth = COLS - 1;
+	termwidth = curf->cols - 1;
 	numcols = termwidth / colwidth;
 	if (s_num > numcols) {
 		numrows = s_num / numcols;
@@ -495,7 +495,6 @@ opts_dump(all)
 	} else
 		numrows = 1;
 
-	EX_PRSTART(1);
 	for (row = 0; row < numrows;) {
 		endcol = colwidth;
 		for (base = row, chcnt = col = 0; col < numcols; ++col) {
@@ -503,21 +502,21 @@ opts_dump(all)
 			if ((base += numrows) >= s_num)
 				break;
 			while ((cnt = (chcnt + TAB & ~(TAB - 1))) <= endcol) {
-				(void)putchar('\t');
+				(void)putc('\t', curf->stdfp);
 				chcnt = cnt;
 			}
 			endcol += colwidth;
 		}
 		if (++row < numrows || b_num)
-			EX_PRNEWLINE;
+			(void)putc('\n', curf->stdfp);
 	}
 
 	for (row = 0; row < b_num;) {
 		(void)opts_print(&opts[b_op[row]]);
 		if (++row < b_num)
-			EX_PRNEWLINE;
+			(void)putc('\n', curf->stdfp);
 	}
-	EX_PRTRAIL;
+	(void)putc('\n', curf->stdfp);
 }
 
 /*
@@ -553,7 +552,7 @@ opts_save(fp)
 }
 
 /*
- * opt_print --
+ * opts_print --
  *	Print out an option.
  */
 static int
@@ -567,27 +566,27 @@ opts_print(op)
 	switch (op->flags & OPT_TYPE) {
 	case OPT_0BOOL:
 		curlen += 2;
-		(void)putchar('n');
-		(void)putchar('o');
+		(void)putc('n', curf->stdfp);
+		(void)putc('o', curf->stdfp);
 		/* FALLTHROUGH */
 	case OPT_1BOOL:
-		curlen += printf("%s", op->name);
+		curlen += fprintf(curf->stdfp, "%s", op->name);
 		break;
 	case OPT_NUM:
-		curlen += printf("%s", op->name);
+		curlen += fprintf(curf->stdfp, "%s", op->name);
 		curlen += 1;
-		(void)putchar('=');
-		curlen += printf("%ld", LVALP(op));
+		(void)putc('=', curf->stdfp);
+		curlen += fprintf(curf->stdfp, "%ld", LVALP(op));
 		break;
 	case OPT_STR:
-		curlen += printf("%s", op->name);
+		curlen += fprintf(curf->stdfp, "%s", op->name);
 		curlen += 1;
-		(void)putchar('=');
+		(void)putc('=', curf->stdfp);
 		curlen += 1;
-		(void)putchar('"');
-		curlen += printf("%s", PVALP(op));
+		(void)putc('"', curf->stdfp);
+		curlen += fprintf(curf->stdfp, "%s", PVALP(op));
 		curlen += 1;
-		(void)putchar('"');
+		(void)putc('"', curf->stdfp);
 		break;
 	}
 	return (curlen);
