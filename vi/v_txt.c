@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.5 1993/08/25 16:52:06 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:06 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.6 1993/09/01 15:58:32 bostic Exp $ (Berkeley) $Date: 1993/09/01 15:58:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <sys/time.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -20,15 +21,16 @@ static char sccsid[] = "$Id: v_txt.c,v 8.5 1993/08/25 16:52:06 bostic Exp $ (Ber
 #include "vi.h"
 #include "vcmd.h"
 
-static int	 txt_abbrev __P((SCR *, TEXT *));
+static int	 txt_abbrev __P((SCR *, TEXT *, int *, int));
 static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, HDR *));
 static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_outdent __P((SCR *, TEXT *));
+static void	 txt_showmatch __P((SCR *, EXF *));
 static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 
 /* Cursor character (space is hard to track on the screen). */
-#ifdef DEBUG
+#if DEBUG && 0
 #define	CURSOR_CHAR	'+'
 #else
 #define	CURSOR_CHAR	' '
@@ -76,6 +78,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	int ch;			/* Input character. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
+	int showmatch;		/* Showmatch set on this character. */
 	int tty_cwait;		/* Characters waiting. */
 	int max, tmp;
 
@@ -202,19 +205,30 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	lch = F_ISSET(sp, S_ABBREV) &&
 	    LF_ISSET(TXT_MAPINPUT) ? L_NOTSPACE : L_NOCHECK;
 
-	for (carat_st = C_NOTSET, quoted = Q_NOTSET, tty_cwait = 0;;) {
+	for (carat_st = C_NOTSET,
+	    showmatch = 0, quoted = Q_NOTSET, tty_cwait = 0;;) {
 
-		/* Reset the line and update the screen. */
+		/*
+		 * Reset the line and update the screen.  The txt_showmatch()
+		 * code refreshes the screen for us.  Three chosen by random
+		 * selection.
+		 */
 		if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 			ERR;
-		/* Three chosen by random selection. */
-		if (tty_cwait > 3 || !term_waiting(sp)) {
+
+#define	CHARS_TO_WAIT	4
+		if (showmatch ||
+		    tty_cwait++ > CHARS_TO_WAIT || !term_waiting(sp)) {
 			tty_cwait = 0;
 			if (sp->s_refresh(sp, ep))
 				ERR;
-		} else
-			++tty_cwait;
-		
+		}
+
+		if (showmatch) {
+			txt_showmatch(sp, ep);
+			showmatch = 0;
+		}
+
 		/*
 		 * Get the character.  Check to see if the character fits
 		 * into the input (and replay, if necessary) buffers.  It
@@ -248,8 +262,12 @@ next_ch:	if (replay)
 		case K_NL:				/* New line. */
 #define	LINE_RESOLVE {							\
 			/* Handle abbreviations. */			\
-			if (lch == L_NOTSPACE && txt_abbrev(sp, tp))	\
-				ERR;					\
+			if (lch == L_NOTSPACE && !replay) {		\
+				if (txt_abbrev(sp, tp, &tmp, ch))	\
+					ERR;				\
+				if (tmp)				\
+					goto next_ch;			\
+			}						\
 			if (lch != L_NOCHECK)				\
 				lch = L_SPACE;				\
 			/*						\
@@ -572,6 +590,10 @@ k_escape:		if (tp->insert && tp->overwrite)
 		case K_FORMFEED:
 			F_SET(sp, S_REFRESH);
 			break;
+		case K_RIGHTBRACE:
+		case K_RIGHTPAREN:
+			showmatch = LF_ISSET(TXT_SHOWMATCH);
+			goto ins_ch;
 		case K_VLNEXT:			/* Quote the next character. */
 			ch = '^';
 			quoted = Q_NEXTCHAR;
@@ -581,9 +603,12 @@ k_escape:		if (tp->insert && tp->overwrite)
 			 * If entering a space character after a word, check
 			 * for abbreviations.
 			 */
-ins_ch:			if (isblank(ch) &&
-			    lch == L_NOTSPACE && txt_abbrev(sp, tp))
-				ERR;
+ins_ch:			if (isblank(ch) && lch == L_NOTSPACE && !replay) {
+				if (txt_abbrev(sp, tp, &tmp, ch))
+					ERR;
+				if (tmp)
+					goto next_ch;
+			}
 			if (lch != L_NOCHECK)
 				lch = isblank(ch) ? L_SPACE : L_NOTSPACE;
 
@@ -640,13 +665,14 @@ ret:	F_CLR(sp, S_INPUT);
  *	Handle abbreviations.
  */
 static int
-txt_abbrev(sp, tp)
+txt_abbrev(sp, tp, didsubp, pushc)
 	SCR *sp;
 	TEXT *tp;
+	int *didsubp, pushc;
 {
 	SEQ *qp;
-	size_t diff, len, off;
-	char *p;	
+	size_t len, off;
+	char *p, ch;
 
 	/* Find the beginning of this "word". */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
@@ -660,23 +686,40 @@ txt_abbrev(sp, tp)
 	}
 
 	/* Check for any abbreviations. */
-	if ((qp = seq_find(sp, p, len, SEQ_ABBREV, NULL)) == NULL)
+	if ((qp = seq_find(sp, p, len, SEQ_ABBREV, NULL)) == NULL) {
+		*didsubp = 0;
 		return (0);
-
-	/* Copy up or down, depending on the lengths. */
-	if (len < qp->olen) {
-		diff = qp->olen - len;
-		BINC(sp, tp->lb, tp->lb_len, tp->len + diff);
-		memmove(tp->lb + sp->cno + diff, tp->lb + sp->cno, tp->insert);
-		sp->cno += diff;
-		tp->len += diff;
-	} else if (len > qp->olen) {
-		diff = len - qp->olen;
-		memmove(tp->lb + sp->cno - diff, tp->lb + sp->cno, tp->insert);
-		sp->cno -= diff;
-		tp->len -= diff;
 	}
-	memmove(p, qp->output, qp->olen);
+
+	/*
+	 * Push the abbreviation onto the tty stack.  Historically, characters
+	 * resulting from an abbreviation expansion were themselves subject to
+	 * map expansions, O_SHOWMATCH matching etc.  This means the expanded
+	 * characters will be re-tested for abbreviations.  It's difficult to
+	 * know what historic practice in this case was, since abbreviations
+	 * were applied to :colon command lines, so entering abbreviations that
+	 * looped was tricky, if not impossible.  In addition, the obvious
+	 * abbreviation loops didn't work as expected.  For example, the command
+	 * ':ab a b|ab b c|ab c a' would silently only implement the last of
+	 * the abbreviations.
+	 *
+	 * XXX
+	 * There is almost certainly an infinite loop here, if a abbreviates
+	 * b and b abbreviates a.  I think that the correct fix is to tag
+	 * each character with the number of times it has been abbreviated,
+	 * and resist any further abbreviations.  This solves recursive maps
+	 * as well, among other things, but requires a major rework of what
+	 * an input character looks like.
+	 */
+	ch = pushc;
+	if (term_push(sp, &sp->tty, &ch, 1))
+		return (1);
+	if (term_push(sp, &sp->tty, qp->output, qp->olen))
+		return (1);
+
+	sp->cno -= len;
+	tp->len -= len;
+	*didsubp = 1;
 	return (0);
 }
 
@@ -967,4 +1010,79 @@ txt_resolve(sp, ep, hp)
 		if (file_aline(sp, ep, 0, lno, tp->lb, tp->len))
 			return (1);
 	return (0);
+}
+
+/*
+ * txt_showmatch --
+ *	Show a character match.
+ *
+ * !!!
+ * Historic vi tried to display matches even in the :colon command
+ * line.  I, for lack of a better phrase, would rather die.
+ */
+static void
+txt_showmatch(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	struct timeval second;
+	VCS cs;
+	MARK m;
+	fd_set zero;
+	int cnt, endc, startc;
+
+	/*
+	 * We don't display the match if it's not on the screen.
+	 * Find out what the first character on the screen is.
+	 */
+	if (svi_sm_position(sp, ep, &m, 0, P_TOP))
+		return;
+
+	/* Initialize the getc() interface. */
+	cs.cs_lno = sp->lno;
+	cs.cs_cno = sp->cno - 1;
+	if (cs_init(sp, ep, &cs))
+		return;
+	startc = (endc = cs.cs_ch)  == ')' ? '(' : '{';
+
+	/* Search for the match. */
+	for (cnt = 1;;) {
+		if (cs_prev(sp, ep, &cs))
+			return;
+		if (cs.cs_lno < m.lno ||
+		    cs.cs_lno == m.lno && cs.cs_cno < m.cno)
+			return;
+		if (cs.cs_flags != 0) {
+			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF) {
+				(void)sp->s_bell(sp);
+				return;
+			}
+			continue;
+		}
+		if (cs.cs_ch == endc)
+			++cnt;
+		else if (cs.cs_ch == startc && --cnt == 0)
+			break;
+	}
+
+	/* Move to the match. */
+	m.lno = sp->lno;
+	m.cno = sp->cno;
+	sp->lno = cs.cs_lno;
+	sp->cno = cs.cs_cno;
+	(void)sp->s_refresh(sp, ep);
+
+	/*
+	 * Sleep(3) is eight system calls.  Do it fast -- besides,
+	 * I don't want to wait an entire second.
+	 */
+	FD_ZERO(&zero);
+	second.tv_sec = 0;
+	second.tv_usec = 750000;
+	(void)select(0, &zero, &zero, &zero, &second);
+
+	/* Return to the current location. */
+	sp->lno = m.lno;
+	sp->cno = m.cno;
+	(void)sp->s_refresh(sp, ep);
 }
