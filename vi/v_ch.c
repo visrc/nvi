@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.18 1992/12/22 16:09:12 bostic Exp $ (Berkeley) $Date: 1992/12/22 16:09:12 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.19 1993/01/24 18:31:16 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:31:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,6 +60,8 @@ v_chrepeat(vp, fm, tm, rp)
 		return (v_chT(vp, fm, tm, rp));
 	case tSEARCH:
 		return (v_cht(vp, fm, tm, rp));
+	default:
+		abort();
 	}
 	/* NOTREACHED */
 }
