@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.30 1993/09/30 13:18:02 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:18:02 $
+ *	$Id: screen.h,v 8.31 1993/10/03 10:42:45 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:42:45 $
  */
 
 /*
@@ -96,7 +96,9 @@ typedef struct _scr {
 
 	size_t	 rows;			/* 1-N:      rows per screen. */
 	size_t	 cols;			/* 1-N:   columns per screen. */
-	size_t	 t_rows;		/* 1-N: text rows per screen. */
+	size_t	 t_rows;		/* 1-N:     text rows per screen. */
+	size_t	 t_maxrows;		/* 1-N: max text rows per screen. */
+	size_t	 t_minrows;		/* 1-N: min text rows per screen. */
 	size_t	 w_rows;		/* 1-N:      rows per window. */
 	size_t	 s_off;			/* 0-N: row offset in window. */
 
