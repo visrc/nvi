@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: tcl.c,v 8.2 1995/11/18 12:59:10 bostic Exp $ (Berkeley) $Date: 1995/11/18 12:59:10 $";
+static char sccsid[] = "$Id: tcl.c,v 8.3 1995/11/22 10:17:20 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:17:20 $";
 #endif /* not lint */
 
 #ifdef TCL_INTERP
@@ -393,7 +393,7 @@ tcl_msg(clientData, interp, argc, argv)
 	SCR *sp;
 
 	if (argc != 3) {
-		Tcl_SetResult(interp, "Usage: viMsg text", TCL_STATIC);
+		Tcl_SetResult(interp, "Usage: viMsg screenId text", TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
@@ -559,7 +559,8 @@ tcl_unmap(clientData, interp, argc, argv)
 	int rval;
 
 	if (argc != 3) {
-		Tcl_SetResult(interp, "Usage: viUnmapKey key", TCL_STATIC);
+		Tcl_SetResult(interp,
+		    "Usage: viUnmapKey screenId key", TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
@@ -590,7 +591,8 @@ tcl_opts_set(clientData, interp, argc, argv)
 	int rval;
 
 	if (argc != 3) {
-		Tcl_SetResult(interp, "Usage: viSetOpt command", TCL_STATIC);
+		Tcl_SetResult(interp,
+		    "Usage: viSetOpt screenId command", TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
@@ -622,7 +624,8 @@ tcl_opts_get(clientData, interp, argc, argv)
 	char *value;
 
 	if (argc != 3) {
-		Tcl_SetResult(interp, "Usage: viGetOpt option", TCL_STATIC);
+		Tcl_SetResult(interp,
+		    "Usage: viGetOpt screenId option", TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
