@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.7 1992/05/21 13:03:28 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:03:28 $";
+static char sccsid[] = "$Id: exf.c,v 5.8 1992/05/21 16:46:15 bostic Exp $ (Berkeley) $Date: 1992/05/21 16:46:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -54,6 +54,7 @@ file_default()
 	EXF *ep;
 
 	file_ins((EXF *)&exfhdr, "no.name");
+	ep = file_first();
 	ep->flags |= F_NONAME;
 	return (0);
 }
@@ -331,11 +332,11 @@ file_lline(ep)
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		/* FALLTHROUGH */
         case 1:
-		return (0);
-		/* NOTREACHED */
+		lno = 0;
+		break;
+	default:
+		bcopy(key.data, &lno, sizeof(lno));
 	}
-
-	bcopy(key.data, &lno, sizeof(lno));
 	return (lno);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.10 1992/05/21 14:36:06 bostic Exp $ (Berkeley) $Date: 1992/05/21 14:36:06 $";
+static char sccsid[] = "$Id: vi.c,v 5.11 1992/05/21 16:46:33 bostic Exp $ (Berkeley) $Date: 1992/05/21 16:46:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -155,9 +155,6 @@ err:		if (msgcnt) {
 		if ((vp->kp->func)(vp, &fm, &cursor))
 			goto err;
 
-		/* Update the screen. */
-		scr_cchange();
-
 		/*
 		 * If that command took us out of vi mode, then exit
 		 * the loop without further action.
@@ -168,6 +165,9 @@ err:		if (msgcnt) {
 			refresh();
 			break;
 		}
+
+		/* Update the screen. */
+		scr_cchange();
 
 		/* Set the dot variables. */
 		if (flags & V_DOT) {
