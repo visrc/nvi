@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 8.2 1995/01/24 10:51:41 bostic Exp $ (Berkeley) $Date: 1995/01/24 10:51:41 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 8.3 1995/01/30 09:23:52 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:23:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ cl_addnstr(sp, str, len)
 	CINIT;
 
 	if (addnstr(str, len) == ERR) {
-		msgq(sp, M_ERR, "Error: addnstr: %.*s\n", (int)len, str);
+		msgq(sp, M_ERR, "Error: addnstr: %.*s", (int)len, str);
 		return (1);
 	}
 	return (0);
@@ -71,7 +71,7 @@ cl_addstr(sp, str)
 	CINIT;
 
 	if (addstr(str) == ERR) {
-		msgq(sp, M_ERR, "Error: addstr: %s\n", str);
+		msgq(sp, M_ERR, "Error: addstr: %s", str);
 		return (1);
 	}
 	return (0);
@@ -202,7 +202,7 @@ cl_move(sp, lno, cno)
 	CINIT;
 
 	if (move(lno, cno) == ERR) {
-		msgq(sp, M_ERR, "Error: move: l(%u) c(%u) o(%u)\n",
+		msgq(sp, M_ERR, "Error: move: l(%u) c(%u) o(%u)",
 		    lno, cno, sp->woff);
 		return (1);
 	}
