@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.22 1992/10/17 15:21:18 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:21:18 $";
+static char sccsid[] = "$Id: options.c,v 5.23 1992/10/22 18:06:33 bostic Exp $ (Berkeley) $Date: 1992/10/22 18:06:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -67,6 +67,8 @@ OPTIONS opts[] = {
 	"cc",		"cc -c",	OPT_STR,
 /* O_COLUMNS */
 	"columns",	&o_columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
+/* O_COPYRIGHT */
+	"copyright",	NULL,		OPT_0BOOL,
 /* O_DIGRAPH */
 	"digraph",	NULL,		OPT_0BOOL,
 /* O_DIRECTORY */
@@ -421,14 +423,14 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 	 * curses default actions.
 	 */
 	if (resize) {
-		scr_end();
+		(void)scr_end(curf);
 		(void)snprintf(sbuf, sizeof(sbuf), "%ld", LVAL(O_LINES));
 		(void)setenv("ROWS", sbuf, 1);
 		(void)snprintf(sbuf, sizeof(sbuf), "%ld", LVAL(O_COLUMNS));
 		(void)setenv("COLUMNS", sbuf, 1);
-		scr_init();
+		(void)scr_init(curf);
 	} else if (needredraw)
-		scr_ref();
+		(void)scr_ref(curf);
 }
 
 /*
