@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.29 1996/03/30 15:35:08 bostic Exp $ (Berkeley) $Date: 1996/03/30 15:35:08 $
+.\"     $Id: vi.1,v 8.30 1996/04/02 21:30:28 bostic Exp $ (Berkeley) $Date: 1996/04/02 21:30:28 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -1003,8 +1003,14 @@ Display a row/column ruler on the colon command line.
 .It Sy "scroll, scr [window / 2]"
 Set the number of lines scrolled.
 .It Sy "searchci [off]"
-All Regular Expression searches are case-insensitive 
-if an upper-case letter does not appear in the search string.
+Makes all Regular Expression searches case-insensitive,
+as long as an upper-case letter does not appear in the search string.
+.It Sy "searchincr [off]"
+Makes the
+.Sy \&/
+and
+.Sy \&?
+commands incremental.
 .It Sy "sections, sect [NHSHH HUnhsh]"
 .Nm \&Vi
 only.
@@ -1013,6 +1019,8 @@ Define additional section boundaries for the
 and
 .Sy \&]]
 commands.
+.It Sy "secure [off]"
+Turns off all access to external programs.
 .It Sy "shell, sh [environment variable SHELL, or /bin/sh]"
 Select the shell used by the editor.
 .\" I cannot get a double quote to print between the square brackets
