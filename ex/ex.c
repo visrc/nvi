@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.40 1996/03/29 19:40:10 bostic Exp $ (Berkeley) $Date: 1996/03/29 19:40:10 $";
+static const char sccsid[] = "$Id: ex.c,v 10.41 1996/04/22 21:32:06 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2104,9 +2104,12 @@ ex_load(sp)
 	 * the current line number, and get a new copy of the command for
 	 * the parser.  Note, the original pointer almost certainly moved,
 	 * so we have play games.
+	 *
+	 * See ex.h for a discussion of SEARCH_TERMINATION.
 	 */
 	ecp->cp = ecp->o_cp;
-	memmove(ecp->cp, ecp->cp + ecp->o_clen, ecp->o_clen);
+	memmove(ecp->cp,
+	    ecp->cp + ecp->o_clen + SEARCH_TERMINATION, ecp->o_clen);
 	ecp->clen = ecp->o_clen;
 	ecp->range_lno = sp->lno = rp->start++;
 
@@ -2127,14 +2130,17 @@ ex_discard(sp)
 	EXCMD *ecp;
 	RANGE *rp;
 
-	/* We know the first command can't be an AGV command. */
+	/*
+	 * We know the first command can't be an AGV command, so we don't
+	 * discard it.
+	 */
 	for (gp = sp->gp; (ecp = gp->ecq.lh_first) != &gp->excmd;) {
 		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
 			while ((rp = ecp->rq.cqh_first) != (void *)&ecp->rq) {
 				CIRCLEQ_REMOVE(&ecp->rq, rp, q);
 				free(rp);
 			}
-			free(ecp->cp);
+			free(ecp->o_cp);
 		}
 		LIST_REMOVE(ecp, q);
 		free(ecp);

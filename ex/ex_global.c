@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.17 1996/03/30 13:45:08 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:08 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.18 1996/04/22 21:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,10 +176,12 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		p = "pp";
 		len = 1;
 	}
-	MALLOC_RET(sp, ecp->cp, char *, len * 2);
+
+	/* See ex.h for a discussion of SEARCH_TERMINATION. */
+	MALLOC_RET(sp, ecp->cp, char *, len * 2 + SEARCH_TERMINATION);
 	ecp->o_cp = ecp->cp;
-	memmove(ecp->cp + len, p, len);
 	ecp->o_clen = len;
+	memmove(ecp->cp + len + SEARCH_TERMINATION, p, len);
 	ecp->range_lno = OOBLNO;
 	FL_SET(ecp->agv_flags, cmd == GLOBAL ? AGV_GLOBAL : AGV_V);
 	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);

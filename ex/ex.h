@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.18 1996/04/10 11:31:28 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:28 $
+ *	$Id: ex.h,v 10.19 1996/04/22 21:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:07 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -61,8 +61,19 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
 	}								\
 }
 
+/*
+ * XXX
+ * There's a chance that the last command in the string, the source file or
+ * the @ buffer or v or g commands is a search command.  All search commands
+ * have to be nul-terminated -- the supporting RE routines require it for
+ * historic reasons, and we don't want our mid-level routines to copy all
+ * the strings before performing searches.  So, we allocate an extra character
+ * in various places, and make it a nul.
+ */
+#define	SEARCH_TERMINATION	1
+
 /* Range structures for global and @ commands. */
-typedef struct _range	RANGE;
+typedef struct _range RANGE;
 struct _range {				/* Global command range. */
 	CIRCLEQ_ENTRY(_range) q;	/* Linked list of ranges. */
 	recno_t start, stop;		/* Start/stop of the range. */
@@ -155,7 +166,7 @@ struct _excmd {
 };
 
 /* Cd paths. */
-typedef struct _cdpath	CDPATH;
+typedef struct _cdpath CDPATH;
 struct _cdpath {			/* Cd path structure. */
 	TAILQ_ENTRY(_cdpath) q;		/* Linked list of cd paths. */
 	char *path;			/* Path. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_at.c,v 10.8 1996/03/06 19:52:09 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:09 $";
+static const char sccsid[] = "$Id: ex_at.c,v 10.9 1996/04/22 21:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,15 +107,20 @@ ex_at(sp, cmdp)
 	for (len = 0, tp = cbp->textq.cqh_last;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
 		len += tp->len + 1;
-	MALLOC_RET(sp, ecp->cp, char *, len * 2);
+
+	/* See ex.h for a discussion of SEARCH_TERMINATION. */
+	MALLOC_RET(sp, ecp->cp, char *, len * 2 + SEARCH_TERMINATION);
 	ecp->o_cp = ecp->cp;
-	for (p = ecp->cp + len, tp = cbp->textq.cqh_last;
+	ecp->o_clen = len;
+	ecp->cp[len] = '\0';
+
+	/* Copy the buffer into the command space. */
+	for (p = ecp->cp + len + SEARCH_TERMINATION, tp = cbp->textq.cqh_last;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev) {
 		memmove(p, tp->lb, tp->len);
 		p += tp->len;
 		*p++ = '\n';
 	}
-	ecp->o_clen = len;
 
 	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
 	return (0);

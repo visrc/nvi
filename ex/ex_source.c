@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_source.c,v 10.9 1996/03/22 16:06:33 bostic Exp $ (Berkeley) $Date: 1996/03/22 16:06:33 $";
+static const char sccsid[] = "$Id: ex_source.c,v 10.10 1996/04/22 21:32:08 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,11 +61,14 @@ ex_source(sp, cmdp)
 		errno = ENOMEM;
 		goto err;
 	}
-	MALLOC(sp, bp, char *, (size_t)sb.st_size);
+
+	/* See ex.h for a discussion of SEARCH_TERMINATION. */
+	MALLOC(sp, bp, char *, (size_t)sb.st_size + SEARCH_TERMINATION);
 	if (bp == NULL) {
 		(void)close(fd);
 		return (1);
 	}
+	bp[sb.st_size] = '\0';
 
 	/* Read the file into memory. */
 	len = read(fd, bp, (int)sb.st_size);
