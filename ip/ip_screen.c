@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_screen.c,v 8.2 1996/10/13 15:41:20 bostic Exp $ (Berkeley) $Date: 1996/10/13 15:41:20 $";
+static const char sccsid[] = "$Id: ip_screen.c,v 8.3 1996/12/10 21:02:27 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:02:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,10 +54,6 @@ ip_screen(sp, flags)
 
 	/* Initialize terminal based information. */
 	if (ip_term_init(sp)) 
-		return (1);
-
-	/* Put up the first file name. */
-	if (ip_rename(sp))
 		return (1);
 
 	F_SET(ipp, IP_SCR_VI_INIT);
