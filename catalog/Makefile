@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.11 1994/11/18 16:10:22 bostic Exp $ (Berkeley) $Date: 1994/11/18 16:10:22 $
+#	$Id: Makefile,v 8.12 1994/11/22 09:34:21 bostic Exp $ (Berkeley) $Date: 1994/11/22 09:34:21 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
@@ -52,7 +52,7 @@ vi_english.base: dump ${FILES}
 	sed -e '/|/!d' \
 	    -e 's/|/ "/' \
 	    -e 's/^"//' \
-	    -e 's/"$$/X"/' |\
+	    -e '/^001/!s/"$$/X"/' |\
 	sort -n > $@
 
 dump: dump.c
