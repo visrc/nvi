@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.1 1994/11/09 18:41:24 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:24 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 9.2 1994/11/12 19:09:06 bostic Exp $ (Berkeley) $Date: 1994/11/12 19:09:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -302,7 +302,7 @@ EXCMDLIST const cmds[] = {
 /* C_SUBSTITUTE */
 	{"s",		ex_s,		E_ADDR2,
 	    "s",
-	    "[line [,line]] s [[/;]RE[/;]/repl[/;] [cgr] [count] [#lp]]",
+	    "[line [,line]] s [[/;]RE[/;]repl[/;] [cgr] [count] [#lp]]",
 	    "substitute on lines matching an RE"},
 /* C_SCRIPT */
 	{"script",	ex_script,	E_NOGLOBAL,
