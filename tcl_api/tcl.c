@@ -10,10 +10,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: tcl.c,v 8.4 1995/11/26 19:38:13 bostic Exp $ (Berkeley) $Date: 1995/11/26 19:38:13 $";
+static char sccsid[] = "$Id: tcl.c,v 8.5 1996/02/20 21:17:42 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:17:42 $";
 #endif /* not lint */
 
-#ifdef TCL_INTERP
+#ifdef HAVE_TCL_INTERP
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/time.h>
@@ -795,4 +795,4 @@ noscreen(interp, id, name)
 		(void)snprintf(buf, sizeof(buf), "unknown screen: %s", name);
 	Tcl_SetResult(interp, buf, TCL_VOLATILE);
 }
-#endif /* TCL_INTERP */
+#endif /* HAVE_TCL_INTERP */
