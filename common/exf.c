@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.67 1993/05/10 19:10:41 bostic Exp $ (Berkeley) $Date: 1993/05/10 19:10:41 $";
+static char sccsid[] = "$Id: exf.c,v 5.68 1993/05/11 17:22:53 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:22:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -349,6 +349,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 			msgq(sp, M_ERR, "%s exists, not written.", fname);
 		return (1);
 	}
+
 	if (fname == NULL)
 		fname = ep->name;
 
@@ -360,6 +361,13 @@ file_write(sp, ep, fm, tm, fname, flags)
 			msgq(sp, M_ERR, "Partial file, not written.");
 		return (1);
 	}
+
+	/*
+	 * Once we've decided that we can actually write the file,
+	 * it doesn't matter that the file name was changed -- if
+	 * it was, we created the file.
+	 */
+	F_CLR(ep, F_NAMECHANGED);
 
 	/* Open the file, either appending or truncating. */
 	flags = O_CREAT | O_WRONLY;
