@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_bang.c,v 10.31 1996/04/27 11:40:20 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:20 $";
+static const char sccsid[] = "$Id: ex_bang.c,v 10.32 1996/05/18 12:40:02 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:40:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,9 +121,9 @@ ex_bang(sp, cmdp)
 	 * command.
 	 *
 	 * Historically, vi lines were replaced by both the stdout and stderr
-	 * lines of the command, but ex by only the stdout lines.  This makes
-	 * no sense to me, so nvi makes it consistent for both, and matches
-	 * vi's historic behavior.
+	 * lines of the command, but ex lines by only the stdout lines.  This
+	 * makes no sense to me, so nvi makes it consistent for both, and
+	 * matches vi's historic behavior.
 	 */
 	else {
 		NEEDFILE(sp, cmdp);
@@ -166,11 +166,11 @@ ex_bang(sp, cmdp)
 		 * seems more useful and consistent, so we do it.
 		 */
 		sp->lno = rm.lno;
-		sp->cno = rm.cno;
-		if (rval == 0 && F_ISSET(sp, SC_VI)) {
+		if (F_ISSET(sp, SC_VI)) {
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
-		}
+		} else
+			sp->cno = rm.cno;
 	}
 
 	/* Ex terminates with a bang, even if the command fails. */
