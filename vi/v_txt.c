@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.55 1993/11/22 17:29:27 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:29:27 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.56 1993/11/22 17:36:02 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:36:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,17 +38,10 @@ static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
 #define	CURSOR_CH	'+'
 #endif
 
-/* Error jump. */
-#define	ERR {								\
-	eval = 1;							\
-	txt_err(sp, ep, tiqh);						\
-	goto ret;							\
-}
-
 /* Local version of BINC. */
 #define	TBINC(sp, lp, llen, nlen) {					\
 	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
-		ERR;							\
+		goto err;						\
 }
 
 /*
@@ -262,12 +255,12 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		if (showmatch || margin ||
 		    !TERM_MORE(gp->key) && !TERM_MORE(gp->tty)) {
 			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
-				ERR;
+				goto err;
 			if (showmatch) {
 				showmatch = 0;
 				txt_showmatch(sp, ep);
 			} else if (sp->s_refresh(sp, ep))
-				ERR;
+				goto err;
 		}
 
 		/*
@@ -277,7 +270,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		 * consider the overwrite characters, but not worth fixing.
 		 */
 next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
-			ERR;
+			goto err;
 		if (LF_ISSET(TXT_RECORD)) {
 			TBINC(sp, VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
 			VIP(sp)->rep[rcol++] = ch;
@@ -314,7 +307,7 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			 */						\
 			if (abb == A_NOTSPACE && !replay) {		\
 				if (txt_abbrev(sp, tp, &tmp, ch))	\
-					ERR;				\
+					goto err;			\
 				if (tmp) {				\
 					if (LF_ISSET(TXT_RECORD))	\
 						rcol -= tmp;		\
@@ -326,7 +319,7 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			/* Handle hex numbers. */			\
 			if (hex == H_INHEX) {				\
 				if (txt_hex(sp, tp, &tmp, ch))		\
-					ERR;				\
+					goto err;			\
 				if (tmp) {				\
 					hex = H_NOTSET;			\
 					goto next_ch;			\
@@ -375,7 +368,7 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			if ((ntp = text_init(sp,
 			    tp->lb + sp->cno + tp->owrite,
 			    tp->insert, tp->insert + 32)) == NULL)
-				ERR;
+				goto err;
 			CIRCLEQ_INSERT_TAIL(tiqh, ntp, q);
 
 			/* Set bookkeeping for the new line. */
@@ -397,12 +390,12 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 				if (carat_st == C_NOCHANGE) {
 					if (txt_auto(sp, ep,
 					    OOBLNO, &ait, ait.ai, ntp))
-						ERR;
+						goto err;
 					FREE_SPACE(sp, ait.lb, ait.lb_len);
 				} else
 					if (txt_auto(sp, ep,
 					    OOBLNO, tp, sp->cno, ntp))
-						ERR;
+						goto err;
 				carat_st = C_NOTSET;
 			}
 
@@ -436,7 +429,7 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 
 			/* Update the old line. */
 			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
-				ERR;
+				goto err;
 
 			/* Swap old and new TEXT's. */
 			tp = ntp;
@@ -446,7 +439,7 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 
 			/* Update the new line. */
 			if (sp->s_change(sp, ep, tp->lno, LINE_INSERT))
-				ERR;
+				goto err;
 
 			/* Set the renumber bit. */
 			F_SET(sp, S_RENUMBER);
@@ -455,7 +448,7 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			if ((margin ||
 			    !TERM_MORE(gp->key) && !TERM_MORE(gp->tty)) &&
 			    sp->s_refresh(sp, ep))
-				ERR;
+				goto err;
 			goto next_ch;
 		case K_ESCAPE:				/* Escape. */
 			if (!LF_ISSET(TXT_ESCAPE))
@@ -499,7 +492,7 @@ k_escape:		if (tp->insert && tp->owrite)
 			 */
 			if (LF_ISSET(TXT_RESOLVE)) {
 				if (txt_resolve(sp, ep, tiqh))
-					ERR;
+					goto err;
 			} else {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 				tp->lb[tp->len] = '\0';
@@ -513,7 +506,7 @@ k_escape:		if (tp->insert && tp->owrite)
 				rp->lno = tp->lno;
 				rp->cno = sp->cno ? sp->cno - 1 : 0;
 				if (sp->s_change(sp, ep, rp->lno, LINE_RESET))
-					ERR;
+					goto err;
 			}
 			goto ret;
 		case K_CARAT:			/* Delete autoindent chars. */
@@ -583,7 +576,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (sp->cno == 0) {
 				if ((ntp = txt_backup(sp,
 				    ep, tiqh, tp, flags)) == NULL)
-					ERR;
+					goto err;
 				tp = ntp;
 				break;
 			}
@@ -617,7 +610,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (sp->cno == 0) {
 				if ((ntp = txt_backup(sp,
 				    ep, tiqh, tp, flags)) == NULL)
-					ERR;
+					goto err;
 				tp = ntp;
 			}
 
@@ -704,7 +697,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (sp->cno == 0) {
 				if ((ntp = txt_backup(sp,
 				    ep, tiqh, tp, flags)) == NULL)
-					ERR;
+					goto err;
 				tp = ntp;
 			}
 
@@ -736,7 +729,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (!LF_ISSET(TXT_CNTRLT))
 				goto ins_ch;
 			if (txt_indent(sp, tp))
-				ERR;
+				goto err;
 			goto ebuf_chk;
 		case K_CNTRLZ:
 			(void)sp->s_suspend(sp);
@@ -754,7 +747,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			/* If in hex mode, see if we've entered a hex value. */
 			if (hex == H_INHEX) {
 				if (txt_hex(sp, tp, &tmp, ch))
-					ERR;
+					goto err;
 				if (tmp) {
 					hex = H_NOTSET;
 					goto next_ch;
@@ -771,7 +764,7 @@ ins_ch:			/*
 			 */
 			if (isblank(ch) && abb == A_NOTSPACE && !replay) {
 				if (txt_abbrev(sp, tp, &tmp, ch))
-					ERR;
+					goto err;
 				if (tmp) {
 					if (LF_ISSET(TXT_RECORD))
 						rcol -= tmp;
@@ -781,7 +774,7 @@ ins_ch:			/*
 			/* If in hex mode, see if we've entered a hex value. */
 			if (hex == H_INHEX && !isxdigit(ch)) {
 				if (txt_hex(sp, tp, &tmp, ch))
-					ERR;
+					goto err;
 				if (tmp) {
 					hex = H_NOTSET;
 					goto next_ch;
@@ -790,10 +783,10 @@ ins_ch:			/*
 			/* Check to see if we've crossed the margin. */
 			if (margin) {
 				if (sp->s_column(sp, ep, &col))
-					ERR;
+					goto err;
 				if (col >= margin) {
 					if (txt_margin(sp, tp, &tmp, ch))
-						ERR;
+						goto err;
 					if (tmp)
 						goto next_ch;
 				}
@@ -849,6 +842,11 @@ ret:	F_CLR(sp, S_INPUT);
 	if (LF_ISSET(TXT_RECORD))
 		VIP(sp)->rep_cnt = rcol;
 	return (eval);
+
+	/* Error jump. */
+err:	eval = 1;
+	txt_err(sp, ep, tiqh);
+	goto ret;
 }
 
 /*
