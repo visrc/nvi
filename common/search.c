@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.6 1995/01/11 18:54:30 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:54:30 $";
+static char sccsid[] = "$Id: search.c,v 9.7 1995/01/11 18:55:26 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:55:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ static char sccsid[] = "$Id: search.c,v 9.6 1995/01/11 18:54:30 bostic Exp $ (Be
 
 static int	ctag_conv __P((SCR *, char **, int *));
 static int	resetup __P((SCR *,
-		    regex_t **, enum direction, char *, char **, u_int *));
+		    regex_t **, enum direction, char *, char **, u_int));
 
 enum smsgtype { S_EMPTY, S_EOF, S_NOPREV, S_NOTFOUND, S_SOF, S_WRAP };
 static void	smsg __P((SCR *, enum smsgtype));
