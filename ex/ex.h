@@ -1,10 +1,12 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
+ * Copyright (c) 1994, 1995
+ *	Keith Bostic.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.6 1994/12/01 17:45:23 bostic Exp $ (Berkeley) $Date: 1994/12/01 17:45:23 $
+ *	$Id: ex.h,v 9.7 1995/01/11 16:16:13 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:13 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
