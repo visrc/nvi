@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.17 1992/12/05 11:08:57 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:57 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.18 1992/12/20 15:54:12 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,6 +51,8 @@ ex_tagpush(cmdp)
 			return (1);
 		}
 		break;
+	default:
+		abort();
 	}
 
 	if ((tag = tag_push(lasttag)) == NULL)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.29 1992/12/20 15:08:28 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:08:28 $";
+static char sccsid[] = "$Id: options.c,v 5.30 1992/12/20 15:54:14 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -420,6 +420,8 @@ draw:			if (curf != NULL &&
 					FF_SET(curf, F_RESIZE);
 			}
 			break;
+		default:
+			abort();
 		}
 	}
 	if (all)

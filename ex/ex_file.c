@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.14 1992/12/07 21:12:31 bostic Exp $ (Berkeley) $Date: 1992/12/07 21:12:31 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.15 1992/12/20 15:54:11 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,8 +40,7 @@ ex_file(cmdp)
 		FF_SET(curf, F_NAMECHANGED);
 		break;
 	default:
-		msg("Usage: file [newname].");
-		return (1);
+		abort();
 	}
 	status(curf, cmdp->addr1.lno);
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.13 1992/12/05 11:08:43 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:43 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.14 1992/12/20 15:54:11 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 5.13 1992/12/05 11:08:43 bostic Exp $
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -44,6 +45,8 @@ ex_mkexrc(cmdp)
 	case 1:
 		fname = (char *)cmdp->argv[0];
 		break;
+	default:
+		abort();
 	}
 
 	/* Create with max permissions of rw-r--r--. */

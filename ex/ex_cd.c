@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.13 1992/12/05 11:08:28 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:28 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.14 1992/12/20 15:54:08 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,6 +42,8 @@ ex_cd(cmdp)
 	case 1:
 		dir = (char *)cmdp->argv[0];
 		break;
+	default:
+		abort();
 	}
 
 	if (chdir(dir) < 0) {

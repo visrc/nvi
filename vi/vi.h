@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.25 1992/12/20 15:09:45 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:09:45 $
+ *	$Id: vi.h,v 5.26 1992/12/20 15:54:28 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:28 $
  */
 
 #include "exf.h"
@@ -84,6 +84,7 @@ extern VIKEYS vikeys[MAXVIKEY + 1];
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
 void	status __P((EXF *, recno_t));
+int	v_msgflush __P((EXF *));
 
 int	v_again __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_at __P((VICMDARG *, MARK *, MARK *, MARK *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.24 1992/12/05 11:08:32 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:32 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.25 1992/12/20 15:54:09 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.24 1992/12/05 11:08:32 bostic Exp $ (
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
@@ -74,6 +75,8 @@ edit(cmdp, cmd)
 		} else
 			reset = 1;
 		break;
+	default:
+		abort();
 	}
 
 	/* Switch files. */

@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.16 1992/12/05 11:10:38 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:38 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.17 1992/12/20 15:54:21 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "vi.h"
 #include "options.h"
@@ -92,6 +93,8 @@ v_chrrepeat(vp, fm, tm, rp)
 	case tSEARCH:
 		rval = v_chT(vp, fm, tm, rp);
 		break;
+	default:
+		abort();
 	}
 	lastdir = savedir;
 	return (rval);
