@@ -1,0 +1,60 @@
+# setup
+setenv VERSION 
+setenv S /usr/src/local/nvi
+
+# docs
+cd $S/USD.doc/vi.ref
+make clean paper.ps vi.ref.txt && chmod 444 vi.ref.txt paper.ps
+rm index index.so
+cd $S/USD.doc/vi.man
+make clean vi.0 vi.0.ps && chmod 444 vi.0 vi.0.ps
+
+# version numbers
+setenv X README
+cd $S/docs; sco $X; vi $X; echo "go to $VERSION" | sccs delget $X
+date +%s%n > /tmp/_f
+setenv X ex_version.c
+cd ../ex; sco $X; vi $X; echo "go to $VERSION" | sccs delget $X
+
+# patches
+cd $S/PORT
+foreach i (`ls */local/Makefile | sed 's/Makefile//'`)
+	(cd $i && \make clean && \make) |& \
+	sed -e '/^Hmm\.\.\.  Looks like a new-style/d' \
+	    -e '/^The text leading up to this/d' \
+	    -e '/^--------------------------/d' \
+	    -e '/^|\*\*\* /d' \
+	    -e '/^|--- /d' \
+	    -e '/^Patching file /d' \
+	    -e '/^done$/d' \
+	    -e '/^chmod 444 /d' \
+	    -e '/^chmod 644 /d' \
+	    -e '/^cp /d' \
+	    -e '/rm -f '/d \
+	    -e '/^patch < PATCH/d'
+end
+
+# build
+cd $S; allout
+cd $S/cl; make
+what obj/nvi |gzip > ../../TK/history/$VERSION.gz
+chmod 444 ../../TK/history/$VERSION.gz
+make tags; chmod 444 ../common/tags
+cd $S/catalog; make clean all; rm dump; chmod 444 vi_english*
+
+# cleanup
+cd $S/cl; csd Makefile
+sccs unedit Makefile
+rm -f WARN.OUT a.out nex.core nvi.core typescript
+echo ":version" | obj/nex
+cd $S; vi docs/changelog
+find . -type d \! -perm 775
+find . \( -name '*.rej' -o -name '*.orig' \)
+find . -type f \( -perm -200 -o -perm -2 -o -perm -20 \)
+chown -R bin.wsrc .
+
+# create
+cd $S/..; mv -i nvi nvi.$VERSION
+tar cFFf - nvi.$VERSION | gzip --best > /tmp/nvi.$VERSION.tar.gz
+chmod 444 /tmp/nvi.$VERSION.tar.gz
+mv -i nvi.$VERSION nvi
