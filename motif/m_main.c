@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.22 1996/12/10 21:05:08 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:05:08 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.23 1996/12/11 13:07:17 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:07:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,7 @@ static	String	*get_fallback_rsrcs( name )
 	/* stop here if running CDE */
 	if ( fallback_rsrcs[i][0] == '?' ) {
 	    if ( running_cde ) break;
-	    (void)fallback_rsrcs[i] = strdup(fallback_rsrcs[i]);
+	    fallback_rsrcs[i] = strdup(fallback_rsrcs[i]);
 	    fallback_rsrcs[i][0] = '*';
 	}
 
