@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.20 1994/06/28 10:34:25 bostic Exp $ (Berkeley) $Date: 1994/06/28 10:34:25 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.21 1994/06/28 10:38:40 bostic Exp $ (Berkeley) $Date: 1994/06/28 10:38:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,7 @@ ex_next(sp, ep, cmdp)
 {
 	ARGS **argv, **pc;
 	FREF *frp;
+	int noargs;
 	char **ap;
 
 	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
@@ -87,19 +88,23 @@ ex_next(sp, ep, cmdp)
 		sp->cargv = sp->argv;
 		if ((frp = file_add(sp, *sp->cargv)) == NULL)
 			return (1);
+		noargs = 0;
 	} else {
 		if (sp->cargv[1] == NULL) {
 			msgq(sp, M_ERR, "No more files to edit");
 			return (1);
 		}
-		if ((frp = file_add(sp, *++sp->cargv)) == NULL)
+		if ((frp = file_add(sp, sp->cargv[1])) == NULL)
 			return (1);
-		if (F_ISSET(sp, S_ARGNOFREE))
+		if (F_ISSET(sp, S_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
+		noargs = 1;
 	}
 
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
+	if (noargs)
+		++sp->cargv;
 
 	/* Push the initial command onto the stack. */
 	if (pc != NULL)
@@ -133,15 +138,16 @@ ex_prev(sp, ep, cmdp)
 	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	if (sp->cargv == sp->argv) {
-		msgq(sp, M_ERR, "No more files to edit");
+		msgq(sp, M_ERR, "No previous files to edit");
 		return (1);
 	}
-	if ((frp = file_add(sp, *--sp->cargv)) == NULL)
+	if ((frp = file_add(sp, sp->cargv[-1])) == NULL)
 		return (1);
 
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
 
+	--sp->cargv;
 	F_SET(sp, S_FSWITCH);
 	return (0);
 }
