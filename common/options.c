@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.42 1996/05/15 19:53:55 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:53:55 $";
+static const char sccsid[] = "$Id: options.c,v 10.43 1996/05/16 09:49:29 bostic Exp $ (Berkeley) $Date: 1996/05/16 09:49:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -793,13 +793,14 @@ opts_dump(sp, type)
 	 * we can ignore the terminal's tab settings.)  Ignore the user's tab
 	 * setting because we have no idea how reasonable it is.
 	 *
-	 * Find a column width we can live with.
+	 * Find a column width we can live with, testing from 10 columns to 1.
 	 */
-	for (cnt = 6; cnt > 1; --cnt) {
-		colwidth = (sp->cols - 1) / cnt & ~(STANDARD_TAB - 1);
+	for (numcols = 10; numcols > 1; --numcols) {
+		colwidth = sp->cols / numcols & ~(STANDARD_TAB - 1);
 		if (colwidth >= 10) {
 			colwidth =
 			    (colwidth + STANDARD_TAB) & ~(STANDARD_TAB - 1);
+			numcols = sp->cols / colwidth;
 			break;
 		}
 		colwidth = 0;
@@ -866,16 +867,15 @@ opts_dump(sp, type)
 			curlen += 3;
 			break;
 		}
-		/* Offset by two so there's a gap. */
-		if (curlen < colwidth - 2)
+		/* Offset by 2 so there's a gap. */
+		if (curlen <= colwidth - 2)
 			s_op[s_num++] = cnt;
 		else
 			b_op[b_num++] = cnt;
 	}
 
 	if (s_num > 0) {
-		/* Figure out the number of columns. */
-		numcols = (sp->cols - 1) / colwidth;
+		/* Figure out the number of rows. */
 		if (s_num > numcols) {
 			numrows = s_num / numcols;
 			if (s_num % numcols)
