@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.81 1994/04/24 17:40:15 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:15 $";
+static char sccsid[] = "$Id: main.c,v 8.82 1994/04/26 11:59:25 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:59:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -211,9 +211,9 @@ main(argc, argv)
 #endif
 	}
 
-	if (set_window_size(sp, 0, 0))	/* Set the window size. */
+	if (set_window_size(sp, 0, 0))	/* first: Set the window size. */
 		goto err;
-	if (opts_init(sp))		/* Options initialization. */
+	if (opts_init(sp))		/*  then: Options initialization. */
 		goto err;
 	if (readonly)			/* Global read-only bit. */
 		O_SET(sp, O_READONLY);
