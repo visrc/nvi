@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.16 1992/11/03 13:52:44 bostic Exp $ (Berkeley) $Date: 1992/11/03 13:52:44 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.17 1992/11/03 17:49:00 bostic Exp $ (Berkeley) $Date: 1992/11/03 17:49:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -551,7 +551,6 @@ newtext(vp, tm, p, len, rp, flags)
 			++rcol;
 		}
 		if (quoted) {
-			quoted = 0;
 			--p;
 			--col;
 			--curf->cno;
@@ -669,7 +668,7 @@ newtext(vp, tm, p, len, rp, flags)
 			p = ib.ilb + col;
 			break;
 		case K_VLNEXT:			/* Quote the next character. */
-			quoted = 1;
+			quoted = 2;
 			ch = '^';
 			/* FALLTHROUGH */
 		case 0:				/* Insert the character. */
@@ -684,9 +683,11 @@ insch:			*p++ = ch;
 		}
 		ib.len = col + insert + overwrite;
 		scr_update(curf, ib.stop.lno, ib.ilb, ib.len,
-		    special[ch] == K_NL || special[ch] == K_CR ?
+		    !quoted && (special[ch] == K_NL || special[ch] == K_CR) ?
 		    LINE_INSERT | LINE_LOGICAL : LINE_RESET);
 		SCREEN_UPDATE;
+		if (quoted)
+			--quoted;
 	}
 
 	/*
