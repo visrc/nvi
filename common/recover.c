@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.6 1995/09/21 12:06:15 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:15 $";
+static char sccsid[] = "$Id: recover.c,v 10.7 1995/09/29 18:37:02 bostic Exp $ (Berkeley) $Date: 1995/09/29 18:37:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -311,7 +311,7 @@ e1:			if (fd != -1)
 				(void)close(fd);
 			rval = 1;
 		}
-		sp->gp->scr_busy(sp, NULL, 1);
+		sp->gp->scr_busy(sp, NULL, 0);
 	}
 
 	/* REQUEST: end the file session. */
