@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.30 1996/02/28 15:24:17 bostic Exp $ (Berkeley) $Date: 1996/02/28 15:24:17 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.31 1996/02/28 20:57:41 bostic Exp $ (Berkeley) $Date: 1996/02/28 20:57:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	 */
 	ofp = NULL;
 	input[0] = input[1] = output[0] = output[1] = -1;
-	if (ftype != FILTER_RBANG && ftype != FILTER_READ && pipe(input) < 0) {
+	if (ftype != FILTER_READ && pipe(input) < 0) {
 		msgq(sp, M_SYSERR, "pipe");
 		goto err;
 	}
@@ -159,6 +159,10 @@ err:		if (input[0] != -1)
 	 * pipe until it finishes, then waits for the child.  Ex_readfp
 	 * appends to the MARK, and closes ofp.
 	 *
+	 * For FILTER_RBANG, there is nothing to write to the utility.
+	 * Make sure it doesn't wait forever by closing its standard
+	 * input.
+	 *
 	 * !!!
 	 * Set the return cursor to the last line read in for FILTER_READ.
 	 * Historically, this behaves differently from ":r file" command,
@@ -167,6 +171,9 @@ err:		if (input[0] != -1)
 	 * empty file.
 	 */
 	if (ftype == FILTER_RBANG || ftype == FILTER_READ) {
+		if (ftype == FILTER_RBANG)
+			(void)close(input[1]);
+
 		if (ex_readfp(sp, "filter", ofp, fm, &nread, 1))
 			rval = 1;
 		sp->rptlines[L_ADDED] += nread;
