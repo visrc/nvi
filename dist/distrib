@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.11 1996/10/23 09:40:49 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:40:49 $
+# $Id: distrib,v 8.12 1996/11/27 12:23:39 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:23:39 $
 
 # Clean
 #make -f Makefile.in clean
@@ -38,13 +38,17 @@ rm -f $f
 sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ex/*.c > $f
 chmod 444 $f
 
-if [ -d ../ip ]; then
-	f=../include/ip_extern.h
-	echo "Building $f"
-	rm -f $f
-	sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ip/*.c > $f
-	chmod 444 $f
-fi
+f=../include/ip_extern.h
+echo "Building $f"
+rm -f $f
+sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ip_vi/*.c > $f
+chmod 444 $f
+
+f=../include/ipc_extern.h
+echo "Building $f"
+rm -f $f
+sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ipc/*.c > $f
+chmod 444 $f
 
 f=../include/options_def.h
 echo "Building $f"
@@ -64,12 +68,6 @@ rm -f $f
 sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../tcl_api/*.c > $f
 chmod 444 $f
 
-f=../include/tk_extern.h
-echo "Building $f"
-rm -f $f
-sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../tk/*.c > $f
-chmod 444 $f
-
 f=../include/vi_extern.h
 echo "Building $f"
 rm -f $f
@@ -79,6 +77,8 @@ chmod 444 $f
 # Build tags files.
 echo "Building tags files"
 rm -f tags
-ctags -w -d ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] ../perl_api/*.[ch] \
-    ../tcl_api/*.[ch] ../tk/*.[ch] ../vi/*.[ch]
+ctags -w -d ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] \
+    ../perl_api/*.[ch] ../tcl_api/*.[ch] \
+    ../ip_vi/*.[ch] ../ipc/*.[ch] ../ipc_motif/*.[ch] ../ipc_curses/*.[ch] \
+    ../vi/*.[ch]
 chmod 444 tags
