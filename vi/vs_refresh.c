@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.37 1996/06/12 13:50:10 bostic Exp $ (Berkeley) $Date: 1996/06/12 13:50:10 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.38 1996/08/16 20:58:20 bostic Exp $ (Berkeley) $Date: 1996/08/16 20:58:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -796,7 +796,8 @@ vs_modeline(sp)
 	 */
 	if (O_ISSET(sp, O_RULER)) {
 		vs_column(sp, &curcol);
-		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno, curcol + 1);
+		len =
+		    snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno, curcol + 1);
 
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
