@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.8 1993/09/30 12:02:19 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:19 $
+ *	$Id: key.h,v 8.9 1993/10/03 14:19:17 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:19:17 $
  */
 
 /* Structure for a key input buffer. */
@@ -120,7 +120,7 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
 
 #define	TXT_GETKEY_MASK							\
-	(TXT_BEAUTIFY | TXT_MAPCOMMAND | TXT_MAPINPUT)
+	(TXT_MAPCOMMAND | TXT_MAPINPUT)
 
 /* Support keyboard routines. */
 int	term_init __P((struct _scr *));
