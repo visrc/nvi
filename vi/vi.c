@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.70 1993/05/15 10:12:18 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:12:18 $";
+static char sccsid[] = "$Id: vi.c,v 5.71 1993/05/16 12:13:25 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:13:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,13 +50,6 @@ vi(sp, ep)
 	/* Command initialization. */
 	cmd.keyword = dot.keyword = dotmotion.keyword = NULL;
 	cmd.kbuflen = dot.kbuflen = dotmotion.kbuflen = 0;
-
-	/*
-	 * XXX
-	 * Turn on signal handling.
-	 */
-	(void)signal(SIGHUP, onhup);
-	(void)signal(SIGINT, SIG_IGN);
 
 	for (eval = 0;;) {
 		if (!term_more_pseudo(sp) && log_cursor(sp, ep))
