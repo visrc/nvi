@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.18 1996/04/27 11:41:13 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:13 $";
+static const char sccsid[] = "$Id: search.c,v 10.19 1996/05/03 09:03:49 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:03:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,6 @@ static const char sccsid[] = "$Id: search.c,v 10.18 1996/04/27 11:41:13 bostic E
 
 typedef enum { S_EMPTY, S_EOF, S_NOPREV, S_NOTFOUND, S_SOF, S_WRAP } smsg_t;
 
-static int	ctag_conv __P((SCR *, char **, int *));
 static void	search_msg __P((SCR *, smsg_t));
 static int	search_setup __P((SCR *, dir_t, char *, char **, u_int));
 
@@ -45,7 +44,7 @@ search_setup(sp, dir, ptrn, epp, flags)
 	u_int flags;
 {
 	recno_t lno;
-	int delim, eval;
+	int delim;
 	char *p, *t;
 
 	/* If the file is empty, it's a fast search. */

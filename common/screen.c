@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.11 1996/04/27 11:41:12 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:12 $";
+static const char sccsid[] = "$Id: screen.c,v 10.12 1996/05/03 09:03:33 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:03:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,7 @@ static const char sccsid[] = "$Id: screen.c,v 10.11 1996/04/27 11:41:12 bostic E
 #include <unistd.h>
 
 #include "common.h"
+#include "../vi/vi.h"
 
 /*
  * screen_init --
