@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.81 1996/09/14 15:57:36 bostic Exp $ (Berkeley) $Date: 1996/09/14 15:57:36 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.82 1996/09/15 13:43:50 bostic Exp $ (Berkeley) $Date: 1996/09/15 13:43:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -711,8 +711,13 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			abb = AB_NOTWORD;				\
 		if (UNMAP_TST)						\
 			txt_unmap(sp, tp, &ec_flags);			\
-		/* Delete any appended cursor. */			\
-		if (LF_ISSET(TXT_APPENDEOL)) {				\
+		/*							\
+		 * Delete any appended cursor.  It's possible to get in	\
+		 * situations where TXT_APPENDEOL is set but tp->insert	\
+		 * is 0 when using the R command and all the characters	\
+		 * are tp->owrite characters.				\
+		 */							\
+		if (LF_ISSET(TXT_APPENDEOL) && tp->insert > 0) {	\
 			--tp->len;					\
 			--tp->insert;					\
 		}							\
