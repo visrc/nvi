@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.4 1994/11/10 16:26:45 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:26:45 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.5 1994/11/12 14:19:29 bostic Exp $ (Berkeley) $Date: 1994/11/12 14:19:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,9 +62,10 @@ svi_refresh(sp)
 		 * Fill the map, incidentally losing any svi_line()
 		 * cached information.
 		 */
-		if (svi_sm_fill(sp, sp->lno, P_FILL))
+		if (svi_sm_fill(sp, sp->lno,
+		    F_ISSET(sp, S_SCR_CENTER) ? P_MIDDLE : P_FILL))
 			return (1);
-		F_CLR(sp, S_SCR_RESIZE | S_SCR_REFORMAT);
+		F_CLR(sp, S_SCR_CENTER | S_SCR_RESIZE | S_SCR_REFORMAT);
 		F_SET(sp, S_SCR_REDRAW);
 	}
 
@@ -156,8 +157,13 @@ svi_paint(sp)
 		SVI_SCR_CFLUSH(SVP(sp));
 
 		/* Toss svi_line() cached information. */
-		if (svi_sm_fill(sp, HMAP->lno, P_TOP))
-			return (1);
+		if (F_ISSET(sp, S_SCR_CENTER)) {
+			F_CLR(sp, S_SCR_CENTER);
+			if (svi_sm_fill(sp, sp->lno, P_MIDDLE))
+				return (1);
+		} else
+			if (svi_sm_fill(sp, HMAP->lno, P_TOP))
+				return (1);
 		if (O_ISSET(sp, O_LEFTRIGHT) &&
 		    (cnt = svi_opt_screens(sp, LNO, &CNO)) != 1)
 			for (smp = HMAP; smp <= TMAP; ++smp)
@@ -276,6 +282,10 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 		/* Current screen. */
 		if (LNO <= TMAP->lno)
 			goto adjust;
+		if (F_ISSET(sp, S_SCR_CENTER)) {
+			F_CLR(sp, S_SCR_CENTER);
+			goto middle;
+		}
 
 		/*
 		 * If less than half a screen above the line, scroll down
@@ -292,7 +302,15 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 	}
 
 	/*
-	 * 3b: Line up.
+	 * 3b: If not on the current screen, may request center.
+	 */
+	if (F_ISSET(sp, S_SCR_CENTER)) {
+		F_CLR(sp, S_SCR_CENTER);
+		goto middle;
+	}
+
+	/*
+	 * 3c: Line up.
 	 */
 	lcnt = svi_sm_nlines(sp, HMAP, LNO, HALFTEXT(sp));
 	if (lcnt < HALFTEXT(sp)) {
