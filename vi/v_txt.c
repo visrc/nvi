@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.53 1993/11/22 10:02:17 bostic Exp $ (Berkeley) $Date: 1993/11/22 10:02:17 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.54 1993/11/22 14:29:18 bostic Exp $ (Berkeley) $Date: 1993/11/22 14:29:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -306,12 +306,18 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 		case K_CR:
 		case K_NL:				/* New line. */
 #define	LINE_RESOLVE {							\
-			/* Handle abbreviations. */			\
+			/*						\
+			 * Handle abbreviations.  If there was one,	\
+			 * discard the replay characters.		\
+			 */						\
 			if (abb == A_NOTSPACE && !replay) {		\
 				if (txt_abbrev(sp, tp, &tmp, ch))	\
 					ERR;				\
-				if (tmp)				\
+				if (tmp) {				\
+					if (LF_ISSET(TXT_RECORD))	\
+						rcol -= tmp;		\
 					goto next_ch;			\
+				}					\
 			}						\
 			if (abb != A_NOTSET)				\
 				abb = A_SPACE;				\
@@ -754,14 +760,18 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			/* FALLTHROUGH */
 		default:			/* Insert the character. */
 ins_ch:			/*
-			 * If entering a space character after a word,
-			 * check for abbreviations.
+			 * If entering a space character after a word, check
+			 * for abbreviations.  If there was one, discard the
+			 * replay characters.
 			 */
 			if (isblank(ch) && abb == A_NOTSPACE && !replay) {
 				if (txt_abbrev(sp, tp, &tmp, ch))
 					ERR;
-				if (tmp)
+				if (tmp) {
+					if (LF_ISSET(TXT_RECORD))
+						rcol -= tmp;
 					goto next_ch;
+				}
 			}
 			/* If in hex mode, see if we've entered a hex value. */
 			if (hex == H_INHEX && !isxdigit(ch)) {
@@ -874,7 +884,7 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	 * were applied to :colon command lines, so entering abbreviations that
 	 * looped was tricky, if not impossible.  In addition, obvious loops
 	 * don't work as expected.  (The command ':ab a b|ab b c|ab c a' will
-	 * silently only implement the last of * the abbreviations.)
+	 * silently only implement the last of the abbreviations.)
 	 *
 	 * XXX
 	 * There obvious infinite loop, if a abbreviates to b and b to a, is
@@ -900,7 +910,14 @@ txt_abbrev(sp, tp, didsubp, pushc)
 		memmove(tp->lb + sp->cno + tp->owrite,
 		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
 
-	*didsubp = 1;
+	/*
+	 * We return the length of the abbreviated characters.  This is so
+	 * the calling routine can replace the replay characters with the
+	 * abbreviation.  This means that subsequent '.' commands will produce
+	 * the same text, regardless of intervening :[un]abbreviate commands.
+	 * This is historic practice.
+	 */
+	*didsubp = len;
 	return (0);
 }
 
