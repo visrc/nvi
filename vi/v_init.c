@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.1 1994/11/09 18:36:04 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:04 $";
+static char sccsid[] = "$Id: v_init.c,v 9.2 1994/11/12 13:28:14 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:28:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,11 +123,11 @@ v_init(sp)
 		msgq(sp, M_SYSERR, "ex output");
 		return (1);
 	}
+
 #ifdef MAKE_EX_OUTPUT_LINE_BUFFERED
 	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
 #endif
-
-	return (msg_status(sp, sp->lno, 0));
+	return (0);
 }
 
 /*

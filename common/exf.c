@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.3 1994/11/09 19:23:33 bostic Exp $ (Berkeley) $Date: 1994/11/09 19:23:33 $";
+static char sccsid[] = "$Id: exf.c,v 9.4 1994/11/12 13:28:22 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:28:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -381,7 +381,8 @@ file_init(sp, frp, rcv_name, flags)
 	/* Redraw the screen from scratch. */
 	F_SET(sp, S_SCR_REFORMAT);
 
-	return (0);
+	/* Display file statistics. */
+	return (msg_status(sp, sp->lno, 0));
 
 err:	if (frp->name != NULL) {
 		free(frp->name);

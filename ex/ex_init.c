@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 9.1 1994/11/09 18:40:46 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:46 $";
+static char sccsid[] = "$Id: ex_init.c,v 9.2 1994/11/12 13:28:06 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:28:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ int
 ex_init(sp)
 	SCR *sp;
 {
-	return (msg_status(sp, sp->lno, 0));
+	return (0);
 }
 
 /*
