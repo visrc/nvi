@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.26 1993/12/23 10:46:49 bostic Exp $ (Berkeley) $Date: 1993/12/23 10:46:49 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.27 1993/12/27 17:02:01 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:02:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,7 +61,9 @@ global(sp, ep, cmdp, cmd)
 {
 	struct sigaction act, oact;
 	struct termios nterm, term;
-	recno_t elno, last1, last2, lno;
+	RANGE *rp;
+	EX_PRIVATE *exp;
+	recno_t elno, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t clen, len;
@@ -128,7 +130,7 @@ global(sp, ep, cmdp, cmd)
 
 		/* Free up any allocated memory. */
 		if (replaced)
-			FREE_SPACE(sp, ptrn, 0);
+			free(ptrn);
 
 		if (eval) {
 			re_error(sp, eval, re);
@@ -144,7 +146,7 @@ global(sp, ep, cmdp, cmd)
 		F_SET(sp, S_SRE_SET);
 	}
 
-	/* Get the command string. */
+	/* Get a copy of the command string. */
 	if ((clen = strlen(p)) == 0) {
 		msgq(sp, M_ERR, "No command string specified.");
 		return (1);
@@ -159,8 +161,6 @@ global(sp, ep, cmdp, cmd)
 	sp->subre = sp->sre;
 	F_SET(sp, S_SUBRE_SET);
 
-	F_SET(sp, S_GLOBAL);
-
 	/*
 	 * Command interrupts.
 	 *
@@ -169,6 +169,7 @@ global(sp, ep, cmdp, cmd)
 	 * because nvi never wants to catch it.  A handler for VSUSP should
 	 * have been installed by the screen code.
 	 */
+	F_SET(sp, S_GLOBAL);
 	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
 		act.sa_handler = global_intr;
 		sigemptyset(&act.sa_mask);
@@ -179,31 +180,38 @@ global(sp, ep, cmdp, cmd)
 			F_SET(sp, S_INTERRUPTIBLE);
 			if (tcgetattr(STDIN_FILENO, &term)) {
 				msgq(sp, M_SYSERR, "tcgetattr");
-				free(cb);
-				return (1);
+				goto err;
 			}
 			nterm = term;
 			nterm.c_lflag |= ISIG;
 			if (tcsetattr(STDIN_FILENO,
 			    TCSANOW | TCSASOFT, &nterm)) {
 				msgq(sp, M_SYSERR, "tcsetattr");
-				free(cb);
-				return (1);
+				goto err;
 			}
 		}
 	}
 
-	/* For each line... */
+	/*
+	 * For each line...  The semantics of global matching are that we first
+	 * have to decide which lines are going to get passed to the command,
+	 * and then pass them to the command, ignoring other changes.  There's
+	 * really no way to do this in a single pass, since arbitrary line
+	 * creation, deletion and movement can be done in the ex command.  For
+	 * example, a good vi clone test is ":g/X/mo.-3", or "g/X/.,.+1d".
+	 * What we do is create linked list of lines that are tracked through
+	 * each ex command.  There's a callback routine which the DB interface
+	 * routines call when a line is created or deleted.  This doesn't help
+	 * the layering much. 
+	 */
+	exp = EXP(sp);
 	for (rval = 0, lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
-
-		/* Get the line. */
+		/* Get the line and search for a match. */
 		if ((t = file_gline(sp, ep, lno, &len)) == NULL) {
 			GETLINE_ERR(sp, lno);
 			goto err;
 		}
-
-		/* Search for a match. */
 		match[0].rm_so = 0;
 		match[0].rm_eo = len;
 		switch(eval = regexec(re, t, 1, match, REG_STARTEND)) {
@@ -220,48 +228,62 @@ global(sp, ep, cmdp, cmd)
 			goto err;
 		}
 
-		/*
-		 * Execute the command, keeping track of the lines that
-		 * change, and adjusting for inserted/deleted lines.
-		 */
-		if (file_lline(sp, ep, &last1))
+		/* If follows the last entry, extend the last entry's range. */
+		if ((rp = exp->rangeq.cqh_last) != (void *)&exp->rangeq &&
+		    rp->stop == lno - 1) {
+			++rp->stop;
+			continue;
+		}
+
+		/* Allocate a new range, and append it to the list. */
+		CALLOC(sp, rp, RANGE *, 1, sizeof(RANGE));
+		if (rp == NULL)
 			goto err;
+		rp->start = rp->stop = lno;
+		CIRCLEQ_INSERT_TAIL(&exp->rangeq, rp, q);
 
-		sp->lno = lno;
+		/* Someone's unhappy, time to stop. */
+		if (F_ISSET(sp, S_INTERRUPTED))
+			goto interrupted;
+	}
+
+	for (exp = EXP(sp);;) {
+		/*
+		 * Start at the beginning of the range each time, it may have
+		 * been changed (or exhausted) if lines were inserted/deleted.
+		 */
+		if ((rp = exp->rangeq.cqh_first) == (void *)&exp->rangeq)
+			break;
+		if (rp->start > rp->stop) {
+			CIRCLEQ_REMOVE(&exp->rangeq, exp->rangeq.cqh_first, q);
+			free(rp);
+			continue;
+		}
 
 		/*
-		 * The cursor moves to last line sent to the command, by
-		 * default.  If the command created new lines, it moves
-		 * to the last of the new lines, if it deleted lines, it
-		 * moves to the line after the deleted line.
+		 * Execute the command, setting the cursor to the line so that
+		 * relative addressing works.  This means that the cursor moves
+		 * to the last line sent to the command, by default, even if
+		 * the command fails.
 		 */
+		exp->range_lno = sp->lno = rp->start++;
 		if (ex_cmd(sp, ep, cb, clen))
 			goto err;
-		if (file_lline(sp, ep, &last2)) {
-err:			rval = 1;
-			break;
-		}
-		if (last2 > last1) {		/* Created lines. */
-			last2 -= last1;
-			sp->lno = lno += last2;
-			elno += last2;
-		} else if (last1 > last2) {	/* Deleted lines. */
-			last1 -= last2;
-			sp->lno = lno -= last1;
-			if (sp->lno == 0)
-				sp->lno = 1;
-			elno -= last1;
-		} else
-			sp->lno = lno;
 
 		/* Someone's unhappy, time to stop. */
 		if (F_ISSET(sp, S_INTERRUPTED)) {
-			msgq(sp, M_INFO, "Interrupted.");
+interrupted:		msgq(sp, M_INFO, "Interrupted.");
 			break;
 		}
 	}
-	F_CLR(sp, S_GLOBAL);
 
+	/* Set the cursor to the new value. */
+	sp->lno = exp->range_lno;
+	if (0) {
+err:		rval = 1;
+	}
+
+	F_CLR(sp, S_GLOBAL);
 	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
 		if (sigaction(SIGINT, &oact, NULL))
 			msgq(sp, M_SYSERR, "signal");
@@ -271,8 +293,92 @@ err:			rval = 1;
 		if (!istate)
 			F_CLR(sp, S_INTERRUPTIBLE);
 	}
+
+	/* Free any remaining ranges and the command buffer. */
+	while ((rp = exp->rangeq.cqh_first) != (void *)&exp->rangeq) {
+		CIRCLEQ_REMOVE(&exp->rangeq, exp->rangeq.cqh_first, q);
+		free(rp);
+	}
 	free(cb);
 	return (rval);
+}
+
+/*
+ * global_insdel --
+ *	Update the ranges based on an insertion or deletion.
+ */
+void
+global_insdel(sp, ep, op, lno)
+	SCR *sp;
+	EXF *ep;
+	enum operation op;
+	recno_t lno;
+{
+	EX_PRIVATE *exp;
+	RANGE *nrp, *rp;
+
+	exp = EXP(sp);
+
+	switch (op) {
+	case LINE_APPEND:
+		return;
+	case LINE_DELETE:
+		for (rp = exp->rangeq.cqh_first;
+		    rp != (void *)&exp->rangeq; rp = nrp) {
+			nrp = rp->q.cqe_next;
+			/* If range less than the line, ignore it. */
+			if (rp->stop < lno)
+				continue;
+			/* If range greater than the line, decrement range. */
+			if (rp->start > lno) {
+				--rp->start;
+				--rp->stop;
+				continue;
+			}
+			/* Lno is inside the range, decrement the end point. */
+			if (rp->start > --rp->stop) {
+				CIRCLEQ_REMOVE(&exp->rangeq, rp, q);
+				free(rp);
+			}
+		}
+		break;
+	case LINE_INSERT:
+		for (rp = exp->rangeq.cqh_first;
+		    rp != (void *)&exp->rangeq; rp = rp->q.cqe_next) {
+			/* If range less than the line, ignore it. */
+			if (rp->stop < lno)
+				continue;
+			/* If range greater than the line, increment range. */
+			if (rp->start >= lno) {
+				++rp->start;
+				++rp->stop;
+				continue;
+			}
+			/*
+			 * Lno is inside the range, so the range must be split.
+			 * Since we're inserting a new element, neither range
+			 * can be exhausted.
+			 */
+			CALLOC(sp, nrp, RANGE *, 1, sizeof(RANGE));
+			if (nrp == NULL) {
+				F_SET(sp, S_INTERRUPTED);
+				return;
+			}
+			nrp->start = lno + 1;
+			nrp->stop = rp->stop + 1;
+			rp->stop = lno - 1;
+			CIRCLEQ_INSERT_AFTER(&exp->rangeq, rp, nrp, q);
+			rp = nrp;
+		}
+		break;
+	case LINE_RESET:
+		return;
+	}
+	/*
+	 * If the command deleted/inserted lines, the cursor moves to
+	 * the line after the deleted/inserted line.
+	 */
+	exp->range_lno = lno;
 }
 
 /*
