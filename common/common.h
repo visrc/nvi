@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.39 1993/02/25 17:43:15 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:43:15 $
+ *	$Id: common.h,v 5.40 1993/03/01 12:45:06 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:45:06 $
  */
 
 #include <limits.h>		/* XXX */
@@ -14,6 +14,7 @@
 #include "mark.h"
 #include "msg.h"
 #include "search.h"
+#include "tag.h"
 #include "exf.h"
 #include "cut.h"
 
