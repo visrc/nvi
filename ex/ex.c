@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.47 1996/05/21 14:59:54 bostic Exp $ (Berkeley) $Date: 1996/05/21 14:59:54 $";
+static const char sccsid[] = "$Id: ex.c,v 10.48 1996/06/06 11:26:18 bostic Exp $ (Berkeley) $Date: 1996/06/06 11:26:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,8 +91,9 @@ ex(spp)
 	for (;; ++gp->excmd.if_lno) {
 		/* Display status line and flush. */
 		if (F_ISSET(sp, SC_STATUS)) {
+			if (!F_ISSET(sp, SC_EX_SILENT))
+				msgq_status(sp, sp->lno, 0);
 			F_CLR(sp, SC_STATUS);
-			msgq_status(sp, sp->lno, 0);
 		}
 		(void)ex_fflush(sp);
 
