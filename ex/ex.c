@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.145 1994/08/07 13:05:02 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:05:02 $";
+static char sccsid[] = "$Id: ex.c,v 8.146 1994/08/07 13:45:59 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:45:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1306,7 +1306,7 @@ addr2:	switch (exc.addrcnt) {
 	saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 
 	/* Do the command. */
-	if ((cp->fn)(sp, ep, &exc))
+	if (cp->fn(sp, ep, &exc))
 		goto err;
 
 #ifdef DEBUG
@@ -1366,44 +1366,51 @@ addr2:	switch (exc.addrcnt) {
 	}
 
 	/*
-	 * If the command was successful and we're in ex command mode,
-	 * we may want to display a line.  Make sure that there is a
-	 * line to display...
+	 * Integrate any offset parsed by the underlying command, and make
+	 * sure the referenced line exists.
+	 *
+	 * XXX
+	 * May not match historic practice (I've never been able to completely
+	 * figure it out.)  For example, the '=' command from vi mode often
+	 * got the offset wrong, and complained it was too large, but didn't
+	 * seem to have a problem with the cursor.  If anyone complains, ask
+	 * them how it's supposed to work, they probably know.
+	 */
+	if (ep != NULL && (flagoff += exc.flagoff)) {
+		if (flagoff < 0) {
+			if (sp->lno <= -flagoff) {
+				msgq(sp, M_ERR, "Flag offset before line 1");
+				goto err;
+			}
+		} else {
+			if (file_lline(sp, ep, &lno))
+				goto err;
+			if (sp->lno + flagoff > lno) {
+				msgq(sp, M_ERR, "Flag offset past end-of-file");
+				goto err;
+			}
+		}
+		sp->lno += flagoff;
+	}
+
+	/*
+	 * If the command was successful and we're in ex command mode, we
+	 * may want to display a line.  Make sure there's a line to display.
 	 */
 	if (ep != NULL && IN_EX_MODE(sp) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
-		 * If so, clear them.  Don't return yet, autoprint may still
-		 * have stuff to print out.
+		 * If so, clear them.
 		 */
-		 if (LF_ISSET(E_F_PRCLEAR))
+		if (LF_ISSET(E_F_PRCLEAR))
 			F_CLR(&exc, E_F_HASH | E_F_LIST | E_F_PRINT);
 
 		/*
 		 * If there was an explicit flag to display the new cursor
 		 * line, or we're in ex mode, autoprint is set, and a change
-		 * was made, display the line.
+		 * was made, display the line.  If any print flags set use
+		 * them, otherwise default to print.
 		 */
-		if (flagoff) {
-			if (flagoff < 0) {
-				if (sp->lno <= -flagoff) {
-					msgq(sp, M_ERR,
-					    "Flag offset before line 1");
-					goto err;
-				}
-			} else {
-				if (file_lline(sp, ep, &lno))
-					goto err;
-				if (sp->lno + flagoff > lno) {
-					msgq(sp, M_ERR,
-					    "Flag offset past end-of-file");
-					goto err;
-				}
-			}
-			sp->lno += flagoff;
-		}
-
-		/* If flags set use them, otherwise default to print. */
 		LF_INIT(F_ISSET(&exc, E_F_HASH | E_F_LIST | E_F_PRINT));
 		if (!LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT) &&
 		    O_ISSET(sp, O_AUTOPRINT) &&
