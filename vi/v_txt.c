@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.65 1993/12/19 19:00:32 bostic Exp $ (Berkeley) $Date: 1993/12/19 19:00:32 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.66 1993/12/20 11:41:38 bostic Exp $ (Berkeley) $Date: 1993/12/20 11:41:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,13 +225,20 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * from the RIGHT-HAND column, not the left.  It's more useful to
 	 * us as a distance from the left-hand column.
 	 *
+	 * !!!
+	 * Replay commands are not affected by wrapmargin values.  What
+	 * I found surprising was that people actually depend on it, as
+	 * in this gem of a macro which centers lines:
+	 *
+	 *	map #c $mq81a ^V^[81^V|D`qld0:s/  / /g^V^M$p
+	 *
 	 * XXX
 	 * Setting margin causes a significant performance hit.  Normally
 	 * we don't update the screen if there are keys waiting, but we
 	 * have to if margin is set, otherwise the screen routines don't
 	 * know where the cursor is.
 	 */
-	if (!LF_ISSET(TXT_WRAPMARGIN))
+	if (LF_ISSET(TXT_REPLAY) || !LF_ISSET(TXT_WRAPMARGIN))
 		margin = 0;
 	else if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
 		margin = sp->cols - margin;
