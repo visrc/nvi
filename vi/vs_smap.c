@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.15 1993/10/04 11:00:51 bostic Exp $ (Berkeley) $Date: 1993/10/04 11:00:51 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.16 1993/10/07 10:38:22 bostic Exp $ (Berkeley) $Date: 1993/10/07 10:38:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -326,6 +326,7 @@ svi_sm_insert(sp, ep, lno)
 	for (cnt = 1, t = p; cnt <= cnt_orig; ++t, ++cnt) {
 		t->lno = lno;
 		t->off = cnt;
+		SMAP_FLUSH(t);
 		if (svi_line(sp, ep, t, NULL, NULL))
 			return (1);
 	}
