@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.28 1996/06/28 15:28:49 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:49 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.29 1996/07/09 20:29:36 bostic Exp $ (Berkeley) $Date: 1996/07/09 20:29:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -193,7 +193,7 @@ exwr(sp, cmdp, cmd)
 	}
 
 	/* Set the FS_ALL flag if we're writing the entire file. */
-	if (cmdp->addr1.lno == 1 && !db_exist(sp, cmdp->addr2.lno + 1))
+	if (cmdp->addr1.lno <= 1 && !db_exist(sp, cmdp->addr2.lno + 1))
 		LF_SET(FS_ALL);
 
 	/* If "write >>" it's an append to a file. */
