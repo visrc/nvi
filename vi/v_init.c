@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.2 1994/11/12 13:28:14 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:28:14 $";
+static char sccsid[] = "$Id: v_init.c,v 9.3 1994/11/13 11:12:56 bostic Exp $ (Berkeley) $Date: 1994/11/13 11:12:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,15 +118,12 @@ v_init(sp)
 	sp->rcm = 0;
 	sp->rcm_last = 0;
 
-	/* Make ex display to a scrolling function. */
+	/* Make ex display to a vi scrolling function. */
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
 		msgq(sp, M_SYSERR, "ex output");
 		return (1);
 	}
 
-#ifdef MAKE_EX_OUTPUT_LINE_BUFFERED
-	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
-#endif
 	return (0);
 }
 
@@ -138,7 +135,7 @@ int
 v_end(sp)
 	SCR *sp;
 {
-	/* Close down ex output file descriptor. */
+	/* Reset ex output file descriptor. */
 	(void)fclose(sp->stdfp);
 
 	return (0);
