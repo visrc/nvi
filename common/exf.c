@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.90 1994/08/03 11:07:32 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:07:32 $";
+static char sccsid[] = "$Id: exf.c,v 8.91 1994/08/03 11:30:00 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:30:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -478,50 +478,50 @@ file_write(sp, ep, fm, tm, name, flags)
 	FREF *frp;
 	MARK from, to;
 	u_long nlno, nch;
-	int btear, fd, oflags, rval;
+	int btear, fd, noname, oflags, rval;
 	char *msg;
+
+	frp = sp->frp;
+	if (name == NULL) {
+		noname = 1;
+		name = frp->name;
+	} else
+		noname = 0;
 
 	/*
 	 * Don't permit writing to temporary files if the command is going to
 	 * exit.  The problem is that if it's a temp file, and the user does
 	 * ":wq", we write and quit, unlinking the temporary file.  Not what
-	 * the user had in mind at all.  This test cannot be forced.
+	 * the user had in mind at all.  This test cannot be forced.  We do
+	 * permit writing to temporary files, so that users can use maps that
+	 * use file system names with temporary files.
 	 */
-	frp = sp->frp;
-	if (name == NULL &&
-	    F_ISSET(frp, FR_TMPFILE) && LF_ISSET(FS_WILLEXIT)) {
+	if (noname && F_ISSET(frp, FR_TMPFILE) && LF_ISSET(FS_WILLEXIT)) {
 		msgq(sp, M_ERR,
 		    "File is a temporary; write/exit not permitted");
 		return (1);
 	}
 
 	/* Can't write files marked read-only, unless forced. */
-	if (!LF_ISSET(FS_FORCE) &&
-	    name == NULL && F_ISSET(frp, FR_RDONLY)) {
+	if (!LF_ISSET(FS_FORCE) && noname && F_ISSET(frp, FR_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
 			    "Read-only file, not written; use ! to override");
 		else
-			msgq(sp, M_ERR,
-			    "Read-only file, not written");
+			msgq(sp, M_ERR, "Read-only file, not written");
 		return (1);
 	}
 
 	/* If not forced, not appending, and "writeany" not set ... */
 	if (!LF_ISSET(FS_FORCE | FS_APPEND) && !O_ISSET(sp, O_WRITEANY)) {
 		/* Don't overwrite anything but the original file. */
-		if (name != NULL) {
-			if (!stat(name, &sb))
-				goto exists;
-		} else if (F_ISSET(frp,
-		    FR_NAMECHANGE) && !stat(frp->name, &sb)) {
-			name = frp->name;
-exists:			if (LF_ISSET(FS_POSSIBLE))
+		if ((!noname || F_ISSET(frp, FR_NAMECHANGE)) &&
+		    !stat(name, &sb)) {
+			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
 		"%s exists, not written; use ! to override", name);
 			else
-				msgq(sp, M_ERR,
-				    "%s exists, not written", name);
+				msgq(sp, M_ERR, "%s exists, not written", name);
 			return (1);
 		}
 
@@ -529,8 +529,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 		 * Don't write part of any existing file.  Only test for the
 		 * original file, the previous test catches anything else.
 		 */
-		if (!LF_ISSET(FS_ALL) &&
-		    name == NULL && !stat(frp->name, &sb)) {
+		if (!LF_ISSET(FS_ALL) && noname && !stat(name, &sb)) {
 			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
 				    "Use ! to write a partial file");
@@ -557,7 +556,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	 * saved modification time, stop the user if it's been written since
 	 * we last edited or wrote it, and make them force it.
 	 */
-	if (stat(name == NULL ? frp->name : name, &sb))
+	if (stat(name, &sb))
 		msg = ": new file";
 	else {
 		msg = "";
@@ -565,19 +564,14 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 			if (ep->mtime && sb.st_mtime > ep->mtime) {
 				msgq(sp, M_ERR,
 			"%s: file modified more recently than this copy%s",
-				    name == NULL ? frp->name : name,
-				    LF_ISSET(FS_POSSIBLE) ?
+				    name, LF_ISSET(FS_POSSIBLE) ?
 				    "; use ! to override" : "");
 				return (1);
 			}
-			if (name != NULL || F_ISSET(frp, FR_NAMECHANGE))
+			if (!noname || F_ISSET(frp, FR_NAMECHANGE))
 				msg = ": existing file";
 		}
 	}
-
-	/* We no longer care where the name came from. */
-	if (name == NULL)
-		name = frp->name;
 
 	/* Set flags to either append or truncate. */
 	oflags = O_CREAT | O_WRONLY;
@@ -638,11 +632,11 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 
 	/*
 	 * If wrote the entire file and it's not a temporary file, clear the
-	 * modified bit.  This permits the user to write the file and run a
-	 * command on it in the file system, but still keeps them from losing
+	 * modified bit.  This permits the user to write the file and use it
+	 * in the context of the file system, but still keeps them from losing
 	 * their changes by exiting.
 	 */
-	if (!F_ISSET(frp, FR_TMPFILE) && LF_ISSET(FS_ALL))
+	if (LF_ISSET(FS_ALL) && (!noname || !F_ISSET(frp, FR_TMPFILE)))
 		F_CLR(ep, F_MODIFIED);
 
 	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters",
