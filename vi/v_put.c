@@ -6,13 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 8.1 1993/06/09 22:27:37 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:37 $";
+static char sccsid[] = "$Id: v_put.c,v 8.2 1993/08/25 16:53:22 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:53:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include "vi.h"
 #include "vcmd.h"
+
+static void	inc_buf __P((SCR *, VICMDARG *));
 
 /*
  * v_Put -- [buffer]P
@@ -25,21 +27,8 @@ v_Put(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	/*
-	 * Historical whackadoo.  The dot command `puts' the numbered buffer
-	 * after the last one put.  For example, `"4p .' would put buffer #4
-	 * and buffer #5.  If the user continued to enter '.', the #9 buffer
-	 * would be repeatedly output.  This was not documented, and is a bit
-	 * tricky to reconstruct.  Historical versions of vi also dropped the
-	 * contents of the default buffer after each put, so after `"4p' the
-	 * default buffer would be empty.  This makes no sense to me, so we
-	 * don't bother.
-	 *
-	 * This code assumes sequential order of numeric characters.
-	 */
-	if (F_ISSET(vp, VC_ISDOT) && vp->buffer >= '1' && vp->buffer <= '8')
-		++vp->buffer;
-
+	if (F_ISSET(vp, VC_ISDOT))
+		inc_buf(sp, vp);
 	return (put(sp, ep, VICB(vp), fm, rp, 0));
 }
 
@@ -54,8 +43,60 @@ v_put(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (F_ISSET(vp, VC_ISDOT) && vp->buffer >= '1' && vp->buffer <= '8')
-		++vp->buffer;
+	if (F_ISSET(vp, VC_ISDOT))
+		inc_buf(sp, vp);
 
 	return (put(sp, ep, VICB(vp), fm, rp, 1));
+}
+
+/*
+ * Historical whackadoo.  The dot command `puts' the numbered buffer
+ * after the last one put.  For example, `"4p.' would put buffer #4
+ * and buffer #5.  If the user continued to enter '.', the #9 buffer
+ * would be repeatedly output.  This was not documented, and is a bit
+ * tricky to reconstruct.  Historical versions of vi also dropped the
+ * contents of the default buffer after each put, so after `"4p' the
+ * default buffer would be empty.  This makes no sense to me, so we
+ * don't bother.  Don't assume sequential order of numeric characters.
+ *
+ * And, if that weren't exciting enough, failed commands don't normally
+ * set the dot command.  Well, boys and girls, an exception is that
+ * the buffer increment gets done regardless of the success of the put.
+ */
+static void
+inc_buf(sp, vp)
+	SCR *sp;
+	VICMDARG *vp;
+{
+	int v;
+
+	switch (vp->buffer) {
+	case '1':
+		v = '2';
+		break;
+	case '2':
+		v = '3';
+		break;
+	case '3':
+		v = '4';
+		break;
+	case '4':
+		v = '5';
+		break;
+	case '5':
+		v = '6';
+		break;
+	case '6':
+		v = '7';
+		break;
+	case '7':
+		v = '8';
+		break;
+	case '8':
+		v = '9';
+		break;
+	default:
+		return;
+	}
+	((VICMDARG *)sp->sdot)->buffer = vp->buffer = v;
 }
