@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.25 1993/05/09 11:36:21 bostic Exp $ (Berkeley) $Date: 1993/05/09 11:36:21 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.26 1993/05/09 11:44:46 bostic Exp $ (Berkeley) $Date: 1993/05/09 11:44:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,10 +45,11 @@ shift(sp, ep, cmdp, rl)
 	EXCMDARG *cmdp;
 	enum which rl;
 {
+	GS *gp;
 	recno_t from, to;
 	size_t blen, len, newcol, newidx, oldcol, oldidx, sw;
 	int curset;
-	char *p, *buf, *bp;
+	char *p, *bp, *tbp;
 
 	if (O_VAL(sp, O_SHIFTWIDTH) == 0) {
 		msgq(sp, M_INFO, "shiftwidth option set to 0");
@@ -62,15 +63,22 @@ shift(sp, ep, cmdp, rl)
 	 * cmdp->string points to the string of '>' or '<' characters, but it
 	 * is NOT nul terminated.
 	 *
-	 * Q: What's the difference between the people adding features to vi
-	 *    and the Girl Scouts?
+	 * Q: What's the difference between the people adding features
+	 *    to vi and the Girl Scouts?
 	 * A: The Girl Scouts have mint cookies and adult supervision.
 	 */
 	for (p = cmdp->string, sw = 0;
 	    *p && (*p == '>' || *p == '<'); ++p, sw += O_VAL(sp, O_SHIFTWIDTH));
 
-	blen = 0;
-	buf = NULL;
+	/* Get temp space. */
+	gp = sp->gp;
+	if (F_ISSET(gp, G_TMP_INUSE)) {
+		bp = NULL;
+		blen = 0;
+	} else {
+		bp = gp->tmp_bp;
+		F_SET(gp, G_TMP_INUSE);
+	}
 	curset = 0;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
 		if ((p = file_gline(sp, ep, from, &len)) == NULL)
@@ -79,8 +87,8 @@ shift(sp, ep, cmdp, rl)
 			continue;
 
 		/*
-		 * Calculate the old number of characters used for the indent
-		 * and the previous indent amount.
+		 * Calculate the old indent amount and the number of
+		 * characters it used.
 		 */
 		for (oldidx = 0, oldcol = 0;; ++oldidx)
 			if (p[oldidx] == ' ')
@@ -101,26 +109,35 @@ shift(sp, ep, cmdp, rl)
 		}
 
 		/* Get a buffer that will hold the new line. */
-		if (blen < newcol + len && binc(sp, &buf, &blen, 0))
-			goto err;
+		if (bp == gp->tmp_bp) {
+			F_CLR(gp, G_TMP_INUSE);
+			BINC(sp, gp->tmp_bp, gp->tmp_blen, newcol + len);
+			bp = gp->tmp_bp;
+			F_SET(gp, G_TMP_INUSE);
+		} else
+			BINC(sp, bp, blen, newcol + len);
 
-		/* Build a new indent string. */
-		for (bp = buf, newidx = 0;
+		/*
+		 * Build a new indent string and count the number of
+		 * characters it uses.
+		 */
+		for (tbp = bp, newidx = 0;
 		    newcol >= O_VAL(sp, O_TABSTOP); ++newidx) {
-			*bp++ = '\t';
+			*tbp++ = '\t';
 			newcol -= O_VAL(sp, O_TABSTOP);
 		}
 		for (; newcol > 0; --newcol, ++newidx)
-			*bp++ = ' ';
+			*tbp++ = ' ';
 
 		/* Add the original line. */
-		memmove(bp, p + oldidx, len - oldidx);
+		memmove(tbp, p + oldidx, len - oldidx);
 
 		/* Set the replacement line. */
-		if (file_sline(sp, ep,
-		    from, buf, (bp + (len - oldidx)) - buf)) {
-err:			if (buf != NULL)
-				free(buf);
+		if (file_sline(sp, ep, from, bp, (tbp + (len - oldidx)) - bp)) {
+err:			if (bp == gp->tmp_bp)
+				F_CLR(gp, G_TMP_INUSE);
+			else
+				FREE(bp, blen);
 			return (1);
 		}
 
@@ -150,8 +167,10 @@ err:			if (buf != NULL)
 			sp->cno = 0;
 	}
 
-	if (buf != NULL)
-		free(buf);
+	if (bp == gp->tmp_bp)
+		F_CLR(gp, G_TMP_INUSE);
+	else
+		FREE(bp, blen);
 
 	/* Reporting. */
 	sp->rptlines = cmdp->addr2.lno - cmdp->addr1.lno + 1;
