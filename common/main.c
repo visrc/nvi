@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.45 1996/09/23 20:34:25 bostic Exp $ (Berkeley) $Date: 1996/09/23 20:34:25 $";
+static const char sccsid[] = "$Id: main.c,v 10.46 1996/09/24 19:23:51 bostic Exp $ (Berkeley) $Date: 1996/09/24 19:23:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,6 +39,7 @@ static const char sccsid[] = "$Id: main.c,v 10.45 1996/09/23 20:34:25 bostic Exp
 #include "../vi/vi.h"
 #include "pathnames.h"
 
+static void	 attach __P((GS *));
 static void	 v_estr __P((char *, int, char *));
 static int	 v_obsolete __P((char *, char *[]));
 
@@ -62,9 +63,8 @@ editor(gp, argc, argv)
 	SCR *sp;
 	size_t len;
 	u_int flags;
-	int ch, fd, flagchk, lflag, secure, startup, readonly, rval, silent;
-	char *tag_f, *wsizearg;
-	char path[256];
+	int ch, flagchk, lflag, secure, startup, readonly, rval, silent;
+	char *tag_f, *wsizearg, path[256];
 
 	/* Initialize the busy routine, if not defined by the screen. */
 	if (gp->scr_busy == NULL)
@@ -138,20 +138,7 @@ editor(gp, argc, argv)
 				startup = 0;
 				break;
 			case 'w':
-				if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
-					v_estr(gp->progname, errno, _PATH_TTY);
-					return (1);
-				}
-		(void)printf("process %lu waiting, enter <CR> to continue: ",
-				    (u_long)getpid());
-				(void)fflush(stdout);
-				do {
-					if (read(fd, &ch, 1) != 1) {
-						(void)close(fd);
-						return (0);
-					}
-				} while (ch != '\n' && ch != '\r');
-				(void)close(fd);
+				attach(gp);
 				break;
 			default:
 				v_estr(gp->progname, 0,
@@ -586,6 +573,33 @@ nomem:					v_estr(name, errno, NULL);
 					++argv;
 	return (0);
 }
+
+#ifdef DEBUG
+static void
+attach(gp)
+	GS *gp;
+{
+	int fd;
+	char ch;
+
+	if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
+		v_estr(gp->progname, errno, _PATH_TTY);
+		return;
+	}
+
+	(void)printf("process %lu waiting, enter <CR> to continue: ",
+	    (u_long)getpid());
+	(void)fflush(stdout);
+
+	do {
+		if (read(fd, &ch, 1) != 1) {
+			(void)close(fd);
+			return;
+		}
+	} while (ch != '\n' && ch != '\r');
+	(void)close(fd);
+}
+#endif
 
 static void
 v_estr(name, eno, msg)
