@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_cde.c,v 8.2 1996/11/27 09:28:37 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:37 $";
+static const char sccsid[] = "$Id: m_cde.c,v 8.3 1996/11/27 12:10:02 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:10:02 $";
 #endif /* not lint */
 
 /* Boolean	is_cde( Display *d )
@@ -52,12 +52,11 @@ int	is_cde( d )
 Display *d;
 #endif
 {
-    int			j, i, r, format;
+    int			i, r, format;
     unsigned long	nitems, remaining;
     unsigned char	*prop;
     Window		root = DefaultRootWindow( d );
     Atom		atom, type;
-    char		*name;
     int			retval = 0;
 
     TRACE( ( "Root window is 0x%x\n", root ) );

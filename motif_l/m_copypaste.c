@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_copypaste.c,v 8.2 1996/11/27 09:28:37 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:37 $";
+static const char sccsid[] = "$Id: m_copypaste.c,v 8.3 1996/11/27 12:10:54 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:10:54 $";
 #endif /* not lint */
 
 /* ICCCM Cut and paste Utilities: */
@@ -112,7 +112,7 @@ static	void	loseProc( widget )
 
 
 #if defined(__STDC__)
-static	convertProc( Widget widget,
+static	int convertProc( Widget widget,
 		     Atom *selection,
 		     Atom *target,
 		     Atom *type,
@@ -121,7 +121,7 @@ static	convertProc( Widget widget,
 		     int *format
 		     )
 #else
-static	convertProc( widget, selection, target, type, value, length, format )
+static	int convertProc( widget, selection, target, type, value, length, format )
 Widget	widget;
 Atom	*selection, *target, *type;
 void	**value;
