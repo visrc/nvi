@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.15 1992/10/17 15:24:34 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:24:34 $";
+static char sccsid[] = "$Id: v_search.c,v 5.16 1992/10/24 14:26:03 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:26:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,7 @@ v_searchw(vp, fm, tm, rp)
 
 	/* Show the searched-for word on the bottom line. */
 	msg("%s", vp->keyword);
-	msg_vflush();
+	msg_vflush(curf);
 
 	if ((mp = f_search(fm, (u_char *)buf, NULL, 1)) == NULL)
 		return (1);
