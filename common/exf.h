@@ -4,17 +4,15 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.19 1992/11/11 18:31:03 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:31:03 $
+ *	$Id: exf.h,v 5.20 1992/12/05 11:05:19 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:05:19 $
  */
 
 #ifndef _EXF_H_
 #define	_EXF_H_
 
 #include <regex.h>
-#include <db.h>
 
 #include "mark.h"
-#include "cut.h"
 
 typedef struct exf {
 	struct exf *next, *prev;	/* Linked list of files. */
@@ -55,6 +53,10 @@ typedef struct exf {
 
 	recno_t	rptlines;		/* Lines modified by command. */
 	char *rptlabel;			/* How lines modified. */
+
+#define	F_FORGET	-1		/* Forgotten. */
+#define	F_UNDO		 1		/* Undo command. */
+	int remember;			/* Last command value. */
 
 	char *name;			/* File name. */
 	size_t nlen;			/* File name length. */
@@ -131,6 +133,8 @@ typedef struct {
 	return (1);							\
 }
 
+#include "cut.h"
+
 /* File routines. */
 EXF	*file_first __P((int));
 void	 file_init __P((void));
@@ -152,5 +156,8 @@ int	 file_ibresolv __P((EXF *, IB *));
 int	 file_iline __P((EXF *, recno_t, u_char *, size_t));
 recno_t	 file_lline __P((EXF *));
 int	 file_sline __P((EXF *, recno_t, u_char *, size_t));
+
+/* Status routine. */
+void	 status __P((EXF *, recno_t));
 
 #endif /* !_EXF_H_ */
