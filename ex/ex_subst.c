@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.7 1993/07/06 19:07:54 bostic Exp $ (Berkeley) $Date: 1993/07/06 19:07:54 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.8 1993/08/19 15:08:26 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:08:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,100 +35,102 @@ ex_substitute(sp, ep, cmdp)
 {
 	regex_t *re, lre;
 	int delim, eval, reflags;
-	char *sub, *rep, *p, *t;
+	char *arg, *sub, *rep, *p, *t;
+
+	/* Skip leading white space. */
+	for (arg = cmdp->argv[0]; isspace(*arg); ++arg);
 
 	/*
-	 * Skip leading white space.  Historic vi allowed any
-	 * non-alphanumeric to serve as the substitution command
-	 * delimiter.
+	 * Historic vi allowed any non-alphanumeric to serve as
+	 * the substitution command delimiter.
 	 */
-	for (; isspace(*cmdp->string); ++cmdp->string);
-	if (!isalnum(*cmdp->string)) {
-		/* Delimiter is the first character. */
-		delim = *cmdp->string;
+	if (isalnum(*arg))
+		return (substitute(sp, ep, cmdp, arg, &sp->sre, MUSTSETR));
 
-		/*
-		 * Get the substitute string, toss escaped characters.
-		 *
-		 * ESCAPE CHARACTER NOTE:
-		 * Only toss an escaped character if it escapes a delimiter.
-		 * This means that "s/A/\\\\f" replaces "A" with "\\f".  It
-		 * would be nice to be more regular, i.e. for each layer of
-		 * escaping a single escape character is removed, but that's
-		 * not how the historic vi worked.
-		 */
-		for (sub = p = t = ++cmdp->string;;) {
-			if (p[0] == '\0' || p[0] == delim) {
-				if (p[0] == delim)
-					++p;
-				*t = '\0';
-				break;
-			}
-			if (p[0] == '\\' && p[1] == delim)
+	/* Delimiter is the first character. */
+	delim = *arg;
+
+	/*
+	 * Get the substitute string, toss escaped characters.
+	 *
+	 * QUOTING NOTE:
+	 *
+	 * Only toss an escaped character if it escapes a delimiter.
+	 * This means that "s/A/\\\\f" replaces "A" with "\\f".  It
+	 * would be nice to be more regular, i.e. for each layer of
+	 * escaping a single escape character is removed, but that's
+	 * not how the historic vi worked.
+	 */
+	for (sub = p = t = ++arg;;) {
+		if (p[0] == '\0' || p[0] == delim) {
+			if (p[0] == delim)
 				++p;
-			*t++ = *p++;
+			*t = '\0';
+			break;
 		}
+		if (p[0] == '\\' && p[1] == delim)
+			++p;
+		*t++ = *p++;
+	}
 
-		/* Get the replacement string, toss escaped characters. */
-		if (*p == '\0') {
-			msgq(sp, M_ERR, "No replacement string specified.");
+	/* Get the replacement string, toss escaped characters. */
+	if (*p == '\0') {
+		msgq(sp, M_ERR, "No replacement string specified.");
+		return (1);
+	}
+	for (rep = t = p;;) {
+		if (p[0] == '\0' || p[0] == delim) {
+			if (p[0] == delim)
+				++p;
+			*t = '\0';
+			break;
+		}
+		if (p[0] == '\\' && p[1] == delim)
+			++p;
+		*t++ = *p++;
+	}
+	if (sp->repl != NULL)
+		free(sp->repl);
+	sp->repl = strdup(rep);
+	sp->repl_len = strlen(rep);
+
+	/* If the substitute string is empty, use the last one. */
+	if (*sub == NULL) {
+		if (!F_ISSET(sp, S_RE_SET)) {
+			msgq(sp, M_ERR,
+			    "No previous regular expression.");
 			return (1);
 		}
-		for (rep = t = p;;) {
-			if (p[0] == '\0' || p[0] == delim) {
-				if (p[0] == delim)
-					++p;
-				*t = '\0';
-				break;
-			}
-			if (p[0] == '\\' && p[1] == delim)
-				++p;
-			*t++ = *p++;
-		}
-		if (sp->repl != NULL)
-			free(sp->repl);
-		sp->repl = strdup(rep);
-		sp->repl_len = strlen(rep);
-
-		/* If the substitute string is empty, use the last one. */
-		if (*sub == NULL) {
-			if (!F_ISSET(sp, S_RE_SET)) {
-				msgq(sp, M_ERR,
-				    "No previous regular expression.");
-				return (1);
-			}
-			if (checkmatchsize(sp, &sp->sre))
-				return (1);
-			return (substitute(sp, ep, cmdp, p, &sp->sre, AGAIN));
-		}
-
-		/* Set RE flags. */
-		reflags = 0;
-		if (O_ISSET(sp, O_EXTENDED))
-			reflags |= REG_EXTENDED;
-		if (O_ISSET(sp, O_IGNORECASE))
-			reflags |= REG_ICASE;
-
-		/* Compile the RE. */
-		re = &lre;
-		if (eval = regcomp(re, (char *)sub, reflags)) {
-			re_error(sp, eval, re);
-			return (1);
-		}
-
-		/*
-		 * Set saved RE.  Historic practice is that substitutes set
-		 * direction as well as the RE.
-		 */
-		sp->sre = lre;
-		sp->searchdir = FORWARD;
-		F_SET(sp, S_RE_SET);
-
 		if (checkmatchsize(sp, &sp->sre))
 			return (1);
-		return (substitute(sp, ep, cmdp, p, re, FIRST));
+		return (substitute(sp, ep, cmdp, p, &sp->sre, AGAIN));
 	}
-	return (substitute(sp, ep, cmdp, cmdp->string, &sp->sre, MUSTSETR));
+
+	/* Set RE flags. */
+	reflags = 0;
+	if (O_ISSET(sp, O_EXTENDED))
+		reflags |= REG_EXTENDED;
+	if (O_ISSET(sp, O_IGNORECASE))
+		reflags |= REG_ICASE;
+
+	/* Compile the RE. */
+	re = &lre;
+	if (eval = regcomp(re, (char *)sub, reflags)) {
+		re_error(sp, eval, re);
+		return (1);
+	}
+
+	/*
+	 * Set saved RE.  Historic practice is that substitutes set
+	 * direction as well as the RE.
+	 */
+	sp->sre = lre;
+	sp->searchdir = FORWARD;
+	F_SET(sp, S_RE_SET);
+
+	if (checkmatchsize(sp, &sp->sre))
+		return (1);
+	return (substitute(sp, ep, cmdp, p, re, FIRST));
 }
 
 int
@@ -141,7 +143,7 @@ ex_subagain(sp, ep, cmdp)
 		msgq(sp, M_ERR, "No previous regular expression.");
 		return (1);
 	}
-	return (substitute(sp, ep, cmdp, cmdp->string, &sp->sre, AGAIN));
+	return (substitute(sp, ep, cmdp, cmdp->argv[0], &sp->sre, AGAIN));
 }
 
 /* 
@@ -644,7 +646,8 @@ sub:			if (sp->match[no].rm_so != -1 &&
 				sp->newl[sp->newl_cnt++] = lbclen;
 			}
 			/*
-			 * ESCAPE CHARACTER NOTE:
+			 * QUOTING NOTE:
+			 *
 			 * Toss all escape characters, this is the lowest level
 			 * of replacement.  Historic practice is the guideline.
 			 */
