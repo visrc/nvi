@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.13 1992/04/15 09:09:34 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:09:34 $";
+static char sccsid[] = "$Id: main.c,v 5.14 1992/04/16 16:08:15 bostic Exp $ (Berkeley) $Date: 1992/04/16 16:08:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -120,9 +120,10 @@ main(argc, argv)
 	noecho();
 	scrollok(stdscr, TRUE);
 
-	/* Catch HUP, TSTP */
+	/* Catch HUP, TSTP, WINCH */
 	(void)signal(SIGHUP, onhup);
 	(void)signal(SIGTSTP, onstop);
+	(void)signal(SIGWINCH, onwinch);
 
 	/*
 	 * Initialize the options -- must be done after initscr(), so that
@@ -280,32 +281,4 @@ usage()
 	(void)fprintf(stderr,
 	    "usage: vi [-emRrv] [-c command] [-m file] [-t tag]\n");
 	exit(1);
-}
-
-/*
- * This function handles deadly signals.  It restores sanity to the terminal
- * preserves the current temp file, and deletes any old temp files.
- */
-static void
-onhup(signo)
-	int signo;
-{
-	/* Restore the terminal's sanity. */
-	endwin();
-
-	/* If we had a temp file going, then preserve it. */
-	if (tmpnum > 0 && tmpfd >= 0) {
-		(void)close(tmpfd);
-		(void)sprintf(tmpblk.c,
-		    "%s \"%s\" %s", _PATH_PRESERVE, "vi died", tmpname);
-		(void)system(tmpblk.c);
-	}
-
-	/* Delete any old temp files. */
-	cutend();
-
-	/* Exit with the proper exit status. */
-	(void)signal(signo, SIG_DFL);
-	(void)kill(0, signo);
-	/* NOTREACHED */
 }
