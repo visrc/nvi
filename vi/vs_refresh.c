@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.63 1993/05/16 21:24:51 bostic Exp $ (Berkeley) $Date: 1993/05/16 21:24:51 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.64 1993/05/17 14:21:20 bostic Exp $ (Berkeley) $Date: 1993/05/17 14:21:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -571,10 +571,9 @@ svi_divider(sp)
 
 	dividesize = DIVIDESIZE > sp->cols ? sp->cols : DIVIDESIZE;
 	memset(buf, ' ', dividesize);
-	buf[dividesize] = '\0';
 	if (standout() == ERR)
 		return (1);
-	ADDSTR(buf);
+	ADDNSTR(buf, dividesize);
 	if (standend() == ERR)
 		return (1);
 	return (0);
