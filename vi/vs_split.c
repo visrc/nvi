@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.20 1993/12/02 10:44:25 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:44:25 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.21 1993/12/02 12:15:00 bostic Exp $ (Berkeley) $Date: 1993/12/02 12:15:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -481,6 +481,8 @@ svi_resize(sp, count)
 				s = NULL;
 			else
 				s->woff += count;
+		else
+			s = NULL;
 		if (s == NULL) {
 			if ((s = sp->q.cqe_prev) == (void *)&sp->gp->dq) {
 toobig:				msgq(sp, M_BERR, "The screen cannot %s.",
