@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.11 1993/08/20 13:28:32 bostic Exp $ (Berkeley) $Date: 1993/08/20 13:28:32 $";
+static char sccsid[] = "$Id: ex.c,v 8.12 1993/08/20 17:56:14 bostic Exp $ (Berkeley) $Date: 1993/08/20 17:56:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -333,9 +333,14 @@ ex_cmd(sp, ep, exc, arg1_len)
 		} else {
 			for (p = exc; isalpha(*exc); ++exc);
 			cmdlen = exc - p;
+			if (cmdlen == 0) {
+				msgq(sp, M_ERR, "Unknown command name.");
+				return (1);
+			}
 		}
 		for (cp = cmds; cp->name && memcmp(p, cp->name, cmdlen); ++cp);
 		if (cp->name == NULL) {
+			/* msgq is safe, command names are all alphabetics. */
 			msgq(sp, M_ERR,
 			    "The %.*s command is unknown.", cmdlen, p);
 			return (1);
