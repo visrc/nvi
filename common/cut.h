@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.4 1993/11/04 16:16:06 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:06 $
+ *	$Id: cut.h,v 8.5 1993/11/09 10:00:37 bostic Exp $ (Berkeley) $Date: 1993/11/09 10:00:37 $
  */
 
 /* Cut buffers. */
@@ -29,7 +29,7 @@ typedef struct _text {			/* Text: a linked list of lines. */
 	size_t	 ai;			/* 0-N: autoindent bytes. */
 	size_t	 insert;		/* 0-N: bytes to insert (push). */
 	size_t	 offset;		/* 0-N: initial, unerasable bytes. */
-	size_t	 overwrite;		/* 0-N: bytes to overwrite. */
+	size_t	 owrite;		/* 0-N: bytes to overwrite. */
 
 	/* These fields are used by the ex text input routine. */
 	u_char	*wd;			/* Width buffer. */

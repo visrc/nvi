@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.9 1993/11/08 14:02:26 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:02:26 $";
+static char sccsid[] = "$Id: cut.c,v 8.10 1993/11/09 10:00:36 bostic Exp $ (Berkeley) $Date: 1993/11/09 10:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,7 +243,7 @@ mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 	if (p != NULL && len != 0)
 		memmove(tp->lb, p, len);
 	tp->len = len;
-	tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
+	tp->ai = tp->insert = tp->offset = tp->owrite = 0;
 	tp->wd = NULL;
 	tp->wd_len = 0;
 
