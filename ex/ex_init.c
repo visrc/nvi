@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.9 1996/02/06 11:00:11 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:00:11 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.10 1996/02/20 21:14:42 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:14:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,7 +25,6 @@ static char sccsid[] = "$Id: ex_init.c,v 10.9 1996/02/06 11:00:11 bostic Exp $ (
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../common/pathnames.h"
 #include "tag.h"
 
 enum rc { NOEXIST, NOPERM, RCOK };
