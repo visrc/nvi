@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.22 1993/03/26 13:38:43 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:43 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.23 1993/04/12 14:35:11 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:35:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ ex_at(sp, ep, cmdp)
 
 	if (cmdp->buffer == OOBCB) {
 		if (sp->exat_lbuf == OOBCB) {
-			msgq(sp, M_ERROR, "No previous buffer to execute.");
+			msgq(sp, M_ERR, "No previous buffer to execute.");
 			return (1);
 		}
 		buffer = sp->exat_lbuf;
@@ -47,7 +47,7 @@ ex_at(sp, ep, cmdp)
 	if (sp->exat_recurse == 0)
 		memset(sp->exat_stack, 0, sizeof(sp->exat_stack));
 	else if (sp->exat_stack[buffer]) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Buffer %s already occurs in this command.",
 		    charname(sp, buffer));
 		return (1);
@@ -56,12 +56,10 @@ ex_at(sp, ep, cmdp)
 	sp->exat_stack[buffer] = 1;
 	++sp->exat_recurse;
 
-	for (tp = cb->head;;) {
-		if (rval = ex_cstring(sp, ep, tp->lp, tp->len, 1))
+	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next) {
+		if (rval = ex_cstring(sp, ep, tp->lb, tp->len, 1))
 			break;
 		if (F_ISSET(sp, S_FILE_CHANGED))
-			break;
-		if ((tp = tp->next) == NULL)
 			break;
 	}
 		
