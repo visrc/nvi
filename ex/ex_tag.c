@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.29 1993/04/12 14:38:19 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:38:19 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.30 1993/04/17 12:00:45 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:00:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,8 +146,9 @@ tagchange(sp, ep, tag, force)
 		msgq(sp, M_ERR, "%s: search pattern not found.", tag->tag);
 		return (1);
 	}
-	tep->start_lno = m.lno;
-	tep->start_cno = m.cno;
+	tep->lno = m.lno;
+	tep->cno = m.cno;
+	F_CLR(tep, F_NOSETPOS);
 
 	sp->enext = tep;
 	F_SET(sp, S_FSWITCH);
