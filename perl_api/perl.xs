@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.7 1996/03/19 20:01:58 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:01:58 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.8 1996/03/21 08:59:47 bostic Exp $ (Berkeley) $Date: 1996/03/21 08:59:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,12 +31,12 @@ static const char sccsid[] = "$Id: perl.xs,v 8.7 1996/03/19 20:01:58 bostic Exp 
 #include <termios.h>
 #include <unistd.h>
 
+#include "../common/common.h"
+#include "perl_extern.h"
+
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
-
-#include "../common/common.h"
-#include "perl_extern.h"
 
 static void noscreen __P((int, char *));
 static void msghandler __P((SCR *, mtype_t, char *, size_t));
