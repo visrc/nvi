@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.14 1992/06/03 09:26:30 bostic Exp $ (Berkeley) $Date: 1992/06/03 09:26:30 $
+ *	$Id: vi.h,v 5.15 1992/09/01 15:37:05 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:37:05 $
  */
 
 #include "exf.h"
@@ -94,11 +94,14 @@ extern VIKEYS vikeys[MAXVIKEY + 1];
 int	v_again __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_at __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_bottom __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_bsearch __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_bsentence __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_bword __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Change __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_change __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_chF __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_chf __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_chrepeat  __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_chrrepeat __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_chT __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_cht __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_down __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -106,12 +109,9 @@ void	v_eof __P((MARK *));
 int	v_eol __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_errlist __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ex __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Fch __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_fch __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_exit __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_filter __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_first __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_fsearch __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_fsentence __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_home __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_hpagedown __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_hpageup __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -122,6 +122,7 @@ int	v_ii __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_increment __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_iO __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_io __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_join __P((VICMDARG *, MARK *, MARK *, MARK *));
 void	v_leaveex __P((void));
 int	v_left __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_lgoto __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -136,17 +137,25 @@ int	v_nbdown __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_nbup __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ncol __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_nonblank __P((MARK *));
-int	v_Nsearch __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_nsearch __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_pagedown __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_pageup __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_paragraphb __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_paragraphf __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Put __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_put __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_quit __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_redraw __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_repeatch  __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_Replace __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_right __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_rrepeatch __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_searchb __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_searchf __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_searchN __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_searchn __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_searchw __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_sectionb __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_sectionf __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_sentenceb __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_sentencef __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftl __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftr __P((VICMDARG *, MARK *, MARK *, MARK *));
 void	v_sof __P((MARK *));
@@ -156,9 +165,8 @@ int	v_stop __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_subst __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_switch __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_tag __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Tch __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_tch __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ulcase __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_undo __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_up __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordB __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordb __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -166,37 +174,23 @@ int	v_wordE __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_worde __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordW __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordw __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_wsearch __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_yank __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_zero __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Replace __P((VICMDARG *, MARK *, MARK *, MARK *));
 
 #ifndef VIROUTINE
-MARK	*adjmove __P((MARK *, MARK *, int));
-MARK	*m_paragraph __P((MARK *, long, int));
-MARK	*m_tch __P((MARK *, long, int));
 MARK	*m_z __P((MARK *, long, int));
-MARK	*v_join __P((MARK *, long));
 MARK	*v_replace __P((MARK *, long, int));
 MARK	*v_selcut __P((MARK *, long, int));
 MARK	*v_start __P((MARK *, long, int));
-MARK	*v_undo __P((MARK *));
 MARK	*v_undoline __P((MARK *));
 void	 v_undosave __P((MARK *));
-MARK	*v_xit __P((MARK *, long, int));
 #else
-int adjmove();
-int m_paragraph();
-int m_tch();
 int m_z();
-int v_join();
 int v_replace();
 int v_selcut();
 int v_start();
-int v_undo();
 int v_undoline();
 void	 v_undosave();
-int v_xit();
 #endif
