@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.71 1993/12/22 17:24:42 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:24:42 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.72 1993/12/22 18:56:47 bostic Exp $ (Berkeley) $Date: 1993/12/22 18:56:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -980,27 +980,31 @@ txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
 	 * tricky, particularly if the string has, say, an embedded escape
 	 * character.  Personally, I think it's a stunningly bad idea.  Other
 	 * examples of problems this caused in historic vi are:
-	 *
 	 *	:ab foo bar
 	 *	:ab foo baz
-	 *
 	 * results in "bar" abbreviated to "baz", which wasn't what the user
 	 * had in mind at all.  Also, the commands:
-	 *
 	 *	:ab foo bar
 	 *	:unab foo<space>
+	 * resulted in an error message that "bar" wasn't mapped.  Finally,
+	 * since the string was already exploded by the time the unabbreviate
+	 * command got it, all it knew was that an abbreviation had occurred.
+	 * Cleverly, it check the replacement string for a match, which means
+	 * that:
+	 *	:ab foo1 bar
+	 *	:ab foo2 bar
+	 *	:unab foo2
+	 * unabbreviates "foo1".
 	 *
-	 * resulted in an error message that "foo" wasn't mapped.  However,
-	 * people sadly neglected to first ask my opinion before they wrote
-	 * macros that depend on it.
-	 *
-	 * We make this work as follows.  When checking for an abbreviation on
-	 * the command line, if we get a string which is <blank> terminated and
-	 * which starts at the beginning of the line, we check to see it is the
-	 * abbreviate or unabbreviate commands.  If it is, turn abbreviations
-	 * off and return as if no abbreviation was found.  Note also, minor
-	 * trickiness, so that if the user erases the line and starts another
-	 * command, we turn abbreviations back on.
+	 * Anyway, people neglected to first ask my opinion before they wrote
+	 * macros that depend on this stuff, so, we make this work as follows.
+	 * When checking for an abbreviation on the command line, if we get a
+	 * string which is <blank> terminated and which starts at the beginning
+	 * of the line, we check to see it is the abbreviate or unabbreviate
+	 * commands.  If it is, turn abbreviations off and return as if no
+	 * abbreviation was found.  Note also, minor trickiness, so that if the
+	 * user erases the line and starts another command, we go ahead an turn
+	 * abbreviations back on.
 	 *
 	 * This makes the layering look like a Nachos Supreme.
 	 */
