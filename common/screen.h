@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.40 1993/05/13 12:21:53 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:21:53 $
+ *	$Id: screen.h,v 5.41 1993/05/15 10:08:14 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:08:14 $
  */
 
 /*
@@ -103,8 +103,18 @@ typedef struct _scr {
 
 	struct _msg	*msgp;		/* User message list. */
 
-	recno_t	 rptlines;		/* Ex/vi: lines changed by last op. */
-	char	*rptlabel;		/* How modified. */
+#define	L_ADDED		 0		/* Added lines. */
+#define	L_CHANGED	 1		/* Changed lines. */
+#define	L_COPIED	 2		/* Copied lines. */
+#define	L_DELETED	 3		/* Deleted lines. */
+#define	L_JOINED	 4		/* Joined lines. */
+#define	L_MOVED		 5		/* Moved lines. */
+#define	L_PUT		 6		/* Put lines. */
+#define	L_READ		 7		/* Read lines. */
+#define	L_LSHIFT	 8		/* Read lines. */
+#define	L_RSHIFT	 9		/* Read lines. */
+#define	L_YANKED	10		/* Yanked lines. */
+	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
 	size_t	 rcm;			/* Vi: 0-N: Column suck. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
@@ -200,6 +210,7 @@ typedef struct _scr {
  * This is the set of routines that have to be written to add a screen.
  */
 	void	 (*s_bell) __P((struct _scr *));
+	int	 (*s_busy_cursor) __P((struct _scr *));
 	int	 (*s_change) __P((struct _scr *,
 		     struct _exf *, recno_t, enum operation));
 	enum confirmation
@@ -207,8 +218,10 @@ typedef struct _scr {
 		     struct _exf *, struct _mark *, struct _mark *));
 	int	 (*s_down) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
+	int	 (*s_ex_cmd) __P((struct _scr *, struct _exf *,
+		     struct _excmdarg *, struct _mark *));
 	int	 (*s_ex_run) __P((struct _scr *, struct _exf *,
-		     struct _mark *, struct _mark *, struct _mark *));
+		     struct _mark *));
 	int	 (*s_ex_write) __P((void *, const char *, int));
 	int	 (*s_fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
