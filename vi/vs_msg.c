@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.35 1995/11/10 14:26:40 bostic Exp $ (Berkeley) $Date: 1995/11/10 14:26:40 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.36 1995/11/10 19:04:26 bostic Exp $ (Berkeley) $Date: 1995/11/10 19:04:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -741,23 +741,20 @@ vs_wait(sp, continuep, wtype)
 	(void)gp->scr_clrtoeol(sp);
 	(void)gp->scr_refresh(sp, 0);
 
-	/*
-	 * Get a single character from the terminal.
-	 *
-	 * XXX
-	 * We're ignoring any errors or illegal events.
-	 */
+	/* Get a single character from the terminal. */
 	if (continuep != NULL)
 		*continuep = 0;
 	for (;;) {
-		if (v_event_get(sp, &ev, 0, EC_INTERRUPT))
+		if (v_event_get(sp, &ev, 0, 0))
 			return;
 		if (ev.e_event == E_CHARACTER)
 			break;
 		if (ev.e_event == E_INTERRUPT) {
 			ev.e_c = CH_QUIT;
+			F_SET(gp, G_INTERRUPTED);
 			break;
 		}
+		(void)gp->scr_bell(sp);
 	}
 	switch (wtype) {
 	case SCROLL_W_QUIT:
