@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.23 1996/02/26 14:24:13 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:24:13 $";
+static char sccsid[] = "$Id: exf.c,v 10.24 1996/02/28 17:29:53 bostic Exp $ (Berkeley) $Date: 1996/02/28 17:29:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1277,7 +1277,7 @@ file_lock(sp, name, fdp, fd, iswrite)
 	if (!O_ISSET(sp, O_LOCK))
 		return (LOCK_SUCCESS);
 	
-#ifdef HAVE_FLOCK			/* Hurrah!  We've got flock(2). */
+#ifdef HAVE_LOCK_FLOCK			/* Hurrah!  We've got flock(2). */
 	/*
 	 * !!!
 	 * We need to distinguish a lock not being available for the file
@@ -1290,7 +1290,7 @@ file_lock(sp, name, fdp, fd, iswrite)
 	    errno == EAGAIN || errno == EWOULDBLOCK ?
 	        LOCK_UNAVAIL : LOCK_FAILED : LOCK_SUCCESS);
 #endif
-#ifdef HAVE_FCNTL			/* Gag me.  We've got fcntl(2). */
+#ifdef HAVE_LOCK_FCNTL			/* Gag me.  We've got fcntl(2). */
 {
 	struct flock arg;
 	int didopen, sverrno;
@@ -1335,7 +1335,7 @@ file_lock(sp, name, fdp, fd, iswrite)
 	    LOCK_UNAVAIL : LOCK_FAILED);
 }
 #endif
-#if !defined(HAVE_FLOCK) && !defined(HAVE_FCNTL)
+#if !defined(HAVE_LOCK_FLOCK) && !defined(HAVE_LOCK_FCNTL)
 	return (LOCK_SUCCESS);
 #endif
 }
