@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.38 1993/11/29 20:02:20 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:20 $";
+static char sccsid[] = "$Id: vi.c,v 8.39 1993/12/02 14:44:08 bostic Exp $ (Berkeley) $Date: 1993/12/02 14:44:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -388,7 +388,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		if (vp->key == 'z') {
 			KEY(vp->character, 0);
 			if (isdigit(vp->character)) {
-				if (getcount(sp, key, &vp->count2))
+				if (getcount(sp, vp->character, &vp->count2))
 					return (1);
 				F_SET(vp, VC_C2SET);
 				KEY(vp->character, 0);
