@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.1 1994/11/09 18:37:46 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:46 $";
+static char sccsid[] = "$Id: db.c,v 9.2 1994/11/10 16:17:33 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:17:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -214,7 +214,7 @@ file_aline(sp, update, lno, p, len)
 			return (1);
 		if (lline == 0) {
 			isempty = 1;
-			F_SET(sp, S_SCR_REFRESH);
+			F_SET(sp, S_SCR_REDRAW);
 		}
 	}
 
@@ -304,7 +304,7 @@ file_iline(sp, lno, p, len)
 		if (file_lline(sp, &lline))
 			return (1);
 		if (lline == 0)
-			F_SET(sp, S_SCR_REFRESH);
+			F_SET(sp, S_SCR_REDRAW);
 	}
 
 	/* Update file. */
