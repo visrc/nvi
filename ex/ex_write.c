@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.3 1995/06/09 12:52:00 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:00 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.4 1995/06/23 19:22:16 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:22:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,7 +115,7 @@ ex_xit(sp, cmdp)
 {
 	int force;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	if (F_ISSET(sp->ep, F_MODIFIED) && exwr(sp, cmdp, XIT))
 		return (1);
@@ -145,7 +145,7 @@ exwr(sp, cmdp, cmd)
 	int flags, nf;
 	char *name, *p;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	/* All write commands can have an associated '!'. */
 	LF_INIT(FS_POSSIBLE);
@@ -174,8 +174,9 @@ exwr(sp, cmdp, cmd)
 		/* Expand the argument. */
 		if (argv_exp1(sp, cmdp, p, strlen(p), 1))
 			return (1);
-		if (filtercmd(sp, &cmdp->addr1, &cmdp->addr2,
-		    &rm, cmdp->argv[1]->bp, FILTER_WRITE))
+
+		if (filtercmd(sp, cmdp, &cmdp->addr1,
+		    &cmdp->addr2, &rm, cmdp->argv[1]->bp, FILTER_WRITE))
 			return (1);
 		sp->lno = rm.lno;
 		return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.5 1995/06/15 19:38:50 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:38:50 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.6 1995/06/23 19:21:26 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:21:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,16 +157,21 @@ ex_message(sp, p, which)
 		    "169|Interrupted: mapped keys discarded" :
 		    "170|Interrupted");
 		break;
+	case EXM_NOCANON:
+		msgq(sp, M_ERR,
+	"268|That form of the %s command requires the ex terminal interface",
+		    p);
+		break;
+	case EXM_NOFILEYET:
+		msgq(sp, M_ERR,
+	"173|The %s command requires that a file have already been read in",
+		    p);
+		break;
 	case EXM_NOPREVBUF:
 		msgq(sp, M_ERR, "171|No previous buffer to execute");
 		break;
 	case EXM_NOPREVRE:
 		msgq(sp, M_ERR, "172|No previous regular expression");
-		break;
-	case EXM_NORC:
-		msgq(sp, M_ERR,
-	"173|The %s command requires that a file have already been read in",
-		    p);
 		break;
 	case EXM_USAGE:
 		msgq(sp, M_ERR, "174|Usage: %s", p);

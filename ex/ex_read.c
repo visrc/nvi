@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.4 1995/06/09 12:51:48 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:48 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.5 1995/06/23 19:21:17 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:21:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,11 +120,12 @@ ex_read(sp, cmdp)
 			p[0] = '!';
 			memmove(p + 1,
 			    cmdp->argv[argc]->bp, cmdp->argv[argc]->len + 1);
-			sp->gp->scr_busy(sp, p, 1);
+			if (sp->gp->scr_busy != NULL)
+				(void)sp->gp->scr_busy(sp, p, 1);
 			FREE_SPACE(sp, p, blen);
 		}
 
-		if (filtercmd(sp, &cmdp->addr1,
+		if (filtercmd(sp, cmdp, &cmdp->addr1,
 		    NULL, &rm, cmdp->argv[argc]->bp, FILTER_READ))
 			return (1);
 
@@ -218,9 +219,11 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		msgq(sp, M_ERR, "146|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	sp->gp->scr_busy(sp, "147|Reading...", 1);
+	if (sp->gp->scr_busy != NULL)
+		(void)sp->gp->scr_busy(sp, "147|Reading...", 1);
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
-	sp->gp->scr_busy(sp, NULL, 0);
+	if (sp->gp->scr_busy != NULL)
+		(void)sp->gp->scr_busy(sp, NULL, 0);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read

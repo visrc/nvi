@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 10.2 1995/05/05 18:49:49 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:49:49 $";
+static char sccsid[] = "$Id: ex_delete.c,v 10.3 1995/06/23 19:23:34 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:23:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ ex_delete(sp, cmdp)
 {
 	recno_t lno;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	/*
 	 * !!!

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 10.2 1995/05/05 18:51:23 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:23 $";
+static char sccsid[] = "$Id: ex_put.c,v 10.3 1995/06/23 19:22:39 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:22:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ ex_put(sp, cmdp)
 {
 	MARK m;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	m.lno = sp->lno;
 	m.cno = sp->cno;

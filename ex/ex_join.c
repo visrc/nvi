@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 10.3 1995/06/09 12:51:40 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:40 $";
+static char sccsid[] = "$Id: ex_join.c,v 10.4 1995/06/23 19:22:56 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:22:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ ex_join(sp, cmdp)
 	int echar, extra, first;
 	char *bp, *p, *tbp;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	from = cmdp->addr1.lno;
 	to = cmdp->addr2.lno;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.7 1995/06/15 19:35:24 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:35:24 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.8 1995/06/23 19:23:27 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:23:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,7 +94,7 @@ ex_aci(sp, cmdp, cmd)
 	size_t len;
 
 	gp = sp->gp;
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	/*
 	 * If doing a change, replace lines for as long as possible.  Then,
@@ -212,25 +212,17 @@ ex_aci(sp, cmdp, cmd)
 	 * However, depending on the screen that we're using, that may not
 	 * be possible.
 	 */
+	ENTERCANONICAL(sp, cmdp, 1);
+
+	/*
+	 * !!!
+	 * Users of historical versions of vi sometimes get confused when they
+	 * enter append mode, and can't seem to get out of it.  Give them an
+	 * informational message.
+	 */
 	if (F_ISSET(sp, S_VI)) {
-		/* Push out any waiting messages. */
-		(void)ex_fflush(sp);
-		(void)vs_msgflush(sp, 1, NULL, NULL);
-
-		/* Go into canonical mode. */
-		if (gp->scr_canon(sp, 1)) {
-			msgq(sp, M_ERR,
-		    "110|Cannot enter ex text input mode from current mode");
-			return (1);
-		}
-
-		/*
-		 * !!!
-		 * Users of historical versions of vi sometimes get confused
-		 * when they enter append mode, and can't seem to get out of
-		 * it.  Give them an informational message.
-		 */
 		(void)ex_printf(sp, "\nEntering ex input mode:\n");
+		(void)ex_fflush(sp);
 	}
 
 	/*

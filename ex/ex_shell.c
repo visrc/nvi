@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.5 1995/06/15 19:36:33 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:36:33 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.6 1995/06/23 19:20:23 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:20:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -46,38 +46,37 @@ ex_shell(sp, cmdp)
 	char buf[MAXPATHLEN];
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	return (ex_exec_proc(sp, buf, "\n", NULL));
+	return (ex_exec_proc(sp, cmdp, buf, "\n", NULL));
 }
 
 /*
  * ex_exec_proc --
  *	Run a separate process.
  *
- * PUBLIC: int ex_exec_proc __P((SCR *, char *, char *, char *));
+ * PUBLIC: int ex_exec_proc __P((SCR *, EXCMD *, char *, char *, char *));
  */
 int
-ex_exec_proc(sp, cmd, p1, p2)
+ex_exec_proc(sp, cmdp, cmd, p1, p2)
 	SCR *sp;
+	EXCMD *cmdp;
 	char *cmd, *p1, *p2;
 {
 	const char *name;
-	GS *gp;
 	pid_t pid;
 	int nf, rval;
 	char *p;
 
 	/* Flush messages and enter canonical mode. */
-	(void)ex_fflush(sp);
-	(void)vs_msgflush(sp, 1, NULL, NULL);
-	gp = sp->gp;
-	if (gp->scr_canon(sp, 1))
-		return;
+	ENTERCANONICAL(sp, cmdp, 1);
 
 	/* Put out special messages. */
-	if (p1 != NULL)
-		(void)write(STDOUT_FILENO, p1, strlen(p1));
-	if (p2 != NULL)
-		(void)write(STDOUT_FILENO, p2, strlen(p2));
+	if (p1 != NULL || p2 != NULL) {
+		F_SET(sp, S_EX_WROTE);
+		if (p1 != NULL)
+			(void)write(STDOUT_FILENO, p1, strlen(p1));
+		if (p2 != NULL)
+			(void)write(STDOUT_FILENO, p2, strlen(p2));
+	}
 
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
@@ -108,9 +107,9 @@ ex_exec_proc(sp, cmd, p1, p2)
 	 * repaint anything.  However, a stat only gives us a 1-second
 	 * resolution.  A fast '!' command, e.g. ":!pwd" can beat us to the
 	 * refresh.  When there's better resolution from the stat(2) timers,
-	 * this should be deleted, as we may be unnecessarily repainting the
-	 * screen.
+	 * this should be changed to be conditional, as we're unnecessarily
+	 * repainting the screen.
 	 */
-	F_SET(sp, S_SCR_REFRESH);
+	F_SET(sp, S_EX_WROTE);
 	return (rval);
 }

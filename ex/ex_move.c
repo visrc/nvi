@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 10.3 1995/06/09 12:51:45 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:45 $";
+static char sccsid[] = "$Id: ex_move.c,v 10.4 1995/06/23 19:22:50 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:22:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ ex_copy(sp, cmdp)
 
 	rval = 0;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	/*
 	 * It's possible to copy things into the area that's being
@@ -102,7 +102,7 @@ ex_move(sp, cmdp)
 	int mark_reset;
 	char *bp, *p;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	/*
 	 * It's not possible to move things into the area that's being
