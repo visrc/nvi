@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.37 1996/09/15 15:59:57 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:57 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.38 1996/12/11 13:04:43 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -140,8 +140,9 @@ subagain:	return (ex_subagain(sp, cmdp));
 		}
 
 		/* Re-compile the RE if necessary. */
-		if (!F_ISSET(sp, SC_RE_SEARCH) && re_compile(sp,
-		    sp->re, sp->re_len, NULL, NULL, &sp->re_c, RE_C_SEARCH))
+		if (!F_ISSET(sp, SC_RE_SEARCH) &&
+		    re_compile(sp, sp->re, sp->re_len,
+		    NULL, NULL, &sp->re_c, SEARCH_CSEARCH | SEARCH_MSG))
 			return (1);
 		flags = 0;
 	} else {
@@ -152,11 +153,11 @@ subagain:	return (ex_subagain(sp, cmdp));
 		 * RE's.  We compile the RE twice, as we don't want to bother
 		 * ref counting the pattern string and (opaque) structure.
 		 */
-		if (re_compile(sp, ptrn, t - ptrn,
-		    &sp->re, &sp->re_len, &sp->re_c, RE_C_SEARCH))
+		if (re_compile(sp, ptrn, t - ptrn, &sp->re,
+		    &sp->re_len, &sp->re_c, SEARCH_CSEARCH | SEARCH_MSG))
 			return (1);
-		if (re_compile(sp, ptrn, t - ptrn,
-		    &sp->subre, &sp->subre_len, &sp->subre_c, RE_C_SUBST))
+		if (re_compile(sp, ptrn, t - ptrn, &sp->subre,
+		    &sp->subre_len, &sp->subre_c, SEARCH_CSUBST | SEARCH_MSG))
 			return (1);
 		
 		flags = SUB_FIRST;
@@ -262,8 +263,9 @@ ex_subagain(sp, cmdp)
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	if (!F_ISSET(sp, SC_RE_SUBST) && re_compile(sp,
-	    sp->subre, sp->subre_len, NULL, NULL, &sp->subre_c, RE_C_SUBST))
+	if (!F_ISSET(sp, SC_RE_SUBST) &&
+	    re_compile(sp, sp->subre, sp->subre_len,
+	    NULL, NULL, &sp->subre_c, SEARCH_CSUBST | SEARCH_MSG))
 		return (1);
 	return (s(sp,
 	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->subre_c, 0));
@@ -286,8 +288,8 @@ ex_subtilde(sp, cmdp)
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	if (!F_ISSET(sp, SC_RE_SEARCH) && re_compile(sp,
-	    sp->re, sp->re_len, NULL, NULL, &sp->re_c, RE_C_SEARCH))
+	if (!F_ISSET(sp, SC_RE_SEARCH) && re_compile(sp, sp->re,
+	    sp->re_len, NULL, NULL, &sp->re_c, SEARCH_CSEARCH | SEARCH_MSG))
 		return (1);
 	return (s(sp,
 	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->re_c, 0));
@@ -903,7 +905,13 @@ re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
 
 	/* Set RE flags. */
 	reflags = 0;
-	if (!LF_ISSET(RE_C_CSCOPE | RE_C_TAG)) {
+	if (LF_ISSET(SEARCH_EXTEND))
+		reflags |= REG_EXTENDED;
+	if (LF_ISSET(SEARCH_IC))
+		reflags |= REG_ICASE;
+	if (LF_ISSET(SEARCH_LITERAL))
+		reflags |= REG_NOSPEC;
+	if (!LF_ISSET(SEARCH_NOOPT | SEARCH_CSCOPE | SEARCH_TAG)) {
 		if (O_ISSET(sp, O_EXTENDED))
 			reflags |= REG_EXTENDED;
 		if (O_ISSET(sp, O_IGNORECASE))
@@ -918,11 +926,11 @@ re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
 	}
 
 	/* If we're replacing a saved value, clear the old one. */
-	if (LF_ISSET(RE_C_SEARCH) && F_ISSET(sp, SC_RE_SEARCH)) {
+	if (LF_ISSET(SEARCH_CSEARCH) && F_ISSET(sp, SC_RE_SEARCH)) {
 		regfree(&sp->re_c);
 		F_CLR(sp, SC_RE_SEARCH);
 	}
-	if (LF_ISSET(RE_C_SUBST) && F_ISSET(sp, SC_RE_SUBST)) {
+	if (LF_ISSET(SEARCH_CSUBST) && F_ISSET(sp, SC_RE_SUBST)) {
 		regfree(&sp->subre_c);
 		F_CLR(sp, SC_RE_SUBST);
 	}
@@ -933,7 +941,8 @@ re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
 	 * later recompilation.   Free any previously saved value.
 	 */
 	if (ptrnp != NULL) {
-		if (LF_ISSET(RE_C_CSCOPE)) {
+		replaced = 0;
+		if (LF_ISSET(SEARCH_CSCOPE)) {
 			if (re_cscope_conv(sp, &ptrn, &plen, &replaced))
 				return (1);
 			/*
@@ -943,10 +952,10 @@ re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
 			 * not be right or safe.
 			 */
 			reflags |= REG_EXTENDED;
-		} else if (LF_ISSET(RE_C_TAG)) {
+		} else if (LF_ISSET(SEARCH_TAG)) {
 			if (re_tag_conv(sp, &ptrn, &plen, &replaced))
 				return (1);
-		} else
+		} else if (!LF_ISSET(SEARCH_LITERAL))
 			if (re_conv(sp, &ptrn, &plen, &replaced))
 				return (1);
 
@@ -987,14 +996,14 @@ re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
 	 * contained a nul.  Bummer!
 	 */
 	if ((rval = regcomp(rep, ptrn, /* plen, */ reflags)) != 0) {
-		if (!LF_ISSET(RE_C_SILENT))
+		if (LF_ISSET(SEARCH_MSG))
 			re_error(sp, rval, rep); 
 		return (1);
 	}
 
-	if (LF_ISSET(RE_C_SEARCH))
+	if (LF_ISSET(SEARCH_CSEARCH))
 		F_SET(sp, SC_RE_SEARCH);
-	if (LF_ISSET(RE_C_SUBST))
+	if (LF_ISSET(SEARCH_CSUBST))
 		F_SET(sp, SC_RE_SUBST);
 
 	return (0);

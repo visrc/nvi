@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.13 1996/09/15 15:59:30 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:30 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.14 1996/12/11 13:04:29 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -985,7 +985,7 @@ cscope_search(sp, tqp, tp)
 		m.lno = 1;
 		m.cno = 0;
 		if (f_search(sp, &m, &m,
-		    tp->search, tp->slen, NULL, SEARCH_CSCOPE | SEARCH_FILE)) {
+		    tp->search, tp->slen, NULL, SEARCH_CSCOPE | SEARCH_FIRST)) {
 			tag_msg(sp, TAG_SEARCH, tqp->tag);
 			return (1);
 		}

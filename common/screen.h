@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.25 1996/10/29 12:11:29 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:11:29 $
+ *	$Id: screen.h,v 10.26 1996/12/11 13:03:44 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:03:44 $
  */
 
 /*
@@ -98,24 +98,25 @@ struct _scr {
 	CHAR_T	 at_lbuf;		/* Ex/vi: Last executed at buffer. */
 
 					/* Ex/vi: re_compile flags. */
-#define	RE_C_CSCOPE	0x0001		/* Compile cscope pattern. */
-#define	RE_C_SEARCH	0x0002		/* Compile search replacement. */
-#define	RE_C_SILENT	0x0004		/* No error messages. */
-#define	RE_C_SUBST	0x0008		/* Compile substitute replacement. */
-#define	RE_C_TAG	0x0010		/* Compile ctag pattern. */
-
 #define	RE_WSTART	"[[:<:]]"	/* Ex/vi: not-in-word search pattern. */
 #define	RE_WSTOP	"[[:>:]]"
 					/* Ex/vi: flags to search routines. */
-#define	SEARCH_CSCOPE	0x0001		/* Search for a cscope pattern. */
-#define	SEARCH_EOL	0x0002		/* Offset past EOL is okay. */
-#define	SEARCH_FILE	0x0004		/* Search the entire file. */
-#define	SEARCH_INCR	0x0008		/* Search incrementally. */
-#define	SEARCH_MSG	0x0010		/* Display search messages. */
-#define	SEARCH_PARSE	0x0020		/* Parse the search pattern. */
-#define	SEARCH_SET	0x0040		/* Set search direction. */
-#define	SEARCH_TAG	0x0080		/* Search for a tag pattern. */
-#define	SEARCH_WMSG	0x0100		/* Display search-wrapped messages. */
+#define	SEARCH_CSCOPE	0x00001		/* Search for a cscope pattern. */
+#define	SEARCH_CSEARCH	0x00002		/* Compile search replacement. */
+#define	SEARCH_CSUBST	0x00004		/* Compile substitute replacement. */
+#define	SEARCH_EOL	0x00008		/* Offset past EOL is okay. */
+#define	SEARCH_EXTEND	0x00010		/* Extended RE. */
+#define	SEARCH_FIRST	0x00020		/* Search from the first line. */
+#define	SEARCH_IC	0x00040		/* Ignore case. */
+#define	SEARCH_INCR	0x00080		/* Search incrementally. */
+#define	SEARCH_LITERAL	0x00100		/* Literal string. */
+#define	SEARCH_MSG	0x00200		/* Display search messages. */
+#define	SEARCH_NOOPT	0x00400		/* Ignore edit options. */
+#define	SEARCH_PARSE	0x00800		/* Parse the search pattern. */
+#define	SEARCH_SET	0x01000		/* Set search direction. */
+#define	SEARCH_TAG	0x02000		/* Search for a tag pattern. */
+#define	SEARCH_WMSG	0x04000		/* Display search-wrapped messages. */
+#define	SEARCH_WRAP	0x08000		/* Wrap past sof/eof. */
 
 					/* Ex/vi: RE information. */
 	dir_t	 searchdir;		/* Last file search direction. */

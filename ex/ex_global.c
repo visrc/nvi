@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.22 1996/10/10 18:41:45 bostic Exp $ (Berkeley) $Date: 1996/10/10 18:41:45 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.23 1996/12/11 13:04:37 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,13 +139,14 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		}
 
 		/* Re-compile the RE if necessary. */
-		if (!F_ISSET(sp, SC_RE_SEARCH) && re_compile(sp,
-		    sp->re, sp->re_len, NULL, NULL, &sp->re_c, RE_C_SEARCH))
+		if (!F_ISSET(sp, SC_RE_SEARCH) &&
+		    re_compile(sp, sp->re, sp->re_len,
+		    NULL, NULL, &sp->re_c, SEARCH_CSEARCH | SEARCH_MSG))
 			return (1);
 	} else {
 		/* Compile the RE. */
-		if (re_compile(sp, ptrn, t - ptrn,
-		    &sp->re, &sp->re_len, &sp->re_c, RE_C_SEARCH))
+		if (re_compile(sp, ptrn, t - ptrn, &sp->re,
+		    &sp->re_len, &sp->re_c, SEARCH_CSEARCH | SEARCH_MSG))
 			return (1);
 
 		/*
