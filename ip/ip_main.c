@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.1 1996/09/20 19:35:58 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:35:58 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.2 1996/09/20 20:31:47 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:31:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,10 +31,10 @@ static void	   nomem __P((char *));
  *      This is the main loop for the vi-as-library editor.
  */
 int
-ip_main(gp, argc, argv, ip_arg)
-	GS *gp;
+ip_main(argc, argv, gp, ip_arg)
 	int argc;
 	char *argv[], *ip_arg;
+	GS *gp;
 {
 	EVENT ev;
 	IP_PRIVATE *ipp;
@@ -52,15 +52,11 @@ ip_main(gp, argc, argv, ip_arg)
 	do {
 		if (ip_event(NULL, &ev, 0, 0))
 			return (1);
-	} while (ev.e_event != IPO_EOF && ev.e_event != IPO_ERR &&
-	    ev.e_event != IPO_QUIT && ev.e_event != IPO_RESIZE &&
-	    ev.e_event != IPO_SIGHUP && ev.e_event != IPO_SIGTERM);
-	if (ev.e_event != IPO_RESIZE)
+	} while (ev.e_event != E_EOF && ev.e_event != E_ERR &&
+	    ev.e_event != E_QUIT && ev.e_event != E_WRESIZE &&
+	    ev.e_event != E_SIGHUP && ev.e_event != E_SIGTERM);
+	if (ev.e_event != E_WRESIZE)
 		return (1);
-
-	/* Add the rows and columns to the global structure. */
-	OG_VAL(gp, GO_LINES) = OG_D_VAL(gp, GO_LINES) = ev.e_lno;
-	OG_VAL(gp, GO_COLUMNS) = OG_D_VAL(gp, GO_COLUMNS) = ev.e_cno;
 
 	/* Run ex/vi. */
 	rval = editor(gp, argc, argv);
@@ -105,7 +101,7 @@ ip_init(gp, ip_arg)
 	ipp->i_fd = strtol(ip_arg, &ep, 10);
 	if (ep[0] != '.' || !isdigit(ep[1]))
 		goto usage;
-	ipp->o_fd = strtol(ep, &ep, 10);
+	ipp->o_fd = strtol(++ep, &ep, 10);
 	if (ep[0] != '\0') {
 usage:		ip_usage();
 		return (NULL);
