@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.11 1992/10/10 13:57:55 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:55 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.12 1992/11/02 22:25:11 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:25:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,9 +16,13 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 5.11 1992/10/10 13:57:55 bostic Exp $
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "options.h"
+#include "seq.h"
 #include "pathnames.h"
 #include "extern.h"
 
@@ -54,21 +58,25 @@ ex_mkexrc(cmdp)
 	/* In case it already existed, set the permissions. */
 	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
+	if ((fp = fdopen(fd, "w")) == NULL) {
+		msg("%s: %s", fname, strerror(errno));
+		return (1);
+	}
+
 	if (abbr_save(fp) || ferror(fp))
 		goto err;
 	if (map_save(fp) || ferror(fp))
 		goto err;
-	if (opts_save(fp) || ferror(fp))
+	opts_save(fp);
+	if (ferror(fp))
 		goto err;
-	fflush(fp);			/* XXX all should use fp. */
-	if (ferror(fp)) {
+	if (fclose(fp)) {
 err:		msg("%s: incomplete: %s", fname, strerror(errno));
 		return (1);
 	}
 #ifndef NO_DIGRAPH
 	digraph_save(fd);
 #endif
-	(void)close(fd);
 	msg("New .exrc file: %s. ", fname);
 	return (0);
 }
