@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.8 1992/05/07 12:47:09 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:09 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.9 1992/05/15 11:07:30 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:07:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,7 +14,6 @@ static char sccsid[] = "$Id: ex_shift.c,v 5.8 1992/05/07 12:47:09 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
-#include "exf.h"
 #include "options.h"
 #include "extern.h"
 
@@ -54,7 +53,7 @@ shift(cmdp, rl)
 	for (; flno < tlno; ++flno) {
 
 		/* Get the line. */
-		if ((p = file_line(curf, flno, &len)) == NULL)
+		if ((p = file_gline(curf, flno, &len)) == NULL)
 			return (1);
 		if (!len)
 			continue;
@@ -99,7 +98,7 @@ shift(cmdp, rl)
 
 		/* Change the old indent string into the new. */
 		fm.lno = tm.lno = flno;
-		fm.cno = 1;
+		fm.cno = 0;
 		tm.cno = oldidx;
 		change(&fm, &tm, sbuf, newidx);
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.8 1992/05/07 12:46:56 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:56 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.9 1992/05/15 11:08:13 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,7 +14,6 @@ static char sccsid[] = "$Id: ex_move.c,v 5.8 1992/05/07 12:46:56 bostic Exp $ (B
 
 #include "vi.h"
 #include "excmd.h"
-#include "exf.h"
 #include "extern.h"
 
 enum which {COPY, MOVE};
@@ -53,7 +52,7 @@ cm(cmdp, cmd)
 	fm1 = cmdp->addr1;
 	fm2 = cmdp->addr2;
 	tm.lno = cmdp->lineno;
-	tm.cno = 1;
+	tm.cno = 0;
 
 	/* Make sure the destination is valid. */
 	if (cmd == MOVE && tm.lno >= fm1.lno && tm.lno < fm2.lno) {
