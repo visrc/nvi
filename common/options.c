@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.17 1993/10/04 17:57:43 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:57:43 $";
+static char sccsid[] = "$Id: options.c,v 8.18 1993/10/05 18:07:48 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:07:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -406,8 +406,7 @@ found:		if (op == NULL) {
 				O_CLR(sp, offset);
 			else
 				O_SET(sp, offset);
-			F_SET(&sp->opts[offset], OPT_SET);
-			break;
+			goto change;
 		case OPT_NUM:
 			if (turnoff) {
 				msgq(sp, M_ERR,
@@ -433,8 +432,7 @@ found:		if (op == NULL) {
 				}
 			} else
 				O_VAL(sp, offset) = value;
-			F_SET(&sp->opts[offset], OPT_SET);
-			break;
+			goto change;
 		case OPT_STR:
 			if (turnoff) {
 				msgq(sp, M_ERR,
@@ -464,6 +462,8 @@ found:		if (op == NULL) {
 				} else
 					F_SET(&sp->opts[offset], OPT_ALLOCATED);
 			}
+change:			if (sp->s_optchange != NULL)
+				(void)sp->s_optchange(sp, offset);
 			F_SET(&sp->opts[offset], OPT_SET);
 			break;
 		default:
