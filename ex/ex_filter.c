@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.18 1993/10/06 16:11:13 bostic Exp $ (Berkeley) $Date: 1993/10/06 16:11:13 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.19 1993/10/11 10:27:03 bostic Exp $ (Berkeley) $Date: 1993/10/11 10:27:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,10 +46,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	int input[2], output[2], rval;
 	char *name;
 
-	/*
-	 * Set default return cursor position; guard against a line number
-	 * of zero.
-	 */
+	/* Set return cursor position; guard against a line number of zero. */
 	*rp = *fm;
 	if (fm->lno == 0)
 		rp->lno = 1;
@@ -276,6 +273,13 @@ err:		if (input[0] != -1)
 				sp->rptlines[L_DELETED] +=
 				    (tm->lno - fm->lno) + 1;
 		}
+		/*
+		 * If the filter had no output, we may have just deleted
+		 * the cursor.  Don't do any real error correction, we'll
+		 * try and recover later.
+		 */
+		 if (rp->lno > 1 && file_gline(sp, ep, rp->lno, NULL) == NULL)
+			--rp->lno;
 		break;
 	}
 	F_CLR(ep, F_MULTILOCK);
