@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.15 1994/05/02 07:42:49 bostic Exp $ (Berkeley) $Date: 1994/05/02 07:42:49 $
+.\"     $Id: set.opt.roff,v 8.16 1994/05/07 19:48:43 bostic Exp $ (Berkeley) $Date: 1994/05/07 19:48:43 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -934,6 +934,11 @@ See the
 .Sy verbose
 option for more information.
 #endif
+.SP
+.It Sy "tildeop"
+Change the
+.Sy \&~
+command from taking a character count to taking an associated motion.
 .SP
 .It Sy "timeout, to [on]"
 #ifdef MANUAL
