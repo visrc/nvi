@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: script.h,v 9.3 1995/01/11 16:16:17 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:17 $
+ *	$Id: script.h,v 10.1 1995/06/08 18:56:16 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:56:16 $
  */
 
 struct _script {

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 9.4 1995/05/05 18:54:13 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:13 $
+ *	$Id: tag.h,v 10.1 1995/06/08 18:56:32 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:56:32 $
  */
 
 struct _tagf {				/* Tag file. */
