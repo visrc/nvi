@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.8 1992/10/10 16:05:39 bostic Exp $ (Berkeley) $Date: 1992/10/10 16:05:39 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.9 1992/10/24 14:26:27 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:26:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ v_home(vp, fm, tm, rp)
 	size_t len;
 	u_long lno;
 
-	lno = curf->top + (vp->flags & VC_C1SET ? vp->count : 0);
+	lno = curf->otop + (vp->flags & VC_C1SET ? vp->count : 0);
 
 	DOWN(lno);
 	return (0);
@@ -84,13 +84,13 @@ v_middle(vp, fm, tm, rp)
 {
 	u_long lno;
 
-	if (file_gline(curf, BOTLINE, NULL) == NULL) {
+	if (file_gline(curf, BOTLINE(curf), NULL) == NULL) {
 		lno = file_lline(curf) / 2;
 		if (lno == 0)
 			lno = 1;
 		rp->lno = lno;
 	} else
-		rp->lno = curf->top + LINES / 2;
+		rp->lno = curf->otop + curf->lines / 2;
 	return (0);
 }
 
@@ -107,12 +107,12 @@ v_bottom(vp, fm, tm, rp)
 	recno_t lno;
 	u_long cnt;
 
-	if (file_gline(curf, BOTLINE, NULL) == NULL) {
+	if (file_gline(curf, BOTLINE(curf), NULL) == NULL) {
 		lno = file_lline(curf) / 2;
 		if (lno == 0)
 			lno = 1;
 	} else
-		lno = BOTLINE;
+		lno = BOTLINE(curf);
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 0;
 	if (cnt >= lno) {
@@ -206,7 +206,8 @@ v_pagedown(vp, fm, tm, rp)
 	u_long lno;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1) * (LINES - 2);
+	lno = fm->lno +
+	    (vp->flags & VC_C1SET ? vp->count : 1) * (curf->lines - 2);
 
 	DOWN(lno);
 	return (0);
@@ -226,16 +227,13 @@ v_linedown(vp, fm, tm, rp)
 	off = vp->flags & VC_C1SET ? vp->count : 1;
 
 	/* Can't go past the end of the file. */
-	if (file_gline(curf, BOTLINE + off, NULL) == NULL) {
-		off = file_lline(curf) - BOTLINE;
-		if (off == 0) {
-			v_eof(fm);
-			return (1);
-		}
+	if (file_gline(curf, BOTLINE(curf) + off, NULL) == NULL) {
+		v_eof(fm);
+		return (1);
 	}
 
-	/* Set the number of lines to scroll. */
-	curf->uwindow = off;
+	/* Set the new top line. */
+	curf->top += off;
 
 	/*
 	 * The cursor moves up, staying with its original line, unless it
@@ -244,8 +242,8 @@ v_linedown(vp, fm, tm, rp)
          * otherwise, we set the relative movement (as if V_RCM_SET was set).
          * It's enough to make you cry.
 	 */
-	if (fm->lno <= curf->top + off) {
-		rp->lno = curf->top + off;
+	if (fm->lno <= curf->top) {
+		rp->lno = curf->top;
 		vp->kp->flags |= V_RCM;
 	} else {
 		rp->lno = fm->lno;
