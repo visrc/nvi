@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.37 1996/03/14 09:33:18 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:33:18 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.38 1996/03/18 18:11:39 bostic Exp $ (Berkeley) $Date: 1996/03/18 18:11:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,12 +179,6 @@ v_tcmd(sp, vp, prompt, flags)
 }
 
 /*
- * XXX
- * Workaround for Sun compiler bug, Sun #1233182.
- */
-u_long __rcount;		/* Replay count. */
-
-/*
  * If doing input mapping on the colon command line, may need to unmap
  * based on the command.
  */
@@ -233,13 +227,6 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	int wm_set, wm_skip;	/* Wrapmargin happened, blank skip flags. */
 	int max, tmp;
 	char *p;
-
-	/*
-	 * XXX
-	 * Workaround for Sun compiler bug, Sun #1233182.
-	 */
-	__rcount = rcount;
-#define	rcount	__rcount
 
 	gp = sp->gp;
 	vip = VIP(sp);
