@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.68 1994/03/02 11:36:27 bostic Exp $ (Berkeley) $Date: 1994/03/02 11:36:27 $";
+static char sccsid[] = "$Id: main.c,v 8.69 1994/03/06 10:14:40 bostic Exp $ (Berkeley) $Date: 1994/03/06 10:14:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -627,7 +627,6 @@ exrc_isok(sp, sbp, path, rootok)
 	char *path;
 	int rootok;
 {
-	struct stat sb;
 	uid_t uid;
 	char *emsg, buf[MAXPATHLEN];
 

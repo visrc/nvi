@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.7 1994/03/06 10:14:02 bostic Exp $ (Berkeley) $Date: 1994/03/06 10:14:02 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.8 1994/03/06 10:15:10 bostic Exp $ (Berkeley) $Date: 1994/03/06 10:15:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ ex_move(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	LMARK *lmp;
-	MARK fm1, fm2, m;
+	MARK fm1, fm2;
 	recno_t cnt, fl, tl, mfl, mtl;
 	size_t len;
 	int mark_reset;
