@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.20 1992/04/26 18:32:33 bostic Exp $ (Berkeley) $Date: 1992/04/26 18:32:33 $";
+static char sccsid[] = "$Id: main.c,v 5.21 1992/05/02 09:08:03 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:08:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -155,7 +155,7 @@ main(argc, argv)
 		(void)ex_cfile(path, 0);
 	}
 	if (ISSET(O_EXRC))
-		(void)ex_cfile(_NAME_EXRC, 0);
+		(void)ex_cfile(_PATH_EXRC, 0);
 	reading_exrc = 0;
 
 	/* Source the EXINIT environment variable. */
@@ -239,8 +239,10 @@ void
 trapint(signo)
 	int signo;
 {
-	resume_curses(FALSE);
 	abortdo();
+#ifdef XXX_notdef
+	resume_curses(FALSE);
+#endif
 	doingglobal = FALSE;
 	longjmp(jmpenv, 1);
 }
@@ -272,6 +274,6 @@ static void
 usage()
 {
 	(void)fprintf(stderr,
-	    "usage: vi [-emRrv] [-c command] [-m file] [-t tag]\n");
+	    "usage: vi [-eRrv] [-c command] [-m file] [-t tag]\n");
 	exit(1);
 }
