@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.33 1992/12/05 11:09:08 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:08 $";
+static char sccsid[] = "$Id: key.c,v 5.34 1992/12/22 16:13:06 bostic Exp $ (Berkeley) $Date: 1992/12/22 16:13:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,6 +200,7 @@ ttyread(buf, len, time)
 	static enum { NOTSET, YES, NO } isfromtty = NOTSET;
 	static fd_set rd;
 	struct timeval t, *tp;
+	int sval;
 
 	/*
 	 * Set if reading from a tty or not on the first entry.  Zero out
@@ -227,19 +228,30 @@ ttyread(buf, len, time)
 
 	/* Select until characters become available, and then read them. */
 	FD_SET(STDIN_FILENO, &rd);
-	for (;;)
-		switch (select(1, &rd, NULL, NULL, tp)) {
-		case -1:
+	for (;;) {
+		/*
+		 * This is the only place we actually wait, so have to handle
+		 * asynchronous resizing here.  If resize is scheduled, do it
+		 * before selecting.
+		 */
+		FF_SET(curf, F_READING);
+		if (mode == MODE_VI && FF_ISSET(curf, F_RESIZE)) {
+			scr_cchange(curf);
+			refresh();
+		}
+		sval = select(1, &rd, NULL, NULL, tp);
+		FF_CLR(curf, F_READING);
+		switch (sval) {
+		case -1:			/* Error. */
 			/* It's okay to be interrupted. */
 			if (errno == EINTR)
 				break;
 			msg("Terminal read error: %s", strerror(errno));
 			return (0);
 		case 0:
-			/* Timeout. */
-			return (0);
+			return (0);		/* Timeout. */
 		default:
-			/* Read it. */
 			return (read(STDIN_FILENO, buf, len));
 		}
+	}
 }
