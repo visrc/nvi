@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.18 1996/03/06 19:55:05 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:05 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.19 1996/03/14 09:31:49 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:31:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,7 +108,8 @@ vs_refresh(sp)
 	 * Also, always do it last -- that way, S_SCR_REDRAW can be set
 	 * in the current screen only, and the screen won't flash.
 	 */
-	if (vs_paint(sp, PAINT_CURSOR | PAINT_FLUSH))
+	if (vs_paint(sp, PAINT_CURSOR |
+	    (F_ISSET(sp, S_SCR_VI) && KEYS_WAITING(sp) ? 0 : PAINT_FLUSH)))
 		return (1);
 
 	/*
@@ -650,7 +651,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	/*
 	 * 10: Update and position the cursor and flush changes.
 	 */
-	if (LF_ISSET(PAINT_FLUSH)) {
+	if (leftright_warp || LF_ISSET(PAINT_FLUSH)) {
 		OCNO = CNO;
 		OLNO = LNO;
 		(void)gp->scr_move(sp, y, SCNO);
