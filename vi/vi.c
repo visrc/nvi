@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.10 1995/09/25 10:42:10 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:42:10 $";
+static char sccsid[] = "$Id: vi.c,v 10.11 1995/09/25 10:49:02 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:49:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -748,8 +748,6 @@ v_motion(sp, dm, vp, mappedp)
 		if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
 			if (vp->m_stop.lno != 1 ||
 			   vp->key != 'c' && vp->key != '!') {
-				m.lno = sp->lno;
-				m.cno = sp->cno;
 				v_message(sp, NULL, VIM_EMPTY);
 				return (1);
 			}
@@ -799,12 +797,17 @@ v_motion(sp, dm, vp, mappedp)
 
 		/*
 		 * If the current line is missing, i.e. the file is empty,
-		 * fail.  Most motion commands will have already failed,
-		 * but some, e.g. G, work in empty files.
+		 * historic vi allowed "c<motion>" or "!<motion>" to insert
+		 * text.  Otherwise fail -- most motion commands will have
+		 * already failed, but some, e.g. G, succeed in empty files.
 		 */
 		if (!file_eline(sp, vp->m_stop.lno)) {
-			v_message(sp, NULL, VIM_EMPTY);
-			return (1);
+			if (vp->m_stop.lno != 1 ||
+			   vp->key != 'c' && vp->key != '!') {
+				v_message(sp, NULL, VIM_EMPTY);
+				return (1);
+			}
+			vp->m_stop.cno = 0;
 		}
 
 		/*
