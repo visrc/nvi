@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.38 1993/02/11 19:53:09 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:53:09 $";
+static char sccsid[] = "$Id: options.c,v 5.39 1993/02/11 20:15:23 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:15:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -486,8 +486,8 @@ f_columns(ep, valp)
 		msg("Screen columns too small, less than number option.");
 		return (1);
 	}
-	(void)snprintf(buf, sizeof(buf), "%lu", val);
-	(void)setenv("COLUMNS", buf, 1);
+	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
+	(void)putenv(buf);
 
 	/* Set resize bit; note, the EXF structure may not yet be in place. */
 	if (ep != NULL)
@@ -617,8 +617,8 @@ f_lines(ep, valp)
 		msg("Screen lines too small, less than %d.", MINLINES);
 		return (1);
 	}
-	(void)snprintf(buf, sizeof(buf), "%lu", val);
-	(void)setenv("ROWS", buf, 1);
+	(void)snprintf(buf, sizeof(buf), "ROWS=%lu", val);
+	(void)putenv(buf);
 
 	/* Set resize bit; note, the EXF structure may not yet be in place. */
 	if (ep != NULL)
