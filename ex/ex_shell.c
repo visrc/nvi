@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.4 1993/10/06 17:20:43 bostic Exp $ (Berkeley) $Date: 1993/10/06 17:20:43 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.5 1993/10/07 13:36:26 bostic Exp $ (Berkeley) $Date: 1993/10/07 13:36:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -89,7 +89,7 @@ ex_exec_process(sp, shell, cmd, needcontinue)
 		/* NOTREACHED */
 	}
 
-	rval = proc_wait(sp, (long)pid, name, 0);
+	rval = proc_wait(sp, (long)pid, cmd, 0);
 
 	/* Vi will repaint the screen; get the user to okay it. */
 	if (needcontinue && F_ISSET(sp, S_MODE_VI)) {
