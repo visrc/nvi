@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.108 1996/05/19 11:06:18 bostic Exp $ (Berkeley) $Date: 1996/05/19 11:06:18 $
+dnl	$Id: configure.in,v 8.109 1996/06/08 12:15:17 bostic Exp $ (Berkeley) $Date: 1996/06/08 12:15:17 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -334,7 +334,7 @@ AC_REPLACE_FUNCS(strtol)
 AC_REPLACE_FUNCS(strtoul)
 AC_CHECK_FUNCS(unsetenv,, [need_env=yes])
 AC_FUNC_VFORK
-AC_FUNC_VPRINTF
+AC_REPLACE_FUNCS(vsnprintf)
 
 dnl If we needed setenv or unsetenv, add in the clib/env.c replacement file.
 if test "$need_env" = yes; then
