@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.51 1993/11/04 16:16:10 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:10 $
+ *	$Id: screen.h,v 8.52 1993/11/07 12:55:21 bostic Exp $ (Berkeley) $Date: 1993/11/07 12:55:21 $
  */
 
 /*
@@ -255,17 +255,16 @@ typedef struct _scr {
 #define	S_INPUT		0x0000400	/* Doing text input. */
 #define	S_INTERRUPTED	0x0000800	/* If have been interrupted. */
 #define	S_INTERRUPTIBLE	0x0001000	/* If can be interrupted. */
-#define	S_MSGREENTER	0x0002000	/* If msg routine reentered. */
-#define	S_REDRAW	0x0004000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0008000	/* Reformat the screen. */
-#define	S_REFRESH	0x0010000	/* Refresh the screen. */
-#define	S_RESIZE	0x0020000	/* Resize the screen. */
-#define	S_SCRIPT	0x0040000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0080000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0100000	/* The substitute RE has been set. */
-#define	S_TERMSIGNAL	0x0200000	/* Termination signal received. */
-#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
+#define	S_REDRAW	0x0002000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0004000	/* Reformat the screen. */
+#define	S_REFRESH	0x0008000	/* Refresh the screen. */
+#define	S_RESIZE	0x0010000	/* Resize the screen. */
+#define	S_SCRIPT	0x0020000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0040000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0080000	/* The substitute RE has been set. */
+#define	S_TERMSIGNAL	0x0100000	/* Termination signal received. */
+#define	S_TIMER_SET	0x0200000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
 	u_int flags;
 } SCR;
 

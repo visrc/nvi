@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.18 1993/11/02 18:44:29 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:44:29 $";
+static char sccsid[] = "$Id: util.c,v 8.19 1993/11/07 12:54:39 bostic Exp $ (Berkeley) $Date: 1993/11/07 12:54:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,18 +52,14 @@ msgq(sp, mt, fmt, va_alist)
         va_start(ap);
 #endif
 	/*
-	 * It's possible to reenter msg when it allocates space.
-	 * We're probably dead anyway, but no reason to drop core.
+	 * It's possible to enter msg when there's no screen to hold
+	 * the message.  Always check sp before using it, and, if it's
+	 * NULL, use __global_list.
 	 */
-	if (F_ISSET(sp, S_MSGREENTER))
-		return;
-	F_SET(sp, S_MSGREENTER);
-
 	switch (mt) {
 	case M_BERR:
-		if (!O_ISSET(sp, O_VERBOSE)) {
+		if (sp != NULL && !O_ISSET(sp, O_VERBOSE)) {
 			F_SET(sp, S_BELLSCHED);
-			F_CLR(sp, S_MSGREENTER);
 			return;
 		}
 		mt = M_ERR;
@@ -73,10 +69,8 @@ msgq(sp, mt, fmt, va_alist)
 	case M_INFO:
 		break;
 	case M_VINFO:
-		if (!O_ISSET(sp, O_VERBOSE)) {
-			F_CLR(sp, S_MSGREENTER);
+		if (sp != NULL && !O_ISSET(sp, O_VERBOSE))
 			return;
-		}
 		mt = M_INFO;
 		break;
 	default:
@@ -88,9 +82,7 @@ msgq(sp, mt, fmt, va_alist)
 	if (len > sizeof(msgbuf))
 		len = sizeof(msgbuf);
 
-	msg_app(NULL, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
-
-	F_CLR(sp, S_MSGREENTER);
+	msg_app(__global_list, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
 }
 
 /*
@@ -106,8 +98,17 @@ msg_app(gp, sp, inv_video, p, len)
 	char *p;
 	size_t len;
 {
+	static int reenter;		/* STATIC: Re-entrancy check. */
 	MSG *mp;
 	int new;
+
+	/*
+	 * It's possible to reenter msg when it allocates space.
+	 * We're probably dead anyway, but no reason to drop core.
+	 */
+	if (reenter)
+		return;
+	reenter = 1;
 
 	/*
 	 * Find an empty structure, or allocate a new one.  Use the
@@ -117,7 +118,7 @@ msg_app(gp, sp, inv_video, p, len)
 	if (sp != NULL)
 		if (sp->msgp == NULL) {
 			if ((sp->msgp = malloc(sizeof(MSG))) == NULL)
-				return;
+				goto ret;
 			new = 1;
 			mp = sp->msgp;
 		} else {
@@ -126,7 +127,7 @@ msg_app(gp, sp, inv_video, p, len)
 		}
 	else if (gp->msgp == NULL) {
 		if ((gp->msgp = malloc(sizeof(MSG))) == NULL)
-			return;
+			goto ret;
 		mp = gp->msgp;
 		new = 1;
 	} else {
@@ -135,7 +136,7 @@ loop:		for (;
 		    !F_ISSET(mp, M_EMPTY) && mp->next != NULL; mp = mp->next);
 		if (!F_ISSET(mp, M_EMPTY)) {
 			if ((mp->next = malloc(sizeof(MSG))) == NULL)
-				return;
+				goto ret;
 			mp = mp->next;
 			new = 1;
 		}
@@ -147,11 +148,13 @@ loop:		for (;
 
 	/* Store the message. */
 	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
-		return;
+		goto ret;
 
 	memmove(mp->mbuf, p, len);
 	mp->len = len;
 	mp->flags = inv_video ? M_INV_VIDEO : 0;
+
+ret:	reenter = 0;
 }
 
 /*
