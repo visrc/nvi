@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.14 1993/01/23 16:30:49 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:30:49 $";
+static char sccsid[] = "$Id: db.c,v 5.15 1993/01/30 17:26:25 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:26:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -278,17 +278,15 @@ file_sline(ep, lno, p, len)
  *	Resolve the ib structure into the file.
  */
 int
-file_ibresolv(ep, ibp)
+file_ibresolv(ep, lno)
 	EXF *ep;
-	IB *ibp;
+	recno_t lno;
 {
 	DBT data, key;
 	TEXT *tp;
-	recno_t lno;
 
 	/* Setup. */
 	tp = ib.head;
-	lno = ibp->start.lno;
 	key.size = sizeof(lno);
 
 	/* Replace the original line. */
