@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.31 1995/11/17 12:54:35 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:54:35 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.32 1996/02/20 20:51:17 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:51:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -525,15 +525,17 @@ cl_suspend(sp, allowedp)
 
 	/* Restore the cursor keys to normal mode. */
 	(void)keypad(stdscr, FALSE);
-
-	/* Restore the original terminal settings. */
-	(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->orig);
 #else
 	(void)endwin();
-#ifdef FORCE_TERM_RESET
+#endif
+	/*
+	 * XXX
+	 * Restore the original terminal settings.  This isn't right --
+	 * this reset can cause use to lose characters from the tty
+	 * queue.  Unfortunately, too many versions of curses don't
+	 * get it right.
+	 */
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
-#endif
-#endif
 
 	/* Stop the process group. */
 	(void)kill(0, SIGTSTP);
