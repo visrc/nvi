@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.9 1992/10/10 14:03:34 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:03:34 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.10 1992/10/17 16:59:32 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:59:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,7 +19,6 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.9 1992/10/10 14:03:34 bostic Exp $ (Be
 
 #include "vi.h"
 #include "vcmd.h"
-#include "cut.h"
 #include "screen.h"
 #include "term.h"
 #include "extern.h"
@@ -29,7 +28,6 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.9 1992/10/10 14:03:34 bostic Exp $ (Be
 #define	N_REPLACE	0x04		/* Replace characters without limit. */
 
 static void	ib_err __P((void));
-static int	ib_put __P((void));
 static int	newtext
 		    __P((VICMDARG *, MARK *, u_char *, size_t, MARK *, u_int));
 
@@ -434,8 +432,8 @@ newtext(vp, tm, p, len, rp, flags)
 			insert = len - curf->cno;
 		}
 		if (flags & N_EMARK) {
-			ib.ilb[tm->cno - 1] = '$';
-			scr_update(curf, ib.start.lno, ib.ilb, len, LINE_SET);
+			ib.ilb[tm->cno - 1] = CHEND;
+			scr_update(curf, ib.start.lno, ib.ilb, len, LINE_RESET);
 			refresh();
 		}
 	} else
@@ -448,19 +446,18 @@ newtext(vp, tm, p, len, rp, flags)
 	 * XXX
 	 * This is not quite right; we should swallow backspaces and such
 	 * so that we don't repeat errors on subsequent dot operations.
-	 * Should figure out a way to keep just the input part of the TEXT
-	 * around and using it.
+	 * Figure out a way to keep just the input part of the TEXT around
+	 * and using it?
 	 */
 	rcol = 0;
 	repp = ib.rep;
 	replay = vp->flags & VC_ISDOT;
 
 	/* Set up parameters. */
-	quoted = 0;
 	col = startcol = curf->cno;
 	p = ib.ilb + col;
 
-	for (;;) {
+	for (quoted = 0;;) {
 		if (col + insert >= ib.ilblen) {
 			if (binc(&ib.ilb, &ib.ilblen, 0)) {
 				rval = 1;
@@ -482,17 +479,21 @@ newtext(vp, tm, p, len, rp, flags)
 			*repp++ = ch = getkey(0);
 			++rcol;
 		}
-		if (quoted)
+		if (quoted) {
+			quoted = 0;
+			--p;
+			--col;
+			--curf->cno;
 			goto insch;
+		}
 
 		switch(special[ch]) {
 		case K_ESCAPE:			/* Escape. */
 			/* Set the end cursor position. */
-			ib.stop.lno = curf->lno;
-			ib.stop.cno = curf->cno;
+			ib.stop.cno = curf->cno ? curf->cno - 1 : 0;
 
 			/* If no input, return. */
-			if (ib.start.lno == ib.start.lno &&
+			if (ib.start.lno == ib.stop.lno &&
 			    ib.start.cno == ib.stop.cno) {
 				rval = 0;
 				goto done;
@@ -514,7 +515,7 @@ newtext(vp, tm, p, len, rp, flags)
 			tp->next = NULL;
 			TEXTAPPEND(&ib, tp);
 
-			rval = ib_put();
+			rval = file_ibresolv(curf, &ib);
 			goto done;
 		case K_CR:
 		case K_NL:			/* New line. */
@@ -522,21 +523,21 @@ newtext(vp, tm, p, len, rp, flags)
 			if (!(flags & N_REPLACE) && overwrite)
 				bcopy(p + overwrite, p, overwrite);
 
+			/* Move current line into the cut buffer. */
 			NEWTP;
 			bcopy(ib.ilb, tp->lp, col);
 			tp->len = col;
 			tp->next = NULL;
 			TEXTAPPEND(&ib, tp);
 
-			/*
-			 * Reset the input buffer, and repaint the current
-			 * line if necessary.
-			 */
+			/* Repaint the current line if necessary. */
 			if (flags & N_REPLACE || insert) {
 				bcopy(p, ib.ilb, insert + overwrite);
 				scr_update(curf,
-				    ib.stop.lno, tp->lp, tp->len, LINE_SET);
+				    ib.stop.lno, tp->lp, tp->len, LINE_RESET);
 			}
+
+			/* Reset the input buffer. */
 			p = ib.ilb;
 			col = startcol = 0;
 
@@ -577,31 +578,32 @@ newtext(vp, tm, p, len, rp, flags)
 			ch = '^';
 			/* FALLTHROUGH */
 		case 0:				/* Insert the character. */
-insch:			if (overwrite)
+			if (overwrite)
 				--overwrite;
 			else if (insert)
 				bcopy(p, p + 1, insert);
-			*p++ = ch;
+insch:			*p++ = ch;
 			++col;
 			++curf->cno;
 			break;
 		}
-		scr_update(curf,
-		    ib.stop.lno, ib.ilb, col + insert + overwrite, LINE_SET);
+		ib.len = col + insert + overwrite;
+		scr_update(curf, ib.stop.lno, ib.ilb, ib.len,
+		    special[ch] == K_NL || special[ch] == K_CR ?
+		    LINE_INSERT | LINE_LOGICAL : LINE_RESET);
 		scr_cchange(curf);
 	}
 
 	/*
-	 * Adjust the cursor.  If an error occurred, ib_err() makes sure that
-	 * the cursor is rational.  Otherwise, if any data was input and the
-	 * last character wasn't a CR or NL, we're one past the last character
-	 * inserted, so back up one.
+	 * Adjust the cursor.  If an error occurred, ib_err() makes sure the
+	 * cursor is rational.  Else, if the last character didn't create a
+	 * new line, we're one past the last character inserted, so back up.
 	 */
 done:	if (rval == 1)
 		ib_err();
 	else {
 		rp->lno = ib.stop.lno;
-		rp->cno = ib.stop.cno > 0 ? ib.stop.cno - 1 : 0;
+		rp->cno = ib.stop.cno;
 	}
 
 	/* Free up text buffers. */
@@ -610,7 +612,6 @@ done:	if (rval == 1)
 		ib.head = NULL;
 		ib.stop.lno = OOBLNO;
 	}
-	scr_ref();			/* XXX */
 	return (rval);
 }
 
@@ -639,29 +640,4 @@ ib_err()
 
 	curf->lno = m.lno;
 	curf->cno = m.cno;
-}
-
-/*
- * ib_put --
- *	Insert an ib structure into the file.
- */
-static int
-ib_put()
-{
-	register TEXT *tp;
-	register recno_t lno;
-
-	/* Replace the original line. */
-	tp = ib.head;
-	lno = ib.start.lno;
-	if (file_sline(curf, lno, tp->lp, tp->len))
-		return (1);
-
-	/* Add the new lines into the file. */
-	while (tp = tp->next)
-		if (file_aline(curf, lno++, tp->lp, tp->len))
-			return (1);
-	/* Shift any marks. */
-	mark_insert(&ib.start, &ib.stop);
-	return (0);
 }
