@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.10 1994/03/16 08:05:52 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:52 $
+ *	$Id: msg.h,v 8.11 1994/05/16 16:03:41 bostic Exp $ (Berkeley) $Date: 1994/05/16 16:03:41 $
  */
 
 /*
@@ -37,6 +37,17 @@ struct _msg {
 #define	M_INV_VIDEO	0x02	/* Inverse video. */
 	u_int	 flags;		/* Flags. */
 };
+
+/*
+ * Define MSG_CATALOG for the Makefile compile command
+ * line to enable message catalogs.
+ */
+#ifdef MSG_CATALOG
+#define	M(number, fmt)	number
+char	*get_msg __P((SCR *, char *));
+#else
+#define	M(number, fmt)	fmt
+#endif
 
 /* Messages. */
 void	msg_app __P((GS *, SCR *, int, char *, size_t));
