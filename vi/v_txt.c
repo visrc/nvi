@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.50 1993/11/18 10:09:24 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:09:24 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.51 1993/11/19 11:53:42 bostic Exp $ (Berkeley) $Date: 1993/11/19 11:53:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,36 +73,36 @@ static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
  * with something here, but I think I'm unlikely to get caught.
  */
 int
-v_ntext(sp, ep, tiqh, tm, p, len, rp, prompt, ai_line, flags)
+v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	SCR *sp;
 	EXF *ep;
 	TEXTH *tiqh;
 	MARK *tm;		/* To MARK. */
-	char *p;		/* Input line. */
-	size_t len;		/* Input line length. */
+	const char *lp;		/* Input line. */
+	const size_t len;	/* Input line length. */
 	MARK *rp;		/* Return MARK. */
 	int prompt;		/* Prompt to display. */
 	recno_t ai_line;	/* Line number to use for autoindent count. */
 	u_int flags;		/* TXT_ flags. */
 {
-				/* State of the "[^0]^D" sequences. */
-	enum { C_CARATSET, C_NOCHANGE, C_NOTSET, C_ZEROSET } carat_st;
 				/* State of abbreviation checks. */
-	enum { A_NOCHECK, A_SPACE, A_NOTSPACE } abb;
+	enum { A_NOTSET, A_SPACE, A_NOTSPACE } abb;
+				/* State of the "[^0]^D" sequences. */
+	enum { C_NOTSET, C_CARATSET, C_NOCHANGE, C_ZEROSET } carat_st;
 				/* State of the hex input character. */
 	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
 	CHAR_T ch;		/* Input character. */
 	GS *gp;			/* Global pointer. */
-	TEXT *tp, *ntp;		/* Input text structures. */
-	TEXT ait;		/* Autoindent text structure. */
+	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	u_long margin;		/* Wrapmargin value. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
 	int max, tmp;
+	char *p;
 
 	/*
 	 * Set the input flag, so tabs get displayed correctly
@@ -126,13 +126,13 @@ v_ntext(sp, ep, tiqh, tm, p, len, rp, prompt, ai_line, flags)
 			goto newtp;
 		}
 		tp->ai = tp->insert = tp->offset = tp->owrite = 0;
-		if (p != NULL) {
+		if (lp != NULL) {
 			tp->len = len;
-			memmove(tp->lb, p, len);
+			memmove(tp->lb, lp, len);
 		} else
 			tp->len = 0;
 	} else {
-newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
+newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 			return (1);
 		CIRCLEQ_INSERT_HEAD(tiqh, tp, q);
 	}
@@ -240,7 +240,7 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 
 	/* Initialize abbreviations check. */
 	abb = F_ISSET(sp, S_ABBREV) &&
-	    LF_ISSET(TXT_MAPINPUT) ? A_NOTSPACE : A_NOCHECK;
+	    LF_ISSET(TXT_MAPINPUT) ? A_NOTSPACE : A_NOTSET;
 
 	gp = sp->gp;
 	for (carat_st = C_NOTSET,
@@ -313,7 +313,7 @@ next_ch:	if (replay)
 				if (tmp)				\
 					goto next_ch;			\
 			}						\
-			if (abb != A_NOCHECK)				\
+			if (abb != A_NOTSET)				\
 				abb = A_SPACE;				\
 			/* Handle hex numbers. */			\
 			if (hex == H_INHEX) {				\
@@ -325,11 +325,14 @@ next_ch:	if (replay)
 				}					\
 			}						\
 			/*						\
-			 * The "R" command doesn't delete characters	\
-			 * that it could have overwritten.  Other input	\
-			 * modes do.					\
+			 * The 'R' command returns any overwriteable	\
+			 * characters in the first line to the original	\
+			 * characters.
 			 */						\
-			if (LF_ISSET(TXT_REPLACE)) {			\
+			if (LF_ISSET(TXT_REPLACE) && tp->owrite &&	\
+			    tp == tiqh->cqh_first) {			\
+				memmove(tp->lb + sp->cno,		\
+				    lp + sp->cno, tp->owrite);		\
 				tp->insert += tp->owrite;		\
 				tp->owrite = 0;				\
 			}						\
@@ -769,7 +772,7 @@ ins_ch:			/*
 				if (tmp)
 					goto next_ch;
 			}
-			if (abb != A_NOCHECK)
+			if (abb != A_NOTSET)
 				abb = isblank(ch) ? A_SPACE : A_NOTSPACE;
 
 			if (tp->owrite)		/* Overwrite a character. */
