@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.7 1996/12/05 23:06:28 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:06:28 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.8 1996/12/10 21:01:01 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:01:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,12 +17,13 @@ static const char sccsid[] = "$Id: ip_funcs.c,v 8.7 1996/12/05 23:06:28 bostic E
 
 #include <bitstring.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../common/common.h"
 #include "../vi/vi.h"
 #include "ip.h"
-
-static int ip_send __P((SCR *, char *, IP_BUF *));
+#include "../include/ipc_extern.h"
 
 /*
  * ip_addstr --
@@ -52,10 +53,10 @@ ip_addstr(sp, str, len)
 		iv = 1;
 		ip_attr(sp, SA_INVERSE, 1);
 	}
-	ipb.code = IPO_ADDSTR;
+	ipb.code = SI_ADDSTR;
 	ipb.len = len;
 	ipb.str = str;
-	rval = ip_send(sp, "s", &ipb);
+	rval = __vi_send("s", &ipb);
 
 	if (iv)
 		ip_attr(sp, SA_INVERSE, 0);
@@ -76,11 +77,11 @@ ip_attr(sp, attribute, on)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_ATTRIBUTE;
+	ipb.code = SI_ATTRIBUTE;
 	ipb.val1 = attribute;
 	ipb.val2 = on;
 
-	return (ip_send(sp, "12", &ipb));
+	return (__vi_send("12", &ipb));
 }
 
 /*
@@ -110,9 +111,9 @@ ip_bell(sp)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_BELL;
+	ipb.code = SI_BELL;
 
-	return (ip_send(sp, NULL, &ipb));
+	return (__vi_send(NULL, &ipb));
 }
 
 /*
@@ -131,14 +132,14 @@ ip_busy(sp, str, bval)
 
 	switch (bval) {
 	case BUSY_ON:
-		ipb.code = IPO_BUSY_ON;
+		ipb.code = SI_BUSY_ON;
 		ipb.len = strlen(str);
 		ipb.str = str;
-		(void)ip_send(sp, "s1", &ipb);
+		(void)__vi_send("s1", &ipb);
 		break;
 	case BUSY_OFF:
-		ipb.code = IPO_BUSY_OFF;
-		(void)ip_send(sp, NULL, &ipb);
+		ipb.code = SI_BUSY_OFF;
+		(void)__vi_send(NULL, &ipb);
 		break;
 	case BUSY_UPDATE:
 		break;
@@ -158,9 +159,9 @@ ip_clrtoeol(sp)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_CLRTOEOL;
+	ipb.code = SI_CLRTOEOL;
 
-	return (ip_send(sp, NULL, &ipb));
+	return (__vi_send(NULL, &ipb));
 }
 
 /*
@@ -203,9 +204,9 @@ ip_deleteln(sp)
 	 * video before it's scrolled.
 	 */
 	if (!F_ISSET(sp, SC_SCR_EXWROTE) && IS_SPLIT(sp)) {
-		ipb.code = IPO_REWRITE;
+		ipb.code = SI_REWRITE;
 		ipb.val1 = RLNO(sp, LASTLINE(sp));
-		if (ip_send(sp, "1", &ipb))
+		if (__vi_send("1", &ipb))
 			return (1);
 	}
 
@@ -213,8 +214,8 @@ ip_deleteln(sp)
 	 * The bottom line is expected to be blank after this operation,
 	 * and other screens must support that semantic.
 	 */
-	ipb.code = IPO_DELETELN;
-	return (ip_send(sp, NULL, &ipb));
+	ipb.code = SI_DELETELN;
+	return (__vi_send(NULL, &ipb));
 }
 
 /*
@@ -257,9 +258,9 @@ ip_insertln(sp)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_INSERTLN;
+	ipb.code = SI_INSERTLN;
 
-	return (ip_send(sp, NULL, &ipb));
+	return (__vi_send(NULL, &ipb));
 }
 
 /*
@@ -319,10 +320,10 @@ ip_move(sp, lno, cno)
 	ipp->row = lno;
 	ipp->col = cno;
 
-	ipb.code = IPO_MOVE;
+	ipb.code = SI_MOVE;
 	ipb.val1 = RLNO(sp, lno);
 	ipb.val2 = cno;
-	return (ip_send(sp, "12", &ipb));
+	return (__vi_send("12", &ipb));
 }
 
 /*
@@ -363,35 +364,37 @@ ip_refresh(sp, repaint)
 	ipb.val3 = total;
 	if (ipb.val1 != ipp->sb_top ||
 	    ipb.val2 != ipp->sb_num || ipb.val3 != ipp->sb_total) {
-		ipb.code = IPO_SCROLLBAR;
-		(void)ip_send(sp, "123", &ipb);
+		ipb.code = SI_SCROLLBAR;
+		(void)__vi_send("123", &ipb);
 		ipp->sb_top = ipb.val1;
 		ipp->sb_num = ipb.val2;
 		ipp->sb_total = ipb.val3;
 	}
 
 	/* Refresh/repaint the screen. */
-	ipb.code = repaint ? IPO_REDRAW : IPO_REFRESH;
-	return (ip_send(sp, NULL, &ipb));
+	ipb.code = repaint ? SI_REDRAW : SI_REFRESH;
+	return (__vi_send(NULL, &ipb));
 }
 
 /*
  * ip_rename --
  *	Rename the file.
  *
- * PUBLIC: int ip_rename __P((SCR *));
+ * PUBLIC: int ip_rename __P((SCR *, char *, int));
  */
 int
-ip_rename(sp)
+ip_rename(sp, name, on)
 	SCR *sp;
+	char *name;
+	int on;
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_RENAME;
-	ipb.len = strlen(sp->frp->name);
-	ipb.str = sp->frp->name;
+	ipb.code = SI_RENAME;
+	ipb.len = strlen(name);
+	ipb.str = name;
 
-	return (ip_send(sp, "s", &ipb));
+	return (__vi_send("s", &ipb));
 }
 
 /*
@@ -435,74 +438,4 @@ ip_usage()
 usage: vi [-eFlRrSv] [-c command] [-I ifd.ofd] [-t tag] [-w size] [file ...]\n"
         (void)fprintf(stderr, "%s", USAGE);
 #undef  USAGE
-}
-
-/*
- * ip_send --
- *	Construct and send an IP buffer.
- */
-static int
-ip_send(sp, fmt, ipbp)
-	SCR *sp;
-	char *fmt;
-	IP_BUF *ipbp;
-{
-	IP_PRIVATE *ipp;
-	size_t blen, off;
-	u_int32_t ilen;
-	int nlen, n, nw, rval;
-	char *bp, *p;
-	
-	ipp = IPP(sp);
-
-	GET_SPACE_RET(sp, bp, blen, 128);
-
-	p = bp;
-	nlen = 0;
-	*p++ = ipbp->code;
-	nlen += IPO_CODE_LEN;
-
-	if (fmt != NULL)
-		for (; *fmt != '\0'; ++fmt)
-			switch (*fmt) {
-			case '1':			/* Value 1. */
-				ilen = htonl(ipbp->val1);
-				goto value;
-			case '2':			/* Value 2. */
-				ilen = htonl(ipbp->val2);
-				goto value;
-			case '3':			/* Value 3. */
-				ilen = htonl(ipbp->val3);
-value:				nlen += IPO_INT_LEN;
-				off = p - bp;
-				ADD_SPACE_RET(sp, bp, blen, nlen);
-				p = bp + off;
-				memmove(p, &ilen, IPO_INT_LEN);
-				p += IPO_INT_LEN;
-				break;
-			case 's':			/* String. */
-				ilen = ipbp->len;	/* XXX: conversion. */
-				ilen = htonl(ilen);
-				nlen += IPO_INT_LEN + ipbp->len;
-				off = p - bp;
-				ADD_SPACE_RET(sp, bp, blen, nlen);
-				p = bp + off;
-				memmove(p, &ilen, IPO_INT_LEN);
-				p += IPO_INT_LEN;
-				memmove(p, ipbp->str, ipbp->len);
-				p += ipbp->len;
-				break;
-			}
-
-
-	rval = 0;
-	for (n = p - bp, p = bp; n > 0; n -= nw, p += nw)
-		if ((nw = write(ipp->o_fd, p, n)) < 0) {
-			rval = 1;
-			break;
-		}
-
-	FREE_SPACE(sp, bp, blen);
-
-	return (rval);
 }
