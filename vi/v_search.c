@@ -17,6 +17,7 @@
 #include "curses.h"
 #include "options.h"
 #include "regexp.h"
+#include "vcmd.h"
 #include "extern.h"
 
 extern long	atol();

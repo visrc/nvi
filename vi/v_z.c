@@ -16,6 +16,7 @@
 #include "vi.h"
 #include "curses.h"
 #include "options.h"
+#include "vcmd.h"
 #include "extern.h"
 
 /* This moves the cursor to a particular row on the screen */

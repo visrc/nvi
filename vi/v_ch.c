@@ -9,8 +9,11 @@
 
 
 /* This file contains movement functions that perform character searches */
+#include <sys/types.h>
 
 #include "vi.h"
+#include "vcmd.h"
+#include "extern.h"
 
 static MARK	(*prevfwdfn)();	/* function to search in same direction */
 static MARK	(*prevrevfn)();	/* function to search in opposite direction */
