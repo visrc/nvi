@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.8 1995/04/13 17:19:48 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:48 $";
+static char sccsid[] = "$Id: cl_screen.c,v 8.9 1995/05/26 09:09:18 bostic Exp $ (Berkeley) $Date: 1995/05/26 09:09:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,8 @@ static int	cl_common __P((SCR *));
 /*
  * cl_vi_init --
  *	Initialize the vi screen.
+ *
+ * PUBLIC: int cl_vi_init __P((SCR *));
  */
 int
 cl_vi_init(sp)
@@ -107,7 +109,7 @@ cl_vi_init(sp)
 	 *
 	 * !!!
 	 * If raw isn't turning off echo and newlines, something's wrong.
-	 * However, it doesn't hurt.
+	 * However, it shouldn't hurt.
 	 */
 	noecho();			/* No character echo. */
 	nonl();				/* No CR/NL translation. */
@@ -125,14 +127,14 @@ cl_vi_init(sp)
 	 *	   handler after completing their own cleanup.
 	 *
 	 * We don't try and figure out which behavior is in place, we
-	 * just set it to SIG_DFL after initializing the curses interface.
+	 * set it to SIG_DFL after initializing the curses interface.
 	 */
 	(void)signal(SIGTSTP, SIG_DFL);
 
 	/*
 	 * If flow control was on, turn it back on.  Turn signals on.  ISIG
-	 * turns on VINTR, VQUIT, VDSUSP and VSUSP.  See signal.c:sig_init()
-	 * for a discussion of what's going on here.  To sum up, sig_init()
+	 * turns on VINTR, VQUIT, VDSUSP and VSUSP.  See cl_sig_init() for
+	 * a discussion of what's going on here.  To sum up, cl_sig_init()
 	 * already installed a handler for VINTR.  We're going to disable the
 	 * other three.
 	 *
@@ -147,9 +149,9 @@ cl_vi_init(sp)
 	 * it.
 	 *
 	 * XXX
-	 * We don't check to see if the user had signals enabled to start with.
-	 * If they didn't, it's unclear what we're supposed to do here, but it's
-	 * also pretty unlikely.
+	 * We don't check to see if the user had signals enabled originally.
+	 * If they didn't, it's unclear what we're supposed to do here, but
+	 * it's also pretty unlikely.
 	 */
 	gp = sp->gp;
 	if (!tcgetattr(STDIN_FILENO, &t)) {
@@ -169,14 +171,14 @@ cl_vi_init(sp)
 	}
 
 	/* Things are now initialized -- set the bit. */
-	F_SET(CLP(sp), CL_VI_INIT);
+	F_SET(CLP(sp), CL_INIT_VI);
 
 	/*
 	 * The historic 4BSD curses had an uneasy relationship with termcap.
 	 * Termcap used a static buffer to hold the terminal information,
 	 * which was was then used by the curses functions.  We want to use
 	 * it too, for lots of random things, but we've put it off until after
-	 * initscr() was called and the CL_VI_INIT bit was set.  Do it now.
+	 * initscr() was called and the CL_INIT_VI bit was set.  Do it now.
 	 */
 	if (cl_term_init(sp)) {
 		(void)cl_vi_end(sp);
@@ -192,6 +194,8 @@ cl_vi_init(sp)
 /*
  * cl_vi_end --
  *	Shutdown the vi screen.
+ *
+ * PUBLIC: int cl_vi_end __P((SCR *));
  */
 int
 cl_vi_end(sp)
@@ -222,7 +226,7 @@ cl_vi_end(sp)
 		return (1);
 	}
 
-	/* Free private space. */
+	/* Free the private space. */
 	free(sp->gp->cl_private);
 	sp->gp->cl_private = NULL;
 
@@ -232,6 +236,8 @@ cl_vi_end(sp)
 /*
  * cl_ex_init --
  *	Initialize the ex screen.
+ *
+ * PUBLIC: int cl_ex_init __P((SCR *));
  */
 int
 cl_ex_init(sp)
@@ -327,7 +333,7 @@ cl_ex_init(sp)
 		return (1);
 
 	/* Things are now initialized -- set the bit. */
-	F_SET(clp, CL_EX_INIT);
+	F_SET(clp, CL_INIT_EX);
 
 	/* Move to the last line on the screen. */
 	if (clp->UP != NULL && clp->CM != NULL)
@@ -339,6 +345,8 @@ cl_ex_init(sp)
 /*
  * cl_ex_end --
  *	Shutdown the ex screen.
+ *
+ * PUBLIC: int cl_ex_end __P((SCR *));
  */
 int
 cl_ex_end(sp)
@@ -376,6 +384,8 @@ cl_ex_end(sp)
  * cl_ex_tinit --
  *	Enter ex terminal mode.  Separated out because it's used by the vi
  *	code to run ex commands that don't run through vi.
+ *
+ * PUBLIC: int cl_ex_tinit __P((SCR *));
  */
 int
 cl_ex_tinit(sp)
@@ -384,8 +394,18 @@ cl_ex_tinit(sp)
 	struct termios term;
 	CL_PRIVATE *clp;
 
-	/* Save the current settings. */
 	clp = CLP(sp);
+
+	/*
+	 * Move to the bottom of the screen, but don't clear the line, it may
+	 * have valid contents, e.g. :set|file|append.
+	 */
+	if (F_ISSET(CLP(sp), CL_INIT_VI)) {
+		(void)move(sp->t_maxrows, 0);
+		(void)refresh();
+	}
+
+	/* Save the current settings. */
 	if (tcgetattr(STDIN_FILENO, &clp->exterm)) {
 		msgq(sp, M_SYSERR, "tcgetattr");
 		return (1);
@@ -428,6 +448,8 @@ cl_ex_tinit(sp)
  * cl_ex_tend --
  *	Leave ex terminal mode.  Separated out because it's used by the vi
  *	code to run ex commands that don't run through vi.
+ *
+ * PUBLIC: int cl_ex_tend __P((SCR *));
  */
 int
 cl_ex_tend(sp)
@@ -468,26 +490,25 @@ cl_common(sp)
 	/* Initialize the functions. */
 	gp->scr_addnstr = cl_addnstr;
 	gp->scr_addstr = cl_addstr;
+	gp->scr_attr = cl_attr;
 	gp->scr_bell = cl_bell;
 	gp->scr_busy = cl_busy;
 	gp->scr_canon = cl_canon;
 	gp->scr_clear = cl_clear;
 	gp->scr_clrtoeol = cl_clrtoeol;
 	gp->scr_clrtoeos = cl_clrtoeos;
-	gp->scr_confirm = cl_confirm;
-	gp->scr_continue = cl_continue;
 	gp->scr_cursor = cl_cursor;
 	gp->scr_deleteln = cl_deleteln;
 	gp->scr_exadjust = cl_exadjust;
 	gp->scr_exinit = cl_ex_init;
 	gp->scr_fmap = cl_fmap;
+	gp->scr_getkey = cl_getkey;
 	gp->scr_insertln = cl_insertln;
-	gp->scr_inverse = cl_inverse;
+	gp->scr_lattr = cl_lattr;
 	gp->scr_move = cl_move;
-	gp->scr_msgflush = F_ISSET(sp, S_EX) ? cl_ex_msgflush : cl_vi_msgflush;
 	gp->scr_refresh = cl_refresh;
 	gp->scr_repaint = cl_repaint;
-	gp->scr_suspend = F_ISSET(sp, S_EX) ? cl_ex_suspend : cl_vi_suspend;
+	gp->scr_suspend = cl_suspend;
 
 	return (0);
 }
