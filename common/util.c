@@ -6,17 +6,19 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.19 1992/10/17 16:09:22 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:09:22 $";
+static char sccsid[] = "$Id: util.c,v 5.20 1992/10/18 13:07:14 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/ioctl.h>
-#include <signal.h>
+
 #include <curses.h>
 #include <errno.h>
-#include <unistd.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "exf.h"
@@ -118,10 +120,32 @@ nonblank(lno, cnop)
 	register u_char *p;
 	size_t len;
 
-	EGETLINE(p, lno, len);
+	if ((p = file_gline(curf, lno, &len)) == NULL) {
+		if (file_lline(curf) == 0) {
+			*cnop = 0;
+			return (0);
+		}
+		GETLINE_ERR(lno);
+		return (1);
+	}
 	for (cnt = 0; len-- && isspace(*p); ++cnt, ++p);
 	*cnop = cnt;
 	return (0);
+}
+
+/*
+ * tail --
+ *	Return tail of a path.
+ */
+char *
+tail(path)
+	char *path;
+{
+	char *p;
+
+	if ((p = strrchr(path, '/')) == NULL)
+		return (path);
+	return (p + 1);
 }
 
 /*
