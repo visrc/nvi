@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.107 1994/08/31 17:12:05 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:05 $";
+static char sccsid[] = "$Id: main.c,v 8.108 1994/08/31 19:07:58 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:07:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -71,7 +71,7 @@ main(argc, argv)
 	FREF *frp;
 	SCR *sp;
 	u_int flags, saved_vi_mode;
-	int ch, eval, flagchk, readonly, silent, snapshot;
+	int ch, eval, flagchk, lflag, readonly, silent, snapshot;
 	char *excmdarg, *myname, *p, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
@@ -106,9 +106,9 @@ main(argc, argv)
 	/* Parse the arguments. */
 	flagchk = '\0';
 	excmdarg = tag_f = trace_f = wsizearg = NULL;
-	silent = 0;
+	lflag = silent = 0;
 	snapshot = 1;
-	while ((ch = getopt(argc, argv, "c:eFRrsT:t:vw:X:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:eFlRrsT:t:vw:X:")) != EOF)
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -119,6 +119,9 @@ main(argc, argv)
 			break;
 		case 'F':		/* No snapshot. */
 			snapshot = 0;
+			break;
+		case 'l':		/* Set lisp, showmatch options. */
+			lflag = 1;
 			break;
 		case 'R':		/* Readonly. */
 			readonly = 1;
@@ -217,10 +220,19 @@ main(argc, argv)
 	}
 	if (term_init(sp))		/* Terminal initialization. */
 		goto err;
-	if (opts_init(sp))		/* Options initialization. */
+
+	{ int oargs[4], *oargp = oargs;
+	if (readonly)			/* Options initialization. */
+		*oargp++ = O_READONLY;
+	if (lflag) {
+		*oargp++ = O_LISP;
+		*oargp++ = O_SHOWMATCH;
+	}
+	*oargp = -1;
+	if (opts_init(sp, oargs))
 		goto err;
-	if (readonly)			/* Global read-only bit. */
-		O_SET(sp, O_READONLY);
+	}
+
 	if (silent) {			/* Ex batch mode. */
 		O_CLR(sp, O_AUTOPRINT);
 		O_CLR(sp, O_PROMPT);
