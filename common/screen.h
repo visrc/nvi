@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.104 1994/05/02 15:08:01 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:08:01 $
+ *	$Id: screen.h,v 8.105 1994/05/04 09:37:04 bostic Exp $ (Berkeley) $Date: 1994/05/04 09:37:04 $
  */
 
 /*
@@ -21,12 +21,15 @@
  */
 #define	MINIMUM_SCREEN_ROWS	 2
 #define	MINIMUM_SCREEN_COLS	20
-					/* Line operations. */
-enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
-					/* Position values. */
-enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
-					/* Screen adjustment operations. */
-enum adjust { A_DECREASE, A_INCREASE, A_SET };
+
+enum adjust {				/* Screen adjustment operations. */
+	A_DECREASE, A_INCREASE, A_SET };
+enum operation {			/* Line operations. */
+	LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
+enum position {				/* Position operations. */
+	P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
+enum sctype {				/* Scroll operations. */
+	CNTRL_B, CNTRL_D, CNTRL_E, CNTRL_F, CNTRL_U, CNTRL_Y, Z_CARAT, Z_PLUS };
 
 /*
  * Structure for holding file references.  Each SCR structure contains a
@@ -227,8 +230,6 @@ struct _scr {
 					/* Refresh the screen. */
 	int	(*s_refresh) __P((SCR *, EXF *));
 					/* Move down the screen. */
-enum sctype { 
-	CNTRL_B, CNTRL_D, CNTRL_E, CNTRL_F, CNTRL_U, CNTRL_Y, Z_CARAT, Z_PLUS };
 	int	(*s_scroll) __P((SCR *, EXF *, MARK *, recno_t, enum sctype));
 					/* Split the screen. */
 	int	(*s_split) __P((SCR *, ARGS *[]));
