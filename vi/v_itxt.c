@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.13 1992/10/25 14:39:04 bostic Exp $ (Berkeley) $Date: 1992/10/25 14:39:04 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.14 1992/10/26 09:09:10 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:09:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -27,7 +27,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.13 1992/10/25 14:39:04 bostic Exp $ (B
 #define	N_APPEND	0x01		/* Appending, so offset cursor. */
 #define	N_EMARK		0x02		/* End of replacement mark. */
 #define	N_OVERWRITE	0x04		/* Overwrite characters. */
-#define	N_REPLACE	0x08		/* Replace characters without limit. */
+#define	N_REPLACE	0x08		/* Replace; don't delete overwrite. */
 
 #define	SCREEN_UPDATE {							\
 	scr_cchange(curf);						\
@@ -379,7 +379,7 @@ v_Replace(vp, fm, tm, rp)
 
 	*rp = *fm;
 	notfirst = 0;
-	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--; notfirst = 1) {
+	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
 		if ((p = file_gline(curf, rp->lno, &len)) == NULL) {
 			if (file_lline(curf) != 0) {
 				GETLINE_ERR(fm->lno);
@@ -395,13 +395,16 @@ v_Replace(vp, fm, tm, rp)
 		 * counts R commands.  Move back to where the user stopped
 		 * replacing after each R command.
 		 */
-		if (notfirst && len) {
-			++rp->cno;
-			curf->lno = rp->lno;
-			curf->cno = rp->cno;
-			SCREEN_UPDATE;
-			vp->flags |= VC_ISDOT;
-		}
+		if (notfirst) {
+			if (len) {
+				++rp->cno;
+				curf->lno = rp->lno;
+				curf->cno = rp->cno;
+				SCREEN_UPDATE;
+				vp->flags |= VC_ISDOT;
+			}
+		} else
+			notfirst = 1;
 		tm->lno = rp->lno;
 		tm->cno = len ? len : 0;
 		if (newtext(vp, tm, p, len, rp, N_OVERWRITE | N_REPLACE))
@@ -448,7 +451,7 @@ v_subst(vp, fm, tm, rp)
 			free(tp);					\
 		bell();							\
 		msg("Error: %s.", strerror(errno));			\
-		rval = 1;						\
+		eval = 1;						\
 		goto done;						\
 	}								\
 }
@@ -462,20 +465,14 @@ newtext(vp, tm, p, len, rp, flags)
 	VICMDARG *vp;
 	MARK *tm;
 	u_char *p;
-	u_int flags;
 	size_t len;
 	MARK *rp;
+	u_int flags;
 {
 	TEXT *tp;
 	size_t col, insert, overwrite, rcol, startcol;
-	int ch, quoted, replay, rval;
+	int ch, eval, quoted, replay, state;
 	u_char *repp;
-
-	/* Free any previous text. */
-	if (ib.head) {
-		freetext(ib.head);
-		ib.head = NULL;
-	}
 
 	/*
 	 * Save the cursor position.  Note, if we're appending and the line
@@ -487,10 +484,15 @@ newtext(vp, tm, p, len, rp, flags)
 	else
 		ib.start.cno = ib.stop.cno = curf->cno;
 
-	/* Copy the current line for editing. */
 	if (len) {
+		/*
+		 * Copy the current line into the buffer for editing.  Set
+		 * insert and overwrite marks.  Overwrite implies insert
+		 * after overwrite.  No overwrite implies insert.  If changing
+		 * to some mark, flag it with CHEND and refresh the screen.
+		 */
 		if (binc(&ib.ilb, &ib.ilblen, len)) {
-			rval = 1;
+			eval = 1;
 			goto done;
 		}
 		bcopy(p, ib.ilb, len);
@@ -514,10 +516,7 @@ newtext(vp, tm, p, len, rp, flags)
 	 * actual characters and replaying the input.
 	 *
 	 * XXX
-	 * This is not quite right; we should swallow backspaces and such
-	 * so that we don't repeat errors on subsequent dot operations.
-	 * Figure out a way to keep just the input part of the TEXT around
-	 * and using it?
+	 * This is not very clean; we should swallow backspaces and such.
 	 */
 	rcol = 0;
 	repp = ib.rep;
@@ -530,7 +529,7 @@ newtext(vp, tm, p, len, rp, flags)
 	for (quoted = 0;;) {
 		if (col + insert >= ib.ilblen) {
 			if (binc(&ib.ilb, &ib.ilblen, 0)) {
-				rval = 1;
+				eval = 1;
 				goto done;
 			}
 			p = ib.ilb + col;
@@ -541,7 +540,7 @@ newtext(vp, tm, p, len, rp, flags)
 		else {
 			if (rcol >= ib.replen) {
 				if (binc(&ib.rep, &ib.replen, 0)) {
-					rval = 1;
+					eval = 1;
 					goto done;
 				}
 				repp = ib.rep + rcol;
@@ -560,23 +559,30 @@ newtext(vp, tm, p, len, rp, flags)
 		switch(special[ch]) {
 		case K_ESCAPE:			/* Escape. */
 			/* Set the end cursor position. */
-			ib.stop.cno = curf->cno ? curf->cno - 1 : 0;
+			if (curf->cno)
+				--curf->cno;
+			ib.stop.cno = curf->cno;
 
 			/* If no input, return. */
 			if (ib.start.lno == ib.stop.lno &&
 			    ib.start.cno == ib.stop.cno) {
-				rval = 0;
+				eval = 0;
 				goto done;
 			}
 
 			/* Delete any remaining overwrite characters. */
 			if (!(flags & N_REPLACE) && overwrite) {
-				bcopy(p + overwrite, p, overwrite);
+				bcopy(p + overwrite, p, insert);
 				overwrite = 0;
 			}
 
-			/* Add in insert characters. */
-			col += insert + overwrite;
+			/* Add in insert characters, set length. */
+			ib.len = col += insert + overwrite;
+
+			/* Update the screen. */
+			scr_update(curf,
+			    ib.stop.lno, ib.ilb, ib.len, LINE_RESET);
+			SCREEN_UPDATE;
 
 			/* Copy the line into place. */
 			NEWTP;
@@ -585,7 +591,7 @@ newtext(vp, tm, p, len, rp, flags)
 			tp->next = NULL;
 			TEXTAPPEND(&ib, tp);
 
-			rval = file_ibresolv(curf, &ib);
+			eval = file_ibresolv(curf, &ib);
 			goto done;
 		case K_CR:
 		case K_NL:			/* New line. */
@@ -619,10 +625,6 @@ newtext(vp, tm, p, len, rp, flags)
 			curf->cno = 0;
 			break;
 		case K_VERASE:			/* Erase the last character. */
-			/*
-			 * XXX
-			 * Should be able to backspace over lines.
-			 */
 			if (col == startcol)
 				bell();
 			else {
@@ -632,12 +634,33 @@ newtext(vp, tm, p, len, rp, flags)
 				--curf->cno;
 			}
 			break;
-		case K_VWERASE:			/* Erase the last word. */
-			/*
-			 * XXX
-			 * Later.
-			 */
-			bell();
+		case K_VWERASE:			/* Skip back one word. */
+			if (col == startcol) {
+				bell();
+				break;
+			}
+			while (col > startcol && isspace(p[-1])) {
+				++overwrite;
+				--p;
+				--col;
+				--curf->cno;
+				scr_update(curf,
+				    ib.stop.lno, ib.ilb, ib.len, LINE_RESET);
+				SCREEN_UPDATE;
+			}
+			if (col == startcol)
+				break;
+			for (state = inword(p[-1]); col > startcol;) {
+				++overwrite;
+				--p;
+				--col;
+				--curf->cno;
+				if (state != inword(p[-1]))
+					break;
+				scr_update(curf,
+				    ib.stop.lno, ib.ilb, ib.len, LINE_RESET);
+				SCREEN_UPDATE;
+			}
 			break;
 		case K_VKILL:			/* Restart this line. */
 			col = curf->cno = startcol;
@@ -669,7 +692,7 @@ insch:			*p++ = ch;
 	 * cursor is rational.  Else, if the last character didn't create a
 	 * new line, we're one past the last character inserted, so back up.
 	 */
-done:	if (rval == 1)
+done:	if (eval == 1)
 		ib_err();
 	else {
 		rp->lno = ib.stop.lno;
@@ -683,7 +706,7 @@ done:	if (rval == 1)
 	}
 	ib.stop.lno = OOBLNO;
 
-	return (rval);
+	return (eval);
 }
 
 /*
