@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.15 1994/08/31 17:12:10 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:10 $";
+static char sccsid[] = "$Id: msg.c,v 8.16 1994/09/02 10:19:23 bostic Exp $ (Berkeley) $Date: 1994/09/02 10:19:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 
 #include <bitstring.h>
@@ -552,6 +553,8 @@ msg_open(sp, file)
 	char *file;
 {
 	DB *db;
+	DBT data, key;
+	recno_t msgno;
 	int nf;
 	char *p, *t, buf[MAXPATHLEN];
 
@@ -574,11 +577,33 @@ msg_open(sp, file)
 	if ((db = dbopen(p,
 	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
 		if (O_STR(sp, O_MSGCAT) != NULL) {
-			p = msg_print(sp, buf, &nf);
+			p = msg_print(sp, p, &nf);
 			msgq(sp, M_SYSERR, "%s", p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
 		}
+		return (1);
+	}
+
+	/*
+	 * Test record 1 for the magic string.  The msgq call
+	 * is here so the message catalog build finds it.
+	 */
+	if (0) {
+#define	VMC	"VI_MESSAGE_CATALOG"
+		msgq(sp, M_ERR, "001|VI_MESSAGE_CATALOG");
+	}
+	key.data = &msgno;
+	key.size = sizeof(recno_t);
+	msgno = 1;
+	if (db->get(db, &key, &data, 0) != 0 ||
+	    data.size != sizeof(VMC) - 1 ||
+	    memcmp(data.data, VMC, sizeof(VMC) - 1)) {
+		(void)db->close(db);
+		p = msg_print(sp, p, &nf);
+		msgq(sp, M_ERR, "232|The file %s is not a message catalog", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
