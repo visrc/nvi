@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.46 1994/09/18 11:57:50 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:50 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.47 1994/09/28 17:04:00 bostic Exp $ (Berkeley) $Date: 1994/09/28 17:04:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,8 +166,8 @@ ex_read(sp, ep, cmdp)
 			set_alt_name(sp, name);
 		break;
 	default:
-		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
-badarg:		msgq(sp, M_ERR,
+badarg:		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
+		msgq(sp, M_ERR,
 		    "149|%s expanded into too many file names", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
