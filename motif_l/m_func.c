@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.8 1996/12/10 17:07:21 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:21 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.9 1996/12/10 17:27:20 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:27:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,10 +43,12 @@ _vi_ipo_addstr(ipbp)
 	    _vi_screen->color, ipbp->len);
 
 	/* Draw from backing store. */
-	_vi_draw_text(_vi_screen, _vi_screen->cury, _vi_screen->curx, ipbp->len);
+	_vi_draw_text(_vi_screen,
+	    _vi_screen->cury, _vi_screen->curx, ipbp->len);
 
 	/* Advance the caret. */
-	_vi_move_caret(_vi_screen, _vi_screen->cury, _vi_screen->curx + ipbp->len);
+	_vi_move_caret(_vi_screen,
+	    _vi_screen->cury, _vi_screen->curx + ipbp->len);
 	return (0);
 }
 
@@ -242,11 +244,11 @@ _vi_ipo_rename(ipbp)
 	const char *tail;
 	Widget	shell;
 
-	/* for the icon, use the tail */
-	if (( tail = strrchr( ipbp->str, '/' )) == NULL || *(tail+1) == '\0' )
-	    tail = ipbp->str;
+	/* For the icon, use the tail. */
+	if ((tail = strrchr(ipbp->str, '/')) == NULL || *(tail + 1) == '\0')
+		tail = ipbp->str;
 	else
-	    tail++;
+		tail++;
 
 	/*
 	 * XXX
@@ -259,7 +261,6 @@ _vi_ipo_rename(ipbp)
 		      XmNiconName,	tail,
 		      XmNtitle,		ipbp->str,
 		      0);
-
 	return (0);
 }
 
