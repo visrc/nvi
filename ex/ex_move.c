@@ -6,14 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.9 1992/05/15 11:08:13 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:13 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.10 1992/05/21 12:55:30 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:55:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "cut.h"
 #include "extern.h"
 
 enum which {COPY, MOVE};
@@ -61,8 +63,7 @@ cm(cmdp, cmd)
 	}
 
 	/* Save the text to a cut buffer. */
-	cutname('\0');
-	cut(&fm1, &fm2);
+	cut(DEFCB, &fm1, &fm2, 1);
 
 	/* If we're not copying, delete the old text & adjust tm. */
 	if (cmd == MOVE) {
@@ -72,10 +73,8 @@ cm(cmdp, cmd)
 	}
 
 	/* Add the new text. */
-	paste(&tm, 0, 0);
+	(void)put(DEFCB, &tm, &cursor, 1);
 
-	/* Move the cursor to the last line of the moved text. */
-	cursor.lno = tm.lno + (fm2.lno - fm1.lno);
 	nlines = file_lline(curf);
 	if (cursor.lno < 1)
 		cursor.lno = 1;
