@@ -8,7 +8,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: vi.ref,v 8.89 1996/12/07 14:05:45 bostic Exp $ (Berkeley) $Date: 1996/12/07 14:05:45 $
+.\"     $Id: vi.ref,v 8.90 2001/01/28 13:48:00 skimo Exp $ (Berkeley) $Date: 2001/01/28 13:48:00 $
 .\"
 .\"
 .so ref.so
@@ -1814,7 +1814,8 @@ of the file.
 .bp
 .SH 1 Index
 .lp
-.2c +0.5i 3
+.ie t .2c +0.5i 3
+.el   .2c +0.5i 2
 .ta \n($luR
 .nf
 .so index.so

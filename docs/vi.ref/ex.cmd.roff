@@ -5,7 +5,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"	$Id: ex.cmd.roff,v 8.41 1996/08/17 17:47:02 bostic Exp $ (Berkeley) $Date: 1996/08/17 17:47:02 $
+.\"	$Id: ex.cmd.roff,v 8.42 2001/01/28 13:48:00 skimo Exp $ (Berkeley) $Date: 2001/01/28 13:48:00 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -264,7 +264,7 @@ command is permitted in an empty file.
 .sp
 If the file has been modified since it was last completely written,
 the
-.Co !
+.CO !
 command will warn you.
 .sp
 A single
@@ -859,7 +859,7 @@ Join lines of text together.
 A
 .LI count
 specified to the
-.Sy join
+.CO join
 command specifies that the last line of the
 .LI range
 plus
@@ -1491,7 +1491,7 @@ The
 command searches for
 .LI tagstring
 in the tags file(s) specified by the
-.Op tags
+.OP tags
 option.
 (See
 .XR ctags 1
@@ -1914,7 +1914,7 @@ reduced to account for those lines.
 .SS
 .SP Line:
 Set to the last line displayed, with the exception of the
-.Dq Li \&=
+.QT \&=
 .LI type ,
 where the current line is set to the line specified by the command.
 .SP Options:
