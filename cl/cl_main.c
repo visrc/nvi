@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.3 1995/06/09 13:46:24 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:46:24 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.4 1995/06/22 19:24:51 bostic Exp $ (Berkeley) $Date: 1995/06/22 19:24:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,8 +16,8 @@ static char sccsid[] = "$Id: cl_main.c,v 10.3 1995/06/09 13:46:24 bostic Exp $ (
 #include <sys/time.h>
 
 #include <bitstring.h>
-#include <curses.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +28,7 @@ static char sccsid[] = "$Id: cl_main.c,v 10.3 1995/06/09 13:46:24 bostic Exp $ (
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
+#include <pathnames.h>
 
 #include "common.h"
 #include "cl.h"
@@ -35,7 +36,9 @@ static char sccsid[] = "$Id: cl_main.c,v 10.3 1995/06/09 13:46:24 bostic Exp $ (
 
 GS *__global_list;			/* GLOBAL: List of screens. */
 
-static void killsig __P((SCR *));
+static GS	*gs_init __P((char *));
+static int	 ignore_busy __P((SCR *, const char *, int));
+static void	 killsig __P((SCR *));
 
 int
 main(argc, argv)
@@ -58,12 +61,15 @@ main(argc, argv)
 	if (reenter++)
 		abort();
 
+	/* Create and initialize the global structure. */
+	__global_list = gp = gs_init(argv[0]);
+
 	/* Figure out how big the screen is. */
 	if (cl_ssize(NULL, 0, &rows, &cols))
 		exit (1);
 
 	/* Create first screen structure, parse the arguments. */
-	switch (v_init(argc, argv, rows, cols, &__global_list)) {
+	switch (v_init(gp, argc, argv, rows, cols)) {
 	case INIT_OK:
 		break;
 	case INIT_DONE:
@@ -79,7 +85,6 @@ main(argc, argv)
 	}
 
 	/* Edit the first screen. */
-	gp = __global_list;
 	sp = gp->dq.cqh_first;
 
 	/*
@@ -93,39 +98,42 @@ main(argc, argv)
 	 * First, if something required ex to write to the screen, we'll
 	 * want to wait before overwriting it.  Second, if ex had to do
 	 * serious processing, then the terminal will have been set up.
-	 * So, if the CL private structure has been allocated when we get
-	 * here, we know that ex has been busy.  Clean up.
+	 * So, if the screen has been initialized for ex when we get here,
+	 * clean up.
 	 */
 	clp = CLP(sp);
-	if (clp != NULL) {
-		if (F_ISSET(sp, S_EX_WROTE)) {
-			(void)write(STDOUT_FILENO,
-			    STR_CMSG, sizeof(STR_CMSG) - 1);
-			if (cl_getkey(sp, &ch))
+	if (F_ISSET(sp, S_VI)) {
+		if (clp != NULL && F_ISSET(clp, CL_INIT_EX)) {
+			if (F_ISSET(sp, S_EX_WROTE)) {
+				(void)write(STDOUT_FILENO,
+				    STR_CMSG, sizeof(STR_CMSG) - 1);
+				if (cl_getkey(sp, &ch))
+					goto err;
+				F_CLR(sp, S_EX_WROTE);
+			}
+			/*
+			 * XXX
+			 * This may discard characters from the tty queue.
+			 */
+			if (cl_ex_end(sp))
 				goto err;
-			F_CLR(sp, S_EX_WROTE);
 		}
-		/*
-		 * XXX
-		 * We may have just discarded some characters from the tty
-		 * queue.
-		 */
-		if (cl_ex_end(sp))
+		if (cl_vi_init(sp))
 			goto err;
-	}
-
-	/* Screen initialization. */
-	if (F_ISSET(sp, S_EX) ? cl_ex_init(sp) : cl_vi_init(sp))
-		goto err;
-	clp = CLP(sp);
+		clp = CLP(sp);
+	} else
+		if (clp == NULL || !F_ISSET(clp, CL_INIT_EX)) {
+			if (cl_ex_init(sp))
+				goto err;
+			clp = CLP(sp);
+		}
 
 	/* Editor startup. */
 	ev.e_event = E_START;
 	if (v_event_handler(sp, &ev, &timeout))
 		goto err;
 
-	killset = 0;
-	for (;;) {					/* Edit loop. */
+	for (killset = 0;;) {				/* Edit loop. */
 		for (;;) {				/* Event loop. */
 			/* Queue signal based events. */
 			if (F_ISSET(clp, CL_SIGCONT |
@@ -471,6 +479,80 @@ ret:	/* Restore the terminal state if it was modified. */
 	if (term_reset)
 		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &term1);
 	return (rval);
+}
+
+/*
+ * gs_init --
+ *	Create and partially initialize the GS structure.
+ */
+static GS *
+gs_init(name)
+	char *name;
+{
+	GS *gp;
+	int fd;
+	char *p;
+
+	/* Figure out what our name is. */
+	if ((p = strrchr(name, '/')) != NULL)
+		name = p + 1;
+
+	/* Allocate the global structure. */
+	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
+	if (gp == NULL) {
+		(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
+		exit(1);
+	}
+
+	/*
+	 * Set the G_STDIN_TTY flag.  It's purpose is to avoid setting and
+	 * resetting the tty if the input isn't from there.
+	 */
+	if (isatty(STDIN_FILENO))
+		F_SET(gp, G_STDIN_TTY);
+
+	/*
+	 * Set the G_TERMIOS_SET flag.  It's purpose is to avoid using the
+	 * original_termios information (mostly special character values)
+	 * if it's not valid.  We expect that if we've lost our controlling
+	 * terminal that the open() (but not the tcgetattr()) will fail.
+	 */
+	if (F_ISSET(gp, G_STDIN_TTY)) {
+		if (tcgetattr(STDIN_FILENO, &gp->original_termios) == -1)
+			goto tcfail;
+		F_SET(gp, G_TERMIOS_SET);
+	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {
+		if (tcgetattr(fd, &gp->original_termios) == -1) {
+tcfail:			(void)fprintf(stderr,
+			    "%s: tcgetattr: %s\n", name, strerror(errno));
+			exit (1);
+		}
+		F_SET(gp, G_TERMIOS_SET);
+		(void)close(fd);
+	}
+
+	/*
+	 * There are two functions that can be called without preparation:
+	 * scr_busy and scr_canon.  Set it up so the right things happen.
+	 */
+	gp->scr_busy = ignore_busy;
+	gp->scr_canon = cl_canon;
+
+	gp->progname = name;
+	return (gp);
+}
+
+/*
+ * ignore_busy --
+ *	Placeholder for busy messages before the screen exists.
+ */
+static int
+ignore_busy(sp, msg, on)
+	SCR *sp;
+	const char *msg;
+	int on;
+{
+	return (0);
 }
 
 /*
