@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.6 1994/04/21 08:08:58 bostic Exp $ (Berkeley) $Date: 1994/04/21 08:08:58 $
+.\"     $Id: vi.1,v 8.7 1994/04/28 13:08:04 bostic Exp $ (Berkeley) $Date: 1994/04/28 13:08:04 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -13,25 +13,22 @@
 .Nd text editors
 .Sh SYNOPSIS
 .Nm \&ex
-.Op Fl eFlRsv
+.Op Fl eFRrsv
 .Op Fl c Ar cmd
-.Op Fl r Ar file
 .Op Fl t Ar tag
 .Op Fl w Ar size
 .Op Fl x Ar \&aw
 .Op Ar "file ..."
 .Nm \&vi
-.Op Fl eFlRv
+.Op Fl eFRrv
 .Op Fl c Ar cmd
-.Op Fl r Ar file
 .Op Fl t Ar tag
 .Op Fl w Ar size
 .Op Fl x Ar \&aw
 .Op Ar "file ..."
 .Nm view
-.Op Fl eFlRv
+.Op Fl eFRrv
 .Op Fl c Ar cmd
-.Op Fl r Ar file
 .Op Fl t Ar tag
 .Op Fl w Ar size
 .Op Fl x Ar \&aw
@@ -76,7 +73,7 @@ Anyone else should almost certainly read a good tutorial on the
 editor before this manual page.
 If you're in an unfamiliar environment, and you absolutely have to
 get work done immediately, read the section near the end of this
-manual page, entitled FAST STARTUP.
+manual page, entitled Fast Startup.
 It's probably enough to get you going.
 .Pp
 The following options are available:
@@ -100,22 +97,13 @@ Start editing in ex mode, as if the command name were
 Don't copy the entire file when first starting to edit.
 (The default is to make a copy in case someone else modifies
 the file during your edit session.)
-.It Fl l
-List the files that may be recovered using the
-.Fl r
-option of
-.Nm \&vi .
-This is the new interface for the historic syntax of the
-.Fl r
-option without a file argument.
-.Nm Nex/nvi
-supports both the old and new syntax.
 .It Fl R
 Start editing in read-only mode, as if the command name was
 .Nm view ,
 or the readonly option was set.
 .It Fl r
-Recover the specified file.
+Recover the specified file, or, if no files are specified,
+list the files that could be recovered.
 .It Fl s
 Enter batch mode; applicable only to
 .Nm \&ex
@@ -164,69 +152,8 @@ option had been specified.
 .Pp
 .Nm Ex/vi
 exits 0 on success, and greater than 0 if an error occurs.
-.Sh ENVIRONMENTAL VARIABLES
-.Bl -tag -width XXXX -compact
-.It Ev COLUMNS
-The number of columns on the screen.
-This value overrides any system or terminal specific values.
-If the COLUMNS environmental variable is not set when
-.Nm ex/vi
-runs, or the
-.Sy columns
-option is explicitly reset by the user,
-.Nm ex/vi
-enters the value into the environment.
-.It Ev EXINIT
-A list of
-.Nm \&ex
-startup commands, read if the variable
-.Ev NEXINIT
-is not set.
-.It Ev HOME
-The user's home directory, used as the initial directory path
-for the startup
-.Pa $HOME/.nexrc
-and
-.Pa $HOME/.exrc
-files.
-This value is also used as the default directory for the
-.Nm \&vi
-.Sy \&cd
-command.
-.It Ev LINES
-The number of rows on the screen.
-This value overrides any system or terminal specific values.
-If the LINES environmental variable is not set when
-.Nm ex/vi
-runs, or the
-.Sy lines
-option is explicitly reset by the user,
-.Nm ex/vi
-enters the value into the environment.
-.It Ev NEXINIT
-A list of
-.Nm \&ex
-startup commands.
-.It Ev SHELL
-The user's shell of choice (see also the
-.Sy shell
-option).
-.It Ev TERM
-The user's terminal type.
-The default is the type
-.Dq unknown .
-If the TERM environmental variable is not set when
-.Nm ex/vi
-runs, or the
-.Sy term
-option is explicitly reset by the user,
-.Nm ex/vi
-enters the value into the environment.
-.It Ev TMPDIR
-The location used to stored temporary files (see also the
-.Sy directory
-option).
-.El
+#include <vi.cmd.roff>
+#include <ex.cmd.roff>
 #include <set.opt.roff>
 .Sh FAST STARTUP
 This section will tell you the minimum amount that you need to
@@ -372,6 +299,87 @@ The above commands work on
 characters and lines, i.e. they affect the entire line no matter
 how many screen lines it takes up and the entire character no matter
 how many screen columns it takes up.
+.Sh ENVIRONMENTAL VARIABLES
+.Bl -tag -width XXXX -compact
+.It Ev COLUMNS
+The number of columns on the screen.
+This value overrides any system or terminal specific values.
+If the COLUMNS environmental variable is not set when
+.Nm ex/vi
+runs, or the
+.Sy columns
+option is explicitly reset by the user,
+.Nm ex/vi
+enters the value into the environment.
+.It Ev EXINIT
+A list of
+.Nm \&ex
+startup commands, read if the variable
+.Ev NEXINIT
+is not set.
+.It Ev HOME
+The user's home directory, used as the initial directory path
+for the startup
+.Pa $HOME/.nexrc
+and
+.Pa $HOME/.exrc
+files.
+This value is also used as the default directory for the
+.Nm \&vi
+.Sy \&cd
+command.
+.It Ev LINES
+The number of rows on the screen.
+This value overrides any system or terminal specific values.
+If the LINES environmental variable is not set when
+.Nm ex/vi
+runs, or the
+.Sy lines
+option is explicitly reset by the user,
+.Nm ex/vi
+enters the value into the environment.
+.It Ev NEXINIT
+A list of
+.Nm \&ex
+startup commands.
+.It Ev SHELL
+The user's shell of choice (see also the
+.Sy shell
+option).
+.It Ev TERM
+The user's terminal type.
+The default is the type
+.Dq unknown .
+If the TERM environmental variable is not set when
+.Nm ex/vi
+runs, or the
+.Sy term
+option is explicitly reset by the user,
+.Nm ex/vi
+enters the value into the environment.
+.It Ev TMPDIR
+The location used to stored temporary files (see also the
+.Sy directory
+option).
+.El
+.Sh ASYNCHRONOUS EVENTS
+.Nm \&Vi/ex
+handles three signals specially.
+.sp
+.Bl -tag -width "SIGCONTXXX" -compact
+.It SIGCONT
+If the editor is running in visual mode, the screen is repainted.
+.It SIGHUP
+If the current buffer has changed since it was last written in its
+entirety, the editor attempts to save the modified file so it can
+be later recovered.
+See the Recovery section for more information.
+.It SIGINT
+When an interrupt occurrs, the current operation is halted, and the
+editor returns to the command level.
+If interrupted during text input, the text already input is resolved
+into the file as if the text input had been normally terminated.
+.El
 .Sh BUGS
 See the file
 .Pa nvi/docs/bugs.current
