@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.10 1994/03/04 10:05:08 bostic Exp $ (Berkeley) $Date: 1994/03/04 10:05:08 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.11 1994/03/04 10:13:16 bostic Exp $ (Berkeley) $Date: 1994/03/04 10:13:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ v_lgoto(sp, ep, vp)
 /* 
  * v_home -- [count]H
  *	Move to the first non-blank character of the logical line
- *	count from the top of the screen, 1 by default.
+ *	count - 1 from the top of the screen, 0 by default.
  */
 int
 v_home(sp, ep, vp)
@@ -91,7 +91,7 @@ v_home(sp, ep, vp)
 	VICMDARG *vp;
 {
 	if (sp->s_position(sp, ep, &vp->m_stop,
-	    F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_TOP))
+	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_TOP))
 		return (1);
 	goto_adjust(vp);
 	return (0);
@@ -122,7 +122,7 @@ v_middle(sp, ep, vp)
 /*
  * v_bottom -- [count]L
  *	Move to the first non-blank character of the logical line
- *	count from the bottom of the screen, 1 by default.
+ *	count - 1 from the bottom of the screen, 0 by default.
  */
 int
 v_bottom(sp, ep, vp)
@@ -131,7 +131,7 @@ v_bottom(sp, ep, vp)
 	VICMDARG *vp;
 {
 	if (sp->s_position(sp, ep, &vp->m_stop,
-	    F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_BOTTOM))
+	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_BOTTOM))
 		return (1);
 	goto_adjust(vp);
 	return (0);
