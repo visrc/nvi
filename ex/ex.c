@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.143 1994/08/07 10:29:22 bostic Exp $ (Berkeley) $Date: 1994/08/07 10:29:22 $";
+static char sccsid[] = "$Id: ex.c,v 8.144 1994/08/07 12:41:02 bostic Exp $ (Berkeley) $Date: 1994/08/07 12:41:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ ex(sp, ep)
 		tp = sp->tiqp->cqh_first;
 		if (tp->len == 0) {
 			tp->len = 1;
-			tp->lb[0] = '|';
+			tp->lb[0] = ' ';
 		}
 
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
@@ -252,6 +252,7 @@ ex_cmd(sp, ep, cmd, cmdlen)
 	char *cmd;
 	size_t cmdlen;
 {
+	enum { NOTSET, NEEDSEP_N, NEEDSEP_NR, NONE } sep;
 	EX_PRIVATE *exp;
 	EXCMDARG exc;
 	EXCMDLIST const *cp;
@@ -261,11 +262,12 @@ ex_cmd(sp, ep, cmd, cmdlen)
 	long flagoff;
 	u_int saved_mode;
 	int blank, ch, cnt, delim, flags, namelen, nl;
-	int osepline, uselastcmd, tmp, vi_address;
+	int uselastcmd, tmp, vi_address;
 	char *arg1, *save_cmd, *p, *s, *t;
 
 	/* Init. */
-	osepline = nl = 0;
+	nl = 0;
+	sep = NOTSET;
 loop:	if (nl) {
 		nl = 0;
 		++sp->if_lno;
@@ -293,8 +295,11 @@ loop:	if (nl) {
 	 * The stripping is done here because, historically, any command
 	 * could have preceding colons, e.g. ":g/pattern/:p" worked.
 	 */
-	if (cmdlen != 0 && ch == ':')
+	if (cmdlen != 0 && ch == ':') {
+		if (sep == NOTSET)
+			sep = NEEDSEP_N;
 		while (--cmdlen > 0 && (ch = *++cmd) == ':');
+	}
 
 	/*
 	 * Command lines that start with a double-quote are comments.
@@ -343,6 +348,19 @@ loop:	if (nl) {
 	exp = EXP(sp);
 	if (argv_init(sp, ep, &exc))
 		goto err;
+
+	/*
+	 * Check to see if this is a command for which we may want to output
+	 * a \r separator instead of a \n.  (The command :1<CR> puts out a \n,
+	 * but the command :<CR> puts out a \r.)  If the line is empty except
+	 * for <blank>s, <carriage-return> or <eof>, we'll probably want to
+	 * output \r.  I don't think there's any way to get <blank> characters
+	 * *after* the command character, but this is the ex parser, and I've
+	 * been wrong before.
+	 */
+	if (sep == NOTSET)
+		sep = cmdlen == 0 || cmdlen == 1 && cmd[0] == '\004' ?
+		    NEEDSEP_NR : NEEDSEP_N;
 
 	/* Parse command addresses. */
 	if (ep_range(sp, ep, &exc, &cmd, &cmdlen))
@@ -1247,9 +1265,8 @@ addr2:	switch (exc.addrcnt) {
 	/*
 	 * !!!
 	 * There are two special commands for the purposes of this code: the
-	 * scrolling command (<EOF> and ^D as the first character of the line),
-	 * and the print default command (<carriage-return> with nothing but
-	 * <blank>s before it).
+	 * default command (<carriage-return>) or the scrolling commands (^D
+	 * and <EOF>) as the first non-<blank> characters  in the line.
 	 *
 	 * If this is the first command in the command line, we received the
 	 * command from the ex command loop and we're talking to a tty, and
@@ -1258,13 +1275,31 @@ addr2:	switch (exc.addrcnt) {
 	 * we put out a newline character to separate the command from the
 	 * output from the command.  It's OK if vi calls us -- we won't be in
 	 * ex mode so we'll do nothing.
+	 *
+	 * !!!
+	 * Historically, ex only put out a \r, so, if the displayed line was
+	 * only a single character long, and <eof> was represented as ^D, the
+	 * output wouldn't overwrite the user's input.  Sex currently doesn't
+	 * display the <eof> character if it's going to be the scroll command,
+	 * i.e. if it's the first non-<blank> character in the line.  If sex
+	 * is changed to run in cooked mode, i.e. <eof> is displayed, this code
+	 * will have to overwrite it.  We also don't treat lines with extra
+	 * prompt characters as empty -- it's not worth the effort since we'd
+	 * have to overwrite some indeterminate number of columns with spaces
+	 * to clean up.  For now, put out enough spaces to overwrite the prompt.
 	 */
-	if (!osepline &&
-	    !F_ISSET(sp, S_GLOBAL) && ep != NULL && IN_EX_MODE(sp) &&
-	    F_ISSET(sp->gp, G_STDIN_TTY)) {
-		(void)fputc((uselastcmd || cp == &cmds[C_SCROLL]) &&
-		    (osepline || save_cmdlen == 0) ? '\r' : '\n', stdout);
-		osepline = 1;
+	if (sep != NONE) {
+		if (!F_ISSET(sp, S_GLOBAL) && ep != NULL &&
+		    IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
+			if (sep == NEEDSEP_NR &&
+			    (uselastcmd || cp == &cmds[C_SCROLL])) {
+				(void)putchar('\r');
+				for (len = KEY_LEN(sp, PROMPTCHAR); len--;)
+					(void)putchar(' ');
+				(void)putchar('\r');
+			} else
+				(void)putchar('\n');
+		sep = NONE;
 	}
 
 	/* Save the current mode. */
@@ -1393,9 +1428,8 @@ addr2:	switch (exc.addrcnt) {
 	 * If we haven't put out a separator line, do it now.  For more
 	 * detailed comments, see above.
 	 */
-err:	if (!osepline &&
-	    !F_ISSET(sp, S_GLOBAL) && ep != NULL && IN_EX_MODE(sp) &&
-	    F_ISSET(sp->gp, G_STDIN_TTY))
+err:	if (sep != NONE && !F_ISSET(sp, S_GLOBAL) &&
+	    ep != NULL && IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
 		(void)fputc('\n', stdout);
 	/*
 	 * On error, we discard any keys we have left, as well as any keys
