@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.45 1992/11/07 18:55:02 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:55:02 $";
+static char sccsid[] = "$Id: ex.c,v 5.46 1992/11/11 18:29:42 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:29:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,6 +25,7 @@ static char sccsid[] = "$Id: ex.c,v 5.45 1992/11/07 18:55:02 bostic Exp $ (Berke
 
 #include "vi.h"
 #include "excmd.h"
+#include "log.h"
 #include "options.h"
 #include "search.h"
 #include "term.h"
@@ -566,8 +567,13 @@ addr2:	switch(cmd.addrcnt) {
 #endif
 	/* Do the command. */
 	autoprint = 0;
-	if (curf != NULL)
+
+	/* If file state, set rptlines and log the start of an action. */
+	if (curf != NULL) {
 		curf->rptlines = 0;
+		(void)log_cursor(curf);
+	}
+
 	if ((cp->fn)(&cmd))
 		return (1);
 
