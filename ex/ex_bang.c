@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.9 1995/09/25 11:11:06 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:11:06 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.10 1995/09/30 10:38:56 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:38:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,27 +76,20 @@ ex_bang(sp, cmdp)
 	 * If the command was modified by the expansion, it was historically
 	 * redisplayed.
 	 */
-	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
 		/*
 		 * Display the command if modified.  Historic ex/vi displayed
 		 * the command if it was modified due to file name and/or bang
 		 * expansion.  If piping lines in vi, it would be immediately
-		 * overwritten by any error or line change reporting.  We don't
-		 * want the user to have to enter a key because of this message,
-		 * so we display it as a busy message.
-		 *
-		 * If that's not possible, i.e. we're entering canonical mode,
-		 * pass it on to the ex_exec_proc routine to display after the
-		 * screen has been reset.
+		 * overwritten by any error or line change reporting.
 		 */
 		if (F_ISSET(sp, S_VI)) {
 			GET_SPACE_RET(sp, bp, blen, ap->len + 3);
 			bp[0] = '!';
 			memmove(bp + 1, ap->bp, ap->len);
-			bp[ap->len + 1] = '\n';
-			bp[ap->len + 2] = '\0';
-		} else if (F_ISSET(sp, S_EX)) {
+			vs_update(sp, bp, ap->len + 1);
+			FREE_SPACE(sp, bp, blen);
+		} else {
 			(void)ex_printf(sp, "!%s\n", ap->bp);
 			(void)ex_fflush(sp);
 		}
@@ -112,15 +105,13 @@ ex_bang(sp, cmdp)
 		msg = NULL;
 		if (F_ISSET(sp->ep, F_MODIFIED))
 			if (O_ISSET(sp, O_AUTOWRITE)) {
-				if (file_aw(sp, FS_ALL)) {
-					rval = 1;
-					goto ret1;
-				}
+				if (file_aw(sp, FS_ALL))
+					return (0);
 			} else if (O_ISSET(sp, O_WARN) &&
 			    !F_ISSET(sp, S_EX_SILENT))
 				msg = "File modified since last write.\n";
 
-		rval = ex_exec_proc(sp, cmdp, ap->bp, msg, bp);
+		(void)ex_exec_proc(sp, cmdp, ap->bp, msg);
 	}
 
 	/*
@@ -137,18 +128,6 @@ ex_bang(sp, cmdp)
 
 		/* Autoprint is set historically, even if the command fails. */
 		F_SET(cmdp, E_AUTOPRINT);
-
-		/*
-		 * Vi gets a busy message.
-		 *
-		 * !!!
-		 * Busy messages don't want the <newline> at the end of the
-		 * message.
-		 */
-		if (bp != NULL) {
-			bp[ap->len + 1] = '\0';
-			(void)sp->gp->scr_busy(sp, bp, 1);
-		}
 
 		/*
 		 * !!!
@@ -202,9 +181,6 @@ ex_bang(sp, cmdp)
 		if (!F_ISSET(sp, S_EX_SILENT))
 			(void)write(STDOUT_FILENO, "!\n", 2);
 	}
-
-ret1:	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
 
 	/*
 	 * XXX
