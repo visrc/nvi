@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.17 1993/10/05 18:00:55 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:00:55 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.18 1993/10/06 16:55:17 bostic Exp $ (Berkeley) $Date: 1993/10/06 16:55:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -655,7 +655,8 @@ lcont:		/* Move to the message line and clear it. */
 			for (;;) {
 				if (term_key(sp, &ch, 0) != INP_OK)
 					break;
-				if (sp->special[ch] == K_CR || isblank(ch))
+				if (sp->special[ch] == K_CR ||
+				    sp->special[ch] == K_NL || isblank(ch))
 					break;
 				svi_bell(sp);
 			}
