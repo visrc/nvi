@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 9.1 1994/11/09 18:36:26 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:26 $";
+static char sccsid[] = "$Id: v_itxt.c,v 9.2 1994/11/11 15:58:25 bostic Exp $ (Berkeley) $Date: 1994/11/11 15:58:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -528,9 +528,6 @@ v_CS(sp, vp, iflags)
 		}
 		tm = &vp->m_stop;
 	}
-
-	/* Correct logging for implied cursor motion. */
-	LOG_CORRECT;
 
 	return (v_ntext(sp,
 	    sp->tiqp, tm, p, len, &vp->m_final, 0, OOBLNO, flags));
