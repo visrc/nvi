@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.6 1993/07/20 10:33:25 bostic Exp $ (Berkeley) $Date: 1993/07/20 10:33:25 $";
+static char sccsid[] = "$Id: exf.c,v 8.7 1993/07/21 10:59:24 bostic Exp $ (Berkeley) $Date: 1993/07/21 10:59:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,6 +249,8 @@ file_start(sp, ep, rcv_fname)
 		}
 	} else if ((ep->rcv_path = strdup(rcv_fname)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		if (ep->tname != NULL)
+			(void)unlink(tname);
 		return (NULL);
 	} else {
 		oinfo.bfname = ep->rcv_path;
@@ -272,6 +274,8 @@ file_start(sp, ep, rcv_fname)
 		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
 		if (ep->db == NULL) {
 			msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
+			if (ep->tname != NULL)
+				(void)unlink(tname);
 			return (NULL);
 		}
 		if (sverrno == EAGAIN) {
