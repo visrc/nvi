@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.21 1995/11/01 18:16:49 bostic Exp $ (Berkeley) $Date: 1995/11/01 18:16:49 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.22 1995/11/01 19:00:18 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:00:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -422,7 +422,8 @@ fast:	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->ex_enter)) {
 
 	/* Move to the last line on the screen. */
 	if (clp->cup != NULL)
-		tputs(tgoto(clp->cup, 0, LINES - 1), 1, cl_putchar);
+		tputs(tgoto(clp->cup,
+		    0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
 
 	F_SET(clp, CL_SCR_EX | CL_SCR_EX_INIT);
 	return (0);
