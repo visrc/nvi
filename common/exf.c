@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.63 1993/12/23 19:29:38 bostic Exp $ (Berkeley) $Date: 1993/12/23 19:29:38 $";
+static char sccsid[] = "$Id: exf.c,v 8.64 1994/01/02 21:07:57 bostic Exp $ (Berkeley) $Date: 1994/01/02 21:07:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -330,7 +330,8 @@ file_init(sp, frp, rcv_name, force)
 	 * !!!
 	 * We need to distinguish a lock not being available for the file
 	 * from the file system not supporting locking.  Assume that EAGAIN
-	 * is the former.  There isn't a portable way to do this.
+	 * or EWOULDBLOCK is the former.  There isn't a portable way to do
+	 * this.
 	 *
 	 * XXX
 	 * The locking is flock(2) style, not fcntl(2).  The latter is known
@@ -338,7 +339,7 @@ file_init(sp, frp, rcv_name, force)
 	 * occasionally works over NFS.
 	 */
 	if (flock(ep->db->fd(ep->db), LOCK_EX | LOCK_NB))
-		if (errno == EAGAIN) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			msgq(sp, M_INFO,
 			    "%s already locked, session is read-only", oname);
 			F_SET(frp, FR_RDONLY);
