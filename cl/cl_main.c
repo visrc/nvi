@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.6 1995/07/04 12:46:47 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:47 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.7 1995/07/05 22:29:43 bostic Exp $ (Berkeley) $Date: 1995/07/05 22:29:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,7 +142,7 @@ main(argc, argv)
 	 * Make sure they get displayed as soon as we can.
 	 */
 	for (mp = gp->msgq.lh_first; mp != NULL;) {
-		(void)cl_msg(sp, mp->mtype, "%.*s", (int)mp->len, mp->buf);
+		(void)cl_msg(sp, mp->mtype, mp->buf, mp->len);
 		freep = mp;
 		mp = mp->q.le_next;
 		LIST_REMOVE(freep, q);

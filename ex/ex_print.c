@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 10.4 1995/07/04 12:42:14 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:14 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.5 1995/07/05 22:29:22 bostic Exp $ (Berkeley) $Date: 1995/07/05 22:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -318,7 +318,7 @@ ex_printf(sp, fmt, va_alist)
 
 	off += n;
 	if (off > sizeof(buf) / 2) {
-		(void)sp->gp->scr_msg(sp, M_NONE, "%.*s", (int)off, buf);
+		(void)sp->gp->scr_msg(sp, M_NONE, buf, off);
 		off = 0;
 	}
 	return (n);
@@ -339,8 +339,7 @@ ex_puts(sp, str)
 
 	for (n = 0; *str != '\0'; ++n) {
 		if (off > sizeof(buf)) {
-			(void)sp->gp->scr_msg(sp,
-			    M_NONE, "%.*s", (int)off, buf);
+			(void)sp->gp->scr_msg(sp, M_NONE, buf, off);
 			off = 0;
 		}
 		buf[off++] = *str++;
@@ -359,9 +358,9 @@ ex_fflush(sp)
 	SCR *sp;
 {
 	if (off != 0) {
-		(void)sp->gp->scr_msg(sp, M_NONE, "%.*s", (int)off, buf);
+		(void)sp->gp->scr_msg(sp, M_NONE, buf, off);
 		off = 0;
 	}
-	(void)sp->gp->scr_msg(sp, M_NONE, NULL);
+	(void)sp->gp->scr_msg(sp, M_NONE, NULL, 0);
 	return (0);
 }
