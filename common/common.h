@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.62 1993/05/20 20:28:59 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:28:59 $
+ *	$Id: common.h,v 5.63 1993/05/21 18:32:12 bostic Exp $ (Berkeley) $Date: 1993/05/21 18:32:12 $
  */
 
 					/* Ordered before local includes. */
@@ -130,7 +130,6 @@ typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 /* Function prototypes that don't seem to belong anywhere else. */
 char	*charname __P((SCR *, int));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
-void	 set_altfname __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
