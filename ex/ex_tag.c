@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.30 1993/04/17 12:00:45 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:00:45 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.31 1993/04/20 18:42:53 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:42:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,6 +116,7 @@ tagchange(sp, ep, tag, force)
 	TAG *tag;
 	int force;
 {
+	enum {TC_FIRST, TC_CHANGE, TC_CURRENT} which;
 	EXF *tep;
 	MARK m;
 	char *argv[2];
@@ -132,25 +133,56 @@ tagchange(sp, ep, tag, force)
 			return (1);
 		if ((tep = file_first(sp, 0)) == NULL)
 			return (1);
-	} else if (strcmp(ep->name, tag->fname)) {
-		MODIFY_CHECK(sp, ep, force);
+		which = TC_FIRST;
+	} else {
 		if ((tep = file_get(sp, ep, tag->fname, 1)) == NULL)
 			return (1);
-	} else
-		tep = ep;
+		else if (ep == tep)
+			which = TC_CURRENT;
+		else {
+			MODIFY_CHECK(sp, ep, force);
+			which = TC_CHANGE;
+		}
+	}
+
+	if (which != TC_CURRENT && (tep = file_start(sp, tep)) == NULL)
+		return (1);
 
 	m.lno = 1;
 	m.cno = 0;
-	if (f_search(sp, tep,
+	if (f_search(sp, tep == NULL ? ep : tep,
 	    &m, &m, tag->line, NULL, SEARCH_PARSE | SEARCH_TERM)) {
 		msgq(sp, M_ERR, "%s: search pattern not found.", tag->tag);
-		return (1);
-	}
-	tep->lno = m.lno;
-	tep->cno = m.cno;
-	F_CLR(tep, F_NOSETPOS);
 
-	sp->enext = tep;
-	F_SET(sp, S_FSWITCH);
+		switch (which) {
+		case TC_FIRST:
+			sp->ep = tep;
+			return (0);
+		case TC_CHANGE:
+			sp->enext = tep;
+			F_SET(sp, S_FSWITCH);
+		case TC_CURRENT:
+			return (1);
+			break;
+		}
+	} else switch (which) {
+		case TC_FIRST:
+			tep->lno = m.lno;
+			tep->cno = m.cno;
+			F_CLR(tep, F_NOSETPOS);
+			sp->ep = tep;
+			break;
+		case TC_CHANGE:
+			tep->lno = m.lno;
+			tep->cno = m.cno;
+			F_CLR(tep, F_NOSETPOS);
+			sp->enext = tep;
+			F_SET(sp, S_FSWITCH);
+			break;
+		case TC_CURRENT:
+			sp->lno = m.lno;
+			sp->cno = m.cno;
+			break;
+	}
 	return (0);
 }
