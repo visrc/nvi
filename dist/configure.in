@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.119 1996/06/28 08:56:00 bostic Exp $ (Berkeley) $Date: 1996/06/28 08:56:00 $
+dnl	$Id: configure.in,v 8.120 1996/06/30 19:19:37 bostic Exp $ (Berkeley) $Date: 1996/06/30 19:19:37 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -199,9 +199,9 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	    $Config{shrpdir} : ($Config{installarchlib}."/CORE"))'`
 	if test "X$perllib" != "X"; then
 		if test "X$RLIBS" = "Xyes"; then
-			LIBS="$LIBS -R$perllib -L$perllib"
+			LIBS="-R$perllib -L$perllib $LIBS"
 		else
-			LIBS="$LIBS -L$perllib"
+			LIBS="-L$perllib $LIBS"
 		fi
 	else
 		echo "Fatal error: no perl5 library; see the section"
@@ -209,10 +209,10 @@ if test "$vi_cv_perlinterp" = "yes"; then
 		exit 1
 	fi
 	LIBOBJS="perl.o $LIBOBJS"
-	LIBS="$LIBS -lperl"
+	LIBS="-lperl $LIBS"
 	perllibs=`$vi_cv_path_perl -e \
 	    'use Config;print "$Config{libs} " . "$Config{installarchlib}/auto/DynaLoader/DynaLoader$Config{lib_ext}"'`
-        LIBS="$LIBS $perllibs"
+        LIBS="$perllibs $LIBS"
 	AC_DEFINE(HAVE_PERL_INTERP)
 fi
 
@@ -226,7 +226,7 @@ AC_ARG_ENABLE(tknvi,
 AC_MSG_RESULT($vi_cv_tknvi)
 if test "$vi_cv_tknvi" = "yes"; then
 	tknvi=tknvi
-	TKLIBS="$LIBS -ltk -ltcl -lm $XLIBS"
+	TKLIBS="-ltk -ltcl -lm $XLIBS $LIBS"
 fi
 
 dnl If the user wants a Tk/Tcl interpreter in nvi, load it.
@@ -237,7 +237,7 @@ AC_ARG_ENABLE(tclinterp,
 AC_MSG_RESULT($vi_cv_tclinterp)
 if test "$vi_cv_tclinterp" = "yes"; then
 	LIBOBJS="tcl.o $LIBOBJS"
-	LIBS="$LIBS -ltk -ltcl -lm $XLIBS"
+	LIBS="-ltk -ltcl -lm $XLIBS $LIBS"
 	AC_DEFINE(HAVE_TCL_INTERP)
 fi
 
