@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.4 1993/08/21 18:03:42 bostic Exp $ (Berkeley) $Date: 1993/08/21 18:03:42 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.5 1993/08/26 19:02:53 bostic Exp $ (Berkeley) $Date: 1993/08/26 19:02:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,9 +66,8 @@ shift(sp, ep, cmdp, rl)
 	 *    to vi and the Girl Scouts?
 	 * A: The Girl Scouts have mint cookies and adult supervision.
 	 */
-	if ((p = cmdp->argv[0]) != NULL)
-		for (sw = 0; *p && (*p == '>' || *p == '<'); ++p)
-			sw += O_VAL(sp, O_SHIFTWIDTH);
+	for (p = cmdp->argv[0], sw = 0; *p && (*p == '>' || *p == '<'); ++p)
+		sw += O_VAL(sp, O_SHIFTWIDTH);
 
 	GET_SPACE(sp, bp, blen, 256);
 
