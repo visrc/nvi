@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.17 1993/02/11 12:29:03 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:03 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.18 1993/02/12 10:02:11 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:02:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,18 +138,30 @@ ex_writefp(fname, fp, fm, tm, success_msg)
 
 	fline = fm->lno;
 	tline = tm->lno;
-	for (ccnt = 0; fline <= tline; ++fline, ccnt += len) {
-		if ((p = file_gline(curf, fline, &len)) == NULL)
-			return (1);
-		if (fwrite(p, 1, len, fp) != len || putc('\n', fp) != '\n')
-			goto err;
-	}
+
+	ccnt = 0;
+	/*
+	 * Historic vi permitted files of 0 length to be written.  However,
+	 * since the way vi got around dealing with "empty" files was to
+	 * always have a line in the file no matter what, it wrote them as
+	 * files of a single, empty line.  `Alex, I'll take vi trivia for
+	 * $500.'
+	 */
+	if (tline != 0)
+		for (; fline <= tline; ++fline, ccnt += len) {
+			if ((p = file_gline(curf, fline, &len)) == NULL)
+				break;
+			if (fwrite(p, 1, len, fp) != len)
+				break;
+			if (putc('\n', fp) != '\n')
+				break;
+		}
 	if (fclose(fp)) {
-err:		msg("%s: %s", fname, strerror(errno));
+		msg("%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (success_msg)
 		msg("%s: %lu lines, %lu characters.",
-		    fname, tm->lno - fm->lno + 1, ccnt);
+		    fname, tm->lno == 0 ? 0 : tm->lno - fm->lno + 1, ccnt);
 	return (0);
 }
