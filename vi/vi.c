@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.9 1993/08/06 12:17:09 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:17:09 $";
+static char sccsid[] = "$Id: vi.c,v 8.10 1993/08/07 10:47:43 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:47:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ vi(sp, ep)
 	/* Edited as it can be. */
 	F_SET(sp->frp, FR_EDITED);
 
-	for (eval = 0;;) {
+	for (eval = 0, vp = &cmd;;) {
 		if (!term_more_pseudo(sp) && log_cursor(sp, ep))
 			goto err;
 
@@ -81,7 +81,6 @@ vi(sp, ep)
 		 * function to get the resulting mark.  We then call the
 		 * command setting the cursor to the resulting mark.
 		 */
-		vp = &cmd;
 		if (getcmd(sp, ep, &dot, vp, NULL, &comcount))
 			goto err;
 
@@ -235,15 +234,20 @@ err:				term_flush_pseudo(sp);
 }
 
 #define	GETCOUNT(sp, count) {						\
+	u_long __tc;							\
 	count = 0;							\
 	do {								\
-		hold = count * 10 + key - '0';				\
-		if (count > hold) {					\
+		__tc = count * 10 + key - '0';				\
+		if (count > __tc) {					\
+			/* Toss the rest of the number. */		\
+			do {						\
+				KEY(sp, key);				\
+			} while (isdigit(key));				\
 			msgq(sp, M_ERR,					\
 			    "Number larger than %lu", ULONG_MAX);	\
-			return (NULL);					\
+			return (1);					\
 		}							\
-		count = hold;						\
+		count = __tc;						\
 		KEY(sp, key);						\
 	} while (isdigit(key));						\
 }
@@ -271,7 +275,6 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 {
 	register VIKEYS const *kp;
 	register u_int flags;
-	u_long hold;
 	int esc_bell, key;
 
 	/* Clean up the command structure. */
