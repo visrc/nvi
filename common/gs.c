@@ -49,6 +49,16 @@ gs_init(name)
 	/* others will need to be copied from main.c */
 	CIRCLEQ_INIT(&gp->dq);
 
+	CIRCLEQ_INIT(&gp->hq);
+	gp->noprint = DEFAULT_NOPRINT;
+
+	/* Structures shared by screens so stored in the GS structure. */
+	CIRCLEQ_INIT(&gp->frefq);
+	CIRCLEQ_INIT(&gp->exfq);
+	CIRCLEQ_INIT(&gp->dcb_store.textq);
+	LIST_INIT(&gp->cutq);
+	LIST_INIT(&gp->seqq);
+
 	thread_init(gp);
 
 	return (gp);

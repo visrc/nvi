@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.30 2000/07/21 18:36:31 skimo Exp $ (Berkeley) $Date: 2000/07/21 18:36:31 $";
+static const char sccsid[] = "$Id: db.c,v 10.31 2000/07/21 22:09:28 skimo Exp $ (Berkeley) $Date: 2000/07/21 22:09:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,7 +157,7 @@ db_get(sp, lno, flags, pp, lenp)
 nocache:
 	nlen = 1024;
 retry:
-	BINC_GOTO(sp, ep->c_lp, ep->c_blen, nlen);
+	BINC_GOTO(sp, (char *)ep->c_lp, ep->c_blen, nlen);
 
 	/* Get the line from the underlying database. */
 	memset(&key, 0, sizeof(key));
@@ -165,7 +165,7 @@ retry:
 	key.size = sizeof(lno);
 	memset(&data, 0, sizeof(data));
 	data.data = ep->c_lp;
-	data.ulen = nlen;
+	data.ulen = ep->c_blen;
 	data.flags = DB_DBT_USERMEM;
 	switch (ep->db->get(ep->db, NULL, &key, &data, 0)) {
 	case ENOMEM:

@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.58 2000/07/21 18:36:31 skimo Exp $ (Berkeley) $Date: 2000/07/21 18:36:31 $";
+static const char sccsid[] = "$Id: main.c,v 10.59 2000/07/21 22:09:28 skimo Exp $ (Berkeley) $Date: 2000/07/21 22:09:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,17 +77,6 @@ editor(wp, argc, argv)
 	/* Initialize the message routine, if not defined by the screen. */
 	if (gp->scr_msg == NULL)
 		gp->scr_msg = vs_msg;
-
-	/* Common global structure initialization. */
-	CIRCLEQ_INIT(&gp->hq);
-	gp->noprint = DEFAULT_NOPRINT;
-
-	/* Structures shared by screens so stored in the GS structure. */
-	CIRCLEQ_INIT(&gp->frefq);
-	CIRCLEQ_INIT(&gp->exfq);
-	CIRCLEQ_INIT(&gp->dcb_store.textq);
-	LIST_INIT(&gp->cutq);
-	LIST_INIT(&gp->seqq);
 
 	/* Set initial screen type and mode based on the program name. */
 	readonly = 0;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.14 2000/07/15 21:05:27 skimo Exp $ (Berkeley) $Date: 2000/07/15 21:05:27 $";
+static const char sccsid[] = "$Id: log.c,v 10.15 2000/07/21 22:09:28 skimo Exp $ (Berkeley) $Date: 2000/07/21 22:09:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,6 +62,7 @@ static const char sccsid[] = "$Id: log.c,v 10.14 2000/07/15 21:05:27 skimo Exp $
  * behaved that way.
  */
 
+static int	vi_log_get __P((SCR *sp, db_recno_t *lnop, size_t *size));
 static int	log_cursor1 __P((SCR *, int));
 static void	log_err __P((SCR *, char *, int));
 #if defined(DEBUG) && 0
@@ -100,7 +101,7 @@ log_init(sp, ep)
 	ep->l_high = ep->l_cur = 1;
 
 	if (db_create(&ep->log, sp->gp->env, 0) != 0 ||
-	    ep->log->open(ep->log, NULL, NULL, DB_RECNO, DB_CREATE,
+	    ep->log->open(ep->log, NULL, NULL, DB_RECNO, DB_CREATE | DB_THREAD,
 	    S_IRUSR | S_IWUSR) != 0) {
 		msgq(sp, M_SYSERR, "009|Log file");
 		F_SET(ep, F_NOLOG);
@@ -361,6 +362,42 @@ log_mark(sp, lmp)
 }
 
 /*
+ * vi_log_get --
+ *	Get a line from the log in log buffer.
+ */
+static int
+vi_log_get(SCR *sp, db_recno_t *lnop, size_t *size)
+{
+	DBT key, data;
+	size_t nlen;
+	EXF *ep;
+
+	ep = sp->ep;
+
+	nlen = 1024;
+retry:
+	BINC_RET(sp, ep->l_lp, ep->l_len, nlen);
+
+	memset(&key, 0, sizeof(key));
+	key.data = lnop;		/* Initialize db request. */
+	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
+	data.data = ep->l_lp;
+	data.ulen = ep->l_len;
+	data.flags = DB_DBT_USERMEM;
+	switch (ep->log->get(ep->log, NULL, &key, &data, 0)) {
+	case ENOMEM:
+		nlen = data.size;
+		goto retry;
+	case 0:
+		*size = data.size;
+		return 0;
+	default:
+		return 1;
+	}
+}
+
+/*
  * Log_backward --
  *	Roll the log backward one operation.
  *
@@ -371,13 +408,13 @@ log_backward(sp, rp)
 	SCR *sp;
 	MARK *rp;
 {
-	DBT key, data;
 	EXF *ep;
 	LMARK lm;
 	MARK m;
 	db_recno_t lno;
 	int didop;
 	u_char *p;
+	size_t size;
 
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG)) {
@@ -393,18 +430,14 @@ log_backward(sp, rp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
-	memset(&key, 0, sizeof(key));
-	key.data = &ep->l_cur;		/* Initialize db request. */
-	key.size = sizeof(db_recno_t);
-	memset(&data, 0, sizeof(data));
 	for (didop = 0;;) {
 		--ep->l_cur;
-		if (ep->log->get(ep->log, NULL, &key, &data, 0))
+		if (vi_log_get(sp, &ep->l_cur, &size))
 			LOG_ERR;
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_backward", ep->l_cur, data.data);
 #endif
-		switch (*(p = (u_char *)data.data)) {
+		switch (*(p = (u_char *)ep->l_lp)) {
 		case LOG_CURSOR_INIT:
 			if (didop) {
 				memmove(rp, p + sizeof(u_char), sizeof(MARK));
@@ -428,7 +461,7 @@ log_backward(sp, rp)
 			if (db_insert(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
 			    sizeof(db_recno_t)), 
-			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    (size - sizeof(u_char) - sizeof(db_recno_t))
 			    / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
@@ -441,7 +474,7 @@ log_backward(sp, rp)
 			if (db_set(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
 			    sizeof(db_recno_t)), 
-			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    (size - sizeof(u_char) - sizeof(db_recno_t))
 			    / sizeof(CHAR_T)))
 				goto err;
 			if (sp->rptlchange != lno) {
@@ -482,12 +515,12 @@ int
 log_setline(sp)
 	SCR *sp;
 {
-	DBT key, data;
 	EXF *ep;
 	LMARK lm;
 	MARK m;
 	db_recno_t lno;
 	u_char *p;
+	size_t size;
 
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG)) {
@@ -501,19 +534,14 @@ log_setline(sp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
-	memset(&key, 0, sizeof(key));
-	key.data = &ep->l_cur;		/* Initialize db request. */
-	key.size = sizeof(db_recno_t);
-	memset(&data, 0, sizeof(data));
-
 	for (;;) {
 		--ep->l_cur;
-		if (ep->log->get(ep->log, NULL, &key, &data, 0))
+		if (vi_log_get(sp, &ep->l_cur, &size))
 			LOG_ERR;
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_setline", ep->l_cur, data.data);
 #endif
-		switch (*(p = (u_char *)data.data)) {
+		switch (*(p = (u_char *)ep->l_lp)) {
 		case LOG_CURSOR_INIT:
 			memmove(&m, p + sizeof(u_char), sizeof(MARK));
 			if (m.lno != sp->lno || ep->l_cur == 1) {
@@ -538,7 +566,7 @@ log_setline(sp)
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (lno == sp->lno &&
 			    db_set(sp, lno, (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
+			    sizeof(db_recno_t)), size - sizeof(u_char) -
 			    sizeof(db_recno_t)))
 				goto err;
 			if (sp->rptlchange != lno) {
@@ -572,13 +600,13 @@ log_forward(sp, rp)
 	SCR *sp;
 	MARK *rp;
 {
-	DBT key, data;
 	EXF *ep;
 	LMARK lm;
 	MARK m;
 	db_recno_t lno;
 	int didop;
 	u_char *p;
+	size_t size;
 
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG)) {
@@ -594,18 +622,14 @@ log_forward(sp, rp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
-	memset(&key, 0, sizeof(key));
-	key.data = &ep->l_cur;		/* Initialize db request. */
-	key.size = sizeof(db_recno_t);
-	memset(&data, 0, sizeof(data));
 	for (didop = 0;;) {
 		++ep->l_cur;
-		if (ep->log->get(ep->log, NULL, &key, &data, 0))
+		if (vi_log_get(sp, &ep->l_cur, &size))
 			LOG_ERR;
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_forward", ep->l_cur, data.data);
 #endif
-		switch (*(p = (u_char *)data.data)) {
+		switch (*(p = (u_char *)ep->l_lp)) {
 		case LOG_CURSOR_END:
 			if (didop) {
 				++ep->l_cur;
@@ -627,7 +651,7 @@ log_forward(sp, rp)
 			if (db_append(sp, 1, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
 			    sizeof(db_recno_t)), 
-			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    (size - sizeof(u_char) - sizeof(db_recno_t))
 			    / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
@@ -638,7 +662,7 @@ log_forward(sp, rp)
 			if (db_insert(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
 			    sizeof(db_recno_t)), 
-			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    (size - sizeof(u_char) - sizeof(db_recno_t))
 			    / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
@@ -658,7 +682,7 @@ log_forward(sp, rp)
 			if (db_set(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
 			    sizeof(db_recno_t)), 
-			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    (size - sizeof(u_char) - sizeof(db_recno_t))
 			    / sizeof(CHAR_T)))
 				goto err;
 			if (sp->rptlchange != lno) {
