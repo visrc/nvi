@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.11 1996/12/03 12:59:54 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:59:54 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.12 1996/12/04 10:16:13 bostic Exp $ (Berkeley) $Date: 1996/12/04 10:16:13 $";
 #endif /* not lint */
 
 #include "X11/Intrinsic.h"
@@ -386,7 +386,10 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-    send_command_string( ":w" );
+    IP_BUF ipb;
+
+    ipb.code = IPO_WRITE;
+    (void)ip_send(NULL, &ipb);
 }
 
 
@@ -418,7 +421,10 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-    send_command_string( ":q " );
+    IP_BUF ipb;
+
+    ipb.code = IPO_QUIT;
+    (void)ip_send(NULL, &ipb);
 }
 
 
