@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.43 1994/03/07 16:54:30 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:54:30 $";
+static char sccsid[] = "$Id: key.c,v 8.44 1994/03/07 17:49:57 bostic Exp $ (Berkeley) $Date: 1994/03/07 17:49:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -247,6 +247,7 @@ term_push(sp, s, len, cmap, flags)
 {
 	IBUF *tty;
 	size_t nlen;
+	u_short *p, *t;
 
 	/* If we have room, stuff the keys into the buffer. */
 	tty = sp->gp->tty;
@@ -255,9 +256,11 @@ term_push(sp, s, len, cmap, flags)
 		if (tty->cnt != 0)
 			tty->next -= len;
 		tty->cnt += len;
-		memmove(tty->ch + tty->next, s, len * sizeof(CHAR_T));
-		memset(tty->chf + tty->next, flags, len);
-		memset(tty->cmap + tty->next, cmap, len);
+		MEMMOVE(tty->ch + tty->next, s, len);
+		MEMSET(tty->chf + tty->next, flags, len);
+		for (p = tty->cmap + tty->next, 
+		    t = tty->cmap + tty->next + len; p < t;)
+			*p++ = cmap;
 		return (0);
 	}
 
@@ -280,26 +283,29 @@ term_push(sp, s, len, cmap, flags)
 	 */
 #define	TERM_PUSH_SHIFT	30
 	if (tty->cnt) {
-		memmove(tty->ch + TERM_PUSH_SHIFT + len,
-		    tty->ch + tty->next, tty->cnt * sizeof(tty->ch[0]));
-		memmove(tty->chf + TERM_PUSH_SHIFT + len,
-		    tty->chf + tty->next, tty->cnt * sizeof(tty->chf[0]));
-		memmove(tty->cmap + TERM_PUSH_SHIFT + len,
-		    tty->cmap + tty->next, tty->cnt * sizeof(tty->cmap[0]));
+		MEMMOVE(tty->ch + TERM_PUSH_SHIFT + len,
+		    tty->ch + tty->next, tty->cnt);
+		MEMMOVE(tty->chf + TERM_PUSH_SHIFT + len,
+		    tty->chf + tty->next, tty->cnt);
+		MEMMOVE(tty->cmap + TERM_PUSH_SHIFT + len,
+		    tty->cmap + tty->next, tty->cnt);
 	}
 
 	/* Put the new characters into the queue. */
 	tty->next = TERM_PUSH_SHIFT;
 	tty->cnt += len;
-	memmove(tty->ch + TERM_PUSH_SHIFT, s, len * sizeof(tty->ch[0]));
-	memset(tty->chf + TERM_PUSH_SHIFT, flags, len * sizeof(tty->chf[0]));
-	memset(tty->cmap + TERM_PUSH_SHIFT, cmap, len * sizeof(tty->cmap[0]));
+	MEMMOVE(tty->ch + TERM_PUSH_SHIFT, s, len);
+	MEMSET(tty->chf + TERM_PUSH_SHIFT, flags, len);
+	for (p = tty->cmap + TERM_PUSH_SHIFT,
+	    t = tty->cmap + TERM_PUSH_SHIFT + len; p < t;)
+		*p++ = cmap;
 	return (0);
 }
 
 /*
- * Remove characters from the queue, simultaneously clearing the
- * flag and map counts.
+ * Remove characters from the queue, simultaneously clearing the flag
+ * and map counts.  Note that the memset of tty->cmap is safe because
+ * we're zeroing it out.
  */
 #define	QREM_HEAD(q, len) {						\
 	size_t __off = (q)->next;					\
@@ -307,8 +313,8 @@ term_push(sp, s, len, cmap, flags)
 		tty->chf[__off] = 0;					\
 		tty->cmap[__off] = 0;					\
 	} else {							\
-		memset(tty->chf + __off, 0, len);			\
-		memset(tty->cmap + __off, 0, len);			\
+		MEMSET(tty->chf + __off, 0, len);			\
+		MEMSET(tty->cmap + __off, 0, len);			\
 	}								\
 	if (((q)->cnt -= len) == 0)					\
 		(q)->next = 0;						\
@@ -321,8 +327,8 @@ term_push(sp, s, len, cmap, flags)
 		tty->chf[__off] = 0;					\
 		tty->cmap[__off] = 0;					\
 	} else {							\
-		memset(tty->chf + __off, 0, len);			\
-		memset(tty->cmap + __off, 0, len);			\
+		MEMSET(tty->chf + __off, 0, len);			\
+		MEMSET(tty->cmap + __off, 0, len);			\
 	}								\
 	if (((q)->cnt -= len) == 0)					\
 		(q)->next = 0;						\
@@ -689,15 +695,14 @@ __term_read_grow(sp, tty)
 
 	len = tty->len;
 	BINC_RET(sp, tty->ch, len, nlen * sizeof(tty->ch[0]));
-	memset(tty->ch + tty->next + tty->cnt, 0, alen * sizeof(tty->ch[0]));
+	MEMSET(tty->ch + tty->next + tty->cnt, 0, alen);
 
 	len = tty->len;
 	BINC_RET(sp, tty->chf, len, nlen * sizeof(tty->chf[0]));
-	memset(tty->chf + tty->next + tty->cnt, 0, alen * sizeof(tty->chf[0]));
+	MEMSET(tty->chf + tty->next + tty->cnt, 0, alen);
 
 	BINC_RET(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
-	memset(tty->cmap +
-	    tty->next + tty->cnt, 0, alen * sizeof(tty->cmap[0]));
+	MEMSET(tty->cmap + tty->next + tty->cnt, 0, alen);
 	return (0);
 }
 

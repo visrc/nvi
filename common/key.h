@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.28 1994/03/07 16:21:58 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:21:58 $
+ *	$Id: key.h,v 8.29 1994/03/07 17:49:59 bostic Exp $ (Berkeley) $Date: 1994/03/07 17:49:59 $
  */
 
 /* Structure to return a character and associated information. */
@@ -49,7 +49,7 @@ struct _ibuf {
 	CHAR_T	*ch;		/* Array of characters. */
 	u_char	*chf;		/* Array of character flags (CH_*). */
 #define	MAX_MAP_COUNT	270	/* Maximum times a character can remap. */
-	u_char	*cmap;		/* Number of times character has been mapped. */
+	u_short *cmap;		/* Number of times character has been mapped. */
 
 	size_t	 cnt;		/* Count of remaining characters. */
 	size_t	 len;		/* Array length. */
