@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.15 1995/01/30 09:13:45 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:13:45 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.16 1995/01/30 10:10:10 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:10:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1498,7 +1498,6 @@ txt_err(sp, tiqh)
 	TEXTH *tiqh;
 {
 	recno_t lno;
-	size_t len;
 
 	/*
 	 * The problem with input processing is that the cursor is at an
@@ -1510,7 +1509,7 @@ txt_err(sp, tiqh)
 	 * chain.
 	 */
 	for (lno = tiqh->cqh_first->lno;
-	    file_gline(sp, lno, &len) == NULL && lno > 0; --lno);
+	    !file_eline(sp, lno) && lno > 0; --lno);
 
 	sp->lno = lno == 0 ? 1 : lno;
 	sp->cno = 0;
