@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.1 1993/06/09 22:23:31 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:23:31 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.2 1993/07/20 10:50:41 bostic Exp $ (Berkeley) $Date: 1993/07/20 10:50:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,8 +33,8 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 	char *s, ***argvp;
 	int expand, *argcp;
 {
-	size_t blen, tlen;
-	int cnt, done, len, off;
+	size_t len, blen, tlen;
+	int cnt, done, off;
 	char *ap, *bp, *p, *t;
 
 	GET_SPACE(sp, bp, blen, 512);
