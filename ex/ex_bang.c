@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.27 1994/07/27 11:02:17 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:02:17 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.28 1994/07/28 12:51:41 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:51:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,7 +68,7 @@ ex_bang(sp, ep, cmdp)
 		return (1);
 	}
 
-	/* Swap commands. */
+	/* Set the last bang command. */
 	exp = EXP(sp);
 	if (exp->lastbcomm != NULL)
 		free(exp->lastbcomm);
