@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 9.7 1995/01/11 21:33:44 bostic Exp $ (Berkeley) $Date: 1995/01/11 21:33:44 $";
+static char sccsid[] = "$Id: ex_init.c,v 9.8 1995/02/02 16:52:59 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:52:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,30 +106,6 @@ ex_screen_end(sp)
 	sp->ex_private = NULL;
 
 	return (rval);
-}
-
-/*
- * ex_init --
- *	Initialize ex.
- */
-int
-ex_init(sp)
-	SCR *sp;
-{
-	sp->stdfp = stdout;
-
-	return (0);
-}
-
-/*
- * ex_end --
- *	End ex session.
- */
-int
-ex_end(sp)
-	SCR *sp;
-{
-	return (0);
 }
 
 /*

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.32 1995/02/02 15:11:01 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:11:01 $";
+static char sccsid[] = "$Id: ex.c,v 9.33 1995/02/02 16:52:53 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:52:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,11 +57,8 @@ ex(sp)
 	u_int flags, saved_mode;
 	int eval;
 
-	if (ex_init(sp))
-		return (1);
-
 	if (sp->e_refresh(sp))
-		return (ex_end(sp));
+		return (1);
 
 	/* If reading from a file, messages should have line info. */
 	if (!F_ISSET(sp->gp, G_STDIN_TTY)) {
@@ -136,7 +133,7 @@ ret:	if (sp->if_name != NULL) {
 		FREE(sp->if_name, strlen(sp->if_name) + 1);
 		sp->if_name = NULL;
 	}
-	return (ex_end(sp) || eval);
+	return (eval);
 }
 
 /*
