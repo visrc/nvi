@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.47 1993/04/13 16:27:14 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:27:14 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.48 1993/04/17 12:06:46 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:06:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,8 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_pageup,	V_CNT|V_RCM_SETFNB,
 	    "page up by screens: [count]^B"},
 /* 003  ^C */
-	{NULL},
+	{NULL,		0,
+	    "interrupt a search: ^C"},
 /* 004  ^D */
 	{v_hpagedown,	V_CNT|V_RCM_SETFNB,
 	    "page down by half screens (set count): [count]^D"},
@@ -78,7 +79,8 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_hpageup,	V_CNT|V_RCM_SETFNB,
 	    "half page up (set count): [count]^U"},
 /* 026  ^V */
-	{NULL},
+	{NULL,		0,
+	    "insert a literal character: ^V"},
 /* 027  ^W */
 	{v_window,	0,
 	    "switch windows: ^W"},
@@ -88,10 +90,11 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_lineup,	V_CNT,
 	    "page up by lines: [count]^Y"},
 /* 032  ^Z */
-	{v_stop, 0,
+	{v_stop,	0,
 	    "suspend: ^Z"},
 /* 033  ^[ */
-	{NULL},
+	{NULL,		0,
+	    "return to command mode: ^["},
 /* 034  ^\ */
 	{NULL},
 /* 035  ^] */
@@ -144,7 +147,8 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_up,		V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move up by lines (first non-blank): [count]-"},
 /* 056   . */
-	{NULL},
+	{NULL,		0,
+	    "repeat the last command: ."},
 /* 057   / */
 	{v_searchf,	V_MOVE|V_RCM_SET,
 	    "search forward: /RE"},
@@ -360,7 +364,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	 * handled specially in getcmd().
 	 */
 	{v_z, 		V_CNT|V_RCM_SETFNB,
-	    "redraw window: [count1]z[count2][.-<CR>]"},
+	    "redraw window: [line]z[window_size][.-<CR>]"},
 /* 173   { */
 	{v_paragraphb,	V_CNT|V_MOVE|V_RCM_SET,
 	    "move back paragraph: [count]{"},
