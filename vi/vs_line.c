@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.11 1995/11/10 10:25:16 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:25:16 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.12 1996/02/28 15:46:15 bostic Exp $ (Berkeley) $Date: 1996/02/28 15:46:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ vs_line(sp, smp, yp, xp)
 	SMAP *tsmp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line, nlen, oldy, oldx;
-	int ch, is_cached, is_partial, is_tab;
+	int ch, dne, is_cached, is_partial, is_tab;
 	int list_tab, list_dollar;
 	char *p, *cbp, *ecbp, cbuf[128];
 
@@ -87,6 +87,9 @@ vs_line(sp, smp, yp, xp)
 	(void)gp->scr_cursor(sp, &oldy, &oldx);
 	(void)gp->scr_move(sp, smp - HMAP, 0);
 
+	/* Get the line. */
+	dne = db_get(sp, smp->lno, 0, &p, &len);
+
 	/*
 	 * Special case if we're printing the info/mode line.  Skip printing
 	 * the leading number, as well as other minor setup.  If painting the
@@ -121,7 +124,7 @@ vs_line(sp, smp, yp, xp)
 		 */
 		if (O_ISSET(sp, O_NUMBER)) {
 			cols_per_screen -= O_NUMBER_LENGTH;
-			if ((smp->lno == 1 || p != NULL) && skip_screens == 0) {
+			if ((smp->lno == 1 || !dne) && skip_screens == 0) {
 				nlen = snprintf(cbuf,
 				    sizeof(cbuf), O_NUMBER_FMT, smp->lno);
 				(void)gp->scr_addstr(sp, cbuf, nlen);
@@ -134,7 +137,7 @@ vs_line(sp, smp, yp, xp)
 	 * file.  In both cases, the cursor position is 0, but corrected
 	 * for the O_NUMBER field if it was displayed.
 	 */
-	if (db_get(sp, smp->lno, 0, &p, &len) || len == 0) {
+	if (dne || len == 0) {
 		/* Fill in the cursor. */
 		if (yp != NULL && smp->lno == sp->lno) {
 			*yp = smp - HMAP;
@@ -151,7 +154,7 @@ vs_line(sp, smp, yp, xp)
 
 		/* Lots of special cases for empty lines. */
 		if (skip_screens == 0)
-			if (p == NULL) {
+			if (dne) {
 				if (smp->lno == 1) {
 					if (list_dollar) {
 						ch = '$';
