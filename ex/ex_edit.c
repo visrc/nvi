@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.34 1993/05/05 10:57:42 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:42 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.35 1993/05/20 12:03:42 bostic Exp $ (Berkeley) $Date: 1993/05/20 12:03:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,8 @@ ex_edit(sp, ep, cmdp)
 	case 1:
 		if ((tep = file_get(sp, ep, (char *)cmdp->argv[0], 1)) == NULL)
 			return (1);
+		if (ex_set_altfname(sp, tep->name))
+			return (1);
 		break;
 	default:
 		abort();
@@ -58,8 +60,13 @@ ex_edit(sp, ep, cmdp)
 }
 
 /*
- * ex_visual --	:[line] vi[sual] [type] [count] [flags]
+ * ex_visual --	:[line] vi[sual] [file]
+ *		:vi[sual] [-^.] [window_size] [flags]
  *	Switch to visual mode.
+ *
+ * XXX
+ * I have no idea what the legal flags are.
+ * The second version of this command isn't implemented.
  */
 int
 ex_visual(sp, ep, cmdp)
@@ -75,6 +82,8 @@ ex_visual(sp, ep, cmdp)
 	case 1:
 		if ((tep = file_get(sp, ep, (char *)cmdp->argv[0], 1)) == NULL)
 			return (1);
+		if (ex_set_altfname(sp, tep->name))
+			return (1);
 		break;
 	default:
 		abort();
@@ -85,6 +94,13 @@ ex_visual(sp, ep, cmdp)
 	/* Switch files. */
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
+
+	if (cmdp->plus)
+		if ((tep->icommand = strdup(cmdp->plus)) == NULL)
+			msgq(sp, M_ERR, "Command not executed: %s",
+			    strerror(errno));
+		else
+			F_SET(tep, F_ICOMMAND);
 
 	F_CLR(sp, S_MODE_EX);
 	F_SET(sp, S_MODE_VI);
