@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.51 1994/03/23 17:15:17 bostic Exp $ (Berkeley) $Date: 1994/03/23 17:15:17 $";
+static char sccsid[] = "$Id: options.c,v 8.52 1994/03/24 12:07:03 bostic Exp $ (Berkeley) $Date: 1994/03/24 12:07:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -358,8 +358,9 @@ opts_set(sp, argv)
 		}
 
 		/* Find equals sign or end of set, skipping backquoted chars. */
-		for (p = name = argv[0]->bp, equals = NULL; ch = *p; ++p)
-			switch(ch) {
+		for (equals = NULL,
+		    p = name = argv[0]->bp; (ch = *p) != '\0'; ++p)
+			switch (ch) {
 			case '=':
 				equals = p;
 				break;
@@ -577,7 +578,7 @@ opts_dump(sp, type)
 	 * Get the set of options to list, entering them into
 	 * the column list or the overflow list.
 	 */
-	for (b_num = s_num = 0, op = optlist; op->name; ++op) {
+	for (b_num = s_num = 0, op = optlist; op->name != NULL; ++op) {
 		cnt = op - optlist;
 
 		/* If OPT_NEVER set, it's never displayed. */
@@ -701,7 +702,7 @@ opts_save(sp, fp)
 	int ch, cnt;
 	char *p;
 
-	for (op = optlist; op->name; ++op) {
+	for (op = optlist; op->name != NULL; ++op) {
 		if (F_ISSET(op, OPT_NOSAVE))
 			continue;
 		cnt = op - optlist;
