@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.92 1994/03/14 18:08:57 bostic Exp $ (Berkeley) $Date: 1994/03/14 18:08:57 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.93 1994/03/15 09:52:41 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:52:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,6 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
 	CH ikey;		/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
-	GS *gp;			/* Global pointer. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	size_t col;		/* Current column. */
@@ -120,7 +119,6 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 
 	/* Local initialization. */
 	eval = 0;
-	gp = sp->gp;
 
 	/*
 	 * Get one TEXT structure with some initial buffer space, reusing
@@ -243,7 +241,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		margin = sp->cols - margin;
 
 	/* Initialize abbreviations checks. */
-	if (F_ISSET(gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
+	if (F_ISSET(sp->gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
 		abb = A_INWORD;
 		ab_cnt = ab_turnoff = 0;
 	} else
@@ -288,7 +286,7 @@ nullreplay:
 
 	unmap_tst = LF_ISSET(TXT_MAPINPUT) && LF_ISSET(TXT_INFOLINE);
 	iflags = LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT);
-	for (gp, showmatch = 0,
+	for (showmatch = 0,
 	    carat_st = C_NOTSET, hex = H_NOTSET, quoted = Q_NOTSET;;) {
 		/*
 		 * Reset the line and update the screen.  (The txt_showmatch()
