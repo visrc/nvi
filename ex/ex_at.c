@@ -6,12 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.3 1992/04/05 09:24:46 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:24:46 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.4 1992/04/05 09:59:54 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:59:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -23,8 +24,8 @@ ex_at(cmdp)
 {
 	static int lastbuf, recurse;
 	static char rstack[UCHAR_MAX];
-	int buf, len, rval;
-	char copy[1024];
+	int buf, csize, len, rval;
+	char *cp, copy[1024];
 
 	if ((buf = cmdp->buffer) == '\0' && (buf = lastbuf) == '\0') {
 		msg("No previous buffer to execute.");
@@ -40,16 +41,22 @@ ex_at(cmdp)
 	} else
 		bzero(rstack, UCHAR_MAX);
 			
-	len = cb2str(buf, copy, sizeof(copy));
-	if (len <= 0) {
-		msg("Buffer %c is empty.", buf);
-		return (1);
+	for (cp = copy, csize = sizeof(copy);;) {
+		len = cb2str(buf, cp, csize);
+		if (len <= 0) {
+			msg("Buffer %c is empty.", buf);
+			return (1);
+		}
+		if (len <= csize)
+			break;
+		if ((cp == malloc(csize = len)) == NULL) {
+			msg("Buffer %c is too large to execute.", buf);
+			return (1);
+		}
 	}
-	if (len >= sizeof buf) {
-		msg("Buffer %c is too large to execute.", buf);
-		return (1);
-	}
-	rval = exstring(copy, len);
+	if (cp != copy)
+		free(cp);
+	rval = exstring(cp, len);
 	--recurse;
 	return (rval);
 }
