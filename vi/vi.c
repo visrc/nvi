@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.6 1993/08/06 09:45:23 bostic Exp $ (Berkeley) $Date: 1993/08/06 09:45:23 $";
+static char sccsid[] = "$Id: vi.c,v 8.7 1993/08/06 11:36:43 bostic Exp $ (Berkeley) $Date: 1993/08/06 11:36:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,16 +118,15 @@ vi(sp, ep)
 			if (getmotion(sp, ep, &dotmotion, vp, &fm, &tm))
 				goto err;
 		} else {
-			fm.lno = sp->lno;
-			fm.cno = sp->cno;
+			tm.lno = fm.lno = sp->lno;
+			tm.cno = fm.cno = sp->cno;
 			if (F_ISSET(vp->kp, V_LMODE)) {
 				F_SET(vp, VC_LMODE);
 				if (F_ISSET(vp, VC_C1SET)) {
 					tm.lno = sp->lno + vp->count - 1;
 					tm.cno = sp->cno;
 				}
-			} else
-				tm = fm;
+			}
 		}
 
 		/*
