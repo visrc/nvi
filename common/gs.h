@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.30 1994/04/09 18:08:25 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:08:25 $
+ *	$Id: gs.h,v 8.31 1994/04/09 18:22:41 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:41 $
  */
 
 struct _gs {
@@ -44,7 +44,10 @@ struct _gs {
 #define	KEY_NAME(sp, ch)						\
 	((ch) <= MAX_FAST_KEY ?						\
 	    sp->gp->cname[ch].name : __key_name(sp, ch))
-	CHNAME	cname[MAX_FAST_KEY + 1];/* Fast lookup table. */
+	struct {
+		CHAR_T	 name[MAX_CHARACTER_COLUMNS + 1];
+		u_int8_t len;
+	} cname[MAX_FAST_KEY + 1];	/* Fast lookup table. */
 
 #define	KEY_VAL(sp, ch)							\
 	((ch) <= MAX_FAST_KEY ? sp->gp->special_key[ch] :		\
