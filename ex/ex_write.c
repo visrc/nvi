@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.12 1995/10/17 08:25:53 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:25:53 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.13 1995/10/17 11:00:16 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:00:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,7 +169,7 @@ exwr(sp, cmdp, cmd)
 		if (argv_exp1(sp, cmdp, p, strlen(p), 1))
 			return (1);
 
-		if (filtercmd(sp, cmdp, &cmdp->addr1,
+		if (ex_filter(sp, cmdp, &cmdp->addr1,
 		    &cmdp->addr2, &rm, cmdp->argv[1]->bp, FILTER_WRITE))
 			return (1);
 		sp->lno = rm.lno;
@@ -279,7 +279,7 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	 * The vi filter code has multiple processes running simultaneously,
 	 * and one of them calls ex_writefp().  The "unsafe" function calls
 	 * in this code are to db_get() and msgq().  Db_get() is safe, see
-	 * the comment in ex_filter.c:filtercmd() for details.  We don't call
+	 * the comment in ex_filter.c:ex_filter() for details.  We don't call
 	 * msgq if the multiple process bit in the EXF is set.
 	 *
 	 * !!!

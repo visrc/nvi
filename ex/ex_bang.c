@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.16 1995/10/17 08:05:26 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:05:26 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.17 1995/10/17 11:00:13 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:00:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,7 +145,7 @@ ex_bang(sp, cmdp)
 				ftype = FILTER_RBANG;
 			}
 		}
-		rval = filtercmd(sp, cmdp,
+		rval = ex_filter(sp, cmdp,
 		    &cmdp->addr1, &cmdp->addr2, &rm, ap->bp, ftype);
 
 		/*

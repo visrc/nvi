@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.14 1995/10/16 15:25:38 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:38 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.15 1995/10/17 11:00:14 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:00:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,16 +31,16 @@ static char sccsid[] = "$Id: ex_filter.c,v 10.14 1995/10/16 15:25:38 bostic Exp 
 static int filter_ldisplay __P((SCR *, FILE *));
 
 /*
- * filtercmd --
+ * ex_filter --
  *	Run a range of lines through a filter utility and optionally
  *	replace the original text with the stdout/stderr output of
  *	the utility.
  *
- * PUBLIC: int filtercmd __P((SCR *, 
+ * PUBLIC: int ex_filter __P((SCR *, 
  * PUBLIC:    EXCMD *, MARK *, MARK *, MARK *, char *, enum filtertype));
  */
 int
-filtercmd(sp, cmdp, fm, tm, rp, cmd, ftype)
+ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	SCR *sp;
 	EXCMD *cmdp;
 	MARK *fm, *tm, *rp;

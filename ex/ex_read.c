@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.16 1995/10/17 08:25:51 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:25:51 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.17 1995/10/17 11:00:15 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:00:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,7 +121,7 @@ ex_read(sp, cmdp)
 				(void)ex_fflush(sp);
 			}
 
-		if (filtercmd(sp, cmdp, &cmdp->addr1,
+		if (ex_filter(sp, cmdp, &cmdp->addr1,
 		    NULL, &rm, cmdp->argv[argc]->bp, FILTER_READ))
 			return (1);
 
