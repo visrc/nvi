@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.5 1994/09/19 13:00:56 bostic Exp $ (Berkeley) $Date: 1994/09/19 13:00:56 $
+#	$Id: Makefile,v 8.6 1994/10/09 18:55:46 bostic Exp $ (Berkeley) $Date: 1994/10/09 18:55:46 $
 
 CAT=	vi_english vi_german
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
@@ -21,7 +21,7 @@ ${CAT}: vi_english.base
 		    -e '/"/s/"$$//' > `basename $$i .base`;		\
 	done
 
-check: catalog
+check: ${CAT}
 	@for i in *.base; do						\
 		echo "... $$i";						\
 		f=`basename $$i .base`;					\
