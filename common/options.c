@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.41 1994/03/14 17:32:31 bostic Exp $ (Berkeley) $Date: 1994/03/14 17:32:31 $";
+static char sccsid[] = "$Id: options.c,v 8.42 1994/03/15 09:24:40 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:24:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ static char sccsid[] = "$Id: options.c,v 8.41 1994/03/14 17:32:31 bostic Exp $ (
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
 static OPTLIST const	*opts_prefix __P((char *));
-static int	 	 opts_print __P((SCR *, OPTLIST const *, OPTION *));
+static int	 	 opts_print __P((SCR *, OPTLIST const *));
 
 /*
  * O'Reilly noted options and abbreviations are from "Learning the VI Editor",
@@ -614,8 +614,7 @@ opts_dump(sp, type)
 		/* Display the options in sorted order. */
 		for (row = 0; row < numrows;) {
 			for (base = row, col = 0; col < numcols; ++col) {
-				cnt = opts_print(sp, &optlist[s_op[base]],
-				    &sp->opts[s_op[base]]);
+				cnt = opts_print(sp, &optlist[s_op[base]]);
 				if ((base += numrows) >= s_num)
 					break;
 				(void)ex_printf(EXCOOKIE,
@@ -627,7 +626,7 @@ opts_dump(sp, type)
 	}
 
 	for (row = 0; row < b_num;) {
-		(void)opts_print(sp, &optlist[b_op[row]], &sp->opts[b_op[row]]);
+		(void)opts_print(sp, &optlist[b_op[row]]);
 		if (++row < b_num)
 			(void)ex_printf(EXCOOKIE, "\n");
 	}
@@ -639,10 +638,9 @@ opts_dump(sp, type)
  *	Print out an option.
  */
 static int
-opts_print(sp, op, spo)
+opts_print(sp, op)
 	SCR *sp;
 	OPTLIST const *op;
-	OPTION *spo;
 {
 	int curlen, offset;
 
