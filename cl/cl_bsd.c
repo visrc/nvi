@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_bsd.c,v 8.31 2000/07/23 11:14:44 skimo Exp $ (Berkeley) $Date: 2000/07/23 11:14:44 $";
+static const char sccsid[] = "$Id: cl_bsd.c,v 8.32 2000/12/01 13:56:17 skimo Exp $ (Berkeley) $Date: 2000/12/01 13:56:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,6 +210,7 @@ static const TL list[] = {
 	"kdl1",		"kL",		/* Delete line. */
 	"ked",		"kS",		/* Delete to end of screen. */
 	"kel",		"kE",		/* Delete to eol. */
+	"kend",		"@7",		/* Go to eol. */
 	"khome",	"kh",		/* Go to sol. */
 	"kich1",	"kI",		/* Insert at cursor. */
 	"kil1",		"kA",		/* Insert line. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.27 2000/07/23 11:14:45 skimo Exp $ (Berkeley) $Date: 2000/07/23 11:14:45 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.28 2000/12/01 13:56:18 skimo Exp $ (Berkeley) $Date: 2000/12/01 13:56:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,7 @@ static TKLIST const c_tklist[] = {	/* Command mappings. */
 	{"kel",		"D",	"delete to eol"},
 	{"kind",     "\004",	"scroll down"},			/* ^D */
 	{"kll",		"$",	"go to eol"},
+	{"kend",	"$",	"go to eol"},
 	{"khome",	"^",	"go to sol"},
 	{"kich1",	"i",	"insert at cursor"},
 	{"kdl1",       "dd",	"delete line"},
