@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.29 1995/11/06 09:57:42 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:57:42 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.30 1995/11/06 19:32:56 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:32:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -250,6 +250,7 @@ vs_msg(sp, mtype, line, len)
 		(void)printf("%.*s", (int)len, line);
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 0);
+		(void)fflush(stdout);
 		return;
 	}
 
@@ -443,14 +444,15 @@ vs_output(sp, mtype, line, llen)
 }
 
 /*
- * vs_ex_wrchk --
- *	Check and wait for ex.
+ * vs_ex_to_vi --
+ *	Switch from ex into vi.
  *
- * PUBLIC: int vs_ex_wrchk __P((SCR *));
+ * PUBLIC: int vs_ex_to_vi __P((SCR *, int *));
  */
 int
-vs_ex_wrchk(sp)
+vs_ex_to_vi(sp, continuep)
 	SCR *sp;
+	int *continuep;
 {
 	const char *p;
 	EVENT ev;
@@ -461,17 +463,42 @@ vs_ex_wrchk(sp)
 	 * should be waited for.
 	 *
 	 * XXX
-	 * We're ignoring most errors or illegal events.
+	 * We're ignoring most errors and unexpected events.
 	 */
 	if (F_ISSET(sp, S_EX_WROTE)) {
-		p = msg_cmsg(sp, CMSG_CONT, &len);
+		p = msg_cmsg(sp,
+		    continuep == NULL ? CMSG_CONT : CMSG_CONT_EX, &len);
 		(void)write(STDOUT_FILENO, p, len);
 		do {
-			if (v_event_get(sp, &ev, 0, 0))
+			if (v_event_get(sp, &ev, 0, EC_RAW))
 				return (1);
 		} while (ev.e_event != E_CHARACTER);
-		F_CLR(sp, S_EX_WROTE);
+
+		/*
+		 * The user may choose to continue.
+		 *
+		 * XXX
+		 * To recap, we've switched into ex mode because the user
+		 * entered something like :!ls.  However, not content with
+		 * that, the user wants to keep entering ex commands.  We
+		 * can't switch back and forth between ex and vi, because
+		 * vi is going to want to repaint the screen.  The historic
+		 * vi supported this, so we make it work.  We hope.  Do it
+		 * all behind curses back, and pray the text input routines
+		 * don't decide to start repainting things.
+		 */
+		if (continuep != NULL && ev.e_c == ':') {
+			(void)write(STDOUT_FILENO, "\n:", 2);
+			*continuep = 1;
+			return (0);
+		}
 	}
+
+	/* (Re)start the vi screen. */
+	if (sp->gp->scr_screen(sp, S_VI))
+		return (1);
+	F_CLR(sp, S_EX | S_EX_CANON | S_EX_WROTE | S_SCREEN_READY);
+	F_SET(sp, S_VI);
 	return (0);
 }
 
@@ -495,9 +522,8 @@ vs_ex_resolve(sp, continuep)
 	GS *gp;
 	VI_PRIVATE *vip;
 
-	/* Don't continue by default. */
-	if (continuep != NULL)
-		*continuep = 0;
+	gp = sp->gp;
+	vip = VIP(sp);
 
 	/* Report on line modifications. */
 	msgq_rpt(sp);
@@ -505,21 +531,19 @@ vs_ex_resolve(sp, continuep)
 	/* Flush ex messages. */
 	(void)ex_fflush(sp);
 
-	gp = sp->gp;
-	vip = VIP(sp);
+	/* Don't continue by default. */
+	if (continuep != NULL)
+		*continuep = 0;
 
 	/* If we switched into ex mode, return into vi mode. */
 	if (F_ISSET(sp, S_EX_CANON)) {
-		/* Check to see if we have to wait for ex. */
-		if (vs_ex_wrchk(sp))
+		if (vs_ex_to_vi(sp, continuep))
 			return (1);
-		if (gp->scr_screen(sp, S_VI))
-			return (1);
-		F_CLR(sp, S_EX_CANON);
-		F_SET(sp, S_SCR_REDRAW);
+		if (continuep != NULL && *continuep == 1)
+			return (0);
 	} else {
 		/* If 0 or 1 lines of output, simply continue. */
-		if (!F_ISSET(sp, S_EX_CANON) && vip->totalcount < 2)
+		if (vip->totalcount < 2)
 			return (0);
 
 		/*
