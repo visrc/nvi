@@ -1,7 +1,7 @@
-#	$Id: Makefile,v 8.1 1993/06/08 12:51:59 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:51:59 $
+#	$Id: Makefile,v 8.2 1994/04/22 08:55:08 bostic Exp $ (Berkeley) $Date: 1994/04/22 08:55:08 $
 
-DIR=	usd/13.ex
-SRCS=	ex.rm
+DIR=	usd/12.exref
+SRCS=	ex.rm ex.summary
 MACROS=	-msU
 CLEANFILES=summary.*
 
