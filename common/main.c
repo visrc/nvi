@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.72 1994/03/14 10:29:34 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:29:34 $";
+static char sccsid[] = "$Id: main.c,v 8.73 1994/03/15 09:19:11 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:19:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -708,7 +708,7 @@ obsolete(argv)
 	char *argv[];
 {
 	size_t len;
-	char *p, *myname;
+	char *p;
 
 	/*
 	 * Translate old style arguments into something getopt will like.
@@ -719,7 +719,7 @@ obsolete(argv)
 	 *	Change "-" into "-s"
 	 *	Change "-r" into "-l"
 	 */
-	for (myname = argv[0]; *++argv;)
+	while (*++argv)
 		if (argv[0][0] == '+') {
 			if (argv[0][1] == '\0') {
 				MALLOC_NOMSG(NULL, argv[0], char *, 4);
