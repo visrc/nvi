@@ -234,15 +234,17 @@ if test "$vi_cv_gtk" = "yes"; then
 	GTKINCS="$GTK_CFLAGS"
 	GTKLIBS="$GTK_LIBS $LIBS"
 	SAVELIBS="$LIBS"
-	AM_PATH_GDK_PIXBUF(0.4.0, , AC_MSG_ERROR([You must have gdk-pixbuf installed.]))
-	LIBS="-lutil $GDK_PIXBUF_LIBS $GTKLIBS"
-	AC_CHECK_LIB(nvizvt, zvt_get_ptys,
-		[vi_cv_zvt="yes"], [vi_cv_zvt="no"])
-	if test "$vi_cv_zvt" = "yes"; then
-		GTKLIBS="-lnvizvt $LIBS"
-		AC_DEFINE(HAVE_ZVT)
+	AM_PATH_GDK_PIXBUF(0.4.0, pixbuf=yes, pixbuf=no)
+	if test "$pixbuf" != "no"; then
+		LIBS="-lutil $GDK_PIXBUF_LIBS $GTKLIBS"
+		AC_CHECK_LIB(nvizvt, zvt_get_ptys,
+			[vi_cv_zvt="yes"], [vi_cv_zvt="no"])
+		if test "$vi_cv_zvt" = "yes"; then
+			GTKLIBS="-lnvizvt $LIBS"
+			AC_DEFINE(HAVE_ZVT)
+		fi
+		LIBS="$SAVELIBS"
 	fi
-	LIBS="$SAVELIBS"
 	AC_PATH_PROG(vi_cv_pango_config, pango-config, no)
 	if test "$vi_cv_pango_config" != "no"; then
 		PANGOLIBS=`$vi_cv_pango_config --libs pangox`

@@ -6,9 +6,6 @@
 #include "gtkviscreen.h"
 #include <gdk/gdkx.h>
 
-#include <pango/pango.h>
-#include <pango/pangox.h>
-
 #include "../common/conv.h"
 
 void * v_strset __P((CHAR_T *s, CHAR_T c, size_t n));
@@ -64,7 +61,8 @@ static GtkWidgetClass *parent_class = NULL;
 static guint vi_screen_signals[LAST_SIGNAL] = { 0 };
 
 static GdkFont *gb_font;
-static GdkFont *tf;
+static GdkFont *tfn;
+static GdkFont *tfw;
 
 #define CharAt(scr,y,x)	scr->chars + (y) * scr->cols + x
 #define FlagAt(scr,y,x)	(scr->reverse + (y) * scr->cols + x)
@@ -306,7 +304,11 @@ gtk_vi_screen_class_init (GtkViScreenClass *class)
   class->resized = NULL;
 
   gb_font = gdk_font_load ("-*-*-*-*-*-*-16-*-*-*-*-*-gb2312.1980-*");
+  /*
   tf = gdk_font_load ("-misc-fixed-*-*-*-*-16-*-*-*-*-*-iso10646-*");
+  */
+  tfn = gdk_font_load ("-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso10646");
+  tfw = gdk_font_load ("-Misc-Fixed-Medium-R-*-*-13-120-75-75-C-120-ISO10646-1");
 }
 
 static void
@@ -704,6 +706,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		p = buf;
 		blen = 2;
 	    } else if (INTISUCS(*(line+x))) {
+#ifdef HAVE_PANGO
 		if (!vi->conx) {
 		    PangoFontDescription font_description;
 
@@ -721,6 +724,15 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		}
 		blen = CHAR_WIDTH(NULL, *(line+x));
 		pango = 1;
+		if (0)
+#endif
+		{
+		    font = tfw;
+		    buf[0] = *(line+x) >> 8;
+		    buf[1] = (*(line+x)) & 0xFF;
+		    p = buf;
+		    blen = 2;
+		}
 	    } else {
 		font = GTK_WIDGET(vi)->style->font;
 		if (sizeof(CHAR_T) == sizeof(gchar))
@@ -743,6 +755,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 				    xpos * vi->ch_width, 
 				    y * vi->ch_height + vi->ch_ascent, 
 				    p, blen);
+#ifdef HAVE_PANGO
 		else {
 		    PangoGlyphString *gs;
 		    GList *list;
@@ -761,6 +774,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 			item->analysis.font, gs, xpos * vi->ch_width, 
 			y * vi->ch_height + vi->ch_ascent);
 		}
+#endif
 	    }
 	}
     }
