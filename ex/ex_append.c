@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_append.c,v 10.27 1996/04/27 11:40:19 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:19 $";
+static const char sccsid[] = "$Id: ex_append.c,v 10.28 1996/06/17 10:39:56 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:39:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,6 +83,7 @@ ex_aci(sp, cmdp, cmd)
 	enum which cmd;
 {
 	CHAR_T *p, *t;
+	GS *gp;
 	TEXT *tp;
 	TEXTH tiq;
 	recno_t cnt, lno;
@@ -90,6 +91,7 @@ ex_aci(sp, cmdp, cmd)
 	u_int32_t flags;
 	int need_newline;
 
+	gp = sp->gp;
 	NEEDFILE(sp, cmdp);
 
 	/*
@@ -210,10 +212,11 @@ ex_aci(sp, cmdp, cmd)
 	 * be possible.
 	 */
 	if (F_ISSET(sp, SC_VI)) {
-		if (sp->gp->scr_screen(sp, SC_EX)) {
+		if (gp->scr_screen(sp, SC_EX)) {
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
+		(void)gp->scr_attr(sp, SA_ALTERNATE, 0);
 
 		/* If we're still in the vi screen, move out explicitly. */
 		need_newline = !F_ISSET(sp, SC_SCR_EXWROTE);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.31 1996/05/08 18:06:20 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:06:20 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.32 1996/06/17 10:39:56 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:39:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -156,10 +156,11 @@ ex_read(sp, cmdp)
 		 * the screen on a normal read.
 		 */
 		if (F_ISSET(sp, SC_VI)) {
-			if (sp->gp->scr_screen(sp, SC_EX)) {
+			if (gp->scr_screen(sp, SC_EX)) {
 				ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
 				return (1);
 			}
+			(void)gp->scr_attr(sp, SA_ALTERNATE, 0);
 			F_SET(sp, SC_SCR_EX | SC_SCR_EXWROTE);
 		}
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.33 1996/04/27 11:40:24 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:24 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.34 1996/06/17 10:39:56 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:39:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -82,8 +82,11 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 	const char *msg;
 	int need_newline;
 {
+	GS *gp;
 	const char *name;
 	pid_t pid;
+
+	gp = sp->gp;
 
 	/* We'll need a shell. */
 	if (opts_empty(sp, O_SHELL, 0))
@@ -91,10 +94,11 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 
 	/* Enter ex mode. */
 	if (F_ISSET(sp, SC_VI)) {
-		if (sp->gp->scr_screen(sp, SC_EX)) {
+		if (gp->scr_screen(sp, SC_EX)) {
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
+		(void)gp->scr_attr(sp, SA_ALTERNATE, 0);
 		F_SET(sp, SC_SCR_EX | SC_SCR_EXWROTE);
 	}
 
