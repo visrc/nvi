@@ -6,131 +6,153 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.3 1992/04/05 09:23:45 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:45 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.4 1992/04/16 13:46:59 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:46:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
 #include "extern.h"
 
+/*
+ * ex_read --	:read[!] [file]
+ *		:read [! cmd]
+ *	Read from a file or utility.
+ */
 int
 ex_read(cmdp)
 	CMDARG *cmdp;
 {
-	int	fd, rc;	/* used while reading from the file */
-	char	*scan;	/* used for finding NUL characters */
-	int	hadnul;	/* boolean: any NULs found? */
-	int	addnl;	/* boolean: forced to add newlines? */
-	int	len;	/* number of chars in current line */
-	long	lines;	/* number of lines in current block */
-	struct stat statb;
+	register char *p;
+	struct stat sb;
+	FILE *fp;
+	int force, rval;
+	char *fname;
 
-	/* special case: if ":r !cmd" then let the filter() function do it */
-	char *extra;
-	extra = cmdp->argv[0];
-	if (extra[0] == '!')
-	{
-		filter(cmdp->addr1, MARK_UNSET, extra + 1);
-		return (0);
+	/* If nothing, just read the file. */
+	if ((p = cmdp->string) == NULL) {
+		if (!*origname) {
+			msg("No filename from which to read.");
+			return (1);
+		}
+		fname = origname;
+		goto noargs;
 	}
 
-	/* open the file */
-	fd = open(extra, O_RDONLY);
-	if (fd < 0)
-	{
-		msg("Can't open \"%s\"", extra);
+	/* If "read!" it's a force from a file. */
+	if (*p == '!') {
+		force = 1;
+		++p;
+	} else
+		force = 0;
+
+	/* Skip whitespace. */
+	for (; *p && isspace(*p); ++p);
+
+	/* If "read !" it's a pipe from a utility. */
+	if (*p == '!') {
+		for (; *p && isspace(*p); ++p);
+		if (*p == '\0') {
+			msg("Usage: %s.", cmdp->cmd->usage);
+			return (1);
+		}
+		return (filter(cmdp->addr1, MARK_UNSET, ++p, NOINPUT));
+	}
+
+	/* Build an argv. */
+	if (buildargv(p, 1, cmdp))
+		return (1);
+
+	switch(cmdp->argc) {
+	case 0:
+		fname = origname;
+		break;
+	case 1:
+		fname = cmdp->argv[0];
+		break;
+	default:
+		msg("Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
-	if (stat(extra, &statb) < 0)
-	{
-		msg("Can't stat \"%s\"", extra);
-	}
-	if ((statb.st_mode & S_IFMT) != S_IFREG)
-	{
-		msg("\"%s\" is not a regular file", extra);
-		return (0);
+	/* Open the file. */
+noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
+		msg("%s: %s", fname, strerror(errno));
+		return (1);
 	}
 
-	/* get blocks from the file, and add them */
+	/* If not a regular file, force must be set. */
+	if (!force && !S_ISREG(sb.st_mode)) {
+		msg("%s is not a regular file -- use ! to read it.", fname);
+		return (1);
+	}
+
+	rval = ex_readfp(fname, fp, cmdp->addr1, &rptlines);
+
+	(void)fclose(fp);
+
+	if (rval)
+		return (1);
+	
+	rptlabel = "read";
+	return (0);
+}
+
+/*
+ * ex_readfp --
+ *	Read lines into the file.  One nasty side effect is that it sets the
+ *	cursor position.
+ */
+int
+ex_readfp(fname, fp, addr, cntp)
+	char *fname;
+	FILE *fp;
+	MARK addr;
+	long *cntp;
+{
+	size_t len;
+	long lno, startlno;
+	char *p;
+
+	/* Add in the lines from the output. */
 	ChangeText
 	{
-		/* insertion starts at the line following frommark */
-		cmdp->addr2 = cmdp->addr1 = (cmdp->addr1 | (BLKSIZE - 1L)) + 1L;
-		len = 0;
-		hadnul = addnl = FALSE;
+		/* Insertion starts at the line following the address. */
+		addr = (addr | (BLKSIZE - 1L)) + 1L;
 
-		/* add an extra newline, so partial lines at the end of
-		 * the file don't trip us up
+		/*
+		 * XXX
+		 * This code doesn't check for lines that are too long.
+		 * Also, the current add module requires both a newline
+		 * and a terminating NULL.  This is, of course, stupid.
 		 */
-		add(cmdp->addr2, "\n");
+		startlno = lno = markline(addr);
+		while (p = fgetline(fp, &len)) {
+			char __buf[8 * 1024];		/* XXX */
+			bcopy(p, __buf, len);		/* XXX */
+			__buf[len] = '\n';		/* XXX */
+			__buf[len + 1] = '\0';		/* XXX */
 
-		/* for each chunk of text... */
-		while ((rc = read(fd, tmpblk.c, BLKSIZE - 1)) > 0)
-		{
-			/* count newlines, convert NULs, etc. ... */
-			for (lines = 0, scan = tmpblk.c; rc > 0; rc--, scan++)
-			{
-				/* break up long lines */
-				if (*scan != '\n' && len + 2 > BLKSIZE)
-				{
-					*scan = '\n';
-					addnl = TRUE;
-				}
-
-				/* protect against NUL chars in file */
-				if (!*scan)
-				{
-					*scan = 0x80;
-					hadnul = TRUE;
-				}
-
-				/* starting a new line? */
-				if (*scan == '\n')
-				{
-					/* reset length at newline */
-					len = 0;
-					lines++;
-				}
-				else
-				{
-					len++;
-				}
-			}
-
-			/* add the text */
-			*scan = '\0';
-			add(cmdp->addr2, tmpblk.c);
-			cmdp->addr2 += MARK_AT_LINE(lines) + len - markidx(cmdp->addr2);
+			add(addr, __buf);		/* XXX */
+			addr = MARK_AT_LINE(++lno);
 		}
-
-		/* if partial last line, then retain that first newline */
-		if (len > 0)
-		{
-			msg("Last line had no newline");
-			cmdp->addr2 += BLKSIZE; /* <- for the rptlines calc */
-		}
-		else /* delete that first newline */
-		{
-			delete(cmdp->addr2, (cmdp->addr2 | (BLKSIZE - 1L)) + 1L);
+		if (ferror(fp)) {
+			msg("%s: %s", strerror(errno));
+			return (1);
 		}
 	}
 
-	/* close the file */
-	close(fd);
+	/* Set cursor to first line read in. */
+	cursor = MARK_AT_LINE(startlno);
 
-	/* Reporting... */
-	rptlines = markline(cmdp->addr2) - markline(cmdp->addr1);
-	rptlabel = "read";
-	cursor = (cmdp->addr2 & ~BLKSIZE) - BLKSIZE;
+	/* Return the number of lines read in. */
+	if (cntp)
+		*cntp = lno - startlno;
 
-	if (addnl)
-		msg("Newlines were added to break up long lines");
-	if (hadnul)
-		msg("NULs were converted to 0x80");
 	return (0);
 }
