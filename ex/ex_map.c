@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.10 1992/04/19 08:53:53 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:53 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.11 1992/04/28 13:44:52 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:44:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,6 @@ static char sccsid[] = "$Id: ex_map.c,v 5.10 1992/04/19 08:53:53 bostic Exp $ (B
 #include <string.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "excmd.h"
 #include "seq.h"
 #include "extern.h"
@@ -65,13 +64,15 @@ ex_map(cmdp)
 	if (input[0] == '#' && isdigit(input[1]) && !input[2]) {
 		key = atoi(input + 1);
 		(void)snprintf(buf, sizeof(buf), "f%d", key);
-		if (FKEY[key]) {
+#ifdef notdef
+		if (FKEY[key]) {		/* CCC */
 			input = FKEY[key];
 			name = buf;
 		} else {
 			msg("This terminal has no %s key.", buf);
 			return (1);
 		}
+#endif
 	} else {
 		name = NULL;
 
