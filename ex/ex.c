@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.104 1994/03/14 11:04:49 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:04:49 $";
+static char sccsid[] = "$Id: ex.c,v 8.105 1994/03/15 15:03:25 bostic Exp $ (Berkeley) $Date: 1994/03/15 15:03:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -428,7 +428,7 @@ loop:	if (nl) {
  	 */
 	if (LF_ISSET(E_NORC) && ep == NULL) {
 		msgq(sp, M_ERR,
-	"The %s command requires that a file already have been read in.",
+	"The %s command requires that a file have already been read in.",
 		    cp->name);
 		goto err;
 	}
@@ -1385,6 +1385,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	long total;
 	u_int flags;
 	size_t cmdlen;
+	int (*sf) __P((SCR *, EXF *, MARK *, MARK *, char *, char **, u_int *));
 	char *cmd, *endp;
 
 	*addr_found = 0;
@@ -1445,25 +1446,19 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		}
 		++cmd;
 		--cmdlen;
-		if (cmd[0] == '/')
-			goto forward;
-		if (cmd[0] == '?')
-			goto backward;
-		/* NOTREACHED */
+		sf = cmd[0] == '/' ? f_search : b_search;
+		goto search;
 	case '/':				/* Search forward. */
-forward:	*addr_found = 1;
-		m.lno = sp->lno;
-		m.cno = sp->cno;
-		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
-		if (f_search(sp, ep, &m, &m, cmd, &endp, &flags))
-			return (1);
-		cur->lno = m.lno;
-		cur->cno = m.cno;
-		cmdlen -= (endp - cmd);
-		cmd = endp;
-		break;
+		sf = f_search;
+		goto search;
 	case '?':				/* Search backward. */
-backward:	*addr_found = 1;
+		sf = b_search;
+search:		if (ep == NULL) {
+			msgq(sp, M_ERR,
+	"A search address requires that a file have already been read in.");
+			return (1);
+		}
+		*addr_found = 1;
 		m.lno = sp->lno;
 		m.cno = sp->cno;
 		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
