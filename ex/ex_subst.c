@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.33 1996/07/01 21:50:30 bostic Exp $ (Berkeley) $Date: 1996/07/01 21:50:30 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.34 1996/07/15 17:15:42 bostic Exp $ (Berkeley) $Date: 1996/07/15 17:15:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1280,7 +1280,7 @@ re_cscope_conv(sp, ptrnp, plenp, replacedp)
 			memcpy(t, CSCOPE_RE_SPACE, sizeof(CSCOPE_RE_SPACE) - 1);
 			t += sizeof(CSCOPE_RE_SPACE) - 1;
 		} else {
-			if (strchr("\\^.[]$*", *p))
+			if (strchr("\\^.[]$*+?()|{}", *p))
 				*t++ = '\\';
 			*t++ = *p;
 		}
