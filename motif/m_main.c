@@ -370,7 +370,7 @@ String	fallback_rsrcs[] = {
     "*font:			-*-*-*-r-*--14-*-*-*-m-*-*-*",
     "*pointerShape:		xterm",
     "*busyShape:		watch",
-    "*iconName:			nvi 2.0",
+    "*iconName:			vi",
 
     /* When *NOT* running MWM, Motif needs to be told how the
      * virtual keys map to the physical keys.  There *ought* to
@@ -434,6 +434,8 @@ static	String	*get_fallback_rsrcs( name )
 	/* stop here if running CDE */
 	if ( fallback_rsrcs[i][0] == '?' ) {
 	    if ( running_cde ) break;
+	    if ((fallback_rsrcs[i] = strdup(fallback_rsrcs[i])) == NULL)
+		nomem();
 	    fallback_rsrcs[i][0] = '*';
 	}
 
