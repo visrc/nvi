@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.25 1994/03/10 13:04:22 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:04:22 $";
+static char sccsid[] = "$Id: seq.c,v 8.26 1994/03/14 11:01:50 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:01:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -172,7 +172,7 @@ seq_find(sp, lastqp, input, ilen, stype, ispartialp)
 	 * Ispartialp is a location where we return if there was a
 	 * partial match, i.e. if the string were extended it might
 	 * match something.
-	 * 
+	 *
 	 * XXX
 	 * Overload the meaning of ispartialp; only the terminal key
 	 * search doesn't want the search limited to complete matches,
@@ -280,14 +280,12 @@ seq_save(sp, fp, prefix, stype)
 	char *prefix;
 	enum seqtype stype;
 {
-	CHAR_T esc;
 	SEQ *qp;
 	size_t olen;
 	int ch;
 	char *p;
 
 	/* Write a sequence command for all keys the user defined. */
-	(void)term_key_ch(sp, K_VLNEXT, &esc);
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (!F_ISSET(qp, S_USERDEF) || stype != qp->stype)
 			continue;
@@ -295,9 +293,9 @@ seq_save(sp, fp, prefix, stype)
 			(void)fprintf(fp, "%s", prefix);
 		for (p = qp->input, olen = qp->ilen; olen > 0; --olen) {
 			ch = *p++;
-			if (ch == esc || ch == '|' ||
+			if (ch == LITERAL_CH || ch == '|' ||
 			    isblank(ch) || term_key_val(sp, ch) == K_NL)
-				(void)putc(esc, fp);
+				(void)putc(LITERAL_CH, fp);
 			(void)putc(ch, fp);
 		}
 		(void)putc(' ', fp);
@@ -305,9 +303,9 @@ seq_save(sp, fp, prefix, stype)
 			for (p = qp->output,
 			    olen = qp->olen; olen > 0; --olen) {
 				ch = *p++;
-				if (ch == esc || ch == '|' ||
+				if (ch == LITERAL_CH || ch == '|' ||
 				    term_key_val(sp, ch) == K_NL)
-					(void)putc(esc, fp);
+					(void)putc(LITERAL_CH, fp);
 				(void)putc(ch, fp);
 			}
 		(void)putc('\n', fp);
