@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.69 2001/06/09 22:05:47 skimo Exp $ (Berkeley) $Date: 2001/06/09 22:05:47 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.70 2001/06/13 20:00:18 skimo Exp $ (Berkeley) $Date: 2001/06/13 20:00:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,10 +57,7 @@ addstr4(SCR *sp, void *str, size_t len, int wide)
 
 #ifdef USE_WIDECHAR
 	if (wide) {
-	    wchar_t *dstr;
-	    size_t dlen;
-	    INT2DISP(sp, str, len, dstr, dlen);
-	    if (waddnwstr(win, dstr, dlen) == ERR)
+	    if (waddnwstr(win, str, len) == ERR)
 		return (1);
 	} else 
 #endif
