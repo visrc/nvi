@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.37 1996/03/19 21:00:00 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:00:00 $";
+static const char sccsid[] = "$Id: vi.c,v 10.38 1996/03/28 15:12:22 bostic Exp $ (Berkeley) $Date: 1996/03/28 15:12:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,12 +93,17 @@ vi(spp)
 		if (!MAPPED_KEYS_WAITING(sp) && vs_resolve(sp))
 			goto ret;
 
-		/* Refresh the screen. */
-		sp->showmode = SM_COMMAND;
+		/*
+		 * If not skipping a refresh, return to command mode and
+		 * refresh the screen.
+		 */
 		if (F_ISSET(vip, VIP_S_REFRESH))
 			F_CLR(vip, VIP_S_REFRESH);
-		else if (vs_refresh(sp, 0))
-			goto ret;
+		else {
+			sp->showmode = SM_COMMAND;
+			if (vs_refresh(sp, 0))
+				goto ret;
+		}
 
 		/* Set the new favorite position. */
 		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
