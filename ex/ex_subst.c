@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.29 1993/02/24 12:56:42 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:42 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.30 1993/02/25 17:47:59 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:47:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,7 +23,6 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.29 1993/02/24 12:56:42 bostic Exp $ 
 #include "excmd.h"
 #include "options.h"
 #include "screen.h"
-#include "search.h"
 #include "term.h"
 #include "pathnames.h"
 
@@ -102,8 +101,12 @@ ex_substitute(ep, cmdp)
 			return (1);
 		}
 
-		/* Set saved RE. */
+		/*
+		 * Set saved RE.  Historic practice is that substitutes set
+		 * direction as well as the RE.
+		 */
 		ep->sre = lre;
+		ep->searchdir = FORWARD;
 		FF_SET(ep, F_RE_SET);
 
 		if (checkmatchsize(ep, &ep->sre))
@@ -118,7 +121,7 @@ ex_subagain(ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (FF_ISSET(ep, F_RE_SET)) {
+	if (!FF_ISSET(ep, F_RE_SET)) {
 		msg(ep, M_ERROR, "No previous regular expression.");
 		return (1);
 	}
@@ -209,7 +212,7 @@ substitute(ep, cmdp, s, re, cmd)
 		case '\t':
 			break;
 		case '#':
-			if (mode == MODE_VI) {
+			if (FF_ISSET(ep, F_MODE_VI)) {
 				msg(ep, M_ERROR,
 				    "'#' flag not supported in vi mode.");
 				return (1);
@@ -223,7 +226,7 @@ substitute(ep, cmdp, s, re, cmd)
 			gflag = 1;
 			break;
 		case 'l':
-			if (mode == MODE_VI) {
+			if (FF_ISSET(ep, F_MODE_VI)) {
 				msg(ep, M_ERROR,
 				    "'l' flag not supported in vi mode.");
 				return (1);
@@ -231,7 +234,7 @@ substitute(ep, cmdp, s, re, cmd)
 			lflag = 1;
 			break;
 		case 'p':
-			if (mode == MODE_VI) {
+			if (FF_ISSET(ep, F_MODE_VI)) {
 				msg(ep, M_ERROR,
 				    "'p' flag not supported in vi mode.");
 				return (1);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.70 1993/02/24 12:54:56 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:54:56 $";
+static char sccsid[] = "$Id: ex.c,v 5.71 1993/02/25 17:48:30 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:48:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,7 +28,6 @@ static char sccsid[] = "$Id: ex.c,v 5.70 1993/02/24 12:54:56 bostic Exp $ (Berke
 #include "log.h"
 #include "options.h"
 #include "screen.h"
-#include "search.h"
 #include "term.h"
 #include "vcmd.h"
 #include "pathnames.h"
@@ -49,18 +48,11 @@ ex(ep)
 	EXF *ep;
 {
 	size_t len;
-	int first;
 	u_char *p, defcom[sizeof(DEFCOM)];
 
-	first = 1;
+	if (ex_init(ep))
+		return (1);
 	do {
-		if (first || FF_ISSET(ep, F_NEWSESSION)) {
-			if (ex_init(ep))
-				return (1);
-			FF_CLR(ep, F_NEWSESSION);
-			first = 0;
-		}
-
 		if (ex_gb(ep, ISSET(O_PROMPT) ? ':' : 0,
 		    &p, &len, GB_MAPCOMMAND) || !p)
 			continue;
@@ -73,12 +65,7 @@ ex(ep)
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
 			ex_cstring(ep, defcom, sizeof(DEFCOM) - 1, 0);
 		}
-		/*
-		 * XXX
-		 * THE UNDERLYING EXF MAY HAVE CHANGED.
-		 */
-		ep = curf;
-	} while (mode == MODE_EX);
+	} while (FF_SET(ep, F_MODE_EX) && !FF_ISSET(ep, F_FILE_RESET));
 	return (ex_end(ep));
 }
 
@@ -174,6 +161,11 @@ cend:			if (p > cmd) {
 			}
 			if (len == 0)
 				return (0);
+			if (ep->flags & F_FILE_RESET) {
+				msg(ep, M_ERROR,
+				    "File changed, remaining input discarded.");
+				return (0);
+			}
 			if (doquoting)
 				QINIT;
 			break;
@@ -554,7 +546,8 @@ addr2:	switch(cmd.addrcnt) {
 		 * vi allowed this, note, it's also the hack that allows
 		 * "vi + nonexistent_file" to work.
 		 */
-		if (num == 0 && (mode != MODE_VI || uselastcmd != 1) &&
+		if (num == 0 &&
+		    (!FF_ISSET(ep, F_MODE_VI) || uselastcmd != 1) &&
 		    !(flags & E_ZERO)) {
 			msg(ep, M_ERROR,
 			    "The %s command doesn't permit an address of 0.",
@@ -574,7 +567,7 @@ addr2:	switch(cmd.addrcnt) {
 	}
 
 	/* If doing a default command, vi just moves to the line. */
-	if (mode == MODE_VI && uselastcmd) {
+	if (FF_ISSET(ep, F_MODE_VI) && uselastcmd) {
 		SCRLNO(ep) = cmd.addr1.lno ? cmd.addr1.lno : 1;
 		SCRCNO(ep) = cmd.addr1.cno;
 		return (0);
@@ -629,11 +622,9 @@ addr2:	switch(cmd.addrcnt) {
 	if ((cp->fn)(ep, &cmd))
 		return (1);
 
-	/*
-	 * XXX
-	 * THE UNDERLYING EXF MAY HAVE CHANGED.
-	 */
-	ep = curf;
+	/* We may be editing a new file. */
+	if (FF_ISSET(ep, F_FILE_RESET))
+		return (0);
 
 	/*
 	 * The print commands have already handled the `print' flags.
@@ -662,8 +653,7 @@ addr2:	switch(cmd.addrcnt) {
 		SCRLNO(ep) += flagoff;
 	}
 
-	if (mode == MODE_EX &&
-	    ISSET(O_AUTOPRINT) && FF_ISSET(ep, F_AUTOPRINT))
+	if (FF_ISSET(ep, F_AUTOPRINT | F_MODE_EX) && ISSET(O_AUTOPRINT))
 		flags = E_F_PRINT;
 	else
 		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);
