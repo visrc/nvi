@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.19 1993/05/02 19:29:22 bostic Exp $ (Berkeley) $Date: 1993/05/02 19:29:22 $";
+static char sccsid[] = "$Id: v_word.c,v 5.20 1993/05/13 16:25:35 bostic Exp $ (Berkeley) $Date: 1993/05/13 16:25:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,7 @@ line:			if (lno == 1) {
 			startp = p;
 			if (len) {
 				p += len - 1;
-				if (len > 1 && !isspace(p[0]))
+				if (cnt && len > 1 && !isspace(p[0]))
 					if (inword(p[0])) {
 						if (!inword(p[-1]))
 							--cnt;
