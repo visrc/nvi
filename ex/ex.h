@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.5 1992/04/16 09:50:47 bostic Exp $ (Berkeley) $Date: 1992/04/16 09:50:47 $
+ *	$Id: ex.h,v 5.6 1992/04/16 13:46:33 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:46:33 $
  */
 
 struct _cmdarg;
@@ -73,6 +73,7 @@ extern char *defcmdarg[2];
 
 void	 ex __P((void));
 char	*linespec __P((char *, CMDARG *));
+int	 buildargv __P((char *, int, CMDARG *));
 
 int	ex_abbr __P((CMDARG *));
 int	ex_append __P((CMDARG *));
@@ -109,6 +110,7 @@ int	ex_print __P((CMDARG *));
 int	ex_put __P((CMDARG *));
 int	ex_quit __P((CMDARG *));
 int	ex_read __P((CMDARG *));
+int	ex_readfp __P((char *, FILE *, MARK, long *));
 void	ex_refresh __P((void));
 int	ex_rew __P((CMDARG *));
 int	ex_set __P((CMDARG *));
@@ -128,6 +130,6 @@ int	ex_vglobal __P((CMDARG *));
 int	ex_visual __P((CMDARG *));
 int	ex_wq __P((CMDARG *));
 int	ex_write __P((CMDARG *));
-int	ex_writerange __P((char *, FILE *, MARK, MARK, int));
+int	ex_writefp __P((char *, FILE *, MARK, MARK, int));
 int	ex_xit __P((CMDARG *));
 int	ex_yank __P((CMDARG *));
