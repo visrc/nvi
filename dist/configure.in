@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.141 1996/12/11 19:26:31 bostic Exp $ (Berkeley) $Date: 1996/12/11 19:26:31 $
+dnl	$Id: configure.in,v 8.142 1996/12/12 09:05:47 bostic Exp $ (Berkeley) $Date: 1996/12/12 09:05:47 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -179,11 +179,13 @@ fi
 AC_MSG_RESULT($vi_cv_path_preserve)
 
 dnl Check for programs used for installation
+AC_PATH_PROG(vi_cv_path_ar, ar, missing_ar)
 AC_PATH_PROG(vi_cv_path_chmod, chmod, missing_chmod)
 AC_PATH_PROG(vi_cv_path_cp, cp, missing_cp)
 AC_PATH_PROG(vi_cv_path_ln, ln, missing_ln)
 AC_PATH_PROG(vi_cv_path_mkdir, mkdir, missing_mkdir)
 AC_PATH_PROG(vi_cv_path_rm, rm, missing_rm)
+AC_PATH_PROG(vi_cv_path_ranlib, ranlib, missing_ranlib)
 AC_PATH_PROG(vi_cv_path_strip, strip, missing_strip)
 
 dnl Checks for libraries.
@@ -205,7 +207,7 @@ if test "$no_x" != yes; then
 fi
 
 dnl If the user wants a Motif IPC front-end for nvi, build it.
-AC_SUBST(nvi_motif)
+AC_SUBST(vi_motif)
 AC_SUBST(MOTIFLIBS)
 AC_MSG_CHECKING(if --enable-motif option specified)
 AC_ARG_ENABLE(motif,
@@ -213,7 +215,7 @@ AC_ARG_ENABLE(motif,
 	[vi_cv_motif="yes"], [vi_cv_motif="no"])
 AC_MSG_RESULT($vi_cv_motif)
 if test "$vi_cv_motif" = "yes"; then
-	nvi_motif=nvi_motif
+	vi_motif=vi_motif
 
 	dnl XXX
 	dnl BSDI's Motif libraries aren't shared.
