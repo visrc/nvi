@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.2 1993/07/21 09:58:31 bostic Exp $ (Berkeley) $Date: 1993/07/21 09:58:31 $";
+static char sccsid[] = "$Id: v_section.c,v 8.3 1993/08/31 17:15:26 bostic Exp $ (Berkeley) $Date: 1993/08/31 17:15:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,14 +18,38 @@ static char sccsid[] = "$Id: v_section.c,v 8.2 1993/07/21 09:58:31 bostic Exp $ 
 
 /*
  * In historic vi, the section commands ignored empty lines, unlike the
- * paragraph commands, which was probably okay, but also moved to the
- * start of the last line when there where no more sections instead of
- * the end of the last line.  This has been changed to be more like the
- * paragraphs command.
+ * paragraph commands, which was probably okay.  However, they also moved
+ * to the start of the last line when there where no more sections instead
+ * of the end of the last line like the paragraph commands.  I've changed
+ * the latter behaviore to match the paragraphs command.
  *
- * In historic vi, a "function" was defined as the first character on
- * the line being an open brace.
+ * In historic vi, a "function" was defined as the first character of the
+ * line being an open brace, which could be followed by anything.  This
+ * implementation follows that historic practice.
  */
+
+/* Macro to do a check on each line. */
+#define	CHECK {								\
+	if (len == 0)							\
+		continue;						\
+	if (p[0] == '{') {						\
+		if (!--cnt) {						\
+			rp->cno = 0;					\
+			rp->lno = lno;					\
+			return (0);					\
+		}							\
+		continue;						\
+	}								\
+	if (p[0] != '.' || len < 3)					\
+		continue;						\
+	for (lp = list; *lp; lp += 2)					\
+		if (lp[0] == p[1] &&					\
+		    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {	\
+			rp->cno = 0;					\
+			rp->lno = lno;					\
+			return (0);					\
+		}							\
+}
 
 /*
  * v_sectionf -- [count]]]
@@ -45,36 +69,10 @@ v_sectionf(sp, ep, vp, fm, tm, rp)
 	/* Get macro list. */
 	if ((list = O_STR(sp, O_SECTIONS)) == NULL)
 		return (1);
-	if (strlen(list) & 1) {
-		msgq(sp, M_ERR,
-		    "Section options must be in groups of two characters.");
-		return (1);
-	}
 
-	rp->cno = 0;
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (lno = fm->lno; (p = file_gline(sp, ep, ++lno, &len)) != NULL;)
-		switch(len) {
-		case 0:
-			break;;
-		case 1:
-			if (p[0] == '{' && !--cnt) {
-				rp->lno = lno;
-				return (0);
-			}
-			break;
-		default:
-			if (p[0] != '.')
-				break;
-			/* Check for macro. */
-			for (lp = list; *lp; lp += 2)
-				if (lp[0] == p[1] &&
-				    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
-					rp->lno = lno;
-					return (0);
-				}
-			break;
-		}
+		CHECK;
 
 	/* EOF is a movement sink. */
 	if (fm->lno != lno - 1) {
@@ -107,38 +105,13 @@ v_sectionb(sp, ep, vp, fm, tm, rp)
 		return (1);
 	}
 
+	/* Get macro list. */
 	if ((list = O_STR(sp, O_SECTIONS)) == NULL)
 		return (1);
-	if (strlen(list) & 1) {
-		msgq(sp, M_ERR,
-		    "Section options must be in groups of two characters.");
-		return (1);
-	}
 
-	rp->cno = 0;
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (lno = fm->lno; (p = file_gline(sp, ep, --lno, &len)) != NULL;)
-		switch(len) {
-		case 0:
-			break;
-		case 1:
-			if (p[0] == '{' && !--cnt) {
-				rp->lno = lno;
-				return (0);
-			}
-			break;
-		default:
-			if (p[0] != '.')
-				break;
-			/* Check for macro. */
-			for (lp = list; *lp; lp += 2)
-				if (lp[0] == p[1] &&
-				    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
-					rp->lno = lno;
-					return (0);
-				}
-			break;
-		}
+		CHECK;
 
 	/* SOF is a movement sink. */
 	rp->lno = 1;
