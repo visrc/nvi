@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.97 1994/10/13 13:59:40 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:40 $";
+static char sccsid[] = "$Id: vi.c,v 8.98 1994/10/23 20:28:56 bostic Exp $ (Berkeley) $Date: 1994/10/23 20:28:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,8 @@ static char sccsid[] = "$Id: vi.c,v 8.97 1994/10/13 13:59:40 bostic Exp $ (Berke
 #include "vi.h"
 #include "vcmd.h"
 
-static int getcmd __P((SCR *, EXF *,
+enum gcret { GC_ERR, GC_ERR_NOFLUSH, GC_OK } gcret;
+static enum gcret getcmd __P((SCR *, EXF *,
 		VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
 static __inline int
 	   getcount __P((SCR *, ARG_CHAR_T, u_long *));
@@ -106,8 +107,22 @@ vi(sp, ep)
 		memset(&vp->vp_startzero, 0,
 		    (u_int8_t *)&vp->vp_endzero -
 		    (u_int8_t *)&vp->vp_startzero);
-		if (getcmd(sp, ep, DOT, vp, NULL, &comcount, &mapped))
+		/*
+		 * !!!
+		 * Vi historically flushed mapped characters on error, but
+		 * entering extra <escape> characters at the beginning of
+		 * a map wasn't considered an error -- in fact, users would
+		 * put leading <escape> characters in maps to clean up vi
+		 * state before the map was interpreted.
+		 */
+		switch (getcmd(sp, ep, DOT, vp, NULL, &comcount, &mapped)) {
+		case GC_ERR:
 			goto err;
+		case GC_ERR_NOFLUSH:
+			goto enoflush;
+		case GC_OK:
+			break;
+		}
 
 		/*
 		 * Historical practice: if a dot command gets a new count,
@@ -268,23 +283,20 @@ vi(sp, ep)
 		    mark_set(sp, ep, ABSMARK1, &abs, 1))
 			goto err;
 
-		if (!MAPPED_KEYS_WAITING(sp))
-			(void)msg_rpt(sp, 1);
+		if (!MAPPED_KEYS_WAITING(sp)) {
+			if (0) {
+err:				term_flush(sp, "Vi error", CH_MAPPED);
+			}
+enoflush:		(void)msg_rpt(sp, 1);
+		}
 
 		/*
 		 * Check and clear the interrupts.  There's an obvious race,
 		 * but it's not worth cleaning up.  This is done after the
 		 * err: lable, so that if the "error" was an interupt it gets
 		 * cleaned up.
-		 *
-		 * !!!
-		 * Previous versions of nvi cleared mapped characters on error,
-		 * even if it wasn't an interrupt.  This feature was removed as
-		 * users complained that it wasn't historic practice and that
-		 * they used leading (illegal) <escape> characters in the map
-		 * to clean up vi state before the map was interpreted.
 		 */
-err:		if (INTERRUPTED(sp))
+		if (INTERRUPTED(sp))
 			term_flush(sp, "Interrupted", CH_MAPPED);
 		CLR_INTERRUPT(sp);
 	}
@@ -330,7 +342,7 @@ VIKEYS const tmotion = {
  *
  *	[count] key [character]
  */
-static int
+static enum gcret
 getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	SCR *sp;
 	EXF *ep;
@@ -368,7 +380,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
 		    "203|Buffers should be specified before the command");
-			return (1);
+			return (GC_ERR);
 		}
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
@@ -382,7 +394,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	 */
 	if (isdigit(key) && key != '0') {
 		if (getcount(sp, key, &vp->count))
-			return (1);
+			return (GC_ERR);
 		F_SET(vp, VC_C1SET);
 		*comcountp = 1;
 
@@ -395,12 +407,12 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 		cpart = ISPARTIAL;
 		if (F_ISSET(vp, VC_BUFFER)) {
 			msgq(sp, M_ERR, "204|Only one buffer can be specified");
-			return (1);
+			return (GC_ERR);
 		}
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
 		    "205|Buffers should be specified before the command");
-			return (1);
+			return (GC_ERR);
 		}
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
@@ -413,7 +425,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR,
 		    "206|%s isn't a vi command", KEY_NAME(sp, key));
-		return (1);
+		return (GC_ERR);
 	}
 	kp = &vikeys[vp->key = key];
 
@@ -434,7 +446,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 		if (key != '.') {
 			msgq(sp, ikey.value == K_ESCAPE ? M_BERR : M_ERR,
 			    "207|%s isn't a vi command", KEY_NAME(sp, key));
-			return (1);
+			return (GC_ERR);
 		}
 
 		/* If called for a motion command, stop now. */
@@ -444,7 +456,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 		/* A repeatable command must have been executed. */
 		if (!F_ISSET(dp, VC_ISDOT)) {
 			msgq(sp, M_ERR, "208|No command to repeat");
-			return (1);
+			return (GC_ERR);
 		}
 
 		/*
@@ -457,7 +469,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 		if (VIP(sp)->u_ccnt == sp->ccnt) {
 			vp->kp = &vikeys['u'];
 			F_SET(vp, VC_ISDOT);
-			return (0);
+			return (GC_OK);
 		}
 
 		/* Set new count/buffer, if any, and return. */
@@ -468,7 +480,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 		if (F_ISSET(vp, VC_BUFFER))
 			dp->buffer = vp->buffer;
 		*vp = *dp;
-		return (0);
+		return (GC_OK);
 	}
 
 	/* Set the flags based on the command flags. */
@@ -513,7 +525,7 @@ usage:			if (ismotion == NULL)
 			else
 				s = vikeys[ismotion->key].usage;
 			msgq(sp, M_ERR, "209|Usage: %s", s);
-			return (1);
+			return (GC_ERR);
 		}
 	}
 	/* Special case: 'z' command. */
@@ -521,7 +533,7 @@ usage:			if (ismotion == NULL)
 		KEY(vp->character, 0);
 		if (isdigit(vp->character)) {
 			if (getcount(sp, vp->character, &vp->count2))
-				return (1);
+				return (GC_ERR);
 			F_SET(vp, VC_C2SET);
 			KEY(vp->character, 0);
 		}
@@ -534,7 +546,7 @@ usage:			if (ismotion == NULL)
 	if (ismotion != NULL && ismotion->key != key && !LF_ISSET(V_MOVE)) {
 		msgq(sp, M_ERR, "210|%s may not be used as a motion command",
 		    KEY_NAME(sp, key));
-		return (1);
+		return (GC_ERR);
 	}
 
 	/* Required character. */
@@ -544,21 +556,21 @@ usage:			if (ismotion == NULL)
 	/* Get any associated keyword. */
 	if (F_ISSET(kp, V_KEYNUM | V_KEYW) &&
 	    getkeyword(sp, ep, vp, F_ISSET(kp, V_KEYNUM | V_KEYW)))
-		return (1);
+		return (GC_ERR);
 
-	return (0);
+	return (GC_OK);
 
 esc:	switch (cpart) {
 	case COMMANDMODE:
 		msgq(sp, M_BERR, "211|Already in command mode");
-		break;
+		return (GC_ERR_NOFLUSH);
 	case ISPARTIAL:
 		break;
 	case NOTPARTIAL:
 		(void)sp->s_bell(sp);
 		break;
 	}
-	return (1);
+	return (GC_ERR);
 }
 
 /*
