@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.15 1994/03/08 19:41:42 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:42 $";
+static char sccsid[] = "$Id: v_word.c,v 8.16 1994/03/09 09:38:23 bostic Exp $ (Berkeley) $Date: 1994/03/09 09:38:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -469,11 +469,11 @@ start:	if (type == BIGWORD)
 			}
 			/*
 			 * When we reach the end of the word before the last
-			 * word, we're done.  Move forward one to the start
-			 * of the next word.
+			 * word, we're done.  If we changed state, move forward
+			 * one to the end of the next word.
 			 */
 			if (cnt == 0) {
-				if (cs_next(sp, ep, &cs))
+				if (cs.cs_flags == 0 && cs_next(sp, ep, &cs))
 					return (1);
 				break;
 			}
@@ -504,7 +504,7 @@ start:	if (type == BIGWORD)
 			}
 			/* See comment above. */
 			if (cnt == 0) {
-				if (cs_next(sp, ep, &cs))
+				if (cs.cs_flags == 0 && cs_next(sp, ep, &cs))
 					return (1);
 				break;
 			}
