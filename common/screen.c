@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.50 1993/12/16 14:59:01 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:59:01 $";
+static char sccsid[] = "$Id: screen.c,v 8.51 1994/01/11 22:36:23 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:36:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,9 @@ screen_init(orig, spp, flags)
 	SCR *sp;
 	size_t len;
 
+	*spp = NULL;
 	CALLOC_RET(orig, sp, SCR *, 1, sizeof(SCR));
+	*spp = sp;
 
 /* INITIALIZED AT SCREEN CREATE. */
 	sp->gp = __global_list;			/* All ref the GS structure. */
