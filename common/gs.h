@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.33 1994/05/03 21:45:47 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:45:47 $
+ *	$Id: gs.h,v 8.34 1994/05/07 11:33:41 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:41 $
  */
 
 struct _gs {
@@ -68,16 +68,12 @@ struct _gs {
 #define	G_RECOVER_SET	0x00008		/* Recover system initialized. */
 #define	G_SETMODE	0x00010		/* Tty mode changed. */
 #define	G_SIGALRM	0x00020		/* SIGALRM arrived. */
-#define	G_SIGHUP	0x00040		/* SIGHUP arrived. */
-#define	G_SIGINTR	0x00080		/* SIGINT arrived. */
-#define	G_SIGTERM	0x00100		/* SIGTERM arrived. */
-#define	G_SIGTSTP	0x00200		/* SIGTSTP arrived. */
-#define	G_SIGWINCH	0x00400		/* SIGWINCH arrived. */
-#define	G_SLEEPING	0x00800		/* Asleep (die on signal). */
-#define	G_SNAPSHOT	0x01000		/* Always snapshot files. */
-#define	G_STDIN_TTY	0x02000		/* Standard input is a tty. */
-#define	G_TERMIOS_SET	0x04000		/* Termios structure is valid. */
-#define	G_TMP_INUSE	0x08000		/* Temporary buffer in use. */
+#define	G_SIGINTR	0x00040		/* SIGINT arrived. */
+#define	G_SIGWINCH	0x00080		/* SIGWINCH arrived. */
+#define	G_SNAPSHOT	0x00100		/* Always snapshot files. */
+#define	G_STDIN_TTY	0x00200		/* Standard input is a tty. */
+#define	G_TERMIOS_SET	0x00400		/* Termios structure is valid. */
+#define	G_TMP_INUSE	0x00800		/* Temporary buffer in use. */
 
 	u_int	 flags;
 };

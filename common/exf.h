@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.24 1994/04/24 17:40:20 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:20 $
+ *	$Id: exf.h,v 8.25 1994/05/07 11:33:37 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:37 $
  */
 					/* Undo direction. */
 /*
@@ -54,10 +54,9 @@ struct _exf {
 #define	F_MODIFIED	0x002		/* File is currently dirty. */
 #define	F_MULTILOCK	0x004		/* Multiple processes running, lock. */
 #define	F_NOLOG		0x008		/* Logging turned off. */
-#define	F_RCV_ALRM	0x010		/* File needs to be synced. */
-#define	F_RCV_NORM	0x020		/* Don't delete recovery files. */
-#define	F_RCV_ON	0x040		/* Recovery is possible. */
-#define	F_UNDO		0x080		/* No change since last undo. */
+#define	F_RCV_NORM	0x010		/* Don't delete recovery files. */
+#define	F_RCV_ON	0x020		/* Recovery is possible. */
+#define	F_UNDO		0x040		/* No change since last undo. */
 	u_int	 flags;
 };
 
@@ -86,12 +85,12 @@ int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_write __P((SCR *, EXF *, MARK *, MARK *, char *, int));
 
 /* Recovery routines. */
-void	 rcv_hup __P((void));
 int	 rcv_init __P((SCR *, EXF *));
 int	 rcv_list __P((SCR *));
+int	 rcv_on __P((SCR *, EXF *));
 int	 rcv_read __P((SCR *, FREF *));
 int	 rcv_sync __P((SCR *, EXF *));
-void	 rcv_term __P((void));
+void	 rcv_syncit __P((SCR *, int));
 int	 rcv_tmp __P((SCR *, EXF *, char *));
 
 /* DB interface routines */

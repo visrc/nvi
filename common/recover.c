@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.52 1994/04/24 17:40:24 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:24 $";
+static char sccsid[] = "$Id: recover.c,v 8.53 1994/05/07 11:33:44 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -77,7 +77,6 @@ static char sccsid[] = "$Id: recover.c,v 8.52 1994/04/24 17:40:24 bostic Exp $ (
 #define	VI_PHEADER	"Vi-recover-path: "
 
 static int	rcv_mailfile __P((SCR *, EXF *));
-static void	rcv_syncit __P((SCR *, int));
 
 /*
  * rcv_tmp --
@@ -302,73 +301,10 @@ rcv_sync(sp, ep)
 }
 
 /*
- * rcv_hup --
- *	Recovery SIGHUP interrupt handler.  (Modem line dropped, or
- *	xterm window closed.)
- */
-void
-rcv_hup()
-{
-	SCR *sp;
-
-	/*
-	 * Walk the lists of screens, sync'ing the files; only sync
-	 * each file once.  Send email to the user for each file saved.
-	 */
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		rcv_syncit(sp, 1);
-	for (sp = __global_list->hq.cqh_first;
-	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
-		rcv_syncit(sp, 1);
-
-	/*
-	 * Die with the proper exit status.  Don't bother using
-	 * sigaction(2) 'cause we want the default behavior.
-	 */
-	(void)signal(SIGHUP, SIG_DFL);
-	(void)kill(0, SIGHUP);
-
-	/* NOTREACHED */
-	exit (1);
-}
-
-/*
- * rcv_term --
- *	Recovery SIGTERM interrupt handler.  (Reboot or halt is running.)
- */
-void
-rcv_term()
-{
-	SCR *sp;
-
-	/*
-	 * Walk the lists of screens, sync'ing the files; only sync
-	 * each file once.
-	 */
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		rcv_syncit(sp, 0);
-	for (sp = __global_list->hq.cqh_first;
-	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
-		rcv_syncit(sp, 0);
-
-	/*
-	 * Die with the proper exit status.  Don't bother using
-	 * sigaction(2) 'cause we want the default behavior.
-	 */
-	(void)signal(SIGTERM, SIG_DFL);
-	(void)kill(0, SIGTERM);
-
-	/* NOTREACHED */
-	exit (1);
-}
-
-/*
  * rcv_syncit --
  *	Sync the file, optionally send mail.
  */
-static void
+void
 rcv_syncit(sp, email)
 	SCR *sp;
 	int email;

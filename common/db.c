@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.24 1994/04/10 14:31:06 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:31:06 $";
+static char sccsid[] = "$Id: db.c,v 8.25 1994/05/07 11:33:40 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,13 +134,13 @@ file_dline(sp, ep, lno)
 	recno_t lno;
 {
 	DBT key;
+	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", lno);
 #endif
 	/*
 	 * XXX
-	 *
 	 * Marks and global commands have to know when lines are
 	 * inserted or deleted.
 	 */
@@ -153,12 +153,14 @@ file_dline(sp, ep, lno)
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
+	SIGBLOCK;
 	if (ep->db->del(ep->db, &key, 0) == 1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to delete line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
+	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno <= ep->c_lno)
@@ -190,6 +192,7 @@ file_aline(sp, ep, update, lno, p, len)
 {
 	DBT data, key;
 	recno_t lline;
+	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
@@ -216,12 +219,14 @@ file_aline(sp, ep, update, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
+	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to append to line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
+	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno < ep->c_lno)
@@ -239,7 +244,6 @@ file_aline(sp, ep, update, lno, p, len)
 
 	/*
 	 * XXX
-	 *
 	 * Marks and global commands have to know when lines are
 	 * inserted or deleted.
 	 */
@@ -273,6 +277,7 @@ file_iline(sp, ep, lno, p, len)
 {
 	DBT data, key;
 	recno_t lline;
+	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp,
@@ -292,12 +297,14 @@ file_iline(sp, ep, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
+	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to insert at line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
+	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno >= ep->c_lno)
@@ -315,7 +322,6 @@ file_iline(sp, ep, lno, p, len)
 
 	/*
 	 * XXX
-	 *
 	 * Marks and global commands have to know when lines are
 	 * inserted or deleted.
 	 */
@@ -339,6 +345,7 @@ file_sline(sp, ep, lno, p, len)
 	size_t len;
 {
 	DBT data, key;
+	sigset_t set;
 
 #if defined(DEBUG) && 0
 	TRACE(sp,
@@ -352,12 +359,14 @@ file_sline(sp, ep, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
+	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to store line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
+	SIGUNBLOCK;
 
 	/* Flush the cache, before logging or screen update. */
 	if (lno == ep->c_lno)

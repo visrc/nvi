@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.57 1994/05/05 14:45:47 bostic Exp $ (Berkeley) $Date: 1994/05/05 14:45:47 $";
+static char sccsid[] = "$Id: util.c,v 8.58 1994/05/07 11:33:38 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,6 +125,9 @@ nullsp2:	len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
 	if (len >= sizeof(msgbuf))
 		len = sizeof(msgbuf) - 1;
 
+#ifdef DEBUG
+	TRACE(sp == NULL ? __global_list : sp, "%.*s\n", len, msgbuf);
+#endif
 	msg_app(__global_list, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
 }
 
@@ -142,6 +145,7 @@ msg_app(gp, sp, inv_video, p, len)
 	size_t len;
 {
 	static int reenter;		/* STATIC: Re-entrancy check. */
+	sigset_t set;
 	MSG *mp, *nmp;
 
 	/*
@@ -151,6 +155,13 @@ msg_app(gp, sp, inv_video, p, len)
 	if (reenter)
 		return;
 	reenter = 1;
+
+	/*
+	 * We can be entered as the result of a signal arriving, trying
+	 * to sync the file and failing.  This shouldn't be a hot spot,
+	 * block the signals.
+	 */
+	SIGBLOCK;
 
 	/*
 	 * Find an empty structure, or allocate a new one.  Use the
@@ -191,6 +202,7 @@ store:	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
 	mp->flags = inv_video ? M_INV_VIDEO : 0;
 
 ret:	reenter = 0;
+	SIGUNBLOCK;
 }
 
 /*

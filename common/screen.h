@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.108 1994/05/06 15:44:26 bostic Exp $ (Berkeley) $Date: 1994/05/06 15:44:26 $
+ *	$Id: screen.h,v 8.109 1994/05/07 11:33:42 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:42 $
  */
 
 /*
@@ -275,10 +275,24 @@ struct _scr {
 	u_int32_t flags;
 };
 
-/* Signals/timers have no structure, so the routines are here. */
+/*
+ * Signals/timers have no structure, so it's all here.
+ *
+ * Block signals that could cause consistency problems, either in
+ * the underlying DB routines, or in the msgq routines.
+ */
+#define	SIGBLOCK {							\
+	(void)sigemptyset(&set);					\
+	(void)sigaddset(&set, SIGALRM);					\
+	(void)sigaddset(&set, SIGHUP);					\
+	(void)sigaddset(&set, SIGTERM);					\
+	(void)sigprocmask(SIG_BLOCK, &set, NULL);			\
+}
+#define	SIGUNBLOCK							\
+	(void)sigprocmask(SIG_UNBLOCK, &set, NULL);
+
 void	 busy_off __P((SCR *));
 int	 busy_on __P((SCR *, char const *));
-int	 rcv_on __P((SCR *, EXF *));
 void	 sig_end __P((void));
 int	 sig_init __P((SCR *));
 
