@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.61 1993/11/27 14:24:02 bostic Exp $ (Berkeley) $Date: 1993/11/27 14:24:02 $";
+static char sccsid[] = "$Id: ex.c,v 8.62 1993/11/28 12:28:35 bostic Exp $ (Berkeley) $Date: 1993/11/28 12:28:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,6 +212,21 @@ ex_cstring(sp, ep, cmd, len)
 					continue;
 				}
 				break;
+			}
+
+			/*
+			 * Special case comments, because the upcoming special
+			 * cases are looking at the command syntax.  A comment
+			 * line could match a syntax, leading to all sorts of
+			 * strangeness.
+			 */
+			if (ch == '"') {
+				for (; len > 0; ++t, --len) {
+					if (sp->special[*t] == K_NL)
+						break;
+				}
+				p = cmd;
+				goto cend;
 			}
 
 			/*
