@@ -6,16 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.19 1992/10/29 14:35:40 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:35:40 $";
+static char sccsid[] = "$Id: cut.c,v 5.20 1992/11/02 22:09:57 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:09:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
-#include <stdlib.h>
-#include <fcntl.h>
+
+#include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "vi.h"
 #include "exf.h"
@@ -184,7 +186,7 @@ put(buffer, cp, rp, append)
 	TEXT *tp;
 	recno_t lno;
 	size_t clen, len;
-	int intermediate, lmode;
+	int lmode;
 	u_char *p, *t;
 
 	CBNAME(buffer, cb);
