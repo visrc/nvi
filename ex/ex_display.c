@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.12 1993/12/02 10:55:03 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:55:03 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.13 1993/12/28 11:47:50 bostic Exp $ (Berkeley) $Date: 1993/12/28 11:47:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,12 +63,17 @@ bdisplay(sp, ep)
 		return (0);
 	}
 
+	/* Buffers can be infinitely long, make it interruptible. */
+	F_SET(sp, S_INTERRUPTIBLE);
+
 	/* Display regular cut buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (isdigit(cbp->name))
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
 			db(sp, cbp);
+		if (F_ISSET(sp, S_INTERRUPTED))
+			return (0);
 	}
 	/* Display numbered buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
@@ -76,6 +81,8 @@ bdisplay(sp, ep)
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
 			db(sp, cbp);
+		if (F_ISSET(sp, S_INTERRUPTED))
+			return (0);
 	}
 	return (0);
 }
@@ -97,8 +104,11 @@ db(sp, cbp)
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : "");
 	for (tp = cbp->textq.cqh_first;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
-		for (len = tp->len, p = tp->lb; len--;)
+		for (len = tp->len, p = tp->lb; len--;) {
 			(void)ex_printf(EXCOOKIE, "%s", charname(sp, *p++));
+			if (F_ISSET(sp, S_INTERRUPTED))
+				return;
+		}
 		(void)ex_printf(EXCOOKIE, "\n");
 	}
 }
