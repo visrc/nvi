@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.26 1995/11/06 19:26:50 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:26:50 $";
+static char sccsid[] = "$Id: vi.c,v 10.27 1995/11/07 08:36:14 bostic Exp $ (Berkeley) $Date: 1995/11/07 08:36:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,6 +64,7 @@ vi(spp)
 {
 	GS *gp;
 	MARK abs;
+	MSG *mp;
 	SCR *next, *sp;
 	VICMD cmd, *vp;
 	VI_PRIVATE *vip;
@@ -87,6 +88,15 @@ vi(spp)
 	 */
 	if (v_init(sp) || vs_refresh(sp))
 		return (1);
+
+	/* Flush any saved messages. */
+	if (gp->msgq.lh_first != NULL && F_ISSET(sp, S_SCREEN_READY))
+		while ((mp = gp->msgq.lh_first) != NULL) {
+			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
+			LIST_REMOVE(mp, q);
+			free(mp->buf);
+			free(mp);
+		}
 
 	for (vip = VIP(sp), rval = 0;;) {
 		/* Resolve messages. */
