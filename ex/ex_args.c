@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.21 1994/06/28 10:38:40 bostic Exp $ (Berkeley) $Date: 1994/06/28 10:38:40 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.22 1994/06/29 18:50:03 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:50:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -204,8 +204,8 @@ ex_args(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	int cnt, col, iscur, len, nlen, sep;
-	char **ap, *name;
+	int cnt, col, len, nlen, sep;
+	char **ap;
 
 	if (sp->argv == NULL) {
 		(void)ex_printf(EXCOOKIE, "No file list to display.\n");
@@ -214,12 +214,7 @@ ex_args(sp, ep, cmdp)
 		
 	col = len = sep = 0;
 	for (cnt = 1, ap = sp->argv; *ap != NULL; ++ap) {
-		name = *ap;
-		iscur = ap == sp->cargv &&
-		    !strcmp(*ap, F_ISSET(sp->frp, FR_TMPFILE) ?
-		    TEMPORARY_FILE_STRING : sp->frp->name);
-extra:		nlen = strlen(name);
-		col += len = nlen + sep + (iscur ? 2 : 0);
+		col += len = strlen(*ap) + sep + (ap == sp->cargv ? 2 : 0);
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
@@ -230,16 +225,10 @@ extra:		nlen = strlen(name);
 		}
 		++cnt;
 
-		if (iscur)
-			(void)ex_printf(EXCOOKIE, "[%s]", name);
-		else {
-			(void)ex_printf(EXCOOKIE, "%s", name);
-			if (ap == sp->cargv) {
-				name = sp->frp->name;
-				iscur = 1;
-				goto extra;
-			}
-		}
+		if (ap == sp->cargv)
+			(void)ex_printf(EXCOOKIE, "[%s]", *ap);
+		else
+			(void)ex_printf(EXCOOKIE, "%s", *ap);
 	}
 	return (0);
 }
