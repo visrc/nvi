@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.24 1994/04/09 18:22:11 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:11 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.25 1994/05/16 18:56:49 bostic Exp $ (Berkeley) $Date: 1994/05/16 18:56:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,8 @@ svi_line(sp, ep, smp, yp, xp)
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line;
 	size_t oldy, oldx;
-	int ch, is_cached, is_infoline, is_partial, is_tab, listset;
+	int ch, is_cached, is_infoline, is_partial, is_tab;
+	int list_tab, list_dollar;
 	char *p, nbuf[10];
 
 #if defined(DEBUG) && 0
@@ -101,14 +102,15 @@ svi_line(sp, ep, smp, yp, xp)
 	 * Set the number of columns for this screen.
 	 */
 	cols_per_screen = sp->cols;
+	list_tab = O_ISSET(sp, O_LIST);
 	if (is_infoline = ISINFOLINE(sp, smp)) {
-		listset = 0;
+		list_dollar = 0;
 		if (O_ISSET(sp, O_LEFTRIGHT))
 			skip_screens = 0;
 		else
 			skip_screens = smp->off - 1;
 	} else {
-		listset = O_ISSET(sp, O_LIST);
+		list_dollar = list_tab;
 		skip_screens = smp->off - 1;
 
 		/*
@@ -150,7 +152,7 @@ svi_line(sp, ep, smp, yp, xp)
 		if (skip_screens == 0)
 			if (p == NULL) {
 				if (smp->lno == 1) {
-					if (listset) {
+					if (list_dollar) {
 						ch = '$';
 						goto empty;
 					}
@@ -159,7 +161,7 @@ svi_line(sp, ep, smp, yp, xp)
 					goto empty;
 				}
 			} else
-				if (listset) {
+				if (list_dollar) {
 					ch = '$';
 empty:					ADDCH(ch);
 				}
@@ -221,7 +223,7 @@ empty:					ADDCH(ch);
 			smp->c_scoff = offset_in_char;
 		} else for (scno = 0; offset_in_line < len; ++offset_in_line) {
 			scno += chlen =
-			    (ch = *(u_char *)p++) == '\t' && !listset ?
+			    (ch = *(u_char *)p++) == '\t' && !list_tab ?
 			    TAB_OFF(sp, scno) : KEY_LEN(sp, ch);
 			if (scno < cols_per_screen)
 				continue;
@@ -272,7 +274,7 @@ empty:					ADDCH(ch);
 	/* This is the loop that actually displays characters. */
 	for (is_partial = 0, scno = 0;
 	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
-		if ((ch = *(u_char *)p++) == '\t' && !listset) {
+		if ((ch = *(u_char *)p++) == '\t' && !list_tab) {
 			scno += chlen = TAB_OFF(sp, scno) - offset_in_char;
 			is_tab = 1;
 		} else {
@@ -353,7 +355,7 @@ empty:					ADDCH(ch);
 		 * end of the line, and the line ended on this screen,
 		 * add a trailing $.
 		 */
-		if (listset) {
+		if (list_dollar) {
 			++scno;
 			ADDCH('$');
 		}
