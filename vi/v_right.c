@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.7 1992/10/24 14:27:30 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:27:30 $";
+static char sccsid[] = "$Id: v_right.c,v 5.8 1992/10/26 17:46:56 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:46:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,6 +91,6 @@ v_dollar(vp, fm, tm, rp)
 	}
 
 	rp->lno = fm->lno;
-	rp->cno = vp->flags & VC_ISMOTION ? len : len - 1;
+	rp->cno = vp->flags & (VC_C | VC_D) ? len : len - 1;
 	return (0);
 }
