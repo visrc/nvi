@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.27 1993/05/13 11:43:56 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:56 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.28 1993/05/13 14:29:17 bostic Exp $ (Berkeley) $Date: 1993/05/13 14:29:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,8 +75,11 @@ shift(sp, ep, cmdp, rl)
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
 		if ((p = file_gline(sp, ep, from, &len)) == NULL)
 			goto err;
-		if (!len)
+		if (!len) {
+			if (sp->lno == from)
+				curset = 1;
 			continue;
+		}
 
 		/*
 		 * Calculate the old indent amount and the number of
