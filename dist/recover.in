@@ -1,4 +1,4 @@
-#	$Id: recover.in,v 8.1 1994/08/11 10:32:55 bostic Exp $ (Berkeley) $Date: 1994/08/11 10:32:55 $
+#	$Id: recover.in,v 8.2 1994/08/12 09:00:48 bostic Exp $ (Berkeley) $Date: 1994/08/12 09:00:48 $
 #
 # Recover nvi editor files:
 RECDIR=/var/tmp/vi.recover
@@ -24,7 +24,7 @@ fi
 virecovery=`echo $RECDIR/recover.*`
 if [ "$virecovery" != "$RECDIR/recover.*" ]; then
 	for i in $virecovery; do
-		recfile=`awk '/X-vi-recover-path:/{print $2}' < $i`
+		recfile=`awk '/^X-vi-recover-path:/{print $2}' < $i`
 		if test ! -n $recfile -a -s $recfile; then
 			$SENDMAIL -t < $i
 		else
