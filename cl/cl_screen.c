@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.6 1995/06/19 19:53:35 bostic Exp $ (Berkeley) $Date: 1995/06/19 19:53:35 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.7 1995/06/22 19:22:22 bostic Exp $ (Berkeley) $Date: 1995/06/22 19:22:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,15 @@ cl_vi_init(sp)
 	int nf;
 	char *p;
 
-	if (sp->gp->cl_private == NULL && cl_common(sp))
+	/* Curses vi always reads from (and writes to) a terminal. */
+	gp = sp->gp;
+	if (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO)) {
+		msgq(sp, M_ERR,
+		    "016|Vi's standard input and output must be a terminal");
+		return (1);
+	}
+
+	if (gp->cl_private == NULL && cl_common(sp))
 		return (1);
 
 #ifdef SYSV_CURSES
@@ -153,7 +161,6 @@ cl_vi_init(sp)
 	 * If they didn't, it's unclear what we're supposed to do here, but
 	 * it's also pretty unlikely.
 	 */
-	gp = sp->gp;
 	if (tcgetattr(STDIN_FILENO, &t)) {
 		msgq(sp, M_SYSERR, "tcgetattr");
 		goto err;
