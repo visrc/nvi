@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.39 1994/03/22 18:42:27 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:42:27 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.40 1994/04/07 11:32:34 bostic Exp $ (Berkeley) $Date: 1994/04/07 11:32:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,6 +81,13 @@ ex_substitute(sp, ep, cmdp)
 		return (substitute(sp, ep,
 		    cmdp, p, &sp->subre, SUB_MUSTSETR));
 
+	/*
+	 * !!!
+	 * The full-blown substitute command reset the remembered
+	 * state of the 'c' and 'g' suffices.
+	 */
+	sp->c_suffix = sp->g_suffix = 0;
+	
 	/*
 	 * Get the pattern string, toss escaped characters.
 	 *
@@ -344,10 +351,21 @@ substitute(sp, ep, cmdp, s, re, flags)
 	MARK from, to;
 	recno_t elno, lno;
 	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
-	int cflag, gflag, lflag, nflag, pflag, rflag;
+	int cflag, lflag, nflag, pflag, rflag;
 	int didsub, do_eol_match, eflags, empty_ok, eval;
 	int linechanged, matched, quit, rval, teardown;
 	char *bp, *lb;
+
+	/*
+	 * !!!
+	 * Historically, the 'g' and 'c' suffices were always toggled as flags,
+	 * so ":s/A/B/" was the same as ":s/A/B/ccgg".  If O_EDCOMPATIBLE was
+	 * not set, they were initialized to 0 for all substitute commands.  If
+	 * O_EDCOMPATIBLE was set, they were initialized to 0 only if the user
+	 * specified substitute/replacement patterns (see ex_substitute()).
+	 */
+	if (!O_ISSET(sp, O_EDCOMPATIBLE))
+		sp->c_suffix = sp->g_suffix = 0;
 
 	/*
 	 * Historic vi permitted the '#', 'l' and 'p' options in vi mode, but
@@ -365,7 +383,7 @@ substitute(sp, ep, cmdp, s, re, flags)
 	 * just take it them in whatever order the user gives them.  (The ex
 	 * usage statement doesn't reflect this.)
 	 */
-	cflag = gflag = lflag = nflag = pflag = rflag = 0;
+	cflag = lflag = nflag = pflag = rflag = 0;
 	for (lno = OOBLNO; *s != '\0'; ++s)
 		switch (*s) {
 		case ' ':
@@ -399,10 +417,10 @@ substitute(sp, ep, cmdp, s, re, flags)
 			nflag = 1;
 			break;
 		case 'c':
-			cflag = 1;
+			sp->c_suffix = !sp->c_suffix;
 			break;
 		case 'g':
-			gflag = 1;
+			sp->g_suffix = !sp->g_suffix;
 			break;
 		case 'l':
 			lflag = 1;
@@ -416,12 +434,13 @@ substitute(sp, ep, cmdp, s, re, flags)
 		    "Regular expression specified; r flag meaningless.");
 				return (1);
 			}
-			if (!F_ISSET(sp, S_SUBRE_SET)) {
+			if (!F_ISSET(sp, S_SRE_SET)) {
 				msgq(sp, M_ERR,
 				    "No previous regular expression.");
 				return (1);
 			}
 			rflag = 1;
+			re = &sp->sre;
 			break;
 		default:
 			goto usage;
@@ -432,7 +451,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
-	if (IN_VI_MODE(sp) && cflag && (lflag || nflag || pflag)) {
+	if (IN_VI_MODE(sp) && sp->c_suffix && (lflag || nflag || pflag)) {
 		msgq(sp, M_ERR,
 	"The #, l and p flags may not be combined with the c flag in vi mode.");
 		return (1);
@@ -472,7 +491,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		 * Make a local copy if doing confirmation -- when calling
 		 * the confirm routine we're likely to lose the cached copy.
 		 */
-		if (cflag) {
+		if (sp->c_suffix) {
 			if (bp == NULL) {
 				GET_SPACE_RET(sp, bp, blen, llen);
 			} else
@@ -567,7 +586,7 @@ nextmatch:	sp->match[0].rm_so = 0;
 		}
 
 		/* Confirm change. */
-		if (cflag) {
+		if (sp->c_suffix) {
 			/*
 			 * Set the cursor position for confirmation.  Note,
 			 * if we matched on a '$', the cursor may be past
@@ -624,7 +643,7 @@ nextmatch:	sp->match[0].rm_so = 0;
 		 * of the last line changed.  We move to the beginning of
 		 * the next substitution.
 		 */
-		if (!cflag) {
+		if (!sp->c_suffix) {
 			sp->lno = lno;
 			sp->cno = lbclen;
 		}
@@ -649,7 +668,7 @@ skip:		offset += sp->match[0].rm_eo;
 		 * update the screen.  The basic idea is to store the line
 		 * so the screen update routines can find it, and restart.
 		 */
-		if (didsub && cflag && gflag) {
+		if (didsub && sp->c_suffix && sp->g_suffix) {
 			/*
 			 * The new search offset will be the end of the
 			 * modified line.
@@ -716,7 +735,7 @@ skip:		offset += sp->match[0].rm_eo;
 		 * the string match.  Set REG_NOTEOL so the '$' pattern
 		 * only matches once.
 		 */
-		if (gflag && do_eol_match) {
+		if (sp->g_suffix && do_eol_match) {
 			if (len == 0) {
 				do_eol_match = 0;
 				eflags |= REG_NOTEOL;
