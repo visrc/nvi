@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.41 1996/06/10 21:00:41 bostic Exp $ (Berkeley) $Date: 1996/06/10 21:00:41 $
+.\"     $Id: vi.1,v 8.42 1996/06/17 11:24:42 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:24:42 $
 .\"
 .TH VI 1 "%Q%"
 .UC
@@ -1353,6 +1353,10 @@ command.
 .TP
 .B "window, w, wi [environment variable LINES]"
 Set the window size for the screen.
+.TP
+.B "windowname [off]"
+Change the icon/window name to the current file name even if it can't
+be restored on editor exit.
 .TP
 .B "wraplen, wl [0]"
 .I \&Vi
