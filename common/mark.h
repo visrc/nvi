@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 5.2 1992/06/07 13:53:40 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:53:40 $
+ *	$Id: mark.h,v 5.3 1992/06/15 09:47:32 bostic Exp $ (Berkeley) $Date: 1992/06/15 09:47:32 $
  */
 
 #ifndef	_MARK_H_
@@ -33,5 +33,6 @@ typedef struct {
 void	 mark_delete __P((MARK *, MARK *, int));
 MARK	*mark_get __P((int));
 void	 mark_insert __P((MARK *, MARK *));
+void	 mark_reset __P((void));
 int	 mark_set __P((int, MARK *));
 #endif /* !_MARK_H_ */
