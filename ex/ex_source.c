@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_source.c,v 10.4 1995/09/21 12:07:33 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:33 $";
+static char sccsid[] = "$Id: ex_source.c,v 10.5 1995/10/04 12:35:08 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:35:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,8 +39,8 @@ ex_source(sp, cmdp)
 	EXCMD *cmdp;
 {
 	struct stat sb;
-	int fd, len, nf;
-	char *bp, *name, *p;
+	int fd, len;
+	char *bp, *name;
 
 	name = cmdp->argv[0]->bp;
 	if ((fd = open(name, O_RDONLY, 0)) < 0 || fstat(fd, &sb))
@@ -73,10 +73,7 @@ ex_source(sp, cmdp)
 		if (len != sb.st_size)
 			errno = EIO;
 
-err:		p = msg_print(sp, name, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+err:		msgq_str(sp, M_SYSERR, name, "%s");
 		if (bp != NULL)
 			free(bp);
 		return (1);
