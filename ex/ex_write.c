@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.18 1993/12/10 12:20:59 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:59 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.19 1993/12/18 11:28:32 bostic Exp $ (Berkeley) $Date: 1993/12/18 11:28:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,7 +203,12 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	fline = fm->lno;
 	tline = tm->lno;
 
+	if (nlno != NULL) {
+		*nch = 0;
+		*nlno = 0;
+	}
 	ccnt = 0;
+
 	/*
 	 * The vi filter code has multiple processes running simultaneously,
 	 * and one of them calls ex_writefp().  The "unsafe" function calls
