@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 9.2 1994/11/13 11:32:10 bostic Exp $ (Berkeley) $Date: 1994/11/13 11:32:10 $";
+static char sccsid[] = "$Id: ex_visual.c,v 9.3 1994/11/13 11:32:42 bostic Exp $ (Berkeley) $Date: 1994/11/13 11:32:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ ex_visual(sp, cmdp)
 		return (1);
 	}
 
-	/* If a line specified, move to that line. */
+	/* Move to the address. */
 	sp->lno = cmdp->addr1.lno == 0 ? 1 : cmdp->addr1.lno;
 
 	/*
