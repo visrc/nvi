@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.32 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $";
+static const char sccsid[] = "$Id: db.c,v 10.33 2000/07/22 15:57:26 skimo Exp $ (Berkeley) $Date: 2000/07/22 15:57:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,6 +97,7 @@ db_get(sp, lno, flags, pp, lenp)
 	char *bp;
 	size_t blen;
 
+	bp = NULL;
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
 	 * have to have an OOB condition for the look-aside into the input
