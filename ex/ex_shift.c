@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.5 1993/08/26 19:02:53 bostic Exp $ (Berkeley) $Date: 1993/08/26 19:02:53 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.6 1993/09/01 12:17:12 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:17:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,8 +152,8 @@ err:			FREE_SPACE(sp, bp, blen);
 	}
 	if (!curset) {
 		sp->lno = to;
-		if (nonblank(sp, ep, to, &sp->cno))
-			sp->cno = 0;
+		sp->cno = 0;
+		(void)nonblank(sp, ep, to, &sp->cno);
 	}
 
 	FREE_SPACE(sp, bp, blen);

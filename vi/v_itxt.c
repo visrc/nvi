@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.10 1993/08/31 18:38:24 bostic Exp $ (Berkeley) $Date: 1993/08/31 18:38:24 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.11 1993/09/01 12:17:31 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:17:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -476,6 +476,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 	 * exciting, the initial space is handled as auto-indent characters.
 	 */
 	if (lmode = F_ISSET(vp, VC_LMODE)) {
+		fm->cno = 0;
 		if (nonblank(sp, ep, fm->lno, &fm->cno))
 			return (1);
 		LF_SET(TXT_AICHARS);
