@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.62 1996/06/17 09:42:31 bostic Exp $ (Berkeley) $Date: 1996/06/17 09:42:31 $
+#	$Id: Makefile.in,v 8.63 1996/06/19 20:02:10 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:02:10 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -533,15 +533,14 @@ rec_utils.o: $(srcdir)/db/recno/rec_utils.c
 	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
 
 # Regular Expressions sources.
-RINC=	-I$(srcdir)/regex
 regcomp.o: $(srcdir)/regex/regcomp.c
-	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $(RINC) $?
+	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $?
 regerror.o: $(srcdir)/regex/regerror.c
-	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $(RINC) $?
+	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $?
 regexec.o: $(srcdir)/regex/regexec.c
-	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $(RINC) $?
+	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $?
 regfree.o: $(srcdir)/regex/regfree.c
-	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $(RINC) $?
+	$(CC) -D__REGEX_PRIVATE $(CFLAGS) $?
 
 # Random replacement and workaround sources.
 addnstr.o: $(srcdir)/clib/addnstr.c
