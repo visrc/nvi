@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.3 1993/08/18 16:22:44 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:22:44 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.4 1993/08/21 18:03:42 bostic Exp $ (Berkeley) $Date: 1993/08/21 18:03:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,8 +137,11 @@ err:			FREE_SPACE(sp, bp, blen);
 		 * highest numbered line shifted.  Here, if the cursor isn't
 		 * part of the set of lines that are moved, move it to the
 		 * first non-blank of the last line shifted.  (This makes
-		 * ":3>>" in vi work reasonably.) Otherwise, don't move it
-		 * at all (this makes dot useful, for example, ">'a."). 
+		 * ":3>>" in vi work reasonably.)  If the cursor is part of
+		 * the shifted lines, it doesn't get moved at all.  This
+		 * permits shifting of marked areas, i.e. ">'a." shifts the
+		 * marked area twice, something that couldn't be done with
+		 * historic vi.
 		 */
 		if (sp->lno == from) {
 			curset = 1;
