@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.29 1993/02/21 19:44:26 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:44:26 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.30 1993/02/24 13:02:59 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:02:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -20,10 +20,10 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.29 1993/02/21 19:44:26 bostic Exp $ (B
 #include <string.h>
 
 #include "vi.h"
-#include "vcmd.h"
 #include "options.h"
 #include "screen.h"
 #include "term.h"
+#include "vcmd.h"
 
 #define	N_AUTOINDENT	0x01		/* Autoindent set this line. */
 #define	N_APPENDEOL	0x02		/* Appending after EOL. */
@@ -63,7 +63,7 @@ v_iA(ep, vp, fm, tm, rp)
 			}
 			len = 0;
 		} else 
-			ep->cno = len;
+			SCRCNO(ep) = len;
 
 		/* Set flag to put an extra space at the end of the line. */
 		if (newtext(ep, vp, NULL, p, len, rp, OOBLNO, N_APPENDEOL))
@@ -103,11 +103,11 @@ v_ia(ep, vp, fm, tm, rp)
 			flags = N_APPENDEOL;
 			len = 0;
 		} else if (len) {
-			if (len == ep->cno + 1) {
+			if (len == SCRCNO(ep) + 1) {
 				flags = N_APPENDEOL;
-				ep->cno = len;
+				SCRCNO(ep) = len;
 			} else
-				++ep->cno;
+				++SCRCNO(ep);
 		} else
 			flags = N_APPENDEOL;
 		if (newtext(ep, vp, NULL, p, len, rp, OOBLNO, flags))
@@ -143,8 +143,8 @@ v_iI(ep, vp, fm, tm, rp)
 				return (1);
 			}
 			len = 0;
-		} else if (ep->cno != 0)
-			ep->cno = 0;
+		} else if (SCRCNO(ep) != 0)
+			SCRCNO(ep) = 0;
 		if (newtext(ep, vp,
 		    NULL, p, len, rp, OOBLNO, len == 0 ? N_APPENDEOL : 0))
 			return (1);
@@ -206,16 +206,16 @@ v_iO(ep, vp, fm, tm, rp)
 		} else {
 			p = (u_char *)"";
 			len = 0;
-			if (file_iline(ep, ep->lno, p, len))
+			if (file_iline(ep, SCRLNO(ep), p, len))
 				return (1);
-			if ((p = file_gline(ep, ep->lno, &len)) == NULL) {
-				GETLINE_ERR(ep, ep->lno);
+			if ((p = file_gline(ep, SCRLNO(ep), &len)) == NULL) {
+				GETLINE_ERR(ep, SCRLNO(ep));
 				return (1);
 			}
-			ep->cno = 0;
+			SCRCNO(ep) = 0;
 		}
 		if (newtext(ep, vp, NULL,
-		    p, len, rp, ep->lno + 1, N_APPENDEOL | N_AUTOINDENT))
+		    p, len, rp, SCRLNO(ep) + 1, N_APPENDEOL | N_AUTOINDENT))
 			return (1);
 
 		vp->flags |= VC_ISDOT;
@@ -238,22 +238,22 @@ v_io(ep, vp, fm, tm, rp)
 	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt; --cnt) {
-		if (ep->lno == 1 && file_lline(ep) == 0) {
+		if (SCRLNO(ep) == 1 && file_lline(ep) == 0) {
 			p = NULL;
 			len = 0;
 		} else {
 			p = (u_char *)"";
 			len = 0;
-			if (file_aline(ep, ep->lno, p, len))
+			if (file_aline(ep, SCRLNO(ep), p, len))
 				return (1);
-			if ((p = file_gline(ep, ++ep->lno, &len)) == NULL) {
-				GETLINE_ERR(ep, ep->lno);
+			if ((p = file_gline(ep, ++SCRLNO(ep), &len)) == NULL) {
+				GETLINE_ERR(ep, SCRLNO(ep));
 				return (1);
 			}
-			ep->cno = 0;
+			SCRCNO(ep) = 0;
 		}
 		if (newtext(ep, vp, NULL,
-		    p, len, rp, ep->lno - 1, N_APPENDEOL | N_AUTOINDENT))
+		    p, len, rp, SCRLNO(ep) - 1, N_APPENDEOL | N_AUTOINDENT))
 			return (1);
 
 		vp->flags |= VC_ISDOT;
@@ -303,8 +303,8 @@ v_Change(ep, vp, fm, tm, rp)
 			GETLINE_ERR(ep, fm->lno);
 			return (1);
 		}
-		ep->lno = fm->lno;
-		ep->cno = 0;
+		SCRLNO(ep) = fm->lno;
+		SCRCNO(ep) = 0;
 		return (newtext(ep, vp, NULL, p, len, rp, OOBLNO, 0));
 	}
 
@@ -361,8 +361,8 @@ v_change(ep, vp, fm, tm, rp)
 			GETLINE_ERR(ep, fm->lno);
 			return (1);
 		}
-		ep->lno = fm->lno;
-		ep->cno = 0;
+		SCRLNO(ep) = fm->lno;
+		SCRCNO(ep) = 0;
 		return (newtext(ep, vp, NULL, p, len, rp, OOBLNO, 0));
 	}
 
@@ -420,8 +420,8 @@ v_Replace(ep, vp, fm, tm, rp)
 		 */
 		if (notfirst && len) {
 			++rp->cno;
-			ep->lno = rp->lno;
-			ep->cno = rp->cno;
+			SCRLNO(ep) = rp->lno;
+			SCRCNO(ep) = rp->cno;
 			vp->flags |= VC_ISDOT;
 		}
 		notfirst = 1;
@@ -530,8 +530,8 @@ newtext(ep, vp, tm, p, len, rp, ai_line, flags)
 	u_char *repp;		/* Replay buffer. */
 
 	/* Set the initial cursor position. */
-	ib.start.lno = ib.stop.lno = ep->lno;
-	ib.start.cno = ib.stop.cno = ep->cno;
+	ib.start.lno = ib.stop.lno = SCRLNO(ep);
+	ib.start.cno = ib.stop.cno = SCRCNO(ep);
 
 	/* Make sure the buffer is big enough even if the line is empty. */
 	if (binc(ep, &ib.ilb, &ib.ilblen, len + 5))
@@ -549,11 +549,11 @@ newtext(ep, vp, tm, p, len, rp, ai_line, flags)
 		memmove(ib.ilb, p, len);
 		ib.len = len;
 		if (flags & N_OVERWRITE) {
-			overwrite = tm->cno - ep->cno;
+			overwrite = tm->cno - SCRCNO(ep);
 			insert = len - tm->cno;
 		} else {
 			overwrite = 0;
-			insert = len - ep->cno;
+			insert = len - SCRCNO(ep);
 		}
 		if (flags & N_EMARK)
 			ib.ilb[tm->cno - 1] = END_CH;
@@ -581,10 +581,10 @@ newtext(ep, vp, tm, p, len, rp, ai_line, flags)
 			return (1);
 		in_ai = 1;
 		startcol = 0;
-		ep->cno = col ? col - 1 : 0;
+		SCRCNO(ep) = col ? col - 1 : 0;
 	} else {
 		in_ai = 0;
-		col = startcol = ep->cno;
+		col = startcol = SCRCNO(ep);
 	}
 
 	/* Point to the first empty slot in which to insert a character. */
@@ -598,7 +598,7 @@ newtext(ep, vp, tm, p, len, rp, ai_line, flags)
 	 */
 	if (flags & N_APPENDEOL) {
 		*p = '+';
-		ep->cno = ib.len;
+		SCRCNO(ep) = ib.len;
 		++ib.len;
 		++insert;
 	}
@@ -658,7 +658,7 @@ next_ch:	if (replay)
 		if (quoted) {
 			--p;
 			--col;
-			--ep->cno;
+			--SCRCNO(ep);
 			goto ins_qch;
 		}
 
@@ -674,12 +674,12 @@ next_ch:	if (replay)
 			if (in_ai) {
 				p = ib.ilb;
 				ib.len = 0;
-				FF_SET(ep, F_CHARDELETED);
+				SF_SET(ep, S_CHARDELETED);
 			} else if (flags & N_APPENDEOL) {
 				--p;
 				--ib.len;
 				--insert;
-				FF_SET(ep, F_CHARDELETED);
+				SF_SET(ep, S_CHARDELETED);
 			}
 
 			/*
@@ -687,9 +687,9 @@ next_ch:	if (replay)
 			 * character.  Reset the return cursor position
 			 * to rest on the last inserted character.
 			 */
-			if (ep->cno)
-				--ep->cno;
-			ib.stop.cno = ep->cno;
+			if (SCRCNO(ep))
+				--SCRCNO(ep);
+			ib.stop.cno = SCRCNO(ep);
 
 			/* If no input, just return. */
 			if (ib.start.lno == ib.stop.lno &&
@@ -726,7 +726,7 @@ next_ch:	if (replay)
 			 */
 			if (in_ai) {
 				col = 0;
-				FF_SET(ep, F_CHARDELETED);
+				SF_SET(ep, S_CHARDELETED);
 			}
 
 			/* Ignore the rest of the line. */
@@ -786,8 +786,8 @@ next_ch:	if (replay)
 			p = ib.ilb + col;
 			
 			/* Reset the cursor. */
-			ep->lno = ib.stop.lno;
-			ep->cno = col;
+			SCRLNO(ep) = ib.stop.lno;
+			SCRCNO(ep) = col;
 			break;
 		case K_CARAT:			/* Delete autoindent chars. */
 			if (in_ai) {
@@ -830,11 +830,11 @@ next_ch:	if (replay)
 			 */
 			--p;
 			--col;
-			--ep->cno;
+			--SCRCNO(ep);
 			if (in_ai) {
 				p[0] = p[1];
 				--ib.len;
-				FF_SET(ep, F_CHARDELETED);
+				SF_SET(ep, S_CHARDELETED);
 			} else
 				++overwrite;
 			break;
@@ -848,7 +848,7 @@ werase:			if (col == startcol) {
 			while (col > startcol && isspace(p[-1])) {
 				--p;
 				--col;
-				--ep->cno;
+				--SCRCNO(ep);
 
 				/* If in autoindent, just lose the character. */
 				if (in_ai) {
@@ -858,20 +858,20 @@ werase:			if (col == startcol) {
 					++overwrite;
 			}
 			if (in_ai)
-				FF_SET(ep, F_CHARDELETED);
+				SF_SET(ep, S_CHARDELETED);
 			if (col == startcol)
 				break;
 			for (tmp = inword(p[-1]); col > startcol;) {
 				++overwrite;
 				--p;
 				--col;
-				--ep->cno;
+				--SCRCNO(ep);
 				if (tmp != inword(p[-1]))
 					break;
 			}
 			break;
 		case K_VKILL:			/* Restart this line. */
-			col = ep->cno = startcol;
+			col = SCRCNO(ep) = startcol;
 			p = ib.ilb + col;
 			break;
 		case K_VLNEXT:			/* Quote the next character. */
@@ -885,12 +885,12 @@ carat_lable:		if (carat_st == C_ZEROSET || carat_st == C_CARATSET) {
 			}
 ins_ch:			if (overwrite) {
 				--overwrite;
-				FF_SET(ep, F_CHARDELETED);
+				SF_SET(ep, S_CHARDELETED);
 			} else if (insert)
 				memmove(p + 1, p, insert);
 ins_qch:		*p++ = ch;
 			++col;
-			++ep->cno;
+			++SCRCNO(ep);
 			if (carat_st == C_ZEROSET || carat_st == C_CARATSET) {
 				ch = carat_ch;
 				carat_st = C_NOTSET;
@@ -953,8 +953,8 @@ ib_err(ep)
 	else if (m.cno >= len)
 		m.cno = len ? len - 1 : 0;
 
-	ep->lno = m.lno;
-	ep->cno = m.cno;
+	SCRLNO(ep) = m.lno;
+	SCRCNO(ep) = m.cno;
 }
 
 static int
