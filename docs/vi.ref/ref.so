@@ -3,9 +3,9 @@
 .\" Copyright (c) 1994, 1995
 .\"	Keith Bostic.  All rights reserved.
 .\"
-.\" %sccs.include.redist.nvi.roff%
+.\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: ref.so,v 8.7 1995/01/11 16:04:49 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:04:49 $
+.\"     $Id: ref.so,v 8.8 1995/01/11 16:09:09 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:09:09 $
 .\"
 .\"
 .\" indented paragraph, with spaces between the items, bold font

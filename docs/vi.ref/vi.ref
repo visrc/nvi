@@ -3,9 +3,9 @@
 .\" Copyright (c) 1994, 1995
 .\"	Keith Bostic.  All rights reserved.
 .\"
-.\" %sccs.include.redist.nvi.roff%
+.\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.58 1995/01/11 16:04:56 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:04:56 $
+.\"     $Id: vi.ref,v 8.59 1995/01/11 16:09:15 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:09:15 $
 .\"
 .\"
 .so ref.so
