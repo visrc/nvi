@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.18 1993/11/19 11:54:41 bostic Exp $ (Berkeley) $Date: 1993/11/19 11:54:41 $
+ *	$Id: vi.h,v 8.19 1993/11/19 12:43:42 bostic Exp $ (Berkeley) $Date: 1993/11/19 12:43:42 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -133,7 +133,7 @@ typedef struct _vi_private {
 #define	VIP(sp)	((VI_PRIVATE *)((sp)->vi_private))
 
 /* Vi function prototypes. */
-int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *, TEXT *));
+int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *, size_t, TEXT *));
 int	v_buildparagraph __P((SCR *));
 int	v_comment __P((SCR *, EXF *));
 int	v_end __P((SCR *));
