@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.41 1996/03/26 17:08:32 bostic Exp $ (Berkeley) $Date: 1996/03/26 17:08:32 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.42 1996/03/27 09:18:54 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -496,6 +496,13 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		if (txt_fc(sp, tp, &filec_redraw))
 			goto err;
 		goto ret;
+	}
+
+	/* Colon command-line editing. */
+	if (LF_ISSET(TXT_CEDIT) &&
+	    O_STR(sp, O_CEDIT) != NULL && O_STR(sp, O_CEDIT)[0] == evp->e_c) {
+		tp->term = TERM_CEDIT;
+		goto k_escape;
 	}
 
 	/* Abbreviation overflow check.  See comment in txt_abbrev(). */

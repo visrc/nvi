@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.11 1996/03/06 19:50:25 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:25 $
+ *	$Id: key.h,v 10.12 1996/03/27 09:18:37 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:37 $
  */
 
 /*
@@ -197,24 +197,25 @@ extern KEYLIST keylist[];
 #define	TXT_BACKSLASH	0x00000020	/* Backslashes escape characters. */
 #define	TXT_BEAUTIFY	0x00000040	/* Only printable characters. */
 #define	TXT_BS		0x00000080	/* Backspace returns the buffer. */
-#define	TXT_CNTRLD	0x00000100	/* Control-D is a command. */
-#define	TXT_CNTRLT	0x00000200	/* Control-T is an indent special. */
-#define	TXT_CR		0x00000400	/* CR returns the buffer. */
-#define	TXT_DOTTERM	0x00000800	/* Leading '.' terminates the input. */
-#define	TXT_EMARK	0x00001000	/* End of replacement mark. */
-#define	TXT_EOFCHAR	0x00002000	/* ICANON set, return EOF character. */
-#define	TXT_ESCAPE	0x00004000	/* Escape returns the buffer. */
-#define	TXT_FILEC	0x00008000	/* Option: filec. */
-#define	TXT_INFOLINE	0x00010000	/* Editing the info line. */
-#define	TXT_MAPINPUT	0x00020000	/* Apply the input map. */
-#define	TXT_NLECHO	0x00040000	/* Echo the newline. */
-#define	TXT_NUMBER	0x00080000	/* Number the line. */
-#define	TXT_OVERWRITE	0x00100000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x00200000	/* Display a prompt. */
-#define	TXT_RECORD	0x00400000	/* Record for replay. */
-#define	TXT_REPLACE	0x00800000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x01000000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x02000000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x04000000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x08000000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x10000000	/* Option: wrapmargin. */
+#define	TXT_CEDIT	0x00000100	/* Can return TERM_CEDIT. */
+#define	TXT_CNTRLD	0x00000200	/* Control-D is a command. */
+#define	TXT_CNTRLT	0x00000400	/* Control-T is an indent special. */
+#define	TXT_CR		0x00000800	/* CR returns the buffer. */
+#define	TXT_DOTTERM	0x00001000	/* Leading '.' terminates the input. */
+#define	TXT_EMARK	0x00002000	/* End of replacement mark. */
+#define	TXT_EOFCHAR	0x00004000	/* ICANON set, return EOF character. */
+#define	TXT_ESCAPE	0x00008000	/* Escape returns the buffer. */
+#define	TXT_FILEC	0x00010000	/* Option: filec. */
+#define	TXT_INFOLINE	0x00020000	/* Editing the info line. */
+#define	TXT_MAPINPUT	0x00040000	/* Apply the input map. */
+#define	TXT_NLECHO	0x00080000	/* Echo the newline. */
+#define	TXT_NUMBER	0x00100000	/* Number the line. */
+#define	TXT_OVERWRITE	0x00200000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x00400000	/* Display a prompt. */
+#define	TXT_RECORD	0x00800000	/* Record for replay. */
+#define	TXT_REPLACE	0x01000000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x02000000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x04000000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x08000000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x10000000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x20000000	/* Option: wrapmargin. */

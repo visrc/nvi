@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.31 1996/03/21 20:02:29 bostic Exp $ (Berkeley) $Date: 1996/03/21 20:02:29 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.32 1996/03/27 09:18:54 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -395,16 +395,19 @@ v_ex(sp, vp)
 		 */
 		if (!EXCMD_RUNNING(sp->gp)) {
 			/* Get a command. */
-			if (v_tcmd(sp,
-			    vp, ':', TXT_BS | TXT_FILEC | TXT_PROMPT))
+			if (v_tcmd(sp, vp, ':',
+			    TXT_BS | TXT_CEDIT | TXT_FILEC | TXT_PROMPT))
 				return (1);
 			tp = sp->tiq.cqh_first;
 
 			/*
 			 * If the user entered a single <esc>, they want to
-			 * edit their colon command history.
+			 * edit their colon command history.  If they already
+			 * entered some text, move it into the edit history.
 			 */
-			if (tp->term == TERM_ESC) {
+			if (tp->term == TERM_CEDIT) {
+				if (tp->len != 0 && v_ecl_log(sp, tp))
+					return (1);
 				vp->m_final.lno = sp->lno;
 				vp->m_final.cno = sp->cno;
 				return (v_ecl(sp));
@@ -418,7 +421,7 @@ v_ex(sp, vp)
 			}
 
 			/* Log the command. */
-			if (v_ecl_log(sp, tp))
+			if (O_STR(sp, O_CEDIT) != NULL && v_ecl_log(sp, tp))
 				return (1);
 
 			/* Push a command on the command stack. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.29 1996/03/14 21:24:40 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:24:40 $";
+static const char sccsid[] = "$Id: options.c,v 10.30 1996/03/27 09:18:37 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,6 +58,8 @@ OPTLIST const optlist[] = {
 	{"beautify",	NULL,		OPT_0BOOL,	0},
 /* O_CDPATH	  4.4BSD */
 	{"cdpath",	NULL,		OPT_STR,	0},
+/* O_CEDIT	  4.4BSD */
+	{"cedit",	NULL,		OPT_STR,	0},
 /* O_COLUMNS	  4.4BSD */
 	{"columns",	f_columns,	OPT_NUM,	OPT_NOSAVE},
 /* O_COMMENT	  4.4BSD */

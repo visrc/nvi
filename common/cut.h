@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cut.h,v 10.2 1996/03/06 19:50:11 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:11 $
+ *	$Id: cut.h,v 10.3 1996/03/27 09:18:36 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:36 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -46,11 +46,12 @@ struct _text {				/* Text: a linked list of lines. */
 	 * The termination condition.  Note, this field is only valid if the
 	 * text input routine returns success.
 	 *	TERM_BS:	User backspaced over the prompt.
+	 *	TERM_CEDIT:	User entered <edit-char>.
 	 *	TERM_CR:	User entered <carriage-return>; no data.
 	 *	TERM_ESC:	User entered <escape>; no data.
 	 *	TERM_OK:	Data available.
 	 */
-	enum { TERM_BS, TERM_CR, TERM_ESC, TERM_OK } term;
+	enum { TERM_BS, TERM_CEDIT, TERM_CR, TERM_ESC, TERM_OK } term;
 };
 
 /*
