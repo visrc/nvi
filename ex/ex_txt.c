@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_txt.c,v 10.17 1996/10/10 18:44:58 bostic Exp $ (Berkeley) $Date: 1996/10/10 18:44:58 $";
+static const char sccsid[] = "$Id: ex_txt.c,v 10.18 1996/12/11 13:04:56 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,7 +159,7 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 			 * pretty sure this still isn't right, but it handles
 			 * what I've seen so far.
 			 */
-			if (!F_ISSET(&ev.e_ch, CH_MAPPED))
+			if (!FL_ISSET(ev.e_flags, CH_MAPPED))
 				goto ins_ch;
 			/* FALLTHROUGH */
 		case K_NL:
