@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.15 1995/02/15 11:57:44 bostic Exp $ (Berkeley) $Date: 1995/02/15 11:57:44 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.16 1995/02/15 16:14:08 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:14:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,6 +198,9 @@ svi_split(sp, topp, botp)
 
 	/* The new screen has to be drawn from scratch. */
 	F_SET(tsp, S_SCR_REFORMAT);
+
+	/* It's ready to go. */
+	F_SET(SVP(tsp), SVI_SCR_INIT);
 
 	return (0);
 }
