@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.30 1996/03/27 09:18:37 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:37 $";
+static const char sccsid[] = "$Id: options.c,v 10.31 1996/03/28 17:51:52 bostic Exp $ (Berkeley) $Date: 1996/03/28 17:51:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -522,7 +522,7 @@ opts_set(sp, argv, usage)
 
 			/*
 			 * Do nothing if the value is unchanged, the underlying
-			 * functions can be expensive.  Otherwise, set it.
+			 * functions can be expensive.
 			 */
 			if (turnoff) {
 				if (!O_ISSET(sp, offset))
@@ -539,8 +539,16 @@ opts_set(sp, argv, usage)
 			    op->func(sp, spo, NULL, &turnoff) ||
 			    ex_optchange(sp, offset, NULL, &turnoff) ||
 			    v_optchange(sp, offset, NULL, &turnoff) ||
-			    sp->gp->scr_optchange(sp, offset, NULL, &turnoff))
+			    sp->gp->scr_optchange(sp, offset, NULL, &turnoff)) {
 				rval = 1;
+				break;
+			}
+
+			/* Set the value. */
+			if (turnoff)
+				O_CLR(sp, offset);
+			else
+				O_SET(sp, offset);
 			break;
 		case OPT_NUM:
 			if (turnoff) {
@@ -597,21 +605,23 @@ badnum:				p = msg_print(sp, name, &nf);
 
 			/*
 			 * Do nothing if the value is unchanged, the underlying
-			 * functions can be expensive.  Otherwise, set it.
+			 * functions can be expensive.
 			 */
 			if (O_VAL(sp, offset) == value)
 				break;
-			if (o_set(sp, offset, 0, NULL, value)) {
-				rval = 1;
-				break;
-			}
 
 			/* Report to subsystems. */
 			if (op->func != NULL &&
 			    op->func(sp, spo, sep, &value) ||
 			    ex_optchange(sp, offset, sep, &value) ||
 			    v_optchange(sp, offset, sep, &value) ||
-			    sp->gp->scr_optchange(sp, offset, sep, &value))
+			    sp->gp->scr_optchange(sp, offset, sep, &value)) {
+				rval = 1;
+				break;
+			}
+
+			/* Set the value. */
+			if (o_set(sp, offset, 0, NULL, value))
 				rval = 1;
 			break;
 		case OPT_STR:
@@ -630,22 +640,24 @@ badnum:				p = msg_print(sp, name, &nf);
 
 			/*
 			 * Do nothing if the value is unchanged, the underlying
-			 * functions can be expensive.  Otherwise, set it.
+			 * functions can be expensive.
 			 */
 			if (O_STR(sp, offset) != NULL &&
 			    !strcmp(O_STR(sp, offset), sep))
 				break;
-			if (o_set(sp, offset, OS_FREE | OS_STRDUP, sep, 0)) {
-				rval = 1;
-				break;
-			}
 
 			/* Report to subsystems. */
 			if (op->func != NULL &&
 			    op->func(sp, spo, sep, NULL) ||
 			    ex_optchange(sp, offset, sep, NULL) ||
 			    v_optchange(sp, offset, sep, NULL) ||
-			    sp->gp->scr_optchange(sp, offset, sep, NULL))
+			    sp->gp->scr_optchange(sp, offset, sep, NULL)) {
+				rval = 1;
+				break;
+			}
+
+			/* Set the value. */
+			if (o_set(sp, offset, OS_FREE | OS_STRDUP, sep, 0))
 				rval = 1;
 			break;
 		default:
