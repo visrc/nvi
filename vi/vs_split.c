@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.35 2000/05/07 19:49:43 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:43 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.36 2000/05/21 08:53:16 skimo Exp $ (Berkeley) $Date: 2000/05/21 08:53:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -324,9 +324,9 @@ vs_insert(sp)
 		CIRCLEQ_INSERT_TAIL(&gp->dq, sp, q);
 	} else if (tsp->roff < sp->roff ||
 	    tsp->roff == sp->roff && tsp->coff < sp->coff) {
-		CIRCLEQ_INSERT_BEFORE(&gp->dq, tsp, sp, q);
-	} else
 		CIRCLEQ_INSERT_AFTER(&gp->dq, tsp, sp, q);
+	} else
+		CIRCLEQ_INSERT_BEFORE(&gp->dq, tsp, sp, q);
 }
 
 /*
