@@ -2,20 +2,11 @@
 setenv VERSION 
 setenv S /usr/src/nvi
 
-# build the docs
-setenv D $S/docs/USD.doc
-cd $D/edit && make clean && make && chmod 444 edittut.ps
-cd $D/exref && make clean && make && chmod 444 exref.ps summary.ps
-cd $D/vi.man && make clean && make && chmod 444 vi.0 vi.0.ps
-cd $D/vi.ref && make clean && make && \
-    chmod 444 index index.so vi.ref.ps vi.ref.txt
-cd $D/vitut && make clean && make && chmod 444 summary.ps viapwh.ps vitut.ps
-
 # increment the version numbers
 setenv X version.h
 cd $S/ex && sco $X && echo "go to $VERSION" | sccs delget $X
-setenv X README
-cd $S && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
+#setenv X README
+#cd $S && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
 cd $S/docs && vi changelog
 
 # build the distribution
@@ -28,6 +19,9 @@ cd $S && rm -rf build.local && mkdir build.local && \
     cd build.local && ../build/configure --enable-debug && make
 what nvi | gzip > ../../TK/history/$VERSION.gz
 chmod 444 ../../TK/history/$VERSION.gz
+
+# build the documents
+cd $S/build.local && make cleandocs docs
 
 # cleanup
 cd $S && allout
