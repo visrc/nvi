@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.19 1994/06/27 11:22:09 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:09 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.20 1994/06/28 10:34:25 bostic Exp $ (Berkeley) $Date: 1994/06/28 10:34:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,6 +112,35 @@ ex_next(sp, ep, cmdp)
 			(void)file_lline(sp, sp->ep, &sp->frp->lno);
 			F_SET(sp->frp, FR_CURSORSET);
 		}
+
+	F_SET(sp, S_FSWITCH);
+	return (0);
+}
+
+/*
+ * ex_prev -- :prev
+ *	Edit the previous file.
+ */
+int
+ex_prev(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	FREF *frp;
+	char *name;
+
+	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
+
+	if (sp->cargv == sp->argv) {
+		msgq(sp, M_ERR, "No more files to edit");
+		return (1);
+	}
+	if ((frp = file_add(sp, *--sp->cargv)) == NULL)
+		return (1);
+
+	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
+		return (1);
 
 	F_SET(sp, S_FSWITCH);
 	return (0);
