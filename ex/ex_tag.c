@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.1 1995/04/13 17:22:33 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:33 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.2 1995/05/05 18:52:42 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:52:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,7 +38,6 @@ static char sccsid[] = "$Id: ex_tag.c,v 10.1 1995/04/13 17:22:33 bostic Exp $ (B
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 #include "tag.h"
 
 static char	*binary_search __P((char *, char *, char *));
@@ -55,6 +54,8 @@ static void	 tag_msg __P((SCR *, enum tagmsg, char *));
 /*
  * ex_tagfirst --
  *	The tag code can be entered from main, i.e. "vi -t tag".
+ *
+ * PUBLIC: int ex_tagfirst __P((SCR *, char *));
  */
 int
 ex_tagfirst(sp, tagarg)
@@ -120,6 +121,8 @@ ex_tagfirst(sp, tagarg)
  * "current" tag is always on the stack.  Each tag has a line/column which is
  * the location from which the user tagged the following TAG entry, and which
  * is used as the return location.
+ *
+ * PUBLIC: int ex_tagpush __P((SCR *, EXCMD *));
  */
 int
 ex_tagpush(sp, cmdp)
@@ -294,6 +297,8 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 /*
  * ex_tagpop -- :tagp[op][!] [number | file]
  *	Pop the tag stack.
+ *
+ * PUBLIC: int ex_tagpop __P((SCR *, EXCMD *));
  */
 int
 ex_tagpop(sp, cmdp)
@@ -395,6 +400,8 @@ ex_tagpop(sp, cmdp)
 /*
  * ex_tagtop -- :tagt[op][!]
  *	Clear the tag stack.
+ *
+ * PUBLIC: int ex_tagtop __P((SCR *, EXCMD *));
  */
 int
 ex_tagtop(sp, cmdp)
@@ -438,6 +445,8 @@ ex_tagtop(sp, cmdp)
 /*
  * ex_tagdisplay --
  *	Display the list of tags.
+ *
+ * PUBLIC: int ex_tagdisplay __P((SCR *));
  */
 int
 ex_tagdisplay(sp)
@@ -472,18 +481,17 @@ ex_tagdisplay(sp)
 		len = strlen(name = tp->frp->name);	/* The original name. */
 		if (len > maxlen || len + tp->slen > sp->cols)
 			if (tp == NULL || tp->search == NULL)
-				(void)ex_printf(EXCOOKIE,
-				    "%2d %s\n", cnt, name);
+				(void)ex_printf(sp, "%2d %s\n", cnt, name);
 			else
-				(void)ex_printf(EXCOOKIE,
+				(void)ex_printf(sp,
 				     "%2d %s\n** %*.*s %s\n", cnt, name,
 				     (int)maxlen, (int)maxlen, "", tp->search);
 		else
 			if (tp == NULL || tp->search == NULL)
-				(void)ex_printf(EXCOOKIE, "%2d %*.*s\n",
+				(void)ex_printf(sp, "%2d %*.*s\n",
 				    cnt, (int)maxlen, (int)len, name);
 			else
-				(void)ex_printf(EXCOOKIE, "%2d %*.*s %s\n",
+				(void)ex_printf(sp, "%2d %*.*s %s\n",
 				    cnt, (int)maxlen, (int)len, name,
 				    tp->search);
 		F_SET(sp, S_EX_WROTE);
@@ -558,6 +566,8 @@ notfound:		tag_msg(sp, TAG_SEARCH, tag);
 /*
  * ex_tagalloc --
  *	Create a new list of tag files.
+ *
+ * PUBLIC: int ex_tagalloc __P((SCR *, char *));
  */
 int
 ex_tagalloc(sp, str)
@@ -600,6 +610,8 @@ ex_tagalloc(sp, str)
 /*
  * ex_tagfree --
  *	Free the tags file list.
+ *
+ * PUBLIC: int ex_tagfree __P((SCR *));
  */
 int
 ex_tagfree(sp)
@@ -623,6 +635,8 @@ ex_tagfree(sp)
 /*
  * ex_tagcopy --
  *	Copy a screen's tag structures.
+ *
+ * PUBLIC: int ex_tagcopy __P((SCR *, SCR *));
  */
 int
 ex_tagcopy(orig, sp)

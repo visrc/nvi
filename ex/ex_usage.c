@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 10.1 1995/04/13 17:22:36 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:36 $";
+static char sccsid[] = "$Id: ex_usage.c,v 10.2 1995/05/05 18:52:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:52:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,11 +27,13 @@ static char sccsid[] = "$Id: ex_usage.c,v 10.1 1995/04/13 17:22:36 bostic Exp $ 
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
+#include "vi.h"
 
 /*
  * ex_help -- :help
  *	Display help message.
+ *
+ * PUBLIC: int ex_help __P((SCR *, EXCMD *));
  */
 int
 ex_help(sp, cmdp)
@@ -39,21 +41,23 @@ ex_help(sp, cmdp)
 	EXCMD *cmdp;
 {
 	F_SET(sp, S_EX_WROTE);
-	(void)ex_printf(EXCOOKIE,
+	(void)ex_puts(sp,
 	    "To see the list of vi commands, enter \":viusage<CR>\"\n");
-	(void)ex_printf(EXCOOKIE,
+	(void)ex_puts(sp,
 	    "To see the list of ex commands, enter \":exusage<CR>\"\n");
-	(void)ex_printf(EXCOOKIE,
+	(void)ex_puts(sp,
 	    "For an ex command usage statement enter \":exusage [cmd]<CR>\"\n");
-	(void)ex_printf(EXCOOKIE,
+	(void)ex_puts(sp,
 	    "For a vi key usage statement enter \":viusage [key]<CR>\"\n");
-	(void)ex_printf(EXCOOKIE, "To exit, enter \":q!\"\n");
+	(void)ex_puts(sp, "To exit, enter \":q!\"\n");
 	return (0);
 }
 
 /*
  * ex_usage -- :exusage [cmd]
  *	Display ex usage strings.
+ *
+ * PUBLIC: int ex_usage __P((SCR *, EXCMD *));
  */
 int
 ex_usage(sp, cmdp)
@@ -71,11 +75,10 @@ ex_usage(sp, cmdp)
 		for (cp = cmds; cp->name != NULL &&
 		    memcmp(ap->bp, cp->name, ap->len); ++cp);
 		if (cp->name == NULL)
-			(void)ex_printf(EXCOOKIE,
-			    "The %.*s command is unknown.\n",
+			(void)ex_printf(sp, "The %.*s command is unknown\n",
 			    (int)ap->len, ap->bp);
 		else {
-			(void)ex_printf(EXCOOKIE,
+			(void)ex_printf(sp,
 			    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
 			/*
 			 * !!!
@@ -89,7 +92,7 @@ ex_usage(sp, cmdp)
 				cp = &cmds[C_VISUAL_VI];
 			else
 				cp = &cmds[C_VISUAL_EX];
-			(void)ex_printf(EXCOOKIE,
+			(void)ex_printf(sp,
 			    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
 		}
 		break;
@@ -100,7 +103,7 @@ ex_usage(sp, cmdp)
 				name = "^D";
 			else
 				name = cp->name;
-			(void)ex_printf(EXCOOKIE,
+			(void)ex_printf(sp,
 			    "%*s: %s\n", MAXCMDNAMELEN, name, cp->help);
 			F_SET(sp, S_EX_WROTE);
 		}
@@ -114,6 +117,8 @@ ex_usage(sp, cmdp)
 /*
  * ex_viusage -- :viusage [key]
  *	Display vi usage strings.
+ *
+ * PUBLIC: int ex_viusage __P((SCR *, EXCMD *));
  */
 int
 ex_viusage(sp, cmdp)
@@ -145,11 +150,11 @@ ex_viusage(sp, cmdp)
 			kp = &vikeys[key];
 
 		if (kp->func == NULL)
-nokey:			(void)ex_printf(EXCOOKIE,
-			    "The %s key has no current meaning.\n",
+nokey:			(void)ex_printf(sp,
+			    "The %s key has no current meaning\n",
 			    KEY_NAME(sp, key));
 		else
-			(void)ex_printf(EXCOOKIE,
+			(void)ex_printf(sp,
 			    "  Key:%s%s\nUsage: %s\n",
 			    isblank(*kp->help) ? "" : " ", kp->help, kp->usage);
 		break;
@@ -161,7 +166,7 @@ nokey:			(void)ex_printf(EXCOOKIE,
 			else
 				kp = &vikeys[key];
 			if (kp->help != NULL)
-				(void)ex_printf(EXCOOKIE, "%s\n", kp->help);
+				(void)ex_printf(sp, "%s\n", kp->help);
 			F_SET(sp, S_EX_WROTE);
 		}
 		break;

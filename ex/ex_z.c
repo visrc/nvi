@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 10.1 1995/04/13 17:22:41 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:41 $";
+static char sccsid[] = "$Id: ex_z.c,v 10.2 1995/05/05 18:53:30 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,8 +31,9 @@ static char sccsid[] = "$Id: ex_z.c,v 10.1 1995/04/13 17:22:41 bostic Exp $ (Ber
 
 /*
  * ex_z -- :[line] z [^-.+=] [count] [flags]
- *
  *	Adjust window.
+ *
+ * PUBLIC: int ex_z __P((SCR *, EXCMD *));
  */
 int
 ex_z(sp, cmdp)
@@ -119,13 +120,11 @@ ex_z(sp, cmdp)
 		cmdp->addr2.lno = lno - 1;
 		if (ex_pr(sp, cmdp))
 			return (1);
-		(void)ex_printf(EXCOOKIE,
-		    "%s", "----------------------------------------\n");
+		(void)ex_puts(sp, "----------------------------------------\n");
 		cmdp->addr2.lno = cmdp->addr1.lno = equals = lno;
 		if (ex_pr(sp, cmdp))
 			return (1);
-		(void)ex_printf(EXCOOKIE,
-		    "%s", "----------------------------------------\n");
+		(void)ex_puts(sp, "----------------------------------------\n");
 		cmdp->addr1.lno = lno + 1;
 		cmdp->addr2.lno = (lno + cnt) - 1;
 		F_SET(sp, S_EX_WROTE);
