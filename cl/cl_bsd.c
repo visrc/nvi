@@ -6,15 +6,26 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.7 1995/10/31 20:13:39 bostic Exp $ (Berkeley) $Date: 1995/10/31 20:13:39 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.8 1995/10/31 20:22:07 bostic Exp $ (Berkeley) $Date: 1995/10/31 20:22:07 $";
 #endif /* not lint */
 
 #ifdef BSD_CURSES_INTERFACE
+#include <sys/types.h>
+#include <sys/queue.h>
+#include <sys/time.h>
+
+#include <bitstring.h>
+#include <ctype.h>
 #include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
+
+#include "../common/common.h"
+#include "../vi/vi.h"
+#include "cl.h"
 
 static char	*ke;				/* Keypad on. */
 static char	*ks;				/* Keypad off. */
