@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.21 1993/12/09 19:42:15 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:15 $";
+static char sccsid[] = "$Id: seq.c,v 8.22 1994/03/07 16:19:35 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:19:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,44 +34,73 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, userdef)
 {
 	SEQ *lastqp, *qp;
 	CHAR_T *p;
+	int sv_errno;
 
-#if defined(DEBUG) && 0
-	TRACE(sp, "seq_set: name {%s} input {%s} output {%s}\n",
-	    name ? name : "", input, output);
+#ifdef DEBUG
+	/*
+	 * An input string must always be present.  The output string
+	 * can be NULL, when set internally, that's how we throw away
+	 * input.
+	 */
+	if (input == NULL || ilen == 0 ||
+	    (userdef && (output == NULL || olen == 0)))
+		abort();
 #endif
-	/* Just replace the output field in any previous occurrence. */
+	/* Just replace the output field if the string already set. */
 	if ((qp = seq_find(sp, &lastqp, input, ilen, stype, NULL)) != NULL) {
-		if ((p = v_strdup(sp, output, olen)) == NULL)
+		if (output == NULL || olen == 0)
+			p = NULL;
+		else if ((p = v_strdup(sp, output, olen)) == NULL) {
+			sv_errno = errno;
 			goto mem1;
-		FREE(qp->output, qp->olen);
+		}
+		if (qp->output != NULL)
+			free(qp->output);
 		qp->olen = olen;
 		qp->output = p;
 		return (0);
 	}
 
-	/* Allocate and initialize space. */
+	/* Allocate and initialize SEQ structure. */
 	CALLOC(sp, qp, SEQ *, 1, sizeof(SEQ));
-	if (qp == NULL)
+	if (qp == NULL) {
+		sv_errno = errno;
 		goto mem1;
-	if (name == NULL)
-		qp->name = NULL;
-	else if ((qp->name = v_strdup(sp, name, nlen)) == NULL)
-		goto mem2;
-	if ((qp->input = v_strdup(sp, input, ilen)) == NULL)
-		goto mem3;
-	if ((qp->output = v_strdup(sp, output, olen)) == NULL) {
-		FREE(qp->input, ilen);
-mem3:		if (qp->name != NULL)
-			FREE(qp->name, nlen);
-mem2:		FREE(qp, sizeof(SEQ));
-mem1:		msgq(sp, M_SYSERR, NULL);
-		return (1);
 	}
 
-	qp->stype = stype;
+	/* Name. */
+	if (name == NULL || nlen == 0)
+		qp->name = NULL;
+	else if ((qp->name = v_strdup(sp, name, nlen)) == NULL) {
+		sv_errno = errno;
+		goto mem2;
+	}
 	qp->nlen = nlen;
+
+	/* Input. */
+	if ((qp->input = v_strdup(sp, input, ilen)) == NULL) {
+		sv_errno = errno;
+		goto mem3;
+	}
 	qp->ilen = ilen;
+
+	/* Output. */
+	if (output == NULL || olen == 0)
+		qp->output = NULL;
+	else if ((qp->output = v_strdup(sp, output, olen)) == NULL) {
+		if (qp->input != NULL)
+			free(qp->input);
+mem3:		if (qp->name != NULL)
+			free(qp->name);
+mem2:		FREE(qp, sizeof(SEQ));
+mem1:		errno = sv_errno;
+		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
 	qp->olen = olen;
+
+	/* Type, flags. */
+	qp->stype = stype;
 	qp->flags = userdef ? S_USERDEF : 0;
 
 	/* Link into the chain. */
@@ -105,9 +134,10 @@ seq_delete(sp, input, ilen, stype)
 
 	LIST_REMOVE(qp, q);
 	if (qp->name != NULL)
-		FREE(qp->name, qp->nlen);
-	FREE(qp->input, qp->ilen);
-	FREE(qp->output, qp->olen);
+		free(qp->name);
+	free(qp->input);
+	if (qp->output == NULL)
+		free(qp->output);
 	FREE(qp, sizeof(SEQ));
 	return (0);
 }
@@ -195,28 +225,34 @@ seq_dump(sp, stype, isname)
 {
 	CHNAME const *cname;
 	SEQ *qp;
-	int cnt, len, olen, tablen;
+	int cnt, len, olen;
 	char *p;
 
 	cnt = 0;
 	cname = sp->gp->cname;
-	tablen = O_VAL(sp, O_TABSTOP);
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (stype != qp->stype)
 			continue;
+		/*
+		 * If qp->output is NULL, we're discarding characters
+		 * internally.   Don't bother to display it.
+		 */
+		if (qp->output == NULL)
+			continue;
 		++cnt;
 		for (p = qp->input,
-		    olen = qp->ilen, len = 0; olen > 0; --olen, ++len)
-			(void)ex_printf(EXCOOKIE, "%s", cname[*p++].name);
-		for (len = tablen - len % tablen; len; --len)
-			(void)ex_printf(EXCOOKIE, " ");
+		    olen = qp->ilen, len = 0; olen > 0; --olen)
+			len += ex_printf(EXCOOKIE, "%s", cname[*p++].name);
+		for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
+			len -= ex_printf(EXCOOKIE, " ");
 
-		for (p = qp->output, olen = qp->olen; olen > 0; --olen)
-			(void)ex_printf(EXCOOKIE, "%s", cname[*p++].name);
+		for (p = qp->output,
+		    olen = qp->olen, len = 0; olen > 0; --olen)
+			len += ex_printf(EXCOOKIE, "%s", cname[*p++].name);
 
 		if (isname && qp->name != NULL) {
-			for (len = tablen - len % tablen; len; --len)
-				(void)ex_printf(EXCOOKIE, " ");
+			for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
+				len -= ex_printf(EXCOOKIE, " ");
 			for (p = qp->name, olen = qp->nlen; olen > 0; --olen)
 				(void)ex_printf(EXCOOKIE,
 				    "%s", cname[*p++].name);
