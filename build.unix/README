@@ -1,4 +1,4 @@
-#	$Id: README,v 8.22 1996/05/19 11:38:01 bostic Exp $ (Berkeley) $Date: 1996/05/19 11:38:01 $
+#	$Id: README,v 8.23 1996/06/11 20:04:13 bostic Exp $ (Berkeley) $Date: 1996/06/11 20:04:13 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -33,6 +33,10 @@ For example, to install them as "nvi", "nex" and "nview", use:
 	configure --program-prefix=n
 
 See the section below on installation for details.
+
+Note that if you are building nvi on a LynxOS system, you should read the
+README.LynxOS file in this directory for additional build instructions that
+are specific to that operating system.
 
 If you have trouble with this procedure, send email to the addresses
 listed in ../README.  In that email, please provide a complete script
