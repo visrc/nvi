@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 9.1 1994/11/09 18:40:50 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:50 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 9.2 1994/11/10 16:48:14 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:48:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ ex_mkexrc(sp, cmdp)
 	}
 
 	p = msg_print(sp, fname, &nf);
-	msgq(sp, M_INFO, "142|New .exrc file: %s. ", p);
+	msgq(sp, M_INFO, "142|New exrc file: %s", p);
 	if (nf)
 		FREE_SPACE(sp, p, 0);
 	return (0);
