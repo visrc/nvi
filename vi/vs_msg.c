@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.57 1996/04/23 14:33:33 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:33 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.58 1996/04/26 17:38:57 bostic Exp $ (Berkeley) $Date: 1996/04/26 17:38:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -165,7 +165,7 @@ vs_update(sp, m1, m2)
 	const char *m1, *m2;
 {
 	GS *gp;
-	size_t len, mlen;
+	size_t len, mlen, oldx, oldy;
 
 	gp = sp->gp;
 
@@ -183,6 +183,12 @@ vs_update(sp, m1, m2)
 		(void)ex_fflush(sp);
 	}
 
+	/*
+	 * Save the cursor position, the substitute-with-confirmation code
+	 * will have already set it correctly.
+	 */
+	(void)gp->scr_cursor(sp, &oldy, &oldx);
+
 	/* Clear the bottom line. */
 	(void)gp->scr_move(sp, LASTLINE(sp), 0);
 	(void)gp->scr_clrtoeol(sp);
@@ -196,14 +202,17 @@ vs_update(sp, m1, m2)
 		if (len > sp->cols - 2)
 			mlen = len = sp->cols - 2;
 		(void)gp->scr_addstr(sp, m1, mlen);
-	}
+	} else
+		len = 0;
 	if (m2 != NULL) {
 		mlen = strlen(m2);
 		if (len + mlen > sp->cols - 2)
 			mlen = (sp->cols - 2) - len;
 		(void)gp->scr_addstr(sp, m2, mlen);
 	}
-	(void)sp->gp->scr_refresh(sp, 0);
+
+	(void)gp->scr_move(sp, oldy, oldx);
+	(void)gp->scr_refresh(sp, 0);
 }
 
 /*
@@ -799,6 +808,9 @@ vs_wait(sp, continuep, wtype)
 		case SCROLL_W:
 			p = msg_cmsg(sp, CMSG_CONT, &len);
 			break;
+		default:
+			abort();
+			/* NOTREACHED */
 		}
 	(void)gp->scr_addstr(sp, p, len);
 
