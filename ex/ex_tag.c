@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.46 1994/08/31 17:17:27 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:27 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.47 1994/09/18 11:57:53 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -230,7 +230,7 @@ ex_tagpush(sp, ep, cmdp)
 	}
 
 	/* Switch files. */
-	if (which == TC_CHANGE && file_init(sp, frp, NULL, 0)) {
+	if (which == TC_CHANGE && file_init(sp, frp, NULL, FS_SETALT)) {
 		if (tp != NULL)
 			FREETAG(tp);
 		/* Handle special, first-tag case. */
@@ -370,7 +370,7 @@ ex_tagpop(sp, ep, cmdp)
 		if (file_m1(sp, ep,
 		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 			return (1);
-		if (file_init(sp, tp->frp, NULL, 0))
+		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
 
 		tp->frp->lno = tp->lno;
@@ -424,7 +424,7 @@ ex_tagtop(sp, ep, cmdp)
 		if (file_m1(sp, sp->ep,
 		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 			return (1);
-		if (file_init(sp, tp->frp, NULL, 0))
+		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
 
 		tp->frp->lno = tp->lno;

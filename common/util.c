@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.76 1994/09/03 09:20:59 bostic Exp $ (Berkeley) $Date: 1994/09/03 09:20:59 $";
+static char sccsid[] = "$Id: util.c,v 8.77 1994/09/18 11:57:39 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,20 +126,28 @@ tail(path)
  * set_alt_name --
  *	Set the alternate file name.
  *
- * Swap the alternate file name.  It's a routine because I wanted some place
+ * Set the alternate file name.  It's a routine because I wanted some place
  * to hang this comment.  The alternate file name (normally referenced using
- * the special character '#' during file expansion) is set by many
- * operations.  In the historic vi, the commands "ex", and "edit" obviously
- * set the alternate file name because they switched the underlying file.
- * Less obviously, the "read", "file", "write" and "wq" commands set it as
- * well.  In this implementation, some new commands have been added to the
- * list.  Where it gets interesting is that the alternate file name is set
- * multiple times by some commands.  If an edit attempt fails (for whatever
- * reason, like the current file is modified but as yet unwritten), it is
- * set to the file name that the user was unable to edit.  If the edit
- * succeeds, it is set to the last file name that was edited.  Good fun.
+ * the special character '#' during file expansion and in the vi ^^ command)
+ * is set by almost all ex commands that take file names as arguments.  The
+ * rules go something like this:
  *
- * If the user edits a temporary file, there are time when there isn't an
+ *    1: If any ex command takes a file name as an argument (except for the
+ *	 :next command), the alternate file name is set to that file name.
+ *	 This excludes the command ":e<CR>" and ":w !command" as no file name
+ *       was specified.  Note, historically, the :source command did not set
+ *	 the alternate file name.  It does in nvi, for consistency.
+ *
+ *    2: However, if any ex command sets the current file name, e.g. the
+ *	 ":e file" or ":rew" commands succeed, then the alternate file name
+ *	 is set to the previous file's current file name, if it had one.
+ *	 This includes the :file command and excludes the ":e<CR>" command.
+ *
+ *    3: However, if it's a read or write command with a file argument and
+ *	 the current file name had not yet been set, the file name becomes
+ *	 the current file name, and the alternate file name is unchanged.
+ *
+ * If the user edits a temporary file, there may be times when there is no
  * alternative file name.  A name argument of NULL turns it off.
  */
 void

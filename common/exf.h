@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.37 1994/09/12 12:54:11 bostic Exp $ (Berkeley) $Date: 1994/09/12 12:54:11 $
+ *	$Id: exf.h,v 8.38 1994/09/18 11:56:54 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:56:54 $
  */
 					/* Undo direction. */
 /*
@@ -70,7 +70,6 @@ struct _exf {
 /* EXF routines. */
 FREF	*file_add __P((SCR *, CHAR_T *));
 int	 file_end __P((SCR *, EXF *, int));
-int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_m1 __P((SCR *, EXF *, int, int));
 int	 file_m2 __P((SCR *, EXF *, int));
 int	 file_m3 __P((SCR *, EXF *, int));
@@ -79,10 +78,12 @@ enum lockt { LOCK_FAILED, LOCK_SUCCESS, LOCK_UNAVAIL };
 enum lockt
 	 file_lock __P((char *, int *, int, int));
 
-#define	FS_ALL		0x01	/* Write the entire file. */
-#define	FS_APPEND	0x02	/* Append to the file. */
-#define	FS_FORCE	0x04	/* Force is set. */
-#define	FS_POSSIBLE	0x08	/* Force could be set. */
+#define	FS_ALL		0x001	/* Write the entire file. */
+#define	FS_APPEND	0x002	/* Append to the file. */
+#define	FS_FORCE	0x004	/* Force is set. */
+#define	FS_POSSIBLE	0x008	/* Force could be set. */
+#define	FS_SETALT	0x010	/* Set alternate file name. */
+int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_write __P((SCR *, EXF *, MARK *, MARK *, char *, int));
 
 /* Recovery routines. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.45 1994/09/16 18:39:48 bostic Exp $ (Berkeley) $Date: 1994/09/16 18:39:48 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.46 1994/09/18 11:57:50 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,17 +150,18 @@ ex_read(sp, ep, cmdp)
 		name = cmdp->argv[1]->bp;
 		/*
 		 * !!!
-		 * Historically, if you had an "unnamed" file, the read command
-		 * renamed the file.
+		 * Historically, the read and write commands renamed
+		 * "unnamed" files, or, if the file had a name, set
+		 * the alternate file name.
 		 */
 		if (F_ISSET(sp->frp, FR_TMPFILE) &&
-		    !F_ISSET(sp->frp, FR_READNAMED)) {
+		    !F_ISSET(sp->frp, FR_EXNAMED)) {
 			if ((p = v_strdup(sp,
 			    cmdp->argv[1]->bp, cmdp->argv[1]->len)) != NULL) {
 				free(sp->frp->name);
 				sp->frp->name = p;
 			}
-			F_SET(sp->frp, FR_NAMECHANGE | FR_READNAMED);
+			F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
 		} else
 			set_alt_name(sp, name);
 		break;

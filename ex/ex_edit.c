@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.20 1994/08/17 14:30:46 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:46 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.21 1994/09/18 11:57:48 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,6 +49,7 @@ ex_edit(sp, ep, cmdp)
 {
 	ARGS *ap;
 	FREF *frp;
+	int setalt;
 
 	frp = sp->frp;
 	switch (cmdp->argc) {
@@ -63,16 +64,15 @@ ex_edit(sp, ep, cmdp)
 		if (F_ISSET(frp, FR_TMPFILE)) {
 			if ((frp = file_add(sp, NULL)) == NULL)
 				return (1);
-		} else {
-			if ((frp = file_add(sp, frp->name)) == NULL)
-				return (1);
-			set_alt_name(sp, sp->frp->name);
-		}
+		} else if ((frp = file_add(sp, frp->name)) == NULL)
+			return (1);
+		setalt = 0;
 		break;
 	case 1:
 		ap = cmdp->argv[0];
 		if ((frp = file_add(sp, ap->bp)) == NULL)
 			return (1);
+		setalt = 1;
 		set_alt_name(sp, ap->bp);
 		break;
 	default:
@@ -89,7 +89,8 @@ ex_edit(sp, ep, cmdp)
 		return (1);
 
 	/* Switch files. */
-	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
+	if (file_init(sp, frp, NULL,
+	    (setalt ? FS_SETALT : 0) | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	F_SET(sp, S_FSWITCH);
 	return (0);

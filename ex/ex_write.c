@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.40 1994/08/31 18:43:41 bostic Exp $ (Berkeley) $Date: 1994/08/31 18:43:41 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.41 1994/09/18 11:57:56 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,7 +200,22 @@ exwr(sp, ep, cmdp, cmd)
 	case 2:
 		/* One new argument, write it. */
 		name = cmdp->argv[exp->argsoff - 1]->bp;
-		set_alt_name(sp, name);
+		/*
+		 * !!!
+		 * Historically, the read and write commands renamed
+		 * "unnamed" files, or, if the file had a name, set
+		 * the alternate file name.
+		 */
+		if (F_ISSET(sp->frp, FR_TMPFILE) &&
+		    !F_ISSET(sp->frp, FR_EXNAMED)) {
+			if ((p = v_strdup(sp,
+			    cmdp->argv[1]->bp, cmdp->argv[1]->len)) != NULL) {
+				free(sp->frp->name);
+				sp->frp->name = p;
+			}
+			F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
+		} else
+			set_alt_name(sp, name);
 		break;
 	default:
 		/* If expanded to more than one argument, object. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_source.c,v 8.7 1994/08/17 14:31:14 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:14 $";
+static char sccsid[] = "$Id: ex_source.c,v 8.8 1994/09/18 11:57:52 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,5 +36,12 @@ ex_source(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	/*
+	 * !!!
+	 * :source did not historically set the alternate file name.
+	 * We do, for consistency.
+	 */
+	set_alt_name(sp, cmdp->argv[0]->bp);
+
 	return (ex_cfile(sp, ep, cmdp->argv[0]->bp, 0));
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.103 1994/09/12 12:54:06 bostic Exp $ (Berkeley) $Date: 1994/09/12 12:54:06 $";
+static char sccsid[] = "$Id: exf.c,v 8.104 1994/09/18 11:56:44 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:56:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -101,11 +101,11 @@ file_add(sp, name)
  *	absolutely sure we have the new one.
  */
 int
-file_init(sp, frp, rcv_name, force)
+file_init(sp, frp, rcv_name, flags)
 	SCR *sp;
 	FREF *frp;
 	char *rcv_name;
-	int force;
+	int flags;
 {
 	EXF *ep;
 	RECNOINFO oinfo;
@@ -241,8 +241,9 @@ file_init(sp, frp, rcv_name, force)
 	 * happen in historical vi as the result of the initial command, i.e.
 	 * if vi was executed without a file name.
 	 */
-	set_alt_name(sp, sp->frp == NULL ||
-	    F_ISSET(sp->frp, FR_TMPFILE) ? NULL : sp->frp->name);
+	if (LF_ISSET(FS_SETALT))
+		set_alt_name(sp, sp->frp == NULL ||
+		    F_ISSET(sp->frp, FR_TMPFILE) ? NULL : sp->frp->name);
 
 	/*
 	 * Close the previous file; if that fails, close the new one and run
@@ -260,7 +261,7 @@ file_init(sp, frp, rcv_name, force)
 	 * Side-effect: after the call to file_end(), sp->frp may be NULL.
 	 */
 	F_SET(frp, FR_DONTDELETE);
-	if (sp->ep != NULL && file_end(sp, sp->ep, force)) {
+	if (sp->ep != NULL && file_end(sp, sp->ep, LF_ISSET(FS_FORCE))) {
 		(void)file_end(sp, ep, 1);
 		goto err;
 	}
