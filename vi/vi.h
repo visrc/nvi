@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.10 1992/05/21 13:59:54 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:59:54 $
+ *	$Id: vi.h,v 5.11 1992/05/22 09:57:41 bostic Exp $ (Berkeley) $Date: 1992/05/22 09:57:41 $
  */
 
 #include "exf.h"
@@ -12,6 +12,7 @@
 
 /* Structure passed around to functions implementing vi commands. */
 typedef struct {
+				/* ZERO OUT. */
 	int buffer;		/* Buffer. */
 	int character;		/* Character. */
 	u_long count;		/* Count. */
@@ -19,9 +20,6 @@ typedef struct {
 	int key;		/* Command key. */
 	MARK motion;		/* Associated motion. */
 	struct _vikeys *kp;	/* VIKEYS structure. */
-	char *keyword;		/* Keyword. */
-	u_long kcstart;		/* Beginning of keyword. */
-	u_long kcstop;		/* End of keyword. */
 	size_t klen;		/* Keyword length. */
 
 #define	VC_C1SET	0x001	/* Count 1 set. */
@@ -30,7 +28,13 @@ typedef struct {
 #define	VC_ISDOT	0x008	/* Command was the dot command. */
 #define	VC_ISMOTION	0x010	/* Decoding a motion. */
 	u_int flags;
+				/* DO NOT ZERO OUT. */
+	char *keyword;		/* Keyword. */
+	size_t kbuflen;		/* Keyword buffer length. */
 } VICMDARG;
+
+#define	vpstartzero	buffer
+#define	vpendzero	keyword
 
 /* Vi command structure. */
 typedef struct _vikeys {	/* Underlying function. */
@@ -41,13 +45,14 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	V_CHAR		0x0002	/* Character (required, trailing). */
 #define	V_CNT		0x0004	/* Count (optional, leading). */
 #define	V_DOT		0x0008	/* Successful command sets dot command. */
-#define	V_KEYW		0x0010	/* Keyword. */
-#define	V_LMODE		0x0020	/* Motion is line oriented. */
-#define	V_MOTION	0x0040	/* Motion (required, trailing). */
-#define	V_MOVE		0x0080	/* Command defines movement. */
-#define	V_OBUF		0x0100	/* Buffer (optional, leading). */
-#define	V_RBUF		0x0200	/* Buffer (required, trailing). */
-#define	V_START		0x0400	/* Command implies SOL movement. */
+#define	V_KEYNUM	0x0010	/* Cursor referenced number. */
+#define	V_KEYW		0x0020	/* Cursor referenced word. */
+#define	V_LMODE		0x0040	/* Motion is line oriented. */
+#define	V_MOTION	0x0080	/* Motion (required, trailing). */
+#define	V_MOVE		0x0100	/* Command defines movement. */
+#define	V_OBUF		0x0200	/* Buffer (optional, leading). */
+#define	V_RBUF		0x0400	/* Buffer (required, trailing). */
+#define	V_START		0x0800	/* Command implies SOL movement. */
 	u_int flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
