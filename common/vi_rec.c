@@ -68,11 +68,21 @@ __vi_cursor_recover(dbenv, dbtp, lsnp, op, info)
 	sp = (SCR *)dbenv->app_private;
 
 	*lsnp = argp->prev_lsn;
-	ret = argp->opcode == (DB_UNDO(op) ? LOG_CURSOR_INIT : LOG_CURSOR_END)
-	      ? LOG_CURSOR_HIT : 0;
-	if (ret) {
-		sp->state.pos.lno = argp->lno;
-		sp->state.pos.cno = argp->cno;
+	if (sp->state.undo == UNDO_SETLINE) {
+		/* Why the check for ep->l_cur ? (copied from log.c)
+		 */
+		ret = (argp->lno != sp->lno || 
+		    (argp->opcode == LOG_CURSOR_INIT && sp->ep->l_cur == 1))
+			  ? LOG_CURSOR_HIT : 0;
+	}
+	else {
+		ret = argp->opcode == 
+			(DB_UNDO(op) ? LOG_CURSOR_INIT : LOG_CURSOR_END)
+			  ? LOG_CURSOR_HIT : 0;
+		if (ret) {
+			sp->state.pos.lno = argp->lno;
+			sp->state.pos.cno = argp->cno;
+		}
 	}
 
     	REC_NOOP_CLOSE;
@@ -140,16 +150,19 @@ __vi_change_recover(dbenv, dbtp, lsnp, op, info)
 	    case LOG_LINE_RESET_B:
 	    case LOG_LINE_RESET_F:
 		    ret = line_insdel(sp, LINE_RESET, argp->lno);
+		    update_cache(sp, LINE_RESET, argp->lno);
 		    ret = scr_update(sp, argp->lno, LINE_RESET, 1) || ret;
 		    break;
 	    case LOG_LINE_APPEND_B:
 	    case LOG_LINE_DELETE_F:
 		    ret = line_insdel(sp, LINE_DELETE, argp->lno);
+		    update_cache(sp, LINE_DELETE, argp->lno);
 		    ret = scr_update(sp, argp->lno, LINE_DELETE, 1) || ret;
 		    break;
 	    case LOG_LINE_DELETE_B:
 	    case LOG_LINE_APPEND_F:
 		    ret = line_insdel(sp, LINE_INSERT, argp->lno);
+		    update_cache(sp, LINE_INSERT, argp->lno);
 		    ret = scr_update(sp, argp->lno, LINE_INSERT, 1) || ret;
 		    break;
 	    }
@@ -220,10 +233,10 @@ alloc_err:
 
 /*
  *
- * PUBLIC: int __vi_log_traverse __P((SCR *sp, db_recops ops, MARK *));
+ * PUBLIC: int __vi_log_traverse __P((SCR *sp, undo_t undo, MARK *));
  */
 int
-__vi_log_traverse(SCR *sp, db_recops ops, MARK *rp)
+__vi_log_traverse(SCR *sp, undo_t undo, MARK *rp)
 {
 	DB_LOGC *logc;
 	DBT data;
@@ -231,11 +244,13 @@ __vi_log_traverse(SCR *sp, db_recops ops, MARK *rp)
 	int	    ret;
 	DB_LSN	    lsn;
 	u_int32_t   which;
+	db_recops   ops;
 
 	ep = sp->ep;
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
+	sp->state.undo = undo;
 	ep->env->app_private = sp;
 	if ((sp->db_error = ep->env->log_cursor(ep->env, &logc, 0)) 
 		    != 0) {
@@ -244,12 +259,14 @@ __vi_log_traverse(SCR *sp, db_recops ops, MARK *rp)
 	}
 	if (vi_log_get(sp, logc, &data, DB_SET))
 		return 1;
-	if (ops == DB_TXN_BACKWARD_ROLL) {
-		which = DB_PREV;
-	} else {
+	if (undo == UNDO_FORWARD) {
+		ops = DB_TXN_FORWARD_ROLL;
 		which = DB_NEXT;
 		if (vi_log_get(sp, logc, &data, DB_NEXT))
 			return 1;
+	} else {
+		ops = DB_TXN_BACKWARD_ROLL;
+		which = DB_PREV;
 	}
 
 	for (;;) {
@@ -262,8 +279,14 @@ __vi_log_traverse(SCR *sp, db_recops ops, MARK *rp)
 
 		if (vi_log_get(sp, logc, &data, which))
 			return 1;
+		if (undo == UNDO_SETLINE && 
+		    log_compare(&ep->lsn_cur, &ep->lsn_first) <= 0) {
+			/* Move to previous record without dispatching. */
+			undo = UNDO_BACKWARD;
+			break;
+		}
 	}
-	if (ops == DB_TXN_BACKWARD_ROLL)
+	if (undo == UNDO_BACKWARD)
 		if (vi_log_get(sp, logc, &data, DB_PREV))
 			return 1;
 

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: log.h,v 10.3 2002/03/02 23:12:13 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:12:13 $
+ *	$Id: log.h,v 10.4 2002/06/08 21:00:33 skimo Exp $ (Berkeley) $Date: 2002/06/08 21:00:33 $
  */
 
 #define	LOG_NOTYPE		0
@@ -20,7 +20,10 @@
 #define	LOG_LINE_RESET_F	9
 #define	LOG_MARK		10	
 
+typedef enum { UNDO_FORWARD, UNDO_BACKWARD, UNDO_SETLINE } undo_t;
+
 struct _log_state {
 	int	didop;
 	MARK	pos;
+	undo_t	undo;
 };

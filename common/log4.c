@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log4.c,v 10.2 2002/03/08 22:37:48 skimo Exp $";
+static const char sccsid[] = "$Id: log4.c,v 10.3 2002/06/08 21:00:33 skimo Exp $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -385,7 +385,7 @@ log_backward(SCR *sp, MARK *rp)
 		msgq(sp, M_BERR, "011|No changes to undo");
 		return (1);
 	}
-	return __vi_log_traverse(sp, DB_TXN_BACKWARD_ROLL, rp);
+	return __vi_log_traverse(sp, UNDO_BACKWARD, rp);
 }
 
 /*
@@ -417,20 +417,11 @@ log_setline(SCR *sp)
 		return (1);
 	}
 
-	if (ep->l_cur == 1)
+	if (log_compare(&ep->lsn_cur, &ep->lsn_first) <= 0) {
+		msgq(sp, M_BERR, "011|No changes to undo");
 		return (1);
-
-	if (ep->l_win && ep->l_win != sp->wp) {
-		ex_emsg(sp, NULL, EXM_LOCKED);
-		return 1;
 	}
-	ep->l_win = sp->wp;
-
-	F_SET(ep, F_NOLOG);		/* Turn off logging. */
-
-	/* XXXX DB4 code */
-
-	return 0;
+	return __vi_log_traverse(sp, UNDO_SETLINE, &m);
 }
 
 /*
@@ -461,5 +452,5 @@ log_forward(SCR *sp, MARK *rp)
 		msgq(sp, M_BERR, "014|No changes to re-do");
 		return (1);
 	}
-	return __vi_log_traverse(sp, DB_TXN_FORWARD_ROLL, rp);
+	return __vi_log_traverse(sp, UNDO_FORWARD, rp);
 }
