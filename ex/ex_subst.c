@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.45 1994/05/02 13:54:58 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:54:58 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.46 1994/05/02 14:27:56 bostic Exp $ (Berkeley) $Date: 1994/05/02 14:27:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -365,7 +365,7 @@ substitute(sp, ep, cmdp, s, re, flags)
 	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
 	int cflag, lflag, nflag, pflag, rflag;
 	int didsub, do_eol_match, eflags, empty_ok, eval;
-	int linechanged, matched, quit, rval, teardown;
+	int linechanged, matched, quit, rval;
 	char *bp, *lb;
 
 	/*
