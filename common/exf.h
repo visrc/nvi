@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 9.1 1994/11/09 18:37:44 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:44 $
+ *	$Id: exf.h,v 9.2 1994/12/02 12:00:50 bostic Exp $ (Berkeley) $Date: 1994/12/02 12:00:50 $
  */
 					/* Undo direction. */
 /*
@@ -69,6 +69,7 @@ struct _exf {
 
 /* EXF routines. */
 FREF	*file_add __P((SCR *, CHAR_T *));
+int	 file_aw __P((SCR *, int));
 void	 file_cinit __P((SCR *));
 int	 file_end __P((SCR *, EXF *, int));
 int	 file_m1 __P((SCR *, int, int));
