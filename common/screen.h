@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.22 1993/09/12 16:58:51 bostic Exp $ (Berkeley) $Date: 1993/09/12 16:58:51 $
+ *	$Id: screen.h,v 8.23 1993/09/27 17:45:51 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:45:51 $
  */
 
 /*
@@ -52,8 +52,9 @@ typedef struct _fref {
 #define	FR_EDITED	0x002		/* If the file was ever edited. */
 #define	FR_IGNORE	0x004		/* File isn't part of argument list. */
 #define	FR_NAMECHANGED	0x008		/* File name was changed. */
-#define	FR_NONAME	0x010		/* File has no name. */
-#define	FR_RDONLY	0x020		/* File is read-only. */
+#define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
+#define	FR_NONAME	0x020		/* File has no name. */
+#define	FR_RDONLY	0x040		/* File is read-only. */
 	u_char	 flags;
 } FREF;
 
