@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.33 1996/09/24 20:51:23 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:51:23 $";
+static const char sccsid[] = "$Id: key.c,v 10.34 1996/11/27 11:59:36 bostic Exp $ (Berkeley) $Date: 1996/11/27 11:59:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,10 +210,13 @@ v_key_ilookup(sp)
 	GS *gp;
 	size_t len;
 
-	for (gp = sp->gp, ch = 0; ch <= MAX_FAST_KEY; ++ch)
+	for (gp = sp->gp, ch = 0;; ++ch) {
 		for (p = gp->cname[ch].name, t = v_key_name(sp, ch),
 		    len = gp->cname[ch].len = sp->clen; len--;)
 			*p++ = *t++;
+		if (ch == MAX_FAST_KEY)
+			break;
+	}
 }
 
 /*
