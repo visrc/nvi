@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.1 1993/06/09 22:20:54 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:20:54 $
+ *	$Id: exf.h,v 8.2 1993/06/19 14:49:18 bostic Exp $ (Berkeley) $Date: 1993/06/19 14:49:18 $
  */
 
 					/* Undo direction. */
@@ -36,10 +36,6 @@ typedef struct _exf {
 	recno_t	 l_cur;			/* Log current record number. */
 	struct _mark	l_cursor;	/* Log cursor position. */
 	enum udirection lundo;		/* Last undo direction. */
-
-	struct _mark	getc_m;		/* Getc mark. */
-	char	*getc_bp;		/* Getc buffer. */
-	size_t	 getc_blen;		/* Getc buffer length. */
 
 	struct _mark	absmark;	/* Saved absolute mark. */
 					/* File marks. */
