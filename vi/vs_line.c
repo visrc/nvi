@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.9 1993/11/06 17:57:17 bostic Exp $ (Berkeley) $Date: 1993/11/06 17:57:17 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.10 1993/11/07 17:02:59 bostic Exp $ (Berkeley) $Date: 1993/11/07 17:02:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,8 +39,8 @@ svi_line(sp, ep, smp, yp, xp)
 	CHNAME const *cname;
 	SMAP *tsmp;
 	recno_t lno;
-	size_t chlen, cols_per_screen, cno_cnt, count_cols;
-	size_t len, offset_in_line, offset_in_char, skip_screens;
+	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
+	size_t offset_in_char, offset_in_line;
 	size_t oldy, oldx;
 	int ch, is_cached, is_infoline, is_partial, is_tab, listset;
 	int reverse_video;
@@ -200,29 +200,31 @@ err:			MOVEA(sp, oldy, oldx);
 		if (skip_screens == 0) {
 			smp->c_sboff = offset_in_line;
 			smp->c_scoff = offset_in_char;
-		} else for (count_cols = 0;
-		    offset_in_line < len; ++offset_in_line) {
-			chlen = (ch = *(u_char *)p++) == '\t' && !listset ?
-			    TAB_OFF(sp, count_cols) : cname[ch].len;
-			count_cols += chlen;
+		} else for (scno = 0; offset_in_line < len; ++offset_in_line) {
+			scno += chlen =
+			    (ch = *(u_char *)p++) == '\t' && !listset ?
+			    TAB_OFF(sp, scno) : cname[ch].len;
+			if (scno < cols_per_screen)
+				continue;
+			/*
+			 * Reset cols_per_screen to second and subsequent line
+			 * length.
+			 */
+			scno -= cols_per_screen;
+			cols_per_screen = sp->cols;
 
 			/*
 			 * If crossed the last skipped screen boundary, start
-			 * displaying the characters.  Reset cols_per_screen
-			 * to second and subsequent line length.
+			 * displaying the characters.
 			 */
-			if (count_cols < cols_per_screen)
-				continue;
-			count_cols -= cols_per_screen;
-			cols_per_screen = sp->cols;
 			if (--skip_screens)
 				continue;
 
 			/* Put starting info for this line in the cache. */
-			if (count_cols) {
+			if (scno) {
 				smp->c_sboff = offset_in_line;
-				smp->c_scoff =
-				    offset_in_char = chlen - count_cols;
+				smp->c_scoff = offset_in_char = chlen - scno;
+				--p;
 			} else {
 				smp->c_sboff = ++offset_in_line;
 				smp->c_scoff = 0;
@@ -249,16 +251,15 @@ err:			MOVEA(sp, oldy, oldx);
 		cno_cnt = (sp->cno - offset_in_line) + 1;
 
 	/* This is the loop that actually displays characters. */
-	for (is_partial = 0, count_cols = 0;
+	for (is_partial = 0, scno = 0;
 	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
 		if ((ch = *(u_char *)p++) == '\t' && !listset) {
-			chlen = TAB_OFF(sp, count_cols) - offset_in_char;
+			scno += chlen = TAB_OFF(sp, scno) - offset_in_char;
 			is_tab = 1;
 		} else {
-			chlen = cname[ch].len - offset_in_char;
+			scno += chlen = cname[ch].len - offset_in_char;
 			is_tab = 0;
 		}
-		count_cols += chlen;
 
 		/*
 		 * Only display up to the right-hand column.  Set a flag if
@@ -268,12 +269,12 @@ err:			MOVEA(sp, oldy, oldx);
 		 * characters to display on the next screen, its lno/off won't
 		 * match up in that case.
 		 */
-		if (count_cols >= cols_per_screen) {
+		if (scno >= cols_per_screen) {
 			smp->c_ecsize = chlen;
-			chlen -= count_cols - cols_per_screen;
+			chlen -= scno - cols_per_screen;
 			smp->c_eclen = chlen;
 			smp->c_eboff = offset_in_line;
-			if (count_cols > cols_per_screen)
+			if (scno > cols_per_screen)
 				is_partial = 1;
 
 			/* Terminate the loop. */
@@ -292,9 +293,9 @@ err:			MOVEA(sp, oldy, oldx);
 		    --cno_cnt == 0 && (F_ISSET(sp, S_INPUT) || !is_partial)) {
 			*yp = smp - HMAP;
 			if (F_ISSET(sp, S_INPUT))
-				*xp = count_cols - chlen;
+				*xp = scno - chlen;
 			else
-				*xp = count_cols - 1;
+				*xp = scno - 1;
 			if (O_ISSET(sp, O_NUMBER) &&
 			    !is_infoline && smp->off == 1)
 				*xp += O_NUMBER_LENGTH;
@@ -323,7 +324,7 @@ err:			MOVEA(sp, oldy, oldx);
 			ADDNSTR(cname[ch].name + offset_in_char, chlen);
 	}
 
-	if (count_cols < cols_per_screen) {
+	if (scno < cols_per_screen) {
 		/* If didn't paint the whole line, update the cache. */
 		smp->c_ecsize = smp->c_eclen = cname[ch].len;
 		smp->c_eboff = len - 1;
@@ -334,12 +335,12 @@ err:			MOVEA(sp, oldy, oldx);
 		 * add a trailing $.
 		 */
 		if (listset) {
-			++count_cols;
+			++scno;
 			ADDCH('$');
 		}
 
 		/* If still didn't paint the whole line, clear the rest. */
-		if (count_cols < cols_per_screen)
+		if (scno < cols_per_screen)
 			clrtoeol();
 	}
 
