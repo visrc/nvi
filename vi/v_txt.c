@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.46 1996/03/29 20:27:28 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:27:28 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.47 1996/04/02 08:12:59 bostic Exp $ (Berkeley) $Date: 1996/04/02 08:12:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,7 @@ static int	 txt_fc __P((SCR *, TEXT *, int *));
 static int	 txt_fc_col __P((SCR *, int, ARGS **));
 static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_insch __P((SCR *, TEXT *, CHAR_T *, u_int));
+static int	 txt_isrch __P((SCR *, TEXT *, u_int32_t *));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
 static void	 txt_Rcleanup __P((SCR *,
@@ -67,10 +68,58 @@ v_tcmd(sp, vp, prompt, flags)
 	ARG_CHAR_T prompt;
 	u_int flags;
 {
-	SMAP *esmp;
 	VI_PRIVATE *vip;
-	recno_t sv_lno, sv_tm_lno;
-	size_t cnt, sv_cno, sv_t_maxrows, sv_t_minrows, sv_t_rows, sv_tm_off;
+
+	/* Initialize the map. */
+	if (txt_map_init(sp))
+		return (1);
+
+	/* Don't update the modeline for now. */
+	F_SET(sp, S_INPUT_INFO);
+
+	/* Set the input flags. */
+	LF_SET(TXT_APPENDEOL |
+	    TXT_CR | TXT_ESCAPE | TXT_INFOLINE | TXT_MAPINPUT);
+	if (O_ISSET(sp, O_ALTWERASE))
+		LF_SET(TXT_ALTWERASE);
+	if (O_ISSET(sp, O_TTYWERASE))
+		LF_SET(TXT_TTYWERASE);
+
+	/* Do the input thing. */
+	if (v_txt(sp, vp, NULL, NULL, 0, prompt, 0, 1, flags))
+		return (1);
+
+	/* Reenable the modeline updates. */
+	F_CLR(sp, S_INPUT_INFO);
+
+	/* Clean up the map. */
+	if (txt_map_end(sp))
+		return (1);
+
+	if (IS_ONELINE(sp))
+		F_SET(sp, S_SCR_REDRAW);	/* XXX */
+
+	/*
+	 * Invalidate the cursor and the line size cache, the line never
+	 * really existed.  This fixes bugs where the user searches for
+	 * the last line on the screen + 1 and the refresh routine thinks
+	 * that's where we just were.
+	 */
+	vip = VIP(sp);
+	VI_SCR_CFLUSH(vip);
+	F_SET(vip, VIP_CUR_INVALID);
+
+	return (0);
+}
+
+recno_t sv_lno, sv_tm_lno;
+size_t sv_cno, sv_t_maxrows, sv_t_minrows, sv_t_rows, sv_tm_off;
+
+int
+txt_map_init(sp)
+	SCR *sp;
+{
+	SMAP *esmp;
 
 	/* Save current cursor. */
 	sv_lno = sp->lno;
@@ -115,22 +164,14 @@ v_tcmd(sp, vp, prompt, flags)
 	/* Move to the last line. */
 	sp->lno = TMAP[0].lno;
 	sp->cno = 0;
+	return (0);
+}
 
-	/* Don't update the modeline for now. */
-	F_SET(sp, S_INPUT_INFO);
-
-	LF_SET(TXT_APPENDEOL |
-	    TXT_CR | TXT_ESCAPE | TXT_INFOLINE | TXT_MAPINPUT);
-	if (O_ISSET(sp, O_ALTWERASE))
-		LF_SET(TXT_ALTWERASE);
-	if (O_ISSET(sp, O_TTYWERASE))
-		LF_SET(TXT_TTYWERASE);
-
-	if (v_txt(sp, vp, NULL, NULL, 0, prompt, 0, 1, flags))
-		return (1);
-
-	/* Reenable the modeline updates. */
-	F_CLR(sp, S_INPUT_INFO);
+int
+txt_map_end(sp)
+	SCR *sp;
+{
+	size_t cnt;
 
 	if (!IS_ONELINE(sp)) {
 		/* Restore the screen information. */
@@ -159,18 +200,7 @@ v_tcmd(sp, vp, prompt, flags)
 		while (sv_tm_lno != TMAP->lno || sv_tm_off != TMAP->off)
 			if (vs_sm_1down(sp))
 				return (1);
-	} else
-		F_SET(sp, S_SCR_REDRAW);
-
-	/*
-	 * Invalidate the cursor and the line size cache, the line never
-	 * really existed.  This fixes bugs where the user searches for
-	 * the last line on the screen + 1 and the refresh routine thinks
-	 * that's where we just were.
-	 */
-	vip = VIP(sp);
-	VI_SCR_CFLUSH(vip);
-	F_SET(vip, VIP_CUR_INVALID);
+	}
 
 	/* Restore the original cursor. */
 	sp->lno = sv_lno;
@@ -1260,8 +1290,14 @@ ret:	/* If replaying text, keep going. */
 			showmatch = 0;
 			if (txt_showmatch(sp))
 				return (1);
-		} else if (vs_refresh(sp, margin != 0))
-			return (1);
+		} else {
+			extern int FOO;
+			if (vs_refresh(sp, margin != 0))
+				return (1);
+			if (LF_ISSET(TXT_SEARCHINCR) &&
+			    txt_isrch(sp, tp, &flags))
+				return (1);
+		}
 	}
 
 	/* Keep going. */
@@ -2355,6 +2391,73 @@ txt_insch(sp, tp, chp, flags)
 	}
 	tp->lb[sp->cno++] = *chp;
 	return (0);
+}
+
+/*
+ * txt_isrch --
+ *	Do an incremental search forward.
+ */
+static int
+txt_isrch(sp, tp, flagsp)
+	SCR *sp;
+	TEXT *tp;
+	u_int32_t *flagsp;
+{
+	CHAR_T savech;
+	MARK fm, rm;
+	size_t savecno, savelno;
+
+	/* If it's a one-line screen, we're screwed. */
+	if (IS_ONELINE(sp)) {
+		FL_CLR(*flagsp, TXT_SEARCHINCR);
+		return (0);
+	}
+
+	/*
+	 * If we see the search pattern termination character, then quit
+	 * doing any kind of incremental search.  There may be more input,
+	 * e.g. ":/foo/;/bar/", but we can't handle that incrementally.
+	 */
+	if (sp->cno > 1 &&
+	    tp->lb[0] == tp->lb[sp->cno] && tp->lb[sp->cno -1] != '\\') {
+		FL_CLR(*flagsp, TXT_SEARCHINCR);
+		return (0);
+	}
+		
+	/* Save the current position and discard the special input map. */
+	savecno = sp->cno;
+	savech = tp->lb[sp->cno];
+	tp->lb[sp->cno] = '\0';
+	F_CLR(sp, S_INPUT);
+	if (txt_map_end(sp))
+		return (1);
+
+	/*
+	 * Specify where we'll start searching, and search.  If we find
+	 * a match, move to it and refresh the screen.  If we didn't find
+	 * the match, then we beep the screen.
+	 */
+	fm.lno = sp->lno;
+	fm.cno = sp->cno;
+	if (tp->lb[0] == '/' ?
+	    !f_search(sp, &fm, &rm, tp->lb + 1, NULL, 0) :
+	    !b_search(sp, &fm, &rm, tp->lb + 1, NULL, 0)) {
+		sp->lno = rm.lno;
+		sp->cno = rm.cno;
+		vs_refresh(sp, 0);
+	} else {
+		(void)sp->gp->scr_bell(sp);
+	}
+
+	/* Reinstantiate the special input map. */
+	if (txt_map_init(sp))
+		return (1);
+	F_SET(sp, S_INPUT);
+
+	/* Reset the input line. */
+	tp->lno = sp->lno;
+	sp->cno = savecno;
+	tp->lb[sp->cno] = savech;
 }
 
 /*
