@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.29 2001/06/10 10:23:43 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:43 $
+ *	$Id: ex.h,v 10.30 2004/03/16 14:11:33 skimo Exp $ (Berkeley) $Date: 2004/03/16 14:11:33 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -133,7 +133,7 @@ struct _excmd {
 #define	E_C_PRINT	0x01000		/*  p flag. */
 	u_int16_t iflags;		/* User input information. */
 
-#define	__INUSE2	0x000004ff	/* Same name space as EXCMDLIST. */
+#define	__INUSE2	0x000007ff	/* Same name space as EXCMDLIST. */
 #define	E_BLIGNORE	0x00000800	/* Ignore blank lines. */
 #define	E_NAMEDISCARD	0x00001000	/* Free/discard the name. */
 #define	E_NOAUTO	0x00002000	/* Don't do autoprint output. */
