@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.41 1993/05/08 16:10:09 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:10:09 $
+ *	$Id: vi.h,v 5.42 1993/05/13 14:07:00 bostic Exp $ (Berkeley) $Date: 1993/05/13 14:07:00 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -97,7 +97,7 @@ extern VIKEYS const vikeys[MAXVIKEY + 1];
 int	getc_init __P((SCR *, EXF *, MARK *, int *));
 int	getc_next __P((SCR *, EXF *, enum direction, int *));
 void	getc_set __P((SCR *, EXF *, MARK *));
-int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *));
+int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *, TEXT *));
 int	vi __P((struct _scr *, struct _exf *));
 int	v_comment __P((SCR *, EXF *));
 int	v_end __P((SCR *));

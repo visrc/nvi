@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.25 1993/05/13 11:43:40 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:40 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.26 1993/05/13 14:06:51 bostic Exp $ (Berkeley) $Date: 1993/05/13 14:06:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 
 		if ((tp = text_init(sp, p, len, len)) == NULL)
 			return (1);
-		if (txt_auto(sp, ep, fm->lno, tp))
+		if (txt_auto(sp, ep, fm->lno, NULL, tp))
 			return (1);
 		rp->cno = tp->ai ? tp->ai - 1 : 0;
 		if (file_aline(sp, ep, fm->lno, tp->lb, tp->len))
