@@ -6,15 +6,16 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 9.2 1995/01/11 16:16:18 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:18 $
+ *	$Id: tag.h,v 9.3 1995/01/31 12:58:58 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:58:58 $
  */
 
 struct _tagf {				/* Tag file. */
 	TAILQ_ENTRY(_tagf) q;		/* Linked list of tag files. */
 	char	*name;			/* Tag file name. */
+	int	 errno;			/* Error. */
 
-#define	TAGF_DNE	0x01		/* Didn't exist. */
-#define	TAGF_DNE_WARN	0x02		/* DNE error reported. */
+#define	TAGF_ERR	0x01		/* Error occurred. */
+#define	TAGF_ERR_WARN	0x02		/* Error reported. */
 	u_int8_t flags;
 };
 

@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.16 1995/01/30 10:03:08 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:03:08 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.17 1995/01/31 12:58:55 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:58:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,7 +44,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 9.16 1995/01/30 10:03:08 bostic Exp $ (B
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
 static char	*linear_search __P((char *, char *, char *));
-static int	 search __P((SCR *, char *, char *, char **));
+static int	 search __P((SCR *, TAGF *, char *, char **));
 static int	 tag_get __P((SCR *, char *, char **, char **, char **));
 
 enum tagmsg {TAG_BADLNO, TAG_EMPTY, TAG_SEARCH};
@@ -620,51 +620,42 @@ tag_get(sp, tag, tagp, filep, searchp)
 	EX_PRIVATE *exp;
 	TAGF *tfp;
 	size_t plen, slen, tlen;
-	int dne, nf1, nf2;
+	int echk, nf1, nf2;
 	char *p, *t, pbuf[MAXPATHLEN];
 
 	/*
 	 * Find the tag, only display missing file messages once, and
 	 * then only if we didn't find the tag.
 	 */
-	dne = 0;
+	echk = 0;
 	exp = EXP(sp);
 	for (p = NULL, tfp = exp->tagfq.tqh_first;
-	    tfp != NULL && p == NULL; tfp = tfp->q.tqe_next) {
-		errno = 0;
-		F_CLR(tfp, TAGF_DNE);
-		if (search(sp, tfp->name, tag, &p))
-			if (errno == ENOENT) {
-				if (!F_ISSET(tfp, TAGF_DNE_WARN)) {
-					dne = 1;
-					F_SET(tfp, TAGF_DNE);
-				}
-			} else {
-				t = msg_print(sp, tfp->name, &nf1);
-				msgq(sp, M_SYSERR, "%s", t);
-				if (nf1)
-					FREE_SPACE(sp, t, 0);
-			}
-		else
+	    tfp != NULL && p == NULL; tfp = tfp->q.tqe_next)
+		if (search(sp, tfp, tag, &p)) {
+			F_SET(tfp, TAGF_ERR);
+			echk = 1;
+		} else {
+			F_CLR(tfp, TAGF_ERR | TAGF_ERR_WARN);
 			if (p != NULL)
 				break;
-	}
+		}
 
 	if (p == NULL) {
 		p = msg_print(sp, tag, &nf1);
 		msgq(sp, M_ERR, "168|%s: tag not found", p);
 		if (nf1)
 			FREE_SPACE(sp, p, 0);
-		if (dne)
+		if (echk)
 			for (tfp = exp->tagfq.tqh_first;
 			    tfp != NULL; tfp = tfp->q.tqe_next)
-				if (F_ISSET(tfp, TAGF_DNE)) {
+				if (F_ISSET(tfp, TAGF_ERR) &&
+				    !F_ISSET(tfp, TAGF_ERR_WARN)) {
 					p = msg_print(sp, tfp->name, &nf1);
-					errno = ENOENT;
+					errno = tfp->errno;
 					msgq(sp, M_SYSERR, "%s", p);
 					if (nf1)
 						FREE_SPACE(sp, p, 0);
-					F_SET(tfp, TAGF_DNE_WARN);
+					F_SET(tfp, TAGF_ERR_WARN);
 				}
 		return (1);
 	}
@@ -738,16 +729,19 @@ malformed:	free(*tagp);
  *	Search a file for a tag.
  */
 static int
-search(sp, name, tname, tag)
+search(sp, tfp, tname, tag)
 	SCR *sp;
-	char *name, *tname, **tag;
+	TAGF *tfp;
+	char *tname, **tag;
 {
 	struct stat sb;
 	int fd, len;
 	char *endp, *back, *front, *map, *p;
 
-	if ((fd = open(name, O_RDONLY, 0)) < 0)
+	if ((fd = open(tfp->name, O_RDONLY, 0)) < 0) {
+		tfp->errno = errno;
 		return (1);
+	}
 
 	/*
 	 * XXX
@@ -760,6 +754,7 @@ search(sp, name, tname, tag)
 	 */
 	if (fstat(fd, &sb) || (map = mmap(NULL, (size_t)sb.st_size,
 	    PROT_READ, MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
+		tfp->errno = errno;
 		(void)close(fd);
 		return (1);
 	}
