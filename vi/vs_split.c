@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.5 1995/01/23 17:30:57 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:57 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.6 1995/01/30 09:19:10 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:19:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ svi_split(sp, argv, argc)
 	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
 	 * Set a flag so we know to fix the screen up later.
 	 */
-	issmallscreen = ISSMALLSCREEN(sp);
+	issmallscreen = IS_SMALL(sp);
 
 	/*
 	 * Split the screen, and link the screens together.  If the cursor
@@ -354,7 +354,7 @@ svi_join(csp, nsp)
 	sp->rows += csp->rows;
 
 	svp = SVP(sp);
-	if (ISSMALLSCREEN(sp)) {
+	if (IS_SMALL(sp)) {
 		sp->t_maxrows += csp->rows;
 		for (cnt = sp->t_rows; ++cnt <= sp->t_maxrows;) {
 			(void)svp->scr_move(sp, RLNO(sp, cnt), 0);
@@ -471,7 +471,7 @@ svi_swap(csp, nsp, name)
 	/* Initialize terminal information. */
 	SVP(sp)->srows = SVP(csp)->srows;
 
-	issmallscreen = ISSMALLSCREEN(sp);
+	issmallscreen = IS_SMALL(sp);
 
 	/* Initialize screen information. */
 	sp->rows = csp->rows;

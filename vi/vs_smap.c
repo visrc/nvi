@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.5 1995/01/23 17:30:54 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:54 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.6 1995/01/30 09:18:48 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:18:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ svi_change(sp, lno, op)
 {
 	SMAP *p;
 	SVI_PRIVATE *svp;
-	size_t oldy, oldx;
+	size_t cnt, oldy, oldx;
 
 	/* Appending is the same as inserting, if the line is incremented. */
 	if (op == LINE_APPEND) {
@@ -76,14 +76,14 @@ svi_change(sp, lno, op)
 			abort();
 			/* NOTREACHED */
 		case LINE_DELETE:
-			for (p = HMAP; p <= TMAP; ++p)
+			for (p = HMAP, cnt = sp->t_rows; cnt--; ++p)
 				--p->lno;
 			if (sp->lno >= lno)
 				--sp->lno;
 			F_SET(svp, SVI_SCR_NUMBER);
 			break;
 		case LINE_INSERT:
-			for (p = HMAP; p <= TMAP; ++p)
+			for (p = HMAP, cnt = sp->t_rows; cnt--; ++p)
 				++p->lno;
 			if (sp->lno >= lno)
 				++sp->lno;
@@ -149,9 +149,10 @@ svi_sm_fill(sp, lno, pos)
 	enum position pos;
 {
 	SMAP *p, tmp;
+	size_t cnt;
 
 	/* Flush all cached information from the SMAP. */
-	for (p = HMAP; p <= TMAP; ++p)
+	for (p = HMAP, cnt = sp->t_rows; cnt--; ++p)
 		SMAP_FLUSH(p);
 
 	/*
@@ -195,13 +196,13 @@ top:			HMAP->lno = lno;
 			HMAP->off = 1;
 		}
 		/* If we fail, just punt. */
-		for (p = HMAP; p < TMAP; ++p)
+		for (p = HMAP, cnt = sp->t_rows; --cnt; ++p)
 			if (svi_sm_next(sp, p, p + 1))
 				goto err;
 		break;
 	case P_MIDDLE:
 		/* If we fail, guess that the file is too small. */
-middle:		p = HMAP + (TMAP - HMAP) / 2;
+middle:		p = HMAP + sp->t_rows / 2;
 		for (p->lno = lno, p->off = 1; p > HMAP; --p)
 			if (svi_sm_prev(sp, p, p - 1)) {
 				lno = 1;
@@ -209,7 +210,7 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 			}
 
 		/* If we fail, just punt. */
-		p = HMAP + (TMAP - HMAP) / 2;
+		p = HMAP + sp->t_rows / 2;
 		for (; p < TMAP; ++p)
 			if (svi_sm_next(sp, p, p + 1))
 				goto err;
@@ -246,22 +247,14 @@ err:	HMAP->lno = 1;
 
 /*
  * For the routines svi_sm_reset, svi_sm_delete and svi_sm_insert: if the
- * screen only contains one line, or, if the line is the entire screen, this
- * gets fairly exciting.  Skip the fun and simply return if there's only one
- * line in the screen, or just call fill.  Fill may not be entirely accurate,
- * i.e. we may be painting the screen with something not even close to the
- * cursor, but it's not like we're into serious performance issues here, and
- * the refresh routine will fix it for us.
+ * screen contains only a single line (whether because the screen is small
+ * or the line large), it gets fairly exciting.  Skip the fun, set a flag
+ * so the screen is repainted, and return.
  */
-#define	TOO_WEIRD {							\
-	if (cnt_orig >= sp->t_rows) {					\
-		if (cnt_orig == 1)					\
-			return (0);					\
-		if (file_gline(sp, lno, NULL) == NULL)			\
-			if (file_lline(sp, &lno))			\
-				return (1);				\
+#define	HANDLE_WEIRDNESS(cnt) {						\
+	if (cnt >= sp->t_rows) {					\
 		F_SET(sp, S_SCR_REDRAW);				\
-		return (svi_sm_fill(sp, lno, P_TOP));			\
+		return (0);						\
 	}								\
 }
 
@@ -288,7 +281,7 @@ svi_sm_delete(sp, lno)
 		for (cnt_orig = 1, t = p + 1;
 		    t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
 
-	TOO_WEIRD;
+	HANDLE_WEIRDNESS(cnt_orig);
 
 	/* Delete that many lines from the screen. */
 	(void)SVP(sp)->scr_move(sp, RLNO(sp, p - HMAP), 0);
@@ -337,7 +330,7 @@ svi_sm_insert(sp, lno)
 	else
 		cnt_orig = svi_opt_screens(sp, lno, NULL);
 
-	TOO_WEIRD;
+	HANDLE_WEIRDNESS(cnt_orig);
 
 	/*
 	 * The lines left in the screen override the number of screen
@@ -397,7 +390,7 @@ svi_sm_reset(sp, lno)
 		cnt_new = svi_opt_screens(sp, lno, NULL);
 	}
 
-	TOO_WEIRD;
+	HANDLE_WEIRDNESS(cnt_orig);
 
 	if (cnt_orig == cnt_new) {
 		do {
@@ -586,7 +579,7 @@ svi_sm_up(sp, rp, count, scmd, smp)
 	 * reasons.
 	 */
 	cursor_set = 0;
-	if (ISSMALLSCREEN(sp)) {
+	if (IS_SMALL(sp)) {
 		if (count >= sp->t_maxrows || scmd == CNTRL_F) {
 			s1 = TMAP[0];
 			if (svi_sm_erase(sp))
@@ -730,7 +723,7 @@ svi_sm_1up(sp)
 		return (1);
 
 	/* One-line screens can fail. */
-	if (HMAP == TMAP) {
+	if (IS_ONELINE(sp)) {
 		if (svi_sm_next(sp, TMAP, TMAP))
 			return (1);
 	} else {
@@ -759,7 +752,9 @@ svi_deleteln(sp, cnt)
 
 	svp = SVP(sp);
 	(void)svp->scr_cursor(sp, &oldy, &oldx);
-	while (cnt--) {
+	if (IS_ONELINE(sp))
+		(void)svp->scr_clrtoeol(sp);
+	else while (cnt--) {
 		(void)svp->scr_deleteln(sp);
 		(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp) - 1), 0);
 		(void)svp->scr_insertln(sp);
@@ -802,7 +797,7 @@ svi_sm_down(sp, rp, count, scmd, smp)
 	 * reasons.
 	 */
 	cursor_set = scmd == CNTRL_Y;
-	if (ISSMALLSCREEN(sp)) {
+	if (IS_SMALL(sp)) {
 		if (count >= sp->t_maxrows || scmd == CNTRL_B) {
 			s1 = HMAP[0];
 			if (svi_sm_erase(sp))
@@ -954,14 +949,21 @@ svi_sm_1down(sp)
 	 * at the top of the screen.
 	 */
 	svp = SVP(sp);
-	(void)svp->scr_move(sp, RLNO(sp, sp->t_rows), 0);
+	(void)svp->scr_move(sp, RLNO(sp, sp->t_rows - 1), 0);
 	(void)svp->scr_clrtoeol(sp);
 	(void)svp->scr_move(sp, RLNO(sp, 0), 0);
 	if (svi_insertln(sp, 1))
 		return (1);
-	memmove(HMAP + 1, HMAP, (sp->rows - 1) * sizeof(SMAP));
-	if (svi_sm_prev(sp, HMAP + 1, HMAP))
-		return (1);
+
+	/* One-line screens can fail. */
+	if (IS_ONELINE(sp)) {
+		if (svi_sm_prev(sp, HMAP, HMAP))
+			return (1);
+	} else {
+		memmove(HMAP + 1, HMAP, (sp->rows - 1) * sizeof(SMAP));
+		if (svi_sm_prev(sp, HMAP + 1, HMAP))
+			return (1);
+	}
 	/* svi_sm_prev() flushed the cache. */
 	if (svi_line(sp, HMAP, NULL, NULL))
 		return (1);
@@ -983,7 +985,10 @@ svi_insertln(sp, cnt)
 
 	svp = SVP(sp);
 	(void)svp->scr_cursor(sp, &oldy, &oldx);
-	while (cnt--) {
+	if (IS_ONELINE(sp)) {
+		(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp)), 0);
+		(void)svp->scr_clrtoeol(sp);
+	} else while (cnt--) {
 		(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp) - 1), 0);
 		(void)svp->scr_deleteln(sp);
 		(void)svp->scr_move(sp, oldy, oldx);

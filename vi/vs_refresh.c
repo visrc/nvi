@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.14 1995/01/23 17:30:48 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:48 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.15 1995/01/30 09:18:26 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:18:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,6 +56,7 @@ svi_refresh(sp)
 	 * which is used by curses.  Stupid, but ugly.
 	 */
 	if (F_ISSET(sp, S_SCR_RESIZE)) {
+abort();
 		/* Reinitialize the screen. */
 		if (svi_screen_init(sp));
 			return (1);
@@ -105,8 +106,7 @@ svi_refresh(sp)
 		if (tsp != sp &&
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(SVP(tsp), priv_paint) ||
-		    tsp->msgq.lh_first != NULL &&
-		    !F_ISSET(tsp->msgq.lh_first, M_EMPTY))) {
+		    MSGS_WAITING(tsp))) {
 			(void)svi_paint(tsp, 0);
 			F_CLR(SVP(tsp), SVI_SCR_DIRTY);
 			F_SET(SVP(sp), SVI_CUR_INVALID);
@@ -155,7 +155,26 @@ svi_paint(sp, flags)
 	svp = SVP(sp);
 
 	/*
-	 * 1: Reformat the lines.
+	 * 5: Flush messages for single line screens.
+	 *
+	 * Fairly odd, but if we're supporting a single line screen, and
+	 * there are messages, might as well do them first because they'll
+	 * overwrite any text we put up, anyway.
+	 *
+	 * XXX
+	 * If repainting the screen generates new messages, they'll be
+	 * displayed, but the text won't get repainted afterward.  I'm
+	 * pretty sure I don't care.
+	 */
+	if (IS_ONELINE(sp)) {
+		if (F_ISSET(sp, S_BELLSCHED))
+			(void)sp->e_bell(sp);
+		if (!KEYS_WAITING(sp) && MSGS_WAITING(sp))
+			svi_msgflush(sp, 1);
+	}
+
+	/*
+	 * 6: Reformat the lines.
 	 *
 	 * If the lines themselves have changed (:set list, for example),
 	 * fill in the map from scratch.  Adjust the screen that's being
@@ -184,39 +203,12 @@ svi_paint(sp, flags)
 	}
 
 	/*
-	 * 2: Line movement.
+	 * 7: Line movement.
 	 *
 	 * Line changes can cause the top line to change as well.  As
 	 * before, if the movement is large, the screen is repainted.
 	 *
-	 * 2a: Tiny screens.
-	 *
-	 * Tiny screens cannot be permitted into the "scrolling" parts of
-	 * the smap code for two reasons.  If the screen size is 1 line,
-	 * HMAP == TMAP and the code will quickly drop core.  If the screen
-	 * size is 2, none of the divisions by 2 will work, and scrolling
-	 * won't work.  In fact, because no line change will be less than
-	 * HALFTEXT(sp), we always ending up "filling" the map, with a
-	 * P_MIDDLE flag, which isn't what the user wanted.  Tiny screens
-	 * can go into the "fill" portions of the smap code, however.
-	 */
-	if (sp->t_rows <= 2) {
-		if (LNO < HMAP->lno) {
-			if (svi_sm_fill(sp, LNO, P_TOP))
-				return (1);
-		} else if (LNO > TMAP->lno)
-			if (svi_sm_fill(sp, LNO, P_BOTTOM))
-				return (1);
-		if (sp->t_rows == 1) {
-			HMAP->off = svi_opt_screens(sp, LNO, &CNO);
-			goto paint;
-		}
-		F_SET(sp, S_SCR_REDRAW);
-		goto adjust;
-	}
-
-	/*
-	 * 2b: Small screens.
+	 * 7a: Small screens.
 	 *
 	 * Users can use the window, w300, w1200 and w9600 options to make
 	 * the screen artificially small.  The behavior of these options
@@ -248,7 +240,7 @@ svi_paint(sp, flags)
 	 * screen but the column offset is not, we'll end up in the adjust
 	 * code, when we should probably have compressed the screen.
 	 */
-	if (ISSMALLSCREEN(sp))
+	if (IS_SMALL(sp))
 		if (LNO < HMAP->lno) {
 			lcnt = svi_sm_nlines(sp, HMAP, LNO, sp->t_maxrows);
 			if (lcnt <= HALFSCREEN(sp))
@@ -289,7 +281,7 @@ small_fill:			(void)svp->scr_move(sp,
 		}
 
 	/*
-	 * 3a: Line down, or current screen.
+	 * 7b: Line down, or current screen.
 	 */
 	if (LNO >= HMAP->lno) {
 		/* Current screen. */
@@ -315,7 +307,7 @@ small_fill:			(void)svp->scr_move(sp,
 	}
 
 	/*
-	 * 3b: If not on the current screen, may request center or top.
+	 * 7c: If not on the current screen, may request center or top.
 	 */
 	if (F_ISSET(sp, S_SCR_TOP))
 		goto top;
@@ -323,7 +315,7 @@ small_fill:			(void)svp->scr_move(sp,
 		goto middle;
 
 	/*
-	 * 3c: Line up.
+	 * 7d: Line up.
 	 */
 	lcnt = svi_sm_nlines(sp, HMAP, LNO, HALFTEXT(sp));
 	if (lcnt < HALFTEXT(sp)) {
@@ -433,7 +425,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	}
 
 	/*
-	 * 4: Cursor movements (current screen only).
+	 * 8: Cursor movements (current screen only).
 	 */
 	if (!LF_ISSET(PAINT_CURSOR))
 		goto number;
@@ -490,7 +482,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 */
 	if (CNO < OCNO) {
 		/*
-		 * 4a: Cursor moved left.
+		 * 8a: Cursor moved left.
 		 *
 		 * Point to the old character.  The old cursor position can
 		 * be past EOL if, for example, we just deleted the rest of
@@ -553,7 +545,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		SCNO -= cwtotal;
 	} else {
 		/*
-		 * 4b: Cursor moved right.
+		 * 8b: Cursor moved right.
 		 *
 		 * Point to the first character to the right.
 		 */
@@ -592,7 +584,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 	}
 
 	/*
-	 * 4c: Fast cursor update.
+	 * 8c: Fast cursor update.
 	 *
 	 * Retrieve the current cursor position, and correct it
 	 * for split screens.
@@ -602,7 +594,7 @@ fast:	(void)svp->scr_cursor(sp, &y, &x);
 	goto number;
 
 	/*
-	 * 4d: Slow cursor update.
+	 * 8d: Slow cursor update.
 	 *
 	 * Walk through the map and find the current line.  If doing left-right
 	 * scrolling and the cursor movement has changed the screen displayed,
@@ -614,7 +606,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = svi_opt_screens(sp, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
-			if (ISINFOLINE(sp, smp))
+			if (F_ISSET(svp, SVI_INFOLINE))
 				smp->off = cnt;
 			else {
 				for (smp = HMAP; smp <= TMAP; ++smp)
@@ -635,7 +627,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	goto number;
 
 	/*
-	 * 5: Repaint the entire screen.
+	 * 9: Repaint the entire screen.
 	 *
 	 * Lost big, do what you have to do.  We flush the cache, since
 	 * S_SCR_REDRAW gets set when the screen isn't worth fixing, and
@@ -671,7 +663,7 @@ paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
 	 */
-	if (F_ISSET(sp, S_SCR_REDRAW) && ISSMALLSCREEN(sp))
+	if (F_ISSET(sp, S_SCR_REDRAW) && IS_SMALL(sp))
 		for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
 			(void)svp->scr_move(sp, RLNO(sp, cnt), 0);
 			(void)svp->scr_clrtoeol(sp);
@@ -680,7 +672,7 @@ paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	didpaint = 1;
 
 	/*
-	 * 6: Repaint the line numbers.
+	 * 10: Repaint the line numbers.
 	 *
 	 * If O_NUMBER is set and the SVI_SCR_NUMBER bit is set, and we
 	 * didn't repaint the screen, repaint all of the line numbers,
@@ -691,7 +683,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 			return (1);
 
 	/*
-	 * 7: Refresh the screen.
+	 * 11: Refresh the screen.
 	 *
 	 * If the screen was corrupted, clear/refresh it, unless we painted
 	 * it from scratch, which will do it for us.
@@ -700,7 +692,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		(void)svp->scr_restore(sp);
 
 	/*
-	 * 8: Display messages, beep the terminal.
+	 * 12: Display messages, beep the terminal.
 	 *
 	 * If the bottom line isn't in use by the colon command, and
 	 * we're not in the middle of a map:
@@ -715,10 +707,9 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	if (F_ISSET(sp, S_BELLSCHED))
 		(void)sp->e_bell(sp);
 	if (!F_ISSET(SVP(sp), SVI_INFOLINE) && !KEYS_WAITING(sp))
-		if (sp->msgq.lh_first != NULL &&
-		    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
-			svi_msgflush(sp);
-		else if (!F_ISSET(sp, S_SCR_UMODE))
+		if (MSGS_WAITING(sp))
+			svi_msgflush(sp, 1);
+		else if (!IS_ONELINE(sp) && !F_ISSET(sp, S_SCR_UMODE))
 			svi_modeline(sp);
 
 	/* Clear the flags that are handled by this routine. */

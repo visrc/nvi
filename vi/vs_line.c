@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 9.5 1995/01/23 17:30:46 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:46 $";
+static char sccsid[] = "$Id: vs_line.c,v 9.6 1995/01/30 09:19:03 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:19:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,7 +104,7 @@ svi_line(sp, smp, yp, xp)
 	 */
 	cols_per_screen = sp->cols;
 	list_tab = O_ISSET(sp, O_LIST);
-	if (is_infoline = ISINFOLINE(sp, smp)) {
+	if (is_infoline = F_ISSET(svp, SVI_INFOLINE)) {
 		list_dollar = 0;
 		if (O_ISSET(sp, O_LEFTRIGHT))
 			skip_screens = 0;
@@ -405,7 +405,7 @@ svi_number(sp)
 	for (smp = HMAP; smp <= TMAP; ++smp) {
 		if (smp->off != 1)
 			continue;
-		if (ISINFOLINE(sp, smp))
+		if (F_ISSET(svp, SVI_INFOLINE))
 			break;
 		if (smp->lno != 1 && lp == NULL &&
 		    file_gline(sp, smp->lno, NULL) == NULL)
