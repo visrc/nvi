@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.30 1996/09/20 19:18:16 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:18:16 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.31 1996/10/13 14:25:22 bostic Exp $ (Berkeley) $Date: 1996/10/13 14:25:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ vs_split(sp, new, ccl)
 	}
 
 	/* Wait for any messages in the screen. */
-	vs_resolve(sp, 1);
+	vs_resolve(sp, NULL, 1);
 
 	half = sp->rows / 2;
 	if (ccl && half > 6)

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.86 1996/09/20 11:57:43 bostic Exp $ (Berkeley) $Date: 1996/09/20 11:57:43 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.87 1996/10/13 14:25:20 bostic Exp $ (Berkeley) $Date: 1996/10/13 14:25:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1414,7 +1414,8 @@ resolve:/*
 	 *    command line or doing file name completion, resolve them.
 	 */
 	if ((vip->totalcount != 0 || F_ISSET(gp, G_BELLSCHED)) &&
-	    !F_ISSET(sp, SC_TINPUT_INFO) && !filec_redraw && vs_resolve(sp, 0))
+	    !F_ISSET(sp, SC_TINPUT_INFO) && !filec_redraw &&
+	    vs_resolve(sp, NULL, 0))
 		return (1);
 
 	/*
