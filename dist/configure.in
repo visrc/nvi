@@ -409,6 +409,8 @@ fi
 dnl check for curses
 AC_SUBST(vi_curses)
 AC_SUBST(CURSLIBS)
+AC_SUBST(CURSCPPFLAGS)
+AC_SUBST(CURSLDFLAGS)
 AC_SUBST(HAVE_NCURSESW)
 
 dnl AC_ARG_WITH(slang,
@@ -423,59 +425,60 @@ dnl         AC_CHECK_LIB(slang, SLtt_get_terminfo,
 dnl                 [CURSLIBS="$CURSLIBS -lslang -lm"],
 dnl                 [AC_MSG_ERROR(unable to compile.  check config.log)], -lm)
 dnl 
-dnl 	CURSLIB=slcurses
+dnl 	vi_cv_curses=slcurses
 dnl 	],
 dnl 	[
 	SAVELIBS="$LIBS"
+	SAVELDFLAGS="$LDFLAGS"
+	SAVECPPFLAGS="$CPPFLAGS"
 	AC_ARG_WITH(curses,
 		[  --with-curses=DIR       Path to curses installation. ])
 	if test "x$with_curses" != "x"; then
-		LDFLAGS="-L$with_curses/lib $LDFLAGS"
-		CPPFLAGS="-I$with_curses/include $CPPFLAGS"
+		CURSLDFLAGS="-L$with_curses/lib $CURSLDFLAGS"
+		CURSCPPFLAGS="-I$with_curses/include $CURSCPPFLAGS"
 	fi;
-	AC_MSG_CHECKING(for ncurses.h)
-	AC_CACHE_VAL(vi_cv_include_ncurses, [dnl
-	    AC_CHECK_HEADERS(ncurses.h, 
-		[vi_cv_include_ncurses=yes], [vi_cv_include_ncurses=no])])
-	AC_MSG_RESULT($vi_cv_include_ncurses)
-	if test "$vi_cv_include_ncurses" = yes; then
-	    CURSHEADER=ncurses.h 
-	    AC_DEFINE(HAVE_NCURSES_H)
-	    AC_MSG_CHECKING(for wide ncurses)
-	    AC_TRY_RUN([#include <ncurses.h> 
-			main(){exit(!(A_CHARTEXT>0xff));}],
-		[AC_DEFINE(HAVE_NCURSESW)
-		 CURSLIB="ncursesw"
-		 vi_cv_ncursesw=yes],
-		[CURSLIB="ncurses"
-		vi_cv_ncursesw=no])
-	    AC_MSG_RESULT($vi_cv_ncursesw)
-	else
-	    CURSHEADER=curses.h
-	    CURSLIB="curses"
+	LDFLAGS="$CURSLDFLAGS $LDFLAGS"
+	CPPFLAGS="$CURSCPPFLAGS $CPPFLAGS"
+	CPPFLAGS="-I$with_curses/include $CPPFLAGS"
+
+	if test "$vi_cv_widechar" = "yes"; then
+	    for vi_cv_curses in ncurses ncursesw curses; do
+		AC_CHECK_LIB($vi_cv_curses, waddnwstr,[break])
+		vi_cv_curses=unknown
+	    done
+	else 
+	    for vi_cv_curses in ncurses ncursesw curses; do
+		AC_CHECK_LIB($vi_cv_curses, initscr, [break])
+		vi_cv_curses=unknown
+	    done
 	fi
 
-	AC_CHECK_LIB($CURSLIB, initscr,
-		[vi_cv_cursesfatal="no"],
-		[vi_cv_cursesfatal="yes"])
-	if test "$vi_cv_cursesfatal" = "yes"; then
-		AC_MSG_ERROR([Need curses.])
+	if test "$vi_cv_curses" != "unknown"; then
+	    CURSHEADER=curses.h
+	    if test "$vi_cv_curses" = "ncurses"; then
+		AC_CHECK_HEADERS(ncurses.h, [CURSHEADER=ncurses.h])
+	    fi
+	    if test "$vi_cv_curses" = "ncursesw"; then
+		AC_CHECK_HEADERS(ncursesw/ncurses.h, 
+			[CURSHEADER=ncursesw/ncurses.h])
+	    fi
+	    vi_curses=vi
+	    CURSLIBS="-l$vi_cv_curses"
+	else
+	    AC_MSG_WARN([No suitable curses library found.])
+	    vi_curses=""
 	fi
-	vi_curses=vi
-	if test "$vi_cv_widechar" = "yes"; then
-	    AC_CHECK_LIB($CURSLIB, addnwstr,
-		    [AC_DEFINE(HAVE_CURSES_ADDNWSTR)],
-		    [if test "$CURSLIB" != "ncursesw"; then vi_curses=""; fi])
-	fi
-        CURSLIBS="-l$CURSLIB"
+
 	LIBS="$SAVELIBS"
+	LDFLAGS="$SAVELDFLAGS"
+	CPPFLAGS="$SAVECPPFLAGS"
 dnl 	])
 
 dnl Check for the termcap/termlib library.  These two checks must occur in the
 dnl current order, and -lcurses must be loaded before -ltermcap/-ltermlib.
 dnl On Solaris curses==termlib, but different versions of curses
 dnl can be used. Avoid loading termlib is curses has tgetent.
-AC_CHECK_LIB($CURSLIB, tgetent,
+AC_CHECK_LIB($vi_cv_curses, tgetent,
 	[vi_cv_curses_tgetent=yes], [vi_cv_curses_tgetent=no])
 if test "$vi_cv_curses_tgetent" = no; then
 	AC_CHECK_LIB(termlib, tgetent,

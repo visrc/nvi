@@ -183,7 +183,8 @@ vi_SOURCES = \
 	$(visrcdir)/cl/cl_term.c \
 	$(visrcdir)/common/nothread.c
 vi_LDADD = libvi.la @perllibs@ @CURSLIBS@
-vi_LDFLAGS = @perlldflags@
+vi_CPPFLAGS = @CURSCPPFLAGS@ @perlldflags@
+vi_LDFLAGS = @CURSLDFLAGS@ @perlldflags@
 
 vi_ipc_SOURCES = \
 	$(visrcdir)/ip/ip_funcs.c \

@@ -52,12 +52,6 @@
 /* Define if you have a BSD version of curses. */
 #undef HAVE_BSD_CURSES
 
-/* Define if you have wide ncurses(3). */
-#undef HAVE_NCURSESW
-
-/* Define if you have the curses(3) waddnwstr function. */
-#undef HAVE_CURSES_ADDNWSTR
-
 /* Define if you have the curses(3) waddnstr function. */
 #undef HAVE_CURSES_WADDNSTR
 
@@ -127,9 +121,6 @@
 /* Define when using wide characters */
 #undef USE_WIDECHAR
 
-/* Define if you have <ncurses.h> */
-#undef HAVE_NCURSES_H
-
 /* Define when fprintf prototype not in an obvious place */
 #undef NEED_FPRINTF_PROTO
 
@@ -177,6 +168,9 @@
 
 /* Define if you have the <ncurses.h> header file.  */
 #undef HAVE_NCURSES_H
+
+/* Define if you have the <ncursesw/ncurses.h> header file.  */
+#undef HAVE_NCURSESW_NCURSES_H
 
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H
