@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 9.8 1995/01/11 16:22:28 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:28 $";
+static char sccsid[] = "$Id: v_itxt.c,v 9.9 1995/01/30 18:09:54 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:09:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,6 +136,9 @@ v_ia(sp, vp)
 		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (INTERRUPTED(sp))
+			break;
 	}
 	return (0);
 }
@@ -196,6 +199,9 @@ v_ii(sp, vp)
 		sp->lno = lno = vp->m_final.lno;
 		if ((sp->cno = vp->m_final.cno) != 0)
 			++sp->cno;
+
+		if (INTERRUPTED(sp))
+			break;
 	}
 	return (0);
 }
@@ -250,6 +256,9 @@ insert:			p = "";
 		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (INTERRUPTED(sp))
+			break;
 	}
 	return (0);
 }
@@ -272,8 +281,7 @@ v_io(sp, vp)
 
 	sp->showmode = "Insert";
 	flags = set_txt_std(sp, vp, TXT_APPENDEOL);
-	for (first = 1,
-	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+	for (first = 1, cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (sp->lno == 1) {
 			if (file_lline(sp, &lno))
 				return (1);
@@ -306,6 +314,9 @@ insert:			p = "";
 		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (INTERRUPTED(sp))
+			break;
 	}
 	return (0);
 }
@@ -535,6 +546,9 @@ v_Replace(sp, vp)
 		    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 		LF_CLR(TXT_APPENDEOL | TXT_OVERWRITE | TXT_REPLACE);
+
+		if (INTERRUPTED(sp))
+			break;
 	}
 	return (0);
 }
