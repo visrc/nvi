@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.31 1996/03/18 18:43:34 bostic Exp $ (Berkeley) $Date: 1996/03/18 18:43:34 $
+#	$Id: Makefile.in,v 8.32 1996/03/18 19:19:02 bostic Exp $ (Berkeley) $Date: 1996/03/18 19:19:02 $
 
 CC=	@CC@
 CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
@@ -526,7 +526,7 @@ mmap.o: ../clib/mmap.c
 	$(CC) $(CFLAGS) $?
 openpty.o: ../clib/openpty.c
 	$(CC) $(CFLAGS) $?
-siglist.o: ../clib/siglist.c
+realloc.o: ../clib/realloc.c
 	$(CC) $(CFLAGS) $?
 snprintf.o: ../clib/snprintf.c
 	$(CC) $(CFLAGS) $?
