@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.7 1994/11/17 20:12:51 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:12:51 $";
+static char sccsid[] = "$Id: vi.c,v 9.8 1994/11/18 13:14:11 bostic Exp $ (Berkeley) $Date: 1994/11/18 13:14:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,13 +32,20 @@ static char sccsid[] = "$Id: vi.c,v 9.7 1994/11/17 20:12:51 bostic Exp $ (Berkel
 
 static __inline VIKEYS const
 		*v_alias __P((SCR *, VICMDARG *, VIKEYS const *));
-static void	 v_comlog __P((SCR *, VICMDARG *));
 static __inline int
 		 v_count __P((SCR *, ARG_CHAR_T, u_long *));
 static __inline int
 		 v_key __P((SCR *, CH *, u_int));
 static int	 v_keyword __P((SCR *, VICMDARG *, u_int));
 static int	 v_motion __P((SCR *, VICMDARG *, VICMDARG *, int *));
+
+enum gcret { GC_ERR, GC_ERR_NOFLUSH, GC_OK } gcret;
+enum gcret	 v_cmd __P((SCR *,
+		    VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
+
+#if defined(DEBUG) && defined(COMLOG)
+static void	 v_comlog __P((SCR *, VICMDARG *));
+#endif
 
 /*
  * Side-effect:
@@ -71,7 +78,9 @@ vi(sp)
 	for (eval = 0, vp = &cmd;;) {
 		/* Refresh the screen. */
 		sp->showmode = "Command";
-		if (sp->s_refresh(sp)) {
+		if (F_ISSET(VIP(sp), VIP_SKIPREFRESH))
+			F_CLR(VIP(sp), VIP_SKIPREFRESH);
+		else if (sp->s_refresh(sp)) {
 			eval = 1;
 			break;
 		}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.3 1994/11/17 20:12:41 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:12:41 $";
+static char sccsid[] = "$Id: v_search.c,v 9.4 1994/11/18 13:14:35 bostic Exp $ (Berkeley) $Date: 1994/11/18 13:14:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,6 @@ static int getptrn __P((SCR *, ARG_CHAR_T, char **, size_t *));
 static int search __P((SCR *,
     VICMDARG *, char *, size_t, u_int, enum direction));
 static int search_addr __P((SCR *, VICMDARG *, enum direction));
-static int search_z __P((SCR *, char *, size_t));
 
 /*
  * v_searchb -- [count]?RE[? offset]
@@ -69,9 +68,9 @@ search_addr(sp, vp, dir)
 	enum direction dir;
 {
 	MARK save;
-	size_t len;
-	char *ptrn;
-	int isdelta, nb, notused;
+	size_t len, tlen;
+	int isdelta, nb, notused, type;
+	char *p, *t, buf[20];
 
 	/*
 	 * !!!
@@ -83,7 +82,7 @@ search_addr(sp, vp, dir)
 		    NULL, len, SEARCH_MSG | SEARCH_SET, dir));
 
 	/* Get a pattern.  A zero-length pattern terminates the command. */
-	if (getptrn(sp, dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH, &ptrn, &len))
+	if (getptrn(sp, dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH, &p, &len))
 		return (1);
 	if (len == 0) {
 		F_SET(vp, VM_NOMOTION);
@@ -96,11 +95,13 @@ search_addr(sp, vp, dir)
 	 * including ';' delimiters, trailing <blank>'s, multiple search
 	 * strings (separated by semi-colons) and, finally, full-blown z
 	 * commands after the / and ? search strings.  (If the search was
-	 * being used as a motion, the trailing z command was ignored.)
-	 * For multiple search strings, leading <blank>'s at the second and
-	 * subsequent strings were eaten as well.  This has some unintended
-	 * side-effects: the command /ptrn/;3 is legal and results in moving
-	 * to line 3.  Should have been illegal, but it's too late now.
+	 * being used as a motion, the trailing z command was ignored.
+	 * Aslo, we do some argument checking on the z command, to be sure
+	 * that it's not some other random command.) For multiple search
+	 * strings, leading <blank>'s at the second and subsequent strings
+	 * were eaten as well.  This has some unintended side-effects: the
+	 * command /ptrn/;3 is legal and results in moving to line 3.  It
+	 * should have been illegal, but it's too late now.
 	 *
 	 * !!!
 	 * Historically, if any part of the search command failed, the cursor
@@ -119,23 +120,23 @@ search_addr(sp, vp, dir)
 	save.lno = sp->lno;
 	save.cno = sp->cno;
 	for (nb = 0;;) {
-		for (; len > 0 && isblank(*ptrn); ++ptrn, --len);
+		for (; len > 0 && isblank(*p); ++p, --len);
 		if (len == 0)
 			break;
 
-		if (ex_line(sp, &vp->m_stop, &ptrn, &len, &notused, &isdelta))
-			goto err;
+		if (ex_line(sp, &vp->m_stop, &p, &len, &notused, &isdelta))
+			goto err2;
 		if (isdelta)
 			nb = 1;
 		sp->lno = vp->m_stop.lno;
 		sp->cno = vp->m_stop.cno;
 
-		for (; len > 0 && isblank(*ptrn); ++ptrn, --len);
+		for (; len > 0 && isblank(*p); ++p, --len);
 		if (len == 0)
 			break;
-		switch (*ptrn) {
+		switch (*p) {
 		case ';':	/* Ignore; the cursor is already udpated. */
-			++ptrn;
+			++p;
 			--len;
 			break;
 		case 'z':	/* Execute a z command. */
@@ -143,18 +144,50 @@ search_addr(sp, vp, dir)
 				len = 0;
 				break;
 			}
-			if (!search_z(sp, ptrn, len)) {
-				nb = 1;
-				len = 0;
-				break;
-			}
-			/* FALLTHROUGH */
+			for (t = p + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
+				if (!isblank(*t))
+					break;
+			for (; tlen > 0; ++t, --tlen)
+				if (!isdigit(*t))
+					break;
+			for (; tlen > 0; ++t, --tlen)
+				if (!isblank(*t))
+					break;
+			if (tlen && (*t == '-' ||
+			    *t == '.' || *t == '+' || *t == '^')) {
+				++t;
+				--tlen;
+				type = 1;
+			} else
+				type = 0;
+			if (tlen)
+				goto err1;
+
+			/* z command will do the nonblank for us. */
+			nb = 0;
+
+			/* Default to z+. */
+			if (!type &&
+			    term_push(sp, "+", 1, CH_NOMAP | CH_QUOTED))
+				return (1);
+
+			/* Push the user's command. */
+			if (term_push(sp, p, len, CH_NOMAP | CH_QUOTED))
+				return (1);
+
+			/* Push line number so get correct z display. */
+			tlen = snprintf(buf,
+			    sizeof(buf), "%lu", (u_long)sp->lno);
+			if (term_push(sp, buf, tlen, CH_NOMAP | CH_QUOTED))
+				return (1);
+			 
+			/* Don't refresh until after 'z' happens. */
+			F_SET(VIP(sp), VIP_SKIPREFRESH);
+
+			len = 0;
+			break;
 		default:
-			msgq(sp, M_ERR,
-    "188|Characters after search string, line offset, and/or z command");
-err:			sp->lno = save.lno;
-			sp->cno = save.cno;
-			return (1);
+			goto err1;
 		}
 	}
 	sp->lno = save.lno;
@@ -172,59 +205,12 @@ err:			sp->lno = save.lno;
 		}
 	}
 	return (0);
-}
 
-/* 
- * search_z --
- *	Execute a z command trailing a search command.
- */
-static int
-search_z(sp, p, len)
-	SCR *sp;
-	char *p;
-	size_t len;
-{
-	VICMDARG v;
-	size_t tlen;
-	int notused, type;
-	char *t;
-
-	/*
-	 * We have to argument checking, otherwise, some jerk could put some
-	 * random command at the end of the search command.  And yes, I agree
-	 * it's hard not to ask `So what?'  Petty annoyances aside, pipe the
-	 * command through the command parser so we catch things like number
-	 * overflows.
-	 */
-	for (t = p + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
-		if (!isdigit(*t))
-			break;
-	if (tlen &&
-	    (*t == '-' || *t == '.' || *t == '+' || *t == '^')) {
-		++t;
-		--tlen;
-		type = 1;
-	} else
-		type = 0;
-	if (tlen)
-		return (1);
-
-	/* Default to z+. */
-	if (!type &&
-	    term_push(sp, "+", 1, CH_NOMAP | CH_QUOTED))
-		return (1);
-	if (term_push(sp, p, len, CH_NOMAP | CH_QUOTED))
-		return (1);
-	switch (v_cmd(sp, NULL, &v, NULL, &notused, &notused)) {
-	case GC_ERR:
-	case GC_ERR_NOFLUSH:
-		return (1);
-	case GC_OK:
-		break;
-	}
-	F_SET(&v, VC_C1SET);
-	v.count = sp->lno;
-	return ((v.kp->func)(sp, &v));
+err1:	msgq(sp, M_ERR,
+    "188|Characters after search string, line offset, and/or z command");
+err2:	sp->lno = save.lno;
+	sp->cno = save.cno;
+	return (1);
 }
 
 /*
@@ -281,8 +267,7 @@ v_searchw(sp, vp)
 	GET_SPACE_RET(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 
-	rval = search(sp,
-	    vp, bp, 0, SEARCH_MSG | SEARCH_SET | SEARCH_TERM, FORWARD);
+	rval = search(sp, vp, bp, 0, SEARCH_MSG | SEARCH_SET, FORWARD);
 
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
