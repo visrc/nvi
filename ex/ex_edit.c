@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.22 1992/11/06 18:04:36 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:04:36 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.23 1992/11/07 13:41:56 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:41:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ edit(cmdp, cmd)
 			if (file_ins(curf, (char *)cmdp->argv[0], 1) ||
 			    (ep = file_next(curf, 0)) == NULL)
 				return (1);
-			ep->flags |= F_IGNORE;
+			FF_SET(ep, F_IGNORE);
 		} else
 			reset = 1;
 		break;

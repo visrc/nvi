@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.24 1992/11/06 18:21:35 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:21:35 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.25 1992/11/07 13:41:46 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:41:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,7 +128,7 @@ ex_args(cmdp)
 		 * showing the current file if it was the result of a ":e"
 		 * command seems wrong.
 		 */
-		if (ep->flags & F_IGNORE && curf != ep)
+		if (FF_ISSET(ep, F_IGNORE) && curf != ep)
 			continue;
 		col += len = strlen(ep->name) + sep + (curf == ep ? 2 : 0);
 		if (col >= curf->cols - 1) {

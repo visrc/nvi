@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.42 1992/11/07 12:43:36 bostic Exp $ (Berkeley) $Date: 1992/11/07 12:43:36 $";
+static char sccsid[] = "$Id: ex.c,v 5.43 1992/11/07 13:41:40 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:41:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -574,7 +574,7 @@ addr2:	switch(cmd.addrcnt) {
 	if (mode == MODE_EX && autoprint && ISSET(O_AUTOPRINT))
 		flags = E_F_PRINT;
 	else
-		flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
+		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);
 	parg.addr1.lno = parg.addr2.lno = curf->lno;
 	parg.addr1.cno = parg.addr2.cno = curf->cno;
 	if (flags) {
@@ -892,7 +892,7 @@ fileexpand(gp, word, wordlen)
 	len = wordlen;
 	for (p = word, olen = plen = 0; p = USTRPBRK(p, "%#"); ++p)
 		if (*p == '%') {
-			if (curf->flags & F_NONAME) {
+			if (FF_ISSET(curf, F_NONAME)) {
 				msg("No filename to substitute for %%.");
 				return (1);
 			}
@@ -900,7 +900,7 @@ fileexpand(gp, word, wordlen)
 		} else {
 			if (ep == NULL)
 				ep = file_prev(curf, 0);
-			if (ep == NULL || ep->flags & F_NONAME) {
+			if (ep == NULL || FF_ISSET(ep, F_NONAME)) {
 				msg("No filename to substitute for #.");
 				return (1);
 			}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.19 1992/11/06 18:04:16 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:04:16 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.20 1992/11/07 13:41:51 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:41:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ ex_bang(cmdp)
 			modified = 1;
 			break;
 		case '%':
-			if (curf->flags & F_NONAME) {
+			if (FF_ISSET(curf, F_NONAME)) {
 				msg("No filename to substitute for %%.");
 				return (1);
 			}
@@ -65,7 +65,7 @@ ex_bang(cmdp)
 			modified = 1;
 			break;
 		case '#':
-			if (curf->flags & F_NONAME) {
+			if (FF_ISSET(curf, F_NONAME)) {
 				msg("No filename to substitute for #.");
 				return (1);
 			}
