@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.17 1994/08/31 17:17:23 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:23 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.18 1994/09/03 13:06:05 bostic Exp $ (Berkeley) $Date: 1994/09/03 13:06:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,6 +65,10 @@ shift(sp, ep, cmdp, rl)
 		msgq(sp, M_INFO, "155|shiftwidth option set to 0");
 		return (0);
 	}
+
+	/* Copy the lines being shifted into the unnamed buffer. */
+	if (cut(sp, ep, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE))
+		return (1);
 
 	/*
 	 * The historic version of vi permitted the user to string any number
