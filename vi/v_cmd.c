@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.23 1994/02/26 17:20:15 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:15 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.24 1994/03/03 20:04:30 bostic Exp $ (Berkeley) $Date: 1994/03/03 20:04:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -357,6 +357,10 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "^",
 	    " ^ move to first non-blank"},
 /* 137   _ */
+	/*
+	 * Needs both to set the VM_RCM_SETFNB flag, and to do the work
+	 * in the function, in case it's a delete.
+	 */
 	{v_cfirst,	V_CNT|V_MOVE|VM_RCM_SETFNB,
 	    "_",
 	    " _ move to first non-blank"},
