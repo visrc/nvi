@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.45 1993/02/16 20:09:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:20 $";
+static char sccsid[] = "$Id: vi.c,v 5.46 1993/02/18 11:42:56 bostic Exp $ (Berkeley) $Date: 1993/02/18 11:42:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,16 +75,17 @@ vi(ep)
 		 * If ex left a message on the screen, leave the screen alone
 		 * until the next keystroke.  If a vi message is waiting,
 		 * display it.
-		 *
+		 */
+err:		v_msgflush(ep);
+
+		if (!FF_ISSET(ep, F_NEEDMERASE))
+			scr_modeline(ep, 0);
+
+		/*
 		 * XXX
 		 * If key already waiting, and it's not a key requiring
-		 * a motion component, should skip repaint.
+		 * a motion component, should skip the repaint.
 		 */
-err:		if (msgcnt) {
-			v_msgflush(ep);
-			FF_SET(ep, F_NEEDMERASE);
-		} else if (!FF_ISSET(ep, F_NEEDMERASE))
-			scr_modeline(ep, 0);
 		refresh();
 
 		/*
