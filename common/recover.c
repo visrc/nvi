@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.48 1994/03/23 16:38:01 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:38:01 $";
+static char sccsid[] = "$Id: recover.c,v 8.49 1994/03/23 16:42:06 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:42:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -184,7 +184,7 @@ rcv_init(sp, ep)
 	if (btear)
 		busy_off(sp);
 
-	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp)) {
+	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp, ep)) {
 err:		msgq(sp, M_ERR, "Recovery after system crash not possible.");
 		return (1);
 	}
