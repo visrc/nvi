@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.37 1996/04/27 11:41:17 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:17 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.38 1996/04/27 16:51:48 bostic Exp $ (Berkeley) $Date: 1996/04/27 16:51:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -524,6 +524,13 @@ cl_suspend(sp, allowedp)
 
 	/* Restore the cursor keys to normal mode. */
 	(void)keypad(stdscr, FALSE);
+
+	/* Send the terminal end sequence. */
+	if (clp->te == NULL)
+		(void)cl_getcap(sp, "te", &clp->te);
+	if (clp->te != NULL)
+		(void)tputs(clp->te, 1, cl_putchar);
+	(void)fflush(stdout);
 #else
 	(void)endwin();
 #endif
@@ -542,12 +549,19 @@ cl_suspend(sp, allowedp)
 	/* Time passes ... */
 
 #ifdef HAVE_BSD_CURSES
-	/* Put the cursor keys into application mode. */
-	(void)keypad(stdscr, TRUE);
-
 	/* Restore terminal settings. */
 	if (F_ISSET(gp, G_STDIN_TTY))
 		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
+
+	/* Put the cursor keys into application mode. */
+	(void)keypad(stdscr, TRUE);
+
+	/* Send the terminal initialize sequence. */
+	if (clp->ti == NULL)
+		(void)cl_getcap(sp, "ti", &clp->ti);
+	if (clp->ti != NULL)
+		(void)tputs(clp->ti, 1, cl_putchar);
+	(void)fflush(stdout);
 #endif
 	/* Refresh and repaint the screen. */
 	(void)move(oldy, oldx);

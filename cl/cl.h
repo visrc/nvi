@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.12 1996/04/27 11:41:17 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:17 $
+ *	$Id: cl.h,v 10.13 1996/04/27 16:51:48 bostic Exp $ (Berkeley) $Date: 1996/04/27 16:51:48 $
  */
 
 typedef struct _cl_private {
@@ -22,6 +22,7 @@ typedef struct _cl_private {
 	char	*cup;		/* Cursor movement terminal string. */
 	char	*cuu1;		/* Cursor up terminal string. */
 	char	*rmso, *smso;	/* Inverse video terminal strings. */
+	char	*ti, *te;	/* Terminal start/stop strings. */
 
 	int	 in_ex;		/* XXX: Currently running ex. */
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.39 1996/04/27 11:41:18 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:18 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.40 1996/04/27 16:51:49 bostic Exp $ (Berkeley) $Date: 1996/04/27 16:51:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -412,8 +412,6 @@ cl_ex_init(sp)
 	SCR *sp;
 {
 	CL_PRIVATE *clp;
-	size_t len;
-	char *t;
 
 	clp = CLP(sp);
 
@@ -426,18 +424,11 @@ cl_ex_init(sp)
 		return (0);
 
 	/* Get the ex termcap/terminfo strings. */
-#define	GETCAP(name, element) {						\
-	if ((t = tigetstr(name)) != NULL &&				\
-	    t != (char *)-1 && (len = strlen(t)) != 0) {		\
-		MALLOC_RET(sp, clp->element, char *, len + 1);		\
-		memmove(clp->element, t, len + 1);			\
-	}								\
-}
-	GETCAP("cup", cup);
-	GETCAP("smso", smso);
-	GETCAP("rmso", rmso);
-	GETCAP("el", el);
-	GETCAP("cuu1", cuu1);
+	(void)cl_getcap(sp, "cup", &clp->cup);
+	(void)cl_getcap(sp, "smso", &clp->smso);
+	(void)cl_getcap(sp, "rmso", &clp->rmso);
+	(void)cl_getcap(sp, "el", &clp->el);
+	(void)cl_getcap(sp, "cuu1", &clp->cuu1);
 
 	/* Enter_standout_mode and exit_standout_mode are paired. */
 	if (clp->smso == NULL || clp->rmso == NULL) {
@@ -509,6 +500,28 @@ cl_ex_end(gp)
 	if (clp->smso != NULL)
 		free(clp->smso);
 #endif
+	return (0);
+}
+
+/*
+ * cl_getcap --
+ *	Retrieve termcap/terminfo strings.
+ *
+ * PUBLIC: int cl_getcap __P((SCR *, char *, char **));
+ */
+int
+cl_getcap(sp, name, elementp)
+	SCR *sp;
+	char *name, **elementp;
+{
+	size_t len;
+	char *t;
+
+	if ((t = tigetstr(name)) != NULL &&
+	    t != (char *)-1 && (len = strlen(t)) != 0) {
+		MALLOC_RET(sp, *elementp, char *, len + 1);
+		memmove(*elementp, t, len + 1);
+	}
 	return (0);
 }
 
