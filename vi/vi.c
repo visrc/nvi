@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.41 1993/12/10 16:24:06 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:24:06 $";
+static char sccsid[] = "$Id: vi.c,v 8.42 1993/12/16 12:14:30 bostic Exp $ (Berkeley) $Date: 1993/12/16 12:14:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -186,6 +186,14 @@ vi(sp, ep)
 		 * with the command flags.  In sp->relative(), we deal with the
 		 * screen flags.  If the movement is to the EOL the vi command
 		 * handles it.  If it's to the beginning, we handle it here.
+		 *
+		 * Note, some commands (e.g. _, ^) don't set the V_RCM_SETFNB
+		 * flag, but do the work themselves.  The reason is that they
+		 * have to modify the column in case they're being used as a
+		 * motion component.  Other similar commands (e.g. +, -) don't
+		 * have to modify the column because they are always line mode
+		 * operations when used as motions, so the column number isn't
+		 * of any interest.
 		 *
 		 * Does this totally violate the screen and editor layering?
 		 * You betcha.  As they say, if you think you understand it,
