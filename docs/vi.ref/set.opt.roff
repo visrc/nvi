@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.33 1994/09/29 17:09:32 bostic Exp $ (Berkeley) $Date: 1994/09/29 17:09:32 $
+.\"     $Id: set.opt.roff,v 8.34 1994/10/23 10:30:48 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:30:48 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -208,6 +208,29 @@ are
 affected by the
 .OP autowrite
 option.
+.KY backup
+.IP "backup [\"\"]"
+If this option is set, it specifies a pathname used as a backup file,
+and, whenever a file is written, the file's current contents are copied
+to it.
+The pathname is
+.QT \&# ,
+.QT \&%
+and
+.QT \&!
+expanded.
+.sp
+If the first character of the pathname is
+.QT \&N ,
+a version number is appended to the pathname (and the
+.QT \&N
+character is then discarded).
+Version numbers are always incremented, and each backup file will have
+a version number one greater than the highest version number currently
+found in the directory.
+.sp
+Backup files must be regular files, owned by the real user ID of the
+user running the editor, and not accessible by any other user.
 .KY beautify
 .IP "beautify, bf [off]"
 If this option is set, all control characters that are not currently being
