@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_copypaste.c,v 8.6 1996/12/10 21:05:15 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:05:15 $";
+static const char sccsid[] = "$Id: m_copypaste.c,v 8.7 1996/12/16 17:27:29 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:27:29 $";
 #endif /* not lint */
 
 /* ICCCM Cut and paste Utilities: */
@@ -72,7 +72,7 @@ static	void	peekProc( widget, data, selection, type, value, length, format )
 }
 
 
-#ifdef 0
+#if 0
 #if defined(__STDC__)
 void 	_vi_AcquireClipboard( Widget wid )
 #else
