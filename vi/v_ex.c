@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 9.3 1995/01/23 17:33:13 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:13 $";
+static char sccsid[] = "$Id: v_ex.c,v 9.4 1995/01/30 09:13:05 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:13:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,12 +145,16 @@ v_filter(sp, vp)
 		if (svi_get(sp, sp->tiqp,
 		    '!', TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT) != INP_OK)
 			return (1);
+
 		/*
-		 * Len is 0 if backspaced over the prompt,
-		 * 1 if only CR entered.
+		 * Check to see if the user changed their mind.
+		 *
+		 * !!!
+		 * Entering <escape> on an empty line was historically
+		 * an error, this implementation doesn't bother.
 		 */
 		tp = sp->tiqp->cqh_first;
-		if (tp->len <= 1)
+		if (tp->term != TERM_OK)
 			return (0);
 
 		if (argv_exp1(sp, &cmd, tp->lb + 1, tp->len - 1, 1))

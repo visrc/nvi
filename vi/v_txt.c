@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.14 1995/01/23 18:33:00 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:33:00 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.15 1995/01/30 09:13:45 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:13:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,6 +145,9 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 			return (1);
 		CIRCLEQ_INSERT_HEAD(tiqh, tp, q);
 	}
+
+	/* Set default termination condition. */
+	tp->term = TERM_OK;
 
 	/* Set the starting line number. */
 	tp->lno = sp->lno;
@@ -454,6 +457,10 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 						goto err;
 				} else if (F_ISSET(sp, S_SCRIPT))
 					(void)term_push(sp, "\r", 1, CH_NOMAP);
+
+				/* If empty, set termination condition. */
+				if (sp->cno <= tp->offset)
+					tp->term = TERM_CR;
 				goto k_escape;
 			}
 
@@ -613,6 +620,11 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 		case K_ESCAPE:				/* Escape. */
 			if (!LF_ISSET(TXT_ESCAPE))
 				goto ins_ch;
+
+			/* If empty, set termination condition. */
+			if (sp->cno <= tp->offset)
+				tp->term = TERM_ESC;
+			
 k_escape:		LINE_RESOLVE;
 
 			/*
@@ -635,10 +647,10 @@ k_escape:		LINE_RESOLVE;
 			}
 
 			/*
-			 * Optionally resolve the lines into the file.  Clear
-			 * the input flag, the look-aside buffer is no longer
-			 * valid.  If not resolving the lines into the file,
-			 * end it with a nul.
+			 * Optionally resolve the lines into the file.  If not
+			 * resolving the lines into the file, end the line with
+			 * a nul.  If the line is empty, then set the length to
+			 * 0, the termination condition has already been set.
 			 *
 			 * XXX
 			 * This is wrong, should pass back a length.
@@ -646,7 +658,6 @@ k_escape:		LINE_RESOLVE;
 			if (LF_ISSET(TXT_RESOLVE)) {
 				if (txt_resolve(sp, tiqh, flags))
 					goto err;
-				F_CLR(sp, S_INPUT);
 			} else {
 				BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 				tp->lb[tp->len] = '\0';
@@ -715,12 +726,9 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			}
 			break;
 		case K_VERASE:			/* Erase the last character. */
-			/*
-			 * If can erase over the prompt, return.  Len is 0
-			 * if backspaced over the prompt, 1 if only CR entered.
-			 */
+			/* If can erase over the prompt, return. */
 			if (LF_ISSET(TXT_BS) && sp->cno <= tp->offset) {
-				tp->len = 0;
+				tp->term = TERM_BS;
 				goto ret;
 			}
 
@@ -1074,18 +1082,18 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 #endif
 	}
 
+	if (0) {
+err:	
+binc_err:	eval = 1;
+		txt_err(sp, tiqh);
+	}
+		
 	/* Clear input flag. */
 ret:	F_CLR(sp, S_INPUT);
 
 	if (LF_ISSET(TXT_RECORD))
 		VIP(sp)->rep_cnt = rcol;
 	return (eval);
-
-err:	/* Error jumps. */
-binc_err:
-	eval = 1;
-	txt_err(sp, tiqh);
-	goto ret;
 }
 
 /*
@@ -1767,6 +1775,14 @@ txt_resolve(sp, tiqh, flags)
 		if (file_aline(sp, 0, lno, tp->lb, tp->len))
 			return (1);
 	}
+
+	/*
+	 * Clear the input flag, the look-aside buffer is no longer valid.
+	 * Has to be done as part of text resolution, or upon return we'll
+	 * be looking at incorrect data.
+	 */
+	F_CLR(sp, S_INPUT);
+
 	return (0);
 }
 

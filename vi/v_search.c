@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.11 1995/01/23 18:33:08 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:33:08 $";
+static char sccsid[] = "$Id: v_search.c,v 9.12 1995/01/30 09:13:13 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:13:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,6 @@ static char sccsid[] = "$Id: v_search.c,v 9.11 1995/01/23 18:33:08 bostic Exp $ 
 #include "../svi/svi_screen.h"
 
 static int correct __P((SCR *, VICMDARG *, int));
-static int getptrn __P((SCR *, ARG_CHAR_T, char **, size_t *));
 static int search __P((SCR *,
     VICMDARG *, char *, size_t, u_int, enum direction));
 static int search_addr __P((SCR *, VICMDARG *, enum direction));
@@ -72,6 +71,7 @@ search_addr(sp, vp, dir)
 {
 	static EXCMDLIST fake = { "search" };
 	MARK save;
+	TEXT *tp;
 	size_t len, tlen;
 	int isdelta, nb, notused, type;
 	char *p, *t, buf[20];
@@ -85,13 +85,25 @@ search_addr(sp, vp, dir)
 		return (search(sp, vp,
 		    NULL, len, SEARCH_MSG | SEARCH_SET, dir));
 
-	/* Get a pattern.  A zero-length pattern terminates the command. */
-	if (getptrn(sp, dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH, &p, &len))
+	/* Get the search pattern. */
+	if (svi_get(sp, sp->tiqp,
+	    dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH,
+	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT) != INP_OK)
 		return (1);
-	if (len == 0) {
+
+	/*
+	 * If the user backspaced over the prompt, do nothing.  If the user
+	 * entered <escape> or <carriage-return>, the length is 1 and the
+	 * right thing will happen, i.e. the prompt will be used as a command
+	 * character.
+	 */
+	tp = sp->tiqp->cqh_first;
+	if (tp->term == TERM_BS) {
 		F_SET(vp, VM_NOMOTION);
 		return (0);
 	}
+	p = tp->lb;
+	len = tp->len;
 
 	/*
 	 * !!!
@@ -316,30 +328,6 @@ search(sp, vp, ptrn, len, flags, dir)
 			return (1);
 	} else
 		vp->m_final = vp->m_stop;
-	return (0);
-}
-
-/*
- * getptrn --
- *	Get the search pattern.
- */
-static int
-getptrn(sp, prompt, ptrnp, lenp)
-	SCR *sp;
-	ARG_CHAR_T prompt;
-	char **ptrnp;
-	size_t *lenp;
-{
-	TEXT *tp;
-
-	if (svi_get(sp, sp->tiqp, prompt,
-	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT) != INP_OK)
-		return (1);
-
-	/* Len is 0 if backspaced over the prompt, 1 if only CR entered. */
-	tp = sp->tiqp->cqh_first;
-	*ptrnp = tp->lb;
-	*lenp = tp->len;
 	return (0);
 }
 
