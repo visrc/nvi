@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.24 1996/04/23 12:53:44 bostic Exp $ (Berkeley) $Date: 1996/04/23 12:53:44 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.25 1996/04/23 14:05:32 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:05:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -746,7 +746,7 @@ sscr_pty(amaster, aslave, name, termp, winp)
 	int *amaster, *aslave;
 	char *name;
 	struct termios *termp;
-	struct winsize *winp;
+	void *winp;
 {
 	static char line[] = "/dev/ptyXX";
 	register char *cp1, *cp2;
