@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_txt.c,v 10.16 1996/09/24 20:51:11 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:51:11 $";
+static const char sccsid[] = "$Id: ex_txt.c,v 10.17 1996/10/10 18:44:58 bostic Exp $ (Berkeley) $Date: 1996/10/10 18:44:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -164,14 +164,13 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 			/* FALLTHROUGH */
 		case K_NL:
 			/*
-			 * '\' can escape <carriage-return>/<newline>.  Toss
-			 * the backslash.
+			 * '\' can escape <carriage-return>/<newline>.  We
+			 * don't discard the backslash because we need it
+			 * to get the <newline> through the ex parser.
 			 */
 			if (LF_ISSET(TXT_BACKSLASH) &&
-			    tp->len != 0 && tp->lb[tp->len - 1] == '\\') {
-				--tp->len;
+			    tp->len != 0 && tp->lb[tp->len - 1] == '\\')
 				goto ins_ch;
-			}
 
 			/*
 			 * CR returns from the ex command line.
