@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.5 1994/11/21 19:43:54 bostic Exp $ (Berkeley) $Date: 1994/11/21 19:43:54 $";
+static char sccsid[] = "$Id: options_f.c,v 9.6 1994/11/24 10:55:29 bostic Exp $ (Berkeley) $Date: 1994/11/24 10:55:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -156,7 +156,7 @@ DECL(f_lines)
 
 	/* If no window value set, set a new default window. */
 	if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW))
-		O_VAL(sp, O_WINDOW) = val - 1;
+		O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = val - 1;
 
 	F_SET(sp, S_SCR_RESIZE);
 	return (0);
