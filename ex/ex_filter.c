@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.4 1995/06/20 19:35:57 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:35:57 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.5 1995/06/23 19:21:00 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:21:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,12 +103,8 @@ filtercmd(sp, cmdp, fm, tm, rp, cmd, ftype)
 	 * restoration of the original terminal modes for read filters is
 	 * necessary so that users can do things like ":r! cat /dev/tty".
 	 */
-	if (ftype != FILTER_WRITE) {
+	if (ftype != FILTER_WRITE)
 		ENTERCANONICAL(sp, cmdp, 1);
-
-		F_SET(sp, S_EX_WROTE);
-		(void)write(STDOUT_FILENO, "\n", 1);
-	}
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
