@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.41 1994/04/13 10:36:49 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:49 $
+ *	$Id: key.h,v 8.42 1994/04/13 15:20:43 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:20:43 $
  */
 
 /*
@@ -40,16 +40,17 @@ struct _ch {
 #define	K_CR		 7
 #define	K_ESCAPE	 8
 #define	K_FORMFEED	 9
-#define	K_NL		10
-#define	K_RIGHTBRACE	11
-#define	K_RIGHTPAREN	12
-#define	K_TAB		13
-#define	K_VERASE	14
-#define	K_VINTR		15
-#define	K_VKILL		16
-#define	K_VLNEXT	17
-#define	K_VWERASE	18
-#define	K_ZERO		19
+#define	K_HEXCHAR	10
+#define	K_NL		11
+#define	K_RIGHTBRACE	12
+#define	K_RIGHTPAREN	13
+#define	K_TAB		14
+#define	K_VERASE	15
+#define	K_VINTR		16
+#define	K_VKILL		17
+#define	K_VLNEXT	18
+#define	K_VWERASE	19
+#define	K_ZERO		20
 	u_int8_t value;		/* Special character flag values. */
 
 #define	CH_ABBREVIATED	0x01	/* Character from an abbreviation. */
@@ -119,7 +120,7 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	CH_ENDMARK	'$'			/* End of a range. */
 #define	CH_EXPROMPT	':'			/* Ex prompt. */
 #define	CH_FSEARCH	'/'			/* Forward search prompt. */
-#define	CH_HEX		'x'			/* Leading hex number. */
+#define	CH_HEX		'\030'			/* Leading hex character. */
 #define	CH_LITERAL	'\026'			/* ASCII ^V. */
 #define	CH_NO		'n'			/* No. */
 #define	CH_NOT_DIGIT	'a'			/* A non-isdigit() character. */

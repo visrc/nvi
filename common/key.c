@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.60 1994/04/13 10:36:41 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:41 $";
+static char sccsid[] = "$Id: key.c,v 8.61 1994/04/13 15:20:35 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:20:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,6 +120,7 @@ static KEYLIST keylist[] = {
 	{K_CR,		  '\r'},	/* \r */
 	{K_ESCAPE,	'\033'},	/* ^[ */
 	{K_FORMFEED,	  '\f'},	/* \f */
+	{K_HEXCHAR,	'\030'},	/* ^X */
 	{K_NL,		  '\n'},	/* \n */
 	{K_RIGHTBRACE,	   '}'},	/*  } */
 	{K_RIGHTPAREN,	   ')'},	/*  ) */
