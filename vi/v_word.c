@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.18 1993/05/02 19:05:17 bostic Exp $ (Berkeley) $Date: 1993/05/02 19:05:17 $";
+static char sccsid[] = "$Id: v_word.c,v 5.19 1993/05/02 19:29:22 bostic Exp $ (Berkeley) $Date: 1993/05/02 19:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -426,8 +426,18 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 		if (cnt && len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
 line:			if ((p = file_gline(sp, ep, ++lno, &llen)) == NULL) {
-				/* If already at eof, complain. */
+				/*
+				 * If already at eof, complain, unless it's
+				 * a change command or a delete command and
+				 * there's something to delete.
+				 */
 				if (empty) {
+					if (F_ISSET(vp, VC_C) ||
+					    F_ISSET(vp, VC_D) && llen != 0) {
+						rp->lno = lno - 1;
+						rp->cno = llen ? llen : 1;
+						return (0);
+					}
 					v_eof(sp, ep, NULL);
 					return (1);
 				}
@@ -438,6 +448,9 @@ line:			if ((p = file_gline(sp, ep, ++lno, &llen)) == NULL) {
 				}
 				rp->lno = lno;
 				rp->cno = llen ? llen - 1 : 0;
+				/* The 'c', 'd' and 'y' need one more space. */
+				if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+					++rp->cno;
 				return (0);
 			}
 			len = llen;
@@ -450,5 +463,9 @@ line:			if ((p = file_gline(sp, ep, ++lno, &llen)) == NULL) {
 	}
 	rp->lno = lno;
 	rp->cno = cno + (p - startp);
+
+	/* The 'c', 'd' and 'y' need one more space. */
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+		++rp->cno;
 	return (0);
 }
