@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.54 1994/05/17 12:31:15 bostic Exp $ (Berkeley) $Date: 1994/05/17 12:31:15 $";
+static char sccsid[] = "$Id: recover.c,v 8.55 1994/05/18 18:52:30 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:52:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -76,7 +76,9 @@ static char sccsid[] = "$Id: recover.c,v 8.54 1994/05/17 12:31:15 bostic Exp $ (
 #define	VI_FHEADER	"Vi-recover-file: "
 #define	VI_PHEADER	"Vi-recover-path: "
 
-static int	rcv_mailfile __P((SCR *, EXF *));
+static int	rcv_copy __P((SCR *, int, char *));
+static int	rcv_mailfile __P((SCR *, EXF *, int, char *));
+static int	rcv_mktemp __P((SCR *, char *, char *));
 
 /*
  * rcv_tmp --
@@ -117,18 +119,8 @@ rcv_tmp(sp, ep, name)
 		}
 
 	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", dp);
-
-	/*
-	 * !!!
-	 * We depend on mkstemp(3) setting the permissions correctly.
-	 * For GP's, we do it ourselves, to keep the window as small
-	 * as possible.
-	 */
-	if ((fd = mkstemp(path)) == -1) {
-		msgq(sp, M_ERR, "Error: %s: %s", dp, strerror(errno));
+	if ((fd = rcv_mktemp(sp, path, dp)) == -1)
 		goto err;
-	}
-	(void)chmod(path, S_IRUSR | S_IWUSR);
 	(void)close(fd);
 
 	if ((ep->rcv_path = strdup(path)) == NULL) {
@@ -167,7 +159,7 @@ rcv_init(sp, ep)
 	F_CLR(ep, F_RCV_ON);
 
 	/* If not recovering a file, build a file to mail to the user. */
-	if (ep->rcv_mpath == NULL && rcv_mailfile(sp, ep))
+	if (ep->rcv_mpath == NULL && rcv_mailfile(sp, ep, 0, NULL))
 		goto err;
 
 	/* Force read of entire file. */
@@ -199,35 +191,116 @@ err:		msgq(sp, M_ERR,
 }
 
 /*
+ * rcv_sync --
+ *	Sync the file, optionally:
+ *		flagging the backup file to be preserved
+ *		sending email
+ *		ending the file session
+ */
+int
+rcv_sync(sp, ep, flags)
+	SCR *sp;
+	EXF *ep;
+	u_int flags;
+{
+	int btear, fd, rval;
+	char *dp, buf[1024];
+
+	/* Make sure that there's something to recover/sync. */
+	if (ep == NULL || !F_ISSET(ep, F_RCV_ON))
+		return (0);
+
+	/* Sync the file. */
+	if (F_ISSET(ep, F_MODIFIED) && ep->db->sync(ep->db, R_RECNOSYNC)) {
+		F_CLR(ep, F_RCV_ON | F_RCV_NORM);
+		msgq(sp, M_SYSERR, "File backup failed: %s", ep->rcv_path);
+		return (1);
+	}
+
+	/* Don't remove backing file on exit. */
+	if (LF_ISSET(RCV_PRESERVE))
+		F_SET(ep, F_RCV_NORM);
+
+	/* Put up a busy message. */
+	if (LF_ISSET(RCV_SNAPSHOT | RCV_EMAIL))
+		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
+		    !busy_on(sp, "Copying file for recovery...");
+
+	/*
+	 * !!!
+	 * Each time the user exec's :preserve, we have to snapshot all of
+	 * the recovery information, i.e. it's like the user re-edited the
+	 * file.  We copy the DB(3) backing file, and then create a new mail
+	 * recovery file, it's simpler than exiting and reopening all of the
+	 * underlying files.
+	 */
+	rval = 0;
+	if (LF_ISSET(RCV_SNAPSHOT)) {
+		dp = O_STR(sp, O_RECDIR);
+		(void)snprintf(buf, sizeof(buf), "%s/vi.XXXXXX", dp);
+		if ((fd = rcv_mktemp(sp, buf, dp)) == -1)
+			goto e1;
+		if (rcv_copy(sp, fd, ep->rcv_path) || close(fd))
+			goto e2;
+		if (rcv_mailfile(sp, ep, 1, buf)) {
+e2:			(void)unlink(buf);
+e1:			if (fd != -1)
+				(void)close(fd);
+			rval = 1;
+		}
+	}
+
+	/*
+	 * !!!
+	 * If you need to port this to a system that doesn't have sendmail,
+	 * the -t flag causes sendmail to read the message for the recipients
+	 * instead of vi specifying them some other way.
+	 */
+	if (LF_ISSET(RCV_EMAIL)) {
+		(void)snprintf(buf, sizeof(buf),
+		    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
+		(void)system(buf);
+	}
+
+	if (btear)
+		busy_off(sp);
+
+	if (LF_ISSET(RCV_ENDSESSION) && file_end(sp, ep, 1))
+		rval = 1;
+	return (rval);
+}
+
+/*
  * rcv_mailfile --
  *	Build the file to mail to the user.
  */
 static int
-rcv_mailfile(sp, ep)
+rcv_mailfile(sp, ep, iscopy, cp_path)
 	SCR *sp;
 	EXF *ep;
+	int iscopy;
+	char *cp_path;
 {
 	struct passwd *pw;
 	uid_t uid;
 	FILE *fp;
 	time_t now;
 	int fd;
-	char *p, *t, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
+	char *dp, *p, *t, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
 		msgq(sp, M_ERR, "Information on user id %u not found.", uid);
 		return (1);
 	}
 
-	(void)snprintf(path, sizeof(path),
-	    "%s/recover.XXXXXX", O_STR(sp, O_RECDIR));
-	if ((fd = mkstemp(path)) == -1 || (fp = fdopen(fd, "w")) == NULL) {
-		msgq(sp, M_ERR,
-		    "Error: %s: %s", O_STR(sp, O_RECDIR), strerror(errno));
-		if (fd != -1)
-			(void)close(fd);
+	/* Initialize for error. */
+	fd = -1;
+	fp = NULL;
+
+	dp = O_STR(sp, O_RECDIR);
+	(void)snprintf(path, sizeof(path), "%s/recover.XXXXXX", dp);
+	if ((fd = rcv_mktemp(sp, path, dp)) == -1)
 		return (1);
-	}
 
 	/*
 	 * We keep an open lock on the file so that the recover option can
@@ -235,14 +308,28 @@ rcv_mailfile(sp, ep)
 	 * be recovered.  There's an obvious window between the mkstemp call
 	 * and the lock, but it's pretty small.
 	 */
-	if ((ep->rcv_fd = dup(fd)) == -1 ||
-	    flock(ep->rcv_fd, LOCK_EX | LOCK_NB))
-		msgq(sp, M_SYSERR, "Unable to lock recovery file");
+	if (!iscopy) {
+		if ((ep->rcv_fd = dup(fd)) == -1)
+			goto nolock;
+		if (flock(ep->rcv_fd, LOCK_EX | LOCK_NB))
+			goto nolock;
+	} else {
+		if (flock(fd, LOCK_EX | LOCK_NB))
+nolock:			msgq(sp, M_SYSERR, "Unable to lock recovery file");
+	}
 
-	if ((ep->rcv_mpath = strdup(path)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		(void)fclose(fp);
-		return (1);
+	if (!iscopy) {
+		if ((ep->rcv_mpath = strdup(path)) == NULL) {
+			msgq(sp, M_SYSERR, NULL);
+			goto err;
+		}
+		cp_path = ep->rcv_path;
+	}
+
+	/* Use stdio(3). */
+	if ((fp = fdopen(fd, "w")) == NULL) {
+		msgq(sp, M_SYSERR, "%s", dp);
+		goto err;
 	}
 
 	t = FILENAME(sp->frp);
@@ -254,7 +341,7 @@ rcv_mailfile(sp, ep)
 	(void)gethostname(host, sizeof(host));
 	(void)fprintf(fp, "%s%s\n%s%s\n%s\n%s\n%s%s\n%s%s\n%s\n\n",
 	    VI_FHEADER, p,			/* Non-standard. */
-	    VI_PHEADER, ep->rcv_path,		/* Non-standard. */
+	    VI_PHEADER, cp_path,		/* Non-standard. */
 	    "Reply-To: root",
 	    "From: root (Nvi recovery program)",
 	    "To: ", pw->pw_name,
@@ -273,59 +360,21 @@ rcv_mailfile(sp, ep)
 	    "to this file using the -l and -r options to nvi(1)",
 	    "or nex(1).");
 
-	if (fflush(fp) || ferror(fp)) {
+	if (ferror(fp) || fclose(fp)) {
 		msgq(sp, M_SYSERR, NULL);
-		(void)fclose(fp);
-		return (1);
+		goto err;
 	}
-	(void)fclose(fp);
 	return (0);
-}
 
-/*
- * rcv_sync --
- *	Sync the file, optionally:
- *		flagging the backup file to be preserved
- *		sending email
- *		ending the file session
- */
-int
-rcv_sync(sp, ep, preserve, email, endsession)
-	SCR *sp;
-	EXF *ep;
-	int preserve, email, endsession;
-{
-	int rval;
-	char comm[1024];
-
-	if (ep == NULL || !F_ISSET(ep, F_MODIFIED) || !F_ISSET(ep, F_RCV_ON))
-		return;
-
-	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
-		F_CLR(ep, F_RCV_ON);
-		msgq(sp, M_SYSERR, "File backup failed: %s", ep->rcv_path);
-		rval = 1;
-	} else
-		rval = 0;
-
-	if (preserve)
-		F_SET(ep, F_RCV_NORM);
-
-	/*
-	 * !!!
-	 * If you need to port this to a system that doesn't have sendmail,
-	 * the -t flag causes sendmail to read the message for the recipients
-	 * instead of vi specifying them some other way.
-	 */
-	if (email) {
-		(void)snprintf(comm, sizeof(comm),
-		    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
-		(void)system(comm);
+err:	if (!iscopy && ep->rcv_fd != -1) {
+		(void)close(ep->rcv_fd);
+		ep->rcv_fd = -1;
 	}
-
-	if (endsession && file_end(sp, ep, 1))
-		rval = 1;
-	return (rval);
+	if (fp != NULL)
+		(void)fclose(fp);
+	else if (fd != -1)
+		(void)close(fd);
+	return (1);
 }
 
 /*
@@ -409,9 +458,10 @@ rcv_read(sp, frp)
 	struct dirent *dp;
 	struct stat sb;
 	DIR *dirp;
+	EXF *ep;
 	FILE *fp, *sv_fp;
 	time_t rec_mtime;
-	int found, requested;
+	int found, locked, requested;
 	char *name, *p, *t, *recp, *pathp;
 	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
 
@@ -435,11 +485,16 @@ rcv_read(sp, frp)
 		if ((fp = fopen(recpath, "r")) == NULL)
 			continue;
 
-		/* If it's locked, it's live. */
 		if (flock(fileno(fp), LOCK_EX | LOCK_NB)) {
-			(void)fclose(fp);
-			continue;
-		}
+			/* If it's locked, it's live. */
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				(void)fclose(fp);
+				continue;
+			}
+			/* Assume that a lock can't be acquired. */
+			locked = 0;
+		} else
+			locked = 1;
 
 		/* Check the headers. */
 		if (fgets(file, sizeof(file), fp) == NULL ||
@@ -526,12 +581,70 @@ next:			(void)fclose(fp);
 	 * distinguish between files that are live and those that need to
 	 * be recovered.  The lock is already acquired, so just get a copy.
 	 */
-	if ((sp->ep->rcv_fd = dup(fileno(sv_fp))) != -1)
-		(void)fclose(sv_fp);
+	ep = sp->ep;
+	if (locked) {
+		if ((ep->rcv_fd = dup(fileno(sv_fp))) == -1)
+			locked = 0;
+	} else
+		ep->rcv_fd = -1;
+	if (!locked)
+		F_SET(frp, FR_UNLOCKED);
+	(void)fclose(sv_fp);
 
-	sp->ep->rcv_mpath = recp;
+	ep->rcv_mpath = recp;
 
 	/* We believe the file is recoverable. */
-	F_SET(sp->ep, F_RCV_ON);
+	F_SET(ep, F_RCV_ON);
 	return (0);
+}
+
+/*
+ * rcv_mktemp --
+ *	Paranoid make temporary file routine.
+ */
+static int
+rcv_mktemp(sp, path, dname)
+	SCR *sp;
+	char *path, *dname;
+{
+	int fd;
+
+	/*
+	 * !!!
+	 * We depend on mkstemp(3) setting the permissions correctly.
+	 * For GP's, we do it ourselves, to keep the window as small
+	 * as possible.
+	 */
+	if ((fd = mkstemp(path)) == -1)
+		msgq(sp, M_SYSERR, "%s", dname);
+	else
+		(void)chmod(path, S_IRUSR | S_IWUSR);
+	return (fd);
+}
+
+/*
+ * rcv_copy --
+ *	Copy a recovery file.
+ */
+static int
+rcv_copy(sp, wfd, fname)
+	SCR *sp;
+	int wfd;
+	char *fname;
+{
+	struct stat sbuf;
+	int nr, nw, off, rfd;
+	char buf[8 * 1024];
+
+	if ((rfd = open(fname, O_RDONLY, 0)) == -1)
+		goto err;
+	while ((nr = read(rfd, buf, sizeof(buf))) > 0)
+		for (off = 0; nr; nr -= nw, off += nw)
+			if ((nw = write(wfd, buf + off, nr)) < 0)
+				goto err;
+	if (nr == 0)
+		return (0);
+
+err:	msgq(sp, M_SYSERR, "%s", fname);
+	return (1);
 }
