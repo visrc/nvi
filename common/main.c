@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.37 1993/11/12 07:56:55 bostic Exp $ (Berkeley) $Date: 1993/11/12 07:56:55 $";
+static char sccsid[] = "$Id: main.c,v 8.38 1993/11/13 09:07:31 bostic Exp $ (Berkeley) $Date: 1993/11/13 09:07:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -63,76 +63,47 @@ main(argc, argv)
 	GS *gp;
 	FREF *frp;
 	SCR *nsp, *sp;
-	int ch, flagchk, eval;
-	char *excmdarg, *errf, *myname, *p, *rfname, *tfname;
+	u_int flags;
+	int ch, eval, flagchk, readonly, snapshot;
+	char *excmdarg, *myname, *p, *rec_f, *tag_f, *trace_f, *wsizearg;
 	char *av[2], path[MAXPATHLEN];
 
 	/* Stop if indirecting through a NULL pointer. */
 	if (reenter++)
 		abort();
 
-	eval = 0;
-
-	/* Figure out the program name. */
+	/* Set screen type and mode based on the program name. */
+	readonly = 0;
 	if ((myname = strrchr(*argv, '/')) == NULL)
 		myname = *argv;
 	else
 		++myname;
-
-	/* Build and initialize the GS structure. */
-	__global_list = gp = gs_init();
-		
-	/* Build and initialize the first/current screen. */
-	if ((sp = malloc(sizeof(SCR))) == NULL)
-		err(1, NULL);
-	if (screen_init(NULL, sp))
-		err(1, NULL);
-
-	sp->gp = gp;		/* All screens point to the GS structure. */
-
-	if (set_window_size(sp, 0, 0))	/* Set the window size. */
-		goto err1;
-
-	if (opts_init(sp))		/* Options initialization. */
-		goto err1;
-
-	/*
-	 * Keymaps, special keys.
-	 * Must follow options and sequence map initializations.
-	 */
-	if (term_init(sp))
-		goto err1;
-
-#ifndef NO_DIGRAPH
-	if (digraph_init(sp))		/* Digraph initialization. */
-		goto err1;
-#endif
-	/* Set screen type and mode based on the program name. */
 	if (!strcmp(myname, "ex") || !strcmp(myname, "nex")) {
-		F_SET(sp, S_MODE_EX);
+		LF_INIT(S_MODE_EX);
 		scr_type = EX_SCR;
 	} else {
+		/* View is readonly. */
 		if (!strcmp(myname, "view"))
-			O_SET(sp, O_READONLY);
-		F_SET(sp, S_MODE_VI);
+			readonly = 1;
+		LF_INIT(S_MODE_VI);
 		scr_type = VI_CURSES_SCR;
 	}
 
 	/* Convert old-style arguments into new-style ones. */
 	obsolete(argv);
 
-	F_SET(gp, G_SNAPSHOT);		/* Default to a snapshot. */
-
 	/* Parse the arguments. */
 	flagchk = '\0';
-	excmdarg = errf = rfname = tfname = NULL;
+	excmdarg = rec_f = tag_f = trace_f = wsizearg = NULL;
+	snapshot = 1;
 	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:vw:x:")) != EOF)
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
 			break;
 		case 'e':		/* Ex mode. */
-			F_SET(sp, S_MODE_EX);
+			LF_CLR(S_MODE_VI);
+			LF_SET(S_MODE_EX);
 			break;
 		case 'l':
 			if (flagchk != '\0' && flagchk != 'l')
@@ -142,7 +113,7 @@ main(argc, argv)
 			flagchk = 'l';
 			break;
 		case 'R':		/* Readonly. */
-			O_SET(sp,O_READONLY);
+			readonly = 1;
 			break;
 		case 'r':		/* Recover. */
 			if (flagchk == 'r')
@@ -153,21 +124,13 @@ main(argc, argv)
 				    "only one of -%c and -r may be specified.",
 				    flagchk);
 			flagchk = 'r';
-			rfname = optarg;
+			rec_f = optarg;
 			break;
 		case 's':		/* No snapshot. */
-			F_CLR(gp, G_SNAPSHOT);
+			snapshot = 0;
 			break;
 		case 'T':		/* Trace. */
-#ifdef DEBUG
-			if ((gp->tracefp = fopen(optarg, "w")) == NULL)
-				err(1, "%s", optarg);
-			(void)fprintf(gp->tracefp,
-			    "\n===\ntrace: open %s\n", optarg);
-#else
-			msgq(sp, M_ERR,
-			    "-T support not compiled into this version.");
-#endif
+			trace_f = optarg;
 			break;
 		case 't':		/* Tag. */
 			if (flagchk == 't')
@@ -178,23 +141,16 @@ main(argc, argv)
 				    "only one of -%c and -t may be specified.",
 				    flagchk);
 			flagchk = 't';
-			tfname = optarg;
+			tag_f = optarg;
 			break;
 		case 'v':		/* Vi mode. */
+			F_CLR(sp, S_MODE_EX);
 			F_SET(sp, S_MODE_VI);
 			if (scr_type == EX_SCR)
 				scr_type = VI_CURSES_SCR;
 			break;
 		case 'w':
-			av[0] = path;
-			av[1] = NULL;
-			if (strtol(optarg, &p, 10) < 0 || *p)
-				errx(1, "illegal window size -- %s", optarg);
-			(void)snprintf(path,
-			    sizeof(path), "window=%s", optarg);
-			if (opts_set(sp, av))
-				 msgq(sp, M_ERR,
-			     "Unable to set command line window option");
+			wsizearg = optarg;
 			break;
 		case 'x':
 			if (!strcmp(optarg, "aw")) {
@@ -208,6 +164,59 @@ main(argc, argv)
 		}
 	argc -= optind;
 	argv += optind;
+
+
+	/* Build and initialize the GS structure. */
+	__global_list = gp = gs_init();
+		
+	if (snapshot)
+		F_SET(gp, G_SNAPSHOT);
+
+	/* Build and initialize the first/current screen. */
+	if ((sp = malloc(sizeof(SCR))) == NULL)
+		err(1, NULL);
+	if (screen_init(NULL, sp))
+		err(1, NULL);
+	sp->flags = flags;
+
+	sp->gp = gp;			/* All ref the GS structure. */
+
+	if (trace_f != NULL) {
+#ifdef DEBUG
+		if ((gp->tracefp = fopen(optarg, "w")) == NULL)
+			err(1, "%s", optarg);
+		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", optarg);
+#else
+		msgq(sp, M_ERR, "-T support not compiled into this version.");
+#endif
+	}
+
+	if (set_window_size(sp, 0, 0))	/* Set the window size. */
+		goto err1;
+
+	if (opts_init(sp))		/* Options initialization. */
+		goto err1;
+	if (readonly)
+		O_SET(sp, O_READONLY);
+	if (wsizearg != NULL) {
+		av[0] = path;
+		av[1] = NULL;
+		if (strtol(optarg, &p, 10) < 0 || *p)
+			errx(1, "illegal window size -- %s", optarg);
+		(void)snprintf(path, sizeof(path), "window=%s", optarg);
+		if (opts_set(sp, av))
+			 msgq(sp, M_ERR,
+			     "Unable to set command line window option");
+	}
+
+	/* Keymaps, special keys, must follow option initializations. */
+	if (term_init(sp))
+		goto err1;
+
+#ifdef	DIGRAPHS
+	if (digraph_init(sp))		/* Digraph initialization. */
+		goto err1;
+#endif
 
 	/*
 	 * Source the system, environment, ~user and local .exrc values.
@@ -246,9 +255,9 @@ main(argc, argv)
 		exit(rcv_list(sp));
 
 	/* Use a tag file or recovery file if specified. */
-	if (tfname != NULL && ex_tagfirst(sp, tfname))
+	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
 		goto err1;
-	else if (rfname != NULL && rcv_read(sp, rfname))
+	else if (rec_f != NULL && rcv_read(sp, rec_f))
 		goto err1;
 
 	/* Append any remaining arguments as file names. */
@@ -261,7 +270,7 @@ main(argc, argv)
 	 * If no recovery or tag file, get an EXF structure.
 	 * If no argv file, use a temporary file.
 	 */
-	if (tfname == NULL && rfname == NULL) {
+	if (tag_f == NULL && rec_f == NULL) {
 		if ((frp = file_first(sp, 1)) == NULL &&
 		    (frp = file_add(sp, NULL, NULL, 0)) == NULL)
 			goto err1;
@@ -366,6 +375,7 @@ main(argc, argv)
 	 * something failed in a screen.  NOTE: sp may be GONE when the
 	 * screen returns, so only the gp can be trusted.
 	 */
+	eval = 0;
 	if (0) {
 err1:		gp->msgp = sp->msgp;
 err2:		eval = 1;
