@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.4 1993/08/23 13:09:03 bostic Exp $ (Berkeley) $Date: 1993/08/23 13:09:03 $";
+static char sccsid[] = "$Id: v_match.c,v 8.5 1993/09/01 14:05:09 bostic Exp $ (Berkeley) $Date: 1993/09/01 14:05:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,8 +97,7 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 		if (cs.cs_flags != 0) {
 			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF)
 				break;
-			if (cs.cs_flags != 0)
-				continue;
+			continue;
 		}
 		if (cs.cs_ch == startc)
 			++cnt;
