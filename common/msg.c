@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.12 1995/02/01 20:44:44 bostic Exp $ (Berkeley) $Date: 1995/02/01 20:44:44 $";
+static char sccsid[] = "$Id: msg.c,v 9.13 1995/02/08 12:06:17 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:06:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -432,36 +432,23 @@ msg_rpt(sp, is_message)
 		"moved",
 		"shifted",
 		"yanked",
-		NULL,
 	};
 	recno_t total;
 	u_long rptval;
 	int first, cnt;
 	size_t blen, len;
 	char * const *ap;
-	char *bp, *p, number[40];
+	char *bp, *p;
 
 	/* Change reports are turned off in batch mode. */
 	if (F_ISSET(sp, S_EXSILENT))
 		return (0);
 
-	GET_SPACE_RET(sp, bp, blen, 512);
-	p = bp;
-
-	for (ap = action,
-	    cnt = 0, first = 1, total = 0; *ap != NULL; ++ap, ++cnt)
-		if (sp->rptlines[cnt] != 0) {
-			total += sp->rptlines[cnt];
-			len = snprintf(number, sizeof(number),
-			    "%s%lu lines %s",
-			    first ? "" : "; ", sp->rptlines[cnt], *ap);
-			memmove(p, number, len);
-			p += len;
-			first = 0;
-		}
+	/* Reset changing line number. */
+	sp->rptlchange = OOBLNO;
 
 	/*
-	 * If nothing to report, return.
+	 * Don't build a message if not enough changed.
 	 *
 	 * !!!
 	 * And now, a vi clone test.  Historically, vi reported if the number
@@ -471,23 +458,40 @@ msg_rpt(sp, is_message)
 	 * historic vi was equivalent to setting it to 1, for an unknown reason
 	 * (this bug was apparently fixed in System V at some point).
 	 */
+#define	ARSIZE(a)	sizeof(a) / sizeof (*a)
+#define	MAXNUM		25
 	rptval = O_VAL(sp, O_REPORT);
-	if (total > rptval || sp->rptlines[L_YANKED] >= rptval) {
-		*p = '\0';
-		if (is_message)
-			msgq(sp, M_INFO, "%s", bp);
-		else {
-			F_SET(sp, S_SCR_EXWROTE);
-			(void)ex_printf(EXCOOKIE, "%s\n", bp);
-		}
+	for (cnt = 0, total = 0; cnt < ARSIZE(action); ++cnt)
+		total += sp->rptlines[cnt];
+	if (total <= rptval && sp->rptlines[L_YANKED] < rptval) {
+		if (total != 0)
+			for (cnt = 0; cnt < ARSIZE(action); ++cnt)
+				sp->rptlines[cnt] = 0;
+		return (0);
 	}
 
-	FREE_SPACE(sp, bp, blen);
+	/* Build and display the message. */
+	GET_SPACE_RET(sp, bp, blen, sizeof(action) * MAXNUM);
+	for (p = bp,
+	    ap = action, cnt = 0, first = 1; cnt < ARSIZE(action); ++ap, ++cnt)
+		if (sp->rptlines[cnt] != 0) {
+			len = snprintf(p, MAXNUM, "%s%lu lines %s",
+			    first ? "" : "; ", sp->rptlines[cnt], *ap);
+			p += len;
+			first = 0;
+			sp->rptlines[cnt] = 0;
+		}
 
-	/* Clear after each report. */
-	sp->rptlchange = OOBLNO;
-	memset(sp->rptlines, 0, sizeof(sp->rptlines));
+	if (is_message)
+		msgq(sp, M_INFO, "%s", bp);
+	else {
+		F_SET(sp, S_SCR_EXWROTE);
+		(void)ex_printf(EXCOOKIE, "%s\n", bp);
+	}
+	FREE_SPACE(sp, bp, blen);
 	return (0);
+#undef ARSIZE
+#undef MAXNUM
 }
 
 /*
