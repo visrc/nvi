@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.93 1994/09/15 20:02:47 bostic Exp $ (Berkeley) $Date: 1994/09/15 20:02:47 $";
+static char sccsid[] = "$Id: vi.c,v 8.94 1994/09/15 20:05:54 bostic Exp $ (Berkeley) $Date: 1994/09/15 20:05:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ vi(sp, ep)
 	if (v_init(sp, ep))
 		return (1);
 
-	/* Command initialization. */
+	/* Initialize the command structure. */
 	memset(&cmd, 0, sizeof(VICMDARG));
 
 	for (eval = 0, vp = &cmd;;) {
@@ -725,10 +725,10 @@ getmotion(sp, ep, dm, vp, mappedp)
  *	Get the "word" the cursor is on.
  */
 static int
-getkeyword(sp, ep, kp, flags)
+getkeyword(sp, ep, vp, flags)
 	SCR *sp;
 	EXF *ep;
-	VICMDARG *kp;
+	VICMDARG *vp;
 	u_int flags;
 {
 	recno_t lno;
@@ -842,10 +842,10 @@ noword:			msgq(sp, M_BERR,
 	 * to not depend on a trailing NULL.
 	 */
 	len = (end - beg) + 2;				/* XXX */
-	kp->klen = (end - beg) + 1;
-	BINC_RET(sp, kp->keyword, kp->kbuflen, len);
-	memmove(kp->keyword, p + beg, kp->klen);
-	kp->keyword[kp->klen] = '\0';			/* XXX */
+	vp->klen = (end - beg) + 1;
+	BINC_RET(sp, vp->keyword, vp->kbuflen, len);
+	memmove(vp->keyword, p + beg, vp->klen);
+	vp->keyword[vp->klen] = '\0';			/* XXX */
 	return (0);
 }
 
