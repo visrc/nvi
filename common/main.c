@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.85 1994/05/01 13:59:39 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:59:39 $";
+static char sccsid[] = "$Id: main.c,v 8.86 1994/05/01 15:18:19 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:18:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,6 +57,7 @@ static void	 h_hup __P((int));
 static void	 h_term __P((int));
 static void	 h_winch __P((int));
 static void	 obsolete __P((char *[]));
+static int	 sig_init __P((SCR *));
 static void	 usage __P((int));
 
 GS *__global_list;			/* GLOBAL: List of screens. */
@@ -69,7 +70,6 @@ main(argc, argv)
 	extern int optind;
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
-	struct sigaction act;
 	struct stat hsb, lsb;
 	GS *gp;
 	FREF *frp;
@@ -394,48 +394,9 @@ main(argc, argv)
 			F_SET(sp->frp, FR_CURSORSET);
 		}
 
-	/*
-	 * Initialize the signals.  Use sigaction(2), not signal(3), because
-	 * we don't always want to restart system calls on 4BSD systems -- 
-	 * the example is when waiting for a command mode keystroke and we
-	 * a SIGWINCH arrives.  Try and set the resetart bit (SA_RESTART) on
-	 * SIGALRM, anyway, it's just that many fewer interruptions to deal
-	 * with.
-	 *
-	 * SIGALRM:
-	 *	Walk structures and call handling routines.
-	 * SIGHUP, SIGTERM, SIGWINCH:
-	 *	Catch and set a global bit.
-	 * SIGQUIT:
-	 *	Always ignore.
-	 */
-	act.sa_handler = h_alrm;
-	sigemptyset(&act.sa_mask);
-#ifdef SA_RESTART
-	act.sa_flags = SA_RESTART;
-#else
-	act.sa_flags = 0;
-#endif
-	if (sigaction(SIGALRM, &act, NULL)) {
-		msgq(sp, M_SYSERR, "timer: sigaction");
+	/* Set up signals. */
+	if (sig_init(sp))
 		goto err;
-	}
-	act.sa_handler = h_hup;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGHUP, &act, NULL);
-	act.sa_handler = h_term;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGTERM, &act, NULL);
-	act.sa_handler = h_winch;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGWINCH, &act, NULL);
-	act.sa_handler = SIG_IGN;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGQUIT, &act, NULL);
 
 	for (;;) {
 		if (sp->s_edit(sp, sp->ep))
@@ -585,6 +546,82 @@ gs_end(gp)
 	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
 	 * OFF SIGNALS/TIMERS, SO IT MAY STILL BE REFERENCED.
 	 */
+}
+
+/*
+ * sig_init --
+ *	Initialize signals.
+ */
+static int
+sig_init(sp)
+	SCR *sp;
+{
+	struct sigaction act;
+
+	/*
+	 * Initialize the signals.  Use sigaction(2), not signal(3), because
+	 * we don't always want to restart system calls on 4BSD systems -- 
+	 * the example is when waiting for a command mode keystroke and we
+	 * a SIGWINCH arrives.  Try and set the resetart bit (SA_RESTART) on
+	 * SIGALRM, anyway, it's just that many fewer interruptions to deal
+	 * with.
+	 *
+	 * SIGALRM:
+	 *	Walk structures and call handling routines.
+	 * SIGHUP, SIGTERM, SIGWINCH:
+	 *	Catch and set a global bit.
+	 * SIGQUIT:
+	 *	Always ignore.
+	 */
+	act.sa_handler = h_alrm;
+	sigemptyset(&act.sa_mask);
+#ifdef SA_RESTART
+	act.sa_flags = SA_RESTART;
+#else
+	act.sa_flags = 0;
+#endif
+	if (sigaction(SIGALRM, &act, NULL)) {
+		msgq(sp, M_SYSERR, "timer: sigaction");
+		return (1);
+	}
+	act.sa_handler = h_hup;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	(void)sigaction(SIGHUP, &act, NULL);
+	act.sa_handler = h_term;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	(void)sigaction(SIGTERM, &act, NULL);
+	act.sa_handler = h_winch;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	(void)sigaction(SIGWINCH, &act, NULL);
+	act.sa_handler = SIG_IGN;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	(void)sigaction(SIGQUIT, &act, NULL);
+	return (0);
+}
+
+/*
+ * sig_end --
+ *	End signal setup.
+ */
+void
+sig_end()
+{
+	/*
+	 * POSIX 1003.1-1990 requires that fork (and, presumably, vfork) clear
+	 * pending alarms, and that the exec functions clear pending signals.
+	 * In addition, after an exec, the child continues to ignore signals
+	 * ignored in the parent, and the child's action for signals caught in
+	 * the parent is set to the default action.  So, the only thing to
+	 * clean up after the fork and before the exec is the one signal that
+	 * we ignore by default.
+	 *
+	 * Don't bother using sigaction(2) 'cause we want the default behavior.
+	 */
+	(void)signal(SIGQUIT, SIG_DFL);
 }
 
 /*
