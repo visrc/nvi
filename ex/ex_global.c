@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.24 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.25 2000/06/25 17:34:39 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,7 +185,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 	memcpy(ecp->cp + len, p, len);
 	ecp->range_lno = OOBLNO;
 	FL_SET(ecp->agv_flags, cmd == GLOBAL ? AGV_GLOBAL : AGV_V);
-	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
+	LIST_INSERT_HEAD(&sp->wp->ecq, ecp, q);
 
 	/*
 	 * For each line...  The semantics of global matching are that we first
@@ -273,7 +273,7 @@ ex_g_insdel(sp, op, lno)
 	if (op == LINE_RESET)
 		return (0);
 
-	for (ecp = sp->gp->ecq.lh_first; ecp != NULL; ecp = ecp->q.le_next) {
+	for (ecp = sp->wp->ecq.lh_first; ecp != NULL; ecp = ecp->q.le_next) {
 		if (!FL_ISSET(ecp->agv_flags, AGV_AT | AGV_GLOBAL | AGV_V))
 			continue;
 		for (rp = ecp->rq.cqh_first; rp != (void *)&ecp->rq; rp = nrp) {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.51 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
+static const char sccsid[] = "$Id: msg.c,v 10.52 2000/06/25 17:34:38 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -68,6 +68,7 @@ msgq(sp, mt, fmt, va_alist)
 	static int reenter;		/* STATIC: Re-entrancy check. */
 	CHAR_T ch;
 	GS *gp;
+	WIN *wp;
 	size_t blen, cnt1, cnt2, len, mlen, nlen, soff;
 	const char *p, *t, *u;
 	char *bp, *mp, *rbp, *s_rbp;
@@ -87,6 +88,7 @@ msgq(sp, mt, fmt, va_alist)
 			mt = M_INFO;
 	} else {
 		gp = sp->gp;
+		wp = sp->wp;
 		switch (mt) {
 		case M_BERR:
 			if (F_ISSET(sp, SC_VI) && !O_ISSET(sp, O_VERBOSE)) {
@@ -157,14 +159,14 @@ retry:		FREE_SPACE(sp, bp, blen);
 	 * the file name and line number prefix.
 	 */
 	if ((mt == M_ERR || mt == M_SYSERR) &&
-	    sp != NULL && gp != NULL && gp->if_name != NULL) {
-		for (p = gp->if_name; *p != '\0'; ++p) {
+	    sp != NULL && wp != NULL && wp->if_name != NULL) {
+		for (p = wp->if_name; *p != '\0'; ++p) {
 			len = snprintf(mp, REM, "%s", KEY_NAME(sp, *p));
 			mp += len;
 			if ((mlen += len) > blen)
 				goto retry;
 		}
-		len = snprintf(mp, REM, ", %d: ", gp->if_lno);
+		len = snprintf(mp, REM, ", %d: ", wp->if_lno);
 		mp += len;
 		if ((mlen += len) > blen)
 			goto retry;

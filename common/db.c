@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.25 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
+static const char sccsid[] = "$Id: db.c,v 10.26 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -628,14 +628,18 @@ scr_update(sp, lno, op, current)
 {
 	EXF *ep;
 	SCR *tsp;
+	WIN *wp;
 
 	if (F_ISSET(sp, SC_EX))
 		return (0);
 
+	/* XXXX goes outside of window */
 	ep = sp->ep;
 	if (ep->refcnt != 1)
-		for (tsp = sp->gp->dq.cqh_first;
-		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
+		for (wp = sp->gp->dq.cqh_first; wp != (void *)&sp->gp->dq; 
+		    wp = wp->q.cqe_next)
+			for (tsp = wp->scrq.cqh_first;
+			    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
 			if (sp != tsp && tsp->ep == ep)
 				if (vs_change(tsp, lno, op))
 					return (1);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.47 2000/06/24 18:54:49 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:49 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.48 2000/06/25 17:34:36 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,6 +55,7 @@ main(argc, argv)
 	static int reenter;
 	CL_PRIVATE *clp;
 	GS *gp;
+	WIN *wp;
 	size_t rows, cols;
 	int rval;
 	char **p_av, **t_av, *ttype;
@@ -83,6 +84,8 @@ main(argc, argv)
 		*p_av++ = *t_av++;
 	}
 
+	/* Create new window */
+	wp = gs_new_win(gp);
 		
 	/* Create and initialize the CL_PRIVATE structure. */
 	clp = cl_init(gp);
@@ -118,7 +121,7 @@ main(argc, argv)
 		exit (1);
 
 	/* Run ex/vi. */
-	rval = editor(gp, argc, argv);
+	rval = editor(wp, argc, argv);
 
 	/* Clean up signals. */
 	sig_end(gp);

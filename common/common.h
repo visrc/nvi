@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.15 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $
+ *	$Id: common.h,v 10.16 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $
  */
 
 /*
@@ -52,6 +52,7 @@ typedef struct _tag		TAG;
 typedef struct _tagf		TAGF;
 typedef struct _tagq		TAGQ;
 typedef struct _text		TEXT;
+typedef struct _win		WIN;
 
 /* Autoindent state. */
 typedef enum { C_NOTSET, C_CARATSET, C_NOCHANGE, C_ZEROSET } carat_t;

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.41 2000/05/07 19:49:40 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:40 $
+ *	$Id: gs.h,v 10.42 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -56,7 +56,7 @@ struct _gs {
 	char	*progname;		/* Programe name. */
 
 	int	 id;			/* Last allocated screen id. */
-	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
+	CIRCLEQ_HEAD(_dqh, _win) dq;	/* Displayed windows. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
 
 	SCR	*ccl_sp;		/* Colon command-line screen. */
@@ -65,7 +65,6 @@ struct _gs {
 	void	*tcl_interp;		/* Tcl_Interp *: Tcl interpreter. */
 
 	void	*cl_private;		/* Curses support private area. */
-	void	*ip_private;		/* IP support private area. */
 	void	*tk_private;		/* Tk/Tcl support private area. */
 
 					/* File references. */
@@ -88,16 +87,6 @@ struct _gs {
 
 	char	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Temporary buffer size. */
-
-	/*
-	 * Ex command structures (EXCMD).  Defined here because ex commands
-	 * exist outside of any particular screen or file.
-	 */
-#define	EXCMD_RUNNING(gp)	((gp)->ecq.lh_first->clen != 0)
-	LIST_HEAD(_excmdh, _excmd) ecq;	/* Ex command linked list. */
-	EXCMD	 excmd;			/* Default ex command structure. */
-	char	 *if_name;		/* Current associated file. */
-	db_recno_t	  if_lno;		/* Current associated line number. */
 
 	char	*c_option;		/* Ex initial, command-line command. */
 

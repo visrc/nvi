@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.30 2000/05/07 19:49:40 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:40 $
+ *	$Id: screen.h,v 10.31 2000/06/25 17:34:38 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:38 $
  */
 
 /*
@@ -25,6 +25,32 @@
 #define	MINIMUM_SCREEN_COLS	20
 
 /*
+ * WIN --
+ *	A list of screens that are displayed as a whole.
+ */
+struct _win {
+	CIRCLEQ_ENTRY(_win)	    q;	    /* Windows. */
+
+	CIRCLEQ_HEAD(_scrh, _scr)   scrq;   /* Screens */
+
+	GS	*gp;			/* Pointer to global area. */
+
+	void	*perl_private;		/* Perl interpreter. */
+
+	void	*ip_private;		/* IP support private area. */
+
+	/*
+	 * Ex command structures (EXCMD).  Defined here because ex commands
+	 * exist outside of any particular screen or file.
+	 */
+#define	EXCMD_RUNNING(wp)	((wp)->ecq.lh_first->clen != 0)
+	LIST_HEAD(_excmdh, _excmd) ecq;	/* Ex command linked list. */
+	EXCMD	 	excmd;		/* Default ex command structure. */
+	char	       *if_name;	/* Current associated file. */
+	db_recno_t	if_lno;		/* Current associated line number. */
+
+};
+/*
  * SCR --
  *	The screen structure.  To the extent possible, all screen information
  *	is stored in the various private areas.  The only information here
@@ -37,6 +63,7 @@ struct _scr {
 	int	 id;			/* Screen id #. */
 	int	 refcnt;		/* Reference count. */
 
+	WIN	*wp;			/* Pointer to window. */
 	GS	*gp;			/* Pointer to global area. */
 	SCR	*nextdisp;		/* Next display screen. */
 	SCR	*ccl_parent;		/* Colon command-line parent screen. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.57 2000/05/07 19:49:39 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:39 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.58 2000/06/25 17:34:36 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -574,9 +574,11 @@ cl_refresh(sp, repaint)
 	 */
 	if (repaint || F_ISSET(clp, CL_LAYOUT)) {
 		getyx(win, y, x);
-		for (psp = sp; psp != (void *)&gp->dq; psp = psp->q.cqe_next)
+		for (psp = sp; 
+		    psp != (void *)&sp->wp->scrq; psp = psp->q.cqe_next)
 			for (tsp = psp->q.cqe_next;
-			    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
+			    tsp != (void *)&sp->wp->scrq; 
+			    tsp = tsp->q.cqe_next)
 				if (psp->roff == tsp->roff) {
 				    if (psp->coff + psp->cols + 1 == tsp->coff)
 					cl_rdiv(psp);

@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.29 2000/04/30 16:55:39 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:55:39 $";
+static const char sccsid[] = "$Id: api.c,v 8.30 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,12 +46,15 @@ api_fscreen(id, name)
 {
 	GS *gp;
 	SCR *tsp;
+	WIN *wp;
 
 	gp = __global_list;
 
-	/* Search the displayed list. */
-	for (tsp = gp->dq.cqh_first;
-	    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
+	/* Search the displayed lists. */
+	for (wp = gp->dq.cqh_first;
+	    wp != (void *)&gp->dq; wp = wp->q.cqe_next)
+		for (tsp = wp->scrq.cqh_first;
+		    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
 		if (name == NULL) {
 			if (id == tsp->id)
 				return (tsp);

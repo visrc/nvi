@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.23 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.24 2000/06/25 17:34:41 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,7 @@ v_exaddr(sp, vp, dir)
 {
 	static EXCMDLIST fake = { "search" };
 	EXCMD *cmdp;
-	GS *gp;
+	WIN *wp;
 	TEXT *tp;
 	db_recno_t s_lno;
 	size_t len, s_cno, tlen;
@@ -121,10 +121,10 @@ v_exaddr(sp, vp, dir)
 	 *
 	 * Build a fake ex command structure.
 	 */
-	gp = sp->gp;
-	gp->excmd.cp = tp->lb;
-	gp->excmd.clen = tp->len;
-	F_INIT(&gp->excmd, E_VISEARCH);
+	wp = sp->wp;
+	wp->excmd.cp = tp->lb;
+	wp->excmd.clen = tp->len;
+	F_INIT(&wp->excmd, E_VISEARCH);
 
 	/*
 	 * XXX
@@ -146,7 +146,7 @@ v_exaddr(sp, vp, dir)
 	 * messages, it's a real problem for us.
 	 */
 	if (!KEYS_WAITING(sp))
-		F_SET(&gp->excmd, E_SEARCH_WMSG);
+		F_SET(&wp->excmd, E_SEARCH_WMSG);
 		
 	/* Save the current line/column. */
 	s_lno = sp->lno;
@@ -176,7 +176,7 @@ v_exaddr(sp, vp, dir)
 	 * Historically, the command "/STRING/;   " failed, apparently it
 	 * confused the parser.  We're not that compatible.
 	 */
-	cmdp = &gp->excmd;
+	cmdp = &wp->excmd;
 	if (ex_range(sp, cmdp, &err))
 		return (1);
 	
@@ -186,7 +186,7 @@ v_exaddr(sp, vp, dir)
 	 */
 	cmd = cmdp->cp;
 	len = cmdp->clen;
-	gp->excmd.clen = 0;
+	wp->excmd.clen = 0;
 
 	if (err)
 		goto err2;

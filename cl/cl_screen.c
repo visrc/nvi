@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.50 2000/05/07 19:49:39 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:39 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.51 2000/06/25 17:34:36 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,7 +92,7 @@ cl_screen(sp, flags)
 	if (F_ISSET(sp, SC_SCR_VI)) {
 		F_CLR(sp, SC_SCR_VI);
 
-		if (sp->q.cqe_next != (void *)&gp->dq) {
+		if (sp->q.cqe_next != (void *)&sp->wp->scrq) {
 			(void)wmove(win, RLNO(sp, sp->rows), 0);
 			wclrtobot(win);
 		}

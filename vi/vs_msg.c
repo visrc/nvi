@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.78 1996/12/04 19:10:04 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:10:04 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.79 2000/06/25 17:34:42 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -598,7 +598,7 @@ vs_ex_resolve(sp, continuep)
 	 * If we're not the bottom of the split screen stack, the screen
 	 * image itself is wrong, so redraw everything.
 	 */
-	if (sp->q.cqe_next != (void *)&sp->gp->dq)
+	if (sp->q.cqe_next != (void *)&sp->wp->scrq)
 		F_SET(sp, SC_SCR_REDRAW);
 
 	/* If ex changed the underlying file, the map itself is wrong. */
@@ -779,7 +779,7 @@ vs_scroll(sp, continuep, wtype)
 		(void)gp->scr_deleteln(sp);
 
 		/* If there are screens below us, push them back into place. */
-		if (sp->q.cqe_next != (void *)&sp->gp->dq) {
+		if (sp->q.cqe_next != (void *)&sp->wp->scrq) {
 			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 			(void)gp->scr_insertln(sp);
 		}

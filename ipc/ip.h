@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.21 2000/06/24 18:54:50 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:50 $
+ *	$Id: ip.h,v 8.22 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $
  */
 
 extern int vi_ifd;		/* Input file descriptor. */
@@ -32,8 +32,8 @@ typedef struct _ip_private {
 	u_int32_t flags;
 } IP_PRIVATE;
 
-#define	IPP(sp)		((IP_PRIVATE *)((sp)->gp->ip_private))
-#define	GIPP(gp)	((IP_PRIVATE *)((gp)->ip_private))
+#define	IPP(sp)		((IP_PRIVATE *)((sp)->wp->ip_private))
+#define	WIPP(wp)	((IP_PRIVATE *)((wp)->ip_private))
 
 /* The screen line relative to a specific window. */
 #define	RLNO(sp, lno)	(sp)->roff + (lno)

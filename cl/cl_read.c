@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.16 1996/12/04 19:07:53 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:07:53 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.17 2000/06/25 17:34:36 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,8 +225,8 @@ cl_read(sp, flags, bp, blen, nrp, tp)
 loop:		FD_ZERO(&rdfd);
 		FD_SET(STDIN_FILENO, &rdfd);
 		maxfd = STDIN_FILENO;
-		for (tsp = gp->dq.cqh_first;
-		    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
+		for (tsp = sp->wp->scrq.cqh_first;
+		    tsp != (void *)&sp->wp->scrq; tsp = tsp->q.cqe_next)
 			if (F_ISSET(sp, SC_SCRIPT)) {
 				FD_SET(sp->script->sh_master, &rdfd);
 				if (sp->script->sh_master > maxfd)

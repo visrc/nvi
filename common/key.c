@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.39 1996/12/11 13:02:32 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:02:32 $";
+static const char sccsid[] = "$Id: key.c,v 10.40 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -752,9 +752,13 @@ v_sync(sp, flags)
 	int flags;
 {
 	GS *gp;
+	WIN *wp;
 
 	gp = sp->gp;
-	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+	for (wp = gp->dq.cqh_first; wp != (void *)&gp->dq; 
+	    wp = wp->q.cqe_next)
+		for (sp = wp->scrq.cqh_first; sp != (void *)&wp->scrq; 
+		    sp = sp->q.cqe_next)
 		rcv_sync(sp, flags);
 	for (sp = gp->hq.cqh_first; sp != (void *)&gp->hq; sp = sp->q.cqe_next)
 		rcv_sync(sp, flags);

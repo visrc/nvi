@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.27 1996/12/05 12:27:16 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:16 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.28 2000/06/25 17:34:39 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -181,7 +181,7 @@ ex_exrc(sp)
 	}
 
 	/* Run the commands. */
-	if (EXCMD_RUNNING(sp->gp))
+	if (EXCMD_RUNNING(sp->wp))
 		(void)ex_cmd(sp);
 	if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE))
 		return (0);
@@ -212,7 +212,7 @@ ex_exrc(sp)
 	}
 
 	/* Run the commands. */
-	if (EXCMD_RUNNING(sp->gp))
+	if (EXCMD_RUNNING(sp->wp))
 		(void)ex_cmd(sp);
 	if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE))
 		return (0);
@@ -237,7 +237,7 @@ ex_exrc(sp)
 			break;
 		}
 		/* Run the commands. */
-		if (EXCMD_RUNNING(sp->gp))
+		if (EXCMD_RUNNING(sp->wp))
 			(void)ex_cmd(sp);
 		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE))
 			return (0);
@@ -275,15 +275,15 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
 	size_t len;
 	int ex_flags, nocopy;
 {
-	GS *gp;
+	WIN *wp;
 	EXCMD *ecp;
 
-	gp = sp->gp;
-	if (EXCMD_RUNNING(gp)) {
+	wp = sp->wp;
+	if (EXCMD_RUNNING(wp)) {
 		CALLOC_RET(sp, ecp, EXCMD *, 1, sizeof(EXCMD));
-		LIST_INSERT_HEAD(&gp->ecq, ecp, q);
+		LIST_INSERT_HEAD(&wp->ecq, ecp, q);
 	} else
-		ecp = &gp->excmd;
+		ecp = &wp->excmd;
 
 	F_INIT(ecp,
 	    ex_flags ? E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY : 0);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.36 2000/05/21 08:53:16 skimo Exp $ (Berkeley) $Date: 2000/05/21 08:53:16 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.37 2000/06/25 17:34:42 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static const char sccsid[] = "$Id: vs_split.c,v 10.36 2000/05/21 08:53:16 skimo 
 typedef enum { HORIZ_FOLLOW, HORIZ_PRECEDE, VERT_FOLLOW, VERT_PRECEDE } jdir_t;
 
 static SCR	*vs_getbg __P((SCR *, char *));
-static void	 vs_insert __P((SCR *));
+static void      vs_insert __P((SCR *sp, WIN *wp));
 static int	 vs_join __P((SCR *, SCR **, jdir_t *));
 
 /*
@@ -171,7 +171,7 @@ vs_split(sp, new, ccl)
 		new->defscroll = 1;
 
 	/* Fit the screen into the logical chain. */
-	vs_insert(new);
+	vs_insert(new, sp->wp);
 
 	/* Tell the display that we're splitting. */
 	(void)gp->scr_split(sp, new);
@@ -260,7 +260,7 @@ vs_vsplit(sp, new)
 	_TMAP(new) = _HMAP(new) + (new->t_rows - 1);
 
 	/* Fit the screen into the logical chain. */
-	vs_insert(new);
+	vs_insert(new, sp->wp);
 
 	/* Tell the display that we're splitting. */
 	(void)gp->scr_split(sp, new);
@@ -295,24 +295,25 @@ vs_vsplit(sp, new)
  *	chain.
  */
 static void
-vs_insert(sp)
-	SCR *sp;
+vs_insert(SCR *sp, WIN *wp)
 {
 	GS *gp;
 	SCR *tsp;
 
 	gp = sp->gp;
 
+	sp->wp = wp;
+
 	/* Move past all screens with lower row numbers. */
-	for (tsp = gp->dq.cqh_first;
-	    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
+	for (tsp = wp->scrq.cqh_first;
+	    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
 		if (tsp->roff >= sp->roff)
 			break;
 	/*
 	 * Move past all screens with the same row number and lower
 	 * column numbers.
 	 */
-	for (; tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
+	for (; tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
 		if (tsp->roff != sp->roff || tsp->coff > sp->coff)
 			break;
 
@@ -320,13 +321,13 @@ vs_insert(sp)
 	 * If we reached the end, this screen goes there.  Otherwise,
 	 * put it before or after the screen where we stopped.
 	 */
-	if (tsp == (void *)&gp->dq) {
-		CIRCLEQ_INSERT_TAIL(&gp->dq, sp, q);
+	if (tsp == (void *)&wp->scrq) {
+		CIRCLEQ_INSERT_TAIL(&wp->scrq, sp, q);
 	} else if (tsp->roff < sp->roff ||
-	    tsp->roff == sp->roff && tsp->coff < sp->coff) {
-		CIRCLEQ_INSERT_AFTER(&gp->dq, tsp, sp, q);
+	    (tsp->roff == sp->roff && tsp->coff < sp->coff)) {
+		CIRCLEQ_INSERT_AFTER(&wp->scrq, tsp, sp, q);
 	} else
-		CIRCLEQ_INSERT_BEFORE(&gp->dq, tsp, sp, q);
+		CIRCLEQ_INSERT_BEFORE(&wp->scrq, tsp, sp, q);
 }
 
 /*
@@ -460,16 +461,18 @@ vs_join(sp, listp, jdirp)
 	jdir_t *jdirp;
 {
 	GS *gp;
+	WIN *wp;
 	SCR **lp, *tsp;
 	int first;
 	size_t tlen;
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 	/* Check preceding vertical. */
 	for (lp = listp, tlen = sp->rows,
-	    tsp = gp->dq.cqh_first;
-	    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next) {
+	    tsp = wp->scrq.cqh_first;
+	    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next) {
 		if (sp == tsp)
 			continue;
 		/* Test if precedes the screen vertically. */
@@ -503,8 +506,8 @@ vs_join(sp, listp, jdirp)
 
 	/* Check following vertical. */
 	for (lp = listp, tlen = sp->rows,
-	    tsp = gp->dq.cqh_first;
-	    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next) {
+	    tsp = wp->scrq.cqh_first;
+	    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next) {
 		if (sp == tsp)
 			continue;
 		/* Test if follows the screen vertically. */
@@ -538,8 +541,8 @@ vs_join(sp, listp, jdirp)
 
 	/* Check preceding horizontal. */
 	for (first = 0, lp = listp, tlen = sp->cols,
-	    tsp = gp->dq.cqh_first;
-	    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next) {
+	    tsp = wp->scrq.cqh_first;
+	    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next) {
 		if (sp == tsp)
 			continue;
 		/* Test if precedes the screen horizontally. */
@@ -574,8 +577,8 @@ vs_join(sp, listp, jdirp)
 
 	/* Check following horizontal. */
 	for (first = 0, lp = listp, tlen = sp->cols,
-	    tsp = gp->dq.cqh_first;
-	    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next) {
+	    tsp = wp->scrq.cqh_first;
+	    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next) {
 		if (sp == tsp)
 			continue;
 		/* Test if precedes the screen horizontally. */
@@ -623,9 +626,11 @@ vs_fg(sp, nspp, name, newscreen)
 	int newscreen;
 {
 	GS *gp;
+	WIN *wp;
 	SCR *nsp;
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 	if (newscreen)
 		/* Get the specified background screen. */
@@ -654,8 +659,9 @@ vs_fg(sp, nspp, name, newscreen)
 		}
 	} else {
 		/* Move the old screen to the background queue. */
-		CIRCLEQ_REMOVE(&gp->dq, sp, q);
+		CIRCLEQ_REMOVE(&wp->scrq, sp, q);
 		CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
+		sp->wp = 0;
 	}
 	return (0);
 }
@@ -671,9 +677,11 @@ vs_bg(sp)
 	SCR *sp;
 {
 	GS *gp;
+	WIN *wp;
 	SCR *nsp;
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 	/* Try and join with another screen. */
 	if (vs_discard(sp, &nsp))
@@ -685,8 +693,9 @@ vs_bg(sp)
 	}
 
 	/* Move the old screen to the background queue. */
-	CIRCLEQ_REMOVE(&gp->dq, sp, q);
+	CIRCLEQ_REMOVE(&wp->scrq, sp, q);
 	CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
+	sp->wp = 0;
 
 	/* Toss the screen map. */
 	free(_HMAP(sp));
@@ -711,9 +720,11 @@ vs_swap(sp, nspp, name)
 	char *name;
 {
 	GS *gp;
+	WIN *wp;
 	SCR *nsp, *list[2];
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 	/* Get the specified background screen. */
 	if ((*nspp = nsp = vs_getbg(sp, name)) == NULL)
@@ -778,7 +789,8 @@ vs_swap(sp, nspp, name)
 	 * code will move the old one to the background queue.
 	 */
 	CIRCLEQ_REMOVE(&gp->hq, nsp, q);
-	CIRCLEQ_INSERT_AFTER(&gp->dq, sp, nsp, q);
+	CIRCLEQ_INSERT_AFTER(&wp->scrq, sp, nsp, q);
+	nsp->wp = sp->wp;
 
 	/*
 	 * Don't change the screen's cursor information other than to
@@ -808,10 +820,12 @@ vs_resize(sp, count, adj)
 	adj_t adj;
 {
 	GS *gp;
+	WIN *wp;
 	SCR *g, *s, *prev, *next, *list[3] = {NULL, NULL, NULL};
 	size_t g_off, s_off;
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 	/*
 	 * Figure out which screens will grow, which will shrink, and
@@ -833,22 +847,22 @@ vs_resize(sp, count, adj)
 
 	/* Find first overlapping screen */
 	for (next = sp->q.cqe_next; 
-	     next != (void *)&gp->dq && 
+	     next != (void *)&wp->scrq && 
 	     (next->coff >= sp->coff + sp->cols || 
 	      next->coff + next->cols <= sp->coff); 
 	     next = next->q.cqe_next);
 	/* See if we can use it */
-	if (next != (void *)&gp->dq && 
+	if (next != (void *)&wp->scrq && 
 	    (sp->coff != next->coff || sp->cols != next->cols))
-		next = (void *)&gp->dq;
+		next = (void *)&wp->scrq;
 	for (prev = sp->q.cqe_prev; 
-	     prev != (void *)&gp->dq && 
+	     prev != (void *)&wp->scrq && 
 	     (prev->coff >= sp->coff + sp->cols || 
 	      prev->coff + prev->cols <= sp->coff); 
 	     prev = prev->q.cqe_prev);
-	if (prev != (void *)&gp->dq && 
+	if (prev != (void *)&wp->scrq && 
 	    (sp->coff != prev->coff || sp->cols != prev->cols))
-		prev = (void *)&gp->dq;
+		prev = (void *)&wp->scrq;
 
 	g_off = s_off = 0;
 	if (adj == A_DECREASE) {
@@ -857,21 +871,21 @@ vs_resize(sp, count, adj)
 		s = sp;
 		if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count)
 			goto toosmall;
-		if ((g = prev) == (void *)&gp->dq) {
-			if ((g = next) == (void *)&gp->dq)
+		if ((g = prev) == (void *)&wp->scrq) {
+			if ((g = next) == (void *)&wp->scrq)
 				goto toobig;
 			g_off = -count;
 		} else
 			s_off = count;
 	} else {
 		g = sp;
-		if ((s = next) != (void *)&gp->dq &&
+		if ((s = next) != (void *)&wp->scrq &&
 		    s->t_maxrows >= MINIMUM_SCREEN_ROWS + count)
 				s_off = count;
 		else
 			s = NULL;
 		if (s == NULL) {
-			if ((s = prev) == (void *)&gp->dq) {
+			if ((s = prev) == (void *)&wp->scrq) {
 toobig:				msgq(sp, M_BERR, adj == A_DECREASE ?
 				    "227|The screen cannot shrink" :
 				    "228|The screen cannot grow");

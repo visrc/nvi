@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_at.c,v 10.12 1996/09/15 15:59:00 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:00 $";
+static const char sccsid[] = "$Id: ex_at.c,v 10.13 2000/06/25 17:34:39 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,6 +121,6 @@ ex_at(sp, cmdp)
 		*p++ = '\n';
 	}
 
-	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
+	LIST_INSERT_HEAD(&sp->wp->ecq, ecp, q);
 	return (0);
 }

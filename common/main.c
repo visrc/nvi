@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.53 2000/06/24 17:22:26 skimo Exp $ (Berkeley) $Date: 2000/06/24 17:22:26 $";
+static const char sccsid[] = "$Id: main.c,v 10.54 2000/06/25 17:34:38 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,11 +47,11 @@ static int	 v_obsolete __P((char *, char *[]));
  * editor --
  *	Main editor routine.
  *
- * PUBLIC: int editor __P((GS *, int, char *[]));
+ * PUBLIC: int editor __P((WIN *, int, char *[]));
  */
 int
-editor(gp, argc, argv)
-	GS *gp;
+editor(wp, argc, argv)
+	WIN *wp;
 	int argc;
 	char *argv[];
 {
@@ -61,10 +61,13 @@ editor(gp, argc, argv)
 	EVENT ev;
 	FREF *frp;
 	SCR *sp;
+	GS *gp;
 	size_t len;
 	u_int flags;
 	int ch, flagchk, lflag, secure, startup, readonly, rval, silent;
 	char *tag_f, *wsizearg, path[256];
+
+	gp = wp->gp;
 
 	/* Initialize the busy routine, if not defined by the screen. */
 	if (gp->scr_busy == NULL)
@@ -74,10 +77,7 @@ editor(gp, argc, argv)
 		gp->scr_msg = vs_msg;
 
 	/* Common global structure initialization. */
-	CIRCLEQ_INIT(&gp->dq);
 	CIRCLEQ_INIT(&gp->hq);
-	LIST_INIT(&gp->ecq);
-	LIST_INSERT_HEAD(&gp->ecq, &gp->excmd, q);
 	gp->noprint = DEFAULT_NOPRINT;
 
 	/* Structures shared by screens so stored in the GS structure. */
@@ -239,12 +239,15 @@ editor(gp, argc, argv)
 	 * Everything we do until we go interactive is done in ex mode.
 	 */
 	if (screen_init(gp, NULL, &sp)) {
-		if (sp != NULL)
-			CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
+		if (sp != NULL) {
+			CIRCLEQ_INSERT_HEAD(&wp->scrq, sp, q);
+			sp->wp = wp;
+		}
 		goto err;
 	}
 	F_SET(sp, SC_EX);
-	CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
+	CIRCLEQ_INSERT_HEAD(&wp->scrq, sp, q);
+	sp->wp = wp;
 
 	if (v_key_init(sp))		/* Special key initialization. */
 		goto err;
@@ -378,7 +381,7 @@ editor(gp, argc, argv)
 
 		if (file_init(sp, frp, NULL, 0))
 			goto err;
-		if (EXCMD_RUNNING(gp)) {
+		if (EXCMD_RUNNING(wp)) {
 			(void)ex_cmd(sp);
 			if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE)) {
 				if (screen_end(sp))
@@ -445,13 +448,16 @@ v_end(gp)
 {
 	MSGS *mp;
 	SCR *sp;
+	WIN *wp;
 
 	/* If there are any remaining screens, kill them off. */
 	if (gp->ccl_sp != NULL) {
 		(void)file_end(gp->ccl_sp, NULL, 1);
 		(void)screen_end(gp->ccl_sp);
 	}
-	while ((sp = gp->dq.cqh_first) != (void *)&gp->dq)
+	for (wp = gp->dq.cqh_first; wp != (void *)&gp->dq; 
+	    wp = wp->q.cqe_next)
+		while ((sp = wp->scrq.cqh_first) != (void *)&wp->scrq)
 		(void)screen_end(sp);
 	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)
 		(void)screen_end(sp);

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_screen.c,v 8.4 1996/12/18 10:28:03 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:03 $";
+static const char sccsid[] = "$Id: ip_screen.c,v 8.5 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ ip_screen(sp, flags)
 
 	/* See if the current information is incorrect. */
 	if (F_ISSET(gp, G_SRESTART)) {
-		if (ip_quit(gp))
+		if (ip_quit(sp->wp))
 			return (1);
 		F_CLR(gp, G_SRESTART);
 	}
@@ -65,19 +65,18 @@ ip_screen(sp, flags)
  * ip_quit --
  *	Shutdown the screens.
  *
- * PUBLIC: int ip_quit __P((GS *));
+ * PUBLIC: int ip_quit __P((WIN *));
  */
 int
-ip_quit(gp)
-	GS *gp;
+ip_quit(WIN *wp)
 {
 	IP_PRIVATE *ipp;
 	int rval;
 
 	/* Clean up the terminal mappings. */
-	rval = ip_term_end(gp);
+	rval = ip_term_end(wp->gp);
 
-	ipp = GIPP(gp);
+	ipp = WIPP(wp);
 	F_CLR(ipp, IP_SCR_VI_INIT);
 
 	return (rval);

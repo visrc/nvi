@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.17 2000/04/30 17:15:55 skimo Exp $ (Berkeley) $Date: 2000/04/30 17:15:55 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.18 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,6 +49,26 @@ ip_event(sp, evp, flags, ms)
 	u_int32_t flags;
 	int ms;
 {
+	return ip_wevent(sp->wp, sp, evp, flags, ms);
+}
+
+/*
+ * XXX probably better to require new_window to send size
+ *     so we never have to call ip_wevent with sp == NULL
+ *
+ * ip_wevent --
+ *	Return a single event.
+ *
+ * PUBLIC: int ip_wevent __P((WIN *, SCR *, EVENT *, u_int32_t, int));
+ */
+int
+ip_wevent(wp, sp, evp, flags, ms)
+	WIN *wp;
+	SCR *sp;
+	EVENT *evp;
+	u_int32_t flags;
+	int ms;
+{
 	IP_PRIVATE *ipp;
 	struct timeval t, *tp;
 
@@ -57,7 +77,7 @@ ip_event(sp, evp, flags, ms)
 		return (0);
 	}
 
-	ipp = sp == NULL ? GIPP(__global_list) : IPP(sp);
+	ipp = sp == NULL ? WIPP(wp) : IPP(sp);
 
 	/* Discard the last command. */
 	if (ipp->iskip != 0) {
@@ -116,6 +136,7 @@ ip_read(sp, ipp, tp)
 	struct timeval poll;
 	GS *gp;
 	SCR *tsp;
+	WIN *wp;
 	fd_set rdfd;
 	input_t rval;
 	size_t blen;
@@ -157,8 +178,8 @@ ip_read(sp, ipp, tp)
 loop:		FD_ZERO(&rdfd);
 		FD_SET(ipp->i_fd, &rdfd);
 		maxfd = ipp->i_fd;
-		for (tsp = gp->dq.cqh_first;
-		    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
+		for (tsp = wp->scrq.cqh_first; 
+		    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
 			if (F_ISSET(sp, SC_SCRIPT)) {
 				FD_SET(sp->script->sh_master, &rdfd);
 				if (sp->script->sh_master > maxfd)

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.45 2000/04/21 19:00:40 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:40 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.46 2000/06/25 17:34:41 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -347,11 +347,11 @@ v_ex(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	GS *gp;
+	WIN *wp;
 	TEXT *tp;
 	int do_cedit, do_resolution, ifcontinue;
 
-	gp = sp->gp;
+	wp = sp->wp;
 
 	/*
 	 * !!!
@@ -368,7 +368,7 @@ v_ex(sp, vp)
 		 * There may already be an ex command waiting to run.  If
 		 * so, we continue with it.
 		 */
-		if (!EXCMD_RUNNING(gp)) {
+		if (!EXCMD_RUNNING(wp)) {
 			/* Get a command. */
 			if (v_tcmd(sp, vp, ':',
 			    TXT_BS | TXT_CEDIT | TXT_FILEC | TXT_PROMPT))

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.65 1996/12/18 10:24:36 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:24:36 $";
+static const char sccsid[] = "$Id: vi.c,v 10.66 2000/06/25 17:34:41 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,6 +65,7 @@ vi(spp)
 	SCR **spp;
 {
 	GS *gp;
+	WIN *wp;
 	MARK abs;
 	SCR *next, *sp;
 	VICMD cmd, *vp;
@@ -73,6 +74,7 @@ vi(spp)
 
 	/* Get the first screen. */
 	sp = *spp;
+	wp = sp->wp;
 	gp = sp->gp;
 
 	/* Initialize the command structure. */
@@ -130,7 +132,7 @@ vi(spp)
 		 * only because we exited a screen or file.  In this case,
 		 * we simply go back into the ex parser.
 		 */
-		if (EXCMD_RUNNING(gp)) {
+		if (EXCMD_RUNNING(wp)) {
 			vp->kp = &vikeys[':'];
 			goto ex_continue;
 		}
@@ -1022,22 +1024,26 @@ v_dtoh(sp)
 {
 	GS *gp;
 	SCR *tsp;
+	WIN *wp;
 	int hidden;
 
 	/* Move all screens to the hidden queue, tossing screen maps. */
-	for (hidden = 0, gp = sp->gp;
-	    (tsp = gp->dq.cqh_first) != (void *)&gp->dq; ++hidden) {
+	for (hidden = 0, gp = sp->gp, wp = sp->wp;
+	    (tsp = wp->scrq.cqh_first) != (void *)&wp->scrq; ++hidden) {
 		if (_HMAP(tsp) != NULL) {
 			free(_HMAP(tsp));
 			_HMAP(tsp) = NULL;
 		}
-		CIRCLEQ_REMOVE(&gp->dq, tsp, q);
+		CIRCLEQ_REMOVE(&wp->scrq, tsp, q);
 		CIRCLEQ_INSERT_TAIL(&gp->hq, tsp, q);
+		/* XXXX Change if hidden screens per window */
+		tsp->wp = 0;
 	}
 
 	/* Move current screen back to the display queue. */
 	CIRCLEQ_REMOVE(&gp->hq, sp, q);
-	CIRCLEQ_INSERT_TAIL(&gp->dq, sp, q);
+	CIRCLEQ_INSERT_TAIL(&wp->scrq, sp, q);
+	sp->wp = wp;
 
 	if (hidden > 1)
 		msgq(sp, M_INFO,

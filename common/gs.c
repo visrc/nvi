@@ -45,8 +45,40 @@ gs_init(name)
 
 	gp->progname = name;
 
+	/* Common global structure initialization. */
+	/* others will need to be copied from main.c */
+	CIRCLEQ_INIT(&gp->dq);
+
 	return (gp);
 }
+
+/*
+ * gs_new_win
+ *	Create new window
+ * PUBLIC: WIN * gs_new_win __P((GS *gp));
+ */
+
+WIN *
+gs_new_win(GS *gp)
+{
+	WIN *wp;
+
+	CALLOC_NOMSG(NULL, wp, WIN *, 1, sizeof(*wp));
+	if (!wp)
+		return NULL;
+
+	/* Common global structure initialization. */
+	LIST_INIT(&wp->ecq);
+	LIST_INSERT_HEAD(&wp->ecq, &wp->excmd, q);
+
+	CIRCLEQ_INSERT_TAIL(&gp->dq, wp, q);
+	CIRCLEQ_INIT(&wp->scrq);
+
+	wp->gp = gp;
+
+	return wp;
+}
+
 
 /*
  * perr --

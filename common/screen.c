@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.16 2000/05/07 19:49:40 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:40 $";
+static const char sccsid[] = "$Id: screen.c,v 10.17 2000/06/25 17:34:38 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,7 +146,7 @@ screen_end(sp)
 	 * be linked into the chain.
 	 */
 	if (sp->q.cqe_next != NULL)
-		CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
+		CIRCLEQ_REMOVE(&sp->wp->scrq, sp, q);
 
 	/* The screen is no longer real. */
 	F_CLR(sp, SC_SCR_EX | SC_SCR_VI);
@@ -212,22 +212,25 @@ screen_next(sp)
 	SCR *sp;
 {
 	GS *gp;
+	WIN *wp;
 	SCR *next;
 
 	/* Try the display queue, without returning the current screen. */
 	gp = sp->gp;
-	for (next = gp->dq.cqh_first;
-	    next != (void *)&gp->dq; next = next->q.cqe_next)
+	wp = sp->wp;
+	for (next = wp->scrq.cqh_first;
+	    next != (void *)&wp->scrq; next = next->q.cqe_next)
 		if (next != sp)
 			break;
-	if (next != (void *)&gp->dq)
+	if (next != (void *)&wp->scrq)
 		return (next);
 
 	/* Try the hidden queue; if found, move screen to the display queue. */
 	if (gp->hq.cqh_first != (void *)&gp->hq) {
 		next = gp->hq.cqh_first;
 		CIRCLEQ_REMOVE(&gp->hq, next, q);
-		CIRCLEQ_INSERT_HEAD(&gp->dq, next, q);
+		CIRCLEQ_INSERT_HEAD(&wp->scrq, next, q);
+		next->wp = sp->wp;
 		return (next);
 	}
 	return (NULL);

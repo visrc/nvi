@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.31 2000/04/21 19:00:37 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:37 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.32 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -376,11 +376,13 @@ sscr_input(sp)
 	SCR *sp;
 {
 	GS *gp;
+	WIN *wp;
 	struct timeval poll;
 	fd_set rdfd;
 	int maxfd;
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 loop:	maxfd = 0;
 	FD_ZERO(&rdfd);
@@ -388,7 +390,8 @@ loop:	maxfd = 0;
 	poll.tv_usec = 0;
 
 	/* Set up the input mask. */
-	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+	for (sp = wp->scrq.cqh_first; sp != (void *)&wp->scrq; 
+	    sp = sp->q.cqe_next)
 		if (F_ISSET(sp, SC_SCRIPT)) {
 			FD_SET(sp->script->sh_master, &rdfd);
 			if (sp->script->sh_master > maxfd)
@@ -407,9 +410,11 @@ loop:	maxfd = 0;
 	}
 
 	/* Read the input. */
-	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+	for (sp = wp->scrq.cqh_first; sp != (void *)&wp->scrq; 
+	    sp = sp->q.cqe_next)
 		if (F_ISSET(sp, SC_SCRIPT) &&
-		    FD_ISSET(sp->script->sh_master, &rdfd) && sscr_insert(sp))
+		    FD_ISSET(sp->script->sh_master, &rdfd) && 
+		    sscr_insert(sp))
 			return (1);
 	goto loop;
 }
@@ -615,9 +620,12 @@ sscr_check(sp)
 	SCR *sp;
 {
 	GS *gp;
+	WIN *wp;
 
 	gp = sp->gp;
-	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+	wp = sp->wp;
+	for (sp = wp->scrq.cqh_first; sp != (void *)&wp->scrq; 
+	    sp = sp->q.cqe_next)
 		if (F_ISSET(sp, SC_SCRIPT)) {
 			F_SET(gp, G_SCRWIN);
 			return;

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.11 2000/06/24 18:54:50 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:50 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.12 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ int vi_ofd;				/* GLOBAL: known to vi_send(). */
 GS *__global_list;				/* GLOBAL: List of screens. */
 
 static void	   ip_func_std __P((GS *));
-static IP_PRIVATE *ip_init __P((GS *gp, int i_fd, int o_fd, int argc, char *argv[]));
+static IP_PRIVATE *ip_init __P((WIN *wp, int i_fd, int o_fd, int argc, char *argv[]));
 static void	   perr __P((char *, char *));
 static void run_editor __P((void * vp));
 
@@ -53,6 +53,7 @@ main(argc, argv)
 	char *ip_arg;
 	char **p_av, **t_av;
 	GS *gp;
+	WIN *wp;
 	int i_fd, o_fd, main_ifd, main_ofd;
 	char *ep;
 
@@ -107,11 +108,14 @@ usage:		ip_usage();
 		return (NULL);
 	}
 
+		/* Create new window */
+		wp = gs_new_win(gp);
+
 	/* Create and partially initialize the IP structure. */
-	if ((ipp = ip_init(gp, i_fd, o_fd, argc, argv)) == NULL)
+	if ((ipp = ip_init(wp, i_fd, o_fd, argc, argv)) == NULL)
 		return (1);
 
-	run_editor((void *)gp);
+	run_editor((void *)wp);
 
 	/* Free the global and IP private areas. */
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
@@ -125,13 +129,14 @@ run_editor(void * vp)
 {
 	GS *gp;
 	IP_PRIVATE *ipp;
+	WIN *wp;
 	EVENT ev;
 	int rval;
 	IP_BUF ipb;
 
-	gp = (GS *)vp;
-
-	ipp = gp->ip_private;
+	wp = (WIN *) vp;
+	gp = wp->gp;
+	ipp = wp->ip_private;
 
 	/* Add the terminal type to the global structure. */
 	if ((OG_D_STR(gp, GO_TERM) =
@@ -143,7 +148,7 @@ run_editor(void * vp)
 	 * the rows and columns.
 	 */
 	for (;;) {
-		if (ip_event(NULL, &ev, 0, 0))
+		if (ip_wevent(wp, NULL, &ev, 0, 0))
 			return;
 		if (ev.e_event == E_WRESIZE)
 			break;
@@ -155,10 +160,10 @@ run_editor(void * vp)
 	}
 
 	/* Run ex/vi. */
-	rval = editor(gp, ipp->argc, ipp->argv);
+	rval = editor(wp, ipp->argc, ipp->argv);
 
 	/* Clean up the screen. */
-	(void)ip_quit(gp);
+	(void)ip_quit(wp);
 
 	/* Send the quit message. */
 	ipb.code = SI_QUIT;
@@ -177,15 +182,15 @@ run_editor(void * vp)
  *	Create and partially initialize the GS structure.
  */
 static IP_PRIVATE *
-ip_init(GS *gp, int i_fd, int o_fd, int argc, char *argv[])
+ip_init(WIN *wp, int i_fd, int o_fd, int argc, char *argv[])
 {
 	IP_PRIVATE *ipp;
 
 	/* Allocate the IP private structure. */
 	CALLOC_NOMSG(NULL, ipp, IP_PRIVATE *, 1, sizeof(IP_PRIVATE));
 	if (ipp == NULL)
-		perr(gp->progname,  NULL);
-	gp->ip_private = ipp;
+		perr(wp->gp->progname,  NULL);
+	wp->ip_private = ipp;
 
 	ipp->i_fd = i_fd;
  	vi_ofd = ipp->o_fd = o_fd;
@@ -194,7 +199,7 @@ ip_init(GS *gp, int i_fd, int o_fd, int argc, char *argv[])
  	ipp->argv = argv;
  
 	/* Initialize the list of ip functions. */
-	ip_func_std(gp);
+	ip_func_std(wp->gp);
 
 	return (ipp);
 }

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.62 2000/04/21 21:26:21 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:21 $";
+static const char sccsid[] = "$Id: ex.c,v 10.63 2000/06/25 17:34:39 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,12 +53,14 @@ ex(spp)
 {
 	EX_PRIVATE *exp;
 	GS *gp;
+	WIN *wp;
 	MSGS *mp;
 	SCR *sp;
 	TEXT *tp;
 	u_int32_t flags;
 
 	sp = *spp;
+	wp = sp->wp;
 	gp = sp->gp;
 	exp = EXP(sp);
 
@@ -76,8 +78,8 @@ ex(spp)
 
 	/* If reading from a file, errors should have name and line info. */
 	if (F_ISSET(gp, G_SCRIPTED)) {
-		gp->excmd.if_lno = 1;
-		gp->excmd.if_name = "script";
+		wp->excmd.if_lno = 1;
+		wp->excmd.if_name = "script";
 	}
 
 	/*
@@ -88,7 +90,7 @@ ex(spp)
 	 * "^H discarded", that was displayed.  We don't bother.
 	 */
 	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR);
-	for (;; ++gp->excmd.if_lno) {
+	for (;; ++wp->excmd.if_lno) {
 		/* Display status line and flush. */
 		if (F_ISSET(sp, SC_STATUS)) {
 			if (!F_ISSET(sp, SC_EX_SILENT))
@@ -114,7 +116,7 @@ ex(spp)
 		}
 
 		/* Initialize the command structure. */
-		CLEAR_EX_PARSER(&gp->excmd);
+		CLEAR_EX_PARSER(&wp->excmd);
 
 		/*
 		 * If the user entered a single carriage return, send
@@ -122,13 +124,13 @@ ex(spp)
 		 */
 		tp = sp->tiq.cqh_first;
 		if (tp->len == 0) {
-			gp->excmd.cp = " ";	/* __TK__ why not |? */
-			gp->excmd.clen = 1;
+			wp->excmd.cp = " ";	/* __TK__ why not |? */
+			wp->excmd.clen = 1;
 		} else {
-			gp->excmd.cp = tp->lb;
-			gp->excmd.clen = tp->len;
+			wp->excmd.cp = tp->lb;
+			wp->excmd.clen = tp->len;
 		}
-		F_INIT(&gp->excmd, E_NRSEP);
+		F_INIT(&wp->excmd, E_NRSEP);
 
 		if (ex_cmd(sp) && F_ISSET(gp, G_SCRIPTED))
 			return (1);
@@ -199,6 +201,7 @@ ex_cmd(sp)
 	EX_PRIVATE *exp;
 	EXCMD *ecp;
 	GS *gp;
+	WIN *wp;
 	MARK cur;
 	db_recno_t lno;
 	size_t arg1_len, discard, len;
@@ -210,6 +213,7 @@ ex_cmd(sp)
 	char *arg1, *p, *s, *t;
 
 	gp = sp->gp;
+	wp = sp->wp;
 	exp = EXP(sp);
 
 	/*
@@ -217,12 +221,12 @@ ex_cmd(sp)
 	 * This means that *everything* must be resolved when we leave
 	 * this function for any reason.
 	 */
-loop:	ecp = gp->ecq.lh_first;
+loop:	ecp = wp->ecq.lh_first;
 
 	/* If we're reading a command from a file, set up error information. */
 	if (ecp->if_name != NULL) {
-		gp->if_lno = ecp->if_lno;
-		gp->if_name = ecp->if_name;
+		wp->if_lno = ecp->if_lno;
+		wp->if_name = ecp->if_name;
 	}
 
 	/*
@@ -238,7 +242,7 @@ loop:	ecp = gp->ecq.lh_first;
 
 	/* If we found a newline, increment the count now. */
 	if (F_ISSET(ecp, E_NEWLINE)) {
-		++gp->if_lno;
+		++wp->if_lno;
 		++ecp->if_lno;
 		F_CLR(ecp, E_NEWLINE);
 	}
@@ -257,7 +261,7 @@ loop:	ecp = gp->ecq.lh_first;
 	/* Skip <blank>s, empty lines.  */
 	for (notempty = 0; ecp->clen > 0; ++ecp->cp, --ecp->clen)
 		if ((ch = *ecp->cp) == '\n') {
-			++gp->if_lno;
+			++wp->if_lno;
 			++ecp->if_lno;
 		} else if (isblank(ch))
 			notempty = 1;
@@ -321,7 +325,7 @@ loop:	ecp = gp->ecq.lh_first;
 	    (!notempty || F_ISSET(sp, SC_VI) || F_ISSET(ecp, E_BLIGNORE))) {
 		if (ex_load(sp))
 			goto rfail;
-		ecp = gp->ecq.lh_first;
+		ecp = wp->ecq.lh_first;
 		if (ecp->clen == 0)
 			goto rsuccess;
 		goto loop;
@@ -694,7 +698,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 				--ecp->clen;
 				ch = *++ecp->cp;
 
-				++gp->if_lno;
+				++wp->if_lno;
 				++ecp->if_lno;
 			} else if (ch == '\n')
 				break;
@@ -779,7 +783,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 			tmp = ecp->cp[1];
 			if (tmp == '\n' || tmp == '|') {
 				if (tmp == '\n') {
-					++gp->if_lno;
+					++wp->if_lno;
 					++ecp->if_lno;
 				}
 				++discard;
@@ -1528,7 +1532,7 @@ addr_verify:
 	 */
 	if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_FSWITCH | SC_SSWITCH)) {
 		at_found = gv_found = 0;
-		for (ecp = sp->gp->ecq.lh_first;
+		for (ecp = sp->wp->ecq.lh_first;
 		    ecp != NULL; ecp = ecp->q.le_next)
 			switch (ecp->agv_flags) {
 			case 0:
@@ -1581,7 +1585,7 @@ err:	/*
 				break;
 			}
 		}
-	if (ecp->save_cmdlen != 0 || gp->ecq.lh_first != &gp->excmd) {
+	if (ecp->save_cmdlen != 0 || wp->ecq.lh_first != &wp->excmd) {
 discard:	msgq(sp, M_BERR,
 		    "092|Ex command failed: pending commands discarded");
 		ex_discard(sp);
@@ -1595,7 +1599,7 @@ rfail:	tmp = 1;
 rsuccess:	tmp = 0;
 
 	/* Turn off any file name error information. */
-	gp->if_name = NULL;
+	wp->if_name = NULL;
 
 	/* Turn off the global bit. */
 	F_CLR(sp, SC_EX_GLOBAL);
@@ -2066,7 +2070,7 @@ static int
 ex_load(sp)
 	SCR *sp;
 {
-	GS *gp;
+	WIN *wp;
 	EXCMD *ecp;
 	RANGE *rp;
 
@@ -2076,13 +2080,13 @@ ex_load(sp)
 	 * Lose any exhausted commands.  We know that the first command
 	 * can't be an AGV command, which makes things a bit easier.
 	 */
-	for (gp = sp->gp;;) {
+	for (wp = sp->wp;;) {
 		/*
 		 * If we're back to the original structure, leave it around,
 		 * but discard any allocated source name, we've returned to
 		 * the beginning of the command stack.
 		 */
-		if ((ecp = gp->ecq.lh_first) == &gp->excmd) {
+		if ((ecp = wp->ecq.lh_first) == &wp->excmd) {
 			if (F_ISSET(ecp, E_NAMEDISCARD)) {
 				free(ecp->if_name);
 				ecp->if_name = NULL;
@@ -2160,7 +2164,7 @@ static int
 ex_discard(sp)
 	SCR *sp;
 {
-	GS *gp;
+	WIN *wp;
 	EXCMD *ecp;
 	RANGE *rp;
 
@@ -2168,7 +2172,7 @@ ex_discard(sp)
 	 * We know the first command can't be an AGV command, so we don't
 	 * process it specially.  We do, however, nail the command itself.
 	 */
-	for (gp = sp->gp; (ecp = gp->ecq.lh_first) != &gp->excmd;) {
+	for (wp = sp->wp; (ecp = wp->ecq.lh_first) != &wp->excmd;) {
 		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
 			while ((rp = ecp->rq.cqh_first) != (void *)&ecp->rq) {
 				CIRCLEQ_REMOVE(&ecp->rq, rp, q);
@@ -2179,7 +2183,7 @@ ex_discard(sp)
 		LIST_REMOVE(ecp, q);
 		free(ecp);
 	}
-	gp->ecq.lh_first->clen = 0;
+	wp->ecq.lh_first->clen = 0;
 	return (0);
 }
 
