@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.22 1996/08/11 18:30:22 bostic Exp $ (Berkeley) $Date: 1996/08/11 18:30:22 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.23 1996/08/11 18:38:52 bostic Exp $ (Berkeley) $Date: 1996/08/11 18:38:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -520,7 +520,7 @@ argv_prefix(sp, path, wp, bpp, blenp, lenp)
 {
 	DIR *dirp;
 	struct dirent *dp;
-	size_t blen, dlen, doffset, len, nlen;
+	size_t blen, clen, dlen, doffset, len, nlen;
 	char *bp, *dname, *name, *p;
 
 	/*
@@ -570,12 +570,14 @@ argv_prefix(sp, path, wp, bpp, blenp, lenp)
 	 * We don't use the d_namlen field, it's not portable enough; we
 	 * assume that d_name is nul terminated, instead.
 	 */
-	while ((dp = readdir(dirp)) != NULL)
-		if (nlen == 0 || !strncmp(dp->d_name, name, nlen)) {
-			if (blen < dp->d_namlen + dlen + 5) {
+	while ((dp = readdir(dirp)) != NULL) {
+		clen = strlen(dp->d_name);
+		if (nlen == 0 ||
+		    (clen >= nlen && !memcmp(dp->d_name, name, nlen))) {
+			if (blen < clen + dlen + 5) {
 				doffset = dname - bp;
 				ADD_SPACE_GOTO(sp, bp, *blenp,
-				    *blenp * 2 + dp->d_namlen + dlen + 5);
+				    *blenp * 2 + clen + dlen + 5);
 				p = bp + len;
 				blen = *blenp - len;
 				if (dname == path)
@@ -588,12 +590,13 @@ argv_prefix(sp, path, wp, bpp, blenp, lenp)
 				len += dlen + 1;
 				blen -= dlen + 1;
 			}
-			memcpy(p, dp->d_name, dp->d_namlen);
-			p += dp->d_namlen;
+			memcpy(p, dp->d_name, clen);
+			p += clen;
 			*p++ = ' ';
-			len += dp->d_namlen + 1;
-			blen -= dp->d_namlen + 1;
+			len += clen + 1;
+			blen -= clen + 1;
 		}
+	}
 	(void)closedir(dirp);
 
 	/*
