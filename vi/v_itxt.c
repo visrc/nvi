@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.10 1995/11/07 10:17:12 bostic Exp $ (Berkeley) $Date: 1995/11/07 10:17:12 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.11 1995/11/07 10:27:20 bostic Exp $ (Berkeley) $Date: 1995/11/07 10:27:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,8 @@ v_ia(sp, vp)
 	} else
 		LF_SET(TXT_APPENDEOL);
 
-	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, vp->count, flags));
+	return (v_txt(sp, vp, NULL, p, len,
+	    0, OOBLNO, F_ISSET(vp, VC_C1SET) ? vp->count : 1, flags));
 }
 
 /*
@@ -166,7 +167,8 @@ v_ii(sp, vp)
 
 	if (len == 0)
 		LF_SET(TXT_APPENDEOL);
-	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, vp->count, flags));
+	return (v_txt(sp, vp, NULL, p, len,
+	    0, OOBLNO, F_ISSET(vp, VC_C1SET) ? vp->count : 1, flags));
 }
 
 enum which { o_cmd, O_cmd };
@@ -241,7 +243,8 @@ insert:		p = "";
 			ai_line = sp->lno - 1;
 		}
 	}
-	return (v_txt(sp, vp, NULL, p, len, 0, ai_line, vp->count, flags));
+	return (v_txt(sp, vp, NULL, p, len,
+	    0, ai_line, F_ISSET(vp, VC_C1SET) ? vp->count : 1, flags));
 }
 
 /*
@@ -323,8 +326,8 @@ v_change(sp, vp)
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
 		LF_SET(TXT_EMARK | TXT_OVERWRITE);
-		return (v_txt(sp,
-		    vp, &vp->m_stop, p, len, 0, OOBLNO, vp->count, flags));
+		return (v_txt(sp, vp, &vp->m_stop, p, len,
+		    0, OOBLNO, F_ISSET(vp, VC_C1SET) ? vp->count : 1, flags));
 	}
 
 	/*
@@ -379,7 +382,8 @@ v_change(sp, vp)
 	if (vp->m_start.cno >= len)
 		LF_SET(TXT_APPENDEOL);
 
-	rval = v_txt(sp, vp, NULL, p, len, 0, OOBLNO, vp->count, flags);
+	rval = v_txt(sp, vp, NULL, p, len,
+	    0, OOBLNO, F_ISSET(vp, VC_C1SET) ? vp->count : 1, flags);
 
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
@@ -418,8 +422,8 @@ v_Replace(sp, vp)
 	vp->m_stop.lno = vp->m_start.lno;
 	vp->m_stop.cno = len ? len - 1 : 0;
 
-	return (v_txt(sp,
-	    vp, &vp->m_stop, p, len, 0, OOBLNO, vp->count, flags));
+	return (v_txt(sp, vp, &vp->m_stop, p, len,
+	    0, OOBLNO, F_ISSET(vp, VC_C1SET) ? vp->count : 1, flags));
 }
 
 /*
@@ -505,7 +509,7 @@ set_txt_std(sp, vp, flags)
 	 *	aABC DEF <ESC>....
 	 *	:map K aABC DEF ^V<ESC><CR>KKKKK
 	 *	:map K 5aABC DEF ^V<ESC><CR>K
-	 * 
+	 *
 	 * The first and second commands are affected by wrapmargin.  The
 	 * third is not.  (If the inserted text is itself longer than the
 	 * wrapmargin value, i.e. if the "ABC DEF " string is replaced by
