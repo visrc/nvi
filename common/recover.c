@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 9.2 1994/11/14 10:19:02 bostic Exp $ (Berkeley) $Date: 1994/11/14 10:19:02 $";
+static char sccsid[] = "$Id: recover.c,v 9.3 1994/11/18 14:54:48 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:54:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -489,6 +489,7 @@ rcv_list(sp)
 	int found, nf;
 	char *p, *t, file[MAXPATHLEN], path[MAXPATHLEN];
 
+	/* Open the recovery directory for reading. */
 	if (chdir(O_STR(sp, O_RECDIR)) || (dirp = opendir(".")) == NULL) {
 		p = msg_print(sp, O_STR(sp, O_RECDIR), &nf);
 		msgq(sp, M_SYSERR, "recdir: %s", p);
@@ -497,6 +498,7 @@ rcv_list(sp)
 		return (1);
 	}
 
+	/* Read the directory. */
 	for (found = 0; (dp = readdir(dirp)) != NULL;) {
 		if (strncmp(dp->d_name, "recover.", 8))
 			continue;
@@ -562,8 +564,8 @@ rcv_list(sp)
 
 		/* Get the last modification time and display. */
 		(void)fstat(fileno(fp), &sb);
-		(void)printf("%s: %s",
-		    file + sizeof(VI_FHEADER) - 1, ctime(&sb.st_mtime));
+		(void)printf("%.24s: %s\n",
+		    ctime(&sb.st_mtime), file + sizeof(VI_FHEADER) - 1);
 		found = 1;
 
 		/* Close, discarding lock. */
