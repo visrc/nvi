@@ -907,7 +907,10 @@ AC_CACHE_CHECK([fprintf prototype needed], vi_cv_proto_fprintf,
 typedef int     (*funcPtr)();
 ],[funcPtr ptr = (funcPtr) fprintf;], 
 vi_cv_proto_fprintf=no, 
-[vi_cv_proto_fprintf=yes, AC_DEFINE(NEED_FPRINTF_PROTO)])])
+[vi_cv_proto_fprintf=yes])])
+if test "$vi_cv_proto_fprintf" = yes; then
+	AC_DEFINE(NEED_FPRINTF_PROTO)
+fi
 
 
 dnl Check for DB 3
