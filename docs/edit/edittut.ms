@@ -3,14 +3,14 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: edittut.ms,v 8.2 1996/06/27 18:48:28 bostic Exp $ (Berkeley) $Date: 1996/06/27 18:48:28 $
+.\"	$Id: edittut.ms,v 8.3 1996/08/18 11:36:05 bostic Exp $ (Berkeley) $Date: 1996/08/18 11:36:05 $
 .\"
+.ll 6.5i
+.nr LL 6.5i
 .EH 'USD:11-%''Edit:  A Tutorial'
 .OH 'Edit:  A Tutorial''USD:11-%'
 .LP
 .ds u \s-2UNIX\s0
-.ll 5i
-.nr LL 5i
 .ND
 .sp 4
 .ce

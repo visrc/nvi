@@ -1,10 +1,12 @@
-#	$Id: Makefile,v 8.6 1996/08/18 10:53:19 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:53:19 $
+#	$Id: Makefile,v 8.7 1996/08/18 11:35:54 bostic Exp $ (Berkeley) $Date: 1996/08/18 11:35:54 $
 
 MACROS=	-ms
 ROFF=	groff
 TBL=	tbl
 
-vitut.ps: vi.in vi.chars summary.ps viapwh.ps
+all: vitut.ps summary.ps viapwh.ps
+
+vitut.ps: vi.in vi.chars
 	${TBL} vi.in vi.chars | ${ROFF} ${MACROS} > $@
 	chmod 444 $@
 

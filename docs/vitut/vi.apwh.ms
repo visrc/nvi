@@ -3,8 +3,10 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.apwh.ms,v 8.1 1993/06/08 12:49:26 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:49:26 $
+.\"	$Id: vi.apwh.ms,v 8.2 1996/08/18 11:35:55 bostic Exp $ (Berkeley) $Date: 1996/08/18 11:35:55 $
 .\"
+.nr LL 6.5i
+.nr FL 6.5i
 .TL
 Vi Command & Function Reference
 .AU CB 2675

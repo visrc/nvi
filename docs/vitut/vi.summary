@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.summary,v 8.2 1996/06/27 19:53:38 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:53:38 $
+.\"	$Id: vi.summary,v 8.3 1996/08/18 11:35:55 bostic Exp $ (Berkeley) $Date: 1996/08/18 11:35:55 $
 .\"
 .ds CH
 .ds CF
@@ -23,10 +23,10 @@
 .vs 11
 .nr HM .50i
 .nr FM .25i
-.nr PO 0
-.po 0
-.nr LL 3.5i
-.ll 3.5i
+.nr PO 1.0i
+.po 1.0i
+.nr LL 4.5i
+.ll 4.5i
 .de nc
 .bp
 ..
