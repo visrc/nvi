@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.55 1994/09/03 11:21:40 bostic Exp $ (Berkeley) $Date: 1994/09/03 11:21:40 $
+.\"     $Id: vi.ref,v 8.56 1994/09/27 14:24:45 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:24:45 $
 .\"
 .\"
 .so ref.so
@@ -535,7 +535,7 @@ as the first part of the
 .CO substitute ,
 .CO global ,
 and
-.CO vglobal
+.CO v
 commands, and in search patterns.
 .pp
 The regular expressions supported by
