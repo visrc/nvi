@@ -1,39 +1,48 @@
-#	$Id: README,v 5.2 1993/01/31 11:18:57 bostic Exp $ (Berkeley) $Date: 1993/01/31 11:18:57 $
+#	$Id: README,v 5.3 1993/01/31 11:43:14 bostic Exp $ (Berkeley) $Date: 1993/01/31 11:43:14 $
 
-A new version of ex/vi, which will be distributed as "nvi" and "nex" in
-4.4BSD, can now be retrieved by anonymous ftp from vangogh.cs.berkeley.edu,
-in the directory hidden/nvi.tar.Z.  It's being distributed for development
-and review only -- please don't redistribute it to anyone without talking
-to me first!
+An ALPHA version of the new ex/vi, which will be distributed as nvi in
+4.4BSD, can be retrieved by anonymous ftp from vangogh.cs.berkeley.edu,
+from hidden/nvi.tar.Z.
+
+You're getting this email because we, at some point, talked over the
+possibility of you testing, or your company distributing, this version
+of vi.  If you are no longer interested in hearing about this, let me
+know and I'll drop your address from my list.
+
+Note, this is ALPHA software, i.e. buggy as hell.  I would have liked to
+wait longer to make it available, but various are interested in using it
+to develop other software and I didn't want to hold them up any longer
+than I already had.  Speaking of which, I apologize for taking so long to
+make it available.  The USL lawsuit is taking up an tremendous amount of
+our group's resources, and programming time has been very hard to come by.
 
 This software is derived from software contributed to UC Berkeley by
 Steve Kirkendall, the author of the vi clone elvis.  Without his work,
 this work would have been far more difficult.
 
-I apologize for taking so long to make it available.  The USL lawsuit
-takes up an amazing amount of our group's resources, and programming
-time is pretty hard to come by.
+Nvi is being distributed for development and review only -- please don't
+redistribute it to anyone without talking to me first!
 
-Finally, your name is on this list because we, at some point, talked
-over the possibility of you testing, or your company distributing, this
-version of vi.  If you are no longer interested in hearing about this,
-let me know and I'll drop your address from the list.
+	Keith Bostic				bostic@cs.berkeley.edu
+						510-642-8524
+
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 + Comments:
 
-This software is alpha software, at best.  I believe that most of the
-necessary functionality for ex/vi is in it, but it's definitely not ready
-for prime time.  My expectation is that it will be ready to go with two
-or so months of bug-fixing.  Code fixes will be, of course, very much
+This software is alpha software, at best.  I believe that almost all of
+the necessary functionality for ex/vi is in it, but it's definitely not
+ready for prime time.  My expectation is that it will be ready to go with
+two or so months of bug-fixing.  Code fixes are, of course, very much
 appreciated, but if you don't have time, please send me as much
 information as you can as to how to reproduce the bug, and I'll fix it
 here.  In particular, the screen routines are nasty stuff, and you
 probably don't want to mess with them.
 
-This software is not yet 8-bit clean, although it only disallows NULLs.
-This isn't difficult to fix, and was deliberately left in during the
-initial development.
+Nvi is not yet 8-bit clean, although it only disallows NULLs.  This isn't
+difficult to fix, and was deliberately left in during initial development.
+Wide character support will be integrated at the same time that NULL
+support is included.
 
 The ex/vi recovery on system crash has not yet been implemented.  (This
 isn't difficult, it only requires some extensions to the current logging
@@ -73,15 +82,15 @@ System V versions of curses don't do this right, either.)
 
 + Porting status:
 
-The curses and nvi code have NOT been ported to other systems, yet.  The
-dbopen code is running on lots of systems and is pretty portable.  Please
-send me back whatever fixes you have to make to nvi and curses to make
-them run, and I'll integrate them into the package so that you don't have
-to do it twice!
+The curses, stdio and nvi code have NOT been ported to other systems, yet.
+The dbopen code is running on lots of systems and is pretty portable.
+Please send me back whatever fixes you have to make to nvi and curses to
+make them run, and I'll integrate them into the package so that you don't
+have to do it twice!
 
-I will be porting this software to SunOS in the near future, which will
+I will be porting this software to SunOS in about two weeks, which will
 limit the amount of software that is included in the package as well as
-writing complete Makefiles, so you may want to wait for that to happen.  
+providing complete Makefiles, so you may want to wait for that to happen.  
 
 + A quick tour:
 
@@ -129,10 +138,5 @@ VICMDARG
 	In nvi/vi/vcmd.h.  The structure that gets passed around to the
 	functions that implement the vi commands.  (The main vi command
 	loop (see nvi/vi/vi.c) builds this up and then passes it to the
-	ex functions.)
-
-
-Good luck,
-	Keith Bostic				bostic@cs.berkeley.edu
-						510-642-8524
+	vi functions.)
 
