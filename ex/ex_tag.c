@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.14 1992/11/06 12:23:01 bostic Exp $ (Berkeley) $Date: 1992/11/06 12:23:01 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.15 1992/11/06 18:23:12 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:23:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.14 1992/11/06 12:23:01 bostic Exp $ (B
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
@@ -96,7 +97,6 @@ ex_tagtop(cmdp)
 	EXCMDARG *cmdp;
 {
 	TAG *tag;
-	int cnt;
 
 	for (tag = NULL; tag_head() != NULL;)
 		tag = tag_pop();

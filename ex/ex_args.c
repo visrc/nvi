@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.23 1992/11/06 18:04:02 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:04:02 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.24 1992/11/06 18:21:35 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:21:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,7 @@ ex_next(cmdp)
 
 	if (file_start(ep))
 		PANIC;
+	return (0);
 }
 
 /*
