@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.23 1992/12/05 11:04:06 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:04:06 $";
+static char sccsid[] = "$Id: cut.c,v 5.24 1993/01/23 16:29:58 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:29:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -147,7 +147,7 @@ mem:			bell();
 			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		bcopy(p + fcno, lp, len);
+		memmove(lp, p + fcno, len);
 		tp->lp = lp;
 		tp->len = len;
 #if DEBUG && 0
@@ -242,13 +242,13 @@ put(ep, buffer, cp, rp, append)
 		/* Original line, left of the split. */
 		t = bp;
 		if (len > 0 && (clen = cp->cno + (append ? 1 : 0)) > 0) {
-			bcopy(p, bp, clen);
+			memmove(bp, p, clen);
 			p += clen;
 			t += clen;
 		}
 
 		/* First line from the CB. */
-		bcopy(tp->lp, t, tp->len);
+		memmove(t, tp->lp, tp->len);
 		t += tp->len;
 
 		/* Calculate length left in original line. */
@@ -260,7 +260,7 @@ put(ep, buffer, cp, rp, append)
 		 */
 		if (tp->next == NULL) {
 			if (clen > 0) {
-				bcopy(p, t, clen);
+				memmove(t, p, clen);
 				t += clen;
 			}
 			if (file_sline(ep, lno, bp, t - bp))
@@ -288,7 +288,7 @@ put(ep, buffer, cp, rp, append)
 
 			t = bp;
 			if (tp->len) {
-				bcopy(tp->lp, t, tp->len);
+				memmove(t, tp->lp, tp->len);
 				t += tp->len;
 			}
 
@@ -302,7 +302,7 @@ put(ep, buffer, cp, rp, append)
 			rp->cno = t - bp - 1;
 
 			if (clen) {
-				bcopy(p, t, clen);
+				memmove(t, p, clen);
 				t += clen;
 			}
 			if (file_aline(ep, lno, bp, t - bp))
