@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.15 1992/09/01 15:37:05 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:37:05 $
+ *	$Id: vi.h,v 5.16 1992/10/10 14:05:37 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:05:37 $
  */
 
 #include "exf.h"
@@ -70,7 +70,11 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	V_MOVE		0x0100	/* Command defines movement. */
 #define	V_OBUF		0x0200	/* Buffer (optional, leading). */
 #define	V_RBUF		0x0400	/* Buffer (required, trailing). */
-#define	V_START		0x0800	/* Command implies SOL movement. */
+#define	V_RCM		0x0800	/* Relative cursor movment (RCM). */
+#define	V_RCM_SET	0x1000	/* Set RCM absolutely. */
+#define	V_RCM_SETFNB	0x2000	/* Set RCM to first non-blank character. */
+#define	V_RCM_SETLAST	0x4000	/* Set RCM to last character. */
+#define	V_START		0x8000	/* Command implies SOL movement. */
 	u_int flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
@@ -136,7 +140,6 @@ int	v_middle __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_nbdown __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_nbup __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ncol __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_nonblank __P((MARK *));
 int	v_pagedown __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_pageup __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_paragraphb __P((VICMDARG *, MARK *, MARK *, MARK *));
