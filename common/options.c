@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.19 1992/06/15 10:44:44 bostic Exp $ (Berkeley) $Date: 1992/06/15 10:44:44 $";
+static char sccsid[] = "$Id: options.c,v 5.20 1992/08/22 19:14:34 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:14:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -504,14 +504,13 @@ opts_dump(all)
 			}
 			endcol += colwidth;
 		}
-		if (++row < numrows)
+		if (++row < numrows || b_num)
 			EX_PRNEWLINE;
 	}
 
 	for (row = 0; row < b_num;) {
 		(void)opts_print(&opts[b_op[row]]);
-		++row;
-		if (numrows || row < b_num)
+		if (++row < b_num)
 			EX_PRNEWLINE;
 	}
 	EX_PRTRAIL;
