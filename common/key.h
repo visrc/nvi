@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.43 1994/04/14 10:44:03 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:44:03 $
+ *	$Id: key.h,v 8.44 1994/04/17 16:51:11 bostic Exp $ (Berkeley) $Date: 1994/04/17 16:51:11 $
  */
 
 /*
@@ -171,4 +171,5 @@ void		 term_ab_flush __P((SCR *, char *));
 int		 term_init __P((SCR *));
 void		 term_map_flush __P((SCR *, char *));
 int		 term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
+int		 term_tgetent __P((SCR *, char *, char *));
 int		 term_waiting __P((SCR *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.63 1994/04/14 10:44:01 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:44:01 $";
+static char sccsid[] = "$Id: key.c,v 8.64 1994/04/17 16:51:09 bostic Exp $ (Berkeley) $Date: 1994/04/17 16:51:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -189,16 +189,8 @@ term_init(sp)
 
 	/* Set key sequences found in the termcap entry. */
 #ifndef SYSV_CURSES
-	switch (tgetent(buf, O_STR(sp, O_TERM))) {
-	case -1:
-		msgq(sp, M_ERR,
-		    "tgetent: %s: %s.", O_STR(sp, O_TERM), strerror(errno));
+	if (term_tgetent(sp, buf, O_STR(sp, O_TERM)))
 		return (0);
-	case 0:
-		msgq(sp, M_ERR,
-		    "%s: unknown terminal type.", O_STR(sp, O_TERM));
-		return (0);
-	}
 #endif
 
 	/* Command mappings. */
@@ -256,6 +248,33 @@ term_init(sp)
 	}
 	return (0);
 }
+
+#ifndef SYSV_CURSES
+/*
+ * term_tgetent --
+ *	Routine to fill in the tgetent buffer, broken out so that
+ *	the error code isn't endlessly repeated.
+ */
+int
+term_tgetent(sp, buf, term)
+	SCR *sp;
+	char *buf, *term;
+{
+	if (term == NULL) {
+		msgq(sp, M_ERR, "No terminal type set.");
+		return (1);
+	}
+	switch (tgetent(buf, term)) {
+	case -1:
+		msgq(sp, M_SYSERR, "tgetent: %s", term);
+		return (1);
+	case 0:
+		msgq(sp, M_ERR, "%s: unknown terminal type.", term);
+		return (1);
+	}
+	return (0);
+}
+#endif
 
 /*
  * term_key_set --

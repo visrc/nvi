@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.49 1994/04/15 00:33:55 bostic Exp $ (Berkeley) $Date: 1994/04/15 00:33:55 $";
+static char sccsid[] = "$Id: util.c,v 8.50 1994/04/17 16:51:23 bostic Exp $ (Berkeley) $Date: 1994/04/17 16:51:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -420,7 +420,7 @@ set_window_size(sp, set_row, ign_env)
 				col = tigetnum("co");
 		}
 #else
-		if (s != NULL && tgetent(buf, s) == 1) {
+		if (s != NULL && !term_tgetent(sp, buf, s)) {
 			if (row == 0)
 				row = tgetnum("li");
 			if (col == 0)
