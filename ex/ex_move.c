@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.12 1994/05/17 10:44:20 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:20 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.13 1994/05/21 09:38:16 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,7 +105,7 @@ ex_move(sp, ep, cmdp)
 	fm1 = cmdp->addr1;
 	fm2 = cmdp->addr2;
 	if (cmdp->lineno >= fm1.lno && cmdp->lineno < fm2.lno) {
-		msgq(sp, M_ERR, "Destination line is inside move range.");
+		msgq(sp, M_ERR, "Destination line is inside move range");
 		return (1);
 	}
 

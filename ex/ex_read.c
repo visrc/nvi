@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.28 1994/05/03 21:40:14 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:14 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.29 1994/05/21 09:38:19 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ ex_read(sp, ep, cmdp)
 
 		/* If argc still 1, there wasn't anything to expand. */
 		if (cmdp->argc == 1) {
-			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+			msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 			return (1);
 		}
 
@@ -111,7 +111,7 @@ ex_read(sp, ep, cmdp)
 		/* If expanded to more than one argument, object. */
 		msgq(sp, M_ERR,
 		    "%s expanded into too many file names", cmdp->argv[0]->bp);
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -127,7 +127,7 @@ ex_read(sp, ep, cmdp)
 	}
 	if (!S_ISREG(sb.st_mode)) {
 		(void)fclose(fp);
-		msgq(sp, M_ERR, "Only regular files may be read.");
+		msgq(sp, M_ERR, "Only regular files may be read");
 		return (1);
 	}
 
@@ -183,7 +183,7 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno, ++lcnt) {
 		if (INTERRUPTED(sp)) {
 			if (!success_msg)
-				msgq(sp, M_INFO, "Interrupted.");
+				msgq(sp, M_INFO, "Interrupted");
 			break;
 		}
 		if (file_aline(sp, ep, 1, lno, exp->ibp, len)) {
@@ -211,7 +211,7 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 		*nlinesp = lcnt;
 
 	if (success_msg)
-		msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.",
+		msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters",
 		    INTERRUPTED(sp) ? "Interrupted read: " : "",
 		    name, lcnt, lcnt == 1 ? "" : "s", ccnt);
 

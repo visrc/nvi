@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.15 1994/05/04 19:04:27 bostic Exp $ (Berkeley) $Date: 1994/05/04 19:04:27 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.16 1994/05/21 09:38:20 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ ex_script(sp, ep, cmdp)
 	/* Vi only command. */
 	if (!IN_VI_MODE(sp)) {
 		msgq(sp, M_ERR,
-		    "The script command is only available in vi mode.");
+		    "The script command is only available in vi mode");
 		return (1);
 	}
 
@@ -217,7 +217,7 @@ sscr_getprompt(sp, ep)
 		msgq(sp, M_SYSERR, "select");
 		goto prompterr;
 	case  0:		/* Timeout */
-		msgq(sp, M_ERR, "Error: timed out.");
+		msgq(sp, M_ERR, "Error: timed out");
 		goto prompterr;
 	case  1:		/* Characters to read. */
 		break;
@@ -329,7 +329,7 @@ sscr_exec(sp, ep, lno)
 	/* Delete any prompt. */
 	if (sscr_matchprompt(sp, p, len, &tlen)) {
 		if (tlen == len) {
-empty:			msgq(sp, M_BERR, "Nothing to execute.");
+empty:			msgq(sp, M_BERR, "Nothing to execute");
 			goto err1;
 		}
 		p += (len - tlen);

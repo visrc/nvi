@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.62 1994/05/09 10:33:24 bostic Exp $ (Berkeley) $Date: 1994/05/09 10:33:24 $
+ *	$Id: ex.h,v 8.63 1994/05/21 09:38:30 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:30 $
  */
 
 /* Ex command structure. */
@@ -141,7 +141,7 @@ typedef struct _ex_private {
 				goto modify_err;			\
 		} else if (ep->refcnt <= 1 && !(force)) {		\
 			msgq(sp, M_ERR,					\
-	"Modified since last write; write or use ! to override.");	\
+	"Modified since last write; write or use ! to override");	\
 			goto modify_err;				\
 		}							\
 }

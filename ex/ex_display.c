@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.17 1994/05/03 21:40:10 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:10 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.18 1994/05/21 09:38:06 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ ex_display(sp, ep, cmdp)
 		return (ex_tagdisplay(sp, ep));
 	}
 	msgq(sp, M_ERR,
-	    "Unknown display argument %s, use b[uffers], s[creens], or t[ags].",
+	    "Unknown display argument %s, use b[uffers], s[creens], or t[ags]",
 	    cmdp->argv[0]);
 	return (1);
 }
@@ -70,7 +70,7 @@ bdisplay(sp, ep)
 	CB *cbp;
 
 	if (sp->gp->cutq.lh_first == NULL && sp->gp->dcbp == NULL) {
-		(void)ex_printf(EXCOOKIE, "No cut buffers to display.");
+		(void)ex_printf(EXCOOKIE, "No cut buffers to display");
 		return (0);
 	}
 

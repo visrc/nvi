@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.15 1994/03/08 19:39:18 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:18 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.16 1994/05/21 09:38:07 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,7 +87,7 @@ ex_edit(sp, ep, cmdp)
 	if (F_ISSET(ep, F_MODIFIED) &&
 	    ep->refcnt <= 1 && !F_ISSET(cmdp, E_FORCE)) {
 		msgq(sp, M_ERR,
-		    "Modified since last write; write or use ! to override.");
+		    "Modified since last write; write or use ! to override");
 		return (1);
 	}
 

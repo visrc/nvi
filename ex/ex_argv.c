@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.29 1994/05/03 21:39:14 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:39:14 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.30 1994/05/21 09:38:01 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -285,7 +285,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			exp = EXP(sp);
 			if (exp->lastbcomm == NULL) {
 				msgq(sp, M_ERR,
-				    "No previous command to replace \"!\".");
+				    "No previous command to replace \"!\"");
 				return (1);
 			}
 			len += tlen = strlen(exp->lastbcomm);
@@ -297,7 +297,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 		case '%':
 			if (sp->frp->cname == NULL && sp->frp->name == NULL) {
 				msgq(sp, M_ERR,
-				    "No filename to substitute for %%.");
+				    "No filename to substitute for %%");
 				return (1);
 			}
 			tlen = strlen(t = FILENAME(sp->frp));
@@ -315,7 +315,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			if (sp->alt_name == NULL && (sp->p_frp == NULL ||
 			    sp->frp->cname == NULL && sp->frp->name == NULL)) {
 				msgq(sp, M_ERR,
-				    "No filename to substitute for #.");
+				    "No filename to substitute for #");
 				return (1);
 			}
 			if (sp->alt_name != NULL)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 8.10 1994/03/22 19:53:39 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:53:39 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 8.11 1994/05/21 09:38:14 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ ex_mkexrc(sp, ep, cmdp)
 
 	if (!F_ISSET(cmdp, E_FORCE) && !stat(fname, &sb)) {
 		msgq(sp, M_ERR,
-		    "%s exists, not written; use ! to override.", fname);
+		    "%s exists, not written; use ! to override", fname);
 		return (1);
 	}
 

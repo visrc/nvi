@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.11 1994/03/24 19:17:25 bostic Exp $ (Berkeley) $Date: 1994/03/24 19:17:25 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.12 1994/05/21 09:38:11 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ ex_join(sp, ep, cmdp)
 
 	/* Check for no lines to join. */
 	if ((p = file_gline(sp, ep, from + 1, &len)) == NULL) {
-		msgq(sp, M_ERR, "No following lines to join.");
+		msgq(sp, M_ERR, "No following lines to join");
 		return (1);
 	}
 

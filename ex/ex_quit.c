@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 8.8 1994/03/08 19:39:20 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:20 $";
+static char sccsid[] = "$Id: ex_quit.c,v 8.9 1994/05/21 09:38:08 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ ex_quit(sp, ep, cmdp)
 	/* Check for modifications. */
 	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
-		    "Modified since last write; write or use ! to override.");
+		    "Modified since last write; write or use ! to override");
 		return (1);
 	}
 
@@ -59,7 +59,7 @@ ex_quit(sp, ep, cmdp)
 	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
-	"More files; use \":n\" to go to the next file, \":q!\" to quit.");
+	"More files; use \":n\" to go to the next file, \":q!\" to quit");
 		return (1);
 	}
 

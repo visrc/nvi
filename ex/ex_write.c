@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.31 1994/05/03 21:40:18 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:18 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.32 1994/05/21 09:38:29 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -165,7 +165,7 @@ exwr(sp, ep, cmdp, cmd)
 	if (cmd == WRITE && *p == '!') {
 		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
-			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+			msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 			return (1);
 		}
 		/* Expand the argument. */
@@ -208,7 +208,7 @@ exwr(sp, ep, cmdp, cmd)
 		/* If expanded to more than one argument, object. */
 		msgq(sp, M_ERR, "%s expanded into too many file names",
 		    cmdp->argv[0]->bp);
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 

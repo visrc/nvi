@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.12 1994/05/04 09:02:25 bostic Exp $ (Berkeley) $Date: 1994/05/04 09:02:25 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.13 1994/05/21 09:38:12 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,7 +61,7 @@ ex_map(sp, ep, cmdp)
 	switch (cmdp->argc) {
 	case 0:
 		if (seq_dump(sp, stype, 1) == 0)
-			msgq(sp, M_INFO, "No %s map entries.",
+			msgq(sp, M_INFO, "No %s map entries",
 			    stype == SEQ_INPUT ? "input" : "command");
 		return (0);
 	case 2:
@@ -98,7 +98,7 @@ ex_map(sp, ep, cmdp)
 			    cmdp->argv[1]->bp, cmdp->argv[1]->len,
 			    stype, S_USERDEF));
 		}
-		msgq(sp, M_ERR, "This terminal has no %s key.", input);
+		msgq(sp, M_ERR, "This terminal has no %s key", input);
 		return (1);
 	} else {
 		name = NULL;
@@ -111,7 +111,7 @@ ex_map(sp, ep, cmdp)
 			case K_ESCAPE:
 			case K_NL:
 				msgq(sp, M_ERR,
-				    "The %s character may not be remapped.",
+				    "The %s character may not be remapped",
 				    KEY_NAME(sp, input[0]));
 				return (1);
 			}
@@ -132,7 +132,7 @@ ex_unmap(sp, ep, cmdp)
 {
 	if (seq_delete(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len,
 	    F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
-		msgq(sp, M_INFO, "\"%s\" isn't mapped.", cmdp->argv[0]->bp);
+		msgq(sp, M_INFO, "\"%s\" isn't mapped", cmdp->argv[0]->bp);
 		return (1);
 	}
 	return (0);

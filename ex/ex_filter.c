@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.36 1994/05/03 21:40:19 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:19 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.37 1994/05/21 09:38:34 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -325,7 +325,7 @@ proc_wait(sp, pid, cmd, okpipe)
 	if (WIFSIGNALED(pstat) && (!okpipe || WTERMSIG(pstat) != SIGPIPE)) {
 		for (; isblank(*cmd); ++cmd);
 		len = strlen(cmd);
-		msgq(sp, M_ERR, "%.*s%s: received signal: %s%s.",
+		msgq(sp, M_ERR, "%.*s%s: received signal: %s%s",
 		    MIN(len, 20), cmd, len > 20 ? "..." : "",
 		    sys_siglist[WTERMSIG(pstat)],
 		    WCOREDUMP(pstat) ? "; core dumped" : "");

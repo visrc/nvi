@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.9 1994/05/19 10:04:04 bostic Exp $ (Berkeley) $Date: 1994/05/19 10:04:04 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.10 1994/05/21 09:37:58 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:37:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,7 @@ ex_abbr(sp, ep, cmdp)
 	switch (cmdp->argc) {
 	case 0:
 		if (seq_dump(sp, SEQ_ABBREV, 0) == 0)
-			msgq(sp, M_INFO, "No abbreviations to display.");
+			msgq(sp, M_INFO, "No abbreviations to display");
 		return (0);
 	case 2:
 		break;
@@ -57,7 +57,7 @@ ex_abbr(sp, ep, cmdp)
 	for (p = cmdp->argv[0]->bp, len = cmdp->argv[0]->len; len--; ++p)
 		if (!inword(*p)) {
 			msgq(sp, M_ERR,
-			    "%s may not be part of an abbreviated word.",
+			    "%s may not be part of an abbreviated word",
 			    KEY_NAME(sp, *p));
 			return (1);
 		}
@@ -85,7 +85,7 @@ ex_unabbr(sp, ep, cmdp)
 	ap = cmdp->argv[0];
 	if (!F_ISSET(sp->gp, G_ABBREV) ||
 	    seq_delete(sp, ap->bp, ap->len, SEQ_ABBREV)) {
-		msgq(sp, M_ERR, "\"%s\" is not an abbreviation.", ap->bp);
+		msgq(sp, M_ERR, "\"%s\" is not an abbreviation", ap->bp);
 		return (1);
 	}
 	return (0);

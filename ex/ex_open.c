@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_open.c,v 8.3 1994/03/08 19:39:31 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:31 $";
+static char sccsid[] = "$Id: ex_open.c,v 8.4 1994/05/21 09:38:17 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,10 +40,10 @@ ex_open(sp, ep, cmdp)
 	/* If open option off, disallow open command. */
 	if (!O_ISSET(sp, O_OPEN)) {
 		msgq(sp, M_ERR,
-		    "The open command requires that the open option be set.");
+		    "The open command requires that the open option be set");
 		return (1);
 	}
 
-	msgq(sp, M_ERR, "The open command is not yet implemented.");
+	msgq(sp, M_ERR, "The open command is not yet implemented");
 	return (1);
 }

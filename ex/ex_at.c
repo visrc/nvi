@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.22 1994/05/04 10:51:46 bostic Exp $ (Berkeley) $Date: 1994/05/04 10:51:46 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.23 1994/05/21 09:38:03 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ ex_at(sp, ep, cmdp)
 	name = cmdp->buffer;
 	if (name == cmdp->cmd->name[0]) {
 		if (!exp->at_lbuf_set) {
-			msgq(sp, M_ERR, "No previous buffer to execute.");
+			msgq(sp, M_ERR, "No previous buffer to execute");
 			return (1);
 		}
 		name = exp->at_lbuf;
@@ -60,7 +60,7 @@ ex_at(sp, ep, cmdp)
 
 	CBNAME(sp, cbp, name);
 	if (cbp == NULL) {
-		msgq(sp, M_ERR, "Buffer %s is empty.", KEY_NAME(sp, name));
+		msgq(sp, M_ERR, "Buffer %s is empty", KEY_NAME(sp, name));
 		return (1);
 	}
 

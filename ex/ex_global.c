@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.34 1994/05/03 21:40:11 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:11 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.35 1994/05/21 09:38:09 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ global(sp, ep, cmdp, cmd)
 	 */
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	if (*p == '\0' || isalnum(*p)) {
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 	delim = *p++;
@@ -115,7 +115,7 @@ global(sp, ep, cmdp, cmd)
 	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_SRE_SET)) {
-			msgq(sp, M_ERR, "No previous regular expression.");
+			msgq(sp, M_ERR, "No previous regular expression");
 			return (1);
 		}
 		re = &sp->sre;
@@ -155,7 +155,7 @@ global(sp, ep, cmdp, cmd)
 
 	/* Get a copy of the command string. */
 	if ((clen = strlen(p)) == 0) {
-		msgq(sp, M_ERR, "No command string specified.");
+		msgq(sp, M_ERR, "No command string specified");
 		return (1);
 	}
 	MALLOC_RET(sp, cb, char *, clen);
@@ -253,7 +253,7 @@ global(sp, ep, cmdp, cmd)
 
 		/* Someone's unhappy, time to stop. */
 		if (INTERRUPTED(sp)) {
-interrupted:		msgq(sp, M_INFO, "Interrupted.");
+interrupted:		msgq(sp, M_INFO, "Interrupted");
 			break;
 		}
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.17 1994/05/09 10:20:14 bostic Exp $ (Berkeley) $Date: 1994/05/09 10:20:14 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.18 1994/05/21 09:38:27 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ ex_usage(sp, ep, cmdp)
 		    memcmp(ap->bp, cp->name, ap->len); ++cp);
 		if (cp->name == NULL)
 			(void)ex_printf(EXCOOKIE,
-			    "The %.*s command is unknown.",
+			    "The %.*s command is unknown",
 			    (int)ap->len, ap->bp);
 		else {
 			(void)ex_printf(EXCOOKIE,
@@ -126,7 +126,7 @@ ex_viusage(sp, ep, cmdp)
 	switch (cmdp->argc) {
 	case 1:
 		if (cmdp->argv[0]->len != 1) {
-			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+			msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 			return (1);
 		}
 		key = cmdp->argv[0]->bp[0];
