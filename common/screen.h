@@ -4,12 +4,13 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.4 1992/10/10 13:53:03 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:53:03 $
+ *	$Id: screen.h,v 5.5 1992/10/17 16:08:48 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:08:48 $
  */
 
 #define	BOTLINE		(curf->top + LINES - 2)
 #define	HALFSCREEN	((LINES - 1) / 2)
 #define	SCREENSIZE	(LINES - 1)
+#define	COLSIZE		(ISSET(O_NUMBER) ? COLS - 9 : COLS - 1)
 
 /* 
  * The interface to the screen is defined by the following functions:
@@ -36,4 +37,17 @@ int	scr_init __P((void));
 void	scr_modeline __P((EXF *));
 void	scr_ref __P((void));
 size_t	scr_relative __P((EXF *, recno_t));
-void	scr_update __P((EXF *, recno_t, u_char *, size_t, enum upmode));
+
+/*
+ * Flags to scr_update.  The LINE_LOGICAL flag is OR'd into the other flags
+ * if the operation is only logical.   The problem this is meant to solve is
+ * that if the operation is logical, not physical, the top line value may
+ * change, i.e. curf->top is changed as part of the update.  LINE_LOGICAL is
+ * not meaningful for the LINE_RESET flag.
+ */
+#define	LINE_LOGICAL	0x001		/* Logical, not physical. */
+#define	LINE_APPEND	0x010		/* Append a line. */
+#define	LINE_DELETE	0x020		/* Delete a line. */
+#define	LINE_INSERT	0x040		/* Insert a line. */
+#define	LINE_RESET	0x080		/* Reset a line. */
+void	scr_update __P((EXF *, recno_t, u_char *, size_t, u_int));
