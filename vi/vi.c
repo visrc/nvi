@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.74 1994/07/01 20:44:50 bostic Exp $ (Berkeley) $Date: 1994/07/01 20:44:50 $";
+static char sccsid[] = "$Id: vi.c,v 8.75 1994/07/16 17:34:14 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:34:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -321,10 +321,13 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	memset(&vp->vp_startzero, 0,
 	    (char *)&vp->vp_endzero - (char *)&vp->vp_startzero);
 
+	/* Get a key. */
+	if (getkey(sp, &ikey, TXT_MAPCOMMAND))
+		return (1);
+
 	/* An escape bells the user if in command mode. */
-	if (getkey(sp, &ikey, TXT_MAPCOMMAND)) {
-		if (ikey.value == K_ESCAPE && ismotion == NULL)
-			msgq(sp, M_BERR, "Already in command mode");
+	if (ikey.value == K_ESCAPE && ismotion == NULL) {
+		msgq(sp, M_BERR, "Already in command mode");
 		return (1);
 	}
 
@@ -818,15 +821,9 @@ getkey(sp, ikeyp, map)
 	CH *ikeyp;
 	u_int map;
 {
-	switch (term_key(sp, ikeyp, map)) {
-	case INP_OK:
-		break;
-	case INP_EOF:
-	case INP_ERR:
-		F_SET(sp, S_EXIT_FORCE);
-		/* FALLTHROUGH */
-	case INP_INTR:
-		return (1);
-	}
-	return (ikeyp->value == K_ESCAPE);
+	if (term_key(sp, ikeyp, map) == INP_OK)
+		return (0);
+
+	F_SET(sp, S_EXIT_FORCE);
+	return (1);
 }
