@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 5.2 1993/05/16 12:49:47 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:49:47 $";
+static char sccsid[] = "$Id: recover.c,v 5.3 1993/05/16 19:53:06 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:53:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -96,7 +96,7 @@ rcv_init(sp, ep)
 	if (file_lline(sp, ep, &lno))
 		goto err;
 
-	(void)sp->s_busy_cursor(sp, 0,
+	(void)sp->s_busy_cursor(sp,
 	    lno > 500 ? "Copying file for recovery..." : NULL);
 
 	/* Sync it to backing store. */
@@ -124,11 +124,9 @@ rcv_init(sp, ep)
 	}
 
 	F_SET(ep, F_RCV_ON);
-	(void)sp->s_busy_cursor(sp, 1, NULL);
 	return (0);
 
 err:	msgq(sp, M_ERR, "Recovery after system crash not possible.");
-	(void)sp->s_busy_cursor(sp, 1, NULL);
 	return (1);
 }
 

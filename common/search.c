@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.41 1993/05/16 14:57:03 bostic Exp $ (Berkeley) $Date: 1993/05/16 14:57:03 $";
+static char sccsid[] = "$Id: search.c,v 5.42 1993/05/16 19:52:37 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:52:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -188,14 +188,14 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	} else {
 		if ((l = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
-			goto ret1;
+			return (1);
 		}
 		if (fm->cno + 1 >= len) {
 			if (fm->lno == lno) {
 				if (!O_ISSET(sp, O_WRAPSCAN)) {
 					if (LF_ISSET(SEARCH_MSG))
 						msgq(sp, M_INFO, EOFMSG);
-					goto ret1;
+					return (1);
 				}
 				lno = 1;
 			} else
@@ -211,7 +211,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		return (1);
 
 	wrapped = 0;
-	(void)sp->s_busy_cursor(sp, 0, NULL);
+	(void)sp->s_busy_cursor(sp, NULL);
 	for (;; ++lno, coff = 0) {
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
@@ -235,7 +235,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 
 		/* If it's going to be awhile, put up a message. */
 		if (lno == lastlno)
-			(void)sp->s_busy_cursor(sp, 0, "Searching...");
+			(void)sp->s_busy_cursor(sp, "Searching...");
 
 		/* Set the termination. */
 		match[0].rm_so = coff;
@@ -282,10 +282,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			if (rm->cno >= len)
 				rm->cno = len ? len - 1 : 0;
 		}
-		(void)sp->s_busy_cursor(sp, 1, NULL);
 		return (0);
 	}
-ret1:	(void)sp->s_busy_cursor(sp, 1, NULL);
 	return (1);
 }
 
@@ -334,7 +332,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		return (1);
 
 	wrapped = 0;
-	(void)sp->s_busy_cursor(sp, 0, NULL);
+	(void)sp->s_busy_cursor(sp, NULL);
 	for (coff = fm->cno;; --lno, coff = 0) {
 		if (lno == 0) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
@@ -343,7 +341,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 				break;
 			}
 			if (file_lline(sp, ep, &lno))
-				goto ret1;
+				return (1);
 			if (lno == 0) {
 				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, EMPTYMSG);
@@ -359,11 +357,11 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		}
 
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL)
-			goto ret1;
+			return (1);
 
 		/* If it's going to be awhile, put up a message. */
 		if (lno == firstlno)
-			(void)sp->s_busy_cursor(sp, 0, "Searching...");
+			(void)sp->s_busy_cursor(sp, "Searching...");
 
 		/* Set the termination. */
 		match[0].rm_so = 0;
@@ -413,7 +411,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 					break;
 				if (eval != 0) {
 					re_error(sp, eval, re);
-					goto ret1;
+					return (1);
 				}
 			}
 			rm->lno = lno;
@@ -422,10 +420,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			if (wordoffset)
 				++rm->cno;
 		}
-		(void)sp->s_busy_cursor(sp, 1, NULL);
 		return (0);
 	}
-ret1:	(void)sp->s_busy_cursor(sp, 1, NULL);
 	return (1);
 }
 
