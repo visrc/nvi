@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.24 1993/02/16 20:10:21 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:21 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.25 1993/02/19 18:31:28 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:31:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,12 +142,12 @@ ex_readfp(ep, fname, fp, fm, cntp)
 		}
 
 	if (ferror(fp)) {
-		msg(ep, M_ERROR, "%s: %s", strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		msg(ep, M_ERROR, "%s: %s", strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
