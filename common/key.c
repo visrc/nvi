@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.4 1993/08/25 16:42:31 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:42:31 $";
+static char sccsid[] = "$Id: key.c,v 8.5 1993/08/27 11:43:41 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:43:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,8 +33,7 @@ static char sccsid[] = "$Id: key.c,v 8.4 1993/08/25 16:42:31 bostic Exp $ (Berke
  * enters "@a1G", we don't want to flush the "1G" keys because "@a" failed.
  */ 
 
-static void	check_sigwinch __P((SCR *));
-static void	onwinch __P((int));
+static void	change_window_size __P((void));
 static int	term_read __P((SCR *, int *, int));
 
 typedef struct _klist {
@@ -278,9 +277,6 @@ beauty:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
 	return (ch);
 }
 
-static int __check_sig_winch;				/* XXX GLOBAL */
-static int __set_sig_winch;				/* XXX GLOBAL */
-
 /*
  * term_read --
  *	Read characters from the input.
@@ -297,12 +293,6 @@ term_read(sp, nrp, timeout)
 	struct timeval t, *tp;
 	int nr;
 
-	/* Set up SIGWINCH handler. */
-	if (__set_sig_winch == 0) {
-		(void)signal(SIGWINCH, onwinch);
-		__set_sig_winch = 1;
-	}
-
 	/*
 	 * If we're reading less than 20 characters, up the size of the
 	 * tty buffer.  This shouldn't ever happen, other than the first
@@ -312,6 +302,13 @@ term_read(sp, nrp, timeout)
 		BINC(sp, sp->tty.buf, sp->tty.len, sp->tty.len + 64);
 
 	*nrp = 0;
+
+	/*
+	 * We're about to block; check for events we should have 
+	 * handled.
+	 */
+	if (F_ISSET(__global_list, G_SIGWINCH))
+		change_window_size();
 
 	/*
 	 * If reading from a file or pipe, never timeout.
@@ -336,13 +333,18 @@ term_read(sp, nrp, timeout)
 		FD_SET(STDIN_FILENO, &sp->rdfd);
 	}
 
-	/* Select until characters become available, and then read them. */
+	/*
+	 * Select until characters become available, and then read them.
+	 * If interrupted, it was SIGALRM or SIGWINCH.  SIGALRM only
+	 * happens every RCV_PERIOD seconds, so it shouldn't be a problem.
+	 * We check signals here because it's the only place we block.
+	 */
 	for (;;) {
 		if (timeout)
 			switch (select(32, &sp->rdfd, NULL, NULL, tp)) {
 			case -1:		/* Error or interrupt. */
 				if (errno == EINTR) {
-					check_sigwinch(sp);
+					change_window_size();
 					continue;
 				}
 				goto err;
@@ -355,7 +357,7 @@ term_read(sp, nrp, timeout)
 			goto eof;
 		case -1:			/* Error or interrupt. */
 			if (errno == EINTR) {
-				check_sigwinch(sp);
+				change_window_size();
 				continue;
 			}
 err:			msgq(sp, M_ERR,
@@ -371,44 +373,36 @@ eof:			F_SET(sp, S_EXIT_FORCE);
 }
 
 /*
- * onwinch --
- *	Handle SIGWINCH.
+ * change_window_size --
+ *	Handle window size change event.
  */
 static void
-onwinch(signo)
-	int signo;
+change_window_size()
 {
-	__check_sig_winch = 1;
-}
-
-/*
- * check_sigwinch --
- *	Check for window size change event.   Done here because it's
- *	the only place we block.
- */
-static void
-check_sigwinch(sp)
 	SCR *sp;
-{
 	sigset_t bmask, omask;
 
-	while (__check_sig_winch == 1) {
+	while (F_ISSET(__global_list, G_SIGWINCH)) {
 		sigemptyset(&bmask);
 		sigaddset(&bmask, SIGWINCH);
 		(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
 
-		set_window_size(sp, 0);
+		/*
+		 * XXX
+		 * This doesn't handle split screens!  If the screen grows,
+		 * can simply add the extra space to the bottom screen.  If
+		 * it shrinks, though, may not even be able to display all
+		 * of the screens.
+		 */
+		sp = __global_list->scrhdr.next;
 		F_SET(sp, S_RESIZE);
-		if (F_ISSET(sp, S_MODE_VI)) {
-			/*
-			 * XXX
-			 * This code needs an EXF structure!!
-			 * (void)scr_update(sp);
-			 */
-			refresh();
-		}
-		__check_sig_winch = 0;
+		set_window_size(sp, 0, 1);
+		(void)sp->s_refresh(sp, sp->ep);
 
+		for (; sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
+			F_SET(sp, S_REFORMAT);
+
+		F_CLR(__global_list, G_SIGWINCH);
 		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 	}
 }
