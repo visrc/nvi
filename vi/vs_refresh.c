@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.42 1996/09/20 19:19:38 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:19:38 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.43 1996/09/26 22:55:46 bostic Exp $ (Berkeley) $Date: 1996/09/26 22:55:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,7 +160,7 @@ vs_paint(sp, flags)
 	VI_PRIVATE *vip;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, notused, off, y;
-	int ch, didpaint, isempty, leftright_warp, shifted;
+	int ch, didpaint, isempty, leftright_warp;
 	char *p;
 
 #define	 LNO	sp->lno			/* Current file line. */
@@ -579,34 +579,36 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * first screen as compared to subsequent ones.
 	 */
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
-		/* Get the screen column for this character. */
+		/*
+		 * Get the screen column for this character, and correct
+		 * for the number option offset.
+		 */
 		cnt = vs_columns(sp, NULL, LNO, &CNO, NULL);
-
-		shifted = 0;
+		if (O_ISSET(sp, O_NUMBER))
+			cnt -= O_NUMBER_LENGTH;
 
 		/* Adjust the window towards the beginning of the line. */
 		off = smp->coff;
 		if (off >= cnt) {
-			while (off >= cnt)
+			do {
 				if (off >= O_VAL(sp, O_SIDESCROLL))
 					off -= O_VAL(sp, O_SIDESCROLL);
 				else {
 					off = 0;
 					break;
 				}
-			shifted = 1;
+			} while (off >= cnt);
+			goto shifted;
 		}
 
 		/* Adjust the window towards the end of the line. */
 		if (off == 0 && off + SCREEN_COLS(sp) < cnt ||
 		    off != 0 && off + sp->cols < cnt) {
-			while (off + sp->cols < cnt)
+			do {
 				off += O_VAL(sp, O_SIDESCROLL);
-			shifted = 1;
-		}
+			} while (off + sp->cols < cnt);
 
-		/* Fill in screen map with the new offset. */
-		if (shifted) {
+shifted:		/* Fill in screen map with the new offset. */
 			if (F_ISSET(sp, SC_TINPUT_INFO))
 				smp->coff = off;
 			else {
