@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.12 1995/09/28 10:40:02 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:40:02 $";
+static char sccsid[] = "$Id: ex.c,v 10.13 1995/10/02 16:52:50 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:52:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,10 +106,10 @@ ex(spp)
 			LF_SET(TXT_PROMPT);
 
 		/* Clear any current interrupts, and get a command. */
-		F_CLR(gp, G_INTERRUPTED);
+		CLR_INTERRUPT(sp);
 		if (ex_txt(sp, &sp->tiq, ':', flags))
 			return (1);
-		if (F_ISSET(gp, G_INTERRUPTED)) {
+		if (INTERRUPTED(sp)) {
 			(void)ex_puts(sp, "\n");
 			(void)ex_fflush(sp);
 			continue;
@@ -134,6 +134,11 @@ ex(spp)
 
 		if (ex_cmd(sp) && !F_ISSET(gp, G_STDIN_TTY))
 			return (1);
+
+		if (INTERRUPTED(sp)) {
+			CLR_INTERRUPT(sp);
+			msgq(sp, M_ERR, "170|Interrupted");
+		}
 
 		/* If switching screens or into vi, return. */
 		if (F_ISSET(sp, S_SSWITCH | S_VI))
@@ -1523,7 +1528,7 @@ addr_verify:
 
 	/* The @/global commands may be infinitely looping, check interrupts. */
 	if (INTERRUPTED(sp))
-		ex_message(sp, NULL, EXM_INTERRUPT);
+		return (0);
 
 	goto loop;
 	/* NOTREACHED */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.13 1995/09/29 09:22:39 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:22:39 $";
+static char sccsid[] = "$Id: vi.c,v 10.14 1995/10/02 16:52:25 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:52:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -374,12 +374,12 @@ err:			if (v_event_flush(sp, CH_MAPPED))
 		 * it's not worth fixing.
 		 */
 gc_err_noflush:	if (INTERRUPTED(sp)) {
-intr:			if (v_event_flush(sp, CH_MAPPED))
+intr:			CLR_INTERRUPT(sp);
+			if (v_event_flush(sp, CH_MAPPED))
 				msgq(sp, M_ERR,
 				    "231|Interrupted: mapped keys discarded");
 			else
 				msgq(sp, M_ERR, "236|Interrupted");
-			CLR_INTERRUPT(sp);
 		}
 
 		/* If leaving vi, return to the main editor loop. */
