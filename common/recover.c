@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.7 1995/09/29 18:37:02 bostic Exp $ (Berkeley) $Date: 1995/09/29 18:37:02 $";
+static char sccsid[] = "$Id: recover.c,v 10.8 1995/10/02 16:34:43 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:34:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -215,16 +215,17 @@ rcv_init(sp)
 			goto err;
 
 		/* Turn on a busy message, and sync it to backing store. */
-		sp->gp->scr_busy(sp, "057|Copying file for recovery...", 1);
+		sp->gp->scr_busy(sp,
+		    "057|Copying file for recovery...", BUSY_ON);
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			p = msg_print(sp, ep->rcv_path, &nf);
 			msgq(sp, M_SYSERR, "058|Preservation failed: %s", p);
 			if (nf)
 				FREE_SPACE(sp, p, nf);
-			sp->gp->scr_busy(sp, NULL, 0);
+			sp->gp->scr_busy(sp, NULL, BUSY_OFF);
 			goto err;
 		}
-		sp->gp->scr_busy(sp, NULL, 0);
+		sp->gp->scr_busy(sp, NULL, BUSY_OFF);
 	}
 
 	/* Turn off the owner execute bit. */
@@ -298,7 +299,8 @@ rcv_sync(sp, flags)
 	 */
 	rval = 0;
 	if (LF_ISSET(RCV_SNAPSHOT)) {
-		sp->gp->scr_busy(sp, "061|Copying file for recovery...", 1);
+		sp->gp->scr_busy(sp,
+		    "061|Copying file for recovery...", BUSY_ON);
 		dp = O_STR(sp, O_RECDIR);
 		(void)snprintf(buf, sizeof(buf), "%s/vi.XXXXXX", dp);
 		if ((fd = rcv_mktemp(sp, buf, dp, S_IRUSR | S_IWUSR)) == -1)
@@ -311,7 +313,7 @@ e1:			if (fd != -1)
 				(void)close(fd);
 			rval = 1;
 		}
-		sp->gp->scr_busy(sp, NULL, 0);
+		sp->gp->scr_busy(sp, NULL, BUSY_OFF);
 	}
 
 	/* REQUEST: end the file session. */

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 10.6 1995/09/21 12:05:45 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:45 $
+ *	$Id: common.h,v 10.7 1995/10/02 16:34:19 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:34:19 $
  */
 
 /*
@@ -42,6 +42,9 @@ typedef struct _text		TEXT;
 
 /* Autoindent state. */
 typedef enum { C_NOTSET, C_CARATSET, C_NOCHANGE, C_ZEROSET } carat_t;
+
+/* Busy message types. */
+typedef enum { BUSY_ON, BUSY_OFF, BUSY_UPDATE } busy_t;
 
 /*
  * Routines that return a confirmation return:

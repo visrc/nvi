@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 10.7 1995/09/21 12:06:18 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:18 $";
+static char sccsid[] = "$Id: search.c,v 10.8 1995/10/02 16:34:52 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:34:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,6 +175,7 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 	char *ptrn, **eptrn;
 	u_int flags;
 {
+	busy_t btype;
 	recno_t lno;
 	regmatch_t match[1];
 	size_t coff, len;
@@ -216,11 +217,13 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		}
 	}
 
+	btype = BUSY_ON;
 	for (cnt = INTERRUPT_CHECK, rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (cnt-- == 0) {
 			if (INTERRUPTED(sp))
 				break;
-			search_busy(sp, 1);
+			search_busy(sp, btype);
+			btype = BUSY_UPDATE;
 			cnt = INTERRUPT_CHECK;
 		}
 		if (wrapped && lno > fm->lno ||
@@ -286,7 +289,7 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		break;
 	}
 
-	search_busy(sp, 0);
+	search_busy(sp, BUSY_OFF);
 	return (rval);
 }
 
@@ -303,6 +306,7 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 	char *ptrn, **eptrn;
 	u_int flags;
 {
+	busy_t btype;
 	recno_t lno;
 	regmatch_t match[1];
 	size_t coff, last, len;
@@ -326,11 +330,13 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 		lno = fm->lno;
 	coff = fm->cno;
 
+	btype = BUSY_ON;
 	for (cnt = INTERRUPT_CHECK, rval = 1, wrapped = 0;; --lno, coff = 0) {
 		if (cnt-- == 0) {
 			if (INTERRUPTED(sp))
 				break;
-			search_busy(sp, 1);
+			search_busy(sp, btype);
+			btype = BUSY_UPDATE;
 			cnt = INTERRUPT_CHECK;
 		}
 		if (wrapped && lno < fm->lno || lno == 0) {
@@ -422,7 +428,7 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 		break;
 	}
 
-err:	search_busy(sp, 0);
+err:	search_busy(sp, BUSY_OFF);
 	return (rval);
 }
 
@@ -714,12 +720,12 @@ search_msg(sp, msg)
  * search_busy --
  *	Put up the busy searching message.
  *
- * PUBLIC: void search_busy __P((SCR *, int));
+ * PUBLIC: void search_busy __P((SCR *, busy_t));
  */
 void
-search_busy(sp, on)
+search_busy(sp, btype)
 	SCR *sp;
-	int on;
+	busy_t btype;
 {
-	sp->gp->scr_busy(sp, "078|Searching...", on);
+	sp->gp->scr_busy(sp, "078|Searching...", btype);
 }
