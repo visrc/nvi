@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 9.9 1995/02/22 09:36:01 bostic Exp $ (Berkeley) $Date: 1995/02/22 09:36:01 $";
+static char sccsid[] = "$Id: v_z.c,v 10.1 1995/03/16 20:40:34 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,9 +25,8 @@ static char sccsid[] = "$Id: v_z.c,v 9.9 1995/02/22 09:36:01 bostic Exp $ (Berke
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
-#include "../svi/svi_screen.h"
 
 /*
  * v_z -- [count]z[count][-.+^<CR>]
@@ -36,7 +35,7 @@ static char sccsid[] = "$Id: v_z.c,v 9.9 1995/02/22 09:36:01 bostic Exp $ (Berke
 int
 v_z(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t lno;
 	u_int value;
@@ -66,16 +65,16 @@ v_z(sp, vp)
 	 * of the O_WINDOW option, but that's not how it worked historically.
 	 */
 	if (F_ISSET(vp, VC_C2SET) &&
-	    vp->count2 != 0 && svi_crel(sp, vp->count2))
+	    vp->count2 != 0 && vs_crel(sp, vp->count2))
 		return (1);
 
 	switch (vp->character) {
 	case '-':		/* Put the line at the bottom. */
-		if (svi_sm_fill(sp, lno, P_BOTTOM))
+		if (vs_sm_fill(sp, lno, P_BOTTOM))
 			return (1);
 		break;
 	case '.':		/* Put the line in the middle. */
-		if (svi_sm_fill(sp, lno, P_MIDDLE))
+		if (vs_sm_fill(sp, lno, P_MIDDLE))
 			return (1);
 		break;
 	case '+':
@@ -85,12 +84,12 @@ v_z(sp, vp)
 		 * a screen from the current screen.
 		 */
 		if (F_ISSET(vp, VC_C1SET)) {
-			if (svi_sm_fill(sp, lno, P_TOP))
+			if (vs_sm_fill(sp, lno, P_TOP))
 				return (1);
-			if (svi_sm_position(sp, &vp->m_final, 0, P_TOP))
+			if (vs_sm_position(sp, &vp->m_final, 0, P_TOP))
 				return (1);
 		} else
-			if (svi_sm_scroll(sp, &vp->m_final, sp->t_rows, Z_PLUS))
+			if (vs_sm_scroll(sp, &vp->m_final, sp->t_rows, Z_PLUS))
 				return (1);
 		break;
 	case '^':
@@ -105,15 +104,14 @@ v_z(sp, vp)
 		 * vi, here.
 		 */
 		if (F_ISSET(vp, VC_C1SET)) {
-			if (svi_sm_fill(sp, lno, P_BOTTOM))
+			if (vs_sm_fill(sp, lno, P_BOTTOM))
 				return (1);
-			if (svi_sm_position(sp, &vp->m_final, 0, P_TOP))
+			if (vs_sm_position(sp, &vp->m_final, 0, P_TOP))
 				return (1);
-			if (svi_sm_fill(sp, vp->m_final.lno, P_BOTTOM))
+			if (vs_sm_fill(sp, vp->m_final.lno, P_BOTTOM))
 				return (1);
 		} else
-			if (svi_sm_scroll(sp,
-			    &vp->m_final, sp->t_rows, Z_CARAT))
+			if (vs_sm_scroll(sp, &vp->m_final, sp->t_rows, Z_CARAT))
 				return (1);
 		break;
 	default:		/* Put the line at the top for <cr>. */
@@ -122,7 +120,7 @@ v_z(sp, vp)
 			v_message(sp, vp->kp->usage, VIM_USAGE);
 			return (1);
 		}
-		if (svi_sm_fill(sp, lno, P_TOP))
+		if (vs_sm_fill(sp, lno, P_TOP))
 			return (1);
 		break;
 	}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 9.3 1995/01/11 16:22:36 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:36 $";
+static char sccsid[] = "$Id: v_xchar.c,v 10.1 1995/03/16 20:40:18 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,8 @@ static char sccsid[] = "$Id: v_xchar.c,v 9.3 1995/01/11 16:22:36 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * v_xchar -- [buffer] [count]x
@@ -35,7 +35,7 @@ static char sccsid[] = "$Id: v_xchar.c,v 9.3 1995/01/11 16:22:36 bostic Exp $ (B
 int
 v_xchar(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t lno;
 	size_t len;
@@ -85,7 +85,7 @@ nodel:		msgq(sp, M_BERR, "200|No characters to delete");
 int
 v_Xchar(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	u_long cnt;
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 9.4 1995/02/22 09:36:00 bostic Exp $ (Berkeley) $Date: 1995/02/22 09:36:00 $";
+static char sccsid[] = "$Id: v_util.c,v 10.1 1995/03/16 20:40:00 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,8 @@ static char sccsid[] = "$Id: v_util.c,v 9.4 1995/02/22 09:36:00 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * v_eof --
@@ -158,6 +158,10 @@ v_message(sp, p, which)
 		msgq(sp,
 		    which == VIM_NOCOM_B ? M_BERR : M_ERR,
 		    "206|%s isn't a vi command", p);
+		break;
+	case VIM_NOSINIT:
+		msgq(sp, M_ERR,
+		    "270|%s command failed, screen not yet initialized", p);
 		break;
 	case VIM_USAGE:
 		msgq(sp, M_ERR, "177|Usage: %s", p);

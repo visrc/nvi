@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 9.4 1995/01/30 10:14:15 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:14:15 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 10.1 1995/03/16 20:39:43 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,8 @@ static char sccsid[] = "$Id: v_ulcase.c,v 9.4 1995/01/30 10:14:15 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 static int ulcase __P((SCR *, recno_t, CHAR_T *, size_t, size_t, size_t));
 
@@ -51,7 +51,7 @@ static int ulcase __P((SCR *, recno_t, CHAR_T *, size_t, size_t, size_t));
 int
 v_ulcase(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t lno;
 	size_t cno, lcnt, len;
@@ -107,7 +107,7 @@ v_ulcase(sp, vp)
 int
 v_mulcase(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	CHAR_T *p;
 	size_t len;

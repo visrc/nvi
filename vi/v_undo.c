@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 9.2 1995/01/11 16:22:33 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:33 $";
+static char sccsid[] = "$Id: v_undo.c,v 10.1 1995/03/16 20:39:52 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,8 @@ static char sccsid[] = "$Id: v_undo.c,v 9.2 1995/01/11 16:22:33 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * v_Undo -- U
@@ -38,7 +38,7 @@ static char sccsid[] = "$Id: v_undo.c,v 9.2 1995/01/11 16:22:33 bostic Exp $ (Be
 int
 v_Undo(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * Historically, U reset the cursor to the first column in the line
@@ -72,7 +72,7 @@ v_Undo(sp, vp)
 int
 v_undo(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	EXF *ep;
 

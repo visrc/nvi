@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 9.2 1995/01/11 16:22:35 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:35 $";
+static char sccsid[] = "$Id: v_word.c,v 10.1 1995/03/16 20:40:10 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,8 +26,8 @@ static char sccsid[] = "$Id: v_word.c,v 9.2 1995/01/11 16:22:35 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * There are two types of "words".  Bigwords are easy -- groups of anything
@@ -70,9 +70,9 @@ static char sccsid[] = "$Id: v_word.c,v 9.2 1995/01/11 16:22:35 bostic Exp $ (Be
 
 enum which {BIGWORD, LITTLEWORD};
 
-static int bword __P((SCR *, VICMDARG *, enum which));
-static int eword __P((SCR *, VICMDARG *, enum which));
-static int fword __P((SCR *, VICMDARG *, enum which));
+static int bword __P((SCR *, VICMD *, enum which));
+static int eword __P((SCR *, VICMD *, enum which));
+static int fword __P((SCR *, VICMD *, enum which));
 
 /*
  * v_wordW -- [count]W
@@ -81,7 +81,7 @@ static int fword __P((SCR *, VICMDARG *, enum which));
 int
 v_wordW(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (fword(sp, vp, BIGWORD));
 }
@@ -93,7 +93,7 @@ v_wordW(sp, vp)
 int
 v_wordw(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (fword(sp, vp, LITTLEWORD));
 }
@@ -105,7 +105,7 @@ v_wordw(sp, vp)
 static int
 fword(sp, vp, type)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 	enum which type;
 {
 	enum { INWORD, NOTWORD } state;
@@ -244,7 +244,7 @@ ret:	if (!ISMOTION(vp) &&
 int
 v_wordE(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (eword(sp, vp, BIGWORD));
 }
@@ -256,7 +256,7 @@ v_wordE(sp, vp)
 int
 v_worde(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (eword(sp, vp, LITTLEWORD));
 }
@@ -268,7 +268,7 @@ v_worde(sp, vp)
 static int
 eword(sp, vp, type)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 	enum which type;
 {
 	enum { INWORD, NOTWORD } state;
@@ -393,7 +393,7 @@ ret:	if (!ISMOTION(vp) &&
 int
 v_wordB(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (bword(sp, vp, BIGWORD));
 }
@@ -405,7 +405,7 @@ v_wordB(sp, vp)
 int
 v_wordb(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (bword(sp, vp, LITTLEWORD));
 }
@@ -417,7 +417,7 @@ v_wordb(sp, vp)
 static int
 bword(sp, vp, type)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 	enum which type;
 {
 	enum { INWORD, NOTWORD } state;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 9.3 1995/02/08 12:24:48 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:24:48 $";
+static char sccsid[] = "$Id: v_screen.c,v 10.1 1995/03/16 20:38:41 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:38:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,8 @@ static char sccsid[] = "$Id: v_screen.c,v 9.3 1995/02/08 12:24:48 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * v_screen -- ^W
@@ -35,7 +35,7 @@ static char sccsid[] = "$Id: v_screen.c,v 9.3 1995/02/08 12:24:48 bostic Exp $ (
 int
 v_screen(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * Try for the next lower screen, or, go back to the first

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 9.2 1995/01/11 16:22:39 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:39 $";
+static char sccsid[] = "$Id: v_zexit.c,v 10.1 1995/03/16 20:40:42 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,9 +26,8 @@ static char sccsid[] = "$Id: v_zexit.c,v 9.2 1995/01/11 16:22:39 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "excmd.h"
-#include "vcmd.h"
 
 /*
  * v_zexit -- ZZ
@@ -37,7 +36,7 @@ static char sccsid[] = "$Id: v_zexit.c,v 9.2 1995/01/11 16:22:39 bostic Exp $ (B
 int
 v_zexit(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/* Write back any modifications. */
 	if (F_ISSET(sp->ep, F_MODIFIED) &&

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 9.4 1995/01/30 10:14:59 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:14:59 $";
+static char sccsid[] = "$Id: v_yank.c,v 10.1 1995/03/16 20:40:25 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,8 @@ static char sccsid[] = "$Id: v_yank.c,v 9.4 1995/01/30 10:14:59 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * v_yank -- [buffer][count]y[count][motion]
@@ -46,7 +46,7 @@ static char sccsid[] = "$Id: v_yank.c,v 9.4 1995/01/30 10:14:59 bostic Exp $ (Be
 int
 v_yank(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	int lmode;
 

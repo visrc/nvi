@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 9.3 1995/01/11 16:22:25 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:25 $";
+static char sccsid[] = "$Id: v_sentence.c,v 10.1 1995/03/16 20:39:18 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,8 +26,8 @@ static char sccsid[] = "$Id: v_sentence.c,v 9.3 1995/01/11 16:22:25 bostic Exp $
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * !!!
@@ -56,7 +56,7 @@ static char sccsid[] = "$Id: v_sentence.c,v 9.3 1995/01/11 16:22:25 bostic Exp $
 int
 v_sentencef(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	enum { BLANK, NONE, PERIOD } state;
 	VCS cs;
@@ -193,7 +193,7 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 int
 v_sentenceb(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	VCS cs;
 	recno_t slno;

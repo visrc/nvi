@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 9.6 1995/01/30 10:11:08 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:11:08 $";
+static char sccsid[] = "$Id: v_scroll.c,v 10.1 1995/03/16 20:38:55 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:38:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,12 +26,10 @@ static char sccsid[] = "$Id: v_scroll.c,v 9.6 1995/01/30 10:11:08 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "excmd.h"
-#include "vcmd.h"
-#include "../svi/svi_screen.h"
 
-static void goto_adjust __P((VICMDARG *));
+static void goto_adjust __P((VICMD *));
 
 /*
  * The historic vi had a problem in that all movements were by physical
@@ -73,7 +71,7 @@ static void goto_adjust __P((VICMDARG *));
 int
 v_lgoto(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t nlines;
 
@@ -110,9 +108,9 @@ v_lgoto(sp, vp)
 int
 v_home(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	if (svi_sm_position(sp, &vp->m_stop,
+	if (vs_sm_position(sp, &vp->m_stop,
 	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_TOP))
 		return (1);
 	goto_adjust(vp);
@@ -127,14 +125,14 @@ v_home(sp, vp)
 int
 v_middle(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * Yielding to none in our quest for compatibility with every
 	 * historical blemish of vi, no matter how strange it might be,
 	 * we permit the user to enter a count and then ignore it.
 	 */
-	if (svi_sm_position(sp, &vp->m_stop, 0, P_MIDDLE))
+	if (vs_sm_position(sp, &vp->m_stop, 0, P_MIDDLE))
 		return (1);
 	goto_adjust(vp);
 	return (0);
@@ -148,9 +146,9 @@ v_middle(sp, vp)
 int
 v_bottom(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	if (svi_sm_position(sp, &vp->m_stop,
+	if (vs_sm_position(sp, &vp->m_stop,
 	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_BOTTOM))
 		return (1);
 	goto_adjust(vp);
@@ -159,7 +157,7 @@ v_bottom(sp, vp)
 
 static void
 goto_adjust(vp)
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/* Guess that it's the end of the range. */
 	vp->m_final = vp->m_stop;
@@ -212,7 +210,7 @@ goto_adjust(vp)
 int
 v_up(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t lno;
 
@@ -234,7 +232,7 @@ v_up(sp, vp)
 int
 v_cr(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * If it's a script window, exec the line,
@@ -251,7 +249,7 @@ v_cr(sp, vp)
 int
 v_down(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t lno;
 
@@ -272,7 +270,7 @@ v_down(sp, vp)
 int
 v_hpageup(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * Half screens always succeed unless already at SOF.
@@ -283,7 +281,7 @@ v_hpageup(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET))
 		sp->defscroll = vp->count;
-	if (svi_sm_scroll(sp, &vp->m_stop, sp->defscroll, CNTRL_U))
+	if (vs_sm_scroll(sp, &vp->m_stop, sp->defscroll, CNTRL_U))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -296,7 +294,7 @@ v_hpageup(sp, vp)
 int
 v_hpagedown(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * Half screens always succeed unless already at EOF.
@@ -307,7 +305,7 @@ v_hpagedown(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET))
 		sp->defscroll = vp->count;
-	if (svi_sm_scroll(sp, &vp->m_stop, sp->defscroll, CNTRL_D))
+	if (vs_sm_scroll(sp, &vp->m_stop, sp->defscroll, CNTRL_D))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -324,7 +322,7 @@ v_hpagedown(sp, vp)
 int
 v_pagedown(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t offset;
 
@@ -357,7 +355,7 @@ v_pagedown(sp, vp)
 	    (IS_SPLIT_SCREEN(sp) ?
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
 	offset = offset <= 2 ? 1 : offset - 2;
-	if (svi_sm_scroll(sp, &vp->m_stop, offset, CNTRL_F))
+	if (vs_sm_scroll(sp, &vp->m_stop, offset, CNTRL_F))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -375,7 +373,7 @@ v_pagedown(sp, vp)
 int
 v_pageup(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t offset;
 
@@ -409,7 +407,7 @@ v_pageup(sp, vp)
 	    (IS_SPLIT_SCREEN(sp) ?
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
 	offset = offset <= 2 ? 1 : offset - 2;
-	if (svi_sm_scroll(sp, &vp->m_stop, offset, CNTRL_B))
+	if (vs_sm_scroll(sp, &vp->m_stop, offset, CNTRL_B))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -422,13 +420,13 @@ v_pageup(sp, vp)
 int
 v_lineup(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * The cursor moves down, staying with its original line, unless it
 	 * reaches the bottom of the screen.
 	 */
-	if (svi_sm_scroll(sp,
+	if (vs_sm_scroll(sp,
 	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, CNTRL_Y))
 		return (1);
 	vp->m_final = vp->m_stop;
@@ -442,13 +440,13 @@ v_lineup(sp, vp)
 int
 v_linedown(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * The cursor moves up, staying with its original line, unless it
 	 * reaches the top of the screen.
 	 */
-	if (svi_sm_scroll(sp,
+	if (vs_sm_scroll(sp,
 	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, CNTRL_E))
 		return (1);
 	vp->m_final = vp->m_stop;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 9.2 1995/01/11 16:22:24 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:24 $";
+static char sccsid[] = "$Id: v_section.c,v 10.1 1995/03/16 20:39:09 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,8 +26,8 @@ static char sccsid[] = "$Id: v_section.c,v 9.2 1995/01/11 16:22:24 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * !!!
@@ -66,7 +66,7 @@ static char sccsid[] = "$Id: v_section.c,v 9.2 1995/01/11 16:22:24 bostic Exp $ 
 int
 v_sectionf(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t cnt, lno;
 	size_t len;
@@ -173,7 +173,7 @@ ret2:	if (ISMOTION(vp)) {
 int
 v_sectionb(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	size_t len;
 	recno_t cnt, lno;
