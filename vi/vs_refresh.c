@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.58 1993/05/08 21:03:48 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:03:48 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.59 1993/05/09 12:25:50 bostic Exp $ (Berkeley) $Date: 1993/05/09 12:25:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -520,7 +520,6 @@ lcont:		/* Move to the message line and clear it. */
 	return (0);
 }
 
-#define	DIVIDESIZE	10
 #define	RULERSIZE	15
 #define	MODESIZE	(RULERSIZE + 15)
 
@@ -533,21 +532,14 @@ svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	int dividesize;
 	char buf[RULERSIZE];
 
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
 
 	/* Display the dividing line. */
-	if (sp->child != NULL) {
-		dividesize = DIVIDESIZE > sp->cols ? sp->cols : DIVIDESIZE;
-		memset(buf, ' ', dividesize);
-		buf[dividesize] = '\0';
-		standout();
-		addstr(buf);
-		standend();
-	}
+	if (sp->child != NULL)
+		svi_divider(sp);
 
 	/* Display the ruler and mode. */
 	if (O_ISSET(sp, O_RULER) && sp->cols > RULERSIZE + 2) {
@@ -555,7 +547,7 @@ svi_modeline(sp, ep)
 		clrtoeol();
 		(void)snprintf(buf,
 		    sizeof(buf), "%lu,%lu", sp->lno, sp->cno + 1);
-		addstr(buf);
+		ADDSTR(buf);
 	}
 
 	/*
@@ -564,8 +556,27 @@ svi_modeline(sp, ep)
 	 */
 	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
 		MOVE(sp, INFOLINE(sp), sp->cols - 8);
-		addstr(F_ISSET(sp, S_INPUT) ? "  Input " : "Command ");
+		ADDSTR(F_ISSET(sp, S_INPUT) ? "  Input " : "Command ");
 	}
 
+	return (0);
+}
+
+int
+svi_divider(sp)
+	SCR *sp;
+{
+#define	DIVIDESIZE	10
+	int dividesize;
+	char buf[DIVIDESIZE + 1];
+
+	dividesize = DIVIDESIZE > sp->cols ? sp->cols : DIVIDESIZE;
+	memset(buf, ' ', dividesize);
+	buf[dividesize] = '\0';
+	if (standout() == ERR)
+		return (1);
+	ADDSTR(buf);
+	if (standend() == ERR)
+		return (1);
 	return (0);
 }
