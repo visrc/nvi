@@ -1,7 +1,7 @@
-#	$Id: README,v 8.148 1997/04/13 14:27:21 bostic Exp $ (Berkeley) $Date: 1997/04/13 14:27:21 $
+#	$Id: README,v 8.149 1997/07/14 19:35:37 bostic Exp $ (Berkeley) $Date: 1997/07/14 19:35:37 $
 
-This is version 1.79 (%H%) of nex/nvi, a freely redistributable implementation
-of the ex/vi text editors originally distributed as part of the Fourth Berkeley
+This is version 1.79 (%H%) of nex/nvi, a reimplementation of the ex/vi
+text editors originally distributed as part of the Fourth Berkeley
 Software Distribution (4BSD), by the University of California, Berkeley.
 
 The directory layout is as follows:
@@ -40,7 +40,7 @@ The directory layout is as follows:
 Bug fixes and updated versions of this software will periodically be made
 available.  For more information see:
 
-	http://www.sleepycat.com/vi
+	http://www.bostic.com/vi
 
 To ask questions about vi, report vi problems, request notification of
 future releases and/or bug fixes, or to contact the authors for any reason,
