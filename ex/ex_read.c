@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.20 1995/11/10 10:21:56 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:56 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.21 1995/11/13 09:01:59 bostic Exp $ (Berkeley) $Date: 1995/11/13 09:01:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,15 +111,22 @@ ex_read(sp, cmdp)
 			return (1);
 		}
 
-		/* Redisplay the user's argument if it's changed. */
-		if (F_ISSET(cmdp, E_MODIFY))
-			if (F_ISSET(sp, S_VI))
+		/*
+		 * Vi redisplayed the user's argument if it changed, ex
+		 * always displayed a !, plus the user's argument if it
+		 * changed.
+		 */
+		if (F_ISSET(sp, S_VI)) {
+			if (F_ISSET(cmdp, E_MODIFY))
 				(void)vs_update(sp, "!", cmdp->argv[argc]->bp);
-			else {
+		} else {
+			if (F_ISSET(cmdp, E_MODIFY))
 				(void)ex_printf(sp,
 				    "!%s\n", cmdp->argv[argc]->bp);
-				(void)ex_fflush(sp);
-			}
+			else
+				(void)ex_puts(sp, "!\n");
+			(void)ex_fflush(sp);
+		}
 
 		/*
 		 * Historically, filter reads didn't wait for the user. If
