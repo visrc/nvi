@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.13 1993/05/05 23:52:44 bostic Exp $ (Berkeley) $Date: 1993/05/05 23:52:44 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.14 1993/05/08 21:05:49 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:05:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -230,25 +230,47 @@ svi_screens(sp, ep, lno, cnop)
 	recno_t lno;
 	size_t *cnop;
 {
-	CHNAME *cname;
-	size_t cno_cnt, cols, len, scno;
-	int ch;
+	size_t cols, len;
 	char *p;
 
 	/* Get a copy of the line. */
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL || len == 0)
 		return (1);
 
-	/* If a line number is being displayed, there's fewer columns. */
-	cols = sp->cols;
+	/* Figure out how many columns the line/column needs. */
+	cols = svi_ncols(sp, p, len, cnop);
+
+	/* Leading number if O_NUMBER option set. */
 	if (O_ISSET(sp, O_NUMBER))
-		cols -= O_NUMBER_LENGTH;
+		cols += O_NUMBER_LENGTH;
+
+	/* Trailing '$' if O_LIST option set. */
+	if (O_ISSET(sp, O_LIST) && cnop == NULL)
+		cols += sp->cname['$'].len;
+
+	return (cols / sp->cols + (cols % sp->cols ? 1 : 0));
+}
+
+/*
+ * svi_ncols --
+ *	Return the number of columns required by the line, or,
+ *	if a column is specified, by the column within the line.
+ */
+size_t
+svi_ncols(sp, p, len, cnop)
+	SCR *sp;
+	u_char *p;
+	size_t len, *cnop;
+{
+	CHNAME *cname;
+	size_t cno_cnt, scno;
+	int ch;
 
 	/* Check for column count. */
 	if (cnop != NULL)
 		cno_cnt = *cnop;
 
-	/* Calculate the lines needed. */
+	/* Calculate the columns needed. */
 	cname = sp->cname;
 	for (scno = 0; len; --len) {
 		if ((ch = *(u_char *)p++) == '\t' && !O_ISSET(sp, O_LIST))
@@ -263,10 +285,5 @@ svi_screens(sp, ep, lno, cnop)
 		}
 	}
 
-	/* Trailing '$' on listed lines. */
-	if (O_ISSET(sp, O_LIST) && len == 0 &&
-	    (cnop == NULL || cno_cnt != 0))
-		scno += cname['$'].len;
-
-	return (scno / cols + (scno % cols ? 1 : 0));
+	return (scno);
 }
