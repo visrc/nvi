@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.8 1993/09/14 08:54:14 bostic Exp $ (Berkeley) $Date: 1993/09/14 08:54:14 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.9 1993/09/29 16:21:01 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:21:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,25 +153,24 @@ svi_split(sp, argv)
 		goto mem4;
 	}
 
-	/* Copy the file state flags. */
-	if (nochange)
-		tsp->frp->flags = sp->frp->flags;
-
-	/* Start the file. */
-	if ((tsp->ep = file_init(tsp,
-	    nochange ? sp->ep : NULL, tsp->frp, NULL)) == NULL)
-		goto mem4;
-
 	/*
-	 * Fill the child's screen map.  If the file is
-	 * unchanged, keep the screen and cursor the same.
+	 * Copy the file state flags, start the file.  Fill the child's
+	 * screen map.  If the file is unchanged, keep the screen and
+	 * cursor the same.
 	 */
 	if (nochange) {
+		tsp->ep = sp->ep;
+		++sp->ep->refcnt;
+
+		tsp->frp->flags = sp->frp->flags;
 		tsp->frp->lno = sp->lno;
 		tsp->frp->cno = sp->cno;
 		F_SET(tsp->frp, FR_CURSORSET);
-	} else
+	} else {
+		if (file_init(tsp, tsp->frp, NULL, 0))
+			goto mem4;
 		(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);
+	}
 
 	/* Clear the information lines. */
 	MOVE(sp, INFOLINE(sp), 0);
