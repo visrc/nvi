@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.21 1993/11/19 10:54:59 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:54:59 $
+ *	$Id: gs.h,v 8.22 1993/11/23 17:09:50 bostic Exp $ (Berkeley) $Date: 1993/11/23 17:09:50 $
  */
 
 struct _gs {
@@ -37,18 +37,19 @@ struct _gs {
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
 	int	key_cnt;		/* Map expansion count. */
 
-#define	G_BELLSCHED	0x0001		/* Bell scheduled. */
-#define	G_CURSES_INIT	0x0002		/* Curses initialized. */
-#define	G_ISFROMTTY	0x0004		/* Reading from a tty. */
-#define	G_RECOVER_SET	0x0008		/* Recover system initialized. */
-#define	G_SETMODE	0x0010		/* Tty mode changed. */
-#define	G_SIGALRM	0x0020		/* SIGALRM arrived. */
-#define	G_SIGHUP	0x0040		/* SIGHUP arrived. */
-#define	G_SIGTERM	0x0080		/* SIGTERM arrived. */
-#define	G_SIGWINCH	0x0100		/* SIGWINCH arrived. */
-#define	G_SLEEPING	0x0200		/* Asleep (die on signal). */
-#define	G_SNAPSHOT	0x0400		/* Always snapshot files. */
-#define	G_TMP_INUSE	0x0800		/* Temporary buffer in use. */
+#define	G_BELLSCHED	0x00001		/* Bell scheduled. */
+#define	G_CURSES_INIT	0x00002		/* Curses: initialized. */
+#define	G_CURSES_S5CB	0x00004		/* Curses: s5_curses_botch set. */
+#define	G_ISFROMTTY	0x00008		/* Reading from a tty. */
+#define	G_RECOVER_SET	0x00010		/* Recover system initialized. */
+#define	G_SETMODE	0x00020		/* Tty mode changed. */
+#define	G_SIGALRM	0x00040		/* SIGALRM arrived. */
+#define	G_SIGHUP	0x00080		/* SIGHUP arrived. */
+#define	G_SIGTERM	0x00100		/* SIGTERM arrived. */
+#define	G_SIGWINCH	0x00200		/* SIGWINCH arrived. */
+#define	G_SLEEPING	0x00400		/* Asleep (die on signal). */
+#define	G_SNAPSHOT	0x00800		/* Always snapshot files. */
+#define	G_TMP_INUSE	0x01000		/* Temporary buffer in use. */
 	u_int	 flags;
 };
 
