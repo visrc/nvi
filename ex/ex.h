@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.50 1994/03/14 11:03:24 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:03:24 $
+ *	$Id: ex.h,v 8.51 1994/03/17 15:41:16 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:41:16 $
  */
 
 /* Ex command structure. */
@@ -71,6 +71,13 @@ struct _range {
 	recno_t start, stop;		/* Start/stop of the range. */
 };
 
+/* Cd paths. */
+typedef struct _cdpath	CDPATH;
+struct _cdpath {
+	TAILQ_ENTRY(_cdpath) q;		/* Linked list of cd paths. */
+	char *path;			/* Path. */
+};
+
 /* Ex private, per-screen memory. */
 typedef struct _ex_private {
 	ARGS   **args;			/* Arguments. */
@@ -87,9 +94,11 @@ typedef struct _ex_private {
 
 	CHAR_T	*lastbcomm;		/* Last bang command. */
 
-	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag stack. */
-	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag stack. */
+	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag list (stack). */
+	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag file list. */
 	char	*tlast;			/* Saved last tag. */
+
+	TAILQ_HEAD(_cdh, _cdpath) cdq;	/* Cd path list. */
 
 					/* Linked list of ranges. */
 	CIRCLEQ_HEAD(_rangeh, _range) rangeq;
