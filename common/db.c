@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.44 2002/03/02 23:12:14 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:12:14 $";
+static const char sccsid[] = "$Id: db.c,v 10.45 2002/03/08 22:37:48 skimo Exp $ (Berkeley) $Date: 2002/03/08 22:37:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -240,6 +240,10 @@ db_delete(SCR *sp, db_recno_t lno)
 		return 1;
 	}
 		
+	/* Update cache, marks, @ and global commands. */
+	if (line_insdel(sp, LINE_DELETE, lno))
+		return 1;
+
 	/* Log before change. */
 	log_line(sp, lno, LOG_LINE_DELETE_B);
 
@@ -257,9 +261,6 @@ db_delete(SCR *sp, db_recno_t lno)
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
-
-	/* Update cache, marks, @ and global commands. */
-	rval = line_insdel(sp, LINE_DELETE, lno);
 
 	/* Log after change. */
 	log_line(sp, lno, LOG_LINE_DELETE_F);

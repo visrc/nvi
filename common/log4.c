@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log4.c,v 10.1 2002/03/02 23:36:23 skimo Exp $";
+static const char sccsid[] = "$Id: log4.c,v 10.2 2002/03/08 22:37:48 skimo Exp $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -341,7 +341,12 @@ log_mark(SCR *sp, LMARK *lmp)
 		ep->l_win = sp->wp;
 	}
 
-	/* XXXX DB4 specific code */
+	if ((sp->db_error = 
+		__vi_mark_log(ep->env, NULL, &ep->lsn_cur, 0, 
+			    lmp)) != 0) {
+		msgq(sp, M_DBERR, "cursor_log");
+		return 1;
+	}
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "%lu: mark %c: %lu/%u\n",

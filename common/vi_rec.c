@@ -95,12 +95,17 @@ __vi_mark_recover(dbenv, dbtp, lsnp, op, info)
 {
 	__vi_mark_args *argp;
 	int ret;
+	MARK m;
+	SCR *sp;
 
 	REC_PRINT(__vi_mark_print);
 	REC_NOOP_INTRO(__vi_mark_read);
 
+	sp = (SCR *)dbenv->app_private;
 	*lsnp = argp->prev_lsn;
-	ret = 0;
+	m.lno = argp->lmp.lno;
+	m.cno = argp->lmp.cno;
+	ret = mark_set(sp, argp->lmp.name, &m, 0);
 
     	REC_NOOP_CLOSE;
 }
@@ -127,6 +132,8 @@ __vi_change_recover(dbenv, dbtp, lsnp, op, info)
 	REC_PRINT(__vi_change_print);
 	REC_NOOP_INTRO(__vi_change_read);
 
+	ret = 0;
+
 	sp = (SCR *)dbenv->app_private;
 	if (DB_UNDO(op) != (argp->opcode & 1))
 	    switch (argp->opcode) {
@@ -148,7 +155,6 @@ __vi_change_recover(dbenv, dbtp, lsnp, op, info)
 	    }
 
 	*lsnp = argp->prev_lsn;
-	ret = 0;
 
     	REC_NOOP_CLOSE;
 }
