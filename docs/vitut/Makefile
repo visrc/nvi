@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.8 2001/01/28 15:28:48 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:48 $
+#	$Id: Makefile,v 8.9 2001/01/28 15:31:32 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:31:32 $
 
 MACROS=	-ms
 ROFF=	groff
@@ -22,7 +22,7 @@ viapwh.ps: vi.apwh.ms
 ../html/vitut.html: vi.in vi.chars
 	${TBL} $+ | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src=".*png">//' > $@
-	rm "$<"*png
+	rm *png
 	chmod 444 $@
 
 ../html/vi-summary.html: vi.summary
