@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.56 1993/04/17 11:53:34 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:53:34 $";
+static char sccsid[] = "$Id: key.c,v 5.57 1993/04/19 15:27:39 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:27:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,22 +26,52 @@ static void	check_sigwinch __P((SCR *));
 static void	onwinch __P((int));
 static int	ttyread __P((SCR *, char *, int, int));
 
+typedef struct _klist {
+	char *ts;				/* Key's termcap string. */
+	char *output;				/* Corresponding vi command. */
+	char *name;				/* Name. */
+} KLIST;
+
+static KLIST klist[] = {
+	{"kA",    "O", "insert line"},
+	{"kD",    "x", "delete character"},
+	{"kd",    "j", "cursor down"},
+	{"kE",    "D", "delete to eol"},
+	{"kF", "\004", "scroll down"},
+	{"kH",    "$", "go to eol"},
+	{"kh",    "^", "go to sol"},
+	{"kI",    "i", "insert at cursor"},
+	{"kL",   "dd", "delete line"},
+	{"kl",    "h", "cursor left"},
+	{"kN", "\006", "page down"},
+	{"kP", "\002", "page up"},
+	{"kR", "\025", "scroll up"},
+	{"kS",	 "dG", "delete to end of screen"},
+	{"kr",    "l", "cursor right"},
+	{"ku",    "k", "cursor up"},
+	{NULL},
+};
+
 /*
- * key_special --
- *	Initialize the special array and input buffers.  The special array
+ * term_init --
+ *	Initialize the special array and special keys.  The special array
  *	has a value for each special character that we can use in a switch
  *	statement.
  */
 int
-key_special(sp)
+term_init(sp)
 	SCR *sp;
 {
+	KLIST *kp;
+	char *sbp, *t, buf[2 * 1024], sbuf[128];
+
 	/* Keys that are treated specially. */
 	sp->special['^'] = K_CARAT;
 	sp->special['\004'] = K_CNTRLD;
 	sp->special['\022'] = K_CNTRLR;
 	sp->special['\024'] = K_CNTRLT;
 	sp->special['\032'] = K_CNTRLZ;
+	sp->special[':'] = K_COLON;
 	sp->special['\r'] = K_CR;
 	sp->special['\033'] = K_ESCAPE;
 	sp->special['\f'] = K_FORMFEED;
@@ -54,6 +84,28 @@ key_special(sp)
 	sp->special[sp->gp->original_termios.c_cc[VWERASE]] = K_VWERASE;
 	sp->special['0'] = K_ZERO;
 
+	/*
+	 * Special terminal keys.
+	 * Get the termcap entry.
+	 */
+	switch (tgetent(buf, O_STR(sp, O_TERM))) {
+	case -1:
+		msgq(sp, M_ERR, "%s tgetent: %s.",
+		    O_STR(sp, O_TERM), strerror(errno));
+		return (1);
+	case 0:
+		msgq(sp, M_ERR, "%s: unknown terminal type.",
+		    O_STR(sp, O_TERM), strerror(errno));
+		return (1);
+	}
+
+	for (kp = klist; kp->name != NULL; ++kp) {
+		sbp = sbuf;
+		if ((t = tgetstr(kp->ts, &sbp)) == NULL)
+			continue;
+		if (seq_set(sp, kp->name, t, kp->output, SEQ_COMMAND, 0))
+			return (1);
+	}
 	return (0);
 }
 
@@ -112,37 +164,43 @@ getkey(sp, flags)
 	 * to read more keys to complete the map.  Max map is sizeof(keybuf)
 	 * and probably not worth fixing.
 	 */
-	if (LF_ISSET(TXT_MAPINPUT | TXT_MAPCOMMAND) &&
-	    sp->seq[sp->keybuf[sp->nextkey]]) {
+	if (LF_ISSET(TXT_MAPINPUT | TXT_MAPCOMMAND)) {
 retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
+		if (qp == NULL)
+			goto nomap;
 		if (ispartial) {
-			if (sizeof(sp->keybuf) == sp->nkeybuf)
-				msgq(sp, M_ERR, "Partial map is too long.");
-			else {
+			if (sizeof(sp->keybuf) == sp->nkeybuf) {
+				msgq(sp, M_ERR,
+				    "Partial map is too long; keys corrupted.");
+				goto nomap;
+			} else {
 				memmove(&sp->keybuf[sp->nextkey],
 				    sp->keybuf, sp->nkeybuf);
 				sp->nextkey = 0;
 				nr = ttyread(sp, sp->keybuf + sp->nkeybuf,
-				    sizeof(sp->keybuf) - sp->nkeybuf,
-				    (int)O_VAL(sp, O_KEYTIME));
+				    sizeof(sp->keybuf) - sp->nkeybuf, 1);
 				if (nr) {
 					sp->nkeybuf += nr;
 					goto retry;
 				}
 			}
-		} else if (qp != NULL) {
+		} else {
 			sp->nkeybuf -= qp->ilen;
 			sp->nextkey += qp->ilen;
-			sp->mappedkey = qp->output;
-			F_SET(sp, S_UPDATE_SCREEN);
-			ch = *sp->mappedkey++;
+			if (qp->output[1] == '\0')
+				ch = *qp->output;
+			else {
+				sp->mappedkey = qp->output;
+				F_SET(sp, S_UPDATE_SCREEN);
+				ch = *sp->mappedkey++;
+			}
 			goto ret;
 		}
 	}
 
-	--sp->nkeybuf;
+nomap:	--sp->nkeybuf;
 	ch = sp->keybuf[sp->nextkey++];
 
 	/*
@@ -171,14 +229,14 @@ static int __check_sig_winch;				/* XXX GLOBAL */
 static int __set_sig_winch;				/* XXX GLOBAL */
 
 static int
-ttyread(sp, buf, len, time)
+ttyread(sp, buf, len, timeout)
 	SCR *sp;
-	char *buf;		/* where to store the characters */
-	int len;		/* max characters to read */
-	int time;		/* max tenth seconds to read */
+	char *buf;		/* Where to store the characters. */
+	int len;		/* Max characters to read. */
+	int timeout;		/* If timeout set. */
 {
 	struct timeval t, *tp;
-	int nr, sval;
+	int nr;
 
 	/* Set up SIGWINCH handler. */
 	if (__set_sig_winch == 0) {
@@ -198,31 +256,42 @@ ttyread(sp, buf, len, time)
 
 	/* Compute the timeout value. */
 	if (time) {
-		t.tv_sec = time / 10;
-		t.tv_usec = (time % 10) * 100000L;
+		t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
+		t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
 		tp = &t;
-	} else
-		tp = NULL;
+
+		FD_SET(STDIN_FILENO, &sp->rdfd);
+	}
 
 	/* Select until characters become available, and then read them. */
-	FD_SET(STDIN_FILENO, &sp->rdfd);
 	for (;;) {
-		sval = select(1, &sp->rdfd, NULL, NULL, tp);
-		switch (sval) {
-		case -1:			/* Error. */
-			/* It's okay to be interrupted. */
+		if (timeout)
+			switch (select(1, &sp->rdfd, NULL, NULL, tp)) {
+			case -1:		/* Error or interrupt. */
+				if (errno == EINTR) {
+					check_sigwinch(sp);
+					continue;
+				}
+				msgq(sp, M_ERR,
+				    "Terminal read error: %s", strerror(errno));
+				return (0);
+			case 0:			/* Timeout. */
+				return (0);
+		}
+		switch (nr = read(STDIN_FILENO, buf, len)) {
+		case -1:			/* Error or interrupt. */
 			if (errno == EINTR) {
 				check_sigwinch(sp);
-				break;
+				continue;
 			}
+			F_SET(sp, S_EXIT_FORCE);
 			msgq(sp, M_ERR,
 			    "Terminal read error: %s", strerror(errno));
 			return (0);
-		case 0:				/* Timeout. */
+		case 0:				/* EOF. */
+			F_SET(sp, S_EXIT_FORCE);
 			return (0);
-		default:			/* Read or EOF. */
-			if ((nr = read(STDIN_FILENO, buf, len)) == 0)
-				F_SET(sp, S_EXIT_FORCE);
+		default:
 			return (nr);
 		}
 	}
