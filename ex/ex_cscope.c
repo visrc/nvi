@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.8 1996/04/15 09:56:04 bostic Exp $ (Berkeley) $Date: 1996/04/15 09:56:04 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 8.9 1996/04/23 09:27:10 bostic Exp $ (Berkeley) $Date: 1996/04/23 09:27:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,7 +39,6 @@ static const char sccsid[] = "$Id: ex_cscope.c,v 8.8 1996/04/15 09:56:04 bostic 
 #define	CSCOPE_PATHS		"cscope.tpath"
 
 /*
-#define	CSCOPE_QUERIES		"sgdct efi"
  * 0name	find all uses of name
  * 1name	find definition of name
  * 2name	find all function calls made from name
