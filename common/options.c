@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.3 1995/06/09 12:47:51 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:51 $";
+static char sccsid[] = "$Id: options.c,v 10.4 1995/06/09 13:40:39 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:40:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -868,7 +868,7 @@ opts_save(sp, fp)
 			break;
 		case OPT_NUM:
 			(void)fprintf(fp,
-			    "set %s=%-3d\n", op->name, O_VAL(sp, cnt));
+			    "set %s=%-3ld\n", op->name, O_VAL(sp, cnt));
 			break;
 		case OPT_STR:
 			if (O_STR(sp, cnt) == NULL)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.3 1995/06/09 12:47:50 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:50 $";
+static char sccsid[] = "$Id: msg.c,v 10.4 1995/06/09 13:39:58 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:39:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -571,7 +571,7 @@ msg_status(sp, lno, showlast)
 		p += sprintf(p, t, lno);
 	}
 #ifdef DEBUG
-	p += sprintf(p, " (pid %u)", getpid());
+	p += sprintf(p, " (pid %lu)", (u_long)getpid());
 #endif
 	if (sp->gp->scr_attr == NULL)
 		msg_save(sp, M_INFO, bp, p - bp);

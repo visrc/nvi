@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.4 1995/06/09 12:51:55 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:55 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.5 1995/06/09 13:42:16 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:42:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -493,7 +493,6 @@ tag_search(sp, search, tag)
 	char *search, *tag;
 {
 	MARK m;
-	int notused;
 	char *p;
 
 	/*

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.3 1995/06/09 12:51:22 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:22 $";
+static char sccsid[] = "$Id: ex.c,v 10.4 1995/06/09 13:41:24 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:41:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1717,7 +1717,7 @@ ex_range(sp, ecp, errp)
 	GS *gp;
 	EX_PRIVATE *exp;
 	MARK m;
-	int isaddr, tmp;
+	int isaddr;
 
 	*errp = 0;
 
@@ -2163,7 +2163,7 @@ ex_discard(sp)
 	SCR *sp;
 {
 	GS *gp;
-	EXCMD *ecp, *next;
+	EXCMD *ecp;
 	RANGE *rp;
 
 	/* We know the first command can't be an AGV command. */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.4 1995/06/09 12:48:02 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:48:02 $";
+static char sccsid[] = "$Id: key.c,v 10.5 1995/06/09 13:40:55 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:40:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -452,7 +452,6 @@ v_getkey(sp, chp)
 	SCR *sp;
 	CHAR_T *chp;
 {
-	CHAR_T ch;
 	GS *gp;
 
 	/*
