@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.30 1993/12/02 13:54:08 bostic Exp $ (Berkeley) $Date: 1993/12/02 13:54:08 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.31 1993/12/02 14:10:10 bostic Exp $ (Berkeley) $Date: 1993/12/02 14:10:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,16 +32,13 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.30 1993/12/02 13:54:08 bostic Exp $ (B
  *	2		-- flags: [-.+^]
  *	3		-- flags: [-.+^=]
  *	b		-- buffer
- *	C		-- count (zero disallowed).
- *	c		-- count as an address offset
+ *	c[01+a]		-- count (0-N, 1-N, signed 1-N, address offset)
  *	f[N#][or]	-- file (a number or N, optional or required)
  *	l		-- line
- *	n		-- signed count
  *	S		-- string with file name expansion
  *	s		-- string
  *	W		-- word string
  *	w[N#][or]	-- word (a number or N, optional or required)
- *	z		-- count (zero allowed).
  */
 EXCMDLIST const cmds[] = {
 /* C_BANG */
@@ -51,7 +48,7 @@ EXCMDLIST const cmds[] = {
 	    "filter lines through commands or run commands"},
 /* C_HASH */
 	{"#",		ex_number,	E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
-	    "c1",
+	    "ca1",
 	    "[line [,line]] # [count] [l]",
 	    "display numbered lines"},
 /* C_SUBAGAIN */
@@ -66,7 +63,7 @@ EXCMDLIST const cmds[] = {
 	    "execute a buffer"},
 /* C_SHIFTL */
 	{"<",		ex_shiftl,	E_ADDR2|E_NORC,
-	    "c1",
+	    "ca1",
 	    "[line [,line]] <[<...] [count] [flags]",
 	    "shift lines left"},
 /* C_EQUAL */
@@ -76,7 +73,7 @@ EXCMDLIST const cmds[] = {
 	    "display line number"},
 /* C_SHIFTR */
 	{">",		ex_shiftr,	E_ADDR2|E_NORC,
-	    "c1",
+	    "ca1",
 	    "[line [,line]] >[>...] [count] [flags]",
 	    "shift lines right"},
 /* C_AT */
@@ -111,7 +108,7 @@ EXCMDLIST const cmds[] = {
 	    "background the current screen"},
 /* C_CHANGE */
 	{"change",	ex_change,	E_ADDR2|E_NORC|E_ZERODEF,
-	    "!c",
+	    "!ca",
 	    "[line [,line]] c[hange][!] [count]",
 	    "change lines to input"},
 /* C_CD */
@@ -131,7 +128,7 @@ EXCMDLIST const cmds[] = {
 	    "copy lines elsewhere in the file"},
 /* C_DELETE */
 	{"delete",	ex_delete,	E_ADDR2|E_NORC,
-	    "bc1",
+	    "bca1",
 	    "[line [,line]] d[elete] [buffer] [count] [flags]",
 	    "delete lines from the file"},
 /* C_DISPLAY */
@@ -186,7 +183,7 @@ EXCMDLIST const cmds[] = {
 	    "insert input before a line"},
 /* C_JOIN */
 	{"join",	ex_join,	E_ADDR2|E_NORC,
-	    "!c1",
+	    "!ca1",
 	    "[line [,line]] j[oin][!] [count] [flags]",
 	    "join lines into a single line"},
 /* C_K */
@@ -196,7 +193,7 @@ EXCMDLIST const cmds[] = {
 	    "mark a line position"},
 /* C_LIST */
 	{"list",	ex_list,	E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
-	    "c1",
+	    "ca1",
 	    "[line [,line]] l[ist] [count] [#]",
 	    "display lines in an unambiguous form"},
 /* C_MOVE */
@@ -226,7 +223,7 @@ EXCMDLIST const cmds[] = {
 	    "edit (and optionally specify) the next file"},
 /* C_NUMBER */
 	{"number",	ex_number,	E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
-	    "c1",
+	    "ca1",
 	    "[line [,line]] nu[mber] [count] [l]",
 	    "change display to number lines"},
 /* C_OPEN */
@@ -236,7 +233,7 @@ EXCMDLIST const cmds[] = {
 	    "enter \"open\" mode (not implemented)"},
 /* C_PRINT */
 	{"print",	ex_pr,		E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
-	    "c1",
+	    "ca1",
 	    "[line [,line]] p[rint] [count] [#l]",
 	    "display lines"},
 /* C_PRESERVE */
@@ -266,7 +263,7 @@ EXCMDLIST const cmds[] = {
 	    "append input from a command or file to the line"},
 /* C_RESIZE */
 	{"resize",	ex_resize,	E_NOGLOBAL|E_NORC,
-	    "n",
+	    "c+",
 	    "resize [change]",
 	    "grow or shrink the current screen"},
 /* C_REWIND */
@@ -366,7 +363,7 @@ EXCMDLIST const cmds[] = {
 	    "display the program version information"},
 /* C_VISUAL_EX */
 	{"visual",	ex_visual,	E_ADDR1|E_NOGLOBAL|E_NORC|E_ZERODEF,
-	    "2C1", 
+	    "2c11", 
 	    "[line] vi[sual] [-|.|+|^] [window_size] [flags]",
 	    "enter visual (vi) mode"},
 /* C_VISUAL_VI */
@@ -396,12 +393,12 @@ EXCMDLIST const cmds[] = {
 	    "exit"},
 /* C_YANK */
 	{"yank",	ex_yank,	E_ADDR2|E_NORC,
-	    "bc",
+	    "bca",
 	    "[line [,line]] ya[nk] [buffer] [count]",
 	    "copy lines to a cut buffer"},
 /* C_Z */
 	{"z",		ex_z,		E_ADDR1|E_NOGLOBAL|E_NORC,
-	    "3z1",
+	    "3c01",
 	    "[line] z [-|.|+|^|=] [count] [flags]",
 	    "display different screens of the file"},
 	{NULL},
