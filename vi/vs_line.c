@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.14 1993/05/08 21:05:49 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:05:49 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.15 1993/05/09 12:19:55 bostic Exp $ (Berkeley) $Date: 1993/05/09 12:19:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,7 +87,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	    O_ISSET(sp, O_NUMBER) && skip_screens == 0) {
 		cols_per_screen = sp->cols -
 		    snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-		addstr(nbuf);
+		ADDSTR(nbuf);
 	} else
 		cols_per_screen = sp->cols;
 
