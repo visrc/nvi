@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 10.6 1995/10/03 13:43:39 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:43:39 $";
+static char sccsid[] = "$Id: v_increment.c,v 10.7 1995/10/04 12:38:00 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:38:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ v_increment(sp, vp)
 	if (vp->character == '#')
 		vp->character = '+';
 	if (vp->character != '+' && vp->character != '-') {
-		v_message(sp, vp->kp->usage, VIM_USAGE);
+		v_emsg(sp, vp->kp->usage, VIM_USAGE);
 		return (1);
 	}
 
