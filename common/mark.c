@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.9 1993/02/11 20:05:31 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:05:31 $";
+static char sccsid[] = "$Id: mark.c,v 5.10 1993/02/16 20:16:21 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,6 @@ static char sccsid[] = "$Id: mark.c,v 5.9 1993/02/11 20:05:31 bostic Exp $ (Berk
 #include <string.h>
 
 #include "vi.h"
-#include "exf.h"
 
 /*
  * XXX
@@ -31,14 +30,15 @@ static MARK marks[UCHAR_MAX + 1];
  *	Reset the marks for file changes.
  */
 void
-mark_reset()
+mark_reset(ep)
+	EXF *ep;
 {
 	MARK m;
 
 	memset(marks, 0, sizeof(marks));
 	m.lno = 1;
 	m.cno = 0;
-	SETABSMARK(&m);
+	SETABSMARK(ep, &m);
 }
 
 /*
@@ -46,13 +46,13 @@ mark_reset()
  *	Set the location referenced by a mark.
  */
 int
-mark_set(key, mp)
+mark_set(ep, key, mp)
+	EXF *ep;
 	int key;
 	MARK *mp;
 {
 	if (key > UCHAR_MAX) {
-		bell();
-		msg("Invalid mark name.");
+		msg(ep, M_ERROR, "Invalid mark name.");
 		return (1);
 	}
 	marks[key] = *mp;
@@ -64,20 +64,19 @@ mark_set(key, mp)
  *	Get the location referenced by a mark.
  */
 MARK *
-mark_get(key)
+mark_get(ep, key)
+	EXF *ep;
 	int key;
 {
 	MARK *mp;
 
 	if (key > UCHAR_MAX) {
-		bell();
-		msg("Invalid mark name.");
+		msg(ep, M_ERROR, "Invalid mark name.");
 		return (NULL);
 	}
 	mp = &marks[key];
 	if (mp->lno == OOBLNO) {
-		bell();
-		msg("Mark '%c not set.", key);
+		msg(ep, M_ERROR, "Mark '%c not set.", key);
                 return (NULL);
 	}
 	return (mp);
@@ -101,7 +100,8 @@ mark_get(key)
  *	Update the marks based on a deletion.
  */
 void
-mark_delete(fm, tm, lmode)
+mark_delete(ep, fm, tm, lmode)
+	EXF *ep;
 	MARK *fm, *tm;
 	int lmode;
 {
@@ -142,7 +142,8 @@ mark_delete(fm, tm, lmode)
  *	Update the marks based on an insertion.
  */
 void
-mark_insert(fm, tm)
+mark_insert(ep, fm, tm)
+	EXF *ep;
 	MARK *fm, *tm;
 {
 	register MARK *mp;

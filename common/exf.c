@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.41 1993/02/15 14:20:54 bostic Exp $ (Berkeley) $Date: 1993/02/15 14:20:54 $";
+static char sccsid[] = "$Id: exf.c,v 5.42 1993/02/16 20:16:15 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -29,8 +29,6 @@ EXF *curf;					/* Current file. */
 
 static EXFLIST exfhdr;				/* List of files. */
 static EXF *last;				/* Last file. */
-
-static void file_def __P((EXF *));
 
 /*
  * file_init --
@@ -60,7 +58,7 @@ file_ins(ep, name, append)
 
 	if ((nep->name = strdup(name)) == NULL) {
 		free(nep);
-err:		msg("Error: %s", strerror(errno));
+err:		msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	nep->nlen = strlen(nep->name);
@@ -100,7 +98,7 @@ file_set(argc, argv)
 		file_def(ep);
 		if ((ep->name = strdup(*argv)) == NULL) {
 			free(ep);
-err:			msg("Error: %s", strerror(errno));
+err:			msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		ep->nlen = strlen(ep->name);
@@ -211,7 +209,8 @@ file_start(ep)
 	if (ep == NULL || stat(ep->name, &sb)) { 
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
-			msg("Temporary file: %s", strerror(errno));
+			msg(ep, M_ERROR,
+			    "Temporary file: %s", strerror(errno));
 			return (1);
 		}
 
@@ -246,11 +245,12 @@ file_start(ep)
 		ep->db = dbopen(openname, O_CREAT | O_NONBLOCK | O_RDONLY,
 		    DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
-			msg("%s already locked, session is read-only.",
+			msg(ep, M_ERROR,
+			    "%s already locked, session is read-only",
 			    ep->name);
 	}
 	if (ep->db == NULL) {
-		msg("%s: %s", ep->name, strerror(errno));
+		msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
 		return (1);
 	}
 	if (fd != -1)
@@ -268,7 +268,7 @@ file_start(ep)
 	 * Not sure this should be here, but don't know where else to put
 	 * it, either.
 	 */
-	mark_reset();
+	mark_reset(ep);
 
 	/* Set the global state. */
 	last = curf;
@@ -292,7 +292,7 @@ file_stop(ep, force)
 
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
-		msg("%s: close: %s", ep->name, strerror(errno));
+		msg(ep, M_ERROR, "%s: close: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
@@ -301,7 +301,7 @@ file_stop(ep, force)
 
 	/* Unlink any temporary file, ignore any error. */
 	if (ep->tname != NULL && unlink(ep->tname)) {
-		msg("%s: remove: %s", ep->tname, strerror(errno));
+		msg(ep, M_ERROR, "%s: remove: %s", ep->tname, strerror(errno));
 		free(ep->tname);
 	}
 
@@ -326,13 +326,14 @@ file_sync(ep, force)
 
 	/* Can't write the temporary file. */
 	if (FF_ISSET(ep, F_NONAME)) {
-		msg("No filename to which to write.");
+		msg(ep, M_ERROR, "No filename to which to write.");
 		return (1);
 	}
 
 	/* Can't write if read-only. */
 	if ((ISSET(O_READONLY) || FF_ISSET(ep, F_RDONLY)) && !force) {
-		msg("Read-only file, not written; use ! to override.");
+		msg(ep, M_ERROR,
+		    "Read-only file, not written; use ! to override.");
 		return (1);
 	}
 
@@ -341,7 +342,8 @@ file_sync(ep, force)
 	 * unless forced.
 	 */
 	if (FF_ISSET(ep, F_NAMECHANGED) && !force && !stat(ep->name, &sb)) {
-		msg("%s exists, not written; use ! to override.", ep->name);
+		msg(ep, M_ERROR,
+		    "%s exists, not written; use ! to override.", ep->name);
 		return (1);
 	}
 
@@ -351,7 +353,7 @@ file_sync(ep, force)
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-err:		msg("%s: %s", ep->name, strerror(errno));
+err:		msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
@@ -359,7 +361,7 @@ err:		msg("%s: %s", ep->name, strerror(errno));
 	from.cno = 0;
 	to.lno = file_lline(ep);
 	to.cno = 0;
-	if (ex_writefp(ep->name, fp, &from, &to, 1))
+	if (ex_writefp(ep, ep->name, fp, &from, &to, 1))
 		return (1);
 
 	FF_CLR(ep, F_MODIFIED);
@@ -371,7 +373,7 @@ err:		msg("%s: %s", ep->name, strerror(errno));
  *	Fill in a default EXF structure.  It's a function because I
  *	just got tired of getting burned 'cause the structure changed.
  */
-static void
+void
 file_def(ep)
 	EXF *ep;
 {

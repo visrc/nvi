@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.10 1993/02/11 12:29:42 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:42 $
+ *	$Id: cut.h,v 5.11 1993/02/16 20:16:13 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:13 $
  */
 
 typedef struct text {			/* Text: a linked list of lines. */
@@ -40,22 +40,23 @@ extern IB ib;				/* Input buffer. */
 #define	VICB(vp)	((vp)->buffer == OOBCB ? DEFCB : (vp)->buffer)
 
 /* Check a buffer name for validity. */
-#define	CBNAME(buf, cb) {						\
+#define	CBNAME(ep, buf, cb) {						\
 	if ((buf) > sizeof(cuts) - 1) {					\
-		bell();							\
-		msg("Invalid cut buffer name.");			\
+		msg(ep, M_ERROR, "Invalid cut buffer name.");		\
 		return (1);						\
 	}								\
 	cb = &cuts[isupper(buf) ? tolower(buf) : buf];			\
 }
 
 /* Check to see if a buffer has contents. */
-#define	CBEMPTY(buf, cb) {						\
+#define	CBEMPTY(ep, buf, cb) {						\
 	if ((cb)->head == NULL) {					\
 		if (buf == DEFCB)					\
-			msg("The default buffer is empty.");		\
+			msg(ep, M_ERROR,				\
+			    "The default buffer is empty.");		\
 		else							\
-			msg("Buffer %s is empty.", CHARNAME(buf));	\
+			msg(ep, M_ERROR,				\
+			    "Buffer %s is empty.", CHARNAME(buf));	\
 		return (1);						\
 	}								\
 }
@@ -70,12 +71,3 @@ extern IB ib;				/* Input buffer. */
 		__cblp->next = (text);					\
 	}								\
 }
-
-enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
-int	filtercmd __P((MARK *, MARK *, u_char *, enum filtertype));
-
-int	add __P((EXF *, MARK *, u_char *, size_t));
-int	cut __P((EXF *, int, MARK *, MARK *, int));
-int	delete __P((EXF *, MARK *, MARK *, int));
-void	freetext __P((TEXT *));
-int	put __P((EXF *, int, MARK *, MARK *, int));

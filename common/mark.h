@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 5.4 1992/10/17 16:08:15 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:08:15 $
+ *	$Id: mark.h,v 5.5 1993/02/16 20:16:22 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:22 $
  */
 
 /*
@@ -22,11 +22,4 @@ typedef struct {
 } MARK;
 
 /* Set absolute movement mark. */
-#define	SETABSMARK(mp)	(mark_set('\'', mp))
-
-/* Marks. */
-void	 mark_delete __P((MARK *, MARK *, int));
-MARK	*mark_get __P((int));
-void	 mark_insert __P((MARK *, MARK *));
-void	 mark_reset __P((void));
-int	 mark_set __P((int, MARK *));
+#define	SETABSMARK(ep, mp)	mark_set(ep, '\'', mp)

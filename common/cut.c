@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.25 1993/01/30 17:24:56 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:24:56 $";
+static char sccsid[] = "$Id: cut.c,v 5.26 1993/02/16 20:16:12 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: cut.c,v 5.25 1993/01/30 17:24:56 bostic Exp $ (Berk
 #include <string.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "options.h"
 #include "pathnames.h"
 
@@ -48,7 +47,7 @@ cut(ep, buffer, fm, tm, lmode)
 	recno_t lno;
 	int append;
 
-	CBNAME(buffer, cb);
+	CBNAME(ep, buffer, cb);
 
 	/*
 	 * Upper-case buffer names map into lower-case buffers, but with
@@ -57,7 +56,7 @@ cut(ep, buffer, fm, tm, lmode)
 	 */
 	if (append = isupper(buffer))
 		if (!lmode && cb->flags & CB_LMODE)
-			msg("Buffer %s changed to line mode.",
+			msg(ep, M_DISPLAY, "Buffer %s changed to line mode.",
 			    CHARNAME(buffer));
 
 	/* Free old buffer. */
@@ -101,7 +100,8 @@ cut(ep, buffer, fm, tm, lmode)
 	if (tm->lno > fm->lno && tm->cno > 0) {
 		if (cutline(ep, lno, 0, tm->cno, &tp)) {
 mem:			if (append)
-				msg("Contents of %s buffer lost.",
+				msg(ep, M_DISPLAY,
+				    "Contents of %s buffer lost.",
 				    CHARNAME(buffer));
 			freetext(cb->head);
 			cb->head = NULL;
@@ -130,7 +130,7 @@ cutline(ep, lno, fcno, len, newp)
 	u_char *lp, *p;
 
 	if ((p = file_gline(ep, lno, &llen)) == NULL) {
-		GETLINE_ERR(lno);
+		GETLINE_ERR(ep, lno);
 		return (1);
 	}
 
@@ -147,8 +147,7 @@ cutline(ep, lno, fcno, len, newp)
 			len = llen - fcno;
 		if ((lp = malloc(len)) == NULL) {
 			free(tp);
-mem:			bell();
-			msg("Error: %s", strerror(errno));
+mem:			msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(lp, p + fcno, len);
@@ -164,11 +163,12 @@ mem:			bell();
 }
 
 /* Increase the buffer space as necessary. */
-#define	BFCHECK(tp) {							\
+#define	BFCHECK(ep, tp) {						\
 	if (blen < len + tp->len) {					\
 		blen += MAX(blen + 256, len + tp->len);			\
 		if ((bp = realloc(bp, blen)) == NULL) {			\
-			msg("Put error: %s", strerror(errno));		\
+			msg(ep, M_ERROR,				\
+			    "Put error: %s", strerror(errno));		\
 			blen = 0;					\
 			return (1);					\
 		}							\
@@ -194,8 +194,8 @@ put(ep, buffer, cp, rp, append)
 	int lmode;
 	u_char *p, *t;
 
-	CBNAME(buffer, cb);
-	CBEMPTY(buffer, cb);
+	CBNAME(ep, buffer, cb);
+	CBEMPTY(ep, buffer, cb);
 	tp = cb->head;
 	lmode = cb->flags & CB_LMODE;
 
@@ -236,12 +236,12 @@ put(ep, buffer, cp, rp, append)
 		/* Get the first line. */
 		lno = cp->lno;
 		if ((p = file_gline(ep, lno, &len)) == NULL) {
-			GETLINE_ERR(lno);
+			GETLINE_ERR(ep, lno);
 			return (1);
 		}
 
 		/* Check for space. */
-		BFCHECK(tp);
+		BFCHECK(ep, tp);
 
 		/* Original line, left of the split. */
 		t = bp;
@@ -288,7 +288,7 @@ put(ep, buffer, cp, rp, append)
 			}
 
 			/* Last part of original line; check for space. */
-			BFCHECK(tp);
+			BFCHECK(ep, tp);
 
 			t = bp;
 			if (tp->len) {
@@ -315,7 +315,7 @@ put(ep, buffer, cp, rp, append)
 	}
 
 	/* Shift any marks in the range. */
-	mark_insert(cp, rp);
+	mark_insert(ep, cp, rp);
 
 	/* Reporting... */
 	ep->rptlabel = "put";

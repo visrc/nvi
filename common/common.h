@@ -4,11 +4,17 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.35 1993/02/14 18:02:44 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:02:44 $
+ *	$Id: common.h,v 5.36 1993/02/16 20:16:28 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:28 $
  */
 
 #include <limits.h>		/* XXX */
 #include <db.h>
+#include <regex.h>
+
+#include "mark.h"
+#include "exf.h"
+#include "msg.h"
+#include "cut.h"
 
 /*
  * Most of the arrays, names, etc. in ex/vi are u_char's, since we want
@@ -44,12 +50,16 @@ enum confirmation { YES, NO, QUIT };
 typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 
 /* Buffer allocation. */
-#define	BINC(lp, llen, nlen) {						\
+#define	BINC(ep, lp, llen, nlen) {					\
 	if ((nlen) > llen &&						\
-	    binc(&(lp), &(llen), nlen))					\
+	    binc(ep, &(lp), &(llen), nlen))				\
 		return (1);						\
 }
-int	binc __P((u_char **, size_t *, size_t));
+int	binc __P((EXF *, u_char **, size_t *, size_t));
+
+/* Filter type. */
+enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
+int	filtercmd __P((EXF *, MARK *, MARK *, u_char *, enum filtertype));
 
 /* Visual bell. */
 extern char *VB;
@@ -58,36 +68,9 @@ extern char *VB;
 enum editmode {MODE_EX, MODE_VI, MODE_QUIT};
 extern enum editmode mode;
 
-/* Messages. */
-extern int msgcnt;		/* Current message count. */
-extern char *msglist[];		/* Message list. */
-void	msg __P((const char *, ...));
-void	msg_eflush __P((void));
-
-#ifdef DEBUG
-void	TRACE __P((const char *, ...));
-#endif
-
-/* Digraphs. */
-int	digraph __P((int, int));
-void	digraph_init __P((void));
-void	digraph_save __P((int));
-
-/* Signals. */
-void	onhup __P((int));
-void	onwinch __P((int));
-void	trapint __P((int));
-
-/* Random stuff. */
-void	 __putchar __P((int));
-void	 bell __P((void));
-int	 nonblank __P((recno_t, size_t *));
-char	*tail __P((char *));
-
 /* Display characters. */
 #define	CHARNAME(c)	(asciiname[c & 0xff])
 extern char *asciiname[UCHAR_MAX + 1];
 extern u_char asciilen[UCHAR_MAX + 1];
 
-int	ex __P((void));
-int	vi __P((void));
+#include "extern.h"

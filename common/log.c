@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.6 1993/02/11 12:10:56 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:10:56 $";
+static char sccsid[] = "$Id: log.c,v 5.7 1993/02/16 20:16:19 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: log.c,v 5.6 1993/02/11 12:10:56 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "log.h"
 #include "screen.h"
 
@@ -28,13 +27,12 @@ static u_char c_ltype = LOG_NOTYPE;
 static int nolog;
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
-#define	LOG_ERR {							\
-	bell();								\
-	msg("Error: %s/%d: put log error: %s.",				\
+#define	LOG_ERR(ep) {							\
+	msg(ep, M_ERROR, "Error: %s/%d: put log error: %s.",		\
 	    tail(__FILE__), __LINE__, strerror(errno));			\
 	(void)ep->log->close(ep->log);					\
 	if (!log_init(ep))						\
-		msg("Log restarted.");					\
+		msg(ep, M_DISPLAY, "Log restarted.");			\
 	return (1);							\
 }
 
@@ -54,8 +52,7 @@ log_init(ep)
 	ep->log = dbopen(NULL, O_CREAT | O_EXLOCK | O_NONBLOCK | O_RDWR,
 	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
 	if (ep->log == NULL) {
-		bell();
-		msg("log db: %s", strerror(errno));
+		msg(ep, M_ERROR, "log db: %s", strerror(errno));
 		nolog = 1;
 		return (1);
 	}
@@ -71,7 +68,7 @@ log_init(ep)
 	key.data = &c_ltype;
 	key.size = sizeof(u_char);
 	if (ep->log->put(ep->log, &key, &key, R_CURSORLOG) == -1) {
-		msg("Error: %s/%d: put log error: %s.",
+		msg(ep, M_ERROR, "Error: %s/%d: put log error: %s.",
 		    tail(__FILE__), __LINE__, strerror(errno));
 		(void)(ep->log->close)(ep->log);
 		nolog = 1;
@@ -116,7 +113,7 @@ log_cursor(ep)
 	if (nolog)
 		return (0);
 
-	BINC(ep->l_lp, ep->l_len, sizeof(u_char) + sizeof(MARK));
+	BINC(ep, ep->l_lp, ep->l_len, sizeof(u_char) + sizeof(MARK));
 		
 	ep->l_lp[0] = LOG_CURSOR;
 
@@ -132,9 +129,9 @@ log_cursor(ep)
 		key.data = &recno_saved;
 		key.size = sizeof(recno_t);
 		if (ep->log->put(ep->log, &key, &data, R_SETCURSOR) == -1)
-			LOG_ERR;
+			LOG_ERR(ep);
 	} else if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-		LOG_ERR;
+		LOG_ERR(ep);
 
 	memmove(&recno_saved, key.data, sizeof(recno_t));
 	c_ltype = LOG_CURSOR;
@@ -161,10 +158,10 @@ log_line(ep, lno, action)
 	FF_CLR(ep, F_UNDO);	/* Vi hack.  Clear the undo flag. */
 
 	if ((lp = file_gline(ep, lno, &len)) == NULL) {
-		GETLINE_ERR(lno);
+		GETLINE_ERR(ep, lno);
 		return (1);
 	}
-	BINC(ep->l_lp, ep->l_len, len + sizeof(u_char) + sizeof(recno_t));
+	BINC(ep, ep->l_lp, ep->l_len, len + sizeof(u_char) + sizeof(recno_t));
 
 	switch(action) {
 	case LINE_APPEND:
@@ -191,7 +188,7 @@ log_line(ep, lno, action)
 	data.size = len + sizeof(u_char) + sizeof(recno_t);
 
 	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-		LOG_ERR;
+		LOG_ERR(ep);
 	return (0);
 }
 
@@ -210,7 +207,7 @@ log_mark(ep, kch, mp)
 	if (nolog)
 		return (0);
 
-	BINC(ep->l_lp,
+	BINC(ep, ep->l_lp,
 	    ep->l_len, sizeof(u_char) + sizeof(u_char) + sizeof(MARK));
 
 	ep->l_lp[0] = LOG_MARK;
@@ -220,7 +217,7 @@ log_mark(ep, kch, mp)
 	data.data = ep->l_lp;
 	data.size = sizeof(u_char) + sizeof(u_char) + sizeof(MARK);
 	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-		LOG_ERR;
+		LOG_ERR(ep);
 
 	c_ltype = LOG_MARK;
 	return (0);
@@ -242,7 +239,8 @@ log_backward(ep, rp, undolno)
 	int didop;
 
 	if (nolog) {
-		msg("Logging not being performed, undo not possible.");
+		msg(ep, M_DISPLAY,
+		    "Logging not being performed, undo not possible.");
 		return (1);
 	}
 	nolog = 1;			/* Turn off logging. */
@@ -250,7 +248,7 @@ log_backward(ep, rp, undolno)
 
 	for (didop = 0;;) {
 		if (ep->log->seq(ep->log, &key, &data, R_PREV))
-			LOG_ERR;
+			LOG_ERR(ep);
 
 		switch(*(u_char *)data.data) {
 		case LOG_CURSOR:
@@ -260,7 +258,7 @@ log_backward(ep, rp, undolno)
 				if (undolno != OOBLNO && rp->lno == lno)
 					break;
 				if (ep->log->seq(ep->log, &key, &data, R_PREV))
-					LOG_ERR;
+					LOG_ERR(ep);
 				nolog = 0;
 				return (0);
 			}
@@ -277,7 +275,8 @@ log_backward(ep, rp, undolno)
 			didop = 1;
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_iline(ep, lno, (u_char *)data.data + sizeof(u_char) +
+			if (file_iline(ep,
+			    lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
@@ -285,10 +284,11 @@ log_backward(ep, rp, undolno)
 		case LOG_LINE_RESET:
 			didop = 1;
 			if (ep->log->seq(ep->log, &key, &data, R_PREV))
-				LOG_ERR;
+				LOG_ERR(ep);
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_sline(ep, lno, (u_char *)data.data + sizeof(u_char) +
+			if (file_sline(ep,
+			    lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
@@ -297,12 +297,12 @@ log_backward(ep, rp, undolno)
 			didop = 1;
 			memmove(&m, (u_char *)data.data +
 			    sizeof(u_char) + sizeof(u_char), sizeof(MARK));
-			if (mark_set(*(((u_char *)data.data) + 1), &m))
+			if (mark_set(ep, *(((u_char *)data.data) + 1), &m))
 				goto err;
 			break;
 		case LOG_START:
 			if (didop == 0)
-				msg("Nothing to undo.");
+				msg(ep, M_DISPLAY, "Nothing to undo.");
 err:			nolog = 0;
 			return (1);
 		default:
@@ -327,7 +327,8 @@ log_forward(ep, rp)
 	int didop, rval;
 
 	if (nolog) {
-		msg("Logging not being performed, roll-forward not possible.");
+		msg(ep, M_DISPLAY,
+		    "Logging not being performed, roll-forward not possible.");
 		return (1);
 	}
 	nolog = 1;			/* Turn off logging. */
@@ -336,12 +337,13 @@ log_forward(ep, rp)
 	for (didop = 0;;) {
 		rval = ep->log->seq(ep->log, &key, &data, R_NEXT);
 		if (rval == 1) {
-			msg("No further changes to roll forward.");
+			msg(ep, M_DISPLAY,
+			    "No further changes to roll forward.");
 			nolog = 0;
 			return (1);
 		}
 		if (rval)
-			LOG_ERR;
+			LOG_ERR(ep);
 
 		switch(*(u_char *)data.data) {
 		case LOG_CURSOR:
@@ -357,7 +359,8 @@ log_forward(ep, rp)
 			didop = 1;
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_iline(ep, lno, (u_char *)data.data + sizeof(u_char) +
+			if (file_iline(ep,
+			    lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t))) {
 				nolog = 0;
@@ -376,10 +379,11 @@ log_forward(ep, rp)
 		case LOG_LINE_RESET:
 			didop = 1;
 			if (ep->log->seq(ep->log, &key, &data, R_NEXT))
-				LOG_ERR;
+				LOG_ERR(ep);
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
-			if (file_sline(ep, lno, (u_char *)data.data + sizeof(u_char) +
+			if (file_sline(ep,
+			    lno, (u_char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				return (1);
@@ -388,7 +392,7 @@ log_forward(ep, rp)
 			didop = 1;
 			memmove(&m, (u_char *)data.data +
 			    sizeof(u_char) + sizeof(u_char), sizeof(MARK));
-			if (mark_set(*(((u_char *)data.data) + 1), &m)) {
+			if (mark_set(ep, *(((u_char *)data.data) + 1), &m)) {
 				nolog = 0;
 				return (1);
 			}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.25 1993/02/14 18:08:27 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:08:27 $";
+static char sccsid[] = "$Id: util.c,v 5.26 1993/02/16 20:16:28 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -18,30 +18,10 @@ static char sccsid[] = "$Id: util.c,v 5.25 1993/02/14 18:08:27 bostic Exp $ (Ber
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "options.h"
 #include "pathnames.h"
-
-/*
- * bell --
- *	Ring the terminal's bell.
- */
-void
-bell()
-{
-	/* Ex doesn't need bells rung. */
-	if (mode == MODE_EX)
-		return;
-
-	if (ISSET(O_FLASH)) {
-		(void)tputs(VB, 1, __putchar);
-		(void)fflush(stdout);
-	} else if (ISSET(O_ERRORBELLS))
-		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
-}
 
 /*
  * __putchar --
@@ -59,7 +39,8 @@ __putchar(ch)
  *	Increase the size of a buffer.
  */
 int
-binc(bpp, bsizep, min)
+binc(ep, bpp, bsizep, min)
+	EXF *ep;
 	u_char **bpp;
 	size_t *bsizep, min;
 {
@@ -72,8 +53,7 @@ binc(bpp, bsizep, min)
 
 	csize += MAX(min, 256);
 	if ((*bpp = realloc(*bpp, csize)) == NULL) {
-		bell();
-		msg("Error: %s.", strerror(errno));
+		msg(ep, M_ERROR, "Error: %s.", strerror(errno));
 		*bsizep = 0;
 		return (1);
 	}
@@ -87,7 +67,8 @@ binc(bpp, bsizep, min)
  *	line.
  */
 int
-nonblank(lno, cnop)
+nonblank(ep, lno, cnop)
+	EXF *ep;
 	recno_t lno;
 	size_t *cnop;
 {
@@ -95,12 +76,12 @@ nonblank(lno, cnop)
 	register u_char *p;
 	size_t len;
 
-	if ((p = file_gline(curf, lno, &len)) == NULL) {
-		if (file_lline(curf) == 0) {
+	if ((p = file_gline(ep, lno, &len)) == NULL) {
+		if (file_lline(ep) == 0) {
 			*cnop = 0;
 			return (0);
 		}
-		GETLINE_ERR(lno);
+		GETLINE_ERR(ep, lno);
 		return (1);
 	}
 	for (cnt = 0; len-- && isspace(*p); ++cnt, ++p);

@@ -4,15 +4,11 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.28 1993/02/12 11:14:19 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:14:19 $
+ *	$Id: exf.h,v 5.29 1993/02/16 20:16:16 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:16 $
  */
 
 #ifndef _EXF_H_
 #define	_EXF_H_
-
-#include <regex.h>
-
-#include "mark.h"
 
 typedef struct exf {
 	struct exf *next, *prev;	/* Linked list of files. */
@@ -74,22 +70,23 @@ typedef struct exf {
 	char *tname;			/* Temporary file name. */
 	size_t nlen;			/* File name length. */
 
-#define	F_AUTOPRINT	0x0001		/* Autoprint flag. */
-#define	F_CHARDELETED	0x0002		/* Character deleted. */
-#define	F_IGNORE	0x0004		/* File not on the command line. */
-#define	F_IN_GLOBAL	0x0008		/* Doing a global command. */
-#define	F_MODIFIED	0x0010		/* File has been modified. */
-#define	F_NAMECHANGED	0x0020		/* File name was changed. */
-#define	F_NEEDMERASE	0x0040		/* Erase modeline after keystroke. */
-#define	F_NEWSESSION	0x0080		/* File has just been edited. */
-#define	F_NONAME	0x0100		/* File has no name. */
-#define	F_RDONLY	0x0200		/* File is read-only. */
-#define	F_READING	0x0400		/* Waiting on a read. */
-#define	F_REDRAW	0x0800		/* Repaint the screen. */
-#define	F_REFRESH	0x1000		/* Refresh the screen. */
-#define	F_RESIZE	0x2000		/* Resize the screen. */
-#define	F_RE_SET	0x4000		/* The file's RE has been set. */
-#define	F_UNDO		0x8000		/* No change since last undo. */
+#define	F_AUTOPRINT	0x00001		/* Autoprint flag. */
+#define	F_BELLSCHED	0x00002		/* Bell scheduled. */
+#define	F_CHARDELETED	0x00004		/* Character deleted. */
+#define	F_IGNORE	0x00008		/* File not on the command line. */
+#define	F_IN_GLOBAL	0x00010		/* Doing a global command. */
+#define	F_MODIFIED	0x00020		/* File has been modified. */
+#define	F_NAMECHANGED	0x00040		/* File name was changed. */
+#define	F_NEEDMERASE	0x00080		/* Erase modeline after keystroke. */
+#define	F_NEWSESSION	0x00100		/* File has just been edited. */
+#define	F_NONAME	0x00200		/* File has no name. */
+#define	F_RDONLY	0x00400		/* File is read-only. */
+#define	F_READING	0x00800		/* Waiting on a read. */
+#define	F_REDRAW	0x01000		/* Repaint the screen. */
+#define	F_REFRESH	0x02000		/* Refresh the screen. */
+#define	F_RESIZE	0x04000		/* Resize the screen. */
+#define	F_RE_SET	0x08000		/* The file's RE has been set. */
+#define	F_UNDO		0x10000		/* No change since last undo. */
 
 #define	F_RETAINMASK	(F_IGNORE)	/* Flags to retain. */
 
@@ -127,9 +124,9 @@ typedef struct {
 	(p)->next = (EXF *)(hp);					\
 }
 
-#define	GETLINE_ERR(lno) {						\
-	bell();								\
-	msg("Error: %s/%d: unable to retrieve line %u.",		\
+#define	GETLINE_ERR(ep, lno) {						\
+	msg(ep, M_ERROR,						\
+	    "Error: %s/%d: unable to retrieve line %u.",		\
 	    tail(__FILE__), __LINE__, lno);				\
 }
 
@@ -139,7 +136,8 @@ typedef struct {
 			if (file_sync((ep), (force)))			\
 				return (1);				\
 		} else {						\
-	msg("Modified since last write; write or use ! to override.");	\
+			msg(ep, M_ERROR,				\
+	"Modified since last write; write or use ! to override.");	\
 			return (1);					\
 		}							\
 	}								\
@@ -147,40 +145,12 @@ typedef struct {
 
 #define	MODIFY_WARN(ep) {						\
 	if ((ep)->flags & F_MODIFIED && ISSET(O_WARN))			\
-		msg("Modified since last write.");			\
+		msg(ep, M_ERROR, "Modified since last write.");		\
 }
 
 #define	PANIC {								\
-	msg("No file state!");						\
+	msg(NULL, M_ERROR, "No file state!");				\
 	mode = MODE_QUIT;						\
 	return (1);							\
 }
-
-#include "cut.h"
-
-/* File routines. */
-EXF	*file_first __P((int));
-void	 file_init __P((void));
-int	 file_ins __P((EXF *, char *, int));
-EXF	*file_last __P((void));
-EXF	*file_locate __P((char *));
-EXF	*file_next __P((EXF *, int));
-EXF	*file_prev __P((EXF *, int));
-int	 file_set __P((int, char *[]));
-int	 file_start __P((EXF *));
-int	 file_stop __P((EXF *, int));
-int	 file_sync __P((EXF *, int));
-
-/* Line routines. */
-int	 file_aline __P((EXF *, recno_t, u_char *, size_t));
-int	 file_dline __P((EXF *, recno_t));
-u_char	*file_gline __P((EXF *, recno_t, size_t *));
-int	 file_ibresolv __P((EXF *, recno_t));
-int	 file_iline __P((EXF *, recno_t, u_char *, size_t));
-recno_t	 file_lline __P((EXF *));
-int	 file_sline __P((EXF *, recno_t, u_char *, size_t));
-
-/* Status routine. */
-void	 status __P((EXF *, recno_t));
-
 #endif /* !_EXF_H_ */

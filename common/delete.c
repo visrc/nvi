@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.16 1993/01/23 16:30:32 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:30:32 $";
+static char sccsid[] = "$Id: delete.c,v 5.17 1993/02/16 20:16:14 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,7 +18,6 @@ static char sccsid[] = "$Id: delete.c,v 5.16 1993/01/23 16:30:32 bostic Exp $ (B
 #include <string.h>
 
 #include "vi.h"
-#include "exf.h"
 
 /*
  * delete --
@@ -57,7 +56,7 @@ delete(ep, fm, tm, lmode)
 	if (tm->lno >= lno) {
 		if (tm->lno == lno) {
 			if ((p = file_gline(ep, lno, &len)) == NULL) {
-				GETLINE_ERR(lno);
+				GETLINE_ERR(ep, lno);
 				return (1);
 			}
 			eof = tm->cno > len ? 1 : 0;
@@ -73,7 +72,7 @@ delete(ep, fm, tm, lmode)
 				goto done;
 			}
 			if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-				GETLINE_ERR(fm->lno);
+				GETLINE_ERR(ep, fm->lno);
 				return (1);
 			}
 			if (file_sline(ep, fm->lno, p, fm->cno))
@@ -85,11 +84,12 @@ delete(ep, fm, tm, lmode)
 	/* Case 3 -- delete within a single line. */
 	if (tm->lno == fm->lno) {
 		if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-			GETLINE_ERR(fm->lno);
+			GETLINE_ERR(ep, fm->lno);
 			return (1);
 		}
 		if ((bp = malloc(len)) == NULL) {
-			msg("Error: %s", strerror(errno));
+			msg(ep, M_ERROR,
+			    "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(bp, p, fm->cno);
@@ -108,23 +108,23 @@ delete(ep, fm, tm, lmode)
 
 	/* Figure out how big a buffer we need. */
 	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(fm->lno);
+		GETLINE_ERR(ep, fm->lno);
 		return (1);
 	}
 	tlen = len;
 	if ((p = file_gline(ep, tm->lno, &len)) == NULL) {
-		GETLINE_ERR(tm->lno);
+		GETLINE_ERR(ep, tm->lno);
 		return (1);
 	}
 	tlen += len;		/* XXX Possible overflow! */
 	if ((bp = malloc(tlen)) == NULL) {
-		msg("Error: %s", strerror(errno));
+		msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
 	/* Copy the start partial line into place. */
 	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(fm->lno);
+		GETLINE_ERR(ep, fm->lno);
 		goto err;
 	}
 	memmove(bp, p, fm->cno);
@@ -132,7 +132,7 @@ delete(ep, fm, tm, lmode)
 
 	/* Copy the end partial line into place. */
 	if ((p = file_gline(ep, tm->lno, &len)) == NULL) {
-		GETLINE_ERR(tm->lno);
+		GETLINE_ERR(ep, tm->lno);
 		goto err;
 	}
 	memmove(bp + tlen, p + tm->cno, len - tm->cno);
@@ -147,7 +147,7 @@ delete(ep, fm, tm, lmode)
 		goto err;
 
 	/* Update the marks. */
-done:	mark_delete(fm, tm, lmode);
+done:	mark_delete(ep, fm, tm, lmode);
 
 	if (bp != NULL)
 		free(bp);

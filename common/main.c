@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.44 1993/02/14 18:03:54 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:03:54 $";
+static char sccsid[] = "$Id: main.c,v 5.45 1993/02/16 20:16:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,6 +57,7 @@ main(argc, argv)
 	extern char *optarg;
 	static int reenter;
 	EXCMDARG cmd;
+	EXF *ep, fake_exf;
 	int ch;
 	char *excmdarg, *err, *p, *tag, path[MAXPATHLEN];
 
@@ -133,37 +134,37 @@ main(argc, argv)
 	seq_init();
 
 	/* Initialize the options. */
-	if (opts_init()) {
-		msg_eflush();
+	if (opts_init(NULL)) {
+		msg_eflush(NULL);
 		exit(1);
 	}
 
 #ifndef NO_DIGRAPH
-	digraph_init();
+	digraph_init(NULL);
 #endif
 
 	/* Initialize special key table. */
-	gb_init();
+	gb_init(NULL);
 
 	/*
 	 * Source the system, ~user and local .exrc files.
 	 * XXX
 	 * Check the correct order for these.
 	 */
-	(void)ex_cfile(_PATH_SYSEXRC, 0);
+	(void)ex_cfile(NULL, _PATH_SYSEXRC, 0);
 	if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
-		(void)ex_cfile(path, 0);
+		(void)ex_cfile(NULL, path, 0);
 	}
 	if (ISSET(O_EXRC))
-		(void)ex_cfile(_PATH_EXRC, 0);
+		(void)ex_cfile(NULL, _PATH_EXRC, 0);
 
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
 		if ((p = strdup(p)) == NULL)
-			msg("Error: %s", strerror(errno));
+			msg(NULL, M_ERROR, "Error: %s", strerror(errno));
 		else {
-			(void)ex_cstring((u_char *)p, strlen(p), 1);
+			(void)ex_cstring(NULL, (u_char *)p, strlen(p), 1);
 			free(p);
 		}
 
@@ -174,28 +175,41 @@ main(argc, argv)
 	if (argc)
 		file_set(argc, argv);
 
+	/*
+	 * Fake up a file structure, so it's available when we call
+	 * ex/vi routines.  Do basic initialization, so error messages
+	 * get printed.
+	 */
+	 ep = &fake_exf;
+	 file_def(ep);
+	 ep->cols = 80;
+	 ep->flags = F_IGNORE;
+
 	/* Use an error list file if specified. */
 #ifndef NO_ERRLIST
 	if (err) {
 		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, err);
-		ex_errlist(&cmd);
+		ex_errlist(ep, &cmd);
 	} else
 #endif
 	/* Use a tag file if specified. */
 	if (tag) {
 		SETCMDARG(cmd, C_TAG, 0, OOBLNO, 0, 0, tag);
-		if (ex_tagpush(&cmd)) {
-			msg_eflush();
+		if (ex_tagpush(ep, &cmd)) {
+			msg_eflush(ep);
 			exit(1);
 		}
 	} else if (file_start(file_first(1))) {
-		msg_eflush();
+		msg_eflush(ep);
 		exit(1);
 	}
 
+	/* Should have a real EXF structure by now. */
+	ep = curf;
+
 	/* Do any commands from the command line. */
 	if (excmdarg)
-		(void)ex_cstring((u_char *)excmdarg, strlen(excmdarg), 0);
+		(void)ex_cstring(ep, (u_char *)excmdarg, strlen(excmdarg), 0);
 
 	/* Catch HUP, INT, WINCH */
 	(void)signal(SIGHUP, onhup);
@@ -203,25 +217,31 @@ main(argc, argv)
 	(void)signal(SIGWINCH, onwinch);
 
 	/* Repeatedly call ex() or vi() until the mode is set to MODE_QUIT. */
-	while (mode != MODE_QUIT)
+	while (mode != MODE_QUIT) {
 		switch (mode) {
 		case MODE_VI:
-			if (vi())
+			if (vi(ep))
 				mode = MODE_QUIT;
 			break;
 		case MODE_EX:
-			if (ex())
+			if (ex(ep))
 				mode = MODE_QUIT;
 			break;
 		default:
 			abort();
 		}
+		/*
+		 * XXX
+		 * THE UNDERLYING EXF MAY HAVE CHANGED.
+		 */
+		ep = curf;
+	}
 
 	/* Reset anything that needs resetting. */
-	opts_end();
+	opts_end(ep);
 
 	/* Flush any left-over error message. */
-	msg_eflush();
+	msg_eflush(ep);
 
 	exit(0);
 	/* NOTREACHED */
