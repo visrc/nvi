@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.21 1993/10/28 11:20:07 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:20:07 $";
+static char sccsid[] = "$Id: search.c,v 8.22 1993/10/28 16:46:48 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:46:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 	 * did not reuse any delta supplied.
 	 */
 	if (ptrn == NULL || ptrn[1] == '\0') {
-		if (!F_ISSET(sp, S_RE_SET)) {
+		if (!F_ISSET(sp, S_SRE_SET)) {
 noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 			return (1);
 		}
@@ -113,7 +113,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 
 		/* If the pattern was empty, use the previous pattern. */
 		if (ptrn == NULL || *ptrn == '\0') {
-			if (!F_ISSET(sp, S_RE_SET))
+			if (!F_ISSET(sp, S_SRE_SET))
 				goto noprev;
 			*rep = &sp->sre;
 			return (0);
@@ -132,7 +132,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	if (eval = regcomp(*rep, ptrn, re_flags))
 		re_error(sp, eval, *rep);
 	else if (LF_ISSET(SEARCH_SET)) {
-		F_SET(sp, S_RE_SET);
+		F_SET(sp, S_SRE_SET);
 		sp->searchdir = dir;
 		sp->sre = **rep;
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.14 1993/10/28 11:21:38 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:21:38 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.15 1993/10/28 16:47:21 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:47:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,7 +105,7 @@ global(sp, ep, cmdp, cmd)
 
 	/* If the substitute string is empty, use the last one. */
 	if (*ptrn == '\0') {
-		if (!F_ISSET(sp, S_RE_SET)) {
+		if (!F_ISSET(sp, S_SRE_SET)) {
 			msgq(sp, M_ERR, "No previous regular expression.");
 			return (1);
 		}
@@ -141,7 +141,7 @@ global(sp, ep, cmdp, cmd)
 		 */
 		sp->sre = lre;
 		sp->searchdir = FORWARD;
-		F_SET(sp, S_RE_SET);
+		F_SET(sp, S_SRE_SET);
 	}
 
 	F_SET(sp, S_GLOBAL);

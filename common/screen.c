@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.19 1993/10/28 11:20:18 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:20:18 $";
+static char sccsid[] = "$Id: screen.c,v 8.20 1993/10/28 16:47:09 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:47:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,12 +106,15 @@ screen_init(orig, sp)
 			goto mem;
 			
 		/* Retain all searching/substitution information. */
-		if (orig->searchdir == NOTSET)
-			sp->searchdir = NOTSET;
-		else {
+		if (F_ISSET(orig, S_SRE_SET)) {
+			F_SET(sp, S_SRE_SET);
 			sp->sre = orig->sre;
-			sp->searchdir = FORWARD;
 		}
+		if (F_ISSET(orig, S_SUBRE_SET)) {
+			F_SET(sp, S_SUBRE_SET);
+			sp->subre = orig->subre;
+		}
+		sp->searchdir = orig->searchdir == NOTSET ? NOTSET : FORWARD;
 		sp->csearchdir = CNOTSET;
 		sp->lastckey = orig->lastckey;
 
@@ -152,7 +155,7 @@ mem:			msgq(orig, M_ERR,
 			return (1);
 		}
 
-		F_SET(sp, (orig->flags & S_SCREEN_RETAIN));
+		F_SET(sp, F_ISSET(orig, S_MODE_EX | S_MODE_VI));
 	} else {
 		sp->inc_lastch = '+';
 		sp->inc_lastval = 1;
