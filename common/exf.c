@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.51 1993/11/21 16:27:28 bostic Exp $ (Berkeley) $Date: 1993/11/21 16:27:28 $";
+static char sccsid[] = "$Id: exf.c,v 8.52 1993/11/23 15:52:47 bostic Exp $ (Berkeley) $Date: 1993/11/23 15:52:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,7 +149,7 @@ file_init(sp, frp, rcv_name, force)
 	struct stat sb;
 	size_t psize;
 	int fd;
-	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
+	char *p, *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	/* Create the EXF. */
 	if ((ep = malloc(sizeof(EXF))) == NULL) {
@@ -319,11 +319,20 @@ file_init(sp, frp, rcv_name, force)
 			msgq(sp, M_VINFO, "%s cannot be locked", oname);
 
 	/*
-	 * Set the previous file and alternate file name to be
-	 * the current file.
+	 * Set the previous file pointer and the alternate file name to be
+	 * the current file.  Note that if the current file was a temporary
+	 * file, the previous call to file_end() unliked it and free'd the
+	 * name.  So, there is no previous file, and there is no alternate
+	 * file name.  This matches historical practice.
 	 */
-	if ((sp->p_frp = sp->frp) != NULL)
-		set_alt_name(sp, FILENAME(sp->frp));
+	if (sp->frp != NULL) {
+		p = FILENAME(sp->frp);
+		if (p == NULL)
+			sp->p_frp = NULL;
+		else
+			sp->p_frp = sp->frp;
+		set_alt_name(sp, p);
+	}
 
 	/* The new file has now been officially edited. */
 	F_SET(frp, FR_EDITED);
