@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.8 1992/04/16 09:50:25 bostic Exp $ (Berkeley) $Date: 1992/04/16 09:50:25 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.9 1992/04/16 13:49:34 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:49:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -15,9 +15,11 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.8 1992/04/16 09:50:25 bostic Exp $ 
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <paths.h>
 
 #include "vi.h"
 #include "options.h"
+#include "excmd.h"
 #include "extern.h"
 
 /*
@@ -28,33 +30,65 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.8 1992/04/16 09:50:25 bostic Exp $ 
  *	coming from /dev/null, and inserts any output lines.
  */
 int
-filter(from, to, cmd)
+filter(from, to, cmd, ftype)
 	MARK from, to;
 	char *cmd;
+	enum filtertype ftype;
 {
-	FILE *fp;
-	MARK new;
+	union wait pstat;
+	FILE *ifp, *ofp;
 	pid_t pid;
 	sig_t intsave, quitsave;
 	sigset_t omask;
-	union wait pstat;
-	int i, input[2], output[2];
+	long dlines, ilines;
+	int input[2], output[2], rval;
 	char *name;
 
-	if (pipe(input) < 0)
-		goto err1;
-	if ((fp = fdopen(input[1], "w")) == NULL || pipe(output) < 0)
-		goto err2;
+	/* Input and output are named from the child's point of view. */
+	input[0] = input[1] = output[0] = output[1] = -1;
+
+	/*
+	 * If child isn't supposed to want input or send output, redirect
+	 * from or to /dev/null.  Otherwise open up the pipe and get a stdio
+	 * buffer for it.
+	 */
+	if (ftype == NOINPUT) {
+		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
+			msg("filter: %s: %s", _PATH_DEVNULL, strerror(errno));
+			goto err;
+		}
+	} else
+		if (pipe(input) < 0 ||
+		    (ifp = fdopen(input[1], "w")) == NULL) {
+			msg("filter: %s", strerror(errno));
+			goto err;
+		}
+
+	if (ftype == NOOUTPUT) {
+		if ((output[1] = open(_PATH_DEVNULL, O_WRONLY, 0)) < 0) {
+			msg("filter: %s: %s", _PATH_DEVNULL, strerror(errno));
+			goto err;
+		}
+	} else
+		if (pipe(output) < 0 ||
+		    (ofp = fdopen(output[0], "r")) == NULL) {
+			msg("filter: %s", strerror(errno));
+			goto err;
+		}
 
 	omask = sigblock(sigmask(SIGCHLD));
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
 		(void)sigsetmask(omask);
-		(void)close(output[0]);
-		(void)close(output[1]);
-err2:		(void)close(input[0]);
-		(void)close(input[1]);
-err1:		msg("filter: %s", strerror(errno));
+		msg("filter: %s", strerror(errno));
+err:		if (input[0] != -1)
+			(void)close(input[0]);
+		if (input[0] != -1)
+			(void)close(input[0]);
+		if (output[0] != -1)
+			(void)close(output[0]);
+		if (output[1] != -1)
+			(void)close(input[1]);
 		return (1);
 		/* NOTREACHED */
 	case 0:				/* Child. */
@@ -71,8 +105,10 @@ err1:		msg("filter: %s", strerror(errno));
 
 		/* Close the child's pipe file descriptors. */
 		(void)close(input[0]);
-		(void)close(input[1]);
-		(void)close(output[0]);
+		if (ftype != NOINPUT)
+			(void)close(input[1]);
+		if (ftype != NOOUTPUT)
+			(void)close(output[0]);
 		(void)close(output[1]);
 
 		if ((name = rindex(PVAL(O_SHELL), '/')) == NULL)
@@ -91,43 +127,52 @@ err1:		msg("filter: %s", strerror(errno));
 
 	/*
 	 * Write the selected lines to the write end of the input pipe.
-	 * Close to flush when done.
+	 * Close when done.
 	 */
-	if (to != MARK_UNSET)
-		ex_writerange("filter", fp, from, to, 0);
-	(void)fclose(fp);
-		
-	ChangeText
-	{
-		/* Adjust MARKs for whole lines, and set "new". */
-		from &= ~(BLKSIZE - 1);
-		if (to) {
-			to &= ~(BLKSIZE - 1);
-			to += BLKSIZE;
-			new = to;
-		} else
-			new = from + BLKSIZE;
+	if (ftype != NOINPUT) {
+		rval = ex_writefp("filter", ifp, from, to, 0);
+		(void)fclose(ifp);
+	} else
+		rval = 0;
 
-		/* Repeatedly read in new text and add it. */
-		while ((i = read(output[0], tmpblk.c, BLKSIZE - 1)) > 0) {
-			tmpblk.c[i] = '\0';
-			add(new, tmpblk.c);
-			for (i = 0; tmpblk.c[i]; i++)
-				if (tmpblk.c[i] == '\n')
-					new = (new & ~(BLKSIZE - 1)) + BLKSIZE;
-				else
-					++new;
-		}
-		if (i < 0) {
-			msg("filter: read: %s.", strerror(errno));
-			(void)close(output[0]);
-			return (1);
-		}
+	/*
+ 	 * Read the output from the read end of the outupt pipe.
+	 * Close when done.
+	 */
+	if (rval == 0 && ftype != NOOUTPUT) {
+		rval = ex_readfp("filter", ofp, from, &ilines);
+		(void)fclose(ofp);
 	}
 
-	/* Close the read end of the output pipe. */
-	(void)close(output[0]);
+	if (rval == 0) {
+		/* Delete old text, if any. */
+		if (ftype != NOINPUT) {
+			delete(from, to);		/* XXX check error. */
+			dlines = markline(to) - markline(from);
+		} else
+			dlines = 0;
 
+		/* Reporting. */
+		if (ilines == dlines) {
+			if (ilines != 0) {
+				rptlines = ilines;
+				rptlabel = "modified";
+			}
+		} else if (dlines == 0) {
+			rptlines = ilines;
+			rptlabel = "added";
+		} else if (ilines == 0) {
+			rptlines = dlines;
+			rptlabel = "deleted";
+		} else if (ilines > dlines) {
+			rptlines = ilines - dlines;
+			rptlabel = "added";
+		} else {
+			rptlines = dlines - ilines;
+			rptlabel = "deleted";
+		}
+	}
+			
 	/* Wait for the child to finish. */
 	intsave = signal(SIGINT, SIG_IGN);
 	quitsave = signal(SIGQUIT, SIG_IGN);
@@ -136,25 +181,11 @@ err1:		msg("filter: %s", strerror(errno));
 	(void)signal(SIGINT, intsave);
 	(void)signal(SIGQUIT, quitsave);
 
-	/* Delete old text, if any. */
-	if (to != MARK_UNSET)
-		delete(from, to);
-
-	/*
-	 * Reporting...
-	 * XXX
-	 * This is wrong at the moment.
-	 */
-	if (rptlines < 0) {
-		rptlines = -rptlines;
-		rptlabel = "less";
-	} else
-		rptlabel = "more";
-
 	if (WIFSIGNALED(pstat))
 		msg("filter: exited with signal %d%s.", WTERMSIG(pstat),
 		    WCOREDUMP(pstat) ? "; core dumped" : "");
 	else if (WIFEXITED(pstat) && WEXITSTATUS(pstat))
 		msg("filter: exited with status %d.", WEXITSTATUS(pstat));
+
 	return (0);
 }
