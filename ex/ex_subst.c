@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.22 1993/01/11 15:51:31 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:31 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.23 1993/02/12 09:29:39 bostic Exp $ (Berkeley) $Date: 1993/02/12 09:29:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -29,7 +29,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.22 1993/01/11 15:51:31 bostic Exp $ 
 enum which {AGAIN, MUSTSETR, FIRST};
 
 static int	checkmatchsize __P((regex_t *));
-static int	regsub __P((u_char *));
+static inline int	regsub __P((u_char *));
 static int	substitute __P((EXCMDARG *, u_char *, regex_t *, enum which));
 
 static regmatch_t *match;		/* Match array. */
