@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.171 1994/10/09 15:22:01 bostic Exp $ (Berkeley) $Date: 1994/10/09 15:22:01 $";
+static char sccsid[] = "$Id: ex.c,v 8.172 1994/10/09 17:25:30 bostic Exp $ (Berkeley) $Date: 1994/10/09 17:25:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1517,10 +1517,9 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	size_t *cmdlenp;
 {
 	MARK cur;
-	recno_t lno;
 	size_t cmdlen;
 	int addr_found, tmp;
-	char *cmd, *endp;
+	char *cmd;
 
 	/*
 	 * Percent character is all lines in the file, and cannot
@@ -1671,7 +1670,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 {
 	EX_PRIVATE *exp;
 	MARK m;
-	long total, val;
+	long total;
 	u_int flags;
 	size_t cmdlen;
 	int (*sf) __P((SCR *, EXF *, MARK *, MARK *, char *, char **, u_int *));

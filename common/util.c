@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.79 1994/10/09 15:21:30 bostic Exp $ (Berkeley) $Date: 1994/10/09 15:21:30 $";
+static char sccsid[] = "$Id: util.c,v 8.80 1994/10/09 17:24:34 bostic Exp $ (Berkeley) $Date: 1994/10/09 17:24:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,9 +241,9 @@ get_slong(sp, addval, rval, isnegative, p, endp, omsg, umsg)
 	val = strtol(p, endp, 10);
 	if (errno == ERANGE) {
 		if (val == LONG_MAX)
-overflow:		msgq(sp, M_ERR, omsg);
+			msgq(sp, M_ERR, omsg);
 		else if (val == LONG_MIN)
-underflow:		msgq(sp, M_ERR, umsg);
+			msgq(sp, M_ERR, umsg);
 		else
 			msgq(sp, M_SYSERR, NULL);
 		return (1);
