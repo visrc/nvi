@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 8.1 1993/06/09 22:24:14 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:24:14 $";
+static char sccsid[] = "$Id: ex_file.c,v 8.2 1993/08/05 18:09:32 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:09:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,6 +28,7 @@ ex_file(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	FREF *frp;
 	char *p;
 
 	switch(cmdp->argc) {
@@ -38,17 +39,19 @@ ex_file(sp, ep, cmdp)
 			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			return (1);
 		}
-		if (F_ISSET(ep, F_NONAME))
-			F_CLR(ep, F_NONAME);
+		frp = sp->frp;
+		if (F_ISSET(frp, FR_NONAME))
+			F_CLR(frp, FR_NONAME);
 		else {
-			set_altfname(sp, ep->name);
-			free(ep->name);
+			set_alt_fname(sp, frp->fname);
+			FREE(frp->fname, strlen(frp->fname));
 		}
-		ep->name = p;
-		F_SET(ep, F_NAMECHANGED);
+		frp->fname = p;
+
+		F_SET(frp, FR_NAMECHANGED);
 
 		/* The read-only bit follows the file name; clear it. */
-		F_CLR(ep, F_RDONLY);
+		F_CLR(frp, FR_RDONLY);
 		break;
 	default:
 		abort();

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.3 1993/07/21 10:02:24 bostic Exp $ (Berkeley) $Date: 1993/07/21 10:02:24 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.4 1993/08/05 18:10:08 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:10:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,21 +58,21 @@ ex_bang(sp, ep, cmdp)
 			modified = 1;
 			break;
 		case '%':
-			if (F_ISSET(ep, F_NONAME)) {
+			if (F_ISSET(sp->frp, FR_NONAME)) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for %%.");
 				return (1);
 			}
-			len += ep->nlen;
+			len += sp->frp->nlen;
 			modified = 1;
 			break;
 		case '#':
-			if (F_ISSET(ep, F_NONAME)) {
+			if (F_ISSET(sp->frp, FR_NONAME)) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for #.");
 				return (1);
 			}
-			len += ep->nlen;
+			len += sp->frp->nlen;
 			modified = 1;
 			break;
 		case '\\':
@@ -97,12 +97,12 @@ ex_bang(sp, ep, cmdp)
 				t += len;
 				break;
 			case '%':
-				memmove(t, ep->name, ep->nlen);
-				t += ep->nlen;
+				memmove(t, sp->frp->fname, sp->frp->nlen);
+				t += sp->frp->nlen;
 				break;
 			case '#':
-				memmove(t, ep->name, ep->nlen);
-				t += ep->nlen;
+				memmove(t, sp->frp->fname, sp->frp->nlen);
+				t += sp->frp->nlen;
 				break;
 			case '\\':
 				if (*p)

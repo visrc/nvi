@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.1 1993/06/09 22:23:54 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:23:54 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.2 1993/08/05 18:09:57 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:09:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,7 @@ static char sccsid[] = "$Id: ex_edit.c,v 8.1 1993/06/09 22:23:54 bostic Exp $ (B
 
 /*
  * ex_edit --	:e[dit][!] [+cmd] [file]
- *	Edit a new file.
+ *	Edit a file; if none specified, re-edit the current file.
  */
 int
 ex_edit(sp, ep, cmdp)
@@ -29,15 +29,16 @@ ex_edit(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	EXF *tep;
+	FREF *frp;
 
 	switch(cmdp->argc) {
 	case 0:
-		tep = ep;
+		frp = sp->frp;
 		break;
 	case 1:
-		if ((tep = file_get(sp, ep, (char *)cmdp->argv[0], 1)) == NULL)
+		if ((frp = file_add(sp, sp->frp, cmdp->argv[0], 1)) == NULL)
 			return (1);
-		set_altfname(sp, tep->name);
+		set_alt_fname(sp, cmdp->argv[0]);
 		break;
 	default:
 		abort();
@@ -46,10 +47,11 @@ ex_edit(sp, ep, cmdp)
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	/* Switch files. */
+	if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
+		return (1);
+	sp->n_ep = tep;
+	sp->n_frp = frp;
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
-	sp->enext = tep;
-
-	set_altfname(sp, ep->name);
 
 	if (cmdp->plus)
 		if ((tep->icommand = strdup(cmdp->plus)) == NULL)
@@ -76,14 +78,17 @@ ex_visual(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	EXF *tep;
+	FREF *frp;
 
 	switch (cmdp->argc) {
 	case 0:
+		F_CLR(sp, S_MODE_EX);
+		F_SET(sp, S_MODE_VI);
 		return (0);
 	case 1:
-		if ((tep = file_get(sp, ep, (char *)cmdp->argv[0], 1)) == NULL)
+		if ((frp = file_add(sp, sp->frp, cmdp->argv[0], 1)) == NULL)
 			return (1);
-		set_altfname(sp, tep->name);
+		set_alt_fname(sp, cmdp->argv[0]);
 		break;
 	default:
 		abort();
@@ -92,10 +97,11 @@ ex_visual(sp, ep, cmdp)
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	/* Switch files. */
+	if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
+		return (1);
+	sp->n_ep = tep;
+	sp->n_frp = frp;
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
-	sp->enext = tep;
-
-	set_altfname(sp, ep->name);
 
 	if (cmdp->plus)
 		if ((tep->icommand = strdup(cmdp->plus)) == NULL)

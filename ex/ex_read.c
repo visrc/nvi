@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.3 1993/07/06 18:44:32 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:44:32 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.4 1993/08/05 18:09:09 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:09:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,11 +41,11 @@ ex_read(sp, ep, cmdp)
 
 	/* If nothing, just read the file. */
 	if ((p = cmdp->string) == NULL) {
-		if (F_ISSET(ep, F_NONAME)) {
+		if (F_ISSET(sp->frp, FR_NONAME)) {
 			msgq(sp, M_ERR, "No filename from which to read.");
 			return (1);
 		}
-		fname = ep->name;
+		fname = sp->frp->fname;
 		force = 0;
 		goto noargs;
 	}
@@ -79,11 +79,11 @@ ex_read(sp, ep, cmdp)
 
 	switch (cmdp->argc) {
 	case 0:
-		fname = ep->name;
+		fname = sp->frp->fname;
 		break;
 	case 1:
 		fname = (char *)cmdp->argv[0];
-		set_altfname(sp, fname);
+		set_alt_fname(sp, fname);
 		break;
 	default:
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);

@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.3 1993/07/21 12:21:28 bostic Exp $ (Berkeley) $Date: 1993/07/21 12:21:28 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.4 1993/08/05 18:09:02 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:09:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,6 @@ static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
 static char	*linear_search __P((char *, char *, char *));
 static int	 search __P((char *, char *, char **));
-static int	 tag_change __P((SCR *, EXF *, char *, char *, char *, int));
 static int	 tag_get __P((SCR *, char *, char **, char **, char **));
 
 /*
@@ -45,10 +44,11 @@ ex_tagfirst(sp, tagarg)
 	char *tagarg;
 {
 	EXF *tep;
+	FREF *frp;
 	MARK m;
 	long tl;
 	int sval;
-	char *p, *tag, *fname, *search, *argv[2];
+	char *p, *tag, *fname, *search;
 
 	/* Taglength may limit the number of characters. */
 	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(tagarg) > tl)
@@ -59,11 +59,9 @@ ex_tagfirst(sp, tagarg)
 		return (1);
 
 	/* Create the file entry. */
-	argv[0] = fname;
-	argv[1] = NULL;
-	if (file_set(sp, 1, argv) ||
-	    (tep = file_first(sp, 0)) == NULL ||
-	    (tep = file_start(sp, tep, NULL)) == NULL)
+	if ((frp = file_add(sp, NULL, fname, 0)) == NULL)
+		return (1);
+	if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
 		return (1);
 
 	/*
@@ -85,13 +83,13 @@ ex_tagfirst(sp, tagarg)
 	}
 
 	/* Set up the screen/file. */
-	tep->lno = m.lno;
-	tep->cno = m.cno;
 	sp->ep = tep;
-	F_SET(tep, F_EADDR_LOAD);
-	F_CLR(tep, F_EADDR_NONE);
+	frp->lno = m.lno;
+	frp->cno = m.cno;
+	sp->frp = frp;
+	F_SET(frp, FR_CURSORSET);
 
-	/* Might as well make this a default tag. */
+	/* Might as well make this the default tag. */
 	if ((sp->tlast = strdup(tagarg)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
@@ -109,9 +107,14 @@ ex_tagpush(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	enum {TC_CHANGE, TC_CURRENT} which;
+	EXF *tep;
+	FREF *frp;
+	MARK m;
 	TAG *tp;
+	int sval;
 	long tl;
-	char *fname, *search, *tag;
+	char *fname, *p, *search, *tag;
 	
 	switch (cmdp->argc) {
 	case 1:
@@ -140,24 +143,77 @@ ex_tagpush(sp, ep, cmdp)
 	if (tag_get(sp, sp->tlast, &tag, &fname, &search))
 		return (1);
 
-	/* Save enough information that we can get back. */
-	if ((tp = malloc(sizeof(TAG))) == NULL) {
+	/* Get an FREF structure. */
+	if ((frp = file_add(sp, sp->frp, fname, 1)) == NULL) {
+		FREE(tag, strlen(tag));
+		return (1);
+	}
+
+	/* Get an EXF structure, so we can search. */
+	if (sp->frp == frp) {
+		which = TC_CURRENT;
+		tep = sp->ep;
+	} else {
+		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
+		if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
+			return (1);
+		which = TC_CHANGE;
+	}
+
+	/*
+	 * Search for the tag; cheap fallback for C functions
+	 * if the name is the same but the arguments have changed.
+	 */
+	m.lno = 1;
+	m.cno = 0;
+	sval = f_search(sp, tep, &m, &m, search,
+	    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
+	if (sval && (p = strrchr(search, '(')) != NULL) {
+		p[1] = '\0';
+		sval = f_search(sp, tep, &m, &m, search,
+		    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
+	}
+	if (sval)
+		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
+	FREE(tag, strlen(tag));
+	if (sval) {
+		switch (which) {
+		case TC_CHANGE:
+			sp->n_ep = tep;
+			sp->n_frp = frp;
+			F_SET(sp, S_FSWITCH);
+			break;
+		case TC_CURRENT:
+			return (1);
+		}
+	} else switch (which) {
+		case TC_CHANGE:
+			frp->lno = m.lno;
+			frp->cno = m.cno;
+			F_SET(frp, FR_CURSORSET);
+			sp->n_ep = tep;
+			sp->n_frp = frp;
+			F_SET(sp, S_FSWITCH);
+			break;
+		case TC_CURRENT:
+			sp->lno = m.lno;
+			sp->cno = m.cno;
+			break;
+		}
+
+	/*
+	 * Save enough information that we can get back; if the malloc
+	 * fails, keep going, it just means the user can't return.
+	 */
+	if ((tp = malloc(sizeof(TAG))) == NULL)
 		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
-		return (1);
-	}
-	tp->ep = ep;
-	tp->lno = sp->lno;
-	tp->cno = sp->cno;
+	else {
+		tp->frp = sp->frp;
+		tp->lno = sp->lno;
+		tp->cno = sp->cno;
 
-	/* Try to change. */
-	if (tag_change(sp, ep, tag, fname, search, F_ISSET(cmdp, E_FORCE))) {
-		free(tag);
-		FREE(tp, sizeof(TAG));
-		return (1);
+		HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
 	}
-
-	/* Push saved information. */
-	HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
 	return (0);
 }
 
@@ -181,13 +237,20 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	/* If not switching files, it's easy; else do the work. */
-	if (tp->ep == ep) {
+	if (tp->frp == sp->frp) {
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
 		MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
-		sp->enext = tp->ep;
-		set_altfname(sp, ep->name);
+
+		if ((sp->n_ep = file_init(sp, NULL, tp->frp, NULL)) == NULL)
+			return (1);
+
+		sp->n_frp = tp->frp;
+		tp->frp->lno = tp->lno;
+		tp->frp->cno = tp->cno;
+		F_SET(sp->n_frp, FR_CURSORSET);
+
 		F_SET(sp, S_FSWITCH);
 	}
 
@@ -216,15 +279,18 @@ ex_tagtop(sp, ep, cmdp)
 	}
 
 	/* If not switching files, it's easy; else do the work. */
-	if (tp->ep == ep) {
+	if (tp->frp == sp->frp) {
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
-		sp->enext = tp->ep;
-		sp->lno = tp->lno;
-		sp->cno = tp->cno;
-		set_altfname(sp, ep->name);
+		if ((sp->n_ep = file_init(sp, NULL, tp->frp, NULL)) == NULL)
+			return (1);
+
+		sp->n_frp = tp->frp;
+		tp->frp->lno = tp->lno;
+		tp->frp->cno = tp->cno;
+		F_SET(sp->n_frp, FR_CURSORSET);
+
 		F_SET(sp, S_FSWITCH);
 	}
 
@@ -233,72 +299,6 @@ ex_tagtop(sp, ep, cmdp)
 		HDR_DELETE(tp, next, prev, TAG);
 		FREE(tp, sizeof(TAG));
 	}
-	return (0);
-}
-
-static int
-tag_change(sp, ep, tag, fname, search, force)
-	SCR *sp;
-	EXF *ep;
-	char *tag, *fname, *search;
-	int force;
-{
-	enum {TC_CHANGE, TC_CURRENT} which;
-	EXF *tep;
-	MARK m;
-	int sval;
-	char *p;
-
-	if ((tep = file_get(sp, ep, fname, 1)) == NULL)
-		return (1);
-	if (ep == tep)
-		which = TC_CURRENT;
-	else {
-		MODIFY_CHECK(sp, ep, force);
-		if ((tep = file_start(sp, tep, NULL)) == NULL)
-			return (1);
-		which = TC_CHANGE;
-	}
-
-	/*
-	 * Search for the tag; cheap fallback for C functions
-	 * if the name is the same but the arguments have changed.
-	 */
-	m.lno = 1;
-	m.cno = 0;
-	sval = f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
-	    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
-	if (sval && (p = strrchr(search, '(')) != NULL) {
-		p[1] = '\0';
-		sval = f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
-		    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
-	}
-	if (sval) {
-		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
-		switch (which) {
-		case TC_CHANGE:
-			sp->enext = tep;
-			set_altfname(sp, ep->name);
-			F_SET(sp, S_FSWITCH);
-			return (0);
-		case TC_CURRENT:
-			return (1);
-		}
-	} else switch (which) {
-		case TC_CHANGE:
-			tep->lno = m.lno;
-			tep->cno = m.cno;
-			F_SET(tep, F_EADDR_LOAD);
-			F_CLR(tep, F_EADDR_NONE);
-			sp->enext = tep;
-			set_altfname(sp, ep->name);
-			F_SET(sp, S_FSWITCH);
-			break;
-		case TC_CURRENT:
-			sp->lno = m.lno;
-			sp->cno = m.cno;
-			break;
-		}
 	return (0);
 }
 
