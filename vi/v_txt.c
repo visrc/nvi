@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.60 1996/04/27 17:46:10 bostic Exp $ (Berkeley) $Date: 1996/04/27 17:46:10 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.61 1996/04/27 18:00:03 bostic Exp $ (Berkeley) $Date: 1996/04/27 18:00:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -606,24 +606,34 @@ replay:	if (LF_ISSET(TXT_REPLAY))
 			goto resolve;
 	}
 
+	/* If quoted by someone else, simply insert the character. */
+	if (F_ISSET(&evp->e_ch, CH_QUOTED))
+		goto insq_ch;
+
 	/*
-	 * If quoted by someone else, simply insert the character.
-	 *
 	 * !!!
 	 * If this character was quoted by a K_VLNEXT or a backslash, replace
 	 * the placeholder (a carat or a backslash) with the new character.
+	 * If it was quoted by a K_VLNEXT, we've already adjusted the cursor
+	 * because it has to appear on top of the placeholder character.  If
+	 * it was quoted by a backslash, adjust the cursor now, the cursor
+	 * doesn't appear on top of it.  Historic practice in both cases.
+	 *
 	 * Skip tests for abbreviations; ":ab xa XA" followed by "ixa^V<space>"
 	 * doesn't perform an abbreviation.  Special case, ^V^J (not ^V^M) is
 	 * the same as ^J, historically.
 	 */
-	if (F_ISSET(&evp->e_ch, CH_QUOTED))
-		goto insq_ch;
-	if (quote != Q_NOTSET) {
+	if (quote == Q_BTHIS || quote == Q_VTHIS) {
 		FL_CLR(ec_flags, EC_QUOTED);
 
-		if (quote == Q_VTHIS && evp->e_value != K_NL ||
-		    quote == Q_BTHIS &&
+		if (quote == Q_BTHIS &&
 		    (evp->e_value == K_VERASE || evp->e_value == K_VKILL)) {
+			quote = Q_NOTSET;
+			--tp->cno;
+			++tp->owrite;
+			goto insl_ch;
+		}
+		if (quote == Q_VTHIS && evp->e_value != K_NL) {
 			quote = Q_NOTSET;
 			goto insl_ch;
 		}
