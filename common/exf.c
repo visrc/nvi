@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.12 1994/12/02 10:45:15 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:45:15 $";
+static char sccsid[] = "$Id: exf.c,v 9.13 1994/12/02 11:01:38 bostic Exp $ (Berkeley) $Date: 1994/12/02 11:01:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1210,12 +1210,17 @@ file_lock(sp, name, fdp, fd, iswrite)
 	arg.l_start = arg.l_len = 0;
 	arg.l_pid = 0;
 
-	/* If the file descriptor isn't opened for writing, it must fail. */
+	/*
+	 * If the file descriptor isn't opened for writing, it must fail.
+	 * If we fail because we can't get a read/write file descriptor,
+	 * we return LOCK_SUCCESS, believing that the file is readonly
+	 * and that will be sufficient to warn the user.
+	 */
 	if (!iswrite) {
 		if (name == NULL || fdp == NULL)
 			return (LOCK_FAILED);
 		if ((fd = open(name, O_RDWR, 0)) == -1)
-			return (LOCK_FAILED);
+			return (LOCK_SUCCESS);
 		*fdp = fd;
 		didopen = 1;
 	}
