@@ -1,4 +1,4 @@
-#	$Id: README,v 8.17 1993/10/09 12:46:39 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:46:39 $
+#	$Id: README,v 8.18 1993/10/26 19:19:19 bostic Exp $ (Berkeley) $Date: 1993/10/26 19:19:19 $
 
 This is the README for version 0.76 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
@@ -63,33 +63,36 @@ There aren't a lot of new features in nex/nvi, but there are a few
 things you might like:
 
 	o 8-bit clean data, practically infinite lines/files.
+		^Vx[0-9A-Fa-f]* in input mode will insert any
+		legal character value.
 	o Split screens:
-		:sp[lit] [file ...] splits the screen
-		^W switches between screens
+		:sp[lit] [file ...] splits the screen.
+		^W switches between screens.
 	o Shell screens:
 		:sc[ript] [file ...] runs a shell in the screen.
 		Carriage return sends a line to the shell.
 	o Buffer display:
-		:b[display] displays the current cut buffers
+		:b[display] displays the current cut buffers.
 	o Tag stacks:
-		^T returns from previous tag location
-		:tagpop returns to previous tag location
-		:tagtop returns to original tag location
+		^T returns from previous tag location.
+		:tagpop returns to previous tag location.
+		:tagtop returns to original tag location.
 	o Infinite undo:
-		:set nundo toggles this behavior
-		u un-does the previous operation
-		U re-does the next operation
+		:set nundo toggles this behavior.
+		u un-does the previous operation.
+		U re-does the next operation.
 	o Usage information:
-		:exu[sage] cmd for ex commands
-		:viu[sage] key for vi commands
+		:exu[sage] [cmd] for ex commands.
+		:viu[sage] [key] for vi commands.
+		:help
 	o Extended RE expressions:
 		:set extended turns on extended RE's, so you can
 		do "/in|or" and search for the next occurrence of
 		more than one expression.
 	o Word search:
-		^A searches for the word referenced by the cursor
+		^A searches for the word referenced by the cursor.
 	o Number increment:
-		# increments the number referenced by the cursor
+		# increments the number referenced by the cursor.
 	o Previous file:
 		:prev[ious][!] edits the previous file from the
 		argument list.
