@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.10 1992/10/26 17:46:12 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:46:12 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.11 1992/11/02 22:18:25 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:18:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: ex_file.c,v 5.10 1992/10/26 17:46:12 bostic Exp $ (
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
@@ -24,8 +25,6 @@ int
 ex_file(cmdp)
 	EXCMDARG *cmdp;
 {
-	recno_t lline;
-
 	switch(cmdp->argc) {
 	case 0:
 		break;
