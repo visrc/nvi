@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 8.7 1994/08/15 19:45:34 bostic Exp $ (Berkeley) $Date: 1994/08/15 19:45:34 $
+ *	$Id: mem.h,v 8.8 1994/08/16 10:03:57 bostic Exp $ (Berkeley) $Date: 1994/08/16 10:03:57 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -12,25 +12,27 @@
  */
 #define	BINC_GOTO(sp, lp, llen, nlen) {					\
 	void *__bincp;							\
-	if ((nlen) > llen &&						\
-	    (__bincp = binc(sp, lp, &(llen), nlen)) == NULL)		\
-		goto binc_err;						\
-	/*								\
-	 * !!!								\
-	 * Possible conversion, e.g. Data General MV-series boxes.	\
-	 */								\
-	lp = __bincp;							\
+	if ((nlen) > llen) {						\
+		if ((__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
+			goto binc_err;					\
+		/*							\
+		 * !!!							\
+		 * Possible pointer conversion.				\
+		 */							\
+		lp = __bincp;						\
+	}								\
 }
 #define	BINC_RET(sp, lp, llen, nlen) {					\
 	void *__bincp;							\
-	if ((nlen) > llen &&						\
-	    (__bincp = binc(sp, lp, &(llen), nlen)) == NULL)		\
-		return (1);						\
-	/*								\
-	 * !!!								\
-	 * Possible conversion, e.g. Data General MV-series boxes.	\
-	 */								\
-	lp = __bincp;							\
+	if ((nlen) > llen) {						\
+		if ((__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
+			return (1);					\
+		/*							\
+		 * !!!							\
+		 * Possible pointer conversion.				\
+		 */							\
+		lp = __bincp;						\
+	}								\
 }
 
 /*
