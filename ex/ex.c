@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.66 1993/11/30 14:18:52 bostic Exp $ (Berkeley) $Date: 1993/11/30 14:18:52 $";
+static char sccsid[] = "$Id: ex.c,v 8.67 1993/11/30 14:19:30 bostic Exp $ (Berkeley) $Date: 1993/11/30 14:19:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ ex_cfile(sp, ep, filename)
 	 * is flatly impossible.  Hope that malloc fails if the file is too
 	 * large.
 	 */
-	if ((bp = malloc((size_t)sb.st_size)) == NULL)
+	if ((bp = malloc((size_t)sb.st_size + 1)) == NULL)
 		goto err;
 
 	len = read(fd, bp, (int)sb.st_size);
