@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.53 1994/08/04 16:44:12 bostic Exp $ (Berkeley) $Date: 1994/08/04 16:44:12 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.54 1994/08/05 07:53:30 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:53:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,8 +139,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] co[py] line [flags]",
 	    "copy lines elsewhere in the file"},
 /* C_DELETE */
-	{"delete",	ex_delete,
-	    E_ADDR2|E_AUTOPRINT|E_NORC|E_ZERO|E_ZERODEF,
+	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "bca1",
 	    "[line [,line]] d[elete] [buffer] [count] [flags]",
 	    "delete lines from the file"},
