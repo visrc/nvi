@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 10.6 1995/09/21 12:08:50 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:50 $";
+static char sccsid[] = "$Id: v_util.c,v 10.7 1995/09/25 10:43:11 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:43:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,6 +154,9 @@ v_message(sp, p, which)
 	case VIM_COMBUF:
 		msgq(sp, M_ERR,
 		    "201|Buffers should be specified before the command");
+		break;
+	case VIM_EMPTY:
+		msgq(sp, M_BERR, "209|The file is empty");
 		break;
 	case VIM_EOF:
 		msgq(sp, M_BERR, "202|Already at end-of-file");
