@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.23 1996/05/15 19:57:36 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:57:36 $";
+static const char sccsid[] = "$Id: search.c,v 10.24 1996/05/26 11:12:08 bostic Exp $ (Berkeley) $Date: 1996/05/26 11:12:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -248,20 +248,29 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		/*
 		 * XXX
 		 * Warn if the search wrapped.  This message is only displayed
-		 * if there are no keys in the queue.  The problem is that the
-		 * command is going to succeed, and the message isn't an error,
-		 * it's informational in nature.  If a macro causes it to be
-		 * output repeatedly, e.g., the pattern only occurs once in the
-		 * file and wrapscan is set, you can lose, particularly if the
-		 * macro does something like:
+		 * if we're in interactive mode and there are no keys in the
+		 * queue. The problem is that the command is going to succeed,
+		 * and the message isn't an error, it's merely informational.
+		 * So, if we're reading the .exrc file, displaying it causes
+		 * the screen to pause before entering the file, which is bad.
+		 * Or, if a macro causes it to be repeatedly displayed, e.g.,
+		 * the pattern only occurs once in the file and wrapscan is set,
+		 * you lose, particularly if the macro does something like:
 		 *	:map K /pattern/^MjK
 		 * Each new search will display the message and the /pattern/
 		 * will immediately overwrite it, with strange results.  The
 		 * System V vi displays the "wrapped" message multiple times,
 		 * but it's overwritten each time, so it's not as noticeable.
 		 * Since we don't discard messages, it's a real problem.
+		 *
+		 * XXX
+		 * The test for SC_SCR_EX or SC_SCR_VI feels wrong to me.  I
+		 * didn't originally intend for that bit to reflect that the
+		 * user has "gone interactive", but that's the only solution
+		 * I see.
 		 */
-		if (wrapped && LF_ISSET(SEARCH_MSG) && !KEYS_WAITING(sp))
+		if (wrapped && LF_ISSET(SEARCH_MSG) &&
+		    F_ISSET(sp, SC_SCR_EX | SC_SCR_VI) && !KEYS_WAITING(sp))
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
@@ -403,7 +412,8 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 		 * XXX
 		 * See the comment in f_search() for more information.
 		 */
-		if (wrapped && LF_ISSET(SEARCH_MSG) && !KEYS_WAITING(sp))
+		if (wrapped && LF_ISSET(SEARCH_MSG) &&
+		    F_ISSET(sp, SC_SCR_EX | SC_SCR_VI) && !KEYS_WAITING(sp))
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
