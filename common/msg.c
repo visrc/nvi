@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.17 1995/10/18 10:48:04 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:48:04 $";
+static char sccsid[] = "$Id: msg.c,v 10.18 1995/10/18 17:55:07 bostic Exp $ (Berkeley) $Date: 1995/10/18 17:55:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -425,10 +425,14 @@ msgq_rpt(sp)
 	 * !!!
 	 * And now, a vi clone test.  Historically, vi reported if the number
 	 * of changed lines was > than the value, not >=, unless it was a yank
-	 * command, which used >=.  No lie.  I got complaints, so we conform
-	 * to historic practice.  In addition, setting report to 0 in the 4BSD
-	 * historic vi was equivalent to setting it to 1, for an unknown reason
-	 * (this bug was apparently fixed in System V at some point).
+	 * command, which used >=.  No lie.  Furthermore, an action was never
+	 * reported for a single line action.  This is consistent for actions
+	 * other than yank, but yank didn't report single line actions even if
+	 * the report edit option was set to 1.  In addition, setting report to
+	 * 0 in the 4BSD historic vi was equivalent to setting it to 1, for an
+	 * unknown reason (this bug was fixed in System III/V at some point).
+	 * I got complaints, so nvi conforms to System III/V historic practice
+	 * except that we report a yank of 1 line if report is set to 1.
 	 */
 #define	ARSIZE(a)	sizeof(a) / sizeof (*a)
 #define	MAXNUM		25
