@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.30 1994/04/24 13:57:30 bostic Exp $ (Berkeley) $Date: 1994/04/24 13:57:30 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.31 1994/04/25 16:28:57 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:28:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -483,7 +483,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	 * DON'T set the V_CHAR flag, the char isn't required,
 	 * so it's handled specially in getcmd().
 	 */
-	{v_z, 		V_CNT|VM_RCM_SETFNB,
+	{v_z, 		V_CNT|VM_RCM_SETLFNB,
 	    "[line]z[window_size][-|.|+|^|<CR>]",
 	    " z redraw window"},
 /* 173   { */
