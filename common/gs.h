@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.4 1995/06/15 12:54:26 bostic Exp $ (Berkeley) $Date: 1995/06/15 12:54:26 $
+ *	$Id: gs.h,v 10.5 1995/06/15 19:01:09 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:01:09 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -172,8 +172,6 @@ struct _gs {
 	int	(*scr_busy) __P((SCR *, char const *, int));
 					/* Enter tty canonical mode. */
 	int	(*scr_canon) __P((SCR *, int));
-					/* Clear the screen. */
-	int	(*scr_clear) __P((SCR *));
 					/* Clear to the end of the line. */
 	int	(*scr_clrtoeol) __P((SCR *));
 					/* Return the cursor location. */
@@ -197,9 +195,7 @@ struct _gs {
 					/* Move the cursor. */
 	int	(*scr_move) __P((SCR *, size_t, size_t));
 					/* Refresh the screen. */
-	int	(*scr_refresh) __P((SCR *));
-					/* Restore the screen. */
-	int	(*scr_repaint) __P((SCR *));
+	int	(*scr_refresh) __P((SCR *, int));
 					/* Resize two screens. */
 	int	(*scr_resize) __P((SCR *, long, long, SCR *, long, long));
 					/* Split the screen. */
