@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.12 1992/11/02 22:37:16 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:37:16 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.13 1992/11/06 18:06:02 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:06:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,11 +45,12 @@ v_increment(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	MARK ecursor;
 	u_long ulval;
 	long lval;
-	size_t len;
-	char *p, *ntype, nbuf[40];
+	size_t len, nlen;
+	int rval;
+	char *ntype, nbuf[60];
+	u_char *p, *np;
 
 	/* Do repeat operations. */
 	if (vp->character == '#')
@@ -66,7 +68,7 @@ v_increment(vp, fm, tm, rp)
 	lastch = vp->character;
 
 	/* Figure out the resulting type and number. */
-	p = vp->keyword;
+	p = (u_char *)vp->keyword;
 	len = vp->klen;
 	if (len > 1 && p[0] == '0') {
 		if (vp->character == '+') {
@@ -86,7 +88,7 @@ v_increment(vp, fm, tm, rp)
 				ntype = fmt[HEXC];
 			else if (p[1] == 'x')
 				ntype = fmt[HEXL];
-		(void)snprintf(nbuf, sizeof(nbuf), ntype, len, ulval);
+		nlen = snprintf(nbuf, sizeof(nbuf), ntype, len, ulval);
 	} else {
 		if (vp->character == '+') {
 			lval = strtol(vp->keyword, NULL, 0);
@@ -107,13 +109,40 @@ underflow:			bell();
 		}
 		ntype = *vp->keyword == '+' || *vp->keyword == '-' ?
 			fmt[SDEC] : fmt[DEC];
-		(void)snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
+		nlen = snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
 	}
-	len = strlen(nbuf);
 
-	*rp = *fm;
-	ecursor = *fm;
-	ecursor.cno += vp->klen;
-			
-	return (change(fm, &ecursor, (u_char *)nbuf, len));
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		GETLINE_ERR(fm->lno);
+		return (1);
+	}
+	if (vp->klen >= nlen) {
+		bcopy(nbuf, p + fm->cno, nlen);
+		if (vp->klen > nlen) {
+			p += fm->cno + nlen;
+			bcopy(p + vp->klen - nlen, p, len - fm->cno - vp->klen);
+			len -= vp->klen - nlen;
+		}
+		np = NULL;
+	} else {
+		if ((np = malloc(len + nlen)) == NULL) {
+			msg("Error: %s", strerror(errno));
+			return (1);
+		}
+		bcopy(p, np, fm->cno);
+		bcopy(nbuf, np + fm->cno, nlen);
+		bcopy(p + fm->cno + vp->klen,
+		    np + fm->cno + nlen, len - fm->cno - vp->klen);
+		p = np;
+		len = len - vp->klen + nlen;
+	}
+	if (file_sline(curf, fm->lno, p, len))
+		rval = 1;
+	else {
+		*rp = *fm;
+		rval = 0;
+	}
+	if (np)
+		free(np);
+	return (rval);
 }
