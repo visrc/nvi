@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.16 1995/01/23 18:33:11 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:33:11 $";
+static char sccsid[] = "$Id: vi.c,v 9.17 1995/01/30 09:14:17 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:14:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,6 +66,7 @@ int
 vi(sp)
 	SCR *sp;
 {
+	GS *gp;
 	MARK abs;
 	VICMDARG cmd, *vp;
 	u_int flags, saved_mode;
@@ -82,7 +83,7 @@ vi(sp)
 	/* Cause reset of strange attraction. */
 	F_SET(vp, VM_RCM_SET);
 
-	for (eval = 0;;) {
+	for (gp = sp->gp, eval = 0;;) {
 		/* Refresh the screen. */
 		sp->showmode = "Command";
 		if (F_ISSET(VIP(sp), VIP_SKIPREFRESH))
@@ -132,9 +133,11 @@ vi(sp)
 		 */
 		switch (v_cmd(sp, DOT, vp, NULL, &comcount, &mapped)) {
 		case GC_ERR:
+			if (INTERRUPTED(sp) || F_ISSET(sp, S_SCR_RESIZE))
+				goto intr;
 			goto err;
 		case GC_ERR_NOFLUSH:
-			goto enoflush;
+			goto err_noflush;
 		case GC_OK:
 			break;
 		}
@@ -175,8 +178,12 @@ vi(sp)
 		if (F_ISSET(vp, V_MOTION)) {
 			flags = F_ISSET(vp, VM_RCM_MASK);
 			F_CLR(vp, VM_RCM_MASK);
-			if (v_motion(sp, DOTMOTION, vp, &mapped))
+			if (v_motion(sp, DOTMOTION, vp, &mapped)) {
+				if (INTERRUPTED(sp) ||
+				    F_ISSET(sp, S_SCR_RESIZE))
+					goto intr;
 				goto err;
+			}
 			if (F_ISSET(vp, VM_NOMOTION))
 				goto err;
 			if (!F_ISSET(vp, VM_RCM_MASK))
@@ -208,7 +215,7 @@ vi(sp)
 			goto err;
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
-		if (F_ISSET(sp->gp, G_TMP_INUSE)) {
+		if (F_ISSET(gp, G_TMP_INUSE)) {
 			msgq(sp, M_ERR,
 			    "202|vi: temporary buffer not released");
 			return (1);
@@ -306,18 +313,21 @@ vi(sp)
 			if (0) {
 err:				term_flush(sp, "Vi error", CH_MAPPED);
 			}
-enoflush:		(void)msg_rpt(sp, 1);
+err_noflush:		(void)msg_rpt(sp, 1);
 		}
 
 		/*
-		 * Check and clear the interrupts.  There's an obvious race,
-		 * but it's not worth cleaning up.  This is done after the
-		 * err: lable, so that if the "error" was an interupt it gets
-		 * cleaned up.
+		 * Check and clear interrupts.  There's an obvious race, but
+		 * it's not worth fixing.
 		 */
-		if (INTERRUPTED(sp))
-			term_flush(sp, "Interrupted", CH_MAPPED);
-		CLR_INTERRUPT(sp);
+		if (INTERRUPTED(sp) || F_ISSET(sp, S_SCR_RESIZE)) {
+			if (INTERRUPTED(sp)) {
+intr:				CLR_INTERRUPT(sp);
+				term_flush(sp, "Interrupted", CH_MAPPED);
+			}
+			if (F_ISSET(sp, S_SCR_RESIZE))
+				break;
+		}
 	}
 
 	/* Free allocated key number/word memory. */
@@ -936,7 +946,8 @@ v_key(sp, ikeyp, map)
 		 * on the command line, and two interrupts were generated
 		 * in a row.  (Just figured you might want to know that.)
 		 */
-		(void)sp->e_bell(sp);
+		if (INTERRUPTED(sp))
+			(void)sp->e_bell(sp);
 		return (1);
 	case INP_OK:
 		return (0);
