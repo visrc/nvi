@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.16 1993/09/30 12:04:45 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:04:45 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.17 1993/10/03 13:38:50 bostic Exp $ (Berkeley) $Date: 1993/10/03 13:38:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,11 +83,11 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	int tty_cwait;		/* Characters waiting. */
 	int max, tmp;
 
-	/* Set the input flag, so tabs get displayed correctly. */
+	/*
+	 * Set the input flag, so tabs get displayed correctly
+	 * and everyone knows that the text buffer is in use.
+	 */
 	F_SET(sp, S_INPUT);
-
-	/* Set text buffer in-use flag. */
-	F_SET(hp, HDR_INUSE);
 
 	/* Set return value. */
 	eval = 0;
@@ -675,9 +675,8 @@ ins_ch:			if (isblank(ch) && lch == L_NOTSPACE && !replay) {
 #endif
 	}
 
-	/* Clear input, text buffer in-use flags. */
+	/* Clear input, text buffer in-use flag. */
 ret:	F_CLR(sp, S_INPUT);
-	F_CLR(hp, HDR_INUSE);
 
 	return (eval);
 }
