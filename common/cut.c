@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.2 1993/06/29 16:53:55 bostic Exp $ (Berkeley) $Date: 1993/06/29 16:53:55 $";
+static char sccsid[] = "$Id: cut.c,v 8.3 1993/08/31 17:21:06 bostic Exp $ (Berkeley) $Date: 1993/08/31 17:21:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,6 +184,13 @@ cutline(sp, ep, lno, fcno, len, newp)
 /*
  * put --
  *	Put text buffer contents into the file.
+ *
+ * !!!
+ * Historically, pasting into a file with no lines in vi would preserve
+ * the single blank line.  This is almost certainly a result of the fact
+ * that historic vi couldn't deal with a file that had no lines in it.
+ * This implementation treats that as a bug, and does not retain the
+ * blank line.
  */	
 int
 put(sp, ep, buffer, cp, rp, append)
