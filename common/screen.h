@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.8 1992/10/26 17:44:50 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:50 $
+ *	$Id: screen.h,v 5.9 1992/10/29 14:36:56 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:36:56 $
  */
 
 /* 
@@ -58,6 +58,8 @@ extern int needexerase;
 		return (1);						\
 	}								\
 }
+
+#define	CONTMSG	"Enter return to continue: "
 
 int	scr_cchange __P((EXF *));
 int	scr_end __P((EXF *));
