@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.30 1993/05/20 18:13:16 bostic Exp $ (Berkeley) $Date: 1993/05/20 18:13:16 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.31 1993/05/28 01:35:12 bostic Exp $ (Berkeley) $Date: 1993/05/28 01:35:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,7 @@ err:			FREE_SPACE(sp, bp, blen);
 			curset = 1;
 			if (newidx > oldidx)
 				sp->cno += newidx - oldidx;
-			else if (sp->cno > oldidx - newidx)
+			else if (sp->cno >= oldidx - newidx)
 				sp->cno -= oldidx - newidx;
 		}
 	}
