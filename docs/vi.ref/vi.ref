@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.27 1994/04/29 15:20:12 bostic Exp $ (Berkeley) $Date: 1994/04/29 15:20:12 $
+.\"     $Id: vi.ref,v 8.28 1994/04/30 10:59:11 bostic Exp $ (Berkeley) $Date: 1994/04/30 10:59:11 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -234,7 +234,6 @@ flag of sendmail (or a similar mechanism in other mailers).
 A simple way to do this is to insert the following script into your
 .Pa /etc/rc.local
 (or other startup) file:
-.sp
 .ne 8v
 .Bd -literal -offset indent -compact
 # Recover nvi editor files.
