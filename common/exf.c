@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.2 1992/05/03 08:25:52 bostic Exp $ (Berkeley) $Date: 1992/05/03 08:25:52 $";
+static char sccsid[] = "$Id: exf.c,v 5.3 1992/05/03 08:27:16 bostic Exp $ (Berkeley) $Date: 1992/05/03 08:27:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -490,8 +490,6 @@ FoundEOF:
 		msg("Backspace characters deleted due to ':set beautify'");
 	}
 
-	storename(origname);
-
 	/* force all blocks out onto the disk, to support file recovery */
 	blksync();
 
@@ -643,47 +641,4 @@ int tmpend(bang)
 	tmpabort(TRUE);
 
 	return TRUE;
-}
-
-/* This function stores the file's name in the second block of the temp file.
- */
-storename(name)
-	char	*name;	/* the name of the file - normally origname */
-{
-	int	len;
-	char	path[MAXPATHLEN], *ptr;
-
-	if (!name)
-	{
-		bzero(path, sizeof(path));
-		path[1] = 127;
-	}
-	else if (*name != '/')
-	{
-		/* get the directory name */
-		ptr = getcwd(path, sizeof(path));
-		if (ptr != path)
-		{
-			strcpy(path, ptr);
-		}
-
-		/* append a slash to the directory name */
-		len = strlen(path);
-		path[len++] = '/';
-
-		/* append the filename, padded with heaps o' NULs */
-		strncpy(path + len, *name ? name : "foo", sizeof(path) - len);
-	}
-	else
-	{
-		/* copy the filename into path */
-		strncpy(path, *name ? name : "foo", sizeof(path));
-	}
-
-	if (tmpfd >= 0)
-	{
-		/* write the name out to second block of the temp file */
-		lseek(tmpfd, (long)sizeof(path), 0);
-		write(tmpfd, path, (unsigned)sizeof(path));
-	}
 }
