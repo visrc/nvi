@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.2 1992/05/17 14:58:57 bostic Exp $ (Berkeley) $Date: 1992/05/17 14:58:57 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.3 1992/05/17 17:28:19 bostic Exp $ (Berkeley) $Date: 1992/05/17 17:28:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,10 +26,33 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.2 1992/05/17 14:58:57 bostic Exp $ (
 	rp->lno = lno;							\
 }
 
+/*
+ * v_lgoto -- [count]G
+ *	Go to first non-blank character of the line count, the last line
+ *	of the file by default.
+ */
+int
+v_lgoto(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	if (vp->flags & VC_C1SET) {
+		if (file_gline(curf, vp->count, NULL) == NULL) {
+			bell();
+			if (ISSET(O_VERBOSE))
+				msg("Line %lu doesn't exist.", vp->count);
+			return (1);
+		}
+		rp->lno = vp->count;
+	} else
+		rp->lno = file_lline(curf);
+	return (v_nonblank(rp));
+}
+
 /* 
  * v_home -- [count]H
  *	Move to the first non-blank character of the line count from
- *	the top of the screen.
+ *	the top of the screen, 1 by default.
  */
 int
 v_home(vp, cp, rp)
@@ -69,7 +92,7 @@ v_middle(vp, cp, rp)
 /*
  * v_bottom -- [count]L
  *	Move to the first non-blank character of the line count from
- *	the bottom of the screen.
+ *	the bottom of the screen, 1 by default.
  */
 int
 v_bottom(vp, cp, rp)
