@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.12 1992/04/15 09:11:38 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:11:38 $";
+static char sccsid[] = "$Id: ex.c,v 5.13 1992/04/16 09:55:54 bostic Exp $ (Berkeley) $Date: 1992/04/16 09:55:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -772,16 +772,16 @@ fileexpand(gp, word, wordlen)
 	for (p = word, olen = plen = 0; p = strpbrk(p, "%#"); ++p)
 		if (*p == '%') {
 			if (!*origname) {
-			    msg("No filename to substitute for %%.");
-			    return (1);
+				msg("No filename to substitute for %%.");
+				return (1);
 			}
 			if (!olen)
 				olen = strlen(origname);
 			len += olen;
 		} else {
 			if (!*prevorig) {
-			    msg("No filename to substitute for #.");
-			    return (1);
+				msg("No filename to substitute for #.");
+				return (1);
 			}
 			if (!plen)
 				plen = strlen(prevorig);
