@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.8 1994/11/19 12:24:32 bostic Exp $ (Berkeley) $Date: 1994/11/19 12:24:32 $";
+static char sccsid[] = "$Id: ex.c,v 9.9 1994/11/19 12:31:48 bostic Exp $ (Berkeley) $Date: 1994/11/19 12:31:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1857,10 +1857,11 @@ search:		F_SET(exp, EX_ABSMARK);
 		}
 
 		/*
-		 * It's illegal to specify a line that doesn't exist.
-		 * Check it here instead of in lots of other places.
+		 * It's illegal to specify a line that doesn't exist (other
+		 * than 0, which is a special address).  Check it here, not
+		 * in lots of other places.
 		 */
-		if (file_gline(sp, cur->lno, NULL) == NULL) {
+		if (cur->lno && file_gline(sp, cur->lno, NULL) == NULL) {
 			badlno(sp, 1, NUM_OK);
 			return (1);
 		}
