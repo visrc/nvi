@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.8 1993/09/10 10:59:48 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:59:48 $";
+static char sccsid[] = "$Id: util.c,v 8.9 1993/09/10 11:38:19 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:38:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,6 +158,13 @@ loop:		for (;
 /*
  * msgrpt --
  *	Report on the lines that changed.
+ *
+ * !!!
+ * Historic vi documentation (USD:15-8) claimed that "The editor will also
+ * always tell you when a change you make affects text which you cannot see."
+ * This isn't true -- edit a large file and do "100d|1".  We don't implement
+ * this semantic as it would require that we track each line that changes
+ * during a command instead of just keeping count.
  */
 int
 msg_rpt(sp, fp)
