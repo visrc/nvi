@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.25 1996/02/06 10:45:17 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:45:17 $";
+static char sccsid[] = "$Id: msg.c,v 10.26 1996/02/25 19:23:07 bostic Exp $ (Berkeley) $Date: 1996/02/25 19:23:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -468,7 +468,7 @@ msgq_rpt(sp)
 				*p++ = ' ';
 				tlen += 2;
 			}
-			len = sprintf(p, "%lu ", sp->rptlines[cnt]);
+			len = snprintf(p, MAXNUM, "%lu ", sp->rptlines[cnt]);
 			p += len;
 			tlen += len;
 			t = msg_cat(sp,
