@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.17 1994/01/09 14:20:08 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:08 $";
+static char sccsid[] = "$Id: cut.c,v 8.18 1994/01/10 08:34:48 bostic Exp $ (Berkeley) $Date: 1994/01/10 08:34:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ cut(sp, ep, cbp, namep, fm, tm, flags)
 	TEXT *tp;
 	recno_t lno;
 	size_t len;
-	int append, namedbuffer;
+	int append, namedbuffer, setdefcb;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "cut: from {%lu, %d}, to {%lu, %d}%s\n",
@@ -79,14 +79,15 @@ cut(sp, ep, cbp, namep, fm, tm, flags)
 		if (namep == NULL) {
 			cbp = sp->gp->dcb_store;
 			append = namedbuffer = 0;
+			setdefcb = 1;
 		} else {
 			name = *namep;
 			CBNAME(sp, cbp, name);
 			append = isupper(name);
-			namedbuffer = 1;
+			namedbuffer = setdefcb = 1;
 		}
 	} else
-		append = namedbuffer = 0;
+		append = namedbuffer = setdefcb = 0;
 
 	/*
 	 * If this is a new buffer, create it and add it into the list.
@@ -96,8 +97,10 @@ cut(sp, ep, cbp, namep, fm, tm, flags)
 		CALLOC(sp, cbp, CB *, 1, sizeof(CB));
 		cbp->name = name;
 		CIRCLEQ_INIT(&cbp->textq);
-		if (namedbuffer)
+		if (namedbuffer) {
 			LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
+		} else
+			sp->gp->dcb_store = cbp;
 	} else if (!append) {
 		text_lfree(&cbp->textq);
 		cbp->len = 0;
@@ -145,7 +148,7 @@ mem:				if (append)
 			cbp->len += tp->len;
 		}
 	}
-	if (namedbuffer)
+	if (setdefcb)
 		sp->gp->dcbp = cbp;	/* Repoint default buffer. */
 	return (0);
 }
