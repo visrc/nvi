@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 9.1 1994/11/09 18:35:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:59 $";
+static char sccsid[] = "$Id: v_ch.c,v 9.2 1994/12/16 12:42:57 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:42:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,7 +161,7 @@ v_chf(sp, vp)
 			notfound(sp, key);
 			return (1);
 		}
-		GETLINE_ERR(sp, vp->m_start.lno);
+		FILE_LERR(sp, vp->m_start.lno);
 		return (1);
 	}
 
@@ -249,7 +249,7 @@ v_chF(sp, vp)
 			notfound(sp, key);
 			return (1);
 		}
-		GETLINE_ERR(sp, vp->m_start.lno);
+		FILE_LERR(sp, vp->m_start.lno);
 		return (1);
 	}
 

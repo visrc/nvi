@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 9.1 1994/11/09 18:36:07 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:07 $";
+static char sccsid[] = "$Id: v_match.c,v 9.2 1994/12/16 12:43:01 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ v_match(sp, vp)
 			return (1);
 		if (lno == 0)
 			goto nomatch;
-		GETLINE_ERR(sp, vp->m_start.lno);
+		FILE_LERR(sp, vp->m_start.lno);
 		return (1);
 	}
 
@@ -167,7 +167,7 @@ nomatch:		msgq(sp, M_BERR, "180|No match character on this line");
 	}
 	mp = vp->m_start.lno < vp->m_stop.lno ? &vp->m_stop : &vp->m_start;
 	if ((p = file_gline(sp, mp->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, mp->lno);
+		FILE_LERR(sp, mp->lno);
 		return (1);
 	}
 	for (p += mp->cno + 1, len -= mp->cno; --len; ++p)

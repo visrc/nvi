@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.6 1994/12/01 17:44:17 bostic Exp $ (Berkeley) $Date: 1994/12/01 17:44:17 $";
+static char sccsid[] = "$Id: v_search.c,v 9.7 1994/12/16 12:43:05 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -442,7 +442,7 @@ correct(sp, vp, isdelta)
 	 */
 	if (vp->m_start.lno < vp->m_stop.lno && vp->m_stop.cno == 0) {
 		if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
-			GETLINE_ERR(sp, vp->m_stop.lno);
+			FILE_LERR(sp, vp->m_stop.lno);
 			return (1);
 		}
 		if (vp->m_start.cno == 0)

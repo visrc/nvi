@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 9.1 1994/11/09 18:36:13 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:13 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 9.2 1994/12/16 12:43:02 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,7 +170,7 @@ eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
 			if (file_lline(sp, &lno))
 				return (1);
 			if (vp->m_start.lno != 1 || lno != 0) {
-				GETLINE_ERR(sp, vp->m_start.lno);
+				FILE_LERR(sp, vp->m_start.lno);
 				return (1);
 			}
 			vp->m_start.cno = 0;

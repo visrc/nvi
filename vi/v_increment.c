@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 9.2 1994/11/20 12:54:54 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:54:54 $";
+static char sccsid[] = "$Id: v_increment.c,v 9.3 1994/12/16 12:42:59 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:42:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ v_increment(sp, vp)
 	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
 		if (file_lline(sp, &lno))
 			return (1);
-		GETLINE_ERR(sp, vp->m_start.lno);
+		FILE_LERR(sp, vp->m_start.lno);
 		return (1);
 	}
 

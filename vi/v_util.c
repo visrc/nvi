@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 9.1 1994/11/09 18:36:32 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:32 $";
+static char sccsid[] = "$Id: v_util.c,v 9.2 1994/12/16 12:43:12 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,7 +68,7 @@ v_eol(sp, mp)
 		msgq(sp, M_BERR, "193|Already at end-of-line");
 	else {
 		if (file_gline(sp, mp->lno, &len) == NULL) {
-			GETLINE_ERR(sp, mp->lno);
+			FILE_LERR(sp, mp->lno);
 			return;
 		}
 		if (mp->cno == len - 1)

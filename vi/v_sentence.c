@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 9.1 1994/11/09 18:36:22 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:22 $";
+static char sccsid[] = "$Id: v_sentence.c,v 9.2 1994/12/16 12:43:06 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -171,7 +171,7 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 		if (vp->m_start.cno == 0 &&
 		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
 			if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
-				GETLINE_ERR(sp, vp->m_stop.lno);
+				FILE_LERR(sp, vp->m_stop.lno);
 				return (1);
 			}
 			vp->m_stop.cno = len ? len - 1 : 0;
@@ -344,7 +344,7 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 		if (vp->m_start.cno == 0 &&
 		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
 			if (file_gline(sp, --vp->m_start.lno, &len) == NULL) {
-				GETLINE_ERR(sp, vp->m_start.lno);
+				FILE_LERR(sp, vp->m_start.lno);
 				return (1);
 			}
 			vp->m_start.cno = len ? len - 1 : 0;

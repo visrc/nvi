@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 9.1 1994/11/09 18:36:34 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:34 $";
+static char sccsid[] = "$Id: v_xchar.c,v 9.2 1994/12/16 12:43:13 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ v_xchar(sp, vp)
 			return (1);
 		if (lno == 0)
 			goto nodel;
-		GETLINE_ERR(sp, vp->m_start.lno);
+		FILE_LERR(sp, vp->m_start.lno);
 		return (1);
 	}
 	if (len == 0) {

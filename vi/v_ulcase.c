@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 9.1 1994/11/09 18:36:30 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:30 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 9.2 1994/12/16 12:43:11 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,7 +113,7 @@ v_mulcase(sp, vp)
 
 	for (lno = vp->m_start.lno;;) {
 		if ((p = file_gline(sp, lno, &len)) == NULL) {
-			GETLINE_ERR(sp, lno);
+			FILE_LERR(sp, lno);
 			return (1);
 		}
 		if (len != 0 && ulcase(sp, lno, p, len,

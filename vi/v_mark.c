@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 9.2 1994/12/16 12:21:55 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:21:55 $";
+static char sccsid[] = "$Id: v_mark.c,v 9.3 1994/12/16 12:43:00 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ mark(sp, vp, cmd)
 	switch (cmd) {
 	case BQMARK:
 		if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
-			GETLINE_ERR(sp, vp->m_stop.lno);
+			FILE_LERR(sp, vp->m_stop.lno);
 			return (1);
 		}
 		if (vp->m_stop.cno < len ||
@@ -213,7 +213,7 @@ mark(sp, vp, cmd)
 	 */
 	if (vp->m_start.lno < vp->m_stop.lno && vp->m_stop.cno == 0) {
 		if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
-			GETLINE_ERR(sp, vp->m_stop.lno);
+			FILE_LERR(sp, vp->m_stop.lno);
 			return (1);
 		}
 		if (vp->m_start.cno == 0)

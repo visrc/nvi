@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 9.1 1994/11/09 18:35:58 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:58 $";
+static char sccsid[] = "$Id: getc.c,v 9.2 1994/12/16 12:42:56 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:42:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ cs_init(sp, csp)
 		if (lno == 0)
 			msgq(sp, M_BERR, "173|Empty file");
 		else
-			GETLINE_ERR(sp, csp->cs_lno);
+			FILE_LERR(sp, csp->cs_lno);
 		return (1);
 	}
 	if (csp->cs_len == 0 || v_isempty(csp->cs_bp, csp->cs_len)) {
@@ -88,7 +88,7 @@ cs_next(sp, csp)
 			if (file_lline(sp, &slno))
 				return (1);
 			if (slno > csp->cs_lno) {
-				GETLINE_ERR(sp, csp->cs_lno);
+				FILE_LERR(sp, csp->cs_lno);
 				return (1);
 			}
 			csp->cs_flags = CS_EOF;
@@ -183,7 +183,7 @@ cs_prev(sp, csp)
 		slno = csp->cs_lno;		/* Save current line. */
 		if ((csp->cs_bp =		/* Line should exist. */
 		    file_gline(sp, --csp->cs_lno, &csp->cs_len)) == NULL) {
-			GETLINE_ERR(sp, csp->cs_lno);
+			FILE_LERR(sp, csp->cs_lno);
 			csp->cs_lno = slno;
 			return (1);
 		}

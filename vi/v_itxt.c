@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 9.6 1994/11/16 19:57:47 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:57:47 $";
+static char sccsid[] = "$Id: v_itxt.c,v 9.7 1994/12/16 12:43:07 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:43:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,7 +111,7 @@ v_ia(sp, vp)
 			if (file_lline(sp, &lno))
 				return (1);
 			if (lno != 0) {
-				GETLINE_ERR(sp, lno);
+				FILE_LERR(sp, lno);
 				return (1);
 			}
 			lno = 1;
@@ -175,7 +175,7 @@ v_ii(sp, vp)
 			if (file_lline(sp, &lno))
 				return (1);
 			if (lno != 0) {
-				GETLINE_ERR(sp, vp->m_start.lno);
+				FILE_LERR(sp, vp->m_start.lno);
 				return (1);
 			}
 			lno = 1;
@@ -235,7 +235,7 @@ insert:			p = "";
 			if (file_iline(sp, sp->lno, p, 0))
 				return (1);
 			if ((p = file_gline(sp, sp->lno, &len)) == NULL) {
-				GETLINE_ERR(sp, sp->lno);
+				FILE_LERR(sp, sp->lno);
 				return (1);
 			}
 			ai_line = sp->lno + 1;
@@ -291,7 +291,7 @@ insert:			p = "";
 			if (file_aline(sp, 1, sp->lno, p, len))
 				return (1);
 			if ((p = file_gline(sp, ++sp->lno, &len)) == NULL) {
-				GETLINE_ERR(sp, sp->lno);
+				FILE_LERR(sp, sp->lno);
 				return (1);
 			}
 			ai_line = sp->lno - 1;
@@ -334,7 +334,7 @@ v_change(sp, vp)
 		if (file_lline(sp, &lno))
 			return (1);
 		if (lno != 0) {
-			GETLINE_ERR(sp, vp->m_start.lno);
+			FILE_LERR(sp, vp->m_start.lno);
 			return (1);
 		}
 		return (v_ia(sp, vp));
@@ -415,7 +415,7 @@ v_change(sp, vp)
 	if (lmode && vp->m_start.cno) {
 		/* Get a copy of the first line changed. */
 		if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-			GETLINE_ERR(sp, vp->m_start.lno);
+			FILE_LERR(sp, vp->m_start.lno);
 			return (1);
 		}
 		/* Copy the leading text elsewhere. */
@@ -441,7 +441,7 @@ v_change(sp, vp)
 		if (file_lline(sp, &lno))
 			return (1);
 		if (lno != 0) {
-			GETLINE_ERR(sp, vp->m_start.lno);
+			FILE_LERR(sp, vp->m_start.lno);
 			return (1);
 		}
 		len = 0;
@@ -482,7 +482,7 @@ v_Replace(sp, vp)
 		if (file_lline(sp, &lno))
 			return (1);
 		if (lno != 0) {
-			GETLINE_ERR(sp, vp->m_start.lno);
+			FILE_LERR(sp, vp->m_start.lno);
 			return (1);
 		}
 		len = 0;
@@ -512,7 +512,7 @@ v_Replace(sp, vp)
 	 */
 	while (--cnt) {
 		if ((p = file_gline(sp, vp->m_final.lno, &len)) == NULL)
-			GETLINE_ERR(sp, vp->m_final.lno);
+			FILE_LERR(sp, vp->m_final.lno);
 		LF_SET(TXT_REPLAY);
 
 		sp->lno = vp->m_final.lno;
@@ -557,7 +557,7 @@ v_subst(sp, vp)
 		if (file_lline(sp, &lno))
 			return (1);
 		if (lno != 0) {
-			GETLINE_ERR(sp, vp->m_start.lno);
+			FILE_LERR(sp, vp->m_start.lno);
 			return (1);
 		}
 		len = 0;
