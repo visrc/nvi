@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.7 1993/10/05 12:05:02 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:02 $";
+static char sccsid[] = "$Id: seq.c,v 8.8 1993/10/31 13:23:49 bostic Exp $ (Berkeley) $Date: 1993/10/31 13:23:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,7 +175,7 @@ seq_dump(sp, stype, isname)
 	enum seqtype stype;
 	int isname;
 {
-	CHNAME *cname;
+	CHNAME const *cname;
 	SEQ *qp;
 	int ch, cnt, len, tablen;
 	char *p;
