@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.24 1993/09/07 18:44:22 bostic Exp $ (Berkeley) $Date: 1993/09/07 18:44:22 $";
+static char sccsid[] = "$Id: ex.c,v 8.25 1993/09/07 19:57:40 bostic Exp $ (Berkeley) $Date: 1993/09/07 19:57:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -509,11 +509,9 @@ two:		switch (cmd.addrcnt) {
 	/*
 	 * If the entire string is parsed by the command itself, we don't
 	 * even skip leading white-space, it's significant for some commands.
-	 * However, require that there be *something*.
 	 */
 	if (cp->syntax[0] == 's') {
-		for (p = exc; *p && isblank(*p); ++p);
-		sp->ex_argv[0] = *p ? exc : NULL;
+		sp->ex_argv[0] = exc;
 		cmd.argc = 1;
 		cmd.argv = sp->ex_argv;
 		goto addr2;
