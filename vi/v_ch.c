@@ -12,7 +12,6 @@
 
 #include "vi.h"
 
-#ifndef NO_CHARSEARCH
 static MARK	(*prevfwdfn)();	/* function to search in same direction */
 static MARK	(*prevrevfn)();	/* function to search in opposite direction */
 static char	prev_key;	/* sought cvhar from previous [fFtT] */
@@ -159,4 +158,3 @@ MARK	m_Tch(m, cnt, key)
 
 	return m + 1;
 }
-#endif
