@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 9.1 1994/11/09 18:36:36 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:36 $";
+static char sccsid[] = "$Id: v_z.c,v 9.2 1994/11/17 20:10:46 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:10:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,8 @@ v_z(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	recno_t last, lno;
+	recno_t lno;
+	size_t len;
 	u_int value;
 
 	/*
@@ -44,10 +45,8 @@ v_z(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET)) {
 		lno = vp->count;
-		if (file_lline(sp, &last))
+		if ((file_gline(sp, lno, &len)) == NULL && file_lline(sp, &lno))
 			return (1);
-		if (lno > last)
-			lno = last;
 	} else
 		lno = vp->m_start.lno;
 
@@ -89,8 +88,7 @@ v_z(sp, vp)
 			if (sp->s_position(sp, &vp->m_final, 0, P_TOP))
 				return (1);
 		} else
-			if (sp->s_scroll(sp,
-			    &vp->m_final, sp->t_rows, Z_PLUS))
+			if (sp->s_scroll(sp, &vp->m_final, sp->t_rows, Z_PLUS))
 				return (1);
 		break;
 	case '^':
@@ -125,7 +123,5 @@ v_z(sp, vp)
 			return (1);
 		break;
 	}
-
-
 	return (0);
 }
