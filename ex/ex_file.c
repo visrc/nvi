@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.24 1993/05/11 17:14:09 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:09 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.25 1993/05/14 16:38:50 bostic Exp $ (Berkeley) $Date: 1993/05/14 16:38:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,6 +51,6 @@ ex_file(sp, ep, cmdp)
 	default:
 		abort();
 	}
-	status(sp, ep, sp->lno);
+	status(sp, ep, sp->lno, 1);
 	return (0);
 }
