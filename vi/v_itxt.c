@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.45 1994/10/11 18:24:57 bostic Exp $ (Berkeley) $Date: 1994/10/11 18:24:57 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.46 1994/10/13 16:43:30 bostic Exp $ (Berkeley) $Date: 1994/10/13 16:43:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,6 +168,7 @@ v_ia(sp, ep, vp)
 		if (v_ntext(sp, ep,
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
+		LF_CLR(TXT_APPENDEOL);
 
 		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
@@ -224,6 +225,7 @@ v_iI(sp, ep, vp)
 		if (v_ntext(sp, ep,
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
+		LF_CLR(TXT_APPENDEOL);
 
 		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
@@ -269,6 +271,7 @@ v_ii(sp, ep, vp)
 		if (v_ntext(sp, ep,
 		    sp->tiqp, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
+		LF_CLR(TXT_APPENDEOL);
 
 		LF_SET(TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
@@ -733,6 +736,7 @@ v_Replace(sp, ep, vp)
 	if (v_ntext(sp, ep, sp->tiqp,
 	    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 		return (1);
+	LF_CLR(TXT_APPENDEOL | TXT_OVERWRITE | TXT_REPLACE);
 
 	/*
 	 * Special case.  The historic vi handled [count]R badly, in that R
@@ -767,6 +771,7 @@ v_Replace(sp, ep, vp)
 		if (v_ntext(sp, ep, sp->tiqp,
 		    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
+		LF_CLR(TXT_APPENDEOL | TXT_OVERWRITE | TXT_REPLACE);
 	}
 	return (0);
 }
