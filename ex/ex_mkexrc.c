@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.5 1992/04/05 09:23:42 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:42 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.6 1992/04/05 15:48:19 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:48:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,8 @@ ex_mkexrc(cmdp)
 	/* In case it already existed, set the permissions. */
 	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
+	if (abbr_save(fp) || ferror(fp))
+		goto err;
 	if (map_save(fp) || ferror(fp))
 		goto err;
 	if (opts_save(fp) || ferror(fp))
@@ -61,9 +63,6 @@ err:		msg("%s: incomplete: %s", name, strerror(errno));
 	}
 #ifndef NO_DIGRAPH
 	digraph_save(fd);
-#endif
-#ifndef	NO_ABBR
-	abbr_save(fd);
 #endif
 #ifndef NO_COLOR
 	color_save(fd);
