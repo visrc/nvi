@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.14 1992/05/23 08:50:20 bostic Exp $ (Berkeley) $Date: 1992/05/23 08:50:20 $";
+static char sccsid[] = "$Id: vi.c,v 5.15 1992/05/27 10:40:02 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:40:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,18 +27,21 @@ static char sccsid[] = "$Id: vi.c,v 5.14 1992/05/23 08:50:20 bostic Exp $ (Berke
 static int getcmd __P((VICMDARG *, VICMDARG *));
 static int getcount __P((int, u_long *, int *));
 static int getkeyword __P((VICMDARG *, u_int));
+static int getmotion __P((VICMDARG *, MARK *, MARK *));
 
 static VICMDARG dot, dotmotion;
 
+/*
+ * vi --
+ * 	Main vi command loop.
+ */
 void
 vi()
 {
-	register VICMDARG *mp, *vp;
-	register int key;
-	VICMDARG cmd, motion;
-	MARK fm;
-	u_long cnt, oldy, oldx;
-	u_int vc_c1set, flags;
+	register VICMDARG *vp;
+	MARK fm, tm;
+	VICMDARG cmd;
+	u_int flags;
 	int erase;
 
 	scr_ref();
@@ -76,7 +79,6 @@ err:		if (msgcnt) {
 		 * command setting the cursor to the resulting mark.
 		 */
 		vp = &cmd;
-		mp = NULL;
 		if (getcmd(vp, NULL))
 			goto err;
 
@@ -89,70 +91,25 @@ err:		if (msgcnt) {
 			goto err;
 		}
 
-		/* If the command requires motion, get the motion command. */
-		if (flags & V_MOTION) {
-			if (getcmd(&motion, vp)) {
-				bell();
-				goto err;
-			}
-			mp = &motion;
-		}
-
 		/* Get any associated keyword. */
 		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(vp, flags))
 			goto err;
-
-		/*
-	 	 * Get resulting motion mark.  Motion commands can be doubled
-		 * to indicate the current line.  In this case, or if the
-		 * command is a "line command", set the flags to indicate
-		 * this.  If not a doubled command, run the function to get
-		 * the resulting mark.  Count may be provided both to the
-		 * command and to the motion, in which case the count is
-		 * multiplicative.  For example, "3y4y" is the same as "12yy".
-		 * This count is provided to the motion command, not to the
-		 * regular function.  Make sure we restore the original values
-		 * of the command structure so dot commands can change the
-		 * count values, e.g. "2dw" "3." deletes a total of five words.
-		 */
-		if (mp != NULL) {
-			cnt = mp->count = mp->flags & VC_C1SET ? mp->count : 1;
-			if (vp->flags & VC_C1SET) {
-				mp->count *= vp->count;
-				mp->flags |= VC_C1SET;
-				vp->flags &= ~VC_C1SET;
-				vc_c1set = VC_C1SET;
-			} else
-				vc_c1set = 0;
-			if (vp->key == mp->key) {
-				vp->flags |= VC_LMODE;
-				vp->motion.lno = cursor.lno + mp->count - 1;
-				vp->motion.cno = 1;
-				fm.lno = cursor.lno;
-				fm.cno = 0;
-				if (file_gline(curf,
-				    vp->motion.lno, NULL) == NULL) {
-					v_eof(&cursor);
-					goto err;
-				}
-			} else {
-				mp->flags |= VC_ISMOTION;
-				if ((mp->kp->func)(mp, &cursor, &vp->motion))
-					goto err;
-				if (mp->kp->flags & V_LMODE)
-					vp->flags |= VC_LMODE;
-				fm = cursor;
-			}
-			mp->count = cnt;
-		} else
-			fm = cursor;
 
 		/* If a non-relative movement, set the '' mark. */
 		if (flags & V_ABS)
 			SETABSMARK(&cursor);
 
+		/* Do any required motion. */
+		if (flags & V_MOTION) {
+			if (getmotion(vp, &fm, &tm)) {
+				bell();
+				goto err;
+			}
+		} else
+			fm = cursor;
+
 		/* Call the function, get the resulting mark. */
-		if ((vp->kp->func)(vp, &fm, &cursor))
+		if ((vp->kp->func)(vp, &fm, &tm, &cursor))
 			goto err;
 
 		/*
@@ -169,11 +126,17 @@ err:		if (msgcnt) {
 		/* Update the screen. */
 		scr_cchange();
 
-		/* Set the dot variables. */
+		/* Set the dot command structure. */
 		if (flags & V_DOT) {
 			dot = cmd;
-			dot.flags |= VC_ISDOT | vc_c1set;
-			dotmotion = motion;
+			dot.flags |= VC_ISDOT;
+			/*
+			 * If a count supplied for both the motion and the
+			 * command, the count applies only to the motion.
+			 * Reset the command count in the dot structure.
+			 */
+			if (vp->flags & VC_C1RESET)
+				dot.flags |= VC_C1SET;
 		}
 	}
 }
@@ -230,18 +193,25 @@ getcmd(vp, ismotion)
 	bzero(&vp->vpstartzero,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
-	/* If '.' command, return the dot motion. */
-	if (ismotion && ismotion->flags & VC_ISDOT) {
-		*vp = dotmotion;
-		return (0);
-	}
-
-	/* 'C' and 'D' imply motion to the end-of-line. */
-	if (ismotion != NULL && (ismotion->key == 'C' || ismotion->key == 'D'))
+	/*
+	 * Some commands imply motions; if they do, any buffer or count
+	 * should have been specified as part of the command.
+	 */
+	switch(vp->key) {
+	case 'C':			/* Implied EOL motion. */
+	case 'D':
 		key = '$';
-	else {
-		/* Pick up optional buffer. */
+		break;
+	case 'X':			/* Implied cursor left motion. */
+		key = 'h';
+		break;
+	case 's':			/* Implied cursor right motion. */
+		key = 'l';
+		break;
+	default:
 		KEY(key);
+
+		/* Pick up optional buffer. */
 		if (key == '"') {
 			KEY(key);
 			if (!isalnum(key))
@@ -250,15 +220,14 @@ getcmd(vp, ismotion)
 			KEY(key);
 		} else
 			vp->buffer = OOBCB;
-	}
-
-	/*
-	 * Pick up optional count.  Special case, a leading 0 is not a count,
-	 * it's a command.
-	 */
-	if (isdigit(key) && key != '0') {
-		GETCOUNT(vp->count);
-		vp->flags |= VC_C1SET;
+		/*
+		 * Pick up optional count.  Special case, a leading 0 is not
+		 * a count, it's a command.
+		 */
+		if (isdigit(key) && key != '0') {
+			GETCOUNT(vp->count);
+			vp->flags |= VC_C1SET;
+		}
 	}
 
 	/* Find the command. */
@@ -301,9 +270,9 @@ getcmd(vp, ismotion)
 			if (key != '"')
 				goto usage;
 			KEY(key);
-			if (!isalnum(vp->buffer)) {
+			if (vp->buffer > UCHAR_MAX) {
 ebuf:				bell();
-				msg("Buffer names are [0-9A-Za-z].");
+				msg("Invalid buffer name.");
 				return (1);
 			}
 			vp->buffer = key;
@@ -359,6 +328,105 @@ usage:				bell();
 	/* Required character. */
 	if (flags & V_CHAR)
 		KEY(vp->character);
+	return (0);
+}
+
+/*
+ * getmotion --
+ *
+ * Get resulting motion mark.
+ */
+static int
+getmotion(vp, fm, tm)
+	VICMDARG *vp;
+	MARK *fm, *tm;
+{
+	VICMDARG motion;
+	u_long cnt;
+
+	/* If '.' command, use the dot motion, else get the motion command. */
+	if (vp->flags & VC_ISDOT)
+		motion = dotmotion;
+	else if (getcmd(&motion, vp))
+		return (1);
+
+	/*
+	 * A count may be provided both to the command and to the motion, in
+	 * which case the count is multiplicative.  For example, "3y4y" is the
+	 * same as "12yy".  This count is provided to the motion command and
+	 * not to the regular function. 
+	 */
+	cnt = motion.count = motion.flags & VC_C1SET ? motion.count : 1;
+	if (vp->flags & VC_C1SET) {
+		motion.count *= vp->count;
+		motion.flags |= VC_C1SET;
+
+		/*
+		 * Set flags to restore the original values of the command
+		 * structure so dot commands can change the count values,
+		 * e.g. "2dw" "3." deletes a total of five words.
+		 */
+		vp->flags &= ~VC_C1SET;
+		vp->flags |= VC_C1RESET;
+	}
+
+	/*
+	 * Motion commands can be doubled to indicate the current line.  In
+	 * this case, or if the command is a "line command", set the flags
+	 * appropriately.  If not a doubled command, run the function to get
+	 * the resulting mark.
+ 	 */
+	if (vp->key == motion.key) {
+		vp->flags |= VC_LMODE;
+
+		/* Set the end of the command. */
+		tm->lno = cursor.lno + motion.count - 1;
+		tm->cno = 1;
+		if (file_gline(curf, tm->lno, NULL) == NULL) {
+			v_eof(&cursor);
+			return (1);
+		}
+
+		/* Set the origin of the command. */
+		fm->lno = cursor.lno;
+		fm->cno = 0;
+	} else {
+		/*
+		 * Motion commands change the underlying movement (*snarl*).
+		 * For example, "l" is illegal at the end of a line, but "dl"
+		 * is not.  Set a flag so the function knows the situation.
+		 */
+		motion.flags |= VC_ISMOTION;
+		if ((motion.kp->func)(&motion, &cursor, NULL, tm))
+			return (1);
+
+		/*
+		 * If the underlying motion was a line motion, set the flag
+		 * in the command structure.
+		 */
+		if (motion.kp->flags & V_LMODE)
+			vp->flags |= VC_LMODE;
+
+		/*
+		 * If the motion is in a backward direction, switch the current
+		 * location so that we're always moving in the same direction.
+		 */
+		if (tm->lno < cursor.lno ||
+		    tm->lno == cursor.lno && tm->cno < cursor.cno) {
+			*fm = *tm;
+			*tm = cursor;
+		} else
+			*fm = cursor;
+	}
+
+	/*
+	 * If a dot command save motion structure.  Note that the motion count
+	 * was changed above and needs to be reset.
+	 */
+	if (vp->flags & V_DOT) {
+		dotmotion = motion;
+		dotmotion.count = cnt;
+	}
 	return (0);
 }
 
