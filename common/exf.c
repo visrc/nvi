@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.23 1995/01/31 17:48:49 bostic Exp $ (Berkeley) $Date: 1995/01/31 17:48:49 $";
+static char sccsid[] = "$Id: exf.c,v 9.24 1995/02/02 15:00:07 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:00:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -379,6 +379,10 @@ file_init(sp, frp, rcv_name, flags)
 	++ep->refcnt;
 	sp->ep = ep;
 	sp->frp = frp;
+
+	/* If we were executing a global, discard further execution. */
+	if (F_ISSET(sp, S_GLOBAL))
+		F_SET(sp, S_GLOBAL_ABORT);
 
 	/* Set the initial cursor position, execute initial command. */
 	file_cinit(sp);
