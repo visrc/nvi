@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.21 1995/01/27 17:34:05 bostic Exp $ (Berkeley) $Date: 1995/01/27 17:34:05 $";
+static char sccsid[] = "$Id: exf.c,v 9.22 1995/01/31 09:44:05 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:44:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -858,42 +858,21 @@ file_write(sp, fm, tm, name, flags)
 	}
 
 	p = msg_print(sp, name, &nf);
-	if (INTERRUPTED(sp))
-		switch (mtype) {
-		case EXISTING:
-			msgq(sp, M_INFO,
-    "015|Interrupted write: %s: existing file: %lu lines, %lu characters",
-			    p, nlno, nch);
-			break;
-		case NEWFILE:
-			msgq(sp, M_INFO,
-    "018|Interrupted write: %s: new file: %lu lines, %lu characters",
-			    p, nlno, nch);
-			break;
-		case NONE:
-			msgq(sp, M_INFO,
-    "020|Interrupted write: %s: %lu lines, %lu characters",
-			    p, nlno, nch);
-			break;
-		}
-	else
-		switch (mtype) {
-		case EXISTING:
-			msgq(sp, M_INFO,
-			    "025|%s: existing file: %lu lines, %lu characters",
-			    p, nlno, nch);
-			break;
-		case NEWFILE:
-			msgq(sp, M_INFO,
-			    "092|%s: new file: %lu lines, %lu characters",
-			    p, nlno, nch);
-			break;
-		case NONE:
-			msgq(sp, M_INFO,
-			    "093|%s: %lu lines, %lu characters", p, nlno, nch);
-			break;
-		}
-
+	switch (mtype) {
+	case EXISTING:
+		msgq(sp, M_INFO,
+		    "025|%s: existing file: %lu lines, %lu characters",
+		    p, nlno, nch);
+		break;
+	case NEWFILE:
+		msgq(sp, M_INFO, "092|%s: new file: %lu lines, %lu characters",
+		    p, nlno, nch);
+		break;
+	case NONE:
+		msgq(sp, M_INFO, "093|%s: %lu lines, %lu characters",
+		    p, nlno, nch);
+		break;
+	}
 	if (nf)
 		FREE_SPACE(sp, p, 0);
 	return (0);
