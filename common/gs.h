@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.34 1994/05/07 11:33:41 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:41 $
+ *	$Id: gs.h,v 8.35 1994/05/20 19:40:16 bostic Exp $ (Berkeley) $Date: 1994/05/20 19:40:16 $
  */
 
 struct _gs {
@@ -58,7 +58,7 @@ struct _gs {
 #define	INTERRUPTED(sp)							\
 	(F_ISSET((sp), S_INTERRUPTED) || F_ISSET((sp)->gp, G_SIGINTR))
 #define	CLR_INTERRUPT(sp) {						\
-	F_CLR((sp), S_INTERRUPTED);					\
+	F_CLR((sp), S_INTERRUPTED | S_INTERRUPTIBLE);			\
 	F_CLR((sp)->gp, G_SIGINTR);					\
 }
 
