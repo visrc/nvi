@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 9.6 1995/01/23 17:03:08 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:08 $";
+static char sccsid[] = "$Id: ex_bang.c,v 9.7 1995/02/17 11:42:19 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:42:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,7 @@ ex_bang(sp, cmdp)
 
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
-		ex_message(sp, cmdp->cmd, EXM_USAGE);
+		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
@@ -87,7 +87,7 @@ ex_bang(sp, cmdp)
 	 * do it here.
 	 */
 	bp = NULL;
-	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EXSILENT)) {
+	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
 		if (F_ISSET(sp, S_EX)) {
 			F_SET(sp, S_SCR_EXWROTE);
 			(void)ex_printf(EXCOOKIE, "!%s\n", ap->bp);
@@ -190,7 +190,7 @@ ex_bang(sp, cmdp)
 				rval = 1;
 				goto ret1;
 			}
-		} else if (O_ISSET(sp, O_WARN) && !F_ISSET(sp, S_EXSILENT))
+		} else if (O_ISSET(sp, O_WARN) && !F_ISSET(sp, S_EX_SILENT))
 			msg = "File modified since last write.\n";
 
 	/* Run the command. */
@@ -209,7 +209,7 @@ ret2:	if (F_ISSET(sp, S_EX)) {
 			(void)sex_refresh(sp);
 
 		/* Ex terminates with a bang, even if the command fails. */
-		if (!F_ISSET(sp, S_EXSILENT))
+		if (!F_ISSET(sp, S_EX_SILENT))
 			(void)write(STDOUT_FILENO, "!\n", 2);
 	}
 
