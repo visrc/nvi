@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.125 1994/05/21 09:37:53 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:37:53 $";
+static char sccsid[] = "$Id: ex.c,v 8.126 1994/06/28 10:09:11 bostic Exp $ (Berkeley) $Date: 1994/06/28 10:09:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -260,7 +260,7 @@ ex_cmd(sp, ep, cmd, cmdlen)
 	size_t arg1_len, len, save_cmdlen;
 	long flagoff;
 	u_int saved_mode;
-	int ch, cnt, delim, flags, namelen, nl, uselastcmd, tmp;
+	int ch, cnt, delim, flags, namelen, nl, uselastcmd, tmp, vi_address;
 	char *arg1, *save_cmd, *p, *t;
 
 	/* Init. */
@@ -620,6 +620,7 @@ loop:	if (nl) {
 	 * '|' characters or literal next characters are stripped as as they're
 	 * no longer useful.
 	 */
+	vi_address = cmdlen > 0;
 	for (p = cmd, cnt = 0; cmdlen > 0; --cmdlen, ++cmd) {
 		ch = cmd[0];
 		if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
@@ -1072,8 +1073,13 @@ addr2:	switch (exc.addrcnt) {
 		break;
 	}
 
-	/* If doing a default command, vi just moves to the line. */
-	if (IN_VI_MODE(sp) && uselastcmd) {
+	/*
+	 * If doing a default command and there's nothing left on the line,
+	 * vi just moves to the line.  For example, ":3" and ":'a,'b" just
+	 * move to line 3 and line 'b, respectively, but ":3|" prints line
+	 * 3.
+	 */
+	if (IN_VI_MODE(sp) && uselastcmd && vi_address == 0) {
 		switch (exc.addrcnt) {
 		case 2:
 			sp->lno = exc.addr2.lno ? exc.addr2.lno : 1;
