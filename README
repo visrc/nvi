@@ -1,4 +1,4 @@
-#	$Id: README,v 8.150 1997/08/02 17:56:34 bostic Exp $ (Berkeley) $Date: 1997/08/02 17:56:34 $
+#	$Id: README,v 8.151 1997/08/03 16:25:19 bostic Exp $ (Berkeley) $Date: 1997/08/03 16:25:19 $
 
 This is version 1.79 (%H%) of nex/nvi, a reimplementation of the ex/vi
 text editors originally distributed as part of the Fourth Berkeley
@@ -6,11 +6,10 @@ Software Distribution (4BSD), by the University of California, Berkeley.
 
 The directory layout is as follows:
 
-    FAQ ........... Frequently asked questions.
     LICENSE ....... Copyright, use and redistribution information.
     README ........ This file.
+    build.unix .... UNIX build directory.
     catalog ....... Message catalogs; see catalog/README.
-    changelog ..... Log of changes from version to version.
     cl ............ Vi interface to the curses(3) library.
     clib .......... C library replacement source code.
     common ........ Code shared by ex and vi.
@@ -37,6 +36,24 @@ The directory layout is as follows:
     tcl_scripts ... Tcl scripts.
     vi ............ Vi source code.
 
+To build DB for a UNIX platform:
+
+    cd build.unix
+    ../dist/configure
+    make
+
+To build multiple UNIX versions of DB in the same source tree, create
+a new directory then configure and build.
+
+    mkdir build.bsdos3.0
+    cd build.bsdos3.0
+    ../dist/configure
+    make
+
+For additional information about building DB for UNIX platforms, the
+description of possible configuration options and other information
+on DB configuration and build issues, see the file build.unix/README.
+	
 Bug fixes and updated versions of this software will periodically be made
 available.  For more information, as well as a list of Frequently Asked
 Questions, see:
@@ -44,8 +61,8 @@ Questions, see:
 	http://www.bostic.com/vi
 
 To ask questions about vi, report vi problems, request notification of
-future releases and/or bug fixes, or to contact the authors for any reason,
-please send email to:
+future releases and/or bug fixes, or to contact the authors for any
+reason, please send email to:
 
 	bostic@bostic.com
 
@@ -85,51 +102,3 @@ o From the original vi acknowledgements, by William Joy and Mark Horton:
 o And...
 	The financial support of UUNET Communications Services is gratefully
 	acknowledged.
-
-=-=-=-=-=-=-=-=-=-=-=
-o Status:
-
-This software is in beta test, and it's pretty stable.  Almost all of the
-historic functionality in ex/vi is there, the only major missing pieces
-are open mode and the lisp edit option.
-
-Nvi is largely 8-bit clean.  This isn't difficult to fix, and was left in
-during initial development to keep things simple.  Wide character support
-will be integrated at the same time that it is made fully 8-bit clean.
-
-There aren't a lot of new features in nex/nvi, but there are a few things
-you might like.  The "Additional Features" section of the reference work
-(docs/USD.doc/vi.ref/vi.ref.txt, docs/USD.doc/vi.ref/vi.ref.ps) has more
-information.
-
-=-=-=-=-=-=-=-=-=-=-=
-o Debugging:
-
-Code fixes are greatly appreciated, of course, but if you can't provide
-them, please email me as much information as you can as to how I might
-reproduce the bug, and I'll try to fix it locally.  Stack traces of core
-dumps are only rarely helpful -- an example file with a set of keystrokes
-that causes the problem is almost invariably necessary.  I know it's
-annoying, but simply playing with the bug until you can reproduce it at
-will, with minimal keystrokes, is immensely helpful to me.
-
-Please include the following in the bug report;
-
-	o The version of nvi you're running (use :version to get it).
-	o The row/column dimensions of the screen (80 x 32).
-	o Unless you're confident that they're not part of the problem,
-	  your startup files (.exrc, .nexrc) and the environment variable
-	  (EXINIT, NEXINIT) values.  (Cutting and pasting the output
-	  of ":set all" is usually sufficient.)
-
-If you want to do your own debugging, recompile the program with DEBUG
-defined.  (Configuring with --enable-debug will do this for you.)  This
-turns on the additional command-line option -D, that takes either s or w
-as an argument.  The option -Ds causes nvi to ignore the EXINIT and
-.exrc files on startup, and -Dw causes nvi to print out the process id
-and wait for you to enter a <carriage-return> to continue.
-
-If you're running a memory checker (e.g. Purify) on nvi, you will first
-want to  recompile everything with "-DPURIFY" set in the CFLAGS.  This
-initializes allocated pages in the DB code, and free's allocated memory
-at the end of the nvi execution.
