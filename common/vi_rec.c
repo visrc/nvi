@@ -234,11 +234,12 @@ __vi_log_traverse(SCR *sp, db_recops ops, MARK *rp)
 
 	ep = sp->ep;
 
+	F_SET(ep, F_NOLOG);		/* Turn off logging. */
+
 	ep->env->app_private = sp;
 	if ((sp->db_error = ep->env->log_cursor(ep->env, &logc, 0)) 
 		    != 0) {
 		msgq(sp, M_DBERR, "env->log_cursor");
-		F_SET(ep, F_NOLOG);
 		return (1);
 	}
 	if (vi_log_get(sp, logc, &data, DB_SET))
@@ -271,6 +272,8 @@ __vi_log_traverse(SCR *sp, db_recops ops, MARK *rp)
 	ep->env->app_private = NULL;
 
 	MEMMOVE(rp, &sp->state.pos, 1);
+
+	F_CLR(ep, F_NOLOG);
 
 	return 0;
 }
