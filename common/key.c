@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.49 1994/03/13 12:34:10 bostic Exp $ (Berkeley) $Date: 1994/03/13 12:34:10 $";
+static char sccsid[] = "$Id: key.c,v 8.50 1994/03/14 11:02:24 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:02:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,7 +185,7 @@ term_init(sp)
 		if (kp->ch <= MAX_FAST_KEY)
 			gp->special_key[kp->ch] = kp->value;
 	}
-	
+
 	/* Set key sequences found in the termcap entry. */
 	switch (tgetent(buf, O_STR(sp, O_TERM))) {
 	case -1:
@@ -283,7 +283,7 @@ termkeyset(gp, name, val)
  * front of the buffer various other functions in ex/vi.  Each key has an
  * associated flag value, which indicates if it has already been quoted,
  * if it is the result of a mapping or an abbreviation.
- */ 
+ */
 int
 term_push(sp, s, len, cmap, flags)
 	SCR *sp;
@@ -305,7 +305,7 @@ term_push(sp, s, len, cmap, flags)
 		tty->cnt += len;
 		MEMMOVE(tty->ch + tty->next, s, len);
 		MEMSET(tty->chf + tty->next, flags, len);
-		for (p = tty->cmap + tty->next, 
+		for (p = tty->cmap + tty->next,
 		    t = tty->cmap + tty->next + len; p < t;)
 			*p++ = cmap;
 		return (0);
@@ -591,8 +591,8 @@ term_ab_flush(sp, msg)
 		QREM_HEAD(tty, 1);
 	} while (tty->cnt && tty->chf[tty->next] & CH_ABBREVIATED);
 	msgq(sp, M_ERR, "%s: keys flushed.", msg);
-	
 }
+
 /*
  * term_map_flush --
  *	Flush any mapped keys.
@@ -611,7 +611,6 @@ term_map_flush(sp, msg)
 		QREM_HEAD(tty, 1);
 	} while (tty->cnt && tty->cmap[tty->next]);
 	msgq(sp, M_ERR, "%s: keys flushed.", msg);
-	
 }
 
 /*
@@ -637,7 +636,7 @@ term_user_key(sp, chp)
 	/* Wait and read another key. */
 	if (rval = sp->s_key_read(sp, &nr, NULL))
 		return (rval);
-			
+
 	/* Fill in the return information. */
 	tty = sp->gp->tty;
 	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
@@ -648,7 +647,7 @@ term_user_key(sp, chp)
 	return (INP_OK);
 }
 
-/* 
+/*
  * term_key_queue --
  *	Read the keys off of the terminal queue until it's empty.
  */
@@ -675,26 +674,6 @@ term_key_queue(sp)
 }
 
 /*
- * term_key_ch --
- *	Fill in the key for a value.
- */
-int
-term_key_ch(sp, val, chp)
-	SCR *sp;
-	int val;
-	CHAR_T *chp;
-{
-	KEYLIST *kp;
-
-	for (kp = keylist;; ++kp)
-		if (kp->value == val) {
-			*chp = kp->ch;
-			return (0);
-		}
-	/* NOTREACHED */
-}
-
-/*
  * __term_key_val --
  *	Fill in the value for a key.  This routine is the backup
  *	for the term_key_val() macro.
@@ -708,7 +687,7 @@ __term_key_val(sp, ch)
 
 	k.ch = ch;
 	kp = bsearch(&k, keylist, nkeylist, sizeof(keylist[0]), keycmp);
-	return (kp == NULL ? 0 : kp->value);
+	return (kp == NULL ? K_NOTUSED : kp->value);
 }
 
 /*
