@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.16 1995/10/17 11:43:34 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:34 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.17 1995/10/20 10:25:42 bostic Exp $ (Berkeley) $Date: 1995/10/20 10:25:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,18 +176,20 @@ err:		if (input[0] != -1)
 	 * appends to the MARK, and closes ofp.
 	 *
 	 * !!!
-	 * Set the return cursor to the last line read in.  Historically,
-	 * this behaves differently from ":r file" command, which leaves
-	 * the cursor at the first line read in.  Check to make sure that
-	 * it's not past EOF because we were reading into an empty file.
+	 * Set the return cursor to the last line read in for FILTER_READ.
+	 * Historically, this behaves differently from ":r file" command,
+	 * which leaves the cursor at the first line read in.  Check to
+	 * make sure that it's not past EOF because we were reading into an
+	 * empty file.
 	 */
 	if (ftype == FILTER_RBANG || ftype == FILTER_READ) {
 		rval = ex_readfp(sp, "filter", ofp, fm, &nread, 0);
 		sp->rptlines[L_ADDED] += nread;
-		if (fm->lno == 0)
-			rp->lno = nread;
-		else
-			rp->lno += nread;
+		if (ftype == FILTER_READ)
+			if (fm->lno == 0)
+				rp->lno = nread;
+			else
+				rp->lno += nread;
 		goto uwait;
 	}
 
