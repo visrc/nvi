@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.9 1995/10/03 09:17:05 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:17:05 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.10 1995/10/03 10:24:08 bostic Exp $ (Berkeley) $Date: 1995/10/03 10:24:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -361,13 +361,15 @@ s(sp, cmdp, s, re, flags)
 {
 	EVENT ev;
 	MARK from, to;
+	TEXT *tp;
+	TEXTH tiq;
 	recno_t elno, lno;
 	regmatch_t match[10];
 	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
 	int cflag, lflag, nflag, pflag, rflag;
 	int didsub, do_eol_match, eflags, empty_ok, eval;
 	int linechanged, matched, quit, rval;
-	char *bp, *lb, *p;
+	char *bp, *lb;
 
 	NEEDFILE(sp, cmdp);
 
@@ -444,6 +446,12 @@ s(sp, cmdp, s, re, flags)
 			break;
 		case 'c':
 			sp->c_suffix = !sp->c_suffix;
+
+			/* Ex text structure initialization. */
+			if (F_ISSET(sp, S_EX)) {
+				memset(&tiq, 0, sizeof(TEXTH));
+				CIRCLEQ_INIT(&tiq);
+			}
 			break;
 		case 'g':
 			sp->g_suffix = !sp->g_suffix;
@@ -608,56 +616,59 @@ nextmatch:	match[0].rm_so = 0;
 			 * Set the cursor position for confirmation.  Note,
 			 * if we matched on a '$', the cursor may be past
 			 * the end of line.
-			 *
-			 * XXX
-			 * We may want to "fix" this in the confirm routine,
-			 * if the confirm routine should be able to display
-			 * a cursor past EOL.
 			 */
 			from.lno = to.lno = lno;
 			from.cno = match[0].rm_so + offset;
 			to.cno = match[0].rm_eo + offset;
+			/*
+			 * Both ex and vi have to correct for a change before
+			 * the first character in the line.
+			 */
 			if (llen == 0)
 				from.cno = to.cno = 0;
-			else {
+			if (F_ISSET(sp, S_VI)) {
+				/*
+				 * Only vi has to correct for a change after
+				 * the last character in the line.
+				 *
+				 * XXX
+				 * It would be nice to change the vi code so
+				 * that we could display a cursor past EOL.
+				 */
 				if (to.cno >= llen)
 					to.cno = llen - 1;
 				if (from.cno >= llen)
 					from.cno = llen - 1;
-			}
-			if (F_ISSET(sp, S_VI)) {
-				p = msg_cat(sp,
-				    "169|Confirm change? [n]", NULL);
+
 				sp->lno = from.lno;
 				sp->cno = from.cno;
 				if (vs_refresh(sp))
 					return (1);
-				vs_update(sp, p, NULL);
-			} else
+				vs_update(sp, msg_cat(sp,
+				    "169|Confirm change? [n]", NULL), NULL);
+
+				if (v_event_get(sp, &ev, 0))
+					goto err;
+				switch (ev.e_event) {
+				case E_CHARACTER:
+					break;
+				case E_EOF:
+				case E_ERR:
+				case E_INTERRUPT:
+					goto quit;
+				default:
+					v_event_err(sp, &ev);
+					goto quit;
+				}
+			} else {
 				if (ex_print(sp, cmdp, &from, &to, 0) ||
 				    ex_scprint(sp, &from, &to))
 					goto quit;
-
-			/* Get a character. */
-next:			if (v_event_get(sp, &ev, 0))
-				goto err;
-
-			switch (ev.e_event) {
-			case E_CHARACTER:
-				break;
-			case E_EOF:
-			case E_ERR:
-			case E_INTERRUPT:
-				goto quit;
-			case E_REPAINT:
-				goto next;
-			case E_RESIZE:
-				ex_e_resize(sp);
-				goto next;
-			default:
-				v_event_err(sp, &ev);
-				goto quit;
+				if (ex_txt(sp, &tiq, 0, TXT_CR))
+					return (1);
+				ev.e_c = tiq.cqh_first->lb[0];
 			}
+
 			switch (ev.e_c) {
 			case CH_YES:
 				break;
@@ -826,15 +837,8 @@ endmatch:	if (!linechanged)
 				(void)ex_print(sp, cmdp, &from, &to, E_C_PRINT);
 		}
 
-		if (!sp->c_suffix)
-			sp->lno = lno;
-
-		/*
-		 * !!!
-		 * Move the cursor to the last line changed.
-		 */
-		if (!sp->c_suffix)
-			sp->lno = lno;
+		/* Set the cursor to the last line changed. */
+		sp->lno = lno;
 	}
 
 	/*
