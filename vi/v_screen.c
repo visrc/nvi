@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 8.2 1993/08/25 16:52:21 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:21 $";
+static char sccsid[] = "$Id: v_screen.c,v 8.3 1993/10/01 14:19:14 bostic Exp $ (Berkeley) $Date: 1993/10/01 14:19:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,11 +42,17 @@ v_window(sp, ep, vp, fm, tm, rp)
 	}
 
 	/*
-	 * Display the status line so the user can find the window
-	 * they want.
+	 * Display the old window's status line so the user can
+	 * find the window they want.
 	 */
 	(void)status(sp, ep, fm->lno, 0);
 	(void)sp->s_refresh(sp, ep);
+
+	/* Save the old window's cursor information. */
+	sp->frp->lno = sp->lno;
+	sp->frp->cno = sp->cno;
+	F_SET(sp->frp, FR_CURSORSET);
+
 	F_SET(sp, S_SSWITCH);
 	return (0);
 }
