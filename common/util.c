@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.32 1993/12/10 16:30:09 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:30:09 $";
+static char sccsid[] = "$Id: util.c,v 8.33 1993/12/20 09:07:58 bostic Exp $ (Berkeley) $Date: 1993/12/20 09:07:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -393,7 +393,7 @@ set_window_size(sp, set_row, ign_env)
 	 * old values.
 	 */
 	if (!ign_env) {
-		if ((s = getenv("ROWS")) != NULL)
+		if ((s = getenv("LINES")) != NULL)
 			row = strtol(s, NULL, 10);
 		if ((s = getenv("COLUMNS")) != NULL)
 			col = strtol(s, NULL, 10);
