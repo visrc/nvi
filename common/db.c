@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.28 2000/07/15 20:26:33 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:33 $";
+static const char sccsid[] = "$Id: db.c,v 10.29 2000/07/19 19:02:26 skimo Exp $ (Berkeley) $Date: 2000/07/19 19:02:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -140,7 +140,8 @@ db_get(sp, lno, flags, pp, lenp)
 	}
 
 	/* Look-aside into the cache, and see if the line we want is there. */
-	if (lno == ep->c_lno) {
+	/* Disable cache for now */
+	if (0 && lno == ep->c_lno) {
 #if defined(DEBUG) && 0
 		vtrace(sp, "retrieve cached line %lu\n", (u_long)lno);
 #endif
