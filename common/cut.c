@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.31 1994/07/28 12:36:25 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:36:25 $";
+static char sccsid[] = "$Id: cut.c,v 8.32 1994/07/28 15:27:08 bostic Exp $ (Berkeley) $Date: 1994/07/28 15:27:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,7 +95,7 @@ cut(sp, ep, namep, fm, tm, flags)
 	 *	   buffers.  This includes most of the commands.
 	 *	3: Some motions aren't line mode motions, e.g. d`<char>,
 	 *	   but always go into the numeric buffers, regardless.  This
-	 *	   was the commands: % ` / ? ( ) N n { -- and nvi adds ^A.
+	 *	   was the commands: % ` / ? ( ) N n { } -- and nvi adds ^A.
 	 *
 	 * Otherwise, put it in the unnamed buffer.
 	 */
