@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.28 1993/02/19 11:13:58 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:13:58 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.29 1993/02/21 19:44:26 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:44:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -646,7 +646,7 @@ next_ch:	if (replay)
 				repp = ib.rep + rcol;
 			}
 			/* Store the character into the replay buffer. */
-			*repp++ = ch = getkey(ep, GB_MAPINPUT);
+			*repp++ = ch = getkey(ep, GB_BEAUTIFY | GB_MAPINPUT);
 			++rcol;
 		}
 
@@ -878,7 +878,7 @@ werase:			if (col == startcol) {
 			quoted = 2;
 			ch = '^';
 			/* FALLTHROUGH */
-		case 0:				/* Insert the character. */
+		default:			/* Insert the character. */
 carat_lable:		if (carat_st == C_ZEROSET || carat_st == C_CARATSET) {
 				carat_ch = ch;
 				ch = '^';
@@ -898,8 +898,6 @@ ins_qch:		*p++ = ch;
 			}
 			in_ai = 0;
 			break;
-		default:
-			abort();
 		}
 		ib.len = col + insert + overwrite;
 		scr_change(ep, ib.stop.lno,

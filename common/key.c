@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.41 1993/02/20 15:16:42 bostic Exp $ (Berkeley) $Date: 1993/02/20 15:16:42 $";
+static char sccsid[] = "$Id: key.c,v 5.42 1993/02/21 19:44:02 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:44:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,18 +55,19 @@ gb_init(ep)
 	if (tcgetattr(STDIN_FILENO, &t))
 		return;
 
-	/* User-defined keys. */
-	special[t.c_cc[VERASE]] = K_VERASE;
-	special[t.c_cc[VKILL]] = K_VKILL;
-	special[t.c_cc[VLNEXT]] = K_VLNEXT;
-	special[t.c_cc[VWERASE]] = K_VWERASE;
-
-	/* Standard keys that are treated specially. */
+	/* Keys that are treated specially. */
 	special['^'] = K_CARAT;
 	special['\004'] = K_CNTRLD;
 	special['\r'] = K_CR;
 	special['\033'] = K_ESCAPE;
+	special['\f'] = K_FORMFEED;
 	special['\n'] = K_NL;
+	special['\t'] = K_TAB;
+	special['\t'] = K_TAB;
+	special[t.c_cc[VERASE]] = K_VERASE;
+	special[t.c_cc[VKILL]] = K_VKILL;
+	special[t.c_cc[VLNEXT]] = K_VLNEXT;
+	special[t.c_cc[VWERASE]] = K_VWERASE;
 	special['0'] = K_ZERO;
 
 	/* Start off with some memory. */
@@ -123,7 +124,7 @@ getkey(ep, flags)
 		ch = *atkeyp++;
 		if (--atkeybuflen == 0)
 			free(atkeybuf);
-		return (ch);
+		goto ret;
 	}
 
 	/* If returning a mapped key, return the next char. */
@@ -133,7 +134,7 @@ getkey(ep, flags)
 			FF_CLR(ep, F_MSGWAIT);
 			mapoutput = NULL;
 		}
-		return (ch);
+		goto ret;
 	}
 
 	/* Read in more keys if necessary. */
@@ -187,7 +188,8 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 			nextkey += sp->ilen;
 			mapoutput = sp->output;
 			FF_SET(ep, F_MSGWAIT);
-			return (*mapoutput++);
+			ch = *mapoutput++;
+			goto ret;
 		}
 	}
 
@@ -198,7 +200,21 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 	 * XXX
 	 * No NULL's for now.
 	 */
-	return (ch == '\0' ? 'A' & 0x1f : ch);
+	ch == '\0' ? 'A' & 0x1f : ch;
+
+	/*
+	 * O_BEAUTIFY eliminates all control characters except tab,
+	 * newline, form-feed and escape.
+	 */
+ret:	if (flags & GB_BEAUTIFY && ISSET(O_BEAUTIFY)) {
+		if (isprint(ch) || special[ch] == K_ESCAPE ||
+		    special[ch] == K_FORMFEED || special[ch] == K_NL ||
+		    special[ch] == K_TAB)
+			return (ch);
+		bell(ep);
+		return (getkey(ep, flags));
+	}
+	return (ch);
 }
 
 static int
