@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.5 1993/08/22 12:09:01 bostic Exp $ (Berkeley) $Date: 1993/08/22 12:09:01 $";
+static char sccsid[] = "$Id: main.c,v 8.6 1993/08/22 13:46:52 bostic Exp $ (Berkeley) $Date: 1993/08/22 13:46:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -400,7 +400,7 @@ obsolete(argv)
 			}
 		}
 		else if (argv[0][0] == '-' &&
-		    argv[0][1] == 'r' && argv[1] == NULL)
+		    argv[0][1] == 'r' && argv[0][2] == '\0' && argv[1] == NULL)
 			argv[0][1] = 'l';
 }
 
@@ -408,6 +408,6 @@ static void
 usage()
 {
 	(void)fprintf(stderr,
-	    "usage: vi [-eRrsv] [-c command] [-m file] [-t tag]\n");
+	    "usage: vi [-eRsv] [-c command] [-m file] [-r file] [-t tag]\n");
 	exit(1);
 }
