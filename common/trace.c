@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: trace.c,v 8.3 1996/12/17 14:51:46 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:51:46 $";
+static const char sccsid[] = "$Id: trace.c,v 8.4 1997/08/03 15:04:23 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:04:23 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -76,7 +76,7 @@ vtrace(fmt, va_alist)
 	va_list ap;
 
 	if (tfp == NULL)
-		trace_init(NULL);
+		vtrace_init(NULL);
 
 #ifdef __STDC__
 	va_start(ap, fmt);
