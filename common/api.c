@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.7 1995/11/22 19:43:14 bostic Exp $ (Berkeley) $Date: 1995/11/22 19:43:14 $";
+static char sccsid[] = "$Id: api.c,v 8.8 1995/11/22 20:35:14 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:35:14 $";
 #endif /* not lint */
 
 #ifdef TCL_INTERP
@@ -250,7 +250,8 @@ api_iscreen(sp, file, idp)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, file);
+	ex_cinit(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, file, strlen(file));
 	cmd.flags |= E_NEWSCREEN;			/* XXX */
 	if (cmd.cmd->fn(sp, &cmd))
 		return (1);
@@ -268,7 +269,6 @@ int
 api_escreen(sp)
 	SCR *sp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
 	/*
@@ -276,7 +276,7 @@ api_escreen(sp)
 	 * If the interpreter exits anything other than the current
 	 * screen, vi isn't going to update everything correctly.
 	 */
-	ex_cbuild(&cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+	ex_cinit(&cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0, NULL);
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
@@ -316,11 +316,9 @@ api_map(sp, name, map, len)
 	ARGS *ap[3], a, b;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_MAP, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
-	b.bp = (CHAR_T *)map;
-	b.len = len;
-	ap[1] = &b;
-	cmd.argc = 2;
+	ex_cinit(&cmd, C_MAP, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, name, strlen(name));
+	ex_cadd(&cmd, &b, map, strlen(len));
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
@@ -338,7 +336,8 @@ api_unmap(sp, name)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_UNMAP, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
+	ex_cinit(&cmd, C_UNMAP, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, name, strlen(name));
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
@@ -399,7 +398,8 @@ api_opts_set(sp, name)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_SET, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
+	ex_cinit(&cmd, C_SET, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, name, strlen(name));
 	return (cmd.cmd->fn(sp, &cmd));
 }
 #endif /* TCL_INTERP */
