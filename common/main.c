@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.7 1994/11/16 19:00:15 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:00:15 $";
+static char sccsid[] = "$Id: main.c,v 9.8 1994/11/18 14:42:02 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:42:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -180,13 +180,14 @@ main(argc, argv)
 
 	/*
 	 * If not reading from a terminal, it's like -s was specified to
-	 * ex.  Vi always reads from (and writes to) a terminal, so fail
-	 * if it's not a terminal.
+	 * ex.  Vi always reads from (and writes to) a terminal unless
+	 * we're just listing recover files, so fail if it's not a terminal.
 	 */
 	if (LF_ISSET(S_EX)) {
 		if (!F_ISSET(gp, G_STDIN_TTY))
 			silent = 1;
-	} else if (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO)) {
+	} else if (flagchk != 'r' &&
+	    (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO))) {
 		msgq(NULL, M_ERR,
 		    "040|Vi's standard input and output must be a terminal");
 		goto errexit;
