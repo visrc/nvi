@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.9 1994/05/03 13:37:54 bostic Exp $ (Berkeley) $Date: 1994/05/03 13:37:54 $
+.\"     $Id: vi.1,v 8.10 1994/05/18 19:41:06 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:41:06 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -105,6 +105,10 @@ or the readonly option was set.
 .It Fl r
 Recover the specified file, or, if no files are specified,
 list the files that could be recovered.
+If no recoverable files by the specified name exist,
+the file is edited as if the
+.Fl r
+option had not been specified.
 .It Fl s
 Enter batch mode; applicable only to
 .Nm \&ex
