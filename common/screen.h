@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.19 1996/05/15 19:56:53 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:56:53 $
+ *	$Id: screen.h,v 10.20 1996/06/08 14:47:25 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:47:25 $
  */
 
 /*
@@ -88,7 +88,6 @@ struct _scr {
 	    SM_REPLACE } showmode;
 
 	void	*ex_private;		/* Ex private area. */
-	void	*sex_private;		/* Ex screen private area. */
 	void	*vi_private;		/* Vi private area. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
@@ -110,7 +109,7 @@ struct _scr {
 #define	SEARCH_EOL	0x0002		/* Offset past EOL is okay. */
 #define	SEARCH_FILE	0x0004		/* Search the entire file. */
 #define	SEARCH_INCR	0x0008		/* Search incrementally. */
-#define	SEARCH_MSG	0x0010		/* Display search warning messages. */
+#define	SEARCH_MSG	0x0010		/* Display search messages. */
 #define	SEARCH_PARSE	0x0020		/* Parse the search pattern. */
 #define	SEARCH_SET	0x0040		/* Set search direction. */
 #define	SEARCH_TAG	0x0080		/* Search for a tag pattern. */
