@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.9 1994/02/26 17:20:14 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:14 $";
+static char sccsid[] = "$Id: v_z.c,v 8.10 1994/03/03 11:34:52 bostic Exp $ (Berkeley) $Date: 1994/03/03 11:34:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ v_z(sp, ep, vp)
 	 * of the O_WINDOW option, but that's not how it worked historically.
 	 */
 	if (F_ISSET(vp, VC_C2SET) &&
-	    vp->count2 != 0 && sp->s_rrel(sp, vp->count2))
+	    vp->count2 != 0 && sp->s_crel(sp, vp->count2))
 		return (1);
 
 	switch (vp->character) {
