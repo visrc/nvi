@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.52 2001/06/05 20:10:28 skimo Exp $ (Berkeley) $Date: 2001/06/05 20:10:28 $
+ *	$Id: gs.h,v 10.53 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -163,8 +163,6 @@ struct _gs {
 	int	(*scr_optchange) __P((SCR *, int, char *, u_long *));
 					/* Move the cursor. */
 	int	(*scr_move) __P((SCR *, size_t, size_t));
-					/* Message or ex output. */
-	void	(*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 					/* Refresh the screen. */
 	int	(*scr_refresh) __P((SCR *, int));
 					/* Rename the file. */

@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.60 2001/06/25 15:19:10 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:10 $";
+static const char sccsid[] = "$Id: main.c,v 10.61 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,8 +72,8 @@ editor(WIN *wp, int argc, char **argv)
 	if (gp->scr_busy == NULL)
 		gp->scr_busy = vs_busy;
 	/* Initialize the message routine, if not defined by the screen. */
-	if (gp->scr_msg == NULL)
-		gp->scr_msg = vs_msg;
+	if (wp->scr_msg == NULL)
+		wp->scr_msg = vs_msg;
 
 	/* Set initial screen type and mode based on the program name. */
 	readonly = 0;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.23 2001/06/25 15:19:18 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:18 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.24 2001/07/29 19:07:29 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -335,7 +335,7 @@ ex_fflush(SCR *sp)
 	exp = EXP(sp);
 
 	if (exp->obp_len != 0) {
-		sp->gp->scr_msg(sp, M_NONE, exp->obp, exp->obp_len);
+		sp->wp->scr_msg(sp, M_NONE, exp->obp, exp->obp_len);
 		exp->obp_len = 0;
 	}
 	return (0);

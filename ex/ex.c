@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.72 2001/06/25 15:19:13 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:13 $";
+static const char sccsid[] = "$Id: ex.c,v 10.73 2001/07/29 19:07:29 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ ex(SCR **spp)
 
 	/* Flush any saved messages. */
 	while ((mp = gp->msgq.lh_first) != NULL) {
-		gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
+		wp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
 		LIST_REMOVE(mp, q);
 		free(mp->buf);
 		free(mp);

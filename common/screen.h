@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.43 2001/05/11 20:09:38 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:09:38 $
+ *	$Id: screen.h,v 10.44 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $
  */
 
 /*
@@ -72,6 +72,9 @@ struct _win {
 /* Flags. */
 #define	W_TMP_INUSE	0x0001		/* Temporary buffer in use. */
 	u_int32_t flags;
+
+					/* Message or ex output. */
+	void	(*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 };
 
 /*

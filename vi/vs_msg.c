@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.84 2001/06/25 15:19:37 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:37 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.85 2001/07/29 19:07:31 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -641,6 +641,7 @@ vs_resolve(SCR *sp, SCR *csp, int forcewait)
 {
 	EVENT ev;
 	GS *gp;
+	WIN *wp;
 	MSGS *mp;
 	VI_PRIVATE *vip;
 	size_t oldy, oldx;
@@ -654,6 +655,7 @@ vs_resolve(SCR *sp, SCR *csp, int forcewait)
 	 * not, csp is the current screen, used for final cursor positioning.
 	 */
 	gp = sp->gp;
+	wp = sp->wp;
 	vip = VIP(sp);
 	if (csp == NULL)
 		csp = sp;
@@ -686,7 +688,7 @@ vs_resolve(SCR *sp, SCR *csp, int forcewait)
 		if (!F_ISSET(sp, SC_SCR_VI) && vs_refresh(sp, 1))
 			return (1);
 		while ((mp = gp->msgq.lh_first) != NULL) {
-			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
+			wp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
 			LIST_REMOVE(mp, q);
 			free(mp->buf);
 			free(mp);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.57 2001/06/25 15:19:11 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:11 $";
+static const char sccsid[] = "$Id: msg.c,v 10.58 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -351,8 +351,8 @@ nofmt:	mp += len;
 
 	if (sp != NULL)
 		(void)ex_fflush(sp);
-	if (gp != NULL)
-		gp->scr_msg(sp, mt, bp, mlen);
+	if (wp != NULL)
+		wp->scr_msg(sp, mt, bp, mlen);
 	else
 		(void)fprintf(stderr, "%.*s", (int)mlen, bp);
 
@@ -516,7 +516,7 @@ mod_rpt(SCR *sp)
 	++tlen;
 
 	(void)ex_fflush(sp);
-	sp->gp->scr_msg(sp, M_INFO, bp, tlen);
+	sp->wp->scr_msg(sp, M_INFO, bp, tlen);
 
 	FREE_SPACE(sp, bp, blen);
 alloc_err:
@@ -681,7 +681,7 @@ msgq_status(SCR *sp, db_recno_t lno, u_int flags)
 	/* Flush any waiting ex messages. */
 	(void)ex_fflush(sp);
 
-	sp->gp->scr_msg(sp, M_INFO, s, len);
+	sp->wp->scr_msg(sp, M_INFO, s, len);
 
 	FREE_SPACE(sp, bp, blen);
 alloc_err:

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.23 2001/06/25 15:19:24 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:24 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.24 2001/07/29 19:07:30 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.23 2001/06/25 15:19:24 skimo Ex
 
 GS *__global_list;				/* GLOBAL: List of screens. */
 
-static void	   ip_func_std __P((GS *));
+static void	   ip_func_std __P((WIN *));
 static IP_PRIVATE *ip_init __P((WIN *wp, int i_fd, int o_fd, int, int argc, char *argv[]));
 static void	   perr __P((char *, char *));
 static int	   get_fds __P((char *ip_arg, int *i_fd, int *o_fd));
@@ -194,7 +194,7 @@ ip_init(WIN *wp, int i_fd, int o_fd, int t_fd, int argc, char *argv[])
  	ipp->argv = argv;
  
 	/* Initialize the list of ip functions. */
-	ip_func_std(wp->gp);
+	ip_func_std(wp);
 
 	return (ipp);
 }
@@ -272,8 +272,12 @@ get_connection(WIN *wp, int main_ifd, int main_ofd,
  *	Initialize the standard ip functions.
  */
 static void
-ip_func_std(GS *gp)
+ip_func_std(WIN *wp)
 {
+	GS *gp;
+
+	gp = wp->gp;
+
 	gp->scr_addstr = ip_addstr;
 	gp->scr_waddstr = ip_waddstr;
 	gp->scr_attr = ip_attr;
@@ -291,7 +295,7 @@ ip_func_std(GS *gp)
 	gp->scr_insertln = ip_insertln;
 	gp->scr_keyval = ip_keyval;
 	gp->scr_move = ip_move;
-	gp->scr_msg = ip_msg;
+	wp->scr_msg = ip_msg;
 	gp->scr_optchange = ip_optchange;
 	gp->scr_refresh = ip_refresh;
 	gp->scr_rename = ip_rename;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.53 2001/06/25 15:19:06 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:06 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.54 2001/07/29 19:07:27 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,9 @@ static const char sccsid[] = "$Id: cl_main.c,v 10.53 2001/06/25 15:19:06 skimo E
 GS *__global_list;				/* GLOBAL: List of screens. */
 sigset_t __sigblockset;				/* GLOBAL: Blocked signals. */
 
-static void	   cl_func_std __P((GS *));
+static void	   cl_func_std __P((WIN *));
 static void	   cl_end __P((CL_PRIVATE *));
-static CL_PRIVATE *cl_init __P((GS *));
+static CL_PRIVATE *cl_init __P((WIN *));
 static void	   perr __P((char *, char *));
 static int	   setsig __P((int, struct sigaction *, void (*)(int)));
 static void	   sig_end __P((GS *));
@@ -85,7 +85,7 @@ main(int argc, char **argv)
 	wp = gs_new_win(gp);
 		
 	/* Create and initialize the CL_PRIVATE structure. */
-	clp = cl_init(gp);
+	clp = cl_init(wp);
 
 	/*
 	 * Initialize the terminal information.
@@ -164,10 +164,13 @@ main(int argc, char **argv)
  *	Create and partially initialize the CL structure.
  */
 static CL_PRIVATE *
-cl_init(GS *gp)
+cl_init(WIN *wp)
 {
 	CL_PRIVATE *clp;
 	int fd;
+	GS *gp;
+
+	gp = wp->gp;
 
 	/* Allocate the CL private structure. */
 	CALLOC_NOMSG(NULL, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
@@ -202,7 +205,7 @@ tcfail:			perr(gp->progname, "tcgetattr");
 	}
 
 	/* Initialize the list of curses functions. */
-	cl_func_std(gp);
+	cl_func_std(wp);
 
 	return (clp);
 }
@@ -377,8 +380,12 @@ sig_end(GS *gp)
  *	Initialize the standard curses functions.
  */
 static void
-cl_func_std(GS *gp)
+cl_func_std(WIN *wp)
 {
+	GS *gp;
+
+	gp = wp->gp;
+
 	gp->scr_addstr = cl_addstr;
 	gp->scr_waddstr = cl_waddstr;
 	gp->scr_attr = cl_attr;
@@ -397,7 +404,7 @@ cl_func_std(GS *gp)
 	gp->scr_insertln = cl_insertln;
 	gp->scr_keyval = cl_keyval;
 	gp->scr_move = cl_move;
-	gp->scr_msg = NULL;
+	wp->scr_msg = NULL;
 	gp->scr_optchange = cl_optchange;
 	gp->scr_refresh = cl_refresh;
 	gp->scr_rename = cl_rename;

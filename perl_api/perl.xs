@@ -5,7 +5,7 @@
  *	Keith Bostic.  All rights reserved.
  * Copyright (c) 1995
  *	George V. Neville-Neil. All rights reserved.
- * Copyright (c) 1996
+ * Copyright (c) 1996-2001
  *	Sven Verdoolaege. All rights reserved.
  *
  * See the LICENSE file for redistribution information.
@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.42 2001/07/29 18:35:44 skimo Exp $ (Berkeley) $Date: 2001/07/29 18:35:44 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.43 2001/07/29 19:07:30 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,10 +79,10 @@ typedef struct _perl_data {
  *	Macros to point messages at the Perl message handler.
  */
 #define	INITMESSAGE(sp)							\
-	scr_msg = sp->gp->scr_msg;					\
+	scr_msg = sp->wp->scr_msg;					\
 	sp->gp->scr_msg = msghandler;
 #define	ENDMESSAGE(sp)							\
-	sp->gp->scr_msg = scr_msg;					\
+	sp->wp->scr_msg = scr_msg;					\
 	if (rval) croak(errmsg);
 
 void xs_init __P((pTHXo));
