@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.21 1993/11/20 10:05:42 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:42 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.22 1993/11/21 15:27:55 bostic Exp $ (Berkeley) $Date: 1993/11/21 15:27:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,6 +175,12 @@ ex_tagpush(sp, ep, cmdp)
 		which = TC_CHANGE;
 	}
 
+	/* Save the search pattern. */
+	if ((ttag.search = strdup(search)) == NULL)
+		msgq(sp, M_SYSERR, NULL);
+	else
+		ttag.slen = strlen(search);
+
 	/*
 	 * !!!
 	 * Historic vi accepted a line number as well as a search
@@ -226,13 +232,25 @@ ex_tagpush(sp, ep, cmdp)
 	else {
 		*tp = ttag;
 		TAILQ_INSERT_HEAD(&EXP(sp)->tagq, tp, q);
-
 	}
 	return (0);
 }
 
+/* Free a tag or tagf structure from a queue. */
+#define	FREETAG(tp) {							\
+	TAILQ_REMOVE(&EXP(sp)->tagq, (tp), q);				\
+	if ((tp)->search != NULL)					\
+		FREE((tp)->search, (tp)->slen);				\
+	FREE((tp), sizeof(TAGF));					\
+}
+#define	FREETAGF(tfp) {							\
+	TAILQ_REMOVE(&exp->tagfq, (tfp), q);				\
+	FREE((tfp)->name, strlen((tfp)->name) + 1);			\
+	FREE((tfp), sizeof(TAGF));					\
+}
+
 /*
- * ex_tagpop -- :tagp[op][!]
+ * ex_tagpop -- :tagp[op][!] [number | file]
  *	Pop the tag stack.
  */
 int
@@ -241,12 +259,59 @@ ex_tagpop(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	TAG *tp;
+	TAG *ntp, *tp;
+	long off;
+	size_t arglen;
+	char *arg, *p, *t;
 
 	/* Pop newest saved information. */
 	if ((tp = EXP(sp)->tagq.tqh_first) == NULL) {
 		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
+	}
+
+	switch (cmdp->argc) {
+	case 0:
+		break;
+	case 1:
+		arg = cmdp->argv[0];
+		off = strtol(arg, &p, 10);
+		if (*p == '\0') {
+			if (off <= 1)
+				return (0);
+			while (--off > 1) {
+				tp = EXP(sp)->tagq.tqh_first;
+				FREETAG(tp);
+			}
+		} else {
+			arglen = strlen(arg);
+			for (; tp != NULL; tp = tp->q.tqe_next) {
+				p = FILENAME(tp->frp);
+				if ((t = strrchr(p, '/')) == NULL)
+					t = p;
+				else
+					++t;
+				if (!strncmp(arg, t, arglen)) {
+					ntp = tp;
+					break;
+				}
+			}
+			if (tp == NULL) {
+				msgq(sp, M_ERR,
+"No file named %s on the tags stack; use :display to see the tags stack.",
+				    arg);
+				return (1);
+			}
+			for (;;) {
+				tp = EXP(sp)->tagq.tqh_first;
+				if (tp == ntp)
+					break;
+				FREETAG(tp);
+			}
+		}
+		break;
+	default:
+		abort();
 	}
 
 	/* If not switching files, it's easy; else do the work. */
@@ -267,7 +332,7 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	/* Delete the saved information from the stack. */
-	TAILQ_REMOVE(&EXP(sp)->tagq, tp, q);
+	FREETAG(tp);
 	return (0);
 }
 
@@ -288,10 +353,9 @@ ex_tagtop(sp, ep, cmdp)
 	/* Pop to oldest saved information. */
 	exp = EXP(sp);
 	for (found = 0; (tp = exp->tagq.tqh_first) != NULL; found = 1) {
-		TAILQ_REMOVE(&exp->tagq, tp, q);
 		if (exp->tagq.tqh_first == NULL)
 			tmp = *tp;
-		FREE(tp, sizeof(TAG));
+		FREETAG(tp);
 	}
 
 	if (!found) {
@@ -320,6 +384,75 @@ ex_tagtop(sp, ep, cmdp)
 }
 
 /*
+ * ex_tagdisplay --
+ *	Display the list of tags.
+ */
+int
+ex_tagdisplay(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	int cnt;
+	FREF *frp;
+	TAG *tp;
+	size_t len, maxlen, slen;
+	char *name;
+
+	if ((tp = EXP(sp)->tagq.tqh_first) == NULL) {
+		(void)ex_printf(EXCOOKIE, "No tags to display.\n");
+		return (0);
+	}
+
+	/* Use the name the user is currently using. */
+#define	GETNAME(frp) {							\
+	if (frp->cname != NULL) {					\
+		len = frp->clen;					\
+		name = frp->cname;					\
+	} else {							\
+		len = frp->nlen;					\
+		name = frp->name;					\
+	}								\
+}
+	/*
+	 * Figure out the formatting.  MNOC is the maximum
+	 * number of file name columns before we split the line.
+	 */
+#define	MNOC	15
+	for (maxlen = 0, frp = sp->frp, tp = EXP(sp)->tagq.tqh_first;
+	    tp != NULL; frp = tp->frp, tp = tp->q.tqe_next) {
+		GETNAME(frp);
+		if (maxlen < len && len < MNOC)
+			maxlen = len;
+	}
+
+	/* 
+	 * The tags list is built off-by-one, i.e. the first tag structure
+	 * on the stack has the search string that got us to the current
+	 * file and the file information for the previous file.
+	 */
+	for (cnt = 1, frp = sp->frp, tp = EXP(sp)->tagq.tqh_first;
+	    tp != NULL; ++cnt, frp = tp->frp, tp = tp->q.tqe_next) {
+		GETNAME(frp);
+		if (len > maxlen || len + tp->slen > sp->cols)
+			if (tp == NULL || tp->search == NULL)
+				(void)ex_printf(EXCOOKIE,
+				    "%2d %s\n", cnt, name);
+			else
+				(void)ex_printf(EXCOOKIE,
+				     "%2d %s\n** %*.*s %s\n",
+				     cnt, name, maxlen, maxlen, "", tp->search);
+		else
+			if (tp == NULL || tp->search == NULL)
+				(void)ex_printf(EXCOOKIE, "%2d %*.*s\n",
+				    maxlen, len, name);
+			else
+				(void)ex_printf(EXCOOKIE, "%2d %-*.*s %s\n",
+				    cnt, maxlen, len, name, tp->search);
+	}
+	return (0);
+}
+
+/*
  * ex_tagalloc --
  *	Create a new list of tag files.
  */
@@ -335,11 +468,8 @@ ex_tagalloc(sp, str)
 
 	/* Free current queue. */
 	exp = EXP(sp);
-	while ((tp = exp->tagfq.tqh_first) != NULL) {
-		TAILQ_REMOVE(&exp->tagfq, tp, q);
-		FREE(tp->name, strlen(tp->name) + 1);
-		FREE(tp, sizeof(TAGF));
-	}
+	while ((tp = exp->tagfq.tqh_first) != NULL)
+		FREETAGF(tp);
 
 	/* Create new queue. */
 	for (p = t = str;; ++p) {
@@ -379,15 +509,10 @@ ex_tagfree(sp)
 
 	/* Free up tag information. */
 	exp = EXP(sp);
-	while ((tp = exp->tagq.tqh_first) != NULL) {
-		TAILQ_REMOVE(&exp->tagq, tp, q);
-		FREE(tp, sizeof(TAG));
-	}
-	while ((tfp = exp->tagfq.tqh_first) != NULL) {
-		TAILQ_REMOVE(&exp->tagfq, tfp, q);
-		FREE(tfp->name, strlen(tfp->name) + 1);
-		FREE(tfp, sizeof(TAGF));
-	}
+	while ((tp = exp->tagq.tqh_first) != NULL)
+		FREETAG(tp);
+	while ((tfp = exp->tagfq.tqh_first) != NULL)
+		FREETAGF(tfp);
 	FREE(exp->tlast, strlen(exp->tlast) + 1);
 	return (0);
 }
@@ -411,6 +536,9 @@ ex_tagcopy(orig, sp)
 		if ((tp = malloc(sizeof(TAG))) == NULL)
 			goto nomem;
 		*tp = *ap;
+		if (ap->search != NULL &&
+		    (tp->search = strdup(ap->search)) == NULL)
+			goto nomem;
 		TAILQ_INSERT_TAIL(&nexp->tagq, tp, q);
 	}
 
