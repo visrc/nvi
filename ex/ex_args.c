@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.30 1993/02/16 20:10:01 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:01 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.31 1993/02/21 18:45:35 bostic Exp $ (Berkeley) $Date: 1993/02/21 18:45:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,17 +93,16 @@ ex_rew(ep, cmdp)
 {
 	EXF *rew_ep;
 
-	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
-
-	if (file_prev(ep, 0) == NULL) {
-		msg(ep, M_ERROR, "No previous files to rewind.");
-		return (1);
-	}
+	/* Historic practice -- you can rewind to the current file. */
 	if ((rew_ep = file_first(0)) == NULL) {
 		msg(ep, M_ERROR, "No previous files to rewind.");
 		return (1);
 	}
-	
+
+	/* Historic practice -- rewind! doesn't do autowrite. */
+	if (!(cmdp->flags & E_FORCE))
+		MODIFY_CHECK(ep, 0);
+
 	if (file_stop(ep, 0))
 		return (1);
 
