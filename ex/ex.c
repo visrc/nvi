@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.6 1994/11/17 14:19:03 bostic Exp $ (Berkeley) $Date: 1994/11/17 14:19:03 $";
+static char sccsid[] = "$Id: ex.c,v 9.7 1994/11/17 20:41:33 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:41:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ static char sccsid[] = "$Id: ex.c,v 9.6 1994/11/17 14:19:03 bostic Exp $ (Berkel
 #include "vi.h"
 #include "excmd.h"
 
-static void	badlno __P((SCR *, recno_t));
+static void	badlno __P((SCR *, int, enum nresult));
 static void	ex_comlog __P((SCR *, EXCMDARG *));
 static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
@@ -264,14 +264,15 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	size_t cmdlen;
 	u_int pflags;
 {
+	enum nresult nret;
 	enum { NOTSET, NEEDSEP_N, NEEDSEP_NR, NONE } sep;
 	EX_PRIVATE *exp;
 	EXCMDARG exc;
 	EXCMDLIST const *cp;
 	MARK cur;
-	recno_t lno, num;
+	recno_t lno;
 	size_t arg1_len, blen, len, save_cmdlen;
-	long flagoff;
+	long flagoff, ltmp;
 	int ch, cnt, delim, flags, isaddr, namelen, nf, nl, notempty;
 	int optnum, uselastcmd, tmp, vi_address;
 	char *arg1, *bp, *p, *s, *save_cmd, *t;
@@ -1017,7 +1018,9 @@ end2:			break;
 				F_SET(&exc, E_COUNT_NEG);
 			else if (*cmd == '+')
 				F_SET(&exc, E_COUNT_POS);
-/* 8-bit XXX */		if ((lno = strtol(cmd, &t, 10)) == 0 && *p != '0') {
+			if ((nret = nget_slong(sp, &ltmp, cmd, &t)) != NUM_OK)
+				badlno(sp, 0, nret);
+			if (ltmp == 0 && *p != '0') {
 				msgq(sp, M_ERR, "104|Count may not be zero");
 				goto err;
 			}
@@ -1053,13 +1056,6 @@ end2:			break;
 				     "105|%s: bad line specification", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
-				goto err;
-			}
-			/* The line must exist for these commands. */
-			if (file_lline(sp, &lno))
-				goto err;
-			if (cur.lno > lno) {
-				badlno(sp, lno);
 				goto err;
 			}
 			exc.lineno = cur.lno;
@@ -1131,9 +1127,9 @@ countchk:		if (*++p != 'N') {		/* N */
 				 * 0 or that number, if optional, and that
 				 * number, if required.
 				 */
-				num = *p - '0';
+				tmp = *p - '0';
 				if ((*++p != 'o' || exp->argsoff != 0) &&
-				    exp->argsoff != num)
+				    exp->argsoff != tmp)
 					goto usage;
 			}
 			goto addr2;
@@ -1163,8 +1159,6 @@ usage:		msgq(sp, M_ERR, "107|Usage: %s", cp->usage);
 	/* Verify that the addresses are legal. */
 addr2:	switch (exc.addrcnt) {
 	case 2:
-		if (file_lline(sp, &lno))
-			goto err;
 		/*
 		 * Historic ex/vi permitted commands with counts to go past
 		 * EOF.  So, for example, if the file only had 5 lines, the
@@ -1173,16 +1167,15 @@ addr2:	switch (exc.addrcnt) {
 		 * of the underlying commands handle random line numbers,
 		 * fix it here.
 		 */
-		if (exc.addr2.lno > lno)
-			if (F_ISSET(&exc, E_COUNT))
-				exc.addr2.lno = lno;
-			else {
-				badlno(sp, lno);
+		if (F_ISSET(&exc, E_COUNT) &&
+		    file_gline(sp, exc.addr2.lno, NULL) == NULL) {
+			if (file_lline(sp, &lno))
 				goto err;
-			}
+			if (exc.addr2.lno > lno)
+				exc.addr2.lno = lno;
+		}
 		/* FALLTHROUGH */
 	case 1:
-		num = exc.addr1.lno;
 		/*
 		 * If it's a "default vi command", zero is okay.  Historic
 		 * vi allowed this, note, it's also the hack that allows
@@ -1190,7 +1183,7 @@ addr2:	switch (exc.addrcnt) {
 		 * at all, that's the real problem, might as well tell the
 		 * user.
 		 */
-		if (num == 0 &&
+		if (exc.addr1.lno == 0 &&
 		    (IN_EX_MODE(sp) || uselastcmd != 1) && !LF_ISSET(E_ZERO)) {
 			if (sp->ep == NULL)
 				ex_message(sp, cp, EXM_NORC);
@@ -1198,12 +1191,6 @@ addr2:	switch (exc.addrcnt) {
 				msgq(sp, M_ERR,
 			    "108|The %s command doesn't permit an address of 0",
 				    cp->name);
-			goto err;
-		}
-		if (file_lline(sp, &lno))
-			goto err;
-		if (num > lno) {
-			badlno(sp, lno);
 			goto err;
 		}
 		break;
@@ -1365,11 +1352,11 @@ addr2:	switch (exc.addrcnt) {
 	 * sure the referenced line exists.
 	 *
 	 * XXX
-	 * May not match historic practice (I've never been able to completely
-	 * figure it out.)  For example, the '=' command from vi mode often
-	 * got the offset wrong, and complained it was too large, but didn't
-	 * seem to have a problem with the cursor.  If anyone complains, ask
-	 * them how it's supposed to work, they might know.
+	 * May not match historic practice (which I've never been able to
+	 * completely figure out.)  For example, the '=' command from vi
+	 * mode often got the offset wrong, and complained it was too large,
+	 * but didn't seem to have a problem with the cursor.  If anyone
+	 * complains, ask them how it's supposed to work, they might know.
 	 */
 	if (sp->ep != NULL && (flagoff += exc.flagoff)) {
 		if (flagoff < 0) {
@@ -1379,9 +1366,11 @@ addr2:	switch (exc.addrcnt) {
 				goto err;
 			}
 		} else {
-			if (file_lline(sp, &lno))
+			if (!NPFITS(MAX_REC_NUMBER, sp->lno, flagoff)) {
+				badlno(sp, 0, NUM_OVER);
 				goto err;
-			if (sp->lno + flagoff > lno) {
+			}
+			if (file_gline(sp, sp->lno + flagoff, NULL) == NULL) {
 				msgq(sp, M_ERR,
 				    "111|Flag offset past end-of-file");
 				goto err;
@@ -1513,7 +1502,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		switch (*cmd) {
 		case '%':		/* Entire file. */
 			if (sp->ep == NULL) {
-				badlno(sp, 0);
+				badlno(sp, 0, NUM_OK);
 				return (0);
 			}
 			/*
@@ -1540,7 +1529,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		case ',':               /* Comma delimiter. */
 		case ';':               /* Semi-colon delimiter. */
 			if (sp->ep == NULL) {
-				badlno(sp, 0);
+				badlno(sp, 0, NUM_OK);
 				return (0);
 			}
 			if (addr != ADDR_FOUND)
@@ -1676,7 +1665,7 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 
 	/* No addresses permitted until a file has been read in. */
 	if (sp->ep == NULL && strchr("$0123456789'\\/?.+-^", *cmd)) {
-		badlno(sp, 0);
+		badlno(sp, 0, NUM_OK);
 		return (1);
 	}
 
@@ -1697,7 +1686,8 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 		F_SET(exp, EX_ABSMARK);
 
 		cur->cno = 0;
-/* 8-bit XXX */	cur->lno = strtol(cmd, &endp, 10);
+		if ((nret = nget_slong(sp, &cur->lno, cmd, &endp)) != NUM_OK)
+			badlno(sp, 0, nret);
 		cmdlen -= (endp - cmd);
 		cmd = endp;
 		break;
@@ -1782,8 +1772,6 @@ search:		F_SET(exp, EX_ABSMARK);
 	 * is relative to ".".
 	 */
 	total = 0;
-	omsg = "254|Address value overflow";
-	umsg = "255|Address value underflow";
 	if (cmdlen != 0 && (isdigit(cmd[0]) ||
 	    cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '^')) {
 		if (!*isaddrp) {
@@ -1839,18 +1827,8 @@ search:		F_SET(exp, EX_ABSMARK);
 				if ((nret = nget_slong(sp,
 				    &val, cmd, &endp)) != NUM_OK ||
 				    (nret = NADD_SLONG(sp,
-				        total, val)) != NUM_OK)
-					switch (nret) {
-					case NUM_ERR:
-						msgq(sp, M_SYSERR, NULL);
-						return (1);
-					case NUM_OVER:
-						msgq(sp, M_ERR, omsg);
-						return (1);
-					case NUM_UNDER:
-						msgq(sp, M_ERR, umsg);
-						return (1);
-					}
+				    total, val)) != NUM_OK)
+					badlno(sp, 0, nret);
 				total += isneg ? -val : val;
 				cmdlen -= (endp - cmd);
 				cmd = endp;
@@ -1863,19 +1841,30 @@ search:		F_SET(exp, EX_ABSMARK);
 		 * Any value less than 0 is an error.  Make sure that the
 		 * new value will fit into a recno_t.
 		 */
-		if (total < 0) {
-			if (-total > cur->lno) {
-				msgq(sp, M_ERR,
+		if (total != 0) {
+			if (total < 0) {
+				if (-total > cur->lno) {
+					msgq(sp, M_ERR,
 			    "117|Reference to a line number less than 0");
-				return (1);
-			}
-		} else if (total > 0) {
-			if (MAX_REC_NUMBER - cur->lno < total) {
-				msgq(sp, M_ERR, omsg);
-				return (1);
-			}
+					return (1);
+				}
+			} else
+				if (!NPFITS(MAX_REC_NUMBER, cur->lno, total)) {
+					msgq(sp, M_ERR, omsg);
+					return (1);
+				}
+			cur->lno += total;
 		}
-		cur->lno += total;
+
+		/*
+		 * It's illegal to specify a line that doesn't exist.
+		 * Check it here instead of in lots of other places.
+		 */
+		if (file_gline(sp, cur->lno, NULL) == NULL) {
+			badlno(sp, 1, NUM_OK);
+			return (1);
+		}
+
 		*cmdp = cmd;
 		*cmdlenp = cmdlen;
 	}
@@ -1969,15 +1958,33 @@ ex_comm_search(name, len)
 }
 
 static void
-badlno(sp, lno)
+badlno(sp, eof, nret)
 	SCR *sp;
-	recno_t lno;
+	int eof;
+	enum nresult nret;
 {
-	if (lno == 0)
-		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
-	else
+	recno_t lno;
+		
+	switch (nret) {
+	case NUM_OK:
+		break;
+	case NUM_ERR:
+		msgq(sp, M_SYSERR, NULL);
+		return;
+	case NUM_OVER:
+		msgq(sp, M_ERR, "254|Address value overflow");
+		return;
+	case NUM_UNDER:
+		msgq(sp, M_ERR, "255|Address value underflow");
+		return;
+	}
+	if (eof) {
+		if (file_lline(sp, &lno))
+			return;
 		msgq(sp, M_ERR,
 		    "119|Illegal address: only %lu lines in the file", lno);
+	} else
+		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
 }
 
 #if defined(DEBUG) && defined(COMLOG)
