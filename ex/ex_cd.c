@@ -6,14 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.10 1992/05/15 11:09:42 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:09:42 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.11 1992/10/10 13:57:48 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+
 #include <errno.h>
+#include <limits.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -37,7 +39,7 @@ ex_cd(cmdp)
 		}
 		break;
 	case 1:
-		dir = cmdp->argv[0];
+		dir = (char *)cmdp->argv[0];
 		break;
 	}
 

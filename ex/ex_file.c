@@ -6,11 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.7 1992/05/15 11:08:59 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:59 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.8 1992/10/10 13:57:52 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -30,7 +32,7 @@ ex_file(cmdp)
 			free(curf->name);
 		else
 			curf->flags &= ~F_NONAME;
-		if ((curf->name = strdup(cmdp->argv[0])) == NULL) {
+		if ((curf->name = strdup((char *)cmdp->argv[0])) == NULL) {
 			curf->flags |= F_NONAME;
 			msg("Error: %s", strerror(errno));
 			return (1);

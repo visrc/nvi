@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.14 1992/05/15 11:10:05 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:10:05 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.15 1992/10/10 13:57:45 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <termios.h>
+
+#include <limits.h>
 #include <stdio.h>
+#include <termios.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -56,7 +58,7 @@ ca(cmdp, cmd)
 	MARK m;
 	size_t len;
 	int set;
-	char *p;
+	u_char *p;
 
 	/* The ! flag turns off autoindent for change and append. */
 	if (cmdp->flags & E_FORCE) {

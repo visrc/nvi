@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.10 1992/06/17 10:06:46 bostic Exp $ (Berkeley) $Date: 1992/06/17 10:06:46 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.11 1992/10/10 13:57:59 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -41,7 +43,7 @@ shift(cmdp, rl)
 {
 	recno_t from, to;
 	size_t blen, len, newcol, oldcol, oldidx;
-	char *p, *buf, *bp;
+	u_char *p, *buf, *bp;
 
 	if (LVAL(O_SHIFTWIDTH) == 0)
 		return (0);

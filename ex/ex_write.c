@@ -6,15 +6,17 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.11 1992/05/15 11:07:07 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:07:07 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.12 1992/10/10 13:58:02 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+
 #include <errno.h>
-#include <unistd.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -29,7 +31,7 @@ int
 ex_write(cmdp)
 	EXCMDARG *cmdp;
 {
-	register char *p;
+	register u_char *p;
 	struct stat sb;
 	FILE *fp;
 	int fd, flags, force;
@@ -87,7 +89,7 @@ ex_write(cmdp)
 		fname = curf->name;
 		break;
 	case 1:
-		fname = cmdp->argv[0];
+		fname = (char *)cmdp->argv[0];
 		break;
 	default:
 		msg("Usage: %s.", cmdp->cmd->usage);
@@ -125,7 +127,7 @@ ex_writefp(fname, fp, fm, tm, success_msg)
 {
 	register u_long ccnt, fline, tline;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	fline = fm->lno;
 	tline = tm->lno;

@@ -6,18 +6,20 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.20 1992/08/22 19:14:34 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:14:34 $";
+static char sccsid[] = "$Id: options.c,v 5.21 1992/10/10 13:58:05 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/ioctl.h>
-#include <errno.h>
+
 #include <curses.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <strings.h>
+#include <errno.h>
+#include <limits.h>
 #include <paths.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -470,7 +472,7 @@ opts_dump(all)
 			    snprintf(nbuf, sizeof(nbuf), "%ld", LVAL(cnt));
 			break;
 		case OPT_STR:
-			curlen += strlen(PVAL(cnt)) + 3;
+			curlen += strlen((char *)PVAL(cnt)) + 3;
 			break;
 		}
 		if (curlen < termwidth) {

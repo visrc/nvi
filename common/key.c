@@ -6,19 +6,20 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.25 1992/06/07 13:52:30 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:52:30 $";
+static char sccsid[] = "$Id: key.c,v 5.26 1992/10/10 13:58:10 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/time.h>
-#include <termios.h>
-#include <limits.h>
+
+#include <ctype.h>
 #include <curses.h>
 #include <errno.h>
-#include <unistd.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "exf.h"
@@ -28,17 +29,17 @@ static char sccsid[] = "$Id: key.c,v 5.25 1992/06/07 13:52:30 bostic Exp $ (Berk
 #include "term.h"
 #include "extern.h"
 
-char special[UCHAR_MAX];		/* Special characters. */
+u_char special[UCHAR_MAX];		/* Special characters. */
 
 u_long cblen;				/* Buffer lengths. */
-char *qb;				/* Quote buffer. */
-static char *cb;			/* Return buffer. */
-static char *wb;			/* Widths buffer. */
+u_char *qb;				/* Quote buffer. */
+static u_char *cb;			/* Return buffer. */
+static u_char *wb;			/* Widths buffer. */
 
 static int	key_inc __P((void));
 static void	modeline __P((int));
 static void	position __P((int));
-static int	ttyread __P((char *, int, int));
+static int	ttyread __P((u_char *, int, int));
 
 /*
  * gb_init --
@@ -104,7 +105,7 @@ gb_inc()
 int
 gb(prompt, storep, lenp, flags)
 	int prompt;
-	char **storep;
+	u_char **storep;
 	size_t *lenp;
 	u_int flags;
 	
@@ -113,7 +114,7 @@ gb(prompt, storep, lenp, flags)
 #ifndef NO_DIGRAPH
 	int erased;			/* 0, or first char of a digraph. */
 #endif
-	register char *p;
+	register u_char *p;
 	char oct[5];
 
 	col = 0;
@@ -270,8 +271,8 @@ getkey(when)
 {
 	static int nkeybuf;		/* # of keys in the buffer. */
 	static int nextkey;		/* Index of next key in the buffer. */
-	static char keybuf[256];	/* Key buffer. */
-	static char *mapoutput;		/* Mapped key return. */
+	static u_char keybuf[256];	/* Key buffer. */
+	static u_char *mapoutput;	/* Mapped key return. */
 	int ch;
 	SEQ *sp;
 	int inuse, ispartial, nr;
@@ -373,7 +374,7 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 
 static int
 ttyread(buf, len, time)
-	char *buf;		/* where to store the characters */
+	u_char *buf;		/* where to store the characters */
 	int len;		/* max characters to read */
 	int time;		/* max tenth seconds to read */
 {

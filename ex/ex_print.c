@@ -6,13 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.13 1992/06/07 13:46:53 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:46:53 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.14 1992/10/10 13:57:56 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <curses.h>
-#include <stdio.h>
+
 #include <ctype.h>
+#include <curses.h>
+#include <limits.h>
+#include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -92,7 +94,8 @@ print(cmdp, flags)
 	register int ch, col, rlen;
 	size_t len;
 	int cnt;
-	char *p, buf[10];
+	u_char *p;
+	char buf[10];
 
 	EX_PRSTART(0);
 	for (cur = cmdp->addr1.lno, end = cmdp->addr2.lno; cur <= end; ++cur) {

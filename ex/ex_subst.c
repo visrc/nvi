@@ -6,11 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.12 1992/06/07 13:52:41 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:52:41 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.13 1992/10/10 13:58:00 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <curses.h>
+#include <limits.h>
 #include <regexp.h>
 #include <stdio.h>
 
@@ -44,21 +46,21 @@ substitute(cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	char	*line;	/* a line from the file */
+	u_char	*line;	/* a line from the file */
 	regexp	*re;	/* the compiled search expression */
-	char	*subst;	/* the substitution string */
-	char	*opt;	/* substitution options */
+	u_char	*subst;	/* the substitution string */
+	u_char	*opt;	/* substitution options */
 	long	l;	/* a line number */
-	char	*s, *d;	/* used during subtitutions */
-	char	*conf;	/* used during confirmation */
+	u_char	*s, *d;	/* used during subtitutions */
+	u_char	*conf;	/* used during confirmation */
 	long	chline;	/* # of lines changed */
 	long	chsub;	/* # of substitutions made */
 	static	optp;	/* boolean option: print when done? */
 	static	optg;	/* boolean option: substitute globally in line? */
 	static	optc;	/* boolean option: confirm before subst? */
 	long	oldnlines;
-	char lbuf[2048];
-	char *extra;
+	u_char lbuf[2048];
+	u_char *extra;
 
 	extra = cmdp->argv[0];
 
@@ -67,9 +69,9 @@ substitute(cmdp, cmd)
 
 	if (cmd == AGAIN) {
 		if (ISSET(O_MAGIC))
-			subst = "~";
+			subst = (u_char *)"~";
 		else
-			subst = "\\~";
+			subst = (u_char *)"\\~";
 		re = regcomp("");
 
 		/* if visual "&", then turn off the "p" and "c" options */
@@ -163,10 +165,13 @@ substitute(cmdp, cmd)
 				/* confirm, if necessary */
 				if (optc)
 				{
-					for (conf = line; conf < re->startp[0]; conf++)
+					for (conf = line;
+					    conf < (u_char *)re->startp[0];
+					    conf++)
 						addch(*conf);
 					standout();
-					for ( ; conf < re->endp[0]; conf++)
+					for (; conf < (u_char *)re->endp[0];
+					    conf++)
 						addch(*conf);
 					standend();
 					for (; *conf; conf++)
@@ -176,7 +181,8 @@ substitute(cmdp, cmd)
 					if (getkey(0) != 'y')
 					{
 						/* copy accross the original chars */
-						while (s < re->endp[0])
+						while (s <
+						    (u_char *)re->endp[0])
 							*d++ = *s++;
 
 						/* skip to next match on this line, if any */
@@ -188,14 +194,12 @@ substitute(cmdp, cmd)
 				chsub++;
 
 				/* copy stuff from before the match */
-				while (s < re->startp[0])
-				{
+				while (s < (u_char *)re->startp[0])
 					*d++ = *s++;
-				}
 
 				/* substitute for the matched part */
 				regsub(re, subst, d);
-				s = re->endp[0];
+				s = (u_char *)re->endp[0];
 				d += strlen(d);
 
 Continue:

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.18 1992/08/22 19:14:15 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:14:15 $
+ *	$Id: ex.h,v 5.19 1992/10/10 13:58:03 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:03 $
  */
 
 #include "exf.h"
@@ -54,14 +54,14 @@ typedef struct excmdarg {
 	recno_t lineno;		/* Line number. */
 	u_int flags;		/* E_F_* flags from EXCMDLIST. */
 	int argc;		/* Count of file/word arguments. */
-	char **argv;		/* List of file/word arguments. */
-	char *command;		/* Command line, if parse locally. */
-	char *plus;		/* '+' command word. */
-	char *string;		/* String. */
+	u_char **argv;		/* List of file/word arguments. */
+	u_char *command;	/* Command line, if parse locally. */
+	u_char *plus;		/* '+' command word. */
+	u_char *string;		/* String. */
 	int buffer;		/* Named buffer. */
 } EXCMDARG;
 
-extern char *defcmdarg[2];	/* Default array. */
+extern u_char *defcmdarg[2];	/* Default array. */
 
 /* Macro to set up the structure. */
 #define	SETCMDARG(s, _cmd, _addrcnt, _lno1, _lno2, _force, _arg) { \
@@ -75,7 +75,7 @@ extern char *defcmdarg[2];	/* Default array. */
 		s.flags |= E_FORCE; \
 	s.argc = _arg ? 1 : 0; \
 	s.argv = defcmdarg; \
-	defcmdarg[0] = _arg; \
+	defcmdarg[0] = (u_char *)_arg; \
 }
 
 /*
@@ -98,8 +98,8 @@ extern char *defcmdarg[2];	/* Default array. */
 #define	ctrl(ch)	((ch) & 0x1f)
 
 void	 ex __P((void));
-char	*linespec __P((char *, EXCMDARG *));
-int	 buildargv __P((char *, int, EXCMDARG *));
+u_char	*linespec __P((u_char *, EXCMDARG *));
+int	 buildargv __P((u_char *, int, EXCMDARG *));
 
 int	ex_abbr __P((EXCMDARG *));
 int	ex_append __P((EXCMDARG *));
@@ -110,10 +110,10 @@ int	ex_cc __P((EXCMDARG *));
 int	ex_cd __P((EXCMDARG *));
 int	ex_cfile __P((char *, int));
 int	ex_change __P((EXCMDARG *));
-int	ex_cmd __P((char *));
+int	ex_cmd __P((u_char *));
 int	ex_color __P((EXCMDARG *));
 int	ex_copy __P((EXCMDARG *));
-int	ex_cstring __P((char *, int, int));
+int	ex_cstring __P((u_char *, int, int));
 int	ex_debug __P((EXCMDARG *));
 int	ex_delete __P((EXCMDARG *));
 int	ex_digraph __P((EXCMDARG *));

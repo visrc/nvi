@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.12 1992/06/07 16:45:50 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:45:50 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.13 1992/10/10 13:57:57 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +31,7 @@ int
 ex_read(cmdp)
 	EXCMDARG *cmdp;
 {
-	register char *p;
+	register u_char *p;
 	struct stat sb;
 	FILE *fp;
 	int force;
@@ -74,7 +76,7 @@ ex_read(cmdp)
 		fname = curf->name;
 		break;
 	case 1:
-		fname = cmdp->argv[0];
+		fname = (char *)cmdp->argv[0];
 		break;
 	default:
 		msg("Usage: %s.", cmdp->cmd->usage);
@@ -131,7 +133,7 @@ ex_readfp(fname, fp, fm, cntp)
 	 */
 	rval = 0;
 	for (lno = fm->lno; p = fgetline(fp, &len); ++lno)
-		if (file_aline(curf, lno, p, len)) {
+		if (file_aline(curf, lno, (u_char *)p, len)) {
 			rval = 1;
 			break;
 		}

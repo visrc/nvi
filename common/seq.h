@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 5.6 1992/05/07 12:47:31 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:31 $
+ *	$Id: seq.h,v 5.7 1992/10/10 13:58:08 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:08 $
  */
 
 /*
@@ -34,9 +34,9 @@ enum seqtype { ABBREV, COMMAND, INPUT };
 typedef struct _seq {
 	struct _seq *lnext, *lprev;	/* Linked list of all sequences. */
 	struct _seq *next, *prev;	/* Linked list of ch sequences. */
-	char *name;			/* Name of the sequence, if any. */
-	char *input;			/* Input key sequence. */
-	char *output;			/* Output key sequence. */
+	u_char *name;			/* Name of the sequence, if any. */
+	u_char *input;			/* Input key sequence. */
+	u_char *output;			/* Output key sequence. */
 	int ilen;			/* Input key sequence length. */
 	enum seqtype stype;		/* Sequence type. */
 
@@ -71,9 +71,9 @@ int	 abbr_save __P((FILE *));
 
 int	 map_save __P((FILE *));
 
-int	 seq_delete __P((char *, enum seqtype));
+int	 seq_delete __P((u_char *, enum seqtype));
 int	 seq_dump __P((enum seqtype, int));
-SEQ	*seq_find __P((char *, size_t, enum seqtype, int *));
+SEQ	*seq_find __P((u_char *, size_t, enum seqtype, int *));
 void	 seq_init __P((void));
-int	 seq_save __P((FILE *, char *, enum seqtype));
-int	 seq_set __P((char *, char *, char *, enum seqtype, int));
+int	 seq_save __P((FILE *, u_char *, enum seqtype));
+int	 seq_set __P((u_char *, u_char *, u_char *, enum seqtype, int));

@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.16 1992/05/15 11:09:53 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:09:53 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.17 1992/10/10 13:57:45 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <curses.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,7 +50,7 @@ ex_next(cmdp)
 
 	/* Take any file list specified. */
 	if (cmdp->argc)
-		file_set(cmdp->argc, cmdp->argv);
+		file_set(cmdp->argc, (char **)cmdp->argv);
 
 	return (file_start(file_next(curf)));
 }

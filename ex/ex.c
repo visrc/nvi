@@ -6,19 +6,21 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.32 1992/08/22 19:13:42 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:13:42 $";
+static char sccsid[] = "$Id: ex.c,v 5.33 1992/10/10 13:57:42 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/stat.h>
-#include <termios.h>
+
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <glob.h>
-#include <errno.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -30,9 +32,10 @@ static char sccsid[] = "$Id: ex.c,v 5.32 1992/08/22 19:13:42 bostic Exp $ (Berke
 #include "extern.h"
 
 int autoprint;
-char *defcmdarg[2];
+u_char *defcmdarg[2];
 
-static int fileexpand __P((glob_t *, char *, int));
+static int	 fileexpand __P((glob_t *, u_char *, int));
+static u_char	*linespec __P((u_char *, EXCMDARG *));
 
 /*
  * ex --
@@ -42,7 +45,7 @@ void
 ex()
 {
 	size_t len;
-	char *p;
+	u_char *p;
 
 	while (mode == MODE_EX) {
 		if (gb(ISSET(O_PROMPT) ? ':' : 0, &p, &len, 0) || !p)
@@ -50,7 +53,7 @@ ex()
 		if (*p)
 			ex_cstring(p, len, 0);
 		else
-			ex_cstring(".+1", 3, 0);
+			ex_cstring((u_char *)".+1", 3, 0);
 	}
 }
 
@@ -65,7 +68,7 @@ ex_cfile(filename, noexisterr)
 {
 	struct stat sb;
 	int fd, len, rval;
-	char *bp;
+	u_char *bp;
 
 	if ((fd = open(filename, O_RDONLY, 0)) < 0) {
 		if (noexisterr)
@@ -109,12 +112,12 @@ e1:	msg("%s: %s.", filename, strerror(errno));
  */
 int
 ex_cstring(cmd, len, doquoting)
-	char *cmd;
+	u_char *cmd;
 	register int len, doquoting;
 {
 	register int cnt;
-	register char *p, *t;
-	char *start;
+	register u_char *p, *t;
+	u_char *start;
 
 	/*
 	 * Walk the string, checking for '^V' quotes and '|' or '\n'
@@ -165,17 +168,17 @@ static EXCMDLIST *lastcmd = &cmds[C_PRINT];
  */
 int
 ex_cmd(exc)
-	register char *exc;
+	register u_char *exc;
 {
 	extern int reading_exrc;
 	register int cmdlen;
-	register char *p;
+	register u_char *p;
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
 	u_long lcount, num;
 	long flagoff;
 	int flags, uselastcmd;
-	char *ep;
+	u_char *ep;
 
 #if DEBUG && 0
 	TRACE("ex: {%s}\n", exc);
@@ -310,7 +313,7 @@ two:		switch(cmd.addrcnt) {
 	 * don't even skip leading white-space, it's significant for some
 	 * commands.  However, require that there be *something*.
 	 */
-	p = cp->syntax;
+	p = (u_char *)cp->syntax;
 	if (*p == 's') {
 		for (p = exc; *p && isspace(*p); ++p);
 		cmd.string = *p ? exc : NULL;
@@ -397,7 +400,7 @@ end2:			break;
 			break;
 		case 'c':				/* count */
 			if (isdigit(*exc)) {
-				lcount = strtol(exc, &ep, 10);
+				lcount = USTRTOL(exc, &ep, 10);
 				if (lcount == 0) {
 					msg("Count may not be zero.");
 					return (1);
@@ -420,7 +423,7 @@ end2:			break;
 			 * Line 0 okay for copy, move??
 			 */
 			if (isdigit(*exc)) {
-				cmd.lineno = strtol(exc, &ep, 10);
+				cmd.lineno = USTRTOL(exc, &ep, 10);
 				if (cmd.lineno == 0) {
 					msg("Line number may not be zero.");
 					return (1);
@@ -457,7 +460,7 @@ countchk:		if (*++p != 'N') {		/* N */
 	 * That means neither 'l' or 'r' in the syntax.
 	 */
 	for (; *exc && isspace(*exc); ++exc);
-	if (*exc || strpbrk(p, "lr")) {
+	if (*exc || USTRPBRK(p, "lr")) {
 usage:		msg("Usage: %s.", cp->usage);
 		return (1);
 	}
@@ -586,15 +589,15 @@ addr2:	switch(cmd.addrcnt) {
  * linespec --
  *	Parse a line specifier for ex commands.
  */
-char *
+static u_char *
 linespec(cmd, cp)
-	char *cmd;
+	u_char *cmd;
 	EXCMDARG *cp;
 {
 	MARK cur, savecursor, sm, *mp;
 	long num, total;
 	int delimiter, savecursor_set;
-	char *ep;
+	u_char *ep;
 
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
@@ -628,7 +631,7 @@ linespec(cmd, cp)
 					/* Absolute line number. */
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
-			cur.lno = strtol(cmd, &ep, 10);
+			cur.lno = USTRTOL(cmd, &ep, 10);
 			cur.cno = 0;
 			cmd = ep;
 			break;
@@ -684,7 +687,7 @@ linespec(cmd, cp)
 			    *cmd == '-' || *cmd == '+'; total += num) {
 				num = *cmd == '-' ? -1 : 1;
 				if (isdigit(*++cmd)) {
-					num *= strtol(cmd, &ep, 10);
+					num *= USTRTOL(cmd, &ep, 10);
 					cmd = ep;
 				}
 			}
@@ -729,7 +732,7 @@ done:	if (savecursor_set) {
 
 typedef struct {
 	int len;		/* Buffer length. */
-	char *bp;		/* Buffer. */
+	u_char *bp;		/* Buffer. */
 #define	A_ALLOCATED	0x01	/* If allocated space. */
 	u_char flags;
 } ARGS;
@@ -740,17 +743,17 @@ typedef struct {
  */
 int
 buildargv(exc, expand, cp)
-	char *exc;
+	u_char *exc;
 	int expand;
 	EXCMDARG *cp;
 {
 	static ARGS *args;
 	static int argscnt;
-	static char **argv;
+	static u_char **argv;
 	static glob_t g;
 	register int ch;
 	int cnt, done, globoff, len, needslots, off;
-	char *ap;
+	u_char *ap;
 
 	/* Discard any previous information. */
 	if (g.gl_pathc) {
@@ -816,7 +819,8 @@ mem1:				argscnt = 0;
 					free(args[off].bp);
 					args[off].flags &= ~A_ALLOCATED;
 				}
-				argv[off] = args[off].bp = g.gl_pathv[cnt];
+				argv[off] = args[off].bp =
+				    (u_char *)g.gl_pathv[cnt];
 			}
 			globoff = g.gl_pathc;
 		} else {
@@ -855,14 +859,14 @@ mem1:				argscnt = 0;
 static int
 fileexpand(gp, word, wordlen)
 	glob_t *gp;
-	char *word;
+	u_char *word;
 	int wordlen;
 {
 	static int tpathlen;
-	static char *tpath;
+	static u_char *tpath;
 	EXF *ep;
 	int len, olen, plen;
-	char ch, *p;
+	u_char ch, *p;
 
 	/*
 	 * Check for escaped %, # characters.
@@ -871,7 +875,7 @@ fileexpand(gp, word, wordlen)
 	/* Figure out how much space we need for this argument. */
 	ep = NULL;
 	len = wordlen;
-	for (p = word, olen = plen = 0; p = strpbrk(p, "%#"); ++p)
+	for (p = word, olen = plen = 0; p = USTRPBRK(p, "%#"); ++p)
 		if (*p == '%') {
 			if (curf->flags & F_NONAME) {
 				msg("No filename to substitute for %%.");
@@ -924,6 +928,7 @@ fileexpand(gp, word, wordlen)
 	} else
 		p = word;
 
-	glob(p, GLOB_APPEND|GLOB_NOSORT|GLOB_NOCHECK|GLOB_QUOTE, NULL, gp);
+	glob((char *)p,
+	    GLOB_APPEND|GLOB_NOSORT|GLOB_NOCHECK|GLOB_QUOTE, NULL, gp);
 	return (0);
 }

@@ -6,11 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.10 1992/06/07 13:47:38 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:47:38 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.11 1992/10/10 13:58:02 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -37,7 +39,7 @@ ex_tag(cmdp)
 
 	switch (cmdp->argc) {
 	case 1:
-		if ((lasttag = strdup(cmdp->argv[0])) == NULL) {
+		if ((lasttag = strdup((char *)cmdp->argv[0])) == NULL) {
 			msg("Error: %s", strerror(errno));
 			return (1);
 		}
@@ -66,7 +68,7 @@ ex_tag(cmdp)
 
 	m.lno = 1;
 	m.cno = 0;
-	if ((mp = f_search(&m, tag->line, NULL, 0)) == NULL) {
+	if ((mp = f_search(&m, (u_char *)tag->line, NULL, 0)) == NULL) {
 		msg("Tag search pattern not found.");
 		return (1);
 	}

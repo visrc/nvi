@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.10 1992/06/07 13:46:31 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:46:31 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.11 1992/10/10 13:57:53 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <regexp.h>
 #include <stdio.h>
 
@@ -41,7 +43,7 @@ global(cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	char	*cmdptr;	/* the command from the command line */
+	u_char	*cmdptr;	/* the command from the command line */
 	char	cmdln[100];	/* copy of the command from the command line */
 	char	*line;		/* a line from the file */
 	long	l;		/* used as a counter to move through lines */
@@ -49,7 +51,7 @@ global(cmdp, cmd)
 	long	nchanged;	/* number of lines changed */
 	int isv;
 	regexp	*re;		/* the compiled search expression */
-	char *extra;
+	u_char *extra;
 
 /*
  * XXX

@@ -6,12 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.11 1992/05/07 12:46:24 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:24 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.12 1992/10/10 13:57:44 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <stdio.h>
+
 #include <limits.h>
+#include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -28,7 +29,7 @@ int
 ex_abbr(cmdp)
 	EXCMDARG *cmdp;
 {
-	register char *input, *output;
+	register u_char *input, *output;
 
 	if (cmdp->string == NULL) {
 		if (seq_dump(ABBREV, 0) == 0)
@@ -64,7 +65,7 @@ int
 ex_unabbr(cmdp)
         EXCMDARG *cmdp;
 {
-	char *input;
+	u_char *input;
 
 	input = cmdp->argv[0];
 	if (!have_abbr || seq_delete(input, ABBREV)) {

@@ -6,11 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.15 1992/05/15 11:09:47 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:09:47 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.16 1992/10/10 13:57:46 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,11 +32,11 @@ int
 ex_bang(cmdp)
 	EXCMDARG *cmdp;
 {
-	static char *lastcom;
+	static u_char *lastcom;
 	register int ch, len, modified;
-	register char *p, *t;
+	register u_char *p, *t;
 	EXF *ep;
-	char *com;
+	u_char *com;
 
 	/* Make sure we got something. */
 	if (cmdp->string == NULL) {
@@ -44,15 +46,15 @@ ex_bang(cmdp)
 
 	/* Figure out how much space we could possibly need. */
 	modified = 0;
-	len = strlen(cmdp->string) + 1;
-	for (p = cmdp->string; p = strpbrk(p, "!%#\\"); ++p)
+	len = USTRLEN(cmdp->string) + 1;
+	for (p = cmdp->string; p = USTRPBRK(p, "!%#\\"); ++p)
 		switch (*p) {
 		case '!':
 			if (lastcom == NULL) {
 				msg("No previous command to replace \"!\".");
 				return (1);
 			}
-			len += strlen(lastcom);
+			len += USTRLEN(lastcom);
 			modified = 1;
 			break;
 		case '%':
@@ -90,7 +92,7 @@ ex_bang(cmdp)
 		for (p = cmdp->string, t = com; ch = *p; ++p)
 			switch (ch) {
 			case '!':
-				len = strlen(lastcom);
+				len = USTRLEN(lastcom);
 				bcopy(lastcom, t, len);
 				t += len;
 				break;
