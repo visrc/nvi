@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.58 1994/03/25 15:25:40 bostic Exp $ (Berkeley) $Date: 1994/03/25 15:25:40 $";
+static char sccsid[] = "$Id: vi.c,v 8.59 1994/04/06 11:38:42 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:38:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -214,7 +214,7 @@ vi(sp, ep)
 			vp->m_final.cno = sp->s_rcm(sp, ep, vp->m_final.lno);
 			break;
 		case VM_RCM_SETLAST:
-			sp->rcmflags = RCM_LAST;
+			sp->rcm_last = 1;
 			break;
 		case VM_RCM_SETLFNB:
 			/*
@@ -227,7 +227,7 @@ vi(sp, ep)
 				if (nonblank(sp, ep,
 				    vp->m_final.lno, &vp->m_final.cno))
 					goto err;
-				sp->rcmflags = RCM_FNB;
+				F_SET(vp, VM_RCM_SET);
 			}
 			break;
 		case VM_RCM_SETFNB:
@@ -236,7 +236,7 @@ vi(sp, ep)
 		case VM_RCM_SETNNB:
 			if (nonblank(sp, ep, vp->m_final.lno, &vp->m_final.cno))
 				goto err;
-			sp->rcmflags = RCM_FNB;
+			F_SET(vp, VM_RCM_SET);
 			break;
 		default:
 			abort();
@@ -261,7 +261,7 @@ err:				term_map_flush(sp, "Vi error");
 
 		/* Set the new favorite position. */
 		if (F_ISSET(vp, VM_RCM_SET)) {
-			sp->rcmflags = 0;
+			sp->rcm_last = 0;
 			(void)sp->s_column(sp, ep, &sp->rcm);
 		}
 	}
@@ -507,7 +507,7 @@ getmotion(sp, ep, dm, vp)
 	 * the resulting mark.
  	 */
 	if (vp->key == motion.key) {
-		F_SET(vp, VM_LMODE);
+		F_SET(vp, VM_LDOUBLE | VM_LMODE);
 
 		/* Set the origin of the command. */
 		vp->m_start.lno = sp->lno;
