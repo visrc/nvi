@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.40 1996/03/29 09:24:30 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:24:30 $
+#	$Id: Makefile.in,v 8.41 1996/04/10 11:32:31 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:32:31 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -22,21 +22,22 @@ DBOBJS=	db.o mpool.o \
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
 TKOBJS=	tk_funcs.o tk_main.o tk_read.o tk_screen.o tk_term.o tk_util.o
 VIOBJS= cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
-	ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_delete.o ex_display.o \
-	ex_edit.o ex_equal.o ex_file.o ex_filter.o ex_global.o ex_init.o \
-	ex_join.o ex_map.o ex_mark.o ex_mkexrc.o ex_move.o ex_open.o \
-	ex_perl.o ex_preserve.o ex_print.o ex_put.o ex_quit.o ex_read.o \
-	ex_screen.o ex_script.o ex_set.o ex_shell.o ex_shift.o ex_source.o \
-	ex_stop.o ex_subst.o ex_tag.o ex_tcl.o ex_txt.o ex_undo.o \
-	ex_usage.o ex_util.o ex_version.o ex_visual.o ex_write.o ex_yank.o \
-	ex_z.o exf.o getc.o key.o line.o log.o main.o mark.o msg.o \
-	options.o options_f.o put.o recover.o screen.o search.o seq.o \
-	util.o v_at.o v_ch.o v_cmd.o v_delete.o v_ex.o v_increment.o \
-	v_init.o v_itxt.o v_left.o v_mark.o v_match.o v_paragraph.o \
-	v_put.o v_redraw.o v_replace.o v_right.o v_screen.o v_scroll.o \
-	v_search.o v_section.o v_sentence.o v_status.o v_txt.o v_ulcase.o \
-	v_undo.o v_util.o v_word.o v_xchar.o v_yank.o v_z.o v_zexit.o vi.o \
-	vs_line.o vs_msg.o vs_refresh.o vs_relative.o vs_smap.o vs_split.o
+	ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_cscope.o ex_delete.o \
+	ex_display.o ex_edit.o ex_equal.o ex_file.o ex_filter.o \
+	ex_global.o ex_init.o ex_join.o ex_map.o ex_mark.o ex_mkexrc.o \
+	ex_move.o ex_open.o ex_perl.o ex_preserve.o ex_print.o ex_put.o \
+	ex_quit.o ex_read.o ex_screen.o ex_script.o ex_set.o ex_shell.o \
+	ex_shift.o ex_source.o ex_stop.o ex_subst.o ex_tag.o ex_tcl.o \
+	ex_txt.o ex_undo.o ex_usage.o ex_util.o ex_version.o ex_visual.o \
+	ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o log.o main.o \
+	mark.o msg.o options.o options_f.o put.o recover.o screen.o \
+	search.o seq.o util.o v_at.o v_ch.o v_cmd.o v_delete.o v_ex.o \
+	v_increment.o v_init.o v_itxt.o v_left.o v_mark.o v_match.o \
+	v_paragraph.o v_put.o v_redraw.o v_replace.o v_right.o v_screen.o \
+	v_scroll.o v_search.o v_section.o v_sentence.o v_status.o v_txt.o \
+	v_ulcase.o v_undo.o v_util.o v_word.o v_xchar.o v_yank.o v_z.o \
+	v_zexit.o vi.o vs_line.o vs_msg.o vs_refresh.o vs_relative.o \
+	vs_smap.o vs_split.o
 
 all: nvi @tknvi@
 
@@ -188,6 +189,8 @@ ex_bang.o: $(srcdir)/ex/ex_bang.c
 ex_cd.o: $(srcdir)/ex/ex_cd.c
 	 $(CC) $(CFLAGS) $?
 ex_cmd.o: $(srcdir)/ex/ex_cmd.c
+	 $(CC) $(CFLAGS) $?
+ex_cscope.o: $(srcdir)/ex/ex_cscope.c
 	 $(CC) $(CFLAGS) $?
 ex_delete.o: $(srcdir)/ex/ex_delete.c
 	 $(CC) $(CFLAGS) $?
