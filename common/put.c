@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 8.4 1994/04/09 18:08:46 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:08:46 $";
+static char sccsid[] = "$Id: put.c,v 8.5 1994/05/05 10:00:09 bostic Exp $ (Berkeley) $Date: 1994/05/05 10:00:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,6 +52,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 	TEXT *ltp, *tp;
 	recno_t lno;
 	size_t blen, clen, len;
+	int rval;
 	char *bp, *p, *t;
 
 	if (cbp == NULL)
@@ -85,13 +86,13 @@ put(sp, ep, cbp, namep, cp, rp, append)
 			return (1);
 		if (lno == 0) {
 			for (; tp != (void *)&cbp->textq;
-			     ++lno, tp = tp->q.cqe_next)
+			    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
 				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
 			rp->cno = 0;
 			(void)nonblank(sp, ep, rp->lno, &rp->cno);
-			goto ret;
+			return (0);
 		}
 	}
 
@@ -99,12 +100,13 @@ put(sp, ep, cbp, namep, cp, rp, append)
 	if (F_ISSET(cbp, CB_LMODE)) {
 		lno = append ? cp->lno : cp->lno - 1;
 		rp->lno = lno + 1;
-		for (; tp != (void *)&cbp->textq; ++lno, tp = tp->q.cqe_next)
+		for (; tp != (void *)&cbp->textq;
+		    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
 			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 				return (1);
 		rp->cno = 0;
 		(void)nonblank(sp, ep, rp->lno, &rp->cno);
-		goto ret;
+		return (0);
 	}
 
 	/*
@@ -145,6 +147,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 	 * the intermediate lines, because the line changes will lose
 	 * the cached line.
 	 */
+	rval = 0;
 	if (tp->q.cqe_next == (void *)&cbp->textq) {
 		/*
 		 * Historical practice is that if a non-line mode put
@@ -160,6 +163,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		}
 		if (file_sline(sp, ep, lno, bp, t - bp))
 			goto mem;
+		++sp->rptlines[L_CHANGED];
 	} else {
 		/*
 		 * Have to build both the first and last lines of the
@@ -193,6 +197,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		 */
 		if (file_sline(sp, ep, lno, bp, t - bp))
 			goto mem;
+		++sp->rptlines[L_CHANGED];
 
 		/*
 		 * Historical practice is that if a non-line mode put
@@ -205,19 +210,14 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		/* Output any intermediate lines in the CB. */
 		for (tp = tp->q.cqe_next;
 		    tp->q.cqe_next != (void *)&cbp->textq;
-		    ++lno, tp = tp->q.cqe_next)
+		    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
 			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 				goto mem;
 
-		if (file_aline(sp, ep, 1, lno, t, clen)) {
-mem:			FREE_SPACE(sp, bp, blen);
-			return (1);
-		}
+		if (file_aline(sp, ep, 1, lno, t, clen))
+mem:			rval = 1;
+		++sp->rptlines[L_ADDED];
 	}
 	FREE_SPACE(sp, bp, blen);
-
-	/* Reporting... */
-ret:	sp->rptlines[L_PUT] += lno - cp->lno;
-
-	return (0);
+	return (rval);
 }
