@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.15 1994/04/11 10:50:58 bostic Exp $ (Berkeley) $Date: 1994/04/11 10:50:58 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.16 1994/04/25 09:03:08 bostic Exp $ (Berkeley) $Date: 1994/04/25 09:03:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: ex_append.c,v 8.15 1994/04/11 10:50:58 bostic Exp $
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
+#include <unistd.h>
 
 #include "compat.h"
 #include <db.h>
@@ -26,6 +27,7 @@ static char sccsid[] = "$Id: ex_append.c,v 8.15 1994/04/11 10:50:58 bostic Exp $
 
 #include "vi.h"
 #include "excmd.h"
+#include "../sex/sex_screen.h"
 
 enum which {APPEND, CHANGE, INSERT};
 
@@ -82,6 +84,7 @@ aci(sp, ep, cmdp, cmd)
 	MARK m;
 	TEXTH *sv_tiqp, tiq;
 	TEXT *tp;
+	struct termios t;
 	recno_t cnt;
 	u_int flags;
 	int rval;
@@ -106,15 +109,26 @@ aci(sp, ep, cmdp, cmd)
 	 * may already be in use, e.g. ":append|s/abc/ABC/" would fail as we're
 	 * only halfway through the line when the append code fires.  Use the
 	 * local structure instead.
+	 *
+	 * If this code is called by vi, we want to reset the terminal and use
+	 * ex's s_get() routine.  It actually works fine if we use vi's s_get()
+	 * routine, but it doesn't look as nice.  Maybe if we had a separate
+	 * window or something, but getting a line at a time looks awkward.
 	 */
 	if (IN_VI_MODE(sp)) {
 		memset(&tiq, 0, sizeof(TEXTH));
 		CIRCLEQ_INIT(&tiq);
 		sv_tiqp = sp->tiqp;
 		sp->tiqp = &tiq;
+
+		if (F_ISSET(sp->gp, G_STDIN_TTY))
+			SEX_RAW(t);
+		(void)write(STDOUT_FILENO, "\n", 1);
+		LF_SET(TXT_NLECHO);
+
 	}
 
-	switch (sp->s_get(sp, ep, sp->tiqp, 0, flags)) {
+	switch (sex_get(sp, ep, sp->tiqp, 0, flags)) {
 	case INP_OK:
 		break;
 	case INP_EOF:
@@ -165,6 +179,13 @@ err:				rval = 1;
 done:	if (IN_VI_MODE(sp)) {
 		sp->tiqp = sv_tiqp;
 		text_lfree(&tiq);
+
+		/* Reset the terminal state. */
+		if (F_ISSET(sp->gp, G_STDIN_TTY)) {
+			if (SEX_NORAW(t))
+				rval = 1;
+			F_SET(sp, S_REFRESH);
+		}
 	}
 	return (rval);
 }
