@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.6 1992/04/14 09:29:42 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:29:42 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.7 1992/04/15 09:09:45 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:09:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,7 +136,7 @@ CMDLIST cmds[] = {
 	"file",		ex_file,	0,
 	    "f10",	"f[ile] [name]",
 #define	C_GLOBAL	22
-	"global",	ex_global,	E_ADDR2,
+	"global",	ex_global,	E_ADDR2_OR_0,
 	    "s",	"[line [,line]] g[lobal] /pattern/ [commands]",
 #define	C_INSERT	23
 	"insert",	ex_append,	E_ADDR1,
@@ -231,7 +231,7 @@ CMDLIST cmds[] = {
 	"unmap",	ex_unmap,	E_EXRCOK,
 	    "!w1r", 	"unm[ap][!] key",
 #define	C_VGLOBAL	49
-	"vglobal",	ex_global,	E_ADDR2,
+	"vglobal",	ex_global,	E_ADDR2_OR_0,
 	    "s", 	"[line [,line]] v[global] /pattern/ [commands]",
 #define	C_VERSION	50
 	"version",	ex_version,	E_EXRCOK,
@@ -240,13 +240,13 @@ CMDLIST cmds[] = {
 	"visual",	ex_visual,	E_ADDR2,
 	    "2c1", 	"[line] vi[sual] [type] [count] [flags]",
 #define	C_WRITE		52
-	"write",	ex_write,	E_ADDR2,
+	"write",	ex_write,	E_ADDR2_OR_0,
 	    "!>f1o",	"[line [,line]] w[rite][!] [>>] [file]",
 #define	C_WQ		53
-	"wq",		ex_wq,		E_ADDR2|E_NL,
+	"wq",		ex_wq,		E_ADDR2_OR_0|E_NL,
 	    "!>f1o",	"[line [,line]] wq[!] [>>] [file]",
 #define	C_XIT		54
-	"xit",		ex_xit,		E_ADDR2|E_NL,
+	"xit",		ex_xit,		E_ADDR2_OR_0|E_NL,
 	    "!f1o",	"[line [,line]] x[it][!] [file]",
 #define	C_YANK		55
 	"yank",		ex_yank,	E_ADDR2,
