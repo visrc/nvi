@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.92 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.93 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1778,7 +1778,7 @@ v_txt_auto(sp, lno, aitp, len, tp)
 	size_t len;
 {
 	size_t nlen;
-	char *p, *t;
+	CHAR_T *p, *t;
 
 	if (aitp == NULL) {
 		/*
@@ -2894,7 +2894,7 @@ txt_Rresolve(sp, tiqh, tp, orig_len)
 {
 	TEXT *ttp;
 	size_t input_len, retain;
-	char *p;
+	CHAR_T *p;
 
 	/*
 	 * Check to make sure that the cursor hasn't moved beyond

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_section.c,v 10.8 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
+static const char sccsid[] = "$Id: v_section.c,v 10.9 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,7 +68,8 @@ v_sectionf(sp, vp)
 {
 	db_recno_t cnt, lno;
 	size_t len;
-	char *p, *list, *lp;
+	CHAR_T *p;
+	char *list, *lp;
 
 	/* Get the macro list. */
 	if ((list = O_STR(sp, O_SECTIONS)) == NULL)
@@ -176,7 +177,8 @@ v_sectionb(sp, vp)
 {
 	size_t len;
 	db_recno_t cnt, lno;
-	char *p, *list, *lp;
+	CHAR_T *p;
+	char *list, *lp;
 
 	/* An empty file or starting from line 1 is always illegal. */
 	if (vp->m_start.lno <= 1) {

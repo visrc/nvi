@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: getc.c,v 10.10 1996/03/06 19:54:09 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:09 $";
+static const char sccsid[] = "$Id: getc.c,v 10.11 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,7 +75,7 @@ cs_next(sp, csp)
 	SCR *sp;
 	VCS *csp;
 {
-	char *p;
+	CHAR_T *p;
 
 	switch (csp->cs_flags) {
 	case CS_EMP:				/* EMP; get next line. */

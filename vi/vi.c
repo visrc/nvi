@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.66 2000/06/25 17:34:41 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:41 $";
+static const char sccsid[] = "$Id: vi.c,v 10.67 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1064,7 +1064,7 @@ v_curword(sp)
 	VI_PRIVATE *vip;
 	size_t beg, end, len;
 	int moved, state;
-	char *p;
+	CHAR_T *p;
 
 	if (db_get(sp, sp->lno, DBG_FATAL, &p, &len))
 		return (1);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.41 2000/04/21 19:00:37 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:37 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.42 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -364,6 +364,7 @@ s(sp, cmdp, s, re, flags)
 	int didsub, do_eol_match, eflags, empty_ok, eval;
 	int linechanged, matched, quit, rval;
 	char *bp, *lb;
+	CHAR_T *p;
 
 	NEEDFILE(sp, cmdp);
 

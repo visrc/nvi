@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.11 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
+static const char sccsid[] = "$Id: cut.c,v 10.12 2000/06/27 17:19:04 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,7 +249,7 @@ cut_line(sp, lno, fcno, clen, cbp)
 {
 	TEXT *tp;
 	size_t len;
-	char *p;
+	CHAR_T *p;
 
 	/* Get the line. */
 	if (db_get(sp, lno, DBG_FATAL, &p, &len))

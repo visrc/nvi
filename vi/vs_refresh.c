@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.47 2000/06/25 17:34:42 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:42 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.48 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,7 +150,7 @@ vs_paint(sp, flags)
 	db_recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, notused, off, y;
 	int ch, didpaint, isempty, leftright_warp;
-	char *p;
+	CHAR_T *p;
 
 #define	 LNO	sp->lno			/* Current file line. */
 #define	OLNO	vip->olno		/* Remembered file line. */
@@ -323,7 +323,7 @@ bottom:		if (db_last(sp, &lastline))
 		tmp.lno = LNO;
 		tmp.coff = HMAP->coff;
 		tmp.soff = 1;
-		lcnt = vs_sm_nlines(sp, &tmp, lastline, sp->t_rows);
+		lcnt = vs_sm_nlines(sp, &tmp, lastline+1, sp->t_rows);
 		if (lcnt < HALFTEXT(sp)) {
 			if (vs_sm_fill(sp, lastline, P_BOTTOM))
 				return (1);
@@ -666,8 +666,11 @@ done_cursor:
 	 * NULL.  If we're debugging, die, otherwise restart from scratch.
 	 */
 #ifdef DEBUG
-	if (vip->sc_smap == NULL)
+	if (vip->sc_smap == NULL) {
+		fprintf(stderr, "smap error\n");
+		sleep(100);
 		abort();
+	}
 #else
 	if (vip->sc_smap == NULL) {
 		F_SET(sp, SC_SCR_REFORMAT);

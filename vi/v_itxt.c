@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.17 2000/04/21 19:00:40 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:40 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.18 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,7 +95,7 @@ v_ia(sp, vp)
 	size_t len;
 	u_int32_t flags;
 	int isempty;
-	char *p;
+	CHAR_T *p;
 
 	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_APPEND;
@@ -155,7 +155,7 @@ v_ii(sp, vp)
 	size_t len;
 	u_int32_t flags;
 	int isempty;
-	char *p;
+	CHAR_T *p;
 
 	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_INSERT;
@@ -213,7 +213,7 @@ io(sp, vp, cmd)
 	db_recno_t ai_line, lno;
 	size_t len;
 	u_int32_t flags;
-	char *p;
+	CHAR_T *p;
 
 	flags = set_txt_std(sp, vp, TXT_ADDNEWLINE | TXT_APPENDEOL);
 	sp->showmode = SM_INSERT;
@@ -265,7 +265,8 @@ v_change(sp, vp)
 	size_t blen, len;
 	u_int32_t flags;
 	int isempty, lmode, rval;
-	char *bp, *p;
+	char *bp;
+	CHAR_T *p;
 
 	/*
 	 * 'c' can be combined with motion commands that set the resulting
@@ -406,7 +407,7 @@ v_Replace(sp, vp)
 	size_t len;
 	u_int32_t flags;
 	int isempty;
-	char *p;
+	CHAR_T *p;
 
 	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_REPLACE;
@@ -442,7 +443,7 @@ v_subst(sp, vp)
 	size_t len;
 	u_int32_t flags;
 	int isempty;
-	char *p;
+	CHAR_T *p;
 
 	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_CHANGE;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_increment.c,v 10.12 1996/03/19 20:59:58 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:59:58 $";
+static const char sccsid[] = "$Id: v_increment.c,v 10.13 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,8 @@ v_increment(sp, vp)
 	long change, ltmp, lval;
 	size_t beg, blen, end, len, nlen, wlen;
 	int base, isempty, rval;
-	char *bp, *ntype, *p, *t, nbuf[100];
+	char *bp, *ntype, *t, nbuf[100];
+	CHAR_T *p;
 
 	/* Validate the operator. */
 	if (vp->character == '#')

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.54 1997/08/03 15:45:34 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:45:34 $";
+static const char sccsid[] = "$Id: options.c,v 10.55 2000/06/27 17:19:04 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -798,6 +798,7 @@ opts_dump(sp, type)
 	int numcols, numrows, row;
 	int b_op[O_OPTIONCOUNT], s_op[O_OPTIONCOUNT];
 	char nbuf[20];
+	CHAR_T *kp;
 
 	/*
 	 * Options are output in two groups -- those that fit in a column and

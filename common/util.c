@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.13 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $";
+static const char sccsid[] = "$Id: util.c,v 10.14 2000/06/27 17:19:05 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,7 +78,7 @@ nonblank(sp, lno, cnop)
 	db_recno_t lno;
 	size_t *cnop;
 {
-	char *p;
+	CHAR_T *p;
 	size_t cnt, len, off;
 	int isempty;
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.46 2000/06/25 17:34:41 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:41 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.47 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -567,7 +567,7 @@ v_ecl_exec(sp)
 	SCR *sp;
 {
 	size_t len;
-	char *p;
+	CHAR_T *p;
 
 	if (db_get(sp, sp->lno, 0, &p, &len) && sp->lno == 1) {
 		v_emsg(sp, NULL, VIM_EMPTY);

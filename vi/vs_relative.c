@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.14 2000/04/21 19:00:42 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:42 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.15 2000/06/27 17:19:09 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,18 +98,18 @@ vs_screens(sp, lno, cnop)
  *	Return the screen columns necessary to display the line, or,
  *	if specified, the physical character column within the line.
  *
- * PUBLIC: size_t vs_columns __P((SCR *, char *, db_recno_t, size_t *, size_t *));
+ * PUBLIC: size_t vs_columns __P((SCR *, CHAR_T *, db_recno_t, size_t *, size_t *));
  */
 size_t
 vs_columns(sp, lp, lno, cnop, diffp)
 	SCR *sp;
-	char *lp;
+	CHAR_T *lp;
 	db_recno_t lno;
 	size_t *cnop, *diffp;
 {
 	size_t chlen, cno, curoff, last, len, scno;
 	int ch, leftright, listset;
-	char *p;
+	CHAR_T *p;
 
 	/* Need the line to go any further. */
 	if (lp == NULL) {
@@ -236,7 +236,7 @@ vs_colpos(sp, lno, cno)
 {
 	size_t chlen, curoff, len, llen, off, scno;
 	int ch, leftright, listset;
-	char *lp, *p;
+	CHAR_T *lp, *p;
 
 	/* Need the line to go any further. */
 	(void)db_get(sp, lno, 0, &lp, &llen);

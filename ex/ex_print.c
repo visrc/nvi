@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.19 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.20 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,7 +107,8 @@ ex_print(sp, cmdp, fp, tp, flags)
 	GS *gp;
 	db_recno_t from, to;
 	size_t col, len;
-	char *p, buf[10];
+	CHAR_T *p;
+	char buf[10];
 
 	NEEDFILE(sp, cmdp);
 
@@ -185,7 +186,7 @@ ex_scprint(sp, fp, tp)
 	SCR *sp;
 	MARK *fp, *tp;
 {
-	const char *p;
+	CHAR_T *p;
 	size_t col, len;
 
 	col = 0;
@@ -195,7 +196,7 @@ ex_scprint(sp, fp, tp)
 			return (1);
 	}
 
-	if (db_get(sp, fp->lno, DBG_FATAL, (char **)&p, &len))
+	if (db_get(sp, fp->lno, DBG_FATAL, &p, &len))
 		return (1);
 
 	if (ex_prchars(sp, p, &col, fp->cno, 0, ' '))
@@ -283,6 +284,7 @@ ex_printf(sp, fmt, va_alist)
 	EX_PRIVATE *exp;
 	va_list ap;
 	size_t n;
+	CHAR_T *kp;
 
 	exp = EXP(sp);
 

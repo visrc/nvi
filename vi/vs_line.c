@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.21 1996/12/17 14:53:30 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:53:30 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.22 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,8 @@ vs_line(sp, smp, yp, xp)
 	size_t scno, skip_cols, skip_screens;
 	int ch, dne, is_cached, is_partial, is_tab;
 	int list_tab, list_dollar;
-	char *p, *cbp, *ecbp, cbuf[128];
+	CHAR_T *p;
+	char *cbp, *ecbp, cbuf[128];
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "vs_line: row %u: line: %u off: %u\n",

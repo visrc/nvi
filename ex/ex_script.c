@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.32 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.33 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,8 @@ sscr_exec(sp, lno)
 	db_recno_t last_lno;
 	size_t blen, len, last_len, tlen;
 	int isempty, matchprompt, nw, rval;
-	char *bp, *p;
+	char *bp;
+	CHAR_T *p;
 
 	/* If there's a prompt on the last line, append the command. */
 	if (db_last(sp, &last_lno))
