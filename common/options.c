@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.46 1993/02/19 18:46:19 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:46:19 $";
+static char sccsid[] = "$Id: options.c,v 5.47 1993/02/21 19:43:48 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:43:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -122,6 +122,8 @@ OPTIONS opts[] = {
 	"number",	NULL,		NULL,		OPT_0BOOL|OPT_REDRAW,
 /* O_NUNDO */
 	"nundo",	NULL,		NULL,		OPT_0BOOL,
+/* O_OPTIMIZE */
+	"optimize",	NULL,		NULL,		OPT_1BOOL,
 /* O_PARAGRAPHS */
 	"paragraphs",
 	    "IPLPPPQPP LIpplpipbp",	NULL,		OPT_STR,
@@ -129,6 +131,8 @@ OPTIONS opts[] = {
 	"prompt",	NULL,		NULL,		OPT_1BOOL,
 /* O_READONLY */
 	"readonly",	NULL,		NULL,		OPT_0BOOL,
+/* O_REDRAW */
+	"redraw",	NULL,		NULL,		OPT_0BOOL,
 /* O_REPORT */
 	"report",	&s_report,	NULL,		OPT_NUM,
 /* O_RULER */
@@ -199,6 +203,7 @@ static ABBREV abbrev[] = {
 	"mk",		O_MAKE,
 	"modeline",	O_MODELINES,
 	"nu",		O_NUMBER,
+	"opt",		O_OPTIMIZE,
 	"pa",		O_PARAGRAPHS,
 	"pr",		O_PROMPT,
 	"re",		O_REPORT,
