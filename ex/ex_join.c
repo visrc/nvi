@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.24 1993/05/05 10:57:44 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:44 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.25 1993/05/07 11:53:22 bostic Exp $ (Berkeley) $Date: 1993/05/07 11:53:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,12 +87,12 @@ ex_join(sp, ep, cmdp)
 		 */
 		if (!first && !F_ISSET(cmdp, E_FORCE)) {
 			if (isspace(echar))
-				while (len-- && isspace(*p))
-					++p;
+				for (; len && isspace(*p); --len, ++p);
 			else if (p[0] != ')') {
 				if (strchr(".?!", echar))
 					*bp++ = ' ';
 				*bp++ = ' ';
+				for (; len && isspace(*p); --len, ++p);
 			}
 		} else
 			first = 0;
