@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.26 1993/04/06 11:36:30 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:30 $
+ *	$Id: screen.h,v 5.27 1993/04/12 14:31:32 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:31:32 $
  */
 
 /*
@@ -141,7 +141,10 @@ typedef struct _scr {
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	struct _gs	*gp;		/* Pointer to global area. */
 
-	struct _ib ib;			/* Vi: text input buffer. */
+	struct _hdr	 txthdr;	/* Vi: text input TEXT header. */
+
+	char	*rep;			/* Vi: input replay buffer. */
+	size_t	 rep_len;		/* Vi: input replay buffer length. */
 
 	char	*VB;			/* Visual bell termcap string. */
 
