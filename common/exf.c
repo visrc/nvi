@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.23 1992/10/28 18:04:28 bostic Exp $ (Berkeley) $Date: 1992/10/28 18:04:28 $";
+static char sccsid[] = "$Id: exf.c,v 5.24 1992/11/01 22:46:27 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:46:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -20,7 +20,7 @@ static char sccsid[] = "$Id: exf.c,v 5.23 1992/10/28 18:04:28 bostic Exp $ (Berk
 #include <string.h>
 
 #include "vi.h"
-#include "exf.h"
+#include "excmd.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -34,9 +34,11 @@ static EXF defexf = {
 	0, 0, 0, 0,				/* cno, ocno, scno, shift */
 	0, 0, 0,				/* rcm, lines, cols */
 	0, 0,					/* cwidth, rcmflags */
+	NULL,					/* s_confirm */
 	NULL,					/* db */
-	NULL, 0, OOBLNO, OOBLNO,		/* c_lp, c_len, c_lno, nlines */
-	stdout, NULL,				/* stdfp, sdb */
+	NULL, 0, OOBLNO, OOBLNO,		/* c_{lp,len,lno,nlines} */
+	stdout, 				/* stdfp */
+	0, NULL,				/* rptlines, rptlabel */
 	NULL, 0, 0,				/* name, nlen, flags */
 };
 
@@ -197,7 +199,7 @@ file_start(ep)
 	EXF *ep;
 {
 	struct stat sb;
-	int fd, flags;
+	int fd;
 	char tname[sizeof(_PATH_TMPNAME) + 1];
 
 	if (ep == NULL) {
@@ -228,7 +230,7 @@ file_start(ep)
 		return (1);
 	}
 	if (ep->flags & F_NONAME)
-		(void)close(fd);
+		(void)close(fd);		/* Can't be uninitialized. */
 
 	/* Flush the line caches. */
 	ep->c_lno = ep->c_nlines = OOBLNO;
@@ -249,11 +251,6 @@ file_start(ep)
 
 	if (ISSET(O_COPYRIGHT))			/* Skip leading comment. */
 		file_copyright(ep);
-
-	if (mode == MODE_VI) {			/* Vi special things. */
-		scr_init(ep);			/* Screen state. */
-		status(ep, ep->lno);		/* Intro message. */
-	}
 
 	/*
 	 * Reset any marks.
@@ -335,6 +332,7 @@ file_sync(ep, force)
 {
 	struct stat sb;
 	FILE *fp;
+	MARK from, to;
 	int fd;
 
 	/* If unmodified, nothing to sync. */
@@ -362,9 +360,6 @@ file_sync(ep, force)
 		return (1);
 	}
 
-	/* Make sure the db routines have completely read the file. */
-	(void)file_lline(ep);
-
 	if ((fd = open(ep->name, O_WRONLY, 0)) < 0)
 		goto err;
 
@@ -374,7 +369,11 @@ err:		msg("%s: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
-	if (ex_writefp(ep->name, fp, 1, 0, 1))
+	from.lno = 1;
+	from.cno = 0;
+	to.lno = file_lline(ep);
+	to.cno = 0;
+	if (ex_writefp(ep->name, fp, &from, &to, 1))
 		return (1);
 
 	ep->flags |= F_WRITTEN;
