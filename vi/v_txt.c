@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.58 1993/11/27 17:20:29 bostic Exp $ (Berkeley) $Date: 1993/11/27 17:20:29 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.59 1993/11/28 11:58:43 bostic Exp $ (Berkeley) $Date: 1993/11/28 11:58:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,6 +96,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
+	int testnr;		/* Test first character for nul replay. */
 	int max, tmp;
 	char *p;
 
@@ -221,6 +222,10 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	else if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
 		margin = sp->cols - margin;
 
+	/* Initialize abbreviations check. */
+	abb = F_ISSET(sp, S_ABBREV) &&
+	    LF_ISSET(TXT_MAPINPUT) ? A_NOTSPACE : A_NOTSET;
+
 	/*
 	 * Set up the dot command.  Dot commands are done by saving the
 	 * actual characters and replaying the input.  We have to push
@@ -233,20 +238,26 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * recognize full line insertions, which could be performed quickly,
 	 * without replay.
 	 */
+nullreplay:
 	rcol = 0;
 	if (replay = LF_ISSET(TXT_REPLAY)) {
+		/*
+		 * !!!
+		 * Historically, it wasn't an error to replay non-existent
+		 * input.  This test is necessary, we get here by the user
+		 * doing an input command followed by a nul.
+		 */
+		if (VIP(sp)->rep == NULL)
+			return (0);
 		if (term_push(sp, sp->gp->key, VIP(sp)->rep, VIP(sp)->rep_cnt))
 			return (1);
+		testnr = 0;
 		LF_CLR(TXT_RECORD);
-	}
+	} else
+		testnr = 1;
 
-	/* Initialize abbreviations check. */
-	abb = F_ISSET(sp, S_ABBREV) &&
-	    LF_ISSET(TXT_MAPINPUT) ? A_NOTSPACE : A_NOTSET;
-
-	gp = sp->gp;
-	for (carat_st = C_NOTSET,
-	    hex = H_NOTSET, showmatch = 0, quoted = Q_NOTSET;;) {
+	for (gp = sp->gp, showmatch = 0,
+	    carat_st = C_NOTSET, hex = H_NOTSET, quoted = Q_NOTSET;;) {
 		/*
 		 * Reset the line and update the screen.  (The txt_showmatch()
 		 * code refreshes the screen for us.)  Don't refresh unless
@@ -264,14 +275,27 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 				goto err;
 		}
 
-		/*
-		 * Get the character.  Check to see if the character fits
-		 * into the input (and replay, if necessary) buffers.  It
-		 * isn't necessary to have tp->len bytes, since it doesn't
-		 * consider the overwrite characters, but not worth fixing.
-		 */
+		/* Get the next character. */
 next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			goto err;
+		/*
+		 * !!!
+		 * Historic feature.  If the first character of the input is
+		 * a nul, replay the previous input.  This isn't documented
+		 * anywhere, and is a great test of vi clones.
+		 */
+		if (ch == '\0' && testnr) {
+			LF_SET(TXT_REPLAY);
+			goto nullreplay;
+		}
+		testnr = 0;
+
+		/*
+		 * Check to see if the character fits into the input (and
+		 * replay, if necessary) buffers.  It isn't necessary to
+		 * have tp->len bytes, since it doesn't consider overwrite
+		 * characters, but not worth fixing.
+		 */
 		if (LF_ISSET(TXT_RECORD)) {
 			TBINC(sp, VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
 			VIP(sp)->rep[rcol++] = ch;
