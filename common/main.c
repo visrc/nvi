@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.7 1993/08/23 09:55:30 bostic Exp $ (Berkeley) $Date: 1993/08/23 09:55:30 $";
+static char sccsid[] = "$Id: main.c,v 8.8 1993/08/25 16:36:27 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:36:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -257,34 +257,37 @@ main(argc, argv)
 	/* If no argv, recovery or tag file specified, use a temporary file. */
 	if ((frp = file_first(sp, 1)) == NULL &&
 	    (frp = file_add(sp, NULL, NULL, 0)) == NULL)
-			goto err1;
+		goto err1;
 	sp->frp = frp;
 	
 	/* If no recover or tag file specified, get an EXF structure. */
 	if (tfname == NULL && rfname == NULL &&
 	    (sp->ep = file_init(sp, NULL, frp, NULL)) == NULL)
-			goto err1;
+		goto err1;
 
 	/*
-	 * Do commands from the command line, which must all assume
-	 * a starting position of the beginning of the file.
+	 * If there's an initial command, push it on the command stack.
+	 * Historically, it was always an ex command, not vi in vi mode
+	 * or ex in ex mode.  So, make it look like an ex command to vi.
 	 */
-	sp->lno = 1;
-	sp->cno = 0;
 	if (excmdarg != NULL)
-		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
-
-	/*
-	 * The commands we executed probably positioned the file, so we
-	 * want the screen to load the address from the FREF structure.
-	 * This isn't a wonderful test, but it's probably fairly safe.
-	 */
-	if (sp->lno != 1 || sp->cno != 0) {
-		sp->frp->lno = sp->lno;
-		sp->frp->cno = sp->cno;
-		F_SET(sp->frp, FR_CURSORSET);
-	}
-
+		switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
+		case S_MODE_EX:
+			if (term_push(sp, &sp->tty, excmdarg, strlen(excmdarg)))
+				goto err1;
+			break;
+		case S_MODE_VI:
+			if (term_push(sp, &sp->tty, "\n", 1))
+				goto err1;
+			if (term_push(sp, &sp->tty, excmdarg, strlen(excmdarg)))
+				goto err1;
+			if (term_push(sp, &sp->tty, ":", 1))
+				goto err1;
+			break;
+		default:
+			abort();
+		}
+		
 	/* Call a screen. */
 	while (sp != NULL)
 		switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
