@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.25 1994/05/07 11:33:37 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:37 $
+ *	$Id: exf.h,v 8.26 1994/05/17 11:46:00 bostic Exp $ (Berkeley) $Date: 1994/05/17 11:46:00 $
  */
 					/* Undo direction. */
 /*
@@ -89,8 +89,7 @@ int	 rcv_init __P((SCR *, EXF *));
 int	 rcv_list __P((SCR *));
 int	 rcv_on __P((SCR *, EXF *));
 int	 rcv_read __P((SCR *, FREF *));
-int	 rcv_sync __P((SCR *, EXF *));
-void	 rcv_syncit __P((SCR *, int));
+int	 rcv_sync __P((SCR *, EXF *, int, int, int));
 int	 rcv_tmp __P((SCR *, EXF *, char *));
 
 /* DB interface routines */
