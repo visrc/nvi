@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.5 1995/09/24 12:01:26 bostic Exp $ (Berkeley) $Date: 1995/09/24 12:01:26 $
+ *	$Id: key.h,v 10.6 1995/09/28 10:38:36 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:38:36 $
  */
 
 /*
@@ -203,16 +203,17 @@ extern KEYLIST keylist[];
 #define	TXT_EMARK	0x00001000	/* End of replacement mark. */
 #define	TXT_EOFCHAR	0x00002000	/* ICANON set, return EOF character. */
 #define	TXT_ESCAPE	0x00004000	/* Escape returns the buffer. */
-#define	TXT_INFOLINE	0x00008000	/* Editing the info line. */
-#define	TXT_MAPINPUT	0x00010000	/* Apply the input map. */
-#define	TXT_NLECHO	0x00020000	/* Echo the newline. */
-#define	TXT_NUMBER	0x00040000	/* Number the line. */
-#define	TXT_OVERWRITE	0x00080000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x00100000	/* Display a prompt. */
-#define	TXT_RECORD	0x00200000	/* Record for replay. */
-#define	TXT_REPLACE	0x00400000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x00800000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x01000000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x02000000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x04000000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x08000000	/* Option: wrapmargin. */
+#define	TXT_FILEC	0x00008000	/* Option: filec. */
+#define	TXT_INFOLINE	0x00010000	/* Editing the info line. */
+#define	TXT_MAPINPUT	0x00020000	/* Apply the input map. */
+#define	TXT_NLECHO	0x00040000	/* Echo the newline. */
+#define	TXT_NUMBER	0x00080000	/* Number the line. */
+#define	TXT_OVERWRITE	0x00100000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x00200000	/* Display a prompt. */
+#define	TXT_RECORD	0x00400000	/* Record for replay. */
+#define	TXT_REPLACE	0x00800000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x01000000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x02000000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x04000000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x08000000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x10000000	/* Option: wrapmargin. */
