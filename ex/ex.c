@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.107 1994/04/06 12:18:09 bostic Exp $ (Berkeley) $Date: 1994/04/06 12:18:09 $";
+static char sccsid[] = "$Id: ex.c,v 8.108 1994/04/06 12:27:34 bostic Exp $ (Berkeley) $Date: 1994/04/06 12:27:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1125,23 +1125,21 @@ addr2:	switch (exc.addrcnt) {
 	if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE)) {
 		/*
 		 * Only here if the mode of the underlying file changed, e.g.
-		 * the user switched files or is exiting.  There are two things
-		 * that we might have to save.  First, any "+cmd" field set up
-		 * for an ex/edit command will have to be saved for later, also,
-		 * any not yet executed part of the current ex command.
+		 * the user switched files or is exiting.  Two things that we
+		 * might have to save: first, any "+cmd" field set up for an
+		 * ex/edit command will have to be saved for later, also, any
+		 * part of the current ex command that hasn't been executed
+		 * yet.  For example:
 		 *
 		 *	:edit +25 file.c|s/abc/ABC/|1
 		 *
-		 * for example.
+		 * The historic vi just hung, of course; nvi handle's it by
+		 * pushing the keys onto the tty queue.  If we're switching
+		 * modes to vi, since the commands are intended as ex commands,
+		 * add the extra characters to make it work.
 		 *
-		 * The historic vi just hung, of course; we handle by
-		 * pushing the keys onto the tty queue.  If we're
-		 * switching modes to vi, since the commands are intended
-		 * as ex commands, add the extra characters to make it
-		 * work.
-		 *
-		 * For the fun of it, if you want to see if a vi clone got
-		 * the ex argument parsing right, try:
+		 * For the fun of it, if you want to see if a vi clone got the
+		 * ex argument parsing right, try:
  		 *
 		 *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
 		 *	vi
