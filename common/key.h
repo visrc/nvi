@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.47 1994/07/15 15:59:11 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:11 $
+ *	$Id: key.h,v 8.48 1994/07/25 17:05:38 bostic Exp $ (Berkeley) $Date: 1994/07/25 17:05:38 $
  */
 
 /*
@@ -151,20 +151,21 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	TXT_DOTTERM	0x00000400	/* Leading '.' terminates the input. */
 #define	TXT_EMARK	0x00000800	/* End of replacement mark. */
 #define	TXT_ESCAPE	0x00001000	/* Escape returns the buffer. */
-#define	TXT_INFOLINE	0x00002000	/* Editing the info line. */
-#define	TXT_MAPCOMMAND	0x00004000	/* Apply the command map. */
-#define	TXT_MAPINPUT	0x00008000	/* Apply the input map. */
-#define	TXT_MAPNODIGIT	0x00010000	/* Return to a digit. */
-#define	TXT_NLECHO	0x00020000	/* Echo the newline. */
-#define	TXT_OVERWRITE	0x00040000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x00080000	/* Display a prompt. */
-#define	TXT_RECORD	0x00100000	/* Record for replay. */
-#define	TXT_REPLACE	0x00200000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x00400000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x00800000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x01000000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x02000000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x04000000	/* Option: wrapmargin. */
+#define	TXT_EXSUSPEND	0x00002000	/* ^Z should suspend the session. */
+#define	TXT_INFOLINE	0x00004000	/* Editing the info line. */
+#define	TXT_MAPCOMMAND	0x00008000	/* Apply the command map. */
+#define	TXT_MAPINPUT	0x00010000	/* Apply the input map. */
+#define	TXT_MAPNODIGIT	0x00020000	/* Return to a digit. */
+#define	TXT_NLECHO	0x00040000	/* Echo the newline. */
+#define	TXT_OVERWRITE	0x00080000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x00100000	/* Display a prompt. */
+#define	TXT_RECORD	0x00200000	/* Record for replay. */
+#define	TXT_REPLACE	0x00400000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x00800000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x01000000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x02000000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x04000000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x08000000	/* Option: wrapmargin. */
 
 /* Support keyboard routines. */
 size_t		 __key_len __P((SCR *, ARG_CHAR_T));
