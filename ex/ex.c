@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.83 1993/04/13 16:21:32 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:21:32 $";
+static char sccsid[] = "$Id: ex.c,v 5.84 1993/04/17 11:55:22 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:55:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,6 +15,7 @@ static char sccsid[] = "$Id: ex.c,v 5.83 1993/04/13 16:21:32 bostic Exp $ (Berke
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -42,7 +43,13 @@ ex(sp, ep)
 
 	if (ex_init(sp, ep))
 		return (1);
-	status(sp, ep, sp->lno);
+	/*
+	 * XXX
+	 * Turn on signal handling.
+	 */
+	(void)signal(SIGHUP, onhup);
+	(void)signal(SIGINT, SIG_IGN);
+
 	do {
 		if (ex_gb(sp, ep, &sp->bhdr, ':', TXT_MAPCOMMAND | TXT_PROMPT))
 			continue;
@@ -56,7 +63,7 @@ ex(sp, ep)
 			(void)fputc('\n', sp->stdfp);
 			(void)ex_cstring(sp, ep, tp->lb, tp->len);
 		}
-	} while (F_ISSET(sp, S_MODE_EX) && !F_ISSET(sp, S_FILE_CHANGED));
+	} while (F_ISSET(sp, S_MODE_EX) && !F_ISSET(sp, S_MAJOR_CHANGE));
 	return (ex_end(sp));
 }
 
@@ -137,7 +144,7 @@ ex_cstring(sp, ep, cmd, len)
 	 * '\n' separated commands.  The string "^V\n" is a single '^V'.
 	 */
 	rval = 0;
-	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_FILE_CHANGED);
+	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
 	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
 		if (len == 0)
 			goto cend;
@@ -157,7 +164,7 @@ cend:			if (p > cmd) {
 			if (len == 0)
 				return (rval);
 			if (saved_mode != F_ISSET(sp,
-			    S_MODE_EX | S_MODE_VI | S_FILE_CHANGED)) {
+			    S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE)) {
 				msgq(sp, M_ERR,
 		    "File or status changed, remaining input discarded.");
 				return (1);
@@ -608,14 +615,14 @@ addr2:	switch(cmd.addrcnt) {
 		(void)log_cursor(sp, ep);
 
 	/* Save the current mode. */
-	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_FILE_CHANGED);
+	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
 
 	/* Do the command. */
 	if ((cp->fn)(sp, ep, &cmd))
 		return (1);
 
 	/* If the world changed, we're done. */
-	if (saved_mode != F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_FILE_CHANGED))
+	if (saved_mode != F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE))
 		return (0);
 
 	/* If just starting up, or not in ex mode, we're done. */
