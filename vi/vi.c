@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.20 1993/10/07 15:18:34 bostic Exp $ (Berkeley) $Date: 1993/10/07 15:18:34 $";
+static char sccsid[] = "$Id: vi.c,v 8.21 1993/10/26 17:50:17 bostic Exp $ (Berkeley) $Date: 1993/10/26 17:50:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -456,9 +456,10 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	int notused;
 
 	/* If '.' command, use the dot motion, else get the motion command. */
-	if (F_ISSET(vp, VC_ISDOT))
+	if (F_ISSET(vp, VC_ISDOT)) {
 		motion = *dm;
-	else if (getcmd(sp, ep, NULL, &motion, vp, &notused))
+		F_SET(&motion, VC_ISDOT);
+	} else if (getcmd(sp, ep, NULL, &motion, vp, &notused))
 		return (1);
 
 	/*
@@ -566,8 +567,9 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	}
 
 	/*
-	 * If a dot command save motion structure.  Note that the motion count
-	 * was changed above and needs to be reset.
+	 * If the command sets dot, save the motion structure.  The
+	 * motion count was changed above and needs to be reset, that's
+	 * why this is done here, and not in the calling routine.
 	 */
 	if (F_ISSET(vp->kp, V_DOT)) {
 		*dm = motion;
