@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.11 1996/04/10 20:00:44 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:00:44 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.12 1996/04/12 10:37:54 bostic Exp $ (Berkeley) $Date: 1996/04/12 10:37:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -417,8 +417,8 @@ XS(XS_VI_setcursor)
  * XS_VI_msg --
  *	Set the message line to text.
  *
- * Perl Command: VI::msg
- * Usage: VI::msg screenId text
+ * Perl Command: VI::Msg
+ * Usage: VI::Msg screenId text
  */
 XS(XS_VI_msg) 
 {
@@ -647,6 +647,27 @@ XS(XS_VI_opts_get)
 	return;
 }
 
+/*
+ * XS_VI_run --
+ *	Run the ex command cmd.
+ *
+ * Perl Command: VI::Run
+ * Usage: VI::Run screenId cmd
+ */
+XS(XS_VI_run) 
+{
+	dXSARGS;
+	SCR *screen;
+
+	if (items != 2) 
+		croak("Usage: VI::Run(screenId, cmd)");
+	SP -= items;
+	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
+	api_run_str(screen, (char *)SvPV(ST(1), na));
+	PUTBACK;
+	return;
+}
+
 static void xs_init __P((void));
 
 /*
@@ -705,6 +726,7 @@ perl_init(gp)
 	newXS("VI::MapKey", XS_VI_map, file);
 	newXS("VI::Msg", XS_VI_msg, file);
 	newXS("VI::NewScreen", XS_VI_iscreen, file);
+	newXS("VI::Run", XS_VI_run, file);
 	newXS("VI::SetCursor", XS_VI_setcursor, file);
 	newXS("VI::SetLine", XS_VI_sline, file);
 	newXS("VI::SetMark", XS_VI_setmark, file);
@@ -760,8 +782,11 @@ extern void boot_DynaLoader _((CV* cv));
 static void
 xs_init()
 {
-    char *file = __FILE__;
-    {
-        newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
-    }
+#ifdef HAVE_PERL_5_002_01
+	dXSUB_SYS;
+#endif
+	char *file = __FILE__;
+	{
+		newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+	}
 }
