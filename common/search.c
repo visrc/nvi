@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.6 1993/09/01 12:16:45 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:16:45 $";
+static char sccsid[] = "$Id: search.c,v 8.7 1993/09/02 13:04:32 bostic Exp $ (Berkeley) $Date: 1993/09/02 13:04:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,9 +70,9 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		/* Find terminating delimiter, handling escaped delimiters. */
 		for (p = t = ptrn;;) {
 			if (p[0] == '\0' || p[0] == delim) {
-				*t = '\0';
 				if (p[0] == delim)
 					++p;
+				*t = '\0';
 				break;
 			}
 			if (p[1] == delim && p[0] == '\\')
@@ -88,13 +88,13 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		 * whack the string, in case it's text space.
 		 */
 		if (*p) {
-			if (LF_ISSET(SEARCH_TERM)) {
-				msgq(sp, M_ERR,
-				    "Characters after search string.");
-				return (1);
-			}
 			if (get_delta(sp, &p, deltap))
 				return (1);
+			if (LF_ISSET(SEARCH_TERM)) {
+				msgq(sp, M_ERR,
+			"Characters after search string and/or delta.");
+				return (1);
+			}
 			if (epp != NULL)
 				*epp = p;
 		} else {
@@ -555,7 +555,7 @@ ctag_conv(sp, ptrnp, replacedp)
 /*
  * get_delta --
  *	Get a line delta.  The trickiness is that the delta can be pretty
- *	complicated, i.e. "+3-2+3" is allowed.
+ *	complicated, i.e. "+3-2+3++-" is allowed.
  */
 static int
 get_delta(sp, dp, valp)
@@ -565,32 +565,42 @@ get_delta(sp, dp, valp)
 {
 	long val, tval;
 
-	for (tval = 0; **dp;) {
-		if (!strchr("+-0123456789", **dp)) {
-			msgq(sp, M_ERR, "Characters after delta string.");
-			return (1);
-		}
+	for (tval = 0; **dp != '\0';) {
+		if (**dp == '+' || **dp == '-') {
+			if (!isdigit(*(*dp + 1))) {
+				if (**dp == '+') {
+					if (tval == LONG_MAX)
+						goto overflow;
+					++tval;
+				} else {
+					if (tval == LONG_MIN)
+						goto underflow;
+					--tval;
+				}
+				++dp;
+				continue;
+			}
+		} else
+			if (!isdigit(**dp))
+				break;
+
 		errno = 0;
 		val = strtol(*dp, dp, 10);
 		if (errno == ERANGE) {
 			if (val == LONG_MAX)
-				msgq(sp, M_ERR, "Delta value overflow.");
+overflow:			msgq(sp, M_ERR, "Delta value overflow.");
 			else if (val == LONG_MIN)
-				msgq(sp, M_ERR, "Delta value underflow.");
+underflow:			msgq(sp, M_ERR, "Delta value underflow.");
 			else
 				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 			return (1);
 		}
-		if (val >= 0) {
-			if (LONG_MAX - val < tval) {
-				msgq(sp, M_ERR, "Delta value overflow.");
-				return (1);
-			}
-		} else
-			if (-(LONG_MIN - tval) > val) {
-				msgq(sp, M_ERR, "Delta value underflow.");
-				return (1);
-			}
+		if (val >= 0)
+			if (LONG_MAX - val < tval)
+				goto overflow;
+		else
+			if (-(LONG_MIN - tval) > val)
+				goto underflow;
 		tval += val;
 	}
 	*valp = tval;
