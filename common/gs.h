@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.34 1996/09/24 20:51:23 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:51:23 $
+ *	$Id: gs.h,v 10.35 1996/10/29 12:11:43 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:11:43 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -163,6 +163,8 @@ struct _gs {
 	int	(*scr_cursor) __P((SCR *, size_t *, size_t *));
 					/* Delete a line. */
 	int	(*scr_deleteln) __P((SCR *));
+					/* Discard a screen. */
+	int	(*scr_discard) __P((SCR *, SCR *));
 					/* Get a keyboard event. */
 	int	(*scr_event) __P((SCR *, EVENT *, u_int32_t, int));
 					/* Ex: screen adjustment routine. */
@@ -185,6 +187,8 @@ struct _gs {
 	int	(*scr_rename) __P((SCR *, char *, int));
 					/* Set the screen type. */
 	int	(*scr_screen) __P((SCR *, u_int32_t));
+					/* Split the screen. */
+	int	(*scr_split) __P((SCR *, SCR *));
 					/* Suspend the editor. */
 	int	(*scr_suspend) __P((SCR *, int *));
 					/* Print usage message. */

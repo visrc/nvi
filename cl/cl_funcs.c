@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.50 1996/09/24 20:48:03 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:48:03 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.51 1996/10/29 12:11:12 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:11:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,8 @@ static const char sccsid[] = "$Id: cl_funcs.c,v 10.50 1996/09/24 20:48:03 bostic
 #include "../vi/vi.h"
 #include "cl.h"
 
+static void cl_rdiv __P((SCR *));
+
 /*
  * cl_addstr --
  *	Add len bytes from the string at the cursor, advancing the cursor.
@@ -44,7 +46,7 @@ cl_addstr(sp, str, len)
 	size_t len;
 {
 	CL_PRIVATE *clp;
-	size_t oldy, oldx;
+	size_t y, x;
 	int iv;
 
 	clp = CLP(sp);
@@ -54,9 +56,9 @@ cl_addstr(sp, str, len)
 	 * it's a split screen, use inverse video.
 	 */
 	iv = 0;
-	getyx(stdscr, oldy, oldx);
+	getyx(stdscr, y, x);
 	if (!F_ISSET(sp, SC_SCR_EXWROTE) &&
-	    oldy == RLNO(sp, LASTLINE(sp)) && IS_SPLIT(sp)) {
+	    y == RLNO(sp, LASTLINE(sp)) && IS_SPLIT(sp)) {
 		iv = 1;
 		(void)standout();
 	}
@@ -235,7 +237,19 @@ int
 cl_clrtoeol(sp)
 	SCR *sp;
 {
-	return (clrtoeol() == ERR);
+	SCR *next;
+	size_t spcnt, y, x;
+
+	next = sp->q.cqe_next;
+	if (next != (void *)&sp->gp->dq && next->roff == sp->roff) {
+		/* The cursor must be returned to its original position. */
+		getyx(stdscr, y, x);
+		for (spcnt = (RCNO(next, 0) - x) - 1; spcnt > 0; --spcnt)
+			(void)addch(' ');
+		(void)move(y, x);
+		return (0);
+	} else
+		return (clrtoeol() == ERR);
 }
 
 /*
@@ -257,7 +271,8 @@ cl_cursor(sp, yp, xp)
 	 * using physically distinct screens won't need this hack.
 	 */
 	getyx(stdscr, *yp, *xp);
-	*yp -= sp->woff;
+	*yp -= sp->roff;
+	*xp -= sp->coff;
 	return (0);
 }
 
@@ -273,7 +288,7 @@ cl_deleteln(sp)
 {
 	CHAR_T ch;
 	CL_PRIVATE *clp;
-	size_t col, lno, spcnt, oldy, oldx;
+	size_t col, lno, spcnt, y, x;
 
 	clp = CLP(sp);
 
@@ -296,7 +311,7 @@ cl_deleteln(sp)
 	 * character following.
 	 */
 	if (!F_ISSET(sp, SC_SCR_EXWROTE) && IS_SPLIT(sp)) {
-		getyx(stdscr, oldy, oldx);
+		getyx(stdscr, y, x);
 #ifdef mvchgat
 		mvchgat(RLNO(sp, LASTLINE(sp)), 0, -1, A_NORMAL, 0, NULL);
 #else
@@ -315,7 +330,7 @@ cl_deleteln(sp)
 				break;
 		}
 #endif
-		(void)move(oldy, oldx);
+		(void)move(y, x);
 	}
 
 	/*
@@ -323,6 +338,25 @@ cl_deleteln(sp)
 	 * and other screens must support that semantic.
 	 */
 	return (deleteln() == ERR);
+}
+
+/* 
+ * cl_discard --
+ *	Discard a screen.
+ *
+ * PUBLIC: int cl_discard __P((SCR *, SCR *));
+ */
+int
+cl_discard(discardp, acquirep)
+	SCR *discardp, *acquirep;
+{
+	CL_PRIVATE *clp;
+
+	clp = CLP(discardp);
+	F_SET(clp, CL_LAYOUT);
+
+	/* discardp is going away, acquirep is taking up its space. */
+	return (0);
 }
 
 /* 
@@ -454,9 +488,9 @@ cl_move(sp, lno, cno)
 	size_t lno, cno;
 {
 	/* See the comment in cl_cursor. */
-	if (move(RLNO(sp, lno), cno) == ERR) {
-		msgq(sp, M_ERR,
-		    "Error: move: l(%u) c(%u) o(%u)", lno, cno, sp->woff);
+	if (move(RLNO(sp, lno), RCNO(sp, cno)) == ERR) {
+		msgq(sp, M_ERR, "Error: move: l(%u + %u) c(%u + %u)",
+		    lno, sp->roff, cno, sp->coff);
 		return (1);
 	}
 	return (0);
@@ -473,8 +507,12 @@ cl_refresh(sp, repaint)
 	SCR *sp;
 	int repaint;
 {
+	GS *gp;
 	CL_PRIVATE *clp;
+	SCR *psp, *tsp;
+	size_t y, x;
 
+	gp = sp->gp;
 	clp = CLP(sp);
 
 	/*
@@ -488,6 +526,23 @@ cl_refresh(sp, repaint)
 	 * If repaint is set, the editor is telling us that we don't know
 	 * what's on the screen, so we have to repaint from scratch.
 	 *
+	 * If repaint set or the screen layout changed, we need to redraw
+	 * any lines separating vertically split screens.  If the horizontal
+	 * offsets are the same, then the split was vertical, and need to
+	 * draw a dividing line.
+	 */
+	if (repaint || F_ISSET(clp, CL_LAYOUT)) {
+		getyx(stdscr, y, x);
+		for (psp = sp; psp != (void *)&gp->dq; psp = psp->q.cqe_next)
+			for (tsp = psp->q.cqe_next;
+			    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
+				if (psp->roff == tsp->roff)
+					cl_rdiv(tsp);
+		(void)move(y, x);
+		F_CLR(clp, CL_LAYOUT);
+	}
+
+	/*
 	 * In the curses library, doing wrefresh(curscr) is okay, but the
 	 * screen flashes when we then apply the refresh() to bring it up
 	 * to date.  So, use clearok().
@@ -495,6 +550,22 @@ cl_refresh(sp, repaint)
 	if (repaint)
 		clearok(curscr, 1);
 	return (refresh() == ERR);
+}
+
+/*
+ * cl_rdiv --
+ *	Draw a dividing line between two vertically split screens.
+ */
+static void
+cl_rdiv(sp)
+	SCR *sp;
+{
+	size_t cnt;
+
+	for (cnt = 0; cnt < sp->rows - 1; ++cnt) {
+		move(sp->roff + cnt, sp->cols + 1);
+		addch('|');
+	}
 }
 
 /*
@@ -538,6 +609,25 @@ cl_rename(sp, name, on)
 	return (0);
 }
 
+/* 
+ * cl_split --
+ *	Split a screen.
+ *
+ * PUBLIC: int cl_split __P((SCR *, SCR *));
+ */
+int
+cl_split(origp, newp)
+	SCR *origp, *newp;
+{
+	CL_PRIVATE *clp;
+
+	clp = CLP(origp);
+	F_SET(clp, CL_LAYOUT);
+
+	/* origp is the original screen, giving up space to newp. */
+	return (0);
+}
+
 /*
  * cl_suspend --
  *	Suspend a screen.
@@ -552,7 +642,7 @@ cl_suspend(sp, allowedp)
 	struct termios t;
 	CL_PRIVATE *clp;
 	GS *gp;
-	size_t oldy, oldx;
+	size_t y, x;
 	int changed;
 
 	gp = sp->gp;
@@ -596,7 +686,7 @@ cl_suspend(sp, allowedp)
 	 * Not sure this is necessary in System V implementations, but it
 	 * shouldn't hurt.
 	 */
-	getyx(stdscr, oldy, oldx);
+	getyx(stdscr, y, x);
 	(void)move(LINES - 1, 0);
 	(void)refresh();
 
@@ -662,7 +752,7 @@ cl_suspend(sp, allowedp)
 	(void)keypad(stdscr, TRUE);
 
 	/* Refresh and repaint the screen. */
-	(void)move(oldy, oldx);
+	(void)move(y, x);
 	(void)cl_refresh(sp, 1);
 
 	/* If the screen changed size, set the SIGWINCH bit. */

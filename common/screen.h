@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.24 1996/07/19 19:47:16 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:47:16 $
+ *	$Id: screen.h,v 10.25 1996/10/29 12:11:29 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:11:29 $
  */
 
 /*
@@ -55,7 +55,8 @@ struct _scr {
 	size_t	 t_rows;		/* 1-N: cur number of text rows. */
 	size_t	 t_maxrows;		/* 1-N: max number of text rows. */
 	size_t	 t_minrows;		/* 1-N: min number of text rows. */
-	size_t	 woff;			/* 0-N: screen offset in frame. */
+	size_t	 coff;			/* 0-N: screen col offset in display. */
+	size_t	 roff;			/* 0-N: screen row offset in display. */
 
 					/* Cursor's: */
 	recno_t	 lno;			/* 1-N: file line. */
