@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.14 1993/09/29 16:18:25 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:18:25 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.15 1993/09/29 16:30:16 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:30:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,7 +168,7 @@ ex_tagpush(sp, ep, cmdp)
 	else {
 		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
 
-		if (file_init(sp, frp, NULL)) {
+		if (file_init(sp, frp, NULL, 0)) {
 			FREE(tag, strlen(tag));
 			return (1);
 		}
