@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 9.4 1995/01/23 18:33:06 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:33:06 $";
+static char sccsid[] = "$Id: v_scroll.c,v 9.5 1995/01/30 09:13:28 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:13:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -341,13 +341,12 @@ v_pagedown(sp, vp)
 	 * i.e. the two line "overlap" was only subtracted once.  Which
 	 * makes no sense, but then again, an overlap makes no sense for
 	 * any screen but the "next" one anyway.  We do it the historical
-	 * was as there's no good reason to change it.
+	 * way as there's no good reason to change it.
 	 *
 	 * If the screen has been split, use the smaller of the current
 	 * window size and the window option value.
 	 *
-	 * Given a one-line screen with the cursor on line 1, it would be
-	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
+	 * It possible for this calculation to be less than 1; move at
 	 * least one line.
 	 */
 #define	IS_SPLIT_SCREEN(sp)						\
@@ -356,9 +355,8 @@ v_pagedown(sp, vp)
 
 	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) *
 	    (IS_SPLIT_SCREEN(sp) ?
-	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW)) - 2;
-	if (offset == 0)
-		offset = 1;
+	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
+	offset = offset <= 2 ? 1 : offset - 2;
 	if (svi_sm_scroll(sp, &vp->m_stop, offset, CNTRL_F))
 		return (1);
 	vp->m_final = vp->m_stop;
@@ -404,15 +402,13 @@ v_pageup(sp, vp)
 	 * If the screen has been split, use the smaller of the current
 	 * window size and the window option value.
 	 *
-	 * Given a one-line screen with the cursor on line 1, it would be
-	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
+	 * It possible for this calculation to be less than 1; move at
 	 * least one line.
 	 */
 	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) *
 	    (IS_SPLIT_SCREEN(sp) ?
-	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW)) - 2;
-	if (offset == 0)
-		offset = 1;
+	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
+	offset = offset <= 2 ? 1 : offset - 2;
 	if (svi_sm_scroll(sp, &vp->m_stop, offset, CNTRL_B))
 		return (1);
 	vp->m_final = vp->m_stop;
