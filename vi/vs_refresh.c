@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.45 1994/03/08 19:40:38 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:40:38 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.46 1994/03/09 11:44:47 bostic Exp $ (Berkeley) $Date: 1994/03/09 11:44:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -489,12 +489,16 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 
 		/*
 		 * If the new column moved us out of the current screen,
-		 * calculate a new screen.
+		 * calculate a new screen.  Since most files don't have
+		 * more than two screens, optimize moving from screen 2
+		 * to screen 1.
 		 */
 		if (SCNO < cwtotal) {
 lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
+				cnt = HMAP->off == 2 ? 1 :
+				    svi_screens(sp, ep, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
-					--smp->off;
+					smp->off = cnt;
 				goto paint;
 			}
 			goto slow;
@@ -533,9 +537,9 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		 */
 		if (SCNO >= SCREEN_COLS(sp)) {
 			if (O_ISSET(sp, O_LEFTRIGHT)) {
-				SCNO -= SCREEN_COLS(sp);
+				cnt = svi_screens(sp, ep, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
-					++smp->off;
+					smp->off = cnt;
 				goto paint;
 			}
 			goto slow;
