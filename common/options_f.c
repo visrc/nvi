@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.9 1995/11/13 08:25:33 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:25:33 $";
+static char sccsid[] = "$Id: options_f.c,v 10.10 1996/02/04 19:01:03 bostic Exp $ (Berkeley) $Date: 1996/02/04 19:01:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,8 +70,6 @@ DECL(f_cdpath)
  */
 DECL(f_columns)
 {
-	EVENT ev;
-
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_COLS) {
 		msgq(sp, M_ERR, "040|Screen columns too small, less than %d",
@@ -101,14 +99,6 @@ DECL(f_columns)
 	/* Set the value. */
 	O_VAL(sp, O_COLUMNS) =  val;
 
-	/* If we're in a screen, queue up a resize event. */
-	if (F_ISSET(sp, S_SCR_EX | S_SCR_VI)) {
-		ev.e_lno = val;
-		ev.e_cno = O_VAL(sp, O_COLUMNS);
-		ev.e_event = E_RESIZE;
-		if (v_event_push(sp, &ev, NULL, 1, 0))
-			return (1);
-	}
 	return (0);
 }
 
@@ -156,8 +146,6 @@ DECL(f_leftright)
  */
 DECL(f_lines)
 {
-	EVENT ev;
-
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_ROWS) {
 		msgq(sp, M_ERR, "042|Screen lines too small, less than %d",
@@ -200,15 +188,6 @@ DECL(f_lines)
 		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
 		    O_VAL(sp, O_WINDOW) > val)
 			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = val - 1;
-	}
-
-	/* If we're in a screen, queue up a resize event. */
-	if (F_ISSET(sp, S_SCR_EX | S_SCR_VI)) {
-		ev.e_lno = val;
-		ev.e_cno = O_VAL(sp, O_COLUMNS);
-		ev.e_event = E_RESIZE;
-		if (v_event_push(sp, &ev, NULL, 1, 0))
-			return (1);
 	}
 	return (0);
 }
