@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.174 1994/10/27 13:05:37 bostic Exp $ (Berkeley) $Date: 1994/10/27 13:05:37 $";
+static char sccsid[] = "$Id: ex.c,v 8.175 1994/10/29 16:55:16 bostic Exp $ (Berkeley) $Date: 1994/10/29 16:55:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1368,6 +1368,10 @@ addr2:	switch (exc.addrcnt) {
 		 *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
 		 *	vi
 		 *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
+		 *
+		 * !!!
+		 * NOTE: if we're exiting the file for any reason, ep is
+		 * probably no longer valid!
 		 */
 		if (arg1_len == 0 && save_cmdlen == 0)
 			return (0);
@@ -1382,9 +1386,12 @@ addr2:	switch (exc.addrcnt) {
 				goto err;
 			if (term_push(sp, arg1, arg1_len, 0))
 				goto err;
-			if (file_lline(sp, ep, &sp->frp->lno))
-				goto err;
-			F_SET(sp->frp, FR_CURSORSET);
+			if (sp->nextdisp != NULL) {
+				if (file_lline(sp,
+				    sp->nextdisp->ep, &sp->nextdisp->frp->lno))
+					goto err;
+				F_SET(sp->nextdisp->frp, FR_CURSORSET);
+			}
 		}
 		if (IN_VI_MODE(sp) && term_push(sp, ":", 1, 0))
 			goto err;
