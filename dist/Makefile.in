@@ -1,0 +1,537 @@
+#	$Id: Makefile.in,v 8.1 1996/02/18 15:36:46 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:36:46 $
+
+#GCCF=	-Wall
+#DEBUG=	-DDEBUG
+LFLAGS=	@lflags@
+OORG=	-g
+INCS=	-I. -I../common -I../ex -I../vi -I../cl @cinc@
+CFLAGS=	-c ${GCCF} ${DEBUG} ${LFLAGS} ${OORG} ${INCS}
+
+# Header files.
+HDRS=	cl_extern.h common_extern.h ex_define.h ex_extern.h \
+	options_define.h tcl_extern.h tk_extern.h vi_extern.h
+COBJS=	addbytes.o addch.o box.o clear.o clrtobot.o clrtoeol.o \
+	cr_put.o ctrace.o cur_hash.o curses.o delch.o deleteln.o delwin.o \
+	erase.o fullname.o getch.o getstr.o id_subwins.o idlok.o initscr.o \
+	insch.o insertln.o longname.o move.o mvwin.o newwin.o overlay.o \
+	overwrite.o putchar.o refresh.o scroll.o setterm.o standout.o \
+	toucholap.o touchwin.o tscroll.o tstp.o tty.o unctrl.o waddnstr.o
+CLOBJS=	cl_bsd.o cl_funcs.o cl_main.o cl_read.o cl_screen.o cl_term.o
+DBOBJS=	db.o mpool.o \
+	bt_close.o bt_conv.o bt_debug.o bt_delete.o bt_get.o bt_open.o \
+	bt_overflow.o bt_page.o bt_put.o bt_search.o bt_seq.o \
+	bt_split.o bt_utils.o \
+	rec_close.o rec_delete.o rec_get.o rec_open.o rec_put.o \
+	rec_search.o rec_seq.o rec_utils.o
+REOBJS=	regcomp.o regerror.o regexec.o regfree.o
+TKOBJS=	tk_funcs.o tk_main.o tk_read.o tk_screen.o tk_term.o tk_util.o
+VIOBJS=	cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
+	ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_delete.o ex_display.o \
+	ex_edit.o ex_equal.o ex_file.o ex_filter.o ex_global.o ex_init.o\
+	ex_join.o ex_map.o ex_mark.o ex_mkexrc.o ex_move.o ex_open.o \
+	ex_preserve.o ex_print.o ex_put.o ex_quit.o ex_read.o \
+	ex_screen.o ex_script.o ex_set.o ex_shell.o ex_shift.o \
+	ex_source.o ex_stop.o ex_subst.o ex_tag.o ex_tcl.o ex_txt.o \
+	ex_undo.o ex_usage.o ex_util.o ex_version.o ex_visual.o \
+	ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o log.o \
+	main.o mark.o msg.o options.o options_f.o put.o recover.o \
+	screen.o search.o seq.o tcl_api.o tcl_tcl.o util.o v_at.o \
+	v_ch.o v_cmd.o v_delete.o v_ex.o v_increment.o v_init.o v_itxt.o\
+	v_left.o v_mark.o v_match.o v_paragraph.o v_put.o v_redraw.o \
+	v_replace.o v_right.o v_screen.o v_scroll.o v_search.o \
+	v_section.o v_sentence.o v_status.o v_txt.o v_ulcase.o v_undo.o \
+	v_util.o v_word.o v_xchar.o v_yank.o v_z.o v_zexit.o vi.o \
+	vs_line.o vs_msg.o vs_refresh.o vs_relative.o vs_smap.o \
+	vs_split.o
+
+all: ${HDRS} nvi @tknvi@
+
+NVIALL=	${CLOBJS} ${VIOBJS} @cobjs@ @dbobjs@ @reobjs@ @LIBOBJS@
+nvi: ${NVIALL}
+	${CC} -o $@ ${NVIALL} @LIBS@
+
+TKALL=	${OBJS} @dbobjs@ @reobjs@ @LIBOBJS@
+tknvi: ${TKALL}
+	${CC} -o $@ ${TKALL} -L/usr/X11/lib -ltk -ltcl -lm -lX11
+
+clean:
+	rm -f nex nvi tknvi @LIBOBJS@ \
+	    ${COBJS} ${CLOBJS} ${DBOBJS} ${REOBJS} ${TKOBJS} ${VIOBJS}
+
+distclean: clean
+	rm -f Makefile port.h
+	rm -f curses_include_path curses_library_path
+	rm -f config.cache config.h config.log config.status
+
+maintainer-clean: distclean
+	rm -f ${HDRS}
+
+config: maintainer-clean
+	rm -f configure config.h.in
+	autoheader
+	chmod 444 config.h.in
+	autoconf
+	chmod 555 configure
+	./configure
+	
+install:
+
+tags:
+	ctags ../*/*.h ../*/*.[cys]
+
+# Header sources.
+cl_extern.h:
+	(echo '#include "config.h"' && \
+	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../cl/*.c) > cl_extern.h
+	chmod 444 $@
+common_extern.h:
+	(echo '#include "config.h"' && \
+	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../common/*.c) > common_extern.h
+	chmod 444 $@
+ex_define.h:
+	(echo '#include "config.h"' && \
+	    awk -f ../ex/ex.awk ../ex/ex_cmd.c) > ex_define.h
+	chmod 444 $@
+ex_extern.h:
+	(echo '#include "config.h"' && \
+	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../ex/*.c) > ex_extern.h
+	chmod 444 $@
+options_define.h:
+	(echo '#include "config.h"' && \
+	    awk -f ../common/options.awk ../common/options.c) > options_define.h
+	chmod 444 $@
+tcl_extern.h:
+	(echo '#include "config.h"' && \
+	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../tclapi/*.c) > tcl_extern.h
+	chmod 444 $@
+tk_extern.h:
+	(echo '#include "config.h"' && \
+	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../tk/*.c) > tk_extern.h
+	chmod 444 $@
+vi_extern.h:
+	(echo '#include "config.h"' && \
+	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../vi/*.c) > vi_extern.h
+	chmod 444 $@
+
+# Vi curses sources.
+cl_bsd.o: ../cl/cl_bsd.c
+	${CC} ${CFLAGS} ${FRCDEF} $?
+cl_funcs.o: ../cl/cl_funcs.c
+	${CC} ${CFLAGS} ${FRCDEF} $?
+cl_main.o: ../cl/cl_main.c
+	${CC} ${CFLAGS} ${FRCDEF} $?
+cl_read.o: ../cl/cl_read.c
+	${CC} ${CFLAGS} ${FRCDEF} $?
+cl_screen.o: ../cl/cl_screen.c
+	${CC} ${CFLAGS} ${FRCDEF} $?
+cl_term.o: ../cl/cl_term.c
+	${CC} ${CFLAGS} ${FRCDEF} $?
+
+# Vi Tk sources.
+XINC=	-I/usr/X11/include
+tk_funcs.o: ../tk/tk_funcs.c
+	${CC} ${CFLAGS} ${XINC} $?
+tk_main.o: ../tk/tk_main.c
+	${CC} ${CFLAGS} ${XINC} $?
+tk_read.o: ../tk/tk_read.c
+	${CC} ${CFLAGS} ${XINC} $?
+tk_screen.o: ../tk/tk_screen.c
+	${CC} ${CFLAGS} ${XINC} $?
+tk_term.o: ../tk/tk_term.c
+	${CC} ${CFLAGS} ${XINC} $?
+tk_util.o: ../tk/tk_util.c
+	${CC} ${CFLAGS} ${XINC} $?
+
+# Vi Tcl sources.
+tcl_api.o: ../tclapi/tcl_api.c
+	${CC} ${CFLAGS} $?
+tcl_tcl.o: ../tclapi/tcl_tcl.c
+	${CC} ${CFLAGS} $?
+
+# Vi sources.
+cut.o: ../common/cut.c
+	 ${CC} ${CFLAGS} $?
+delete.o: ../common/delete.c
+	 ${CC} ${CFLAGS} $?
+exf.o: ../common/exf.c
+	 ${CC} ${CFLAGS} $?
+key.o: ../common/key.c
+	 ${CC} ${CFLAGS} $?
+line.o: ../common/line.c
+	 ${CC} ${CFLAGS} $?
+log.o: ../common/log.c
+	 ${CC} ${CFLAGS} $?
+main.o: ../common/main.c
+	 ${CC} ${CFLAGS} $?
+mark.o: ../common/mark.c
+	 ${CC} ${CFLAGS} $?
+msg.o: ../common/msg.c
+	 ${CC} ${CFLAGS} $?
+options.o: ../common/options.c
+	 ${CC} ${CFLAGS} $?
+options_f.o: ../common/options_f.c
+	 ${CC} ${CFLAGS} $?
+put.o: ../common/put.c
+	 ${CC} ${CFLAGS} $?
+screen.o: ../common/screen.c
+	 ${CC} ${CFLAGS} $?
+search.o: ../common/search.c
+	 ${CC} ${CFLAGS} $?
+seq.o: ../common/seq.c
+	 ${CC} ${CFLAGS} $?
+recover.o: ../common/recover.c
+	 ${CC} ${CFLAGS} $?
+util.o: ../common/util.c
+	 ${CC} ${CFLAGS} $?
+ex.o: ../ex/ex.c
+	 ${CC} ${CFLAGS} $?
+ex_abbrev.o: ../ex/ex_abbrev.c
+	 ${CC} ${CFLAGS} $?
+ex_append.o: ../ex/ex_append.c
+	 ${CC} ${CFLAGS} $?
+ex_args.o: ../ex/ex_args.c
+	 ${CC} ${CFLAGS} $?
+ex_argv.o: ../ex/ex_argv.c
+	 ${CC} ${CFLAGS} $?
+ex_at.o: ../ex/ex_at.c
+	 ${CC} ${CFLAGS} $?
+ex_bang.o: ../ex/ex_bang.c
+	 ${CC} ${CFLAGS} $?
+ex_cd.o: ../ex/ex_cd.c
+	 ${CC} ${CFLAGS} $?
+ex_cmd.o: ../ex/ex_cmd.c
+	 ${CC} ${CFLAGS} $?
+ex_delete.o: ../ex/ex_delete.c
+	 ${CC} ${CFLAGS} $?
+ex_digraph.o: ../ex/ex_digraph.c
+	 ${CC} ${CFLAGS} $?
+ex_display.o: ../ex/ex_display.c
+	 ${CC} ${CFLAGS} $?
+ex_edit.o: ../ex/ex_edit.c
+	 ${CC} ${CFLAGS} $?
+ex_equal.o: ../ex/ex_equal.c
+	 ${CC} ${CFLAGS} $?
+ex_file.o: ../ex/ex_file.c
+	 ${CC} ${CFLAGS} $?
+ex_filter.o: ../ex/ex_filter.c
+	 ${CC} ${CFLAGS} $?
+ex_global.o: ../ex/ex_global.c
+	 ${CC} ${CFLAGS} $?
+ex_init.o: ../ex/ex_init.c
+	 ${CC} ${CFLAGS} $?
+ex_join.o: ../ex/ex_join.c
+	 ${CC} ${CFLAGS} $?
+ex_map.o: ../ex/ex_map.c
+	 ${CC} ${CFLAGS} $?
+ex_mark.o: ../ex/ex_mark.c
+	 ${CC} ${CFLAGS} $?
+ex_mkexrc.o: ../ex/ex_mkexrc.c
+	 ${CC} ${CFLAGS} $?
+ex_move.o: ../ex/ex_move.c
+	 ${CC} ${CFLAGS} $?
+ex_open.o: ../ex/ex_open.c
+	 ${CC} ${CFLAGS} $?
+ex_preserve.o: ../ex/ex_preserve.c
+	 ${CC} ${CFLAGS} $?
+ex_print.o: ../ex/ex_print.c
+	 ${CC} ${CFLAGS} $?
+ex_put.o: ../ex/ex_put.c
+	 ${CC} ${CFLAGS} $?
+ex_quit.o: ../ex/ex_quit.c
+	 ${CC} ${CFLAGS} $?
+ex_read.o: ../ex/ex_read.c
+	 ${CC} ${CFLAGS} $?
+ex_screen.o: ../ex/ex_screen.c
+	 ${CC} ${CFLAGS} $?
+ex_script.o: ../ex/ex_script.c
+	 ${CC} ${CFLAGS} $?
+ex_set.o: ../ex/ex_set.c
+	 ${CC} ${CFLAGS} $?
+ex_shell.o: ../ex/ex_shell.c
+	 ${CC} ${CFLAGS} $?
+ex_shift.o: ../ex/ex_shift.c
+	 ${CC} ${CFLAGS} $?
+ex_source.o: ../ex/ex_source.c
+	 ${CC} ${CFLAGS} $?
+ex_stop.o: ../ex/ex_stop.c
+	 ${CC} ${CFLAGS} $?
+ex_subst.o: ../ex/ex_subst.c
+	 ${CC} ${CFLAGS} $?
+ex_tag.o: ../ex/ex_tag.c
+	 ${CC} ${CFLAGS} $?
+ex_tcl.o: ../ex/ex_tcl.c
+	 ${CC} ${CFLAGS} $?
+ex_txt.o: ../ex/ex_txt.c
+	 ${CC} ${CFLAGS} $?
+ex_undo.o: ../ex/ex_undo.c
+	 ${CC} ${CFLAGS} $?
+ex_usage.o: ../ex/ex_usage.c
+	 ${CC} ${CFLAGS} $?
+ex_util.o: ../ex/ex_util.c
+	 ${CC} ${CFLAGS} $?
+ex_version.o: ../ex/ex_version.c
+	 ${CC} ${CFLAGS} $?
+ex_visual.o: ../ex/ex_visual.c
+	 ${CC} ${CFLAGS} $?
+ex_write.o: ../ex/ex_write.c
+	 ${CC} ${CFLAGS} $?
+ex_yank.o: ../ex/ex_yank.c
+	 ${CC} ${CFLAGS} $?
+ex_z.o: ../ex/ex_z.c
+	 ${CC} ${CFLAGS} $?
+getc.o: ../vi/getc.c
+	 ${CC} ${CFLAGS} $?
+v_at.o: ../vi/v_at.c
+	 ${CC} ${CFLAGS} $?
+v_ch.o: ../vi/v_ch.c
+	 ${CC} ${CFLAGS} $?
+v_cmd.o: ../vi/v_cmd.c
+	 ${CC} ${CFLAGS} $?
+v_delete.o: ../vi/v_delete.c
+	 ${CC} ${CFLAGS} $?
+v_ex.o: ../vi/v_ex.c
+	 ${CC} ${CFLAGS} $?
+v_increment.o: ../vi/v_increment.c
+	 ${CC} ${CFLAGS} $?
+v_init.o: ../vi/v_init.c
+	 ${CC} ${CFLAGS} $?
+v_itxt.o: ../vi/v_itxt.c
+	 ${CC} ${CFLAGS} $?
+v_left.o: ../vi/v_left.c
+	 ${CC} ${CFLAGS} $?
+v_mark.o: ../vi/v_mark.c
+	 ${CC} ${CFLAGS} $?
+v_match.o: ../vi/v_match.c
+	 ${CC} ${CFLAGS} $?
+v_paragraph.o: ../vi/v_paragraph.c
+	 ${CC} ${CFLAGS} $?
+v_put.o: ../vi/v_put.c
+	 ${CC} ${CFLAGS} $?
+v_redraw.o: ../vi/v_redraw.c
+	 ${CC} ${CFLAGS} $?
+v_replace.o: ../vi/v_replace.c
+	 ${CC} ${CFLAGS} $?
+v_right.o: ../vi/v_right.c
+	 ${CC} ${CFLAGS} $?
+v_screen.o: ../vi/v_screen.c
+	 ${CC} ${CFLAGS} $?
+v_scroll.o: ../vi/v_scroll.c
+	 ${CC} ${CFLAGS} $?
+v_search.o: ../vi/v_search.c
+	 ${CC} ${CFLAGS} $?
+v_section.o: ../vi/v_section.c
+	 ${CC} ${CFLAGS} $?
+v_sentence.o: ../vi/v_sentence.c
+	 ${CC} ${CFLAGS} $?
+v_status.o: ../vi/v_status.c
+	 ${CC} ${CFLAGS} $?
+v_txt.o: ../vi/v_txt.c
+	 ${CC} ${CFLAGS} $?
+v_ulcase.o: ../vi/v_ulcase.c
+	 ${CC} ${CFLAGS} $?
+v_undo.o: ../vi/v_undo.c
+	 ${CC} ${CFLAGS} $?
+v_util.o: ../vi/v_util.c
+	 ${CC} ${CFLAGS} $?
+v_word.o: ../vi/v_word.c
+	 ${CC} ${CFLAGS} $?
+v_xchar.o: ../vi/v_xchar.c
+	 ${CC} ${CFLAGS} $?
+v_yank.o: ../vi/v_yank.c
+	 ${CC} ${CFLAGS} $?
+v_z.o: ../vi/v_z.c
+	 ${CC} ${CFLAGS} $?
+v_zexit.o: ../vi/v_zexit.c
+	 ${CC} ${CFLAGS} $?
+vi.o: ../vi/vi.c
+	 ${CC} ${CFLAGS} $?
+vs_line.o: ../vi/vs_line.c
+	 ${CC} ${CFLAGS} $?
+vs_msg.o: ../vi/vs_msg.c
+	 ${CC} ${CFLAGS} $?
+vs_refresh.o: ../vi/vs_refresh.c
+	 ${CC} ${CFLAGS} $?
+vs_relative.o: ../vi/vs_relative.c
+	 ${CC} ${CFLAGS} $?
+vs_smap.o: ../vi/vs_smap.c
+	 ${CC} ${CFLAGS} $?
+vs_split.o: ../vi/vs_split.c
+	 ${CC} ${CFLAGS} $?
+
+addbytes.o: ../curses/addbytes.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+addch.o: ../curses/addch.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+box.o: ../curses/box.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+clear.o: ../curses/clear.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+clrtobot.o: ../curses/clrtobot.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+clrtoeol.o: ../curses/clrtoeol.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+cr_put.o: ../curses/cr_put.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+ctrace.o: ../curses/ctrace.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+cur_hash.o: ../curses/cur_hash.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+curses.o: ../curses/curses.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+delch.o: ../curses/delch.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+deleteln.o: ../curses/deleteln.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+delwin.o: ../curses/delwin.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+erase.o: ../curses/erase.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+fullname.o: ../curses/fullname.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+getch.o: ../curses/getch.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+getstr.o: ../curses/getstr.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+id_subwins.o: ../curses/id_subwins.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+idlok.o: ../curses/idlok.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+initscr.o: ../curses/initscr.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+insch.o: ../curses/insch.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+insertln.o: ../curses/insertln.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+longname.o: ../curses/longname.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+move.o: ../curses/move.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+mvwin.o: ../curses/mvwin.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+newwin.o: ../curses/newwin.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+overlay.o: ../curses/overlay.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+overwrite.o: ../curses/overwrite.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+putchar.o: ../curses/putchar.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+refresh.o: ../curses/refresh.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+scroll.o: ../curses/scroll.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+setterm.o: ../curses/setterm.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+standout.o: ../curses/standout.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+toucholap.o: ../curses/toucholap.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+touchwin.o: ../curses/touchwin.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+tscroll.o: ../curses/tscroll.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+tstp.o: ../curses/tstp.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+tty.o: ../curses/tty.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+unctrl.o: ../curses/unctrl.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+waddnstr.o: ../curses/waddnstr.c
+	${CC} -D_CURSES_PRIVATE ${CFLAGS} $?
+
+# DB sources.
+db.o: ../db/db/db.c
+	${CC} ${CFLAGS} $?
+mpool.o: ../db/mpool/mpool.c
+	${CC} ${CFLAGS} -I../db/mpool $?
+bt_close.o: ../db/btree/bt_close.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_conv.o: ../db/btree/bt_conv.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_debug.o: ../db/btree/bt_debug.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_delete.o: ../db/btree/bt_delete.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_get.o: ../db/btree/bt_get.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_open.o: ../db/btree/bt_open.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_overflow.o: ../db/btree/bt_overflow.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_page.o: ../db/btree/bt_page.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_put.o: ../db/btree/bt_put.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_search.o: ../db/btree/bt_search.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_seq.o: ../db/btree/bt_seq.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_split.o: ../db/btree/bt_split.c
+	${CC} ${CFLAGS} -I../db/btree $?
+bt_utils.o: ../db/btree/bt_utils.c
+	${CC} ${CFLAGS} -I../db/btree $?
+rec_close.o: ../db/recno/rec_close.c
+	${CC} ${CFLAGS} -I../db/recno $?
+rec_delete.o: ../db/recno/rec_delete.c
+	${CC} ${CFLAGS} -I../db/recno $?
+rec_get.o: ../db/recno/rec_get.c
+	${CC} ${CFLAGS} -I../db/recno $?
+rec_open.o: ../db/recno/rec_open.c
+	${CC} ${CFLAGS} -I../db/recno $?
+rec_put.o: ../db/recno/rec_put.c
+	${CC} ${CFLAGS} -I../db/recno $?
+rec_search.o: ../db/recno/rec_search.c
+	${CC} ${CFLAGS} -I../db/recno $?
+rec_seq.o: ../db/recno/rec_seq.c
+	${CC} ${CFLAGS} -I../db/recno $?
+rec_utils.o: ../db/recno/rec_utils.c
+	${CC} ${CFLAGS} -I../db/recno $?
+
+# Regular Expressions sources.
+RINC=	-I../regex
+regcomp.o: ../regex/regcomp.c
+	${CC} ${CFLAGS} ${RINC} $?
+regerror.o: ../regex/regerror.c
+	${CC} ${CFLAGS} ${RINC} $?
+regexec.o: ../regex/regexec.c
+	${CC} ${CFLAGS} ${RINC} $?
+regfree.o: ../regex/regfree.c
+	${CC} ${CFLAGS} ${RINC} $?
+
+# Random replacement and workaround sources.
+addnstr.o: ../clib/addnstr.c
+	${CC} ${CFLAGS} $?
+bsearch.o: ../clib/bsearch.c
+	${CC} ${CFLAGS} $?
+fchmod.o: ../clib/fchmod.c
+	${CC} ${CFLAGS} ${INC} $?
+getopt.o: ../clib/getopt.c
+	${CC} ${CFLAGS} ${INC} $?
+memchr.o: ../clib/memchr.c
+	${CC} ${CFLAGS} $?
+memmove.o: ../clib/memmove.c
+	${CC} ${CFLAGS} -DMEMMOVE $?
+memset.o: ../clib/memset.c
+	${CC} ${CFLAGS} $?
+mktemp.o: ../clib/mktemp.c
+	${CC} ${CFLAGS} $?
+mmap.o: ../clib/mmap.c
+	${CC} ${CFLAGS} $?
+openpty.o: ../clib/openpty.c
+	${CC} ${CFLAGS} $?
+siglist.o: ../clib/siglist.c
+	${CC} ${CFLAGS} $?
+snprintf.o: ../clib/snprintf.c
+	${CC} ${CFLAGS} $?
+strdup.o: ../clib/strdup.c
+	${CC} ${CFLAGS} $?
+strerror.o: ../clib/strerror.c
+	${CC} ${CFLAGS} $?
+strpbrk.o: ../clib/strpbrk.c
+	${CC} ${CFLAGS} $?
+strsep.o: ../clib/strsep.c
+	${CC} ${CFLAGS} $?
+strtol.o: ../clib/strtol.c
+	${CC} ${CFLAGS} $?
+strtoul.o: ../clib/strtoul.c
+	${CC} ${CFLAGS} $?

@@ -1,0 +1,75 @@
+#	$Id: README,v 8.1 1996/02/18 15:36:49 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:36:49 $
+
+Vi uses the GNU autoconf program for configuration and compilation.
+You should enter:
+
+	./configure<carriage-return>
+	make<carriage-return>
+
+and vi should configure the system and build two binaries, named
+"ex" and "vi" for you.
+
+If you've want to rebuild vi, for example, you change your mind about
+what curses library implementation that you want to use, enter:
+
+	make distclean<carriage-return>
+
+and then follow the above instructions.
+
+There is only one part of vi's configuration that is interactive:
+selecting the curses library that you want to use.
+
+Where possible, vi uses the local curses library.  The problem is that
+there are lots of systems where the local curses library is sufficiently
+broken that it cannot support vi.  Symptoms of curses implementations
+that can't handle vi include:
+
+	+ Core dumps in curses routines.
+	+ Line-by-line screen repainting instead of scrolling.
+	+ Missing routines when compiling.
+	+ Repainting the wrong characters on the screen.
+	+ Displaying inverse video in the wrong places.
+
+If you see any of the above symptoms, then you should find another curses
+library to use.  There are three alternatives:
+
+    #1: Compile the 4BSD curses library from any of the recent BSD
+	releases: FreeBSD, NetBSD or 4.4BSD-Lite release 2.  These
+	libraries should be able to support vi.
+
+    #2: Compile the curses library included with vi (in ../curses).
+	This is a stripped-down copy of the 4.4BSD-Lite2 curses library.
+
+    #3: Retrieve and build the ncurses library.  This library is not
+	really recommended, at least for now, for two reasons.  First, it
+	can't be built on any system where the compiler doesn't support
+	function prototypes.  Second, it currently has a few bugs in its
+	support for vi.  It mostly works, but it's still not quite right.
+
+When you enter "./configure" for the FIRST time, you will be prompted:
+
+	Do you want to use the system curses library? (y/n)
+
+If you enter yes<carriage-return>, then vi will compile using the loader
+option -lcurses to find the curses library, and will assume that the
+curses include file <curses.h> will be found by the compiler without any
+additional action on vi's part.
+
+If you enter anything other than yes, then you will be prompted:
+
+	Do you want to use the vi supplied curses library? (y/n)
+
+If you enter yes<carriage-return>, then vi will compile using the curses
+source code supplied with the vi distribution.  
+
+If you enter anything other than yes, then you will be prompted:
+
+	Type in the pathname of the curses library:
+
+You should enter the path of the curses library you want to use,
+e.g., "/usr/lib/libcurses.a".  You will then be prompted:
+
+	Type in the pathname of the directory holding <curses.h>:
+
+You should enter the path of the directory where the compiler can
+find the <curses.h> include file, e.g., "/usr/include".
