@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.16 1993/12/19 12:59:05 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:59:05 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.17 1993/12/23 16:49:18 bostic Exp $ (Berkeley) $Date: 1993/12/23 16:49:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -96,6 +96,15 @@ ex_exec_proc(sp, cmd, p1, p2)
 
 	/* Restore ex/vi terminal settings. */
 err:	EX_RETURN(sp, isig, act, oact, sb, osb, term);
+
+	/*
+	 * XXX
+	 * EX_LEAVE/EX_RETURN only give us 1-second resolution on the tty
+	 * changes.  A fast '!' command, e.g. ":!pwd" can beat us to the
+	 * refresh.  When there's better resolution from the stat(2) timers,
+	 * this can go away.
+	 */
+	F_SET(sp, S_REFRESH);
 
 	return (rval);
 }
