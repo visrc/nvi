@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.2 1993/06/28 20:03:53 bostic Exp $ (Berkeley) $Date: 1993/06/28 20:03:53 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.3 1993/07/21 10:02:24 bostic Exp $ (Berkeley) $Date: 1993/07/21 10:02:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ ex_bang(sp, ep, cmdp)
 	/* Figure out how much space we could possibly need. */
 	modified = 0;
 	len = strlen(cmdp->string) + 1;
-	for (p = cmdp->string; p = strpbrk(p, "!%#\\"); ++p)
+	for (p = cmdp->string; (p = strpbrk(p, "!%#\\")) != NULL; ++p)
 		switch (*p) {
 		case '!':
 			if (sp->lastbcomm == NULL) {
@@ -89,7 +89,7 @@ ex_bang(sp, ep, cmdp)
 
 	/* Fill it in. */
 	if (modified) {
-		for (p = cmdp->string, t = com; ch = *p; ++p)
+		for (p = cmdp->string, t = com; (ch = *p) != '\0'; ++p)
 			switch (ch) {
 			case '!':
 				len = strlen(sp->lastbcomm);
