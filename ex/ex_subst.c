@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.9 1995/01/23 17:03:18 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:18 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.10 1995/01/31 09:34:32 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:34:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -493,11 +493,8 @@ noargs:	if (F_ISSET(sp, S_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 	    elno = cmdp->addr2.lno; !quit && lno <= elno; ++lno) {
 
 		/* Someone's unhappy, time to stop. */
-		if (INTERRUPTED(sp)) {
-			if (!F_ISSET(sp, S_GLOBAL))
-				ex_message(sp, NULL, EXM_INTERRUPTED);
+		if (INTERRUPTED(sp))
 			break;
-		}
 
 		/* Get the line. */
 		if ((s = file_gline(sp, lno, &llen)) == NULL) {
