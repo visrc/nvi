@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.50 1996/12/05 12:27:24 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:24 $";
+static const char sccsid[] = "$Id: exf.c,v 10.51 1997/01/02 17:11:05 bostic Exp $ (Berkeley) $Date: 1997/01/02 17:11:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1195,15 +1195,11 @@ file_comment(sp)
 		} while (!db_get(sp, ++lno, 0, &p, &len));
 	} else if (len > 1 && p[0] == '/' && p[1] == '/') {
 		F_SET(sp, SC_SCR_TOP);
-		p += 2;
-		len -= 2;
-		do {
-			for (; len > 1; --len, ++p)
-				if (p[0] == '/' && p[1] == '/') {
-					sp->lno = lno;
-					return;
-				}
-		} while (!db_get(sp, ++lno, 0, &p, &len));
+		while (!db_get(sp, ++lno, 0, &p, &len))
+			if (len < 1 || p[0] != '/' || p[1] != '/') {
+				sp->lno = lno;
+				return;
+			}
 	}
 }
 
