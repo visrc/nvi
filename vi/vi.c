@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.58 1993/04/13 16:28:11 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:28:11 $";
+static char sccsid[] = "$Id: vi.c,v 5.59 1993/04/17 12:07:48 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:07:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,12 +42,15 @@ vi(sp, ep)
 	if (v_init(sp, ep))
 		return (1);
 
-	F_SET(sp, S_REDRAW);
-	status(sp, ep, sp->lno);
-
 	if (sp->refresh(sp, ep))
 		return (v_end(sp));
-		
+	/*
+	 * XXX
+	 * Turn on signal handling.
+	 */
+	(void)signal(SIGHUP, onhup);
+	(void)signal(SIGINT, SIG_IGN);
+
 	for (eval = 0;;) {
 		/*
 		 * We get a command, which may or may not have an associated
@@ -100,10 +104,10 @@ vi(sp, ep)
 			goto err;
 		
 		/*
-		 * If that command took us out of vi, then exit
-		 * the loop without further action.
+		 * If that command took us out of vi or changed the screen,
+		 * then exit the loop without further action.
 		 */
-		if (!F_ISSET(sp, S_MODE_VI) || F_ISSET(sp, S_FILE_CHANGED))
+		if (!F_ISSET(sp, S_MODE_VI) || F_ISSET(sp, S_MAJOR_CHANGE))
 			break;
 
 		/* Set the dot command structure. */
@@ -183,8 +187,11 @@ err:			if (sp->refresh(sp, ep)) {
 	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
 		(k) = getkey(sp, 0);					\
-	else if (sp->special[(k)] == K_ESCAPE)				\
+	if (sp->special[(k)] == K_ESCAPE) {				\
+		if (esc_bell)						\
+		    msgq(sp, M_BERR, "Already in command mode");	\
 		return (1);						\
+	}								\
 }
 
 #define	GETCOUNT(sp, count) {						\
@@ -224,14 +231,17 @@ getcmd(sp, ep, dp, vp, ismotion)
 	register VIKEYS const *kp;
 	register u_int flags;
 	u_long hold;
-	int key;
+	int esc_bell, key;
 
 	memset(&vp->vpstartzero, 0,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
-	KEY(sp, key, TXT_MAPCOMMAND);
+	/* An escape bells the user only if already in command mode. */
+	esc_bell = ismotion == NULL ? 1 : 0;
+	KEY(sp, key, TXT_MAPCOMMAND)
+	esc_bell = 0;
 	if (key < 0 || key > MAXVIKEY) {
-		msgq(sp, M_BERR, "%s isn't a command", charname(sp, key));
+		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
 		return (1);
 	}
 
