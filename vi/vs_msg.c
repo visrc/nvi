@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.72 1996/06/26 19:27:49 bostic Exp $ (Berkeley) $Date: 1996/06/26 19:27:49 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.73 1996/06/28 15:28:13 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -276,8 +276,8 @@ vs_msg(sp, mtype, line, len)
 	 * to respect that.  Switch to ex mode long enough to put out the
 	 * message.
 	 *
-	 * If the SC_EX_DONTWAIT bit is set, turn it off -- we're writing,
-	 * so previous opinions should be ignored.
+	 * If the SC_EX_WAIT_NO bit is set, turn it off -- we're writing to
+	 * the screen, so previous opinions are ignored.
 	 */
 	if (F_ISSET(sp, SC_EX | SC_SCR_EXWROTE)) {
 		if (!F_ISSET(sp, SC_SCR_EX))
@@ -295,7 +295,7 @@ vs_msg(sp, mtype, line, len)
 			(void)gp->scr_attr(sp, SA_INVERSE, 0);
 		(void)fflush(stdout);
 
-		F_CLR(sp, SC_EX_DONTWAIT);
+		F_CLR(sp, SC_EX_WAIT_NO);
 
 		if (!F_ISSET(sp, SC_SCR_EX))
 			(void)sp->gp->scr_screen(sp, SC_VI);
@@ -537,7 +537,7 @@ vs_ex_resolve(sp, continuep)
 	vip = VIP(sp);
 	*continuep = 0;
 
-	/* If we ran an ex command, we don't trust the cursor. */
+	/* If we ran any ex command, we can't trust the cursor position. */
 	F_SET(vip, VIP_CUR_INVALID);
 
 	/* Terminate any partially written message. */
@@ -553,29 +553,34 @@ vs_ex_resolve(sp, continuep)
 	 * figure out what to do with the screen and potentially get another
 	 * command to execute.
 	 *
-	 * If we didn't switch into ex and only 0 or 1 lines of output, we can
-	 * continue without making the user wait.
+	 * If we didn't switch into ex, we're not required to wait, and less
+	 * than 2 lines of output, we can continue without waiting for the
+	 * wait.
 	 *
-	 * Note, all other code paths require waiting, so those cases leave the
-	 * report of modified lines until later.  As a result, groups of ex
-	 * commands will have cumulative line modification reports.  That seems
-	 * right (well, at least not wrong) to me.
+	 * Note, all other code paths require waiting, so we leave the report
+	 * of modified lines until later, so that we won't wait for no other
+	 * reason than a threshold number of lines were modified.  This means
+	 * we display cumulative line modification reports for groups of ex
+	 * commands.  That seems right to me (well, at least not wrong).
 	 */
 	if (F_ISSET(sp, SC_SCR_EXWROTE)) {
 		if (sp->gp->scr_screen(sp, SC_VI))
 			return (1);
 	} else
-		if (vip->totalcount < 2) {
-			F_CLR(sp, SC_EX_DONTWAIT);
+		if (!F_ISSET(sp, SC_EX_WAIT_YES) && vip->totalcount < 2) {
+			F_CLR(sp, SC_EX_WAIT_NO);
 			return (0);
 		}
+
+	/* Clear the required wait flag -- we're going to wait. */
+	F_CLR(sp, SC_EX_WAIT_YES);
 
 	/*
 	 * Wait, unless explicitly told not to wait or the user interrupted
 	 * the command.  If the user is leaving the screen, for any reason,
 	 * they can't continue with further ex commands.
 	 */
-	if (!F_ISSET(sp, SC_EX_DONTWAIT) && !INTERRUPTED(sp)) {
+	if (!F_ISSET(sp, SC_EX_WAIT_NO) && !INTERRUPTED(sp)) {
 		wtype = F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE |
 		    SC_FSWITCH | SC_SSWITCH) ? SCROLL_W : SCROLL_W_EX;
 		if (F_ISSET(sp, SC_SCR_EXWROTE))
@@ -608,7 +613,7 @@ vs_ex_resolve(sp, continuep)
 	 * Whew.  We're finally back home, after what feels like years.
 	 * Kiss the ground.
 	 */
-	F_CLR(sp, SC_SCR_EXWROTE | SC_EX_DONTWAIT);
+	F_CLR(sp, SC_SCR_EXWROTE | SC_EX_WAIT_NO);
 
 	/*
 	 * We may need to repaint some of the screen, e.g.:
@@ -616,8 +621,8 @@ vs_ex_resolve(sp, continuep)
 	 *	:set
 	 *	:!ls
 	 *
-	 * gives us a combination of some lines that are "wrong", and a
-	 * need for a full refresh.
+	 * gives us a combination of some lines that are "wrong", and a need
+	 * for a full refresh.
 	 */
 	if (vip->totalcount > 1) {
 		/* Set up the redraw of the overwritten lines. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.41 1996/06/17 20:38:27 bostic Exp $ (Berkeley) $Date: 1996/06/17 20:38:27 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.42 1996/06/28 15:28:12 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -480,7 +480,7 @@ v_ex(sp, vp)
 	 * that.
 	 */
 	if (do_resolution) {
-		F_SET(sp, SC_EX_DONTWAIT);
+		F_SET(sp, SC_EX_WAIT_NO);
 		if (vs_ex_resolve(sp, &ifcontinue))
 			return (1);
 	}

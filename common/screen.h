@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.20 1996/06/08 14:47:25 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:47:25 $
+ *	$Id: screen.h,v 10.21 1996/06/28 15:28:24 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:24 $
  */
 
 /*
@@ -185,15 +185,16 @@ struct _scr {
 #define	SC_ARGRECOVER	0x00004000	/* Argument list is recovery files. */
 #define	SC_AT_SET	0x00008000	/* Last at buffer set. */
 #define	SC_COMEDIT	0x00010000	/* Colon command-line edit window. */
-#define	SC_EX_DONTWAIT	0x00020000	/* Ex: don't wait for the user. */
-#define	SC_EX_GLOBAL	0x00040000	/* Ex: executing a global command. */
-#define	SC_EX_SILENT	0x00080000	/* Ex: batch script. */
-#define	SC_READONLY	0x00100000	/* Persistent readonly state. */
-#define	SC_RE_SEARCH	0x00200000	/* Search RE has been compiled. */
-#define	SC_RE_SUBST	0x00400000	/* Substitute RE has been compiled. */
-#define	SC_SCRIPT	0x00800000	/* Shell script window. */
-#define	SC_STATUS	0x01000000	/* Schedule welcome message. */
-#define	SC_TINPUT	0x02000000	/* Doing text input. */
-#define	SC_TINPUT_INFO	0x04000000	/* Doing text input on info line. */
+#define	SC_EX_GLOBAL	0x00020000	/* Ex: executing a global command. */
+#define	SC_EX_SILENT	0x00040000	/* Ex: batch script. */
+#define	SC_EX_WAIT_NO	0x00080000	/* Ex: don't wait for the user. */
+#define	SC_EX_WAIT_YES	0x00100000	/* Ex:    do wait for the user. */
+#define	SC_READONLY	0x00200000	/* Persistent readonly state. */
+#define	SC_RE_SEARCH	0x00400000	/* Search RE has been compiled. */
+#define	SC_RE_SUBST	0x00800000	/* Substitute RE has been compiled. */
+#define	SC_SCRIPT	0x01000000	/* Shell script window. */
+#define	SC_STATUS	0x02000000	/* Schedule welcome message. */
+#define	SC_TINPUT	0x04000000	/* Doing text input. */
+#define	SC_TINPUT_INFO	0x08000000	/* Doing text input on info line. */
 	u_int32_t flags;
 };

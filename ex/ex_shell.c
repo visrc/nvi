@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.34 1996/06/17 10:39:56 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:39:56 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.35 1996/06/28 15:28:36 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -63,7 +63,7 @@ ex_shell(sp, cmdp)
 	 * Historically, vi didn't require a continue message after the
 	 * return of the shell.  Match it.
 	 */
-	F_SET(sp, SC_EX_DONTWAIT);
+	F_SET(sp, SC_EX_WAIT_NO);
 
 	return (rval);
 }

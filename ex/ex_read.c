@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.35 1996/06/27 09:44:30 bostic Exp $ (Berkeley) $Date: 1996/06/27 09:44:30 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.36 1996/06/28 15:28:30 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,7 +144,7 @@ ex_read(sp, cmdp)
 		 * the don't-wait flag.
 		 */
 		if (!F_ISSET(sp, SC_SCR_EXWROTE))
-			F_SET(sp, SC_EX_DONTWAIT);
+			F_SET(sp, SC_EX_WAIT_NO);
 
 		/*
 		 * Switch into ex canonical mode.  The reason to restore the

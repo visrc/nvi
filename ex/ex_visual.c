@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_visual.c,v 10.12 1996/04/27 11:40:26 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:26 $";
+static const char sccsid[] = "$Id: ex_visual.c,v 10.13 1996/06/28 15:28:41 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,7 @@ nopush:	/*
 	 * already a reason to wait.
 	 */
 	if (!F_ISSET(sp, SC_SCR_EXWROTE))
-		F_SET(sp, SC_EX_DONTWAIT);
+		F_SET(sp, SC_EX_WAIT_NO);
 
 	if (F_ISSET(sp, SC_EX_GLOBAL)) {
 		/*
