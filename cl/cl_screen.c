@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.25 1995/11/07 20:25:21 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:25:21 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.26 1995/11/10 10:13:02 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:13:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,12 +49,9 @@ cl_screen(sp, flags)
 	clp = CLP(sp);
 
 	/* See if we're already in the right mode. */
-	if (LF_ISSET(S_EX) && F_ISSET(clp, CL_SCR_EX) ||
-	    LF_ISSET(S_VI) && F_ISSET(clp, CL_SCR_VI))
+	if (LF_ISSET(S_EX) && F_ISSET(sp, S_SCR_EX) ||
+	    LF_ISSET(S_VI) && F_ISSET(sp, S_SCR_VI))
 		return (0);
-
-	/* Turn off the screen-ready bit. */
-	F_CLR(sp, S_SCREEN_READY);
 
 	/*
 	 * Fake leaving ex mode.
@@ -65,8 +62,8 @@ cl_screen(sp, flags)
 	 * "leaves" vi to enter ex, when it exits ex we'll just fall back into
 	 * vi.
 	 */
-	if (F_ISSET(clp, CL_SCR_EX))
-		F_CLR(clp, CL_SCR_EX);
+	if (F_ISSET(sp, S_SCR_EX))
+		F_CLR(sp, S_SCR_EX);
 
 	/*
 	 * Fake leaving vi mode.
@@ -78,20 +75,24 @@ cl_screen(sp, flags)
 	 * go past it.  Don't clear the info line, its contents may be valid,
 	 * e.g. :file|append.
 	 */
-	if (F_ISSET(clp, CL_SCR_VI)) {
+	if (F_ISSET(sp, S_SCR_VI)) {
+		F_CLR(sp, S_SCR_VI);
+
 		(void)move(LINES - 1, 0);
 		(void)refresh();
-		F_CLR(clp, CL_SCR_VI);
 	}
 
 	/* Enter the requested mode. */
 	if (LF_ISSET(S_EX)) {
 		if (cl_ex_init(sp))
 			return (1);
+		clp->in_ex = 1;
+		F_SET(clp, CL_SCR_EX_INIT);
 	} else {
 		if (cl_vi_init(sp))
 			return (1);
-		clearok(curscr, 1);
+		clp->in_ex = 0;
+		F_SET(clp, CL_SCR_VI_INIT);
 	}
 	return (0);
 }
@@ -116,26 +117,38 @@ cl_quit(gp)
 	if (cl_term_end(gp))
 		rval = 1;
 
-	/*
-	 * Really leave ex mode.
-	 *
-	 * XXX
-	 * This call may discard characters from the tty queue.
-	 */
-	if (F_ISSET(clp, CL_SCR_EX_INIT) && cl_ex_end(gp))
+	/* Really leave vi mode. */
+	if (F_ISSET(gp, G_STDIN_TTY) &&
+	    F_ISSET(clp, CL_SCR_VI_INIT) && cl_vi_end(gp))
 		rval = 1;
-	F_CLR(clp, CL_SCR_EX | CL_SCR_EX_INIT);
+
+	/* Really leave ex mode. */
+	if (F_ISSET(gp, G_STDIN_TTY) &&
+	    F_ISSET(clp, CL_SCR_EX_INIT) && cl_ex_end(gp))
+		rval = 1;
 
 	/*
-	 * Really leave vi mode.
+	 * If we were running ex when we quit, or we're using an implementation
+	 * of curses where endwin() doesn't get this right, restore the original
+	 * terminal modes.
 	 *
 	 * XXX
-	 * This call may discard characters from the tty queue.
+	 * We could always do this but don't want to.  It may discard type-ahead
+	 * characters from the tty queue.
 	 */
-	if (F_ISSET(clp, CL_SCR_VI_INIT) && cl_vi_end(gp))
-		rval = 1;
-	F_CLR(clp, CL_SCR_VI | CL_SCR_VI_INIT);
+#ifndef FORCE_TERM_RESET
+	if (clp->in_ex)
+#endif
+		(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
 
+	/*
+	 * If we were running vi when we quit, force the screen to scroll
+	 * so we get a fresh line.
+	 */
+	if (!clp->in_ex)
+		(void)write(STDOUT_FILENO, "\n", 1);
+
+	F_CLR(clp, CL_SCR_EX_INIT | CL_SCR_VI_INIT);
 	return (rval);
 }
 
@@ -273,13 +286,6 @@ fast:	if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->vi_enter)) {
 err:		(void)cl_vi_end(sp->gp);
 		return (1);
 	}
-
-
-#ifdef NCURSES_DEBUG
-	trace(TRACE_UPDATE | TRACE_MOVE | TRACE_CALLS);
-#endif
-
-	F_SET(clp, CL_SCR_VI | CL_SCR_VI_INIT);
 	return (0);
 }
 
@@ -294,11 +300,6 @@ cl_vi_end(gp)
 	CL_PRIVATE *clp;
 
 	clp = GCLP(gp);
-	if (!F_ISSET(clp, CL_SCR_VI_INIT))
-		return (0);
-	F_CLR(clp, CL_SCR_VI_INIT);
-	if (!F_ISSET(gp, G_STDIN_TTY))
-		return (0);
 
 #ifndef FALSE
 #define	FALSE	0
@@ -307,25 +308,16 @@ cl_vi_end(gp)
 	(void)keypad(stdscr, FALSE);
 
 	/*
-	 * Move to the bottom of the window (some endwin implementations
-	 * don't do this for you).
+	 * If we were running vi when we quit, move to the bottom of the
+	 * window (some endwin implementations don't do this for you).
 	 */
-	(void)move(LINES - 1, 0);
-	(void)refresh();
+	if (!clp->in_ex) {
+		(void)move(LINES - 1, 0);
+		(void)refresh();
+	}
 
 	/* End curses window. */
 	(void)endwin();
-
-	/*
-	 * Force restoration of terminal modes (some endwin implementations
-	 * don't do this for you).
-	 */
-#ifdef FORCE_TERM_RESET
-	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
-#endif
-
-	/* Force the screen to scroll, so we get a fresh line. */
-	(void)write(STDOUT_FILENO, "\n", 1);
 
 	return (0);
 }
@@ -414,8 +406,6 @@ fast:	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->ex_enter)) {
 	if (clp->cup != NULL)
 		tputs(tgoto(clp->cup,
 		    0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
-
-	F_SET(clp, CL_SCR_EX | CL_SCR_EX_INIT);
 	return (0);
 }
 
@@ -430,15 +420,6 @@ cl_ex_end(gp)
 	CL_PRIVATE *clp;
 
 	clp = GCLP(gp);
-	if (!F_ISSET(clp, CL_SCR_EX_INIT))
-		return (0);
-	F_CLR(clp, CL_SCR_EX_INIT);
-	if (!F_ISSET(gp, G_STDIN_TTY))
-		return (0);
-
-	/* Restore the original terminal modes. */
-	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
-	F_CLR(clp, CL_SCR_EX_INIT);
 
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	if (clp->el != NULL)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 10.4 1995/09/21 12:06:17 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:17 $";
+static char sccsid[] = "$Id: screen.c,v 10.5 1995/11/10 10:13:19 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:13:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,8 +147,8 @@ screen_end(sp)
 	if (sp->q.cqe_next != NULL)
 		CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
 
-	/* No more messages. */
-	F_CLR(sp, S_SCREEN_READY);
+	/* The screen is no longer real. */
+	F_CLR(sp, S_SCR_EX | S_SCR_VI);
 
 	rval = 0;
 	if (v_screen_end(sp))			/* End vi. */

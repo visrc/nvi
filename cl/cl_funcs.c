@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.27 1995/11/06 20:14:57 bostic Exp $ (Berkeley) $Date: 1995/11/06 20:14:57 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.28 1995/11/10 10:12:36 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:12:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ cl_attr(sp, attribute, on)
 
 	switch (attribute) {
 	case SA_INVERSE:
-		if (F_ISSET(sp, S_EX | S_EX_CANON)) {
+		if (F_ISSET(sp, S_EX | S_SCR_EXWROTE)) {
 			clp = CLP(sp);
 			if (clp->smso == NULL)
 				return (1);
@@ -160,7 +160,7 @@ int
 cl_bell(sp)
 	SCR *sp;
 {
-	if (F_ISSET(sp, S_EX | S_EX_CANON))
+	if (F_ISSET(sp, S_EX | S_SCR_EXWROTE))
 		(void)write(STDOUT_FILENO, "\07", 1);		/* \a */
 	else {
 		/*
