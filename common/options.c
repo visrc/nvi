@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.36 1993/01/31 10:26:48 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:26:48 $";
+static char sccsid[] = "$Id: options.c,v 5.37 1993/02/11 11:51:44 bostic Exp $ (Berkeley) $Date: 1993/02/11 11:51:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -146,7 +146,7 @@ OPTIONS opts[] = {
 	"showmode",	NULL,		NULL,		OPT_0BOOL,
 /* O_SIDESCROLL */
 	"sidescroll",	&s_sidescroll,	f_sidescroll,	OPT_NUM,
-/* O_SYNC */
+/* O_SYNCCMD */
 	"sync",		NULL,		NULL,		OPT_0BOOL,
 /* O_TABSTOP */
 	"tabstop",	&s_tabstop,	f_tabstop,	OPT_NUM|OPT_REDRAW,
@@ -209,7 +209,7 @@ static ABBREV abbrev[] = {
 	"sm",		O_SHOWMATCH,
 	"ss",		O_SIDESCROLL,
 	"sw",		O_SHIFTWIDTH,
-	"sy",		O_SYNC,
+	"sy",		O_SYNCCMD,
 	"te",		O_TERM,
 	"to",		O_KEYTIME,
 	"tr",		O_TERSE,
