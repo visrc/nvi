@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.4 1993/10/07 13:53:51 bostic Exp $ (Berkeley) $Date: 1993/10/07 13:53:51 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.5 1993/10/10 13:09:19 bostic Exp $ (Berkeley) $Date: 1993/10/10 13:09:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,6 +111,10 @@ svi_line(sp, ep, smp, yp, xp)
 	 * is 0.
 	 */
 	if ((p = file_gline(sp, ep, smp->lno, &len)) == NULL || len == 0) {
+		/* Set line cacheing information. */
+		smp->c_sboff = smp->c_eboff = 0;
+		smp->c_scoff = smp->c_eclen = 0;
+
 		if (yp != NULL && smp->lno == sp->lno) {
 			*yp = smp - HMAP;
 			*xp = O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0;
@@ -218,6 +222,10 @@ err:			MOVEA(sp, oldy, oldx);
 		cno_cnt = 0;
 	else
 		cno_cnt = (sp->cno - offset_in_line) + 1;
+
+	/* Default ending values (if the entire line is displayed). */
+	smp->c_eboff = len - 1;
+	smp->c_eclen = cname[p[len - 1]].len;
 
 	/* This is the loop that actually displays characters. */
 	for (is_partial = 0, count_cols = 0;
