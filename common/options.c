@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.40 1996/05/04 18:52:48 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:52:48 $";
+static const char sccsid[] = "$Id: options.c,v 10.41 1996/05/15 17:03:26 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:03:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ OPTLIST const optlist[] = {
 	{"lisp",	f_lisp,		OPT_0BOOL,	OPT_NOSAVE},
 /* O_LIST	    4BSD */
 	{"list",	f_reformat,	OPT_0BOOL,	0},
-/* O_LOCK	  4.4BSD
+/* O_LOCKFILES	  4.4BSD
  *	XXX
  *	Locking isn't reliable enough over NFS to require it, in addition,
  *	it's a serious startup performance problem over some remote links.

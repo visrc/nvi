@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.32 1996/05/07 19:38:20 bostic Exp $ (Berkeley) $Date: 1996/05/07 19:38:20 $";
+static const char sccsid[] = "$Id: exf.c,v 10.33 1996/05/15 17:03:25 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:03:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1286,7 +1286,7 @@ file_lock(sp, name, fdp, fd, iswrite)
 	char *name;
 	int *fdp, fd, iswrite;
 {
-	if (!O_ISSET(sp, O_LOCK))
+	if (!O_ISSET(sp, O_LOCKFILES))
 		return (LOCK_SUCCESS);
 	
 #ifdef HAVE_LOCK_FLOCK			/* Hurrah!  We've got flock(2). */
