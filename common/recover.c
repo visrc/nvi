@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.20 1993/09/29 16:26:41 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:26:41 $";
+static char sccsid[] = "$Id: recover.c,v 8.21 1993/09/30 13:19:35 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:19:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -116,7 +116,6 @@ rcv_tmp(sp, ep, fname)
 		(void)unlink(path);
 		return (1);
 	}
-
 	F_SET(ep, F_RCV_ON);
 	return (0);
 }
@@ -170,8 +169,9 @@ rcv_init(sp, ep)
 	F_SET(ep, F_RCV_ON);
 	return (0);
 
-err2:	FREE(ep->rcv_mpath, strlen(ep->rcv_path));
-	ep->rcv_mpath = NULL;
+err2:	(void)unlink(ep->rcv_mpath);
+	(void)unlink(ep->rcv_path);
+	F_SET(ep, F_RCV_NORM);
 err1:	msgq(sp, M_ERR, "Recovery after system crash not possible.");
 	return (1);
 }
@@ -189,7 +189,7 @@ rcv_mailfile(sp, ep)
 	uid_t uid;
 	FILE *fp;
 	time_t now;
-	int fd;
+	int fd, sverrno;
 	char *p, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
@@ -239,10 +239,23 @@ rcv_mailfile(sp, ep)
 	    "to this file using the -l and -r options to nvi(1)",
 	    "or nex(1).");
 
+	if (ferror(fp)) {
+		sverrno = errno;
+		(void)fclose(fp);
+		errno = sverrno;
+		goto err;
+	}
 	if (fclose(fp)) {
+err:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+
+		/*
+		 * XXX
+		 * Without a mail file, a recovery file is pretty useless.
+		 * This might be worth fixing.
+		 */
 		(void)unlink(ep->rcv_mpath);
-		FREE(ep->rcv_mpath, strlen(ep->rcv_path));
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		(void)unlink(ep->rcv_path);
+		F_SET(ep, F_RCV_NORM);
 		return (1);
 	}
 	return (0);
@@ -344,12 +357,10 @@ rcv_hup(signo)
 				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
 				F_CLR(sp->ep, F_RCV_ON);
 				F_SET(sp->ep, F_RCV_NORM);
-				if (sp->ep->rcv_mpath != NULL) {
-					(void)snprintf(comm, sizeof(comm),
-					    "%s -t < %s", _PATH_SENDMAIL,
-					    sp->ep->rcv_mpath);
-					(void)system(comm);
-				}
+				(void)snprintf(comm, sizeof(comm),
+				    "%s -t < %s", _PATH_SENDMAIL,
+				    sp->ep->rcv_mpath);
+				(void)system(comm);
 			}
 			(void)file_end(sp, sp->ep, 1);
 		}

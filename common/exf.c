@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.29 1993/09/30 12:40:24 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:40:24 $";
+static char sccsid[] = "$Id: exf.c,v 8.30 1993/09/30 13:19:31 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:19:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,7 +150,7 @@ file_init(sp, frp, rcv_fname, force)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int e_ep, e_tname, e_rcv_path, fd;
+	int fd;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	/* Create the EXF. */
@@ -159,10 +159,6 @@ file_init(sp, frp, rcv_fname, force)
 		return (1);
 	}
 	memset(ep, 0, sizeof(EXF));
-
-	/* Allocate up to three pieces of memory; free on error. */
-	e_ep = 1;
-	e_tname = e_rcv_path = 0;
 
 	/* Insert into the chain of EXF structures. */
 	HDR_INSERT(ep, &sp->gp->exfhdr, next, prev, EXF);
@@ -174,6 +170,9 @@ file_init(sp, frp, rcv_fname, force)
 	 * If no name or backing file, create a backing temporary file, saving
 	 * the temp file name so can later unlink it.  Repoint the name to the
 	 * temporary name (we display it to the user until they rename it).
+	 * There are some games we play with the FR_FREE_TNAME and FR_NONAME
+	 * flags (see ex/ex_file.c) to make sure that the temporary memory gets
+	 * free'd up.
 	 */
 	if (frp->fname == NULL || stat(frp->fname, &sb)) {
 		(void)strcpy(tname, _PATH_TMPNAME);
@@ -182,17 +181,19 @@ file_init(sp, frp, rcv_fname, force)
 			goto err;
 		}
 		(void)close(fd);
+		F_SET(frp, FR_UNLINK_TFILE);
+
 		if ((frp->tname = strdup(tname)) == NULL) {
+			(void)unlink(tname);
 			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			goto err;
 		}
-		e_tname = 1;
-
 		if (frp->fname == NULL) {
 			F_SET(frp, FR_NONAME);
 			frp->fname = frp->tname;
 			frp->nlen = strlen(frp->fname);
-		}
+		} else
+			F_SET(frp, FR_FREE_TNAME);
 		oname = frp->tname;
 		psize = 4 * 1024;
 
@@ -226,7 +227,6 @@ file_init(sp, frp, rcv_fname, force)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		goto err;
 	} else {
-		e_rcv_path = 1;
 		oinfo.bfname = ep->rcv_path;
 		F_SET(ep, F_MODIFIED);
 	}
@@ -328,12 +328,13 @@ file_init(sp, frp, rcv_fname, force)
 	sp->frp = frp;
 	return (0);
 
-err:	if (e_rcv_path)
+err:	if (ep->rcv_path != NULL) {
 		FREE(ep->rcv_path, strlen(ep->rcv_path));
-	if (e_tname)
-		(void)unlink(frp->tname);
-	if (e_ep)
-		FREE(ep, sizeof(EXF));
+		ep->rcv_path = NULL;
+	}
+	if (F_ISSET(frp, FR_FREE_TNAME))
+		FREE(frp->tname, strlen(frp->tname));
+	FREE(ep, sizeof(EXF));
 	return (NULL);
 }
 
@@ -350,6 +351,7 @@ file_end(sp, ep, force)
 	EXF *ep;
 	int force;
 {
+	FREF *frp;
 	MARK *mp;
 	int termsignal;
 
@@ -360,9 +362,10 @@ file_end(sp, ep, force)
 	 * It would be cleaner to do this somewhere else, but by the time
 	 * ex or vi know that we're changing files it's already happened.
 	 */
-	sp->frp->lno = sp->lno;
-	sp->frp->cno = sp->cno;
-	F_SET(sp->frp, FR_CURSORSET);
+	frp = sp->frp;
+	frp->lno = sp->lno;
+	frp->cno = sp->cno;
+	F_SET(frp, FR_CURSORSET);
 
 	/* If multiply referenced, decrement count and return. */
 	if (--ep->refcnt != 0)
@@ -372,8 +375,6 @@ file_end(sp, ep, force)
 	 * The HUP and TERM signal handlers use this routine.  If the
 	 * S_TERMSIGNAL flag is set, we clean up and get out.  We very
 	 * specifically don't muck with linked lists or messages.
-	 * Check everything for a NULL value, this makes the "drop core"
-	 * window quite small.
 	 */
 	termsignal = F_ISSET(sp, S_TERMSIGNAL);
 
@@ -381,7 +382,7 @@ file_end(sp, ep, force)
 	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
 		if (!termsignal)
 		    msgq(sp, M_ERR,
-		        "%s: close: %s", sp->frp->fname, strerror(errno));
+		        "%s: close: %s", frp->fname, strerror(errno));
 		return (1);
 	}
 
@@ -389,11 +390,10 @@ file_end(sp, ep, force)
 
 	/* Delete the recovery file. */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
-		if (ep->rcv_path != NULL)
-			(void)unlink(ep->rcv_path);
-		if (ep->rcv_mpath != NULL)
-			(void)unlink(ep->rcv_mpath);
+		(void)unlink(ep->rcv_path);
+		(void)unlink(ep->rcv_mpath);
 	}
+
 	/* Free recovery memory. */
 	if (!termsignal) {
 		if (ep->rcv_path != NULL)
@@ -406,18 +406,17 @@ file_end(sp, ep, force)
 	(void)log_end(sp, ep);
 
 	/*
-	 * Unlink any temporary file; if FR_NONAME set, don't free the
-	 * memory referenced by tname, because it's also referenced by
-	 * fname.  The screen end code will free it.
+	 * Unlink any temporary file, and, if FR_FREE_TNAME set, free
+	 * the memory referenced by tname.
 	 */
-	if (sp->frp->tname != NULL) {
-		if (unlink(sp->frp->tname) && !termsignal)
+	if (F_ISSET(frp, FR_UNLINK_TFILE)) {
+		F_CLR(frp, FR_UNLINK_TFILE);
+		if (unlink(frp->tname) && !termsignal)
 			msgq(sp, M_ERR,
-			    "%s: remove: %s", sp->frp->tname, strerror(errno));
-		if (!termsignal) {
-			if (!F_ISSET(sp->frp, FR_NONAME))
-				FREE(sp->frp->tname, strlen(sp->frp->tname));
-			sp->frp->tname = NULL;
+			    "%s: remove: %s", frp->tname, strerror(errno));
+		if (!termsignal && F_ISSET(frp, FR_FREE_TNAME)) {
+			F_CLR(frp, FR_FREE_TNAME);
+			FREE(frp->tname, strlen(frp->tname));
 		}
 	}
 
