@@ -49,6 +49,8 @@ gs_init(name)
 	/* others will need to be copied from main.c */
 	CIRCLEQ_INIT(&gp->dq);
 
+	thread_init(gp);
+
 	return (gp);
 }
 

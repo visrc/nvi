@@ -44,7 +44,8 @@ VIOBJS= api.o cut.o db.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	v_replace.o v_right.o v_screen.o v_scroll.o v_search.o v_section.o \
 	v_sentence.o v_status.o v_txt.o v_ulcase.o v_undo.o v_util.o \
 	v_word.o v_xchar.o v_yank.o v_z.o v_zexit.o vi.o vs_line.o \
-	vs_msg.o vs_refresh.o vs_relative.o vs_smap.o vs_split.o
+	vs_msg.o vs_refresh.o vs_relative.o vs_smap.o vs_split.o \
+	pthread.o
 
 all: vi vi-ipc @vi_motif@
 
@@ -335,9 +336,13 @@ mark.o: $(srcdir)/common/mark.c
 	$(CC) $(CFLAGS) $?
 msg.o: $(srcdir)/common/msg.c
 	$(CC) $(CFLAGS) $?
+nothread.o: $(srcdir)/common/nothread.c
+	$(CC) $(CFLAGS) $?
 options.o: $(srcdir)/common/options.c
 	$(CC) $(CFLAGS) $?
 options_f.o: $(srcdir)/common/options_f.c
+	$(CC) $(CFLAGS) $?
+pthread.o: $(srcdir)/common/pthread.c
 	$(CC) $(CFLAGS) $?
 put.o: $(srcdir)/common/put.c
 	$(CC) $(CFLAGS) $?

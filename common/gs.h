@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.42 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $
+ *	$Id: gs.h,v 10.43 2000/07/02 20:31:59 skimo Exp $ (Berkeley) $Date: 2000/07/02 20:31:59 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -188,6 +188,11 @@ struct _gs {
 	int	(*scr_suspend) __P((SCR *, int *));
 					/* Print usage message. */
 	void	(*scr_usage) __P((void));
+
+	/* Threading stuff */
+	void	*th_private;
+
+	void	(*run) __P((WIN *, void (*)(void*), void *));
 };
 
 /*

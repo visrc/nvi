@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.31 2000/06/25 17:34:38 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:38 $
+ *	$Id: screen.h,v 10.32 2000/07/02 20:31:59 skimo Exp $ (Berkeley) $Date: 2000/07/02 20:31:59 $
  */
 
 /*
@@ -38,6 +38,8 @@ struct _win {
 	void	*perl_private;		/* Perl interpreter. */
 
 	void	*ip_private;		/* IP support private area. */
+
+	void	*th_private;		/* Threading support private area. */
 
 	/*
 	 * Ex command structures (EXCMD).  Defined here because ex commands

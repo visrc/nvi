@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.15 2000/07/01 14:09:33 skimo Exp $ (Berkeley) $Date: 2000/07/01 14:09:33 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.16 2000/07/02 20:32:00 skimo Exp $ (Berkeley) $Date: 2000/07/02 20:32:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,7 +103,7 @@ main(argc, argv)
 	if ((ipp = ip_init(wp, i_fd, o_fd, argc, argv)) == NULL)
 		return (1);
 
-	run_editor((void *)wp);
+		gp->run(wp, run_editor, (void *)wp);
 	}
 
 	/* Free the global and IP private areas. */
