@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.59 1994/04/24 15:07:22 bostic Exp $ (Berkeley) $Date: 1994/04/24 15:07:22 $
+ *	$Id: ex.h,v 8.60 1994/04/26 18:57:09 bostic Exp $ (Berkeley) $Date: 1994/04/26 18:57:09 $
  */
 
 /* Ex command structure. */
@@ -269,6 +269,7 @@ EXPROTO(ex_version);
 EXPROTO(ex_vglobal);
 EXPROTO(ex_visual);
 EXPROTO(ex_viusage);
+EXPROTO(ex_wn);
 EXPROTO(ex_wq);
 EXPROTO(ex_write);
 EXPROTO(ex_xit);
