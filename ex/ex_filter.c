@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.21 1993/11/02 18:46:54 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:54 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.22 1993/11/03 17:49:01 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:49:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,13 +96,15 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	}
 
 	/*
+	 * Save ex/vi terminal settings, and set new ones.
+	 *
 	 * ISIG turns on VINTR, VQUIT and VSUSP.  We don't want to interrupt
 	 * the parent(s), so we ignore VINTR.  VQUIT is ignored by main()
 	 * because nvi never wants to catch it.  A handler for VSUSP should
 	 * have been installed by the screen code.
 	 */
 	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
-		act.sa_handler = SIG_IGN;;
+		act.sa_handler = SIG_IGN;
 		sigemptyset(&act.sa_mask);
 		act.sa_flags = 0;
 		if (isig = !sigaction(SIGINT, &act, &oact)) {
@@ -138,7 +140,8 @@ err:		if (input[0] != -1)
 			(void)close(output[0]);
 		if (output[1] != -1)
 			(void)close(output[1]);
-		return (1);
+		rval = 1;
+		goto ret;
 	case 0:				/* Utility. */
 		/*
 		 * The utility has default signal behavior.  Don't bother
@@ -293,12 +296,16 @@ err:		if (input[0] != -1)
 
 uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
 
-	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
-		if (sigaction(SIGINT, &oact, NULL))
+ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
+		if (sigaction(SIGINT, &oact, NULL)) {
 			msgq(sp, M_ERR, "Error: signal: %s", strerror(errno));
-		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
+			rval = 1;
+		}
+		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term)) {
 			msgq(sp, M_ERR,
 			    "Error: tcsetattr: %s", strerror(errno));
+			rval = 1;
+		}
 	}
 	return (rval);
 }
