@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.12 1995/02/02 11:26:55 bostic Exp $ (Berkeley) $Date: 1995/02/02 11:26:55 $
+ *	$Id: ex.h,v 9.13 1995/02/02 15:10:35 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:10:35 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -40,11 +40,10 @@ typedef struct _excmdlist {
 
 #define	E_F_PRCLEAR	0x0080000	/* Clear the print (#, l, p) flags. */
 #define	E_MODIFY	0x0100000	/* File name expansion modified arg. */
-#define	E_NOGLOBAL	0x0200000	/* Not in a global. */
-#define	E_NOPERM	0x0400000	/* Permission denied for now. */
-#define	E_VIONLY	0x0800000	/* Meaningful only in vi. */
-#define	E_ZERO		0x1000000	/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x2000000	/* 0 is default addr1 of empty files. */
+#define	E_NOPERM	0x0200000	/* Permission denied for now. */
+#define	E_VIONLY	0x0400000	/* Meaningful only in vi. */
+#define	E_ZERO		0x0800000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x1000000	/* 0 is default addr1 of empty files. */
 	u_int32_t flags;
 	char	 *syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
