@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.11 1995/02/10 14:44:25 bostic Exp $ (Berkeley) $Date: 1995/02/10 14:44:25 $";
+static char sccsid[] = "$Id: screen.c,v 9.12 1995/02/16 12:02:26 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:02:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,10 +138,6 @@ mem:				msgq(orig, M_SYSERR, NULL);
 	if (sex_screen_copy(orig, sp))		/* Ex screen. */
 		goto err;
 	if (svi_screen_copy(orig, sp))		/* Vi screen. */
-		goto err;
-	if (cl_copy(orig, sp))			/* Curses support. */
-		goto err;
-	if (xaw_copy(orig, sp))			/* Athena widget support. */
 		goto err;
 
 	*spp = sp;

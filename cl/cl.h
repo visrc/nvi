@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 8.4 1995/02/09 15:24:04 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:24:04 $
+ *	$Id: cl.h,v 8.5 1995/02/16 12:02:40 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:02:40 $
  */
 
 typedef struct _cl_private {
@@ -16,10 +16,9 @@ typedef struct _cl_private {
 	u_int8_t flags;
 } CL_PRIVATE;
 
-#define	CLP(sp)		((CL_PRIVATE *)((sp)->cl_private))
+#define	CLP(sp)		((CL_PRIVATE *)((sp)->gp->cl_private))
 
 /* Generic interfaces to the curses support. */
-int	cl_copy __P((SCR *, SCR *));
 int	cl_init __P((SCR *));
 
 /* Curses support function prototypes. */
