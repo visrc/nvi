@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.9 1993/08/29 11:28:28 bostic Exp $ (Berkeley) $Date: 1993/08/29 11:28:28 $
+ *	$Id: ex.h,v 8.10 1993/08/29 14:22:51 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:22:51 $
  */
 
 struct _excmdarg;
@@ -99,6 +99,7 @@ typedef struct _excmdarg {
 
 /* Ex function prototypes. */
 int	file_argv __P((SCR *, EXF *, char *, int *, char ***));
+int	free_argv __P((SCR *));
 int	word_argv __P((SCR *, EXF *, char *, int *, char ***));
 int	esystem __P((SCR *, const u_char *, const u_char *));
 int	ex_run_process __P((SCR *, char *, size_t *, char *, size_t));

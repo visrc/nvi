@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.8 1993/08/28 11:13:01 bostic Exp $ (Berkeley) $Date: 1993/08/28 11:13:01 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.9 1993/08/29 14:23:03 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:23:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,17 @@ static char sccsid[] = "$Id: ex_argv.c,v 8.8 1993/08/28 11:13:01 bostic Exp $ (B
 #define	SHELLECHO	"echo "
 #define	SHELLOFFSET	(sizeof(SHELLECHO) - 1)
 
+/* Structure for building argc/argv vector of ex arguments. */
+typedef struct _args {
+	char	*bp;			/* Buffer. */
+	size_t	 len;			/* Buffer length. */
+
+#define	A_ALLOCATED	0x01		/* If allocated space. */
+	u_char	 flags;
+} ARGS;
+
+#define	ARGP	((ARGS *)(sp->args))
+					/* Screen positions. */
 /*
  * file_argv --
  *	Do file name and shell expansion on a string, then
@@ -168,46 +179,46 @@ word_argv(sp, ep, p, argcp, argvp)
 #define	INCREMENT	20
 		if (off + 2 >= sp->argscnt - 1) {
 			sp->argscnt += cnt = MAX(INCREMENT, 2);
-			if ((sp->args = realloc(sp->args,
+			if ((ARGP = realloc(ARGP,
 			    sp->argscnt * sizeof(ARGS))) == NULL) {
 				free(sp->argv);
 				goto mem1;
 			}
 			if ((sp->argv = realloc(sp->argv,
 			    sp->argscnt * sizeof(char *))) == NULL) {
-				free(sp->args);
+				free(ARGP);
 mem1:				sp->argscnt = 0;
-				sp->args = NULL;
+				ARGP = NULL;
 				sp->argv = NULL;
 				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 				return (1);
 			}
-			memset(&sp->args[off], 0, cnt * sizeof(ARGS));
+			memset(&ARGP[off], 0, cnt * sizeof(ARGS));
 		}
 
 		/*
 		 * Copy the argument(s) into place, allocating space if
 		 * necessary.
 		 */
-		if (sp->args[off].len < len) {
-			if ((sp->args[off].bp =
-			    realloc(sp->args[off].bp, len)) == NULL) {
-				sp->args[off].bp = NULL;
-				sp->args[off].len = 0;
+		if (ARGP[off].len < len) {
+			if ((ARGP[off].bp =
+			    realloc(ARGP[off].bp, len)) == NULL) {
+				ARGP[off].bp = NULL;
+				ARGP[off].len = 0;
 				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 				return (1);
 			}
-			sp->args[off].len = len;
+			ARGP[off].len = len;
 		}
-		sp->argv[off] = sp->args[off].bp;
-		sp->args[off].flags |= A_ALLOCATED;
+		sp->argv[off] = ARGP[off].bp;
+		ARGP[off].flags |= A_ALLOCATED;
 
 		/*
 		 * ESCAPE CHARACTER NOTE:
 		 *
 		 * Copy the argument into place, losing quote chars.
 		 */
-		for (t = sp->args[off].bp; len; *t++ = *ap++, --len)
+		for (t = ARGP[off].bp; len; *t++ = *ap++, --len)
 			if (sp->special[*ap] == K_VLNEXT && len) {
 				++ap;
 				--len;
@@ -230,5 +241,21 @@ mem1:				sp->argscnt = 0;
 	for (cnt = 0; cnt < off; ++cnt)
 		TRACE(sp, "arg %d: {%s}\n", cnt, sp->argv[cnt]);
 #endif
+	return (0);
+}
+
+int
+free_argv(sp)
+	SCR *sp;
+{
+	int off;
+
+	if (sp->args != NULL) {
+		for (off = 0; off < sp->argscnt; ++off)
+			if (F_ISSET(&ARGP[off], A_ALLOCATED))
+				FREE(ARGP[off].bp, ARGP[off].len);
+		FREE(ARGP, sp->argscnt * sizeof(ARGS *));
+		FREE(sp->argv, sp->argscnt * sizeof(char *));
+	}
 	return (0);
 }
