@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.38 1996/04/28 12:41:01 bostic Exp $ (Berkeley) $Date: 1996/04/28 12:41:01 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.39 1996/06/08 14:35:52 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:35:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -340,9 +340,6 @@ v_event_exec(sp, vp)
 		break;
 	case E_WRITE:
 		ex_cinit(&cmd, C_WRITE, 0, OOBLNO, OOBLNO, 0, NULL);
-		break;
-	case E_WRITEQUIT:
-		ex_cinit(&cmd, C_WQ, 0, OOBLNO, OOBLNO, 0, NULL);
 		break;
 	default:
 		abort();
