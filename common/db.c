@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.9 1995/09/25 11:58:40 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:58:40 $";
+static char sccsid[] = "$Id: db.c,v 10.10 1995/10/16 15:24:40 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,31 +25,80 @@ static char sccsid[] = "$Id: db.c,v 10.9 1995/09/25 11:58:40 bostic Exp $ (Berke
 #include "common.h"
 #include "../vi/vi.h"
 
-static __inline int scr_update __P((SCR *, recno_t, lnop_t, int));
+static int scr_update __P((SCR *, recno_t, lnop_t, int));
 
 /*
- * file_gline --
- *	Look in the text buffers for a line; if it's not there
- *	call file_rline to retrieve it from the database.
+ * db_eget --
+ *	Front-end to db_get, special case handling for empty files.
  *
- * PUBLIC: char *file_gline __P((SCR *, recno_t, size_t *));
+ * PUBLIC: int db_eget __P((SCR *, recno_t, char **, size_t *, int *));
  */
-char *
-file_gline(sp, lno, lenp)
+int
+db_eget(sp, lno, pp, lenp, isemptyp)
 	SCR *sp;
 	recno_t lno;				/* Line number. */
+	char **pp;				/* Pointer store. */
+	size_t *lenp;				/* Length store. */
+	int *isemptyp;
+{
+	recno_t l1;
+
+	if (isemptyp != NULL)
+		*isemptyp = 0;
+
+	/* If the line exists, simply return it. */
+	if (!db_get(sp, lno, 0, pp, lenp))
+		return (0);
+
+	/*
+	 * If the user asked for line 1, i.e. the only possible line in an
+	 * empty file, find the last line of the file; db_last fails loudly.
+	 */
+	if (lno == 1 && db_last(sp, &l1))
+		return (1);
+
+	/* If the file isn't empty, fail loudly. */
+	if (lno != 1 || l1 != 0) {
+		db_err(sp, lno);
+		return (1);
+	}
+
+	if (isemptyp != NULL)
+		*isemptyp = 1;
+
+	return (1);
+}
+
+/*
+ * db_get --
+ *	Look in the text buffers for a line, followed by the cache, followed
+ *	by the database.
+ *
+ * PUBLIC: int db_get __P((SCR *, recno_t, u_int32_t, char **, size_t *));
+ */
+int
+db_get(sp, lno, flags, pp, lenp)
+	SCR *sp;
+	recno_t lno;				/* Line number. */
+	u_int32_t flags;
+	char **pp;				/* Pointer store. */
 	size_t *lenp;				/* Length store. */
 {
+	DBT data, key;
+	EXF *ep;
 	TEXT *tp;
 	recno_t l1, l2;
 
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
-	 * have to have an oob condition for the look-aside into the input
+	 * have to have an OOB condition for the look-aside into the input
 	 * buffer anyway.
 	 */
 	if (lno == 0)
-		return (NULL);
+		goto err;
+
+	if (LF_ISSET(DBG_NOCACHE))
+		goto nocache;
 
 	/*
 	 * Look-aside into the TEXT buffers and see if the line we want
@@ -59,11 +108,16 @@ file_gline(sp, lno, lenp)
 		l1 = ((TEXT *)sp->tiq.cqh_first)->lno;
 		l2 = ((TEXT *)sp->tiq.cqh_last)->lno;
 		if (l1 <= lno && l2 >= lno) {
+#if defined(DEBUG) && 0
+	TRACE(sp, "retrieve TEXT buffer line %lu\n", (u_long)lno);
+#endif
 			for (tp = sp->tiq.cqh_first;
 			    tp->lno != lno; tp = tp->q.cqe_next);
 			if (lenp != NULL)
 				*lenp = tp->len;
-			return (tp->lb);
+			if (pp != NULL)
+				*pp = tp->lb;
+			return (0);
 		}
 		/*
 		 * Adjust the line number for the number of lines used
@@ -72,71 +126,61 @@ file_gline(sp, lno, lenp)
 		if (lno > l2)
 			lno -= l2 - l1;
 	}
-	return (file_rline(sp, lno, lenp));
-}
 
-/*
- * file_rline --
- *	Look in the cache for a line; if it's not there retrieve
- *	it from the file.
- *
- * PUBLIC: char *file_rline __P((SCR *, recno_t, size_t *));
- */
-char *
-file_rline(sp, lno, lenp)
-	SCR *sp;
-	recno_t lno;				/* Line number. */
-	size_t *lenp;				/* Length store. */
-{
-	DBT data, key;
-	EXF *ep;
-
-	/* Check the cache. */
+	/* Look-aside into the cache, and see if the line we want is there. */
 	ep = sp->ep;
 	if (lno == ep->c_lno) {
 #if defined(DEBUG) && 0
-	TRACE(sp, "get cached line %lu\n", lno);
+	TRACE(sp, "retrieve cached line %lu\n", (u_long)lno);
 #endif
 		if (lenp != NULL)
 			*lenp = ep->c_len;
-		return (ep->c_lp);
+		if (pp != NULL)
+			*pp = ep->c_lp;
+		return (0);
 	}
 	ep->c_lno = OOBLNO;
 
+nocache:
 	/* Get the line from the underlying database. */
-#if defined(DEBUG) && 0
-	TRACE(sp, "get uncached line %lu\n", lno);
-#endif
 	key.data = &lno;
 	key.size = sizeof(lno);
 	switch (ep->db->get(ep->db, &key, &data, 0)) {
         case -1:
-		msgq(sp, M_SYSERR, "002|%s/%d: unable to get line %u",
-		    tail(__FILE__), __LINE__, lno);
-		/* FALLTHROUGH */
-        case 1:
-		return (NULL);
-		/* NOTREACHED */
+		goto fatal;
+	case 1:
+err:		if (LF_ISSET(DBG_FATAL))
+fatal:			db_err(sp, lno);
+		if (lenp != NULL)
+			*lenp = 0;
+		if (pp != NULL)
+			*pp = NULL;
+		return (1);
 	}
-	if (lenp != NULL)
-		*lenp = data.size;
 
-	/* Fill the cache. */
+	/* Reset the cache. */
 	ep->c_lno = lno;
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
 
-	return (data.data);
+#if defined(DEBUG) && 0
+	TRACE(sp, "retrieve DB line %lu\n", (u_long)lno);
+#endif
+	if (lenp != NULL)
+		*lenp = data.size;
+	if (pp != NULL)
+		*pp = ep->c_lp;
+	return (0);
 }
 
 /*
- * file_dline --
+ * db_delete --
  *	Delete a line from the file.
  *
- * PUBLIC: int file_dline __P((SCR *, recno_t));
+ * PUBLIC: int db_delete __P((SCR *, recno_t));
  */
 int
-file_dline(sp, lno)
+db_delete(sp, lno)
 	SCR *sp;
 	recno_t lno;
 {
@@ -144,11 +188,13 @@ file_dline(sp, lno)
 	EXF *ep;
 
 #if defined(DEBUG) && 0
-	TRACE(sp, "delete line %lu\n", lno);
+	TRACE(sp, "delete line %lu\n", (u_long)lno);
 #endif
-	/* Update marks and @ and global commands. */
-	mark_insdel(sp, LINE_DELETE, lno);
-	ex_g_insdel(sp, LINE_DELETE, lno);
+	/* Update marks, @ and global commands.
+	if (mark_insdel(sp, LINE_DELETE, lno))
+		return (1);
+	if (ex_g_insdel(sp, LINE_DELETE, lno))
+		return (1);
 
 	/* Log change. */
 	log_line(sp, lno, LOG_LINE_DELETE);
@@ -159,8 +205,8 @@ file_dline(sp, lno)
 	key.size = sizeof(lno);
 	SIGBLOCK;
 	if (ep->db->del(ep->db, &key, 0) == 1) {
-		msgq(sp, M_SYSERR, "003|%s/%d: unable to delete line %u",
-		    tail(__FILE__), __LINE__, lno);
+		msgq(sp, M_SYSERR,
+		    "003|unable to delete line %lu", (u_long)lno);
 		return (1);
 	}
 	SIGUNBLOCK;
@@ -171,7 +217,7 @@ file_dline(sp, lno)
 	if (ep->c_nlines != OOBLNO)
 		--ep->c_nlines;
 
-	/* File now dirty. */
+	/* File now modified. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
@@ -181,13 +227,13 @@ file_dline(sp, lno)
 }
 
 /*
- * file_aline --
+ * db_append --
  *	Append a line into the file.
  *
- * PUBLIC: int file_aline __P((SCR *, int, recno_t, char *, size_t));
+ * PUBLIC: int db_append __P((SCR *, int, recno_t, char *, size_t));
  */
 int
-file_aline(sp, update, lno, p, len)
+db_append(sp, update, lno, p, len)
 	SCR *sp;
 	int update;
 	recno_t lno;
@@ -196,6 +242,7 @@ file_aline(sp, update, lno, p, len)
 {
 	DBT data, key;
 	EXF *ep;
+	int rval;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
@@ -208,8 +255,8 @@ file_aline(sp, update, lno, p, len)
 	data.size = len;
 	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
-		msgq(sp, M_SYSERR, "004|%s/%d: unable to append to line %u",
-		    tail(__FILE__), __LINE__, lno);
+		msgq(sp, M_SYSERR,
+		    "004|unable to append to line %lu", (u_long)lno);
 		return (1);
 	}
 	SIGUNBLOCK;
@@ -228,9 +275,12 @@ file_aline(sp, update, lno, p, len)
 	/* Log change. */
 	log_line(sp, lno + 1, LOG_LINE_APPEND);
 
-	/* Update marks and @ and global commands. */
-	mark_insdel(sp, LINE_INSERT, lno + 1);
-	ex_g_insdel(sp, LINE_INSERT, lno + 1);
+	/* Update marks, @ and global commands. */
+	rval = 0;
+	if (mark_insdel(sp, LINE_INSERT, lno + 1))
+		rval = 1;
+	if (ex_g_insdel(sp, LINE_INSERT, lno + 1))
+		rval = 1;
 
 	/*
 	 * Update screen.
@@ -242,17 +292,17 @@ file_aline(sp, update, lno, p, len)
 	 * is called to copy the new lines from the cut buffer into the file,
 	 * it has to know not to update the screen again.
 	 */
-	return (scr_update(sp, lno, LINE_APPEND, update));
+	return (scr_update(sp, lno, LINE_APPEND, update) || rval);
 }
 
 /*
- * file_iline --
+ * db_insert --
  *	Insert a line into the file.
  *
- * PUBLIC: int file_iline __P((SCR *, recno_t, char *, size_t));
+ * PUBLIC: int db_insert __P((SCR *, recno_t, char *, size_t));
  */
 int
-file_iline(sp, lno, p, len)
+db_insert(sp, lno, p, len)
 	SCR *sp;
 	recno_t lno;
 	char *p;
@@ -260,10 +310,11 @@ file_iline(sp, lno, p, len)
 {
 	DBT data, key;
 	EXF *ep;
+	int rval;
 
 #if defined(DEBUG) && 0
-	TRACE(sp,
-	    "insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+	TRACE(sp, "insert before %lu: len %lu {%.*s}\n",
+	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
 
 	/* Update file. */
@@ -274,8 +325,8 @@ file_iline(sp, lno, p, len)
 	data.size = len;
 	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
-		msgq(sp, M_SYSERR, "005|%s/%d: unable to insert at line %u",
-		    tail(__FILE__), __LINE__, lno);
+		msgq(sp, M_SYSERR,
+		    "005|unable to insert at line %lu", (u_long)lno);
 		return (1);
 	}
 	SIGUNBLOCK;
@@ -294,22 +345,25 @@ file_iline(sp, lno, p, len)
 	/* Log change. */
 	log_line(sp, lno, LOG_LINE_INSERT);
 
-	/* Update marks and @ and global commands. */
-	mark_insdel(sp, LINE_INSERT, lno);
-	ex_g_insdel(sp, LINE_INSERT, lno);
+	/* Update marks, @ and global commands. */
+	rval = 0;
+	if (mark_insdel(sp, LINE_INSERT, lno))
+		rval = 1;
+	if (ex_g_insdel(sp, LINE_INSERT, lno))
+		rval = 1;
 
 	/* Update screen. */
-	return (scr_update(sp, lno, LINE_INSERT, 1));
+	return (scr_update(sp, lno, LINE_INSERT, 1) || rval);
 }
 
 /*
- * file_sline --
+ * db_set --
  *	Store a line in the file.
  *
- * PUBLIC: int file_sline __P((SCR *, recno_t, char *, size_t));
+ * PUBLIC: int db_set __P((SCR *, recno_t, char *, size_t));
  */
 int
-file_sline(sp, lno, p, len)
+db_set(sp, lno, p, len)
 	SCR *sp;
 	recno_t lno;
 	char *p;
@@ -319,8 +373,8 @@ file_sline(sp, lno, p, len)
 	EXF *ep;
 
 #if defined(DEBUG) && 0
-	TRACE(sp,
-	    "replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+	TRACE(sp, "replace line %lu: len %lu {%.*s}\n",
+	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
 	/* Log before change. */
 	log_line(sp, lno, LOG_LINE_RESET_B);
@@ -333,8 +387,8 @@ file_sline(sp, lno, p, len)
 	data.size = len;
 	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
-		msgq(sp, M_SYSERR, "006|%s/%d: unable to store line %u",
-		    tail(__FILE__), __LINE__, lno);
+		msgq(sp, M_SYSERR,
+		    "006|unable to store line %lu", (u_long)lno);
 		return (1);
 	}
 	SIGUNBLOCK;
@@ -356,19 +410,19 @@ file_sline(sp, lno, p, len)
 }
 
 /*
- * file_eline --
+ * db_exist --
  *	Return if a line exists.
  *
- * PUBLIC: int file_eline __P((SCR *, recno_t));
+ * PUBLIC: int db_exist __P((SCR *, recno_t));
  */
 int
-file_eline(sp, lno)
+db_exist(sp, lno)
 	SCR *sp;
 	recno_t lno;
 {
 	EXF *ep;
 
-	/* Check the cache. */
+	/* Check the last-line number cache. */
 	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO)
 		return (lno > OOBLNO && (lno <= (F_ISSET(sp, S_INPUT) &&
@@ -376,17 +430,17 @@ file_eline(sp, lno)
 		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines)));
 
 	/* Go get the line. */
-	return (file_gline(sp, lno, NULL) != NULL);
+	return (!db_get(sp, lno, 0, NULL, NULL));
 }
 
 /*
- * file_lline --
+ * db_last --
  *	Return the number of lines in the file.
  *
- * PUBLIC: int file_lline __P((SCR *, recno_t *));
+ * PUBLIC: int db_last __P((SCR *, recno_t *));
  */
 int
-file_lline(sp, lnop)
+db_last(sp, lnop)
 	SCR *sp;
 	recno_t *lnop;
 {
@@ -394,7 +448,7 @@ file_lline(sp, lnop)
 	EXF *ep;
 	recno_t lno;
 
-	/* Check the cache. */
+	/* Check the last-line number cache. */
 	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO) {
 		*lnop = (F_ISSET(sp, S_INPUT) &&
@@ -408,8 +462,7 @@ file_lline(sp, lnop)
 
 	switch (ep->db->seq(ep->db, &key, &data, R_LAST)) {
         case -1:
-		msgq(sp, M_SYSERR, "007|%s/%d: unable to get last line",
-		    tail(__FILE__), __LINE__);
+		msgq(sp, M_SYSERR, "007|unable to get last line");
 		*lnop = 0;
 		return (1);
         case 1:
@@ -433,19 +486,18 @@ file_lline(sp, lnop)
 }
 
 /*
- * file_lerr --
+ * db_err --
  *	Report a line error.
  *
- * PUBLIC: void file_lerr __P((SCR *, char *, recno_t, recno_t));
+ * PUBLIC: void db_err __P((SCR *, recno_t));
  */
 void
-file_lerr(sp, fname, fline, lno)
+db_err(sp, lno)
 	SCR *sp;
-	char *fname;
-	recno_t fline, lno;
+	recno_t lno;
 {
-	msgq(sp, M_ERR, "008|Error: %s/%d: unable to retrieve line %u",
-	    tail(fname), fline, lno);
+	msgq(sp, M_ERR,
+	    "008|Error: unable to retrieve line %lu", (u_long)lno);
 }
 
 /*
@@ -453,7 +505,7 @@ file_lerr(sp, fname, fline, lno)
  *	Update all of the screens that are backed by the file that
  *	just changed.
  */
-static __inline int
+static int
 scr_update(sp, lno, op, current)
 	SCR *sp;
 	recno_t lno;
@@ -471,6 +523,7 @@ scr_update(sp, lno, op, current)
 		for (tsp = sp->gp->dq.cqh_first;
 		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 			if (sp != tsp && tsp->ep == ep)
-				(void)vs_change(tsp, lno, op);
-	return (current && vs_change(sp, lno, op));
+				if (vs_change(tsp, lno, op))
+					return (1);
+	return (current ? vs_change(sp, lno, op) : 0);
 }

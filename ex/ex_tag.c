@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.9 1995/10/04 12:34:07 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:34:07 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.10 1995/10/16 15:25:50 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -495,7 +495,7 @@ tag_search(sp, search, tag)
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
-		if (!file_eline(sp, m.lno)) {
+		if (!db_exist(sp, m.lno)) {
 			tag_msg(sp, TAG_BADLNO, tag);
 			return (1);
 		}

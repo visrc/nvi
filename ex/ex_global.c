@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.11 1995/10/16 12:29:18 bostic Exp $ (Berkeley) $Date: 1995/10/16 12:29:18 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.12 1995/10/16 15:25:39 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -233,10 +233,8 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 			btype = BUSY_UPDATE;
 			cnt = INTERRUPT_CHECK;
 		}
-		if ((p = file_gline(sp, start, &len)) == NULL) {
-			FILE_LERR(sp, start);
+		if (db_get(sp, start, DBG_FATAL, &p, &len))
 			return (1);
-		}
 		match[0].rm_so = 0;
 		match[0].rm_eo = len;
 		switch (eval = regexec(&sp->sre, p, 0, match, REG_STARTEND)) {
@@ -387,10 +385,10 @@ ex_load(sp)
 			/* If it's a global/v command, fix up the last line. */
 			if (FL_ISSET(ecp->agv_flags,
 			    AGV_GLOBAL | AGV_V) && ecp->range_lno != OOBLNO)
-				if (file_eline(sp, ecp->range_lno))
+				if (db_exist(sp, ecp->range_lno))
 					sp->lno = ecp->range_lno;
 				else {
-					if (file_lline(sp, &sp->lno))
+					if (db_last(sp, &sp->lno))
 						return (1);
 					if (sp->lno == 0)
 						sp->lno = 1;

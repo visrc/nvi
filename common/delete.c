@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 10.5 1995/09/21 12:05:49 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:49 $";
+static char sccsid[] = "$Id: delete.c,v 10.6 1995/10/16 15:24:34 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ delete(sp, fm, tm, lmode)
 	/* Case 1 -- delete in line mode. */
 	if (lmode) {
 		for (lno = tm->lno; lno >= fm->lno; --lno)
-			if (file_dline(sp, lno))
+			if (db_delete(sp, lno))
 				return (1);
 		goto vdone;
 	}
@@ -55,30 +55,26 @@ delete(sp, fm, tm, lmode)
 	 * Case 2 -- delete to EOF.  This is a special case because it's
 	 * easier to pick it off than try and find it in the other cases.
  	 */
-	if (file_lline(sp, &lno))
+	if (db_last(sp, &lno))
 		return (1);
 	if (tm->lno >= lno) {
 		if (tm->lno == lno) {
-			if ((p = file_gline(sp, lno, &len)) == NULL) {
-				FILE_LERR(sp, lno);
+			if (db_get(sp, lno, DBG_FATAL, &p, &len))
 				return (1);
-			}
 			eof = tm->cno >= len ? 1 : 0;
 		} else
 			eof = 1;
 		if (eof) {
 			for (lno = tm->lno; lno > fm->lno; --lno) {
-				if (file_dline(sp, lno))
+				if (db_delete(sp, lno))
 					return (1);
 				++sp->rptlines[L_DELETED];
 			}
-			if ((p = file_gline(sp, fm->lno, &len)) == NULL) {
-				FILE_LERR(sp, fm->lno);
+			if (db_get(sp, fm->lno, DBG_FATAL, &p, &len))
 				return (1);
-			}
 			GET_SPACE_RET(sp, bp, blen, fm->cno);
 			memmove(bp, p, fm->cno);
-			if (file_sline(sp, fm->lno, bp, fm->cno))
+			if (db_set(sp, fm->lno, bp, fm->cno))
 				return (1);
 			goto done;
 		}
@@ -86,15 +82,13 @@ delete(sp, fm, tm, lmode)
 
 	/* Case 3 -- delete within a single line. */
 	if (tm->lno == fm->lno) {
-		if ((p = file_gline(sp, fm->lno, &len)) == NULL) {
-			FILE_LERR(sp, fm->lno);
+		if (db_get(sp, fm->lno, DBG_FATAL, &p, &len))
 			return (1);
-		}
 		GET_SPACE_RET(sp, bp, blen, len);
 		if (fm->cno != 0)
 			memmove(bp, p, fm->cno);
 		memmove(bp + fm->cno, p + (tm->cno + 1), len - (tm->cno + 1));
-		if (file_sline(sp, fm->lno,
+		if (db_set(sp, fm->lno,
 		    bp, len - ((tm->cno - fm->cno) + 1)))
 			goto err;
 		goto done;
@@ -106,19 +100,15 @@ delete(sp, fm, tm, lmode)
 	 * Copy the start partial line into place.
 	 */
 	if ((tlen = fm->cno) != 0) {
-		if ((p = file_gline(sp, fm->lno, NULL)) == NULL) {
-			FILE_LERR(sp, fm->lno);
+		if (db_get(sp, fm->lno, DBG_FATAL, &p, NULL))
 			return (1);
-		}
 		GET_SPACE_RET(sp, bp, blen, tlen + 256);
 		memmove(bp, p, tlen);
 	}
 
 	/* Copy the end partial line into place. */
-	if ((p = file_gline(sp, tm->lno, &len)) == NULL) {
-		FILE_LERR(sp, tm->lno);
+	if (db_get(sp, tm->lno, DBG_FATAL, &p, &len))
 		goto err;
-	}
 	if (len != 0 && tm->cno != len - 1) {
 		/*
 		 * XXX
@@ -141,12 +131,12 @@ delete(sp, fm, tm, lmode)
 	}
 
 	/* Set the current line. */
-	if (file_sline(sp, fm->lno, bp, tlen))
+	if (db_set(sp, fm->lno, bp, tlen))
 		goto err;
 
 	/* Delete the last and intermediate lines. */
 	for (lno = tm->lno; lno > fm->lno; --lno)
-		if (file_dline(sp, lno))
+		if (db_delete(sp, lno))
 			goto err;
 
 	/* Reporting. */

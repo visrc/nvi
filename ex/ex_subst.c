@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.11 1995/10/04 12:37:19 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:37:19 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.12 1995/10/16 15:25:48 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -437,8 +437,8 @@ s(sp, cmdp, s, re, flags)
 			 */
 			cmdp->addr1.lno = cmdp->addr2.lno;
 			cmdp->addr2.lno += lno - 1;
-			if (!file_eline(sp, cmdp->addr2.lno) &&
-			    file_lline(sp, &cmdp->addr2.lno))
+			if (!db_exist(sp, cmdp->addr2.lno) &&
+			    db_last(sp, &cmdp->addr2.lno))
 				return (1);
 			break;
 		case '#':
@@ -509,10 +509,8 @@ noargs:	if (F_ISSET(sp, S_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 			break;
 
 		/* Get the line. */
-		if ((s = file_gline(sp, lno, &llen)) == NULL) {
-			FILE_LERR(sp, lno);
+		if (db_get(sp, lno, DBG_FATAL, &s, &llen))
 			goto err;
-		}
 
 		/*
 		 * Make a local copy if doing confirmation -- when calling
@@ -732,7 +730,7 @@ skip:		offset += match[0].rm_eo;
 			if (sp->newl_cnt) {
 				for (cnt = 0;
 				    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
-					if (file_iline(sp, lno,
+					if (db_insert(sp, lno,
 					    lb + last, sp->newl[cnt] - last))
 						goto err;
 					last = sp->newl[cnt] + 1;
@@ -744,12 +742,10 @@ skip:		offset += match[0].rm_eo;
 			}
 
 			/* Store and retrieve the line. */
-			if (file_sline(sp, lno, lb + last, lbclen))
+			if (db_set(sp, lno, lb + last, lbclen))
 				goto err;
-			if ((s = file_gline(sp, lno, &llen)) == NULL) {
-				FILE_LERR(sp, lno);
+			if (db_get(sp, lno, DBG_FATAL, &s, &llen))
 				goto err;
-			}
 			ADD_SPACE_RET(sp, bp, blen, llen)
 			memmove(bp, s, llen);
 			s = bp;
@@ -800,7 +796,7 @@ endmatch:	if (!linechanged)
 		if (sp->newl_cnt) {
 			for (cnt = 0;
 			    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
-				if (file_iline(sp,
+				if (db_insert(sp,
 				    lno, lb + last, sp->newl[cnt] - last))
 					goto err;
 				last = sp->newl[cnt] + 1;
@@ -811,7 +807,7 @@ endmatch:	if (!linechanged)
 		}
 
 		/* Store the changed line. */
-		if (file_sline(sp, lno, lb + last, lbclen))
+		if (db_set(sp, lno, lb + last, lbclen))
 			goto err;
 
 		/* Update changed line counter. */

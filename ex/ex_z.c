@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 10.7 1995/09/21 12:07:48 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:48 $";
+static char sccsid[] = "$Id: ex_z.c,v 10.8 1995/10/16 15:25:55 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,7 +135,7 @@ ex_z(sp, cmdp)
 	}
 
 	if (eofcheck) {
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return (1);
 		if (cmdp->addr2.lno > lno)
 			cmdp->addr2.lno = lno;

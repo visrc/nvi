@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 10.7 1995/09/21 12:07:22 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:22 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 10.8 1995/10/16 15:25:43 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ ex_preserve(sp, cmdp)
 		return (1);
 
 	/* Force the file to be read in, in case it hasn't yet. */
-	if (file_lline(sp, &lno))
+	if (db_last(sp, &lno))
 		return (1);
 
 	/* Sync to disk. */

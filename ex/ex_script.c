@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.8 1995/10/04 12:37:06 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:37:06 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.9 1995/10/16 15:25:46 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,8 +241,8 @@ more:	len = sizeof(buf) - (endp - buf);
 	for (p = t = buf; p < endp; ++p) {
 		value = KEY_VAL(sp, *p);
 		if (value == K_CR || value == K_NL) {
-			if (file_lline(sp, &lline) ||
-			    file_aline(sp, 0, lline, t, p - t))
+			if (db_last(sp, &lline) ||
+			    db_append(sp, 0, lline, t, p - t))
 				goto prompterr;
 			t = p + 1;
 		}
@@ -272,8 +272,8 @@ more:	len = sizeof(buf) - (endp - buf);
 	endp = buf;
 
 	/* Append the line into the file. */
-	if (file_lline(sp, &lline) ||
-	    file_aline(sp, 0, lline, buf, llen)) {
+	if (db_last(sp, &lline) ||
+	    db_append(sp, 0, lline, buf, llen)) {
 prompterr:	sscr_end(sp);
 		return (1);
 	}
@@ -295,16 +295,14 @@ sscr_exec(sp, lno)
 	SCRIPT *sc;
 	recno_t last_lno;
 	size_t blen, len, last_len, tlen;
-	int matchprompt, nw, rval;
+	int isempty, matchprompt, nw, rval;
 	char *bp, *p;
 
 	/* If there's a prompt on the last line, append the command. */
-	if (file_lline(sp, &last_lno))
+	if (db_last(sp, &last_lno))
 		return (1);
-	if ((p = file_gline(sp, last_lno, &last_len)) == NULL) {
-		FILE_LERR(sp, last_lno);
+	if (db_get(sp, last_lno, DBG_FATAL, &p, &last_len))
 		return (1);
-	}
 	if (sscr_matchprompt(sp, p, last_len, &tlen) && tlen == 0) {
 		matchprompt = 1;
 		GET_SPACE_RET(sp, bp, blen, last_len + 128);
@@ -313,13 +311,9 @@ sscr_exec(sp, lno)
 		matchprompt = 0;
 
 	/* Get something to execute. */
-	if ((p = file_gline(sp, lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			goto err1;
-		if (lno == 0)
+	if (db_eget(sp, lno, &p, &len, &isempty)) {
+		if (isempty)
 			goto empty;
-		else
-			FILE_LERR(sp, lno);
 		goto err1;
 	}
 
@@ -352,7 +346,7 @@ err2:		if (nw == 0)
 	if (matchprompt) {
 		ADD_SPACE_RET(sp, bp, blen, last_len + len);
 		memmove(bp + last_len, p, len);
-		if (file_sline(sp, last_lno, bp, last_len + len))
+		if (db_set(sp, last_lno, bp, last_len + len))
 err1:			rval = 1;
 	}
 	if (matchprompt)
@@ -427,7 +421,7 @@ sscr_insert(sp)
 	char *bp;
 
 	/* Find out where the end of the file is. */
-	if (file_lline(sp, &lno))
+	if (db_last(sp, &lno))
 		return (1);
 
 #define	MINREAD	1024
@@ -455,7 +449,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 		value = KEY_VAL(sp, *p);
 		if (value == K_CR || value == K_NL) {
 			len = p - t;
-			if (file_aline(sp, 1, lno++, t, len))
+			if (db_append(sp, 1, lno++, t, len))
 				goto ret;
 			t = p + 1;
 		}
@@ -483,7 +477,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 		}
 		if (sscr_setprompt(sp, t, len))
 			return (1);
-		if (file_aline(sp, 1, lno++, t, len))
+		if (db_append(sp, 1, lno++, t, len))
 			goto ret;
 	}
 

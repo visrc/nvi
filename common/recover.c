@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.9 1995/10/04 12:30:36 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:30:36 $";
+static char sccsid[] = "$Id: recover.c,v 10.10 1995/10/16 15:24:47 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -209,7 +209,7 @@ rcv_init(sp)
 			goto err;
 
 		/* Force a read of the entire file. */
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			goto err;
 
 		/* Turn on a busy message, and sync it to backing store. */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 10.8 1995/10/16 12:29:34 bostic Exp $ (Berkeley) $Date: 1995/10/16 12:29:34 $";
+static char sccsid[] = "$Id: mark.c,v 10.9 1995/10/16 15:24:44 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,7 +136,7 @@ mark_get(sp, key, mp, mtype)
 	 * The absolute mark is initialized to lno 1/cno 0, and historically
 	 * you could use it in an empty file.  Make such a mark always work.
 	 */
-	if ((lmp->lno != 1 || lmp->cno != 0) && !file_eline(sp, lmp->lno)) {
+	if ((lmp->lno != 1 || lmp->cno != 0) && !db_exist(sp, lmp->lno)) {
 		msgq(sp, mtype,
 		    "019|Mark %s: cursor position no longer exists",
 		    KEY_NAME(sp, key));
@@ -257,8 +257,8 @@ mark_insdel(sp, op, lno)
 		 *
 		 * Check for line #2 before going to the end of the file.
 		 */
-		if (!file_eline(sp, 2)) {
-			if (file_lline(sp, &lline))
+		if (!db_exist(sp, 2)) {
+			if (db_last(sp, &lline))
 				return (1);
 			if (lline == 1)
 				return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.13 1995/10/04 12:30:57 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:30:57 $";
+static char sccsid[] = "$Id: msg.c,v 10.14 1995/10/16 15:24:45 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -549,7 +549,7 @@ msg_status(sp, lno, showlast)
 		*p++ = ' ';
 	}
 	if (showlast) {
-		if (file_lline(sp, &last))
+		if (db_last(sp, &last))
 			return (1);
 		if (last > 1) {
 			t = msg_cat(sp, "027|line %lu of %lu [%ld%%]", &len);

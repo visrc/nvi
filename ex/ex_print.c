@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 10.8 1995/10/03 10:23:47 bostic Exp $ (Berkeley) $Date: 1995/10/03 10:23:47 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.9 1995/10/16 15:25:43 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,10 +136,8 @@ ex_print(sp, cmdp, fp, tp, flags)
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
-		if ((p = file_gline(sp, from, &len)) == NULL) {
-			FILE_LERR(sp, from);
+		if (db_get(sp, from, DBG_FATAL, &p, &len))
 			return (1);
-		}
 
 		if (len == 0 && !LF_ISSET(E_C_LIST))
 			(void)ex_puts(sp, "\n");
@@ -198,10 +196,8 @@ ex_scprint(sp, fp, tp)
 			return (1);
 	}
 
-	if ((p = file_gline(sp, fp->lno, &len)) == NULL) {
-		FILE_LERR(sp, fp->lno);
+	if (db_get(sp, fp->lno, DBG_FATAL, &p, &len))
 		return (1);
-	}
 
 	if (ex_prchars(sp, p, &col, fp->cno, 0, ' '))
 		return (1);

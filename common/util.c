@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 10.7 1995/09/21 12:06:23 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:23 $";
+static char sccsid[] = "$Id: util.c,v 10.8 1995/10/16 15:24:51 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,20 +79,15 @@ nonblank(sp, lno, cnop)
 {
 	char *p;
 	size_t cnt, len, off;
+	int isempty;
 
 	/* Default. */
 	off = *cnop;
 	*cnop = 0;
 
-	/* Get the line. */
-	if ((p = file_gline(sp, lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0)
-			return (0);
-		FILE_LERR(sp, lno);
-		return (1);
-	}
+	/* Get the line, succeeding in an empty file. */
+	if (db_eget(sp, lno, &p, &len, &isempty))
+		return (!isempty);
 
 	/* Set the offset. */
 	if (len == 0 || off >= len)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 10.6 1995/09/21 12:07:20 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:20 $";
+static char sccsid[] = "$Id: ex_move.c,v 10.7 1995/10/16 15:25:42 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,11 +142,11 @@ ex_move(sp, cmdp)
 		mfl = tl - diff;
 		mtl = tl;
 		for (cnt = diff; cnt--;) {
-			if ((p = file_gline(sp, fl, &len)) == NULL)
+			if (db_get(sp, fl, DBG_FATAL, &p, &len))
 				return (1);
 			BINC_RET(sp, bp, blen, len);
 			memmove(bp, p, len);
-			if (file_aline(sp, 1, tl, bp, len))
+			if (db_append(sp, 1, tl, bp, len))
 				return (1);
 			if (mark_reset)
 				for (lmp = sp->ep->marks.lh_first;
@@ -154,18 +154,18 @@ ex_move(sp, cmdp)
 					if (lmp->name != ABSMARK1 &&
 					    lmp->lno == fl)
 						lmp->lno = tl + 1;
-			if (file_dline(sp, fl))
+			if (db_delete(sp, fl))
 				return (1);
 		}
 	} else {				/* Destination < source. */
 		mfl = tl;
 		mtl = tl + diff;
 		for (cnt = diff; cnt--;) {
-			if ((p = file_gline(sp, fl, &len)) == NULL)
+			if (db_get(sp, fl, DBG_FATAL, &p, &len))
 				return (1);
 			BINC_RET(sp, bp, blen, len);
 			memmove(bp, p, len);
-			if (file_aline(sp, 1, tl++, bp, len))
+			if (db_append(sp, 1, tl++, bp, len))
 				return (1);
 			if (mark_reset)
 				for (lmp = sp->ep->marks.lh_first;
@@ -174,7 +174,7 @@ ex_move(sp, cmdp)
 					    lmp->lno == fl)
 						lmp->lno = tl;
 			++fl;
-			if (file_dline(sp, fl))
+			if (db_delete(sp, fl))
 				return (1);
 		}
 	}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 10.6 1995/09/21 12:07:16 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:16 $";
+static char sccsid[] = "$Id: ex_join.c,v 10.7 1995/10/16 15:25:40 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ ex_join(sp, cmdp)
 	to = cmdp->addr2.lno;
 
 	/* Check for no lines to join. */
-	if (!file_eline(sp, from + 1)) {
+	if (!db_exist(sp, from + 1)) {
 		msgq(sp, M_ERR, "131|No following lines to join");
 		return (1);
 	}
@@ -74,7 +74,7 @@ ex_join(sp, cmdp)
 		 * Get next line.  Historic versions of vi allowed "10J" while
 		 * less than 10 lines from the end-of-file, so we do too.
 		 */
-		if ((p = file_gline(sp, from, &len)) == NULL) {
+		if (db_get(sp, from, 0, &p, &len)) {
 			cmdp->addr2.lno = from - 1;
 			break;
 		}
@@ -161,11 +161,11 @@ ex_join(sp, cmdp)
 
 	/* Delete the joined lines. */
         for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; to > from; --to)
-		if (file_dline(sp, to))
+		if (db_delete(sp, to))
 			goto err;
 
 	/* If the original line changed, reset it. */
-	if (!first && file_sline(sp, from, bp, tbp - bp)) {
+	if (!first && db_set(sp, from, bp, tbp - bp)) {
 err:		FREE_SPACE(sp, bp, blen);
 		return (1);
 	}

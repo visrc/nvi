@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 10.5 1995/09/21 12:06:14 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:14 $";
+static char sccsid[] = "$Id: put.c,v 10.6 1995/10/16 15:24:46 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,12 +80,12 @@ put(sp, cbp, namep, cp, rp, append)
 	 * in the file.
 	 */
 	if (cp->lno == 1) {
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return (1);
 		if (lno == 0) {
 			for (; tp != (void *)&cbp->textq;
 			    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
-				if (file_aline(sp, 1, lno, tp->lb, tp->len))
+				if (db_append(sp, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
 			rp->cno = 0;
@@ -99,7 +99,7 @@ put(sp, cbp, namep, cp, rp, append)
 		rp->lno = lno + 1;
 		for (; tp != (void *)&cbp->textq;
 		    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
-			if (file_aline(sp, 1, lno, tp->lb, tp->len))
+			if (db_append(sp, 1, lno, tp->lb, tp->len))
 				return (1);
 		rp->cno = 0;
 		(void)nonblank(sp, rp->lno, &rp->cno);
@@ -116,10 +116,8 @@ put(sp, cbp, namep, cp, rp, append)
 	 * Get the first line.
 	 */
 	lno = cp->lno;
-	if ((p = file_gline(sp, lno, &len)) == NULL) {
-		FILE_LERR(sp, lno);
+	if (db_get(sp, lno, DBG_FATAL, &p, &len))
 		return (1);
-	}
 
 	GET_SPACE_RET(sp, bp, blen, tp->len + len + 1);
 	t = bp;
@@ -164,7 +162,7 @@ put(sp, cbp, namep, cp, rp, append)
 			memmove(t, p, clen);
 			t += clen;
 		}
-		if (file_sline(sp, lno, bp, t - bp))
+		if (db_set(sp, lno, bp, t - bp))
 			goto mem;
 		if (sp->rptlchange != lno) {
 			sp->rptlchange = lno;
@@ -201,7 +199,7 @@ put(sp, cbp, namep, cp, rp, append)
 		 *
 		 * Output the line replacing the original line.
 		 */
-		if (file_sline(sp, lno, bp, t - bp))
+		if (db_set(sp, lno, bp, t - bp))
 			goto mem;
 		if (sp->rptlchange != lno) {
 			sp->rptlchange = lno;
@@ -220,10 +218,10 @@ put(sp, cbp, namep, cp, rp, append)
 		for (tp = tp->q.cqe_next;
 		    tp->q.cqe_next != (void *)&cbp->textq;
 		    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
-			if (file_aline(sp, 1, lno, tp->lb, tp->len))
+			if (db_append(sp, 1, lno, tp->lb, tp->len))
 				goto mem;
 
-		if (file_aline(sp, 1, lno, t, clen))
+		if (db_append(sp, 1, lno, t, clen))
 mem:			rval = 1;
 		++sp->rptlines[L_ADDED];
 	}

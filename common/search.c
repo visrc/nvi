@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 10.8 1995/10/02 16:34:52 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:34:52 $";
+static char sccsid[] = "$Id: search.c,v 10.9 1995/10/16 15:24:49 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ search_setup(sp, dir, ptrn, epp, flags)
 
 	/* If the file is empty, it's a fast search. */
 	if (sp->lno <= 1) {
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return (1);
 		if (lno == 0) {
 			if (LF_ISSET(SEARCH_MSG))
@@ -196,13 +196,11 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		lno = 1;
 		coff = 0;
 	} else {
-		if ((l = file_gline(sp, fm->lno, &len)) == NULL) {
-			FILE_LERR(sp, fm->lno);
+		if (db_get(sp, fm->lno, DBG_FATAL, &l, &len))
 			return (1);
-		}
 		if (fm->cno + 1 >= len) {
 			lno = fm->lno + 1;
-			if ((l = file_gline(sp, lno, &len)) == NULL) {
+			if (db_get(sp, lno, 0, &l, &len)) {
 				if (!O_ISSET(sp, O_WRAPSCAN)) {
 					if (LF_ISSET(SEARCH_MSG))
 						search_msg(sp, S_EOF);
@@ -226,8 +224,7 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 			btype = BUSY_UPDATE;
 			cnt = INTERRUPT_CHECK;
 		}
-		if (wrapped && lno > fm->lno ||
-		    (l = file_gline(sp, lno, &len)) == NULL) {
+		if (wrapped && lno > fm->lno || db_get(sp, lno, 0, &l, &len)) {
 			if (wrapped) {
 				if (LF_ISSET(SEARCH_MSG))
 					search_msg(sp, S_NOTFOUND);
@@ -350,7 +347,7 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 					search_msg(sp, S_SOF);
 				break;
 			}
-			if (file_lline(sp, &lno))
+			if (db_last(sp, &lno))
 				break;
 			if (lno == 0) {
 				if (LF_ISSET(SEARCH_MSG))
@@ -362,7 +359,7 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 			continue;
 		}
 
-		if ((l = file_gline(sp, lno, &len)) == NULL)
+		if (db_get(sp, lno, 0, &l, &len))
 			break;
 
 		/* Set the termination. */

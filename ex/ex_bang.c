@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.14 1995/10/04 12:31:41 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:31:41 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.15 1995/10/16 15:25:35 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,7 +137,7 @@ ex_bang(sp, cmdp)
 		 */
 		ftype = FILTER_BANG;
 		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
-			if (file_lline(sp, &lno))
+			if (db_last(sp, &lno))
 				return (1);
 			if (lno == 0) {
 				cmdp->addr1.lno = cmdp->addr2.lno = 0;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 10.5 1995/09/21 12:07:06 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:06 $";
+static char sccsid[] = "$Id: ex_delete.c,v 10.6 1995/10/16 15:25:36 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ex_delete(sp, cmdp)
 	sp->lno = cmdp->addr1.lno;
 
 	/* Or the last line in the file if deleted to the end of the file. */
-	if (file_lline(sp, &lno))
+	if (db_last(sp, &lno))
 		return (1);
 	if (sp->lno > lno)
 		sp->lno = lno;

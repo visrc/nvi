@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.13 1995/10/04 12:33:52 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:33:52 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.14 1995/10/16 15:25:45 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -264,7 +264,7 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 				break;
 			(void)sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
 		}
-		if (file_aline(sp, 1, lno, exp->ibp, len))
+		if (db_append(sp, 1, lno, exp->ibp, len))
 			goto err;
 		ccnt += len;
 	}

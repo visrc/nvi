@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 10.3 1995/06/08 18:57:35 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:35 $
+ *	$Id: exf.h,v 10.4 1995/10/16 15:24:38 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:38 $
  */
 					/* Undo direction. */
 /*
@@ -63,6 +63,10 @@ struct _exf {
 	u_int8_t flags;
 };
 
+/* Flags to db_get(). */
+#define	DBG_FATAL	0x001	/* If DNE, error message. */
+#define	DBG_NOCACHE	0x002	/* Ignore the front-end cache. */
+
 /* Flags to file_init() and file_write(). */
 #define	FS_ALL		0x001	/* Write the entire file. */
 #define	FS_APPEND	0x002	/* Append to the file. */
@@ -76,7 +80,3 @@ struct _exf {
 #define	RCV_ENDSESSION	0x02	/* End the file session. */
 #define	RCV_PRESERVE	0x04	/* Preserve backup file, IFF file modified. */
 #define	RCV_SNAPSHOT	0x08	/* Snapshot the recovery, and send email. */
-
-/* Line retrieval error. */
-#define	FILE_LERR(sp, lno)						\
-	file_lerr(sp, __FILE__, __LINE__, lno);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.12 1995/10/04 12:29:55 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:29:55 $";
+static char sccsid[] = "$Id: exf.c,v 10.13 1995/10/16 15:24:35 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -435,7 +435,7 @@ file_cinit(sp)
 	nb = 0;
 	gp = sp->gp;
 	if (gp->c_option != NULL && !F_ISSET(sp->frp, FR_NEWFILE)) {
-		if (file_lline(sp, &sp->lno))
+		if (db_last(sp, &sp->lno))
 			return;
 		if (sp->lno == 0) {
 			sp->lno = 1;
@@ -446,7 +446,7 @@ file_cinit(sp)
 			return;
 		gp->c_option = NULL;
 	} else if (F_ISSET(sp, S_EX)) {
-		if (file_lline(sp, &sp->lno))
+		if (db_last(sp, &sp->lno))
 			return;
 		if (sp->lno == 0) {
 			sp->lno = 1;
@@ -468,7 +468,7 @@ file_cinit(sp)
 				sp->lno = 1;
 			nb = 1;
 		}
-		if (file_gline(sp, sp->lno, &len) == NULL) {
+		if (db_get(sp, sp->lno, 0, NULL, &len)) {
 			sp->lno = 1;
 			sp->cno = 0;
 			return;
@@ -749,7 +749,7 @@ file_write(sp, fm, tm, name, flags)
 		from.lno = 1;
 		from.cno = 0;
 		fm = &from;
-		if (file_lline(sp, &to.lno))
+		if (db_last(sp, &to.lno))
 			return (1);
 		to.cno = 0;
 		tm = &to;
@@ -1025,7 +1025,7 @@ file_comment(sp)
 	char *p;
 
 	for (lno = 1;
-	    (p = file_gline(sp, lno, &len)) != NULL && len == 0; ++lno);
+	    db_get(sp, lno, 0, &p, &len) && len == 0; ++lno);
 	if (p == NULL || len <= 1 || p[0] != '/' || p[1] != '*')
 		return;
 	F_SET(sp, S_SCR_TOP);
@@ -1035,7 +1035,7 @@ file_comment(sp)
 				sp->lno = lno;
 				return;
 			}
-	} while ((p = file_gline(sp, ++lno, &len)) != NULL);
+	} while (!db_get(sp, ++lno, 0, &p, &len));
 }
 
 /*

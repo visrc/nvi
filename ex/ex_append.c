@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.15 1995/10/04 12:31:13 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:31:13 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.16 1995/10/16 15:25:34 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,13 +163,13 @@ ex_aci(sp, cmdp, cmd)
 					--len;
 					break;
 				}
-				if (file_aline(sp, 1, lno++, p, t - p))
+				if (db_append(sp, 1, lno++, p, t - p))
 					return (1);
 			}
 			if (len != 0) {
 				++t;
 				if (--len == 0 &&
-				    file_aline(sp, 1, lno++, "", 0))
+				    db_append(sp, 1, lno++, "", 0))
 					return (1);
 			}
 		}
@@ -190,7 +190,7 @@ ex_aci(sp, cmdp, cmd)
 	}
 
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
-		if ((sp->lno = lno) == 0 && file_eline(sp, 1))
+		if ((sp->lno = lno) == 0 && db_exist(sp, 1))
 			sp->lno = 1;
 		return (0);
 	}
@@ -250,7 +250,7 @@ ex_aci(sp, cmdp, cmd)
 
 	for (cnt = 0, tp = tiq.cqh_first;
 	    tp != (TEXT *)&tiq; ++cnt, tp = tp->q.cqe_next)
-		if (file_aline(sp, 1, lno++, tp->lb, tp->len))
+		if (db_append(sp, 1, lno++, tp->lb, tp->len))
 			return (1);
 
 	/*
@@ -258,7 +258,7 @@ ex_aci(sp, cmdp, cmd)
 	 * possible 0 value) as that's historically correct for the final
 	 * line value, whether or not the user entered any text.
 	 */
-	if ((sp->lno = lno) == 0 && file_eline(sp, 1))
+	if ((sp->lno = lno) == 0 && db_exist(sp, 1))
 		sp->lno = 1;
 
 	return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 10.7 1995/09/21 12:07:09 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:09 $";
+static char sccsid[] = "$Id: ex_equal.c,v 10.8 1995/10/16 15:25:37 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ ex_equal(sp, cmdp)
 	 * file, which, in an empty file, is 0.
 	 */
 	if (F_ISSET(cmdp, E_ADDR_DEF)) {
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return (1);
 	} else
 		lno = cmdp->addr1.lno;

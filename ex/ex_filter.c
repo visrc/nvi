@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.13 1995/10/04 12:37:40 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:37:40 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.14 1995/10/16 15:25:38 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,8 +212,8 @@ err:		if (input[0] != -1)
 	 * it inserts new records.  When the DB code has locking, we should
 	 * treat vi as if it were multiple applications sharing a database, and
 	 * do the required locking.  If necessary a work-around would be to do
-	 * explicit locking in the line.c:file_gline() code, based on the flag
-	 * set here.
+	 * explicit locking in the line.c:db_get() code, based on the flag set
+	 * here.
 	 */
 	rval = 0;
 	F_SET(sp->ep, F_MULTILOCK);
@@ -270,7 +270,7 @@ err:		if (input[0] != -1)
 		 * the cursor.  Don't do any real error correction, we'll
 		 * try and recover later.
 		 */
-		 if (rp->lno > 1 && !file_eline(sp, rp->lno))
+		 if (rp->lno > 1 && !db_exist(sp, rp->lno))
 			--rp->lno;
 		break;
 	}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.16 1995/10/04 15:56:30 bostic Exp $ (Berkeley) $Date: 1995/10/04 15:56:30 $";
+static char sccsid[] = "$Id: ex.c,v 10.17 1995/10/16 15:25:26 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,7 +225,7 @@ loop:	ecp = gp->ecq.lh_first;
 	 * do it now.
 	 */
 	if (F_ISSET(ecp, E_MOVETOEND)) {
-		if (file_lline(sp, &sp->lno))
+		if (db_last(sp, &sp->lno))
 			goto rfail;
 		if (sp->lno == 0)
 			sp->lno = 1;
@@ -824,7 +824,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 			ecp->addrcnt = 1;
 			F_SET(ecp, E_ADDR_DEF);
 			if (F_ISSET(ecp, E_ADDR_ZERODEF)) {
-				if (file_lline(sp, &lno))
+				if (db_last(sp, &lno))
 					goto err;
 				if (lno == 0) {
 					ecp->addr1.lno = 0;
@@ -850,7 +850,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		if (ecp->addrcnt == 0) {	/* Default entire/empty file. */
 			ecp->addrcnt = 2;
 			F_SET(ecp, E_ADDR_DEF);
-			if (file_lline(sp, &ecp->addr2.lno))
+			if (db_last(sp, &ecp->addr2.lno))
 				goto err;
 			if (F_ISSET(ecp, E_ADDR_ZERODEF) &&
 			    ecp->addr2.lno == 0) {
@@ -870,7 +870,7 @@ two_addr:	switch (ecp->addrcnt) {
 			F_SET(ecp, E_ADDR_DEF);
 			if (sp->lno == 1 &&
 			    F_ISSET(ecp, E_ADDR_ZERODEF)) {
-				if (file_lline(sp, &lno))
+				if (db_last(sp, &lno))
 					goto err;
 				if (lno == 0) {
 					ecp->addr1.lno = ecp->addr2.lno = 0;
@@ -906,7 +906,7 @@ two_addr:	switch (ecp->addrcnt) {
 		ecp->addr1.lno = sp->lno + 1;
 		ecp->addr2.lno = sp->lno + O_VAL(sp, O_SCROLL);
 		ecp->addr1.cno = ecp->addr2.cno = sp->cno;
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			goto err;
 		if (lno != 0 && lno > sp->lno && ecp->addr2.lno > lno)
 			ecp->addr2.lno = lno;
@@ -1094,7 +1094,7 @@ end_case23:		break;
 			 * The target line should exist for these commands,
 			 * but 0 is legal for them as well.
 			 */
-			if (cur.lno != 0 && !file_eline(sp, cur.lno)) {
+			if (cur.lno != 0 && !db_exist(sp, cur.lno)) {
 				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 				goto err;
 			}
@@ -1228,9 +1228,9 @@ addr_verify:
 				ex_badaddr(sp, ecp->cmd, A_ZERO, NUM_OK);
 				goto err;
 			}
-		} else if (!file_eline(sp, ecp->addr2.lno))
+		} else if (!db_exist(sp, ecp->addr2.lno))
 			if (FL_ISSET(ecp->iflags, E_C_COUNT)) {
-				if (file_lline(sp, &lno))
+				if (db_last(sp, &lno))
 					goto err;
 				ecp->addr2.lno = lno;
 			} else {
@@ -1246,7 +1246,7 @@ addr_verify:
 				ex_badaddr(sp, ecp->cmd, A_ZERO, NUM_OK);
 				goto err;
 			}
-		} else if (!file_eline(sp, ecp->addr1.lno)) {
+		} else if (!db_exist(sp, ecp->addr1.lno)) {
 			ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 			goto err;
 		}
@@ -1387,7 +1387,7 @@ addr_verify:
 				ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 				goto err;
 			}
-			if (!file_eline(sp, sp->lno + ecp->flagoff)) {
+			if (!db_exist(sp, sp->lno + ecp->flagoff)) {
 				msgq(sp, M_ERR,
 				    "089|Flag offset past end-of-file");
 				goto err;
@@ -1640,7 +1640,7 @@ ex_range(sp, ecp, errp)
 				*errp = 1;
 				return (0);
 			}
-			if (file_lline(sp, &ecp->addr2.lno))
+			if (db_last(sp, &ecp->addr2.lno))
 				return (1);
 			ecp->addr1.lno = ecp->addr2.lno == 0 ? 0 : 1;
 			ecp->addr1.cno = ecp->addr2.cno = 0;
@@ -1811,7 +1811,7 @@ ex_line(sp, ecp, mp, isaddrp, errp)
 		F_SET(ecp, E_ABSMARK);
 
 		mp->cno = 0;
-		if (file_lline(sp, &mp->lno))
+		if (db_last(sp, &mp->lno))
 			return (1);
 		++ecp->cp;
 		--ecp->clen;
@@ -1896,7 +1896,7 @@ search:		mp->lno = sp->lno;
 
 		/* If an empty file, then '.' is 0, not 1. */
 		if (sp->lno == 1) {
-			if (file_lline(sp, &mp->lno))
+			if (db_last(sp, &mp->lno))
 				return (1);
 			if (mp->lno != 0)
 				mp->lno = 1;
@@ -2183,7 +2183,7 @@ ex_badaddr(sp, cp, ba, nret)
 		msgq(sp, M_ERR, "101|Illegal address combination");
 		break;
 	case A_EOF:
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return;
 		if (lno != 0) {
 			msgq(sp, M_ERR,

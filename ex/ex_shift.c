@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 10.6 1995/09/21 12:07:31 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:31 $";
+static char sccsid[] = "$Id: ex_shift.c,v 10.7 1995/10/16 15:25:47 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,7 @@ shift(sp, cmdp, rl)
 
 	curset = 0;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
-		if ((p = file_gline(sp, from, &len)) == NULL)
+		if (db_get(sp, from, DBG_FATAL, &p, &len))
 			goto err;
 		if (!len) {
 			if (sp->lno == from)
@@ -148,7 +148,7 @@ shift(sp, cmdp, rl)
 		memmove(tbp, p + oldidx, len - oldidx);
 
 		/* Set the replacement line. */
-		if (file_sline(sp, from, bp, (tbp + (len - oldidx)) - bp)) {
+		if (db_set(sp, from, bp, (tbp + (len - oldidx)) - bp)) {
 err:			FREE_SPACE(sp, bp, blen);
 			return (1);
 		}

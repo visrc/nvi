@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.9 1995/10/04 12:35:41 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:35:41 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.10 1995/10/16 15:25:53 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -278,9 +278,9 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	/*
 	 * The vi filter code has multiple processes running simultaneously,
 	 * and one of them calls ex_writefp().  The "unsafe" function calls
-	 * in this code are to file_gline() and msgq().  File_gline() is safe,
-	 * see the comment in ex_filter.c:filtercmd() for details.  We don't
-	 * call msgq if the multiple process bit in the EXF is set.
+	 * in this code are to db_get() and msgq().  Db_get() is safe, see
+	 * the comment in ex_filter.c:filtercmd() for details.  We don't call
+	 * msgq if the multiple process bit in the EXF is set.
 	 *
 	 * !!!
 	 * Historic vi permitted files of 0 length to be written.  However,
@@ -300,8 +300,8 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 					break;
 				(void)sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
 			}
-			if ((p = file_gline(sp, fline, &len)) == NULL)
-				break;
+			if (db_get(sp, fline, DBG_FATAL, &p, &len))
+				goto err;
 			if (fwrite(p, 1, len, fp) != len)
 				goto err;
 			ccnt += len;
