@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.16 1993/09/28 17:32:17 bostic Exp $ (Berkeley) $Date: 1993/09/28 17:32:17 $";
+static char sccsid[] = "$Id: main.c,v 8.17 1993/09/28 18:41:17 bostic Exp $ (Berkeley) $Date: 1993/09/28 18:41:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -61,7 +61,7 @@ main(argc, argv)
 	EXCMDARG cmd;
 	GS *gp;
 	FREF *frp;
-	SCR *sp;
+	SCR *nsp, *sp;
 	int ch, flagchk, eval;
 	char *excmdarg, *errf, *myname, *p, *rfname, *tfname;
 	char *av[2], path[MAXPATHLEN];
@@ -338,9 +338,9 @@ main(argc, argv)
 	 * screen flags word there's a bit if it's a vi or ex screen.
 	 * Since there are multiple vi screens, we use scr_type to decide.
 	 */
-	while (sp != NULL)
+	for (; sp != NULL; sp = nsp) {
 		if (F_ISSET(sp, S_MODE_EX)) {
-			if (sex(sp, sp->ep, &sp))
+			if (sex(sp, sp->ep, &nsp))
 				goto err2;
 		} else
 			switch (scr_type) {
@@ -348,17 +348,26 @@ main(argc, argv)
 				abort();
 				/* NOTREACHED */
 			case VI_CURSES_SCR:
-				if (svi(sp, sp->ep, &sp))
+				if (svi(sp, sp->ep, &nsp))
 					goto err2;
 				break;
 			case VI_XAW_SCR:
-				if (xaw(sp, sp->ep, &sp))
+				if (xaw(sp, sp->ep, &nsp))
 					goto err2;
 				break;
 			default:
 				abort();
 				/* NOTREACHED */
 			}
+
+		/* If the screen has exited, clean up. */
+		switch (F_ISSET(sp, S_MAJOR_CHANGE)) {
+		case S_EXIT:
+		case S_EXIT_FORCE:
+			if (scr_end(sp))
+				goto err2;
+		}
+	}
 
 	/*
 	 * Two error paths.  The first means that something failed before
