@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.23 1995/10/30 13:37:56 bostic Exp $ (Berkeley) $Date: 1995/10/30 13:37:56 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.24 1995/10/31 10:51:23 bostic Exp $ (Berkeley) $Date: 1995/10/31 10:51:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -574,9 +574,9 @@ cl_suspend(sp, allowedp)
  * cl_usage --
  *	Print out the curses usage messages.
  * 
- * PUBLIC: int cl_usage __P((void));
+ * PUBLIC: void cl_usage __P((void));
  */
-int
+void
 cl_usage()
 {
 #define	USAGE "\
@@ -584,7 +584,6 @@ usage: ex [-eFRrsv] [-c command] [-t tag] [-w size] [file ...]\n\
 usage: vi [-eFlRrv] [-c command] [-t tag] [-w size] [file ...]\n"
 	(void)fprintf(stderr, "%s", USAGE);
 #undef	USAGE
-	return (0);
 }
 
 #ifdef DEBUG
