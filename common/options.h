@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.12 1993/12/02 10:32:54 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:32:54 $
+ *	$Id: options.h,v 8.13 1993/12/10 16:31:26 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:31:26 $
  */
 
 struct _option {
@@ -63,7 +63,7 @@ int	f_lisp __P((SCR *, OPTION *, char *, u_long));
 int	f_list __P((SCR *, OPTION *, char *, u_long));
 int	f_matchtime __P((SCR *, OPTION *, char *, u_long));
 int	f_mesg __P((SCR *, OPTION *, char *, u_long));
-int	f_modelines __P((SCR *, OPTION *, char *, u_long));
+int	f_modeline __P((SCR *, OPTION *, char *, u_long));
 int	f_number __P((SCR *, OPTION *, char *, u_long));
 int	f_optimize __P((SCR *, OPTION *, char *, u_long));
 int	f_paragraph __P((SCR *, OPTION *, char *, u_long));

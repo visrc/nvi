@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.23 1993/11/22 14:46:40 bostic Exp $ (Berkeley) $Date: 1993/11/22 14:46:40 $";
+static char sccsid[] = "$Id: options_f.c,v 8.24 1993/12/10 16:31:27 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:31:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -229,17 +229,17 @@ DECL(f_mesg)
 }
 
 /*
- * f_modelines --
+ * f_modeline --
  *	This has been documented in historical systems as both "modeline"
  *	and as "modelines".  Regardless of the name, this option represents
  *	a security problem of mammoth proportions, not to mention a stunning
  *	example of what your intro CS professor referred to as the perils of
  *	mixing code and data.  Don't add it, or I will kill you.
  */
-DECL(f_modelines)
+DECL(f_modeline)
 {
 	if (!turnoff)
-		msgq(sp, M_ERR, "The modelines option may never be set.");
+		msgq(sp, M_ERR, "The modeline(s) option may never be set.");
 	return (0);
 }
 

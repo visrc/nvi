@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.29 1993/12/03 15:40:26 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:26 $";
+static char sccsid[] = "$Id: options.c,v 8.30 1993/12/10 16:31:23 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:31:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,126 +28,138 @@ static int	 	 opts_cmp __P((const void *, const void *));
 static OPTLIST const	*opts_prefix __P((char *));
 static int	 	 opts_print __P((SCR *, OPTLIST const *, OPTION *));
 
+/*
+ * O'Reilly noted options and abbreviations are from "Learning the VI Editor",
+ * Fifth Edition, May 1992.  There's no way of knowing what systems they are
+ * actually from.
+ *
+ * HPUX noted options and abbreviations are from "The Ultimate Guide to the
+ * VI and EX Text Editors", 1990.
+ */
 static OPTLIST const optlist[] = {
-/* O_ALTWERASE */
+/* O_ALTWERASE	  4.4BSD */
 	{"altwerase",	f_altwerase,	OPT_0BOOL,	0},
-/* O_AUTOINDENT */
+/* O_AUTOINDENT	    4BSD */
 	{"autoindent",	NULL,		OPT_0BOOL,	0},
-/* O_AUTOPRINT */
+/* O_AUTOPRINT	    4BSD */
 	{"autoprint",	NULL,		OPT_1BOOL,	0},
-/* O_AUTOWRITE */
+/* O_AUTOWRITE	    4BSD */
 	{"autowrite",	NULL,		OPT_0BOOL,	0},
-/* O_BEAUTIFY */
+/* O_BEAUTIFY	    4BSD */
 	{"beautify",	NULL,		OPT_0BOOL,	0},
-/* O_COLUMNS */
+/* O_COLUMNS	  4.4BSD */
 	{"columns",	f_columns,	OPT_NUM,	OPT_NOSAVE},
-/* O_COMMENT */
+/* O_COMMENT	  4.4BSD */
 	{"comment",	NULL,		OPT_0BOOL,	0},
-/* O_DIGRAPH */
+/* O_DIGRAPH	  XXX: Elvis */
 	{"digraph",	NULL,		OPT_0BOOL,	0},
-/* O_DIRECTORY */
+/* O_DIRECTORY	    4BSD */
 	{"directory",	NULL,		OPT_STR,	OPT_NOSAVE},
-/* O_EDCOMPATIBLE */
+/* O_EDCOMPATIBLE   4BSD */
 	{"edcompatible",NULL,		OPT_0BOOL,	0},
-/* O_ERRORBELLS */
+/* O_ERRORBELLS	    4BSD */
 	{"errorbells",	NULL,		OPT_0BOOL,	0},
-/* O_EXRC */
+/* O_EXRC	System V (undocumented) */
 	{"exrc",	NULL,		OPT_0BOOL,	0},
-/* O_EXTENDED */
+/* O_EXTENDED	  4.4BSD */
 	{"extended",	NULL,		OPT_0BOOL,	0},
-/* O_FLASH */
+/* O_FLASH	    HPUX */
 	{"flash",	NULL,		OPT_1BOOL,	0},
-/* O_IGNORECASE */
+/* O_HARDTABS	    4BSD */
+	{"hardtabs",	NULL,		OPT_NUM,	0},
+/* O_IGNORECASE	    4BSD */
 	{"ignorecase",	NULL,		OPT_0BOOL,	0},
-/* O_KEYTIME */
+/* O_KEYTIME	  4.4BSD */
 	{"keytime",	f_keytime,	OPT_NUM,	0},
-/* O_LEFTRIGHT */
+/* O_LEFTRIGHT	  4.4BSD */
 	{"leftright",	f_leftright,	OPT_0BOOL,	0},
-/* O_LINES */
+/* O_LINES	  4.4BSD */
 	{"lines",	f_lines,	OPT_NUM,	OPT_NOSAVE},
-/* O_LISP */
+/* O_LISP	    4BSD */
 	{"lisp",	f_lisp,		OPT_0BOOL,	0},
-/* O_LIST */
+/* O_LIST	    4BSD */
 	{"list",	f_list,		OPT_0BOOL,	0},
-/* O_MAGIC */
+/* O_MAGIC	    4BSD */
 	{"magic",	NULL,		OPT_1BOOL,	0},
-/* O_MATCHTIME */
+/* O_MATCHTIME	  4.4BSD */
 	{"matchtime",	f_matchtime,	OPT_NUM,	0},
-/* O_MESG */
+/* O_MESG	    4BSD */
 	{"mesg",	f_mesg,		OPT_1BOOL,	0},
-/* O_MODELINE */
-	{"modeline",	f_modelines,	OPT_0BOOL,	0},
-/* O_MODELINES */
-	{"modelines",	f_modelines,	OPT_0BOOL,	0},
-/* O_NUMBER */
+/* O_MODELINE	    4BSD */
+	{"modeline",	f_modeline,	OPT_0BOOL,	0},
+/* O_NUMBER	    4BSD */
 	{"number",	f_number,	OPT_0BOOL,	0},
-/* O_NUNDO */
+/* O_NUNDO	  4.4BSD */
 	{"nundo",	NULL,		OPT_0BOOL,	0},
-/* O_OPEN */
+/* O_OPEN	    4BSD */
 	{"open",	NULL,		OPT_1BOOL,	0},
-/* O_OPTIMIZE */
+/* O_OPTIMIZE	    4BSD */
 	{"optimize",	f_optimize,	OPT_1BOOL,	0},
-/* O_PARAGRAPHS */
+/* O_PARAGRAPHS	    4BSD */
 	{"paragraphs",	f_paragraph,	OPT_STR,	0},
-/* O_PROMPT */
+/* O_PROMPT	    4BSD */
 	{"prompt",	NULL,		OPT_1BOOL,	0},
-/* O_READONLY */
+/* O_READONLY	    4BSD */
 	{"readonly",	f_readonly,	OPT_0BOOL,	0},
-/* O_REDRAW */
+/* O_REDRAW	    4BSD */
 	{"redraw",	NULL,		OPT_0BOOL,	0},
-/* O_REMAP */
+/* O_REMAP	    4BSD */
 	{"remap",	NULL,		OPT_1BOOL,	0},
-/* O_REPORT */
+/* O_REPORT	    4BSD */
 	{"report",	NULL,		OPT_NUM,	OPT_NOSTR},
-/* O_RULER */
+/* O_RULER	  4.4BSD */
 	{"ruler",	f_ruler,	OPT_0BOOL,	0},
-/* O_SCROLL */
+/* O_SCROLL	    4BSD */
 	{"scroll",	NULL,		OPT_NUM,	0},
-/* O_SECTIONS */
+/* O_SECTIONS	    4BSD */
 	{"sections",	f_section,	OPT_STR,	0},
-/* O_SHELL */
+/* O_SHELL	    4BSD */
 	{"shell",	NULL,		OPT_STR,	0},
-/* O_SHIFTWIDTH */
+/* O_SHIFTWIDTH	    4BSD */
 	{"shiftwidth",	f_shiftwidth,	OPT_NUM,	0},
-/* O_SHOWDIRTY */
+/* O_SHOWDIRTY	  4.4BSD */
 	{"showdirty",	NULL,		OPT_0BOOL,	0},
-/* O_SHOWMATCH */
+/* O_SHOWMATCH	    4BSD */
 	{"showmatch",	NULL,		OPT_0BOOL,	0},
-/* O_SHOWMODE */
+/* O_SHOWMODE	  4.4BSD */
 	{"showmode",	NULL,		OPT_0BOOL,	0},
-/* O_SIDESCROLL */
+/* O_SIDESCROLL	  4.4BSD */
 	{"sidescroll",	f_sidescroll,	OPT_NUM,	0},
-/* O_TABSTOP */
+/* O_SLOWOPEN	    4BSD  */
+	{"slowopen",	NULL,		OPT_0BOOL,	0},
+/* O_SOURCEANY	    4BSD (undocumented) */
+	{"sourceany",	NULL,		OPT_0BOOL,	0},
+/* O_TABSTOP	    4BSD */
 	{"tabstop",	f_tabstop,	OPT_NUM,	0},
-/* O_TAGLENGTH */
+/* O_TAGLENGTH	    4BSD */
 	{"taglength",	NULL,		OPT_NUM,	OPT_NOSTR},
-/* O_TAGS */
+/* O_TAGS	    4BSD */
 	{"tags",	f_tags,		OPT_STR,	0},
-/* O_TERM */
+/* O_TERM	    4BSD */
 	{"term",	f_term,		OPT_STR,	OPT_NOSAVE},
-/* O_TERSE */
+/* O_TERSE	    4BSD */
 	{"terse",	NULL,		OPT_0BOOL,	0},
-/* O_TIMEOUT */
+/* O_TIMEOUT	    4BSD */
 	{"timeout",	NULL,		OPT_0BOOL,	0},
-/* O_TTYWERASE */
+/* O_TTYWERASE	  4.4BSD */
 	{"ttywerase",	f_ttywerase,	OPT_0BOOL,	0},
-/* O_VERBOSE */
+/* O_VERBOSE	  4.4BSD */
 	{"verbose",	NULL,		OPT_0BOOL,	0},
-/* O_W300 */
-	{"w300",	f_w300,		OPT_NUM,	OPT_NEVER},
-/* O_W1200 */
+/* O_W1200	    4BSD */
 	{"w1200",	f_w1200,	OPT_NUM,	OPT_NEVER},
-/* O_W9600 */
+/* O_W300	    4BSD */
+	{"w300",	f_w300,		OPT_NUM,	OPT_NEVER},
+/* O_W9600	    4BSD */
 	{"w9600",	f_w9600,	OPT_NUM,	OPT_NEVER},
-/* O_WARN */
+/* O_WARN	    4BSD */
 	{"warn",	NULL,		OPT_1BOOL,	0},
-/* O_WINDOW */
+/* O_WINDOW	    4BSD */
 	{"window",	f_window,	OPT_NUM,	0},
-/* O_WRAPMARGIN */
+/* O_WRAPMARGIN	    4BSD */
 	{"wrapmargin",	f_wrapmargin,	OPT_NUM,	OPT_NOSTR},
-/* O_WRAPSCAN */
+/* O_WRAPSCAN	    4BSD */
 	{"wrapscan",	NULL,		OPT_1BOOL,	0},
-/* O_WRITEANY */
+/* O_WRITEANY	    4BSD */
 	{"writeany",	NULL,		OPT_0BOOL,	0},
 	{NULL},
 };
@@ -158,43 +170,41 @@ typedef struct abbrev {
 } OABBREV;
 
 static OABBREV const abbrev[] = {
-	{"ai",		O_AUTOINDENT},
-	{"ap",		O_AUTOPRINT},
-	{"aw",		O_AUTOWRITE},
-	{"bf",		O_BEAUTIFY},
-	{"co",		O_COLUMNS},
-	{"dir",		O_DIRECTORY},
-	{"eb",		O_ERRORBELLS},
-	{"ed",		O_EDCOMPATIBLE},
-	{"fl",		O_FLASH},
-	{"ic",		O_IGNORECASE},
-	{"kt",		O_KEYTIME},
-	{"li",		O_LIST},
-	{"ls",		O_LINES},
-	{"ma",		O_MAGIC},
-	{"me",		O_MESG},
-	{"modeline",	O_MODELINES},
-	{"nu",		O_NUMBER},
-	{"opt",		O_OPTIMIZE},
-	{"pa",		O_PARAGRAPHS},
-	{"pr",		O_PROMPT},
-	{"re",		O_REPORT},
-	{"ro",		O_READONLY},
-	{"ru",		O_RULER},
-	{"sc",		O_SCROLL},
-	{"se",		O_SECTIONS},
-	{"sh",		O_SHELL},
-	{"sm",		O_SHOWMATCH},
-	{"ss",		O_SIDESCROLL},
-	{"sw",		O_SHIFTWIDTH},
-	{"te",		O_TERM},
-	{"tr",		O_TERSE},
-	{"ts",		O_TABSTOP},
-	{"ve",		O_VERBOSE},
-	{"wa",		O_WARN},
-	{"wm",		O_WRAPMARGIN},
-	{"wr",		O_WRITEANY},
-	{"ws",		O_WRAPSCAN},
+	{"ai",		O_AUTOINDENT},		/*     4BSD */
+	{"ap",		O_AUTOPRINT},		/*     4BSD */
+	{"aw",		O_AUTOWRITE},		/*     4BSD */
+	{"bf",		O_BEAUTIFY},		/*     4BSD */
+	{"co",		O_COLUMNS},		/*   4.4BSD */
+	{"dir",		O_DIRECTORY},		/*     4BSD */
+	{"eb",		O_ERRORBELLS},		/*     4BSD */
+	{"ed",		O_EDCOMPATIBLE},	/*     4BSD (undocumented) */
+	{"ex",		O_EXRC},		/* System V (undocumented) */
+	{"ht",		O_HARDTABS},		/*     4BSD */
+	{"ic",		O_IGNORECASE},		/*     4BSD */
+	{"li",		O_LINES},		/*   4.4BSD */
+	{"modelines",	O_MODELINE},		/*     HPUX */
+	{"nu",		O_NUMBER},		/*     4BSD */
+	{"opt",		O_OPTIMIZE},		/*     4BSD */
+	{"para",	O_PARAGRAPHS},		/*     4BSD */
+	{"re",		O_REDRAW},		/* O'Reilly */
+	{"ro",		O_READONLY},		/*     4BSD (undocumented) */
+	{"scr",		O_SCROLL},		/*     4BSD (undocumented) */
+	{"sect",	O_SECTIONS},		/* O'Reilly */
+	{"sh",		O_SHELL},		/*     4BSD */
+	{"slow",	O_SLOWOPEN},		/*     4BSD */
+	{"sm",		O_SHOWMATCH},		/*     4BSD */
+	{"sw",		O_SHIFTWIDTH},		/*     4BSD */
+	{"tag",		O_TAGS},		/*     4BSD (undocumented) */
+	{"tl",		O_TAGLENGTH},		/*     4BSD */
+	{"to",		O_TIMEOUT},		/*     4BSD (undocumented) */
+	{"ts",		O_TABSTOP},		/*     4BSD */
+	{"tty",		O_TERM},		/*     4BSD (undocumented) */
+	{"ttytype",	O_TERM},		/*     4BSD (undocumented) */
+	{"w",		O_WINDOW},		/* O'Reilly */
+	{"wa",		O_WRITEANY},		/*     4BSD */
+	{"wi",		O_WINDOW},		/*     4BSD (undocumented) */
+	{"wm",		O_WRAPMARGIN},		/*     4BSD */
+	{"ws",		O_WRAPSCAN},		/*     4BSD */
 	{NULL},
 };
 
