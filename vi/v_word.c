@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.3 1993/07/21 09:14:27 bostic Exp $ (Berkeley) $Date: 1993/07/21 09:14:27 $";
+static char sccsid[] = "$Id: v_word.c,v 8.4 1993/07/22 12:05:38 bostic Exp $ (Berkeley) $Date: 1993/07/22 12:05:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,12 +138,19 @@ fword(sp, ep, vp, fm, rp, type)
 					break;
 			}
 			/*
-			 * If a motion command and we're at the end of the
-			 * line or word, don't eat any trailing white space
-			 * and don't move off the line.
+			 * If a "c" or "y" motion command and we're at the
+			 * end of the last word, don't eat trailing white
+			 * space.  If any motion command, and we're at the
+			 * end of the last word and at the end of a line,
+			 * don't move off the line.
 			 */
-			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y))
-				break;
+			if (cnt == 0) {
+				if (F_ISSET(vp, VC_C))
+					break;
+				if (cs.cs_flags == CS_EOL &&
+				    F_ISSET(vp, VC_D | VC_Y))
+					break;
+			}
 
 			/* Eat any space characters. */
 			if (cs_fblank(sp, ep, &cs))
@@ -170,8 +177,13 @@ fword(sp, ep, vp, fm, rp, type)
 						break;
 			}
 			/* See comment above. */
-			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y))
-				break;
+			if (cnt == 0) {
+				if (F_ISSET(vp, VC_C))
+					break;
+				if (cs.cs_flags == CS_EOL &&
+				    F_ISSET(vp, VC_D | VC_Y))
+					break;
+			}
 
 			/* Eat any space characters. */
 			if (cs.cs_flags != 0 || isspace(cs.cs_ch))
