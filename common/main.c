@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.25 1992/05/21 13:04:18 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:04:18 $";
+static char sccsid[] = "$Id: main.c,v 5.26 1992/05/27 10:28:58 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:28:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -92,7 +92,8 @@ main(argc, argv)
 			if ((tracefp = fopen(optarg, "w")) == NULL)
 				(void)fprintf(stderr,
 				    "%s: %s", optarg, strerror(errno));
-			(void)fprintf(tracefp, "trace: open %s\n", optarg);
+			(void)fprintf(tracefp,
+			    "\n===\ntrace: open %s\n", optarg);
 			break;
 #endif
 		case 't':		/* Tag. */
