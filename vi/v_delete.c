@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.10 1992/10/17 16:10:37 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:10:37 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.11 1992/10/18 13:08:53 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:08:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -30,7 +30,12 @@ v_Delete(vp, fm, tm, rp)
 	size_t len;
 	u_char *p;
 
-	EGETLINE(p, fm->lno, len);
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			return (0);
+		GETLINE_ERR(fm->lno);
+		return (1);
+	}
 
 	if (len == 0)
 		return (0);
@@ -55,15 +60,22 @@ v_delete(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t nlines;
 	int lmode;
 	
 	lmode = vp->flags & VC_LMODE;
 	if (cut(VICB(vp), fm, tm, lmode) || delete(fm, tm, lmode))
 		return (1);
 
-	/* If deleting lines, leave the cursor at the lowest line deleted. */
+	/*
+	 * If deleting lines, leave the cursor at the lowest line deleted,
+	 * correcting, of course, for deleting everything.
+	 */
 	if (lmode) {
 		rp->lno = MIN(fm->lno, tm->lno);
+		nlines = file_lline(curf);
+		if (rp->lno > nlines)
+			rp->lno = nlines ? nlines : 1;
 		rp->cno = fm->cno;
 		return (0);
 	}
