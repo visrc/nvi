@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.23 1993/12/19 18:58:08 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:58:08 $
+ *	$Id: key.h,v 8.24 1993/12/22 13:44:43 bostic Exp $ (Berkeley) $Date: 1993/12/22 13:44:43 $
  */
 
 /* Structure to return a character and associated information. */
@@ -37,11 +37,16 @@ struct _ch {
 	u_char	 flags;
 };
 
-/* Structure for the key input buffer. */
+/*
+ * Structure for the key input buffer.
+ *
+ * MAX_MAP_COUNT was chosen based on the vi maze script, which remaps
+ * characters roughly 250 times.
+ */
 struct _ibuf {
 	CHAR_T	*ch;		/* Array of characters. */
 	u_char	*chf;		/* Array of character flags (CH_*). */
-#define	MAX_MAP_COUNT	50	/* Maximum times a character can remap. */
+#define	MAX_MAP_COUNT	270	/* Maximum times a character can remap. */
 	u_char	*cmap;		/* Number of times character has been mapped. */
 
 	size_t	 cnt;		/* Count of remaining characters. */
