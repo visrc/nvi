@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 9.5 1995/01/08 11:21:09 bostic Exp $ (Berkeley) $Date: 1995/01/08 11:21:09 $";
+static char sccsid[] = "$Id: v_increment.c,v 9.6 1995/01/09 16:50:40 bostic Exp $ (Berkeley) $Date: 1995/01/09 16:50:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,23 +111,19 @@ v_increment(sp, vp)
 	 * the number.
 	 */
 	wlen = len - beg;
-	if (wlen > 2 &&
-	    p[beg] == '0' && (p[beg + 1] == 'X' || p[beg + 1] == 'x')) {
+	if (p[beg] == '0' && wlen > 2 &&
+	    (p[beg + 1] == 'X' || p[beg + 1] == 'x')) {
 		base = 16;
 		end = beg + 2;
-		ntype = p[beg + 1] == 'X' ? fmt[HEXC] : fmt[HEXL];
 		if (!ishex(p[end]))
-			goto nonum;
-	} else if (wlen > 1 && p[beg] == '0') {
+			goto decimal;
+		ntype = p[beg + 1] == 'X' ? fmt[HEXC] : fmt[HEXL];
+	} else if (p[beg] == '0' && wlen > 1) {
 		base = 8;
 		end = beg + 1;
+		if (!isoctal(p[end]))
+			goto decimal;
 		ntype = fmt[OCTAL];
-		if (!isoctal(p[end])) {
-			base = 10;
-			ntype = fmt[DEC];
-			if (!isdigit(p[end]))
-				goto nonum;
-		}
 	} else if (wlen >= 1 && (p[beg] == '+' || p[beg] == '-')) {
 		base = 10;
 		end = beg + 1;
@@ -135,7 +131,7 @@ v_increment(sp, vp)
 		if (!isdigit(p[end]))
 			goto nonum;
 	} else {
-		base = 10;
+decimal:	base = 10;
 		end = beg;
 		ntype = fmt[DEC];
 		if (!isdigit(p[end])) {
