@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.8 1992/04/05 09:38:20 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:38:20 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.9 1992/04/15 09:06:49 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:06:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -364,7 +364,7 @@ void vi()
 			if (U_line != markline(cursor))
 			{
 				U_line = markline(cursor);
-				strcpy(U_text, fetchline(U_line));
+				strcpy(U_text, fetchline(U_line, NULL));
 			}
 		}
 
@@ -388,7 +388,7 @@ void vi()
 			if (U_line != markline(cursor))
 			{
 				U_line = markline(cursor);
-				strcpy(U_text, fetchline(U_line));
+				strcpy(U_text, fetchline(U_line, NULL));
 			}
 		}
 		else
