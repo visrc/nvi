@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.21 1996/04/10 11:31:31 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:31 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.22 1996/04/12 16:56:07 bostic Exp $ (Berkeley) $Date: 1996/04/12 16:56:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1198,8 +1198,6 @@ re_tag_conv(sp, ptrnp, replacedp)
  * re_cscope_conv --
  *	 Convert a cscope search path into something that the POSIX
  *      1003.2 RE functions can handle.
- *
- * PUBLIC: int re_cscope_conv __P((SCR *, char **, int *));
  */
 static int
 re_cscope_conv(sp, ptrnp, replacedp)
