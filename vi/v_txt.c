@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.54 1996/04/22 19:02:29 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:02:29 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.55 1996/04/22 19:29:11 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:29:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -451,7 +451,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	/* Other text input mode setup. */
 	quote = Q_NOTSET;
 	carat = C_NOTSET;
-	FL_INIT(is_flags, LF_ISSET(TXT_SEARCHINCR) ? IS_RUNNING : 0);
+	FL_INIT(is_flags, LF_ISSET(TXT_SEARCHINCR) ? IS_RESET | IS_RUNNING : 0);
 	filec_redraw = hexcnt = showmatch = 0;
 
 	/* Initialize input flags. */
@@ -1343,11 +1343,11 @@ ret:	/* If replaying text, keep going. */
 		UPDATE_POSITION(sp, tp);
 		if (vs_refresh(sp, margin != 0))
 			return (1);
-
-		if (FL_ISSET(is_flags, IS_RUNNING) &&
-		    txt_isrch(sp, vp, tp, &is_flags))
-			return (1);
 	}
+
+	/* Proceed with the incremental search. */
+	if (FL_ISSET(is_flags, IS_RUNNING) && txt_isrch(sp, vp, tp, &is_flags))
+		return (1);
 
 	/* Keep going. */
 	goto next;
@@ -2463,6 +2463,7 @@ txt_isrch(sp, vp, tp, is_flagsp)
 {
 	CHAR_T savech;
 	recno_t lno;
+	u_int sf;
 
 	/* If it's a one-line screen, we don't do incrementals. */
 	if (IS_ONELINE(sp)) {
@@ -2511,22 +2512,25 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	/*
 	 * Specify a starting point and search.  If we find a match, move to
 	 * it and refresh the screen.  If we didn't find the match, then we
-	 * beep the screen.
+	 * beep the screen.  When searching from the original cursor position, 
+	 * we have to move the cursor, otherwise, we don't want to move the
+	 * cursor in case the text at the current position continues to match.
 	 */
 	if (FL_ISSET(*is_flagsp, IS_RESET)) {
+		sf = SEARCH_SET;
 		vp->m_final.lno = vp->m_start.lno;
 		vp->m_final.cno = vp->m_start.cno;
-	}
+	} else
+		sf = SEARCH_INCR | SEARCH_SET;
+
 	if (tp->lb[0] == '/' ?
-	    !f_search(sp, &vp->m_final,
-	    &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR | SEARCH_SET) :
-	    !b_search(sp, &vp->m_final,
-	    &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR | SEARCH_SET)) {
+	    !f_search(sp, &vp->m_final, &vp->m_final, tp->lb + 1, NULL, sf) :
+	    !b_search(sp, &vp->m_final, &vp->m_final, tp->lb + 1, NULL, sf)) {
 		sp->lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 		FL_CLR(*is_flagsp, IS_FAILED | IS_RESET);
 
-		if (vs_refresh(sp, 0))
+		if (!KEYS_WAITING(sp) && vs_refresh(sp, 0))
 			return (1);
 	} else {
 		vp->m_final.lno = vp->m_start.lno;
