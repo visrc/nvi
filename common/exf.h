@@ -4,11 +4,9 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.19 1993/12/10 12:20:41 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:41 $
+ *	$Id: exf.h,v 8.20 1993/12/28 16:39:54 bostic Exp $ (Berkeley) $Date: 1993/12/28 16:39:54 $
  */
 					/* Undo direction. */
-enum udirection { UBACKWARD, UFORWARD };
-
 /*
  * exf --
  *	The file structure.
@@ -29,7 +27,7 @@ struct _exf {
 	recno_t	 l_high;		/* Log last + 1 record number. */
 	recno_t	 l_cur;			/* Log current record number. */
 	MARK	 l_cursor;		/* Log cursor position. */
-	enum udirection lundo;		/* Last undo direction. */
+	enum direction lundo;		/* Last undo direction. */
 
 	LIST_HEAD(_markh, _mark) marks;	/* Linked list of file MARK's. */
 
