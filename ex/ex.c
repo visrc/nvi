@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.29 1993/09/09 14:26:34 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:26:34 $";
+static char sccsid[] = "$Id: ex.c,v 8.30 1993/09/10 11:29:02 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:29:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -350,12 +350,23 @@ ex_cmd(sp, ep, exc, arg1_len)
 			}
 		}
 		for (cp = cmds; cp->name && memcmp(p, cp->name, cmdlen); ++cp);
-		if (cp->name == NULL) {
-			/* msgq is safe, command names are all alphabetics. */
-			msgq(sp, M_ERR,
-			    "The %.*s command is unknown.", cmdlen, p);
-			return (1);
-		}
+
+		/*
+		 * !!!
+		 * Historic vi permitted the mark to immediately follow the 'k'
+		 * in the 'k' command.  Make it work.
+		 *
+		 * Use of msgq below is safe, command names are all alphabetics.
+		 */
+		if (cp->name == NULL)
+			if (p[0] == 'k' && p[1] && !p[2]) {
+				exc = p + 1;
+				cp = &cmds[C_K];
+			} else {
+				msgq(sp, M_ERR,
+				    "The %.*s command is unknown.", cmdlen, p);
+				return (1);
+			}
 		uselastcmd = 0;
 
 		/* Some commands are turned off. */
