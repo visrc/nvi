@@ -6,14 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.8 1992/09/01 15:36:31 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:36:31 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.9 1992/10/10 14:03:34 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:03:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
-#include <errno.h>
+
 #include <curses.h>
-#include <stdlib.h>
+#include <errno.h>
+#include <limits.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -29,7 +31,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.8 1992/09/01 15:36:31 bostic Exp $ (Be
 static void	ib_err __P((void));
 static int	ib_put __P((void));
 static int	newtext
-		    __P((VICMDARG *, MARK *, char *, size_t, MARK *, u_int));
+		    __P((VICMDARG *, MARK *, u_char *, size_t, MARK *, u_int));
 
 IB ib;
 
@@ -44,7 +46,7 @@ v_iA(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		/*
@@ -57,8 +59,7 @@ v_iA(vp, fm, tm, rp)
 			len = 0;
 		else {
 			curf->cno = len;
-			scr_cchange();
-			refresh();
+			scr_cchange(curf);
 		}
 
 		if (newtext(vp, NULL, p, len, rp, 0))
@@ -82,7 +83,7 @@ v_ia(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		/*
@@ -92,8 +93,7 @@ v_ia(vp, fm, tm, rp)
 		EGETLINE(p, fm->lno, len);
 		if (len) {
 			++curf->cno;
-			scr_cchange();
-			refresh();
+			scr_cchange(curf);
 		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
@@ -116,7 +116,7 @@ v_iI(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		/*
@@ -126,8 +126,7 @@ v_iI(vp, fm, tm, rp)
 		EGETLINE(p, fm->lno, len);
 		if (curf->cno != 0) {
 			curf->cno = 0;
-			scr_cchange();
-			refresh();
+			scr_cchange(curf);
 		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
@@ -150,7 +149,7 @@ v_ii(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		EGETLINE(p, fm->lno, len);
@@ -175,18 +174,16 @@ v_iO(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
-		if (file_iline(curf, fm->lno, "", 0))
+		if (file_iline(curf, fm->lno, (u_char *)"", 0))
 			return (1);
 		EGETLINE(p, curf->lno, len);
 		curf->cno = 0;
 
 		/* XXX Scroll the screen +1. */
-		scr_lchange(curf->lno, p, len);
-		scr_cchange();
-		refresh();
+		scr_cchange(curf);
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
 
@@ -208,18 +205,16 @@ v_io(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
-		if (file_aline(curf, fm->lno, "", 0))
+		if (file_aline(curf, fm->lno, (u_char *)"", 0))
 			return (1);
 		EGETLINE(p, ++curf->lno, len);
 		curf->cno = 0;
 
 		/* XXX Scroll the screen +1. */
-		scr_lchange(curf->lno, p, len);
-		scr_cchange();
-		refresh();
+		scr_cchange(curf);
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
 
@@ -240,7 +235,7 @@ v_Change(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	char *p;
+	u_char *p;
 
 	if (cut(VICB(vp), fm, tm, 1))
 		return (1);
@@ -257,7 +252,7 @@ v_Change(vp, fm, tm, rp)
 			return (1);
 		}
 		/* Insert a line while we still can... */
-		if (file_iline(curf, fm->lno, "", 0))
+		if (file_iline(curf, fm->lno, (u_char *)"", 0))
 			return (1);
 		++fm->lno;
 		++tm->lno;
@@ -267,8 +262,7 @@ v_Change(vp, fm, tm, rp)
 		curf->lno = fm->lno;
 		curf->cno = 0;
 		scr_ref();
-		scr_cchange();
-		refresh();
+		scr_cchange(curf);
 		return (newtext(vp, NULL, p, len, rp, 0));
 	}
 
@@ -288,7 +282,7 @@ v_change(vp, fm, tm, rp)
 {
 	size_t len;
 	int lmode;
-	char *p;
+	u_char *p;
 
 	lmode = vp->flags & VC_LMODE;
 	if (cut(VICB(vp), fm, tm, lmode))
@@ -299,7 +293,7 @@ v_change(vp, fm, tm, rp)
 	 * line and go into insert mode.
 	 */
 	if (fm->lno != tm->lno) {
-		if (file_iline(curf, fm->lno, "", 0))
+		if (file_iline(curf, fm->lno, (u_char *)"", 0))
 			return (1);
 		++fm->lno;
 		++tm->lno;
@@ -309,8 +303,7 @@ v_change(vp, fm, tm, rp)
 		curf->lno = fm->lno;
 		curf->cno = 0;
 		scr_ref();
-		scr_cchange();
-		refresh();
+		scr_cchange(curf);
 		return (newtext(vp, NULL, p, len, rp, 0));
 	}
 
@@ -331,7 +324,7 @@ v_Replace(vp, fm, tm, rp)
 	u_long cnt;
 	size_t len;
 	int notfirst;
-	char *p;
+	u_char *p;
 
 	*rp = *fm;
 	notfirst = 0;
@@ -350,8 +343,7 @@ v_Replace(vp, fm, tm, rp)
 			curf->lno = rp->lno;
 			curf->cno = rp->cno;
 			scr_ref();
-			scr_cchange();
-			refresh();
+			scr_cchange(curf);
 			vp->flags |= VC_ISDOT;
 		}
 		tm->lno = rp->lno;
@@ -372,7 +364,7 @@ v_subst(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	char *p;
+	u_char *p;
 
 	EGETLINE(p, fm->lno, len);
 
@@ -407,7 +399,7 @@ static int
 newtext(vp, tm, p, len, rp, flags)
 	VICMDARG *vp;
 	MARK *tm;
-	char *p;
+	u_char *p;
 	u_int flags;
 	size_t len;
 	MARK *rp;
@@ -415,7 +407,7 @@ newtext(vp, tm, p, len, rp, flags)
 	TEXT *tp;
 	size_t col, insert, overwrite, rcol, startcol;
 	int ch, quoted, replay, rval;
-	char *repp;
+	u_char *repp;
 
 	/* Free any previous text. */
 	if (ib.head) {
@@ -443,7 +435,7 @@ newtext(vp, tm, p, len, rp, flags)
 		}
 		if (flags & N_EMARK) {
 			ib.ilb[tm->cno - 1] = '$';
-			scr_lchange(ib.start.lno, ib.ilb, len);
+			scr_update(curf, ib.start.lno, ib.ilb, len, LINE_SET);
 			refresh();
 		}
 	} else
@@ -542,7 +534,8 @@ newtext(vp, tm, p, len, rp, flags)
 			 */
 			if (flags & N_REPLACE || insert) {
 				bcopy(p, ib.ilb, insert + overwrite);
-				scr_lchange(ib.stop.lno, tp->lp, tp->len);
+				scr_update(curf,
+				    ib.stop.lno, tp->lp, tp->len, LINE_SET);
 			}
 			p = ib.ilb;
 			col = startcol = 0;
@@ -593,9 +586,9 @@ insch:			if (overwrite)
 			++curf->cno;
 			break;
 		}
-		scr_cchange();
-		scr_lchange(ib.stop.lno, ib.ilb, col + insert + overwrite);
-		refresh();
+		scr_update(curf,
+		    ib.stop.lno, ib.ilb, col + insert + overwrite, LINE_SET);
+		scr_cchange(curf);
 	}
 
 	/*
