@@ -1,4 +1,4 @@
-#	$Id: README,v 8.19 1996/05/10 12:05:29 bostic Exp $ (Berkeley) $Date: 1996/05/10 12:05:29 $
+#	$Id: README,v 8.20 1996/05/12 14:53:29 bostic Exp $ (Berkeley) $Date: 1996/05/12 14:53:29 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -6,16 +6,16 @@ should enter:
 	configure
 	make
 
-and nvi will configure the system and build two binaries: nex and nvi.
-You can use any path to the configure script, e.g., to build for an
-x86 architecture, you might do:
+and nvi will configure the system and build one or two binaries:  nvi and
+tknvi.  You can use any path to the configure script, e.g., to build for
+an x86 architecture, you might do:
 
 	mkdir build.x86
 	cd build.x86
 	../build/configure
 	make
 
-If you're only building a single version of the system, you can just use
+If you're only building nvi for a single architecture, you can just use
 the path ./configure, and build it in this directory.
 
 There are options that you can specify to the configure command.  See
@@ -28,9 +28,9 @@ your mind as to the curses library that you want to use, enter:
 
 and then reconfigure using "configure" and whatever options you choose.
 
-By default, the programs are installed as "vi", "ex" and "view".  To
-install them using other names, use the configure program options.  For
-example, to install them as "nvi", "nex" and "nview", use:
+By default, nvi is installed as "vi", with hard links to "ex" and "view".
+To install them using different names, use the configure program options.
+For example, to install them as "nvi", "nex" and "nview", use:
 
 	configure --program-prefix=n
 
@@ -134,6 +134,45 @@ enable-tknvi:
 	see the next section of this README file for more information.
 
 =-=-=-=-=-=-=
+ADDING OR CHANGING COMPILE OR LOAD LINE FLAGS
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+If you want to specify additional load line flags, specify the ADDLDFLAGS
+environment variable before running configure.  For example:
+
+	env ADDLDFLAGS="-Q" ./configure
+
+would specify the -Q flag in the load line when the nvi programs are
+loaded.
+
+If you don't want configure to use the default load line flags for the
+system, specify the LDFLAGS environment variable before running configure.
+For example:
+
+	env LDFLAGS="-32" ./configure
+
+will cause configure to set the load line flags to "-32", and not set
+them based on the current system.
+
+If you want to specify additional compile line flags, specify the
+ADDCPPFLAGS environment variable before running configure.  For example:
+
+	env ADDCPPFLAGS="-I../foo" ./configure
+
+would cause the compiler to be passed the -I../foo flag when compiling
+test programs during configuration as well as when building nvi object
+files.
+
+If you don't want configure to use the default compile line flags for the
+system, specify the CPPFLAGS environment variable before running configure.
+For example:
+
+	env CPPFLAGS="-I.." ./configure
+
+will cause configure to use "-I.." as the compile line flags instead of
+the default values.
+
+=-=-=-=-=-=-=
 ADDING LIBRARIES AND INCLUDE FILES
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
@@ -141,19 +180,18 @@ If the Tk/Tcl or any other include files or libraries are in non-standard
 places on your system, you will need to specify the directory path where
 they can be found.
 
-If you want to specify additional library paths or additional libraries,
-specify the LIBS environment variable before running configure.  For
-example:
+If you want to specify additional library paths, set the ADDLIBS environment
+variable before running configure.  For example:
 
-	env LIBS="-L/a/b -L/e/f -ldb" ./configure
+	env ADDLIBS="-L/a/b -L/e/f -ldb" ./configure
 
 would specify two additional directories to search for libraries, /a/b
 and /e/f, and one additional library to load, "db".
 
-If you want to specify additional include paths, specify the CPPFLAGS
+If you want to specify additional include paths, specify the ADDCPPFLAGS
 environment variable before running configure.  For example:
 
-	env CPPFLAGS="-I/usr/local/include" LIBS="-ldb" ./configure
+	env ADDCPPFLAGS="-I/usr/local/include" LIBS="-ldb" ./configure
 
 would search /usr/local/include for include files, as well as load the db
 library as described above.
@@ -162,8 +200,8 @@ As a final example, let's say that you've downloaded ncurses from the net
 and you've built it in a directory named ncurses which is at the same
 level in the filesystem hierarchy as nvi.  You would enter something like:
 
-	env CPPFLAGS="-I../../ncurses/include" \
-	    LIBS="-L../../ncurses/libraries" ./configure
+	env ADDCPPFLAGS="-I../../ncurses/include" \
+	    ADDLIBS="-L../../ncurses/libraries" ./configure
 
 to cause nvi to look for the curses include files and the curses library
 in the ncurses environment.
@@ -173,7 +211,7 @@ Notes:
 	that you prepend -I to any include file directory names!  Also,
 	make sure that you quote the paths as shown above, i.e. with
 	single or double quotes around the values you're specifying for
-	CPPFLAGS and LIBS.
+	ADDCPPFLAGS and ADDLIBS.
 
 	=-=-=-=-=-=
 	You should NOT need to add any libraries or include files to load
@@ -210,35 +248,14 @@ Notes:
 	variables in your shell before running configure.  For example,
 	in sh or ksh, you could do:
 
-		LIBS="-L/a/b -L/e/f -ldb" ./configure
+		ADDLIBS="-L/a/b -L/e/f -ldb" ./configure
 
 	and in csh or tcsh, you could do:
 
-		setenv LIBS "-L/a/b -L/e/f -ldb"
+		setenv ADDLIBS "-L/a/b -L/e/f -ldb"
 		./configure
 
 	See your shell manual page for further information.
-
-=-=-=-=-=-=-=
-ADDING COMPILE OR LOAD LINE FLAGS
-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-If you want to specify additional load line flags, specify the LDFLAGS
-environment variable before running configure.  For example:
-
-	env LDFLAGS="-Q" ./configure
-
-would specify the -Q flag in the load line when the nvi programs are
-loaded.
-
-If you want to specify additional compile line flags, specify the CPPFLAGS
-environment variable before running configure.  For example:
-
-	env CPPFLAGS="-I../foo" ./configure
-
-would cause the compiler to be passed the -I../foo flag when compiling
-test programs during configuration as well as when building nvi object
-files.
 
 =-=-=-=-=-=-=
 INSTALLING NVI
