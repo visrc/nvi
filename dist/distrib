@@ -1,9 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.17 1996/12/18 10:32:05 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:32:05 $
-
-# Clean
-#make -f Makefile.in clean
-#rm -f configure config.h.in
+# $Id: distrib,v 8.18 1997/08/03 16:17:59 bostic Exp $ (Berkeley) $Date: 1997/08/03 16:17:59 $
 
 # Build autoconf structure.
 echo "Running autoheader"
@@ -14,61 +10,12 @@ autoconf 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 555 configure config.guess config.sub install-sh
 
 msg="/* Do not edit: automatically built by build/distrib. */"
-# Build include files.
-f=../cl/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../cl/*.c) > $f
-chmod 444 $f
-
-f=../common/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../clib/*.c ../common/*.c) > $f
-chmod 444 $f
-
+# Build automatically generated header files.
 f=../ex/ex_def.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     awk -f ../ex/ex.awk ../ex/ex_cmd.c) > $f
-chmod 444 $f
-
-f=../ex/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ex/*.c) > $f
-chmod 444 $f
-
-f=../ip/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ip/*.c) > $f
-chmod 444 $f
-
-f=../ipc/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ipc/*.c) > $f
-chmod 444 $f
-
-f=../motif/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../motif/*.c) > $f
-chmod 444 $f
-
-f=../motif_l/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../motif_l/*.c) > $f
 chmod 444 $f
 
 f=../common/options_def.h
@@ -78,31 +25,21 @@ rm -f $f
     awk -f ../common/options.awk ../common/options.c) > $f
 chmod 444 $f
 
-f=../perl_api/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../perl_api/*.xs ../perl_api/*.c) > $f
-chmod 444 $f
-
-f=../tcl_api/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../tcl_api/*.c) > $f
-chmod 444 $f
-
-f=../vi/extern.h
-echo "Building $f"
-rm -f $f
-(echo "$msg" && \
-    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../vi/*.c) > $f
-chmod 444 $f
+# Build the automatically generated function prototype files.
+for i in cl common ex ip ipc motif motif_l perl_api tcl_api vi; do
+	f=../$i/extern.h
+	echo "Building $f"
+	(echo "$msg" && \
+	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../$i/*.c) > $f
+	chmod 444 $f
+done
 
 # Build tags files.
 echo "Building tags files"
-rm -f tags
-ctags -w -d ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] \
-    ../perl_api/*.[ch] ../tcl_api/*.[ch] \
-    ../ip/*.[ch] ../ipc/*.[ch] ../motif_l/*.[ch] ../vi/*.[ch]
-chmod 444 tags
+f=tags
+rm -f $f
+ctags -d -w \
+	../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] ../ip/*.[ch] \
+	../ipc/*.[ch] ../motif/*.[ch] ../motif_l/*.[ch] ../perl_api/*.[ch] \
+	../tcl_api/*.[ch] ../vi/*.[ch]
+chmod 444 $f
