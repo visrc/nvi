@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 5.9 1992/11/02 22:36:09 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:36:09 $";
+static char sccsid[] = "$Id: v_zexit.c,v 5.10 1992/11/06 18:06:51 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:06:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,10 +32,6 @@ v_exit(vp, fm, tm, rp)
 {
 	EXCMDARG cmd;
 
-	v_startex();
-
-	SETCMDARG(cmd, C_WQ, 0, OOBLNO, OOBLNO, 0, NULL);
-	(void)ex_wq(&cmd);
-	v_leaveex();
-	return (1);
+	SETCMDARG(cmd, C_WQ, 0, OOBLNO, OOBLNO, 1, NULL);
+	return (ex_wq(&cmd));
 }
