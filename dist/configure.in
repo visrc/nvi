@@ -94,8 +94,7 @@ netbsd1*)  LIBS=${LIBS-"-lcrypt"};;
 ptx*)	   LIBS=${LIBS-"-lseq -linet -lsocket"};;
 sco3.2*)   LIBS=${LIBS-"-lsocket"};;
 sinix*)	   LIBS=${LIBS-"-lelf -lc"};;
-solaris*)  LIBS=${LIBS-"-lsocket -lnsl -ldl"}
-	   RLIBS=yes;;
+solaris*)  LIBS=${LIBS-"-lsocket -lnsl -ldl"};;
 wgs*)	   LIBS=${LIBS-"-lnsl"};;
 esac
 
@@ -109,7 +108,13 @@ case "$host_os" in
 ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE);;
 esac
 
-if test "X$RLIBS" = "Xyes"; then
+AC_MSG_CHECKING(whether recording of pathnames of libraries is enabled)
+AC_ARG_ENABLE(runpath,
+	[  --disable-runpath       Don't record path of libraries in binary.],
+	[vi_cv_runpath="$enableval"], [vi_cv_runpath="yes"])
+AC_MSG_RESULT($vi_cv_runpath)
+
+if test "X$vi_cv_runpath" = "Xyes"; then
 	LRscript='s/^\(.*\)/-R\1 -L\1 /'
 else
 	LRscript='s/^\(.*\)/-L\1 /'
