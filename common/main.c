@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.43 1996/05/15 20:16:19 bostic Exp $ (Berkeley) $Date: 1996/05/15 20:16:19 $";
+static const char sccsid[] = "$Id: main.c,v 10.44 1996/07/13 14:19:16 bostic Exp $ (Berkeley) $Date: 1996/07/13 14:19:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -417,7 +417,7 @@ editor(gp, argc, argv)
 
 	/* Switch into the right editor, regardless. */
 	F_CLR(sp, SC_EX | SC_VI);
-	F_SET(sp, LF_ISSET(SC_EX | SC_VI));
+	F_SET(sp, LF_ISSET(SC_EX | SC_VI) | SC_STATUS_CNT);
 
 	/*
 	 * Main edit loop.  Vi handles split screens itself, we only return

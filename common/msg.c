@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.39 1996/06/20 10:39:51 bostic Exp $ (Berkeley) $Date: 1996/06/20 10:39:51 $";
+static const char sccsid[] = "$Id: msg.c,v 10.40 1996/07/13 14:19:17 bostic Exp $ (Berkeley) $Date: 1996/07/13 14:19:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -517,20 +517,32 @@ msgq_status(sp, lno, flags)
 	u_int flags;
 {
 	recno_t last;
-	const char *t;
-	char *bp, *np, *p, *s;
-	int needsep;
 	size_t blen, len;
+	int cnt, needsep;
+	const char *t;
+	char **ap, *bp, *np, *p, *s;
 
+	/* Get sufficient memory. */
 	len = strlen(sp->frp->name);
 	GET_SPACE_GOTO(sp, bp, blen, len + 128);
 	p = bp;
 
+	/* Copy in the filename. */
 	memmove(p, sp->frp->name, len);
 	p += len;
 	np = p;
 	*p++ = ':';
 	*p++ = ' ';
+
+	/* Copy in the argument count. */
+	if (F_ISSET(sp, SC_STATUS_CNT)) {
+		for (cnt = 0, ap = sp->argv; *ap != NULL; ++ap, ++cnt);
+		p += sprintf(p, msg_cat(sp, "317|1 of %d", NULL), cnt);
+		*p++ = ':';
+		*p++ = ' ';
+
+		F_CLR(sp, SC_STATUS_CNT);
+	}
 
 	/*
 	 * See nvi/exf.c:file_init() for a description of how and when the

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.22 1996/06/30 16:12:38 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:12:38 $
+ *	$Id: screen.h,v 10.23 1996/07/13 14:19:17 bostic Exp $ (Berkeley) $Date: 1996/07/13 14:19:17 $
  */
 
 /*
@@ -194,8 +194,9 @@ struct _scr {
 #define	SC_RE_SEARCH	0x00400000	/* Search RE has been compiled. */
 #define	SC_RE_SUBST	0x00800000	/* Substitute RE has been compiled. */
 #define	SC_SCRIPT	0x01000000	/* Shell script window. */
-#define	SC_STATUS	0x02000000	/* Schedule welcome message. */
-#define	SC_TINPUT	0x04000000	/* Doing text input. */
-#define	SC_TINPUT_INFO	0x08000000	/* Doing text input on info line. */
+#define	SC_STATUS	0x02000000	/* Welcome message. */
+#define	SC_STATUS_CNT	0x04000000	/* Welcome message plus file count. */
+#define	SC_TINPUT	0x08000000	/* Doing text input. */
+#define	SC_TINPUT_INFO	0x10000000	/* Doing text input on info line. */
 	u_int32_t flags;
 };
