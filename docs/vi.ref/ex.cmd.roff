@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.12 1994/05/18 19:39:06 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:39:06 $
+.\"	$Id: ex.cmd.roff,v 8.13 1994/05/23 14:32:58 bostic Exp $ (Berkeley) $Date: 1994/05/23 14:32:58 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -19,8 +19,9 @@ commands.
 The end-of-file character is used to scroll the screen in the
 .Nm \&ex
 editor.
-This character is normally <control-D>, however, whatever character
-is set for the current terminal is used.
+This character is normally
+.Li <control-D> ,
+however, whatever character is set for the current terminal is used.
 .SP
 .It Sy "line"
 A single-line address, given in any of the forms described in the
@@ -48,6 +49,11 @@ The starting address must be less than, or equal to, the ending address.
 .It Sy "count"
 A positive integer, specifying the number of lines to be affected by
 the command; the default is 1.
+Generally, a count past the end-of-file may be specified, e.g. the
+command
+.Dq Li "p 3000"
+in a 10 line file is acceptable, and will print from the current line
+through the last line in the file.
 .SP
 .It Sy "flags"
 One or more of the characters
@@ -86,17 +92,16 @@ This will be replaced with a temporary file name which can be used
 for temporary work, e.g.
 .Dq Li ":e /tmp"
 creates and edits a new file.
-.SP
-.It Sy "word"
-A word consists of a sequence of letters, digits, and underscores,
-delimited at both ends by characters other than letters, digits, or
-underscores, or by the beginning or end of a line or the file.
 .El
 .Pp
-If both a count and a range are specified for a command that uses either,
-the number of lines affected is that specified by the count value and
-not the range.
-The starting line for the command is the first line addressed by the range.
+If both a count and a range are specified for commands that use either,
+the starting line for the command is the
+.Em last
+line addressed by the range, and
+.Li count - 1
+subsequent lines are affected by the command, e.g. the command
+.Dq Li "2,3p4"
+prints out lines 3, 4, 5 and 6.
 .Pp
 When only a line or range is specified, with no command, the implied
 command is either a
@@ -115,11 +120,13 @@ the current line is incremented by 1 and then the current line is displayed.
 .Pp
 Zero or more whitespace characters may precede or follow the addresses,
 count, flags, or command name.
-Any object following a command name (such as buffer, file, etc.) that
-begins with an alphabetic character should be separated from the command
-name by at least one whitespace character.
+Any object following a command name (such as buffer, file, etc.),
+that begins with an alphabetic character,
+should be separated from the command name by at least one whitespace
+character.
 .Pp
-Any character, including <carriage-return>,
+Any character, including
+.Li <carriage-return> ,
 .Dq Li \&%
 and
 .Dq Li \&#
@@ -134,9 +141,16 @@ In each entry below, the tag line is a usage synopsis for the command.
 #ifdef REFERENCE
 .Pp
 For each of the commands, the command can be entered as the abbreviation
-(those characters in the synopsis command word preceding the [), the full
-command (all characters shown for the command word, omitting the [ and ]),
-or any subset of the characters of the full command down to the abbreviation.
+(those characters in the synopsis command word preceding the
+.Dq \&[
+character),
+the full command (all characters shown for the command word,
+omitting the
+.Dq \&[
+and
+.Dq \&]
+characters),
+or any leading subset of the full command down to the abbreviation.
 For example, the args command (shown as
 .Dq Li ar[gs]
 in the synopsis)
@@ -149,7 +163,7 @@ or
 Each
 .Nm \&ex
 command described below notes the new current line after it
-is executed, as well an any options that affect the command.
+is executed, as well as any options that affect the command.
 #endif
 .sp
 .Bl -tag -width "XXXX" -compact
@@ -167,8 +181,10 @@ key.
 .Pp
 Historically, the
 .Sy eof
-command ignored any preceding count, and the <end-of-file> character
-was ignored unless it was entered as the first character of the command.
+command ignored any preceding count, and the
+.Li <end-of-file>
+character was ignored unless it was entered as the first character
+of the command.
 This implementation treats it as a command
 .Em only
 if entered as the first character of the command line, and otherwise
@@ -182,8 +198,8 @@ None.
 .El
 #endif
 .SP
-.It Sy "! command"
-.It Sy "[range]! command"
+.It Sy "! argument(s)"
+.It Sy "[range]! argument(s)"
 Execute a shell command, or filter lines through a shell command.
 #ifdef REFERENCE
 In the first synopsis, the remainder of the line after the
@@ -384,14 +400,16 @@ None.
 .El
 #endif
 .SP
-.It Sy "ab[brev] word rhs"
-Add the named abbreviation to the current abbreviation list.
+.It Sy "ab[brev] lhs rhs"
+Add an abbreviation to the current abbreviation list.
 #ifdef REFERENCE
 In
 .Nm \&vi ,
-if word is typed so that it is preceded and followed by characters
+if
+.Li lhs
+is entered such that it is preceded and followed by characters
 that cannot be part of a word, it is replaced by the string
-.Dq Li rhs .
+.Li rhs .
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -455,7 +473,8 @@ None.
 #endif
 .SP
 .It Sy "bg"
-Visual mode only.
+.Nm \&Vi
+mode only.
 Background the current screen.
 #ifdef REFERENCE
 .Pp
@@ -525,14 +544,17 @@ to the command.
 .It "Line:"
 Unchanged.
 .It "Options:"
-None.
+Affected by the
+.Sy cdpath
+option.
 .El
 #endif
 .SP
 .It Sy "[range] co[py] line [flags]"
 .It Sy "[range] t line [flags]"
 Copy the specified lines (range) after the destination line.
-Line 0 places the lines at the beginning of the file.
+Line 0 may be specified to insert the lines at the beginning of
+the file.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -548,13 +570,18 @@ Delete the lines from the file.
 The deleted text is saved in the specified buffer, or, if no buffer
 is specified, in the unnamed buffer.
 If the command name is followed by a letter that could be interpreted
-as either a buffer name or a flag value (because neither a count nor
-an additional flags value was given),
+as either a buffer name or a flag value (because neither a
+.Li count
+or
+.Li flags
+values were given),
 .Nm \&ex
-treats the letter as a flags value if the letter immediately follows the
-command name, without any whitespace separation.
-If the letter is preceded by whitespace characters, it treats it as a
-buffer name.
+treats the letter as a
+.Li flags
+value if the letter immediately follows the command name,
+without any whitespace separation.
+If the letter is preceded by whitespace characters,
+it treats it as a buffer name.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -567,14 +594,14 @@ None.
 .SP
 .It Sy "di[splay] b[uffers] | s[creens] | t[ags]"
 Display buffers, screens or tags.
-#ifdef REFERENCE 
+#ifdef REFERENCE
 The
 .Sy display
 command takes one of three additional arguments, which are as follows:
 .Bl -tag -width "XXb[uffers]" -compact
 .It Dq Li b[uffers]
 Display all buffers (including named, unnamed, and numeric)
-that currently contain text.
+that contain text.
 .It Dq Li s[creens]
 Display the file names of all background screens.
 .It Dq Li t[ags]
@@ -599,19 +626,9 @@ You can override this by appending a
 .Dq Li \&!
 to the command name.
 .Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
-If you have previously edited the file, the current line will be set
-to your last position in the file.
-If that position does not exist, or you have not previously edited the
-file, the current line will be set to the first line of the file if
-you are in
-.Nm \&vi ,
-and the last line of the file, otherwise.
-.Pp
 If the
 .Dq Li +cmd
-option is specified, the
+option is specified, that
 .Nm \&ex
 command will be executed in the new file.
 Any
@@ -619,11 +636,23 @@ Any
 command may be used, although the most common use of this feature is
 to specify a line number or search pattern to set the initial location
 in the new file.
+.Pp
+.Bl -tag -width "XOptions:" -compact
+.It "Line:"
+If you have previously edited the file, the current line will be set
+to your last position in the file.
+If that position does not exist, or you have not previously edited the
+file, the current line will be set to the first line of the file if
+you are in
+.Nm \&vi
+mode, and the last line of the file if you are in
+.Nm \&ex .
 .It "Options:"
-Affected by
+Affected by the
 .Sy autowrite
 and
-.Sy writeany .
+.Sy writeany
+options.
 .El
 #endif
 .SP
@@ -664,7 +693,8 @@ None.
 #endif
 .SP
 .It Sy "fg [name]"
-Visual mode only.
+.Nm \&Vi
+mode only.
 Foreground the specified screen.
 #ifdef REFERENCE
 Swap the current screen with the specified backgrounded screen.
@@ -696,12 +726,14 @@ If no range is specified, the entire file is searched for matching,
 or not matching, lines.
 .Pp
 Multiple commands can be specified, one per line, by escaping each
-<newline> character with a backslash, or by separating commands with a
+.Li <newline>
+character with a backslash, or by separating commands with a
 .Dq Li \&|
 character.
 If no commands are specified, the command defaults to the
 .Sy print
 command.
+.Pp
 For the
 .Sy append ,
 .Sy change
@@ -709,9 +741,12 @@ and
 .Sy insert
 commands, the input text must be part of the global command line.
 In this case, the terminating period can be omitted if it ends the commands.
+.Pp
 The
 .Sy visual
-command may be specified as one of the commands.
+command may also be specified as one of the
+.Nm \&ex
+commands.
 In this mode, input is taken from the terminal.
 Entering a
 .Sy \&Q
@@ -789,30 +824,38 @@ options.
 .It Sy "[range] j[oin][!] [count] [flags]"
 Join lines of text together.
 #ifdef REFERENCE
-When the last character on the first line of a pair of lines to be
-joined is a period, two space's are added following the period.
-When the last character of the first line is a whitespace character,
-or when the first character on the second line of the pair is a
-.Dq Li \&) ,
-no whitespace characters are added.
-Otherwise, one space is added following the last character of the
-first line.
-Any trailing blanks at the start of a line are discarded.
-.Pp
-Appending a
-.Dq Li \&!
-character to the command name causes a simpler join with no
-white-space processing.
 .Pp
 A
 .Li count
 specified to the
 .Sy join
-command specifies that the
+command specifies that the last line of the
 .Li range
 plus
 .Li count
 subsequent lines will be joined.
+(Note, this differs by one from the general rule where only
+.Li count - 1
+subsequent lines are affected.)
+.Pp
+If the current line ends with a whitespace character, all whitespace
+is stripped from the next line.
+Otherwise, if the next line starts with a open parenthesis
+.Pq Dq Li "\&(" ,
+do nothing.
+Otherwise, if the current line ends with a question mark
+.Pq Dq Li "\&?" ,
+period
+.Pq Dq Li "\&."
+or exclamation point
+.Pq Dq Li "\&!" ,
+insert two spaces.
+Otherwise, insert a single space.
+.Pp
+Appending a
+.Dq Li \&!
+character to the command name causes a simpler join with no
+white-space processing.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -826,18 +869,15 @@ None.
 Display the lines unambiguously.
 #ifdef REFERENCE
 Tabs are displayed as
-.Dq Li \&^I .
-Nonprintable characters are displayed as hexadecimal values.
-The end of the line is marked with a
-.Dq Li $ .
+.Dq Li \&^I ,
+and the end of the line is marked with a
+.Dq Li \&$
+character.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
 Set to the last line displayed.
 .It "Options:"
-Affected by the
-.Sy octal
-option.
 None.
 .El
 #endif
@@ -847,24 +887,6 @@ Define or display maps (for
 .Nm \&vi
 only).
 #ifdef REFERENCE
-When the
-.Dq Li lhs
-character sequence is entered in
-.Nm \&vi ,
-the action is as if the corresponding
-.Dq Li rhs
-had been entered.
-If the character
-.Dq Li \&!
-is appended to the command name, the mapping is effective during text
-input mode instead of command mode.
-This allows
-.Dq Li lhs
-to have two different macro definitions at the same time: one for command
-mode and one for input mode.
-Nonprintable characters, except for tab,
-require escaping with a <literal next> character to be entered in the
-arguments.
 .Pp
 If
 .Dq Li lhs
@@ -876,7 +898,36 @@ If a
 character is appended to to the command,
 the text input mode maps are displayed.
 .Pp
-Keys which map to themselves are not further remapped,
+Otherwise, when the
+.Dq Li lhs
+character sequence is entered in
+.Nm \&vi ,
+the action is as if the corresponding
+.Dq Li rhs
+had been entered.
+If the character
+.Dq Li \&!
+is appended to the command name,
+the mapping is effective during text input mode,
+otherwise, it is effective during command mode.
+This allows
+.Dq Li lhs
+to have two different macro definitions at the same time: one for command
+mode and one for input mode.
+.Pp
+Whitespace characters require escaping with a
+.Li <literal next>
+character to be entered in the
+.Li lhs
+string in visual mode.
+.Pp
+Normally, keys in the
+.Li rhs
+string are remapped (see the
+.Sy remap
+option),
+and it is possible to create infinite loops.
+However, keys which map to themselves are not further remapped,
 regardless of the setting of the
 .Sy remap
 option.
@@ -890,8 +941,9 @@ and
 .Sy \&z
 commands.
 .Pp
-It is possible to enter maps that are infinite loops.
-To exit such a map, use the terminal <interrupt> character.
+To exit an infinitely looping map, use the terminal
+.Li <interrupt>
+character.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -903,13 +955,14 @@ None.
 .SP
 .It Sy "[line] ma[rk] <character>"
 .It Sy "[line] k <character>"
-Mark the line with the mark <character>.
+Mark the line with the mark
+.Li <character> .
 #ifdef REFERENCE
 The expressions
 .Dq Li '<character>
 and
 .Dq Li `<character>
-can then be used as an address in any command requiring one.
+can then be used as an address in any command that uses one.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -982,7 +1035,6 @@ Affected by the options
 .Sy autowrite
 and
 .Sy writeany .
-None.
 .El
 #endif
 .SP
@@ -1114,16 +1166,16 @@ None.
 .It Sy "[line] r[ead][!] [file]"
 Read a file.
 #ifdef REFERENCE
-A copy of the specified file is appended after the specified line.
+A copy of the specified file is appended to the line.
 If
-.Dq Li line
+.Li line
 is 0, the copy is inserted at the beginning of the file.
 If no file is specified, the current file is read; if there is no
 current file, then
-.Dq Li file
+.Li file
 becomes the current file.
 If there is no current file and no
-.Dq Li file
+.Li file
 is specified, then the
 .Sy read
 command will fail.
@@ -1136,7 +1188,7 @@ is preceded by a
 is treated as if it were a shell command, and passed to the program
 named by the
 .Ev SHELL
-environment variable. 
+environment variable.
 The standard and standard error outputs of that command are read into
 the file after the specified line.
 The special meaning of the
@@ -1152,7 +1204,7 @@ When executed from
 the current line is set to the last line read.
 When executed from
 .Nm \&vi ,
-the current line is set to the first line read. 
+the current line is set to the first line read.
 .It "Options:"
 None.
 .El
@@ -1180,10 +1232,11 @@ None.
 #endif
 .SP
 .It Sy "res[ize] [+|-]size"
-Visual mode only.
+.Nm \&Vi
+mode only.
 Grow or shrink the current screen.
 #ifdef REFERENCE
-If 
+If
 .Li size
 is a positive, signed number, the current screen is grown by that many lines.
 If
@@ -1234,13 +1287,13 @@ options.
 .It Sy "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
 Display or set editor options.
 #ifdef REFERENCE
-When no arguments are specified, write the editor option
+When no arguments are specified, the editor option
 .Sy term ,
 and any editor options whose values have been changed from the
-default settings.
-when the argument
+default settings are displayed.
+If the argument
 .Dq Li all
-is specified, display the values of all of editor options.
+is specified, the values of all of editor options are displayed.
 .Pp
 Specifying an option name followed by the character
 .Dq Li \&?
@@ -1277,9 +1330,9 @@ Run a shell program.
 #ifdef REFERENCE
 The program named by the
 .Ev shell
-environment variable is run with the
+environment variable is run with a
 .Fl i
-(interactive) option.
+(interactive) flag.
 Editing is resumed when that program exits.
 .Pp
 .Bl -tag -width "XOptions:" -compact
@@ -1307,10 +1360,16 @@ None.
 #endif
 .SP
 .It Sy "sp[lit] [file ...]"
-Visual mode only.
+.Nm \&Vi
+mode only.
 Split the screen.
 #ifdef REFERENCE
 The current screen is split into two screens, of approximately equal size.
+If the cursor is in the lower half of the screen, the screen will split
+up, i.e. the new screen will be above the old one.
+If the cursor is in the upper half of the screen, the new screen will be
+below the old one.
+.Pp
 If
 .Li file
 is specified, the new screen is editing that file, otherwise, both
@@ -1319,7 +1378,6 @@ be reflected in the other.
 The argument list for the new screen consists of the list of files
 specified as arguments to this command, or, the current pathname if
 no files are specified.
-In the former case, editing starts with the first file on the list.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -1477,7 +1535,7 @@ Affected by the
 .Sy taglength ,
 .Sy tags
 and
-.Sy writeany 
+.Sy writeany
 options.
 .El
 #endif
@@ -1519,7 +1577,7 @@ Set to the line indicated by the tag.
 Affected by the
 .Sy autowrite ,
 and
-.Sy writeany 
+.Sy writeany
 options.
 .El
 #endif
@@ -1542,16 +1600,16 @@ Set to the line indicated by the tag.
 Affected by the
 .Sy autowrite ,
 and
-.Sy writeany 
+.Sy writeany
 options.
 .El
 #endif
 .SP
-.It Sy "una[bbrev] word"
+.It Sy "una[bbrev] lhs"
 Delete an abbreviation.
 #ifdef REFERENCE
 Delete
-.Li word
+.Li lhs
 from the current list of abbreviations.
 .Pp
 .Bl -tag -width "XOptions:" -compact
@@ -1640,7 +1698,8 @@ None.
 #endif
 .SP
 .It Sy "vi[sual][!] [+cmd] [file]"
-Visual mode only.
+.Nm \&Vi
+mode only.
 Edit a new file.
 #ifdef REFERENCE
 Identical to the
@@ -1693,7 +1752,7 @@ will be attempted, regardless.
 Specifying the optional
 .Dq Li \&>>
 string will cause the write to be appended to the file, in which case
-not tests are made for the file already existing.
+no tests are made for the file already existing.
 .Pp
 If the file is preceded by a
 .Dq Li \&!
@@ -1725,7 +1784,7 @@ commands (i.e.
 or
 .Sy ZZ )
 in a row) will override this check and the editor will exit,
-unless the write fails.
+ignoring any files that have not yet been edited.
 .Pp
 The
 .Sy wn
@@ -1770,7 +1829,7 @@ commands (i.e.
 or
 .Sy ZZ )
 in a row) will override this check and the editor will exit,
-unless the write fails.
+ignoring any files that have not yet been edited.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -1820,6 +1879,7 @@ displayed before and after
 The following
 .Li type
 characters may be used:
+.Pp
 .Bl -tag -width "XXXX" -compact
 .It Dq Li \&-
 Place line at the bottom of the screen.

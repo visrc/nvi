@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.9 1994/05/22 12:22:52 bostic Exp $ (Berkeley) $Date: 1994/05/22 12:22:52 $
+.\"	$Id: vi.cmd.roff,v 8.10 1994/05/23 14:33:05 bostic Exp $ (Berkeley) $Date: 1994/05/23 14:33:05 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -30,7 +30,8 @@ options for more information.
 .Pp
 Empty lines do not have any special representation on the screen,
 but lines on the screen that would logically come after the end of
-the file are displayed as a single <tilde>
+the file are displayed as a single
+.Li <tilde>
 .Pq Dq Li "\&~"
 character.
 To differentiate between empty lines and lines consisting of only
@@ -39,13 +40,15 @@ whitespace characters, use the
 option.
 Historically, implementations of
 .Nm \&vi
-have also displayed some lines as single <asterisk>
+have also displayed some lines as single
+.Li <asterisk>
 .Pq Dq Li "\&@"
 characters.
 These were lines that were not correctly displayed, i.e. lines on the
-screen that did not correspond to lines in the file.
+screen that did not correspond to lines in the file, or lines that did
+not fit on the current screen.
 .Nm \&Nvi
-does not display lines in this fashion.
+never displays lines in this fashion.
 .Pp
 .Nm \&Vi
 is a modeful editor, i.e. it has two modes,
@@ -58,7 +61,9 @@ first starts, it is in command mode.
 There are several commands that change
 .Nm \&vi
 into text input mode.
-The <escape> character is used to resolve the text input into the file,
+The
+.Li <escape>
+character is used to resolve the text input into the file,
 and exit back into command mode.
 In
 .Nm \&vi
@@ -86,7 +91,7 @@ A major difference between the historical
 .Nm \&vi
 presentation and
 .Nm \&nvi
-is for the scrolling and screen oriented position commands.
+is in the scrolling and screen oriented position commands,
 .Sy <control-B> ,
 .Sy <control-D> ,
 .Sy <control-E> ,
@@ -99,12 +104,13 @@ and
 .Sy \&H .
 In historical implementations of
 .Nm \&vi ,
-these commands acted on physical, not logical lines.
+these commands acted on physical (as opposed to logical, or screen)
+lines.
 For lines that were sufficiently long in relation to the size of the
-screen, this mean that single line scroll commands might repaint the
-entire screen, any scrolling or screen positioning command might not
-change the screen or move the cursor at all, and some lines simply
-could not be displayed, even though
+screen, this meant that single line scroll commands might repaint the
+entire screen, scrolling or screen positioning command might not change
+the screen or move the cursor at all, and some lines simply could not
+be displayed, even though
 .Nm \&vi
 would edit the file that contained them.
 In
@@ -125,11 +131,11 @@ or if it is moved to the
 The latter means that the cursor is moved to the cursor position
 that is vertically as close as possible to the current cursor
 position.
-If the current line is shorter than than the cursor position
+If the current line is shorter than the cursor position
 .Nm \&vi
 would select, the cursor is positioned on the last character in the line.
-In all cases, if the line is empty, the cursor is positioned on the first
-column of the line.
+(If the line is empty, the cursor is positioned on the first column
+of the line.)
 If a command moves the cursor to the most attractive position,
 it does not alter the current cursor position, and a subsequent
 movement will again attempt to move the cursor to that position.
@@ -179,25 +185,29 @@ command can be used as an optional trailing argument to the
 .Sy \&< ,
 .Sy \&> ,
 .Sy \&c ,
-.Sy \&d
-and
-.Sy \&y
+.Sy \&d ,
+.Sy \&y ,
+and (depending on the
+.Sy tildeop
+option)
+.Sy \&~
 commands.
-This command indicates the of the text that's affected by the command.
+This command indicates the end of the region of text that's affected by
+the command.
 The motion command may be either the command character repeated (in
 which case it means the current line) or a cursor movement command.
 In the latter case, the region affected by the command is from the
 starting or stopping cursor position which comes first in the file,
 to immediately before the starting or stopping cursor position which
 comes later in the file.
-Commands that operate on lines instead of beginning and ending cursor
-positions operate on all of the lines that are wholly or partially
-in the region.
+Commands that operate on lines instead of using beginning and ending
+cursor positions operate on all of the lines that are wholly or
+partially in the region.
 In addition, some other commands become line oriented depending on
-where they are used.
+where in the text they are used.
 The command descriptions below note these special cases.
 .Pp
-The following may all be used as motion components for
+The following commands may all be used as motion components for
 .Nm \&vi
 commands:
 .sp
@@ -300,6 +310,7 @@ An area of text that starts with the beginning of the file or a line
 whose first character is an open brace
 .Pq Dq Li "\&{"
 and continues until the next section or the end of the file.
+.Pp
 Additional section boundaries can be defined using the
 .Sy sections
 option.
@@ -345,8 +356,10 @@ and any options which affect the command are noted.
 .It Sy "[count] <control-A>"
 Search forward
 .Li count
-times for the occurrence of the word upon which the cursor is positioned.
+times for the current word.
 #ifdef REFERENCE
+The current word begins at the current cursor position,
+and extends up to the next non-word character on the current line.
 .Pp
 The
 .Sy <control-A>
@@ -365,7 +378,8 @@ Set to the line where the word is found.
 Set to the first character of the word.
 .It "Options:"
 Affected by the
-.Sy extended
+.Sy extended ,
+.Sy ignorecase
 and
 .Sy wrapscan
 options.
@@ -385,7 +399,8 @@ where
 is the value of the
 .Sy window
 option.
-(This size is corrected in the case of split screens, however.)
+(In the case of split screens, this size is corrected to the
+current screen size.)
 It is an error if the cursor is on the first line in the file.
 .Pp
 The
@@ -403,16 +418,25 @@ None.
 #endif
 .SP
 .It Sy "[count] <control-D>"
-Scroll forwards
+Scroll forward
 .Li count
 lines.
 #ifdef REFERENCE
 If
 .Li count
-is not specified, scroll forwards the number of lines specified by the
-last <control-D> or <control-U> command.
-If this is the first <control-D> or <control-U> command,
+is not specified, scroll forward the number of lines specified by the last
+.Sy <control-D>
+or
+.Sy <control-U>
+command.
+If this is the first
+.Sy <control-D>
+or
+.Sy <control-U>
+command,
 scroll forward half the number of lines in the screen.
+(In the case of split screens, the default scrolling distance is
+corrected to half the current screen size.)
 This is an error if the movement is past the end of the file.
 .Pp
 The
@@ -462,7 +486,8 @@ where
 is the value of the
 .Sy window
 option.
-(This size is corrected in the case of split screens, however.)
+(In the case of split screens, this size is corrected to the
+current screen size.)
 It is an error if the cursor is on the last line in the file.
 .Pp
 The
@@ -485,7 +510,8 @@ Display the file information.
 The information includes the current pathname, the current line,
 the number of total lines in the file, the current line as a percentage
 of the total lines in the file, if the file has been modified,
-if the file's name has been changed, and if the edit session is read-only.
+was able to be locked, if the file's name has been changed,
+and if the edit session is read-only.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -651,9 +677,19 @@ lines.
 If
 .Li count
 is not specified, scroll backwards the number of lines specified by the
-last <control-D> or <control-U> command.
-If this is the first <control-D> or <control-U> command,
+last
+.Sy <control-D>
+or
+.Sy <control-U>
+command.
+If this is the first
+.Sy <control-D>
+or
+.Sy <control-U>
+command,
 scroll backward half the number of lines in the screen.
+(In the case of split screens, the default scrolling distance is
+corrected to half the current screen size.)
 This is an error if the movement is past the beginning of the file.
 .Pp
 The
@@ -773,7 +809,8 @@ Push a tag reference onto the tag stack.
 The tags files (see the
 .Sy tags
 option for more information) are searched for a tag matching the
-text from the current cursor position to the end of the word.
+text from the current cursor position to the next non-word character
+on the current line.
 If a matching tag is found, the current file is discarded and the
 file containing the tag reference is edited.
 .Pp
@@ -820,7 +857,7 @@ option.
 .SP
 .It Sy "[count] <space>"
 .It Sy "[count] l"
-Move the cursor forwards
+Move the cursor forward
 .Li count
 characters without changing the current line.
 #ifdef REFERENCE
@@ -844,7 +881,7 @@ Unchanged.
 .It "Column:"
 Set to the current character plus the next
 .Li count
-characters, or the end of the line if
+characters, or to the last character on the line if
 .Li count
 is greater than the number of characters in the line after the
 current character.
@@ -853,8 +890,8 @@ None.
 .El
 #endif
 .SP
-.It Sy "[count] ! motion shell-command(s) <newline>"
-Replace text with results from shell command.
+.It Sy "[count] ! motion shell-argument(s)"
+Replace text with results from a shell command.
 #ifdef REFERENCE
 Pass the lines specified by the
 .Li count
@@ -867,9 +904,9 @@ standard error and standard output) of that command.
 .Pp
 After the motion is entered,
 .Nm \&vi
-prompts for arguments to the command.
+prompts for arguments to the shell command.
 .Pp
-Within the arguments of the command,
+Within those arguments,
 .Dq Li \&%
 and
 .Dq Li \&#
@@ -904,7 +941,7 @@ The
 command does
 .Em not
 do shell expansion on the strings provided as arguments.
-If any of the above expansions change the command the user entered,
+If any of the above expansions change the arguments the user entered,
 the command is redisplayed at the bottom of the screen.
 .Pp
 .Nm \&Vi
@@ -931,7 +968,7 @@ The first column of the replaced text.
 .It "Options:"
 Affected by the
 .Sy shell
-options.
+option.
 .El
 #endif
 .SP
@@ -944,14 +981,15 @@ or, if
 .Li count
 is not specified, by the amount of the last increment.
 If no word has ever been incremented before, it is incremented by 1.
-The format and type of the word are retained unless the new value
-cannot be represented in the previous format.
+The format (decimal, hexadecimal, and octal, and leading 0's) and
+type of the word are retained unless the new value cannot be represented
+in the previous format.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
 Unchanged.
 .It "Column:"
-Unchanged.
+Set to the first character in the cursor word.
 .It "Options:"
 None.
 .El
@@ -1006,7 +1044,8 @@ It is an error to execute the
 .Sy \&%
 command on a line without a parenthesis or curly brace.
 Historically, any
-.Li count specified to the
+.Li count
+specified to the
 .Sy \&%
 command was ignored.
 .Pp
@@ -1021,7 +1060,7 @@ commands, in which case any text copied into a buffer is
 character oriented, unless the starting point of the region is at
 or before the first nonblank character on its line, and the ending
 point is at or after the last nonblank character on its line, in
-which case it is is line oriented.
+which case it is line oriented.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -1062,9 +1101,12 @@ options.
 .SP
 .It Sy "'<character>"
 .It Sy "`<character>"
-Return to a context marked by the character <character>.
+Return to a context marked by the character
+.Li <character> .
 #ifdef REFERENCE
-If <character> is the
+If
+.Li <character>
+is the
 .Dq Li \&'
 or
 .Dq Li \&`
@@ -1077,11 +1119,11 @@ return to the context marked by that character (see the
 command for more information).
 If the command is the
 .Sy \&'
-command, only the line is restored, and the cursor is placed on
-the first nonblank character of that line.
+command, only the line value is restored,
+and the cursor is placed on the first nonblank character of that line.
 If the command is the
 .Sy \&`
-command, both the line and column are restored.
+command, both the line and column values are restored.
 .Pp
 It is an error if the context no longer exists because of
 line deletion.
@@ -1104,11 +1146,13 @@ For the
 command, any text copied into a buffer is character oriented, unless
 it both starts and stops at the first character of the line, in which
 case it's line oriented.
-In addition,
+In addition, when using the
 .Sy \&`
-commands which move backward and start at the first character in the
-line, or move forwards and end at the first character in the line,
-are corrected to the last character of the previous lines.
+command as a motion component,
+commands which move backward and started at the first character in the
+line, or move forward and ended at the first character in the line,
+are corrected to the last character of the starting and ending lines,
+respectively.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -1206,6 +1250,7 @@ command may be used as the motion component of other
 .Nm \&vi
 commands, in which case any text copied into a buffer is
 character oriented.
+.Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
 Unchanged.
@@ -1217,7 +1262,7 @@ None.
 #endif
 .SP
 .It Sy "[count] -"
-Move to first nonblank of previous line,
+Move to first nonblank of the previous line,
 .Li count
 times.
 #ifdef REFERENCE
@@ -1243,7 +1288,9 @@ None.
 #endif
 .SP
 .It Sy "[count] ."
-Repeat the last command that modified text.
+Repeat the last
+.Nm \&vi
+command that modified text.
 #ifdef REFERENCE
 The repeated command may be a command and motion component combination.
 If
@@ -1325,14 +1372,23 @@ or
 character is followed by a signed offset), the buffer will always
 be line oriented (e.g.
 .Dq Li /string/+0
-will guarantee a line orientation.
+will guarantee a line orientation).
 .Pp
 The
 .Sy \&n
 command repeats the previous search.
+.Pp
 The
 .Sy \&N
 command repeats the previous search, but in the reverse direction.
+.Pp
+Missing RE's (e.g.
+.Dq Li //<carriage-return> ,
+.Dq Li /<carriage-return> ,
+.Dq Li ??<carriage-return> ,
+or
+.Dq Li ?<carriage-return>
+search for the last search RE, in the indicated direction.
 .Pp
 Searches may be interrupted using the
 .Li <interrupt>
@@ -1361,9 +1417,13 @@ Move to the first character in the current line.
 It is not an error to use the
 .Sy \&0
 command when the cursor is on the first character of the line,
-however, it is an error to use the
+.Pp
+The
 .Sy \&0
-command as a motion component in the same situation.
+command may be used as the motion component of other
+.Nm \&vi
+commands, in which case it is an error if the cursor is on the
+first character of the line.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -1383,33 +1443,47 @@ prompts for an
 .Nm \&ex
 command on the last line of the screen, using a colon
 .Pq Dq Li \&:
-character, which is then executed.
-The command is terminated by a <carriage-return>, <newline> or
-<escape> character; all of these characters may be escaped by
-using a <literal next> character.
+character.
+The command is terminated by a
+.Li <carriage-return> ,
+.Li <newline>
+or
+.Li <escape>
+character; all of these characters may be escaped by
+using a
+.Li "<literal next>"
+character.
+The command is then executed.
 .Pp
 If the
 .Nm \&ex
 command writes to the screen,
 .Nm \&vi
-will prompt the user for a <carriage-return> before continuing
+will prompt the user for a
+.Li <carriage-return>
+before continuing
 when the
 .Nm \&ex
 command finishes.
 Large amounts of output from the
 .Nm \&ex
 command will be paged for the user, and the user prompted for a
-<carriage-return> or <space> key to continue, or, in some cases,
-a quit (normally a
-.Dq Li \&q )
-character to interrupt the
+.Li <carriage-return>
+or
+.Li <space>
+key to continue.
+In some cases, a quit (normally a
+.Dq Li \&q
+character) or
+.Li <interrupt>
+may be entered to interrupt the
 .Nm \&ex
 command.
 .Pp
 When the
 .Nm \&ex
-command finishes, and the user is prompted to resume in visual
-mode, it is also possible to enter another
+command finishes, and the user is prompted to resume visual mode,
+it is also possible to enter another
 .Dq Li \&:
 character followed by another
 .Nm \&ex
@@ -1453,7 +1527,7 @@ character oriented.
 .It "Line:"
 Unchanged.
 .It "Column:"
-The character searched for.
+Set to the searched-for character.
 .It "Options:"
 None.
 .El
@@ -1463,7 +1537,7 @@ None.
 .It Sy "[count] > motion"
 Shift lines left or right.
 #ifdef REFERENCE
-Shift the number lines in the region specified by the motion component,
+Shift the number of lines in the region specified by the motion component,
 times
 .Li count ,
 left (for the
@@ -1481,10 +1555,7 @@ will succeed, but the line will not be modified.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
-If the current line is set to one of the lines that are affected
-by the command, it is unchanged.
-Otherwise, it is set to the first nonblank character of the lowest
-numbered line shifted.
+Unchanged.
 .It "Column:"
 Set to the first nonblank character of the line.
 .It "Options:"
@@ -1499,34 +1570,41 @@ Execute a named buffer.
 #ifdef REFERENCE
 Execute the named buffer as
 .Nm \&vi
-commands
-(including
+commands.
+The buffer may include
 .Nm \&ex
-commands).
-If the buffer is line oriented, <newlines> are logically appended
-to each line of the buffer.
-If the buffer is character oriented, <newlines> are logically
-appended to all but the last line in the buffer.
+commands, too, but they must be expressed as a
+.Sy \&:
+command.
+If the buffer is line oriented,
+.Li <newline>
+characters are logically appended to each line of the buffer.
+If the buffer is character oriented,
+.Li <newline>
+characters are logically appended to all but the last line in the buffer.
 .Pp
 If the buffer name is
 .Dq Li \&@ ,
 or
 .Dq Li \&* ,
 then the last buffer executed shall be used.
-It's an error to specify
+It is an error to specify
 .Dq Li \&@@
 or
 .Dq Li \&**
-if there is no last buffer execution.
+if there were no buffer previous executions.
 The text of a macro may contain an
 .Sy \&@
 command, and it is possible to create infinite loops in this manner.
+(The
+.Li <interrupt>
+character may be used to interrupt the loop.)
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
-Dependent on the results of the execution of the command(s).
+The current line is set as described for the command(s).
 .It "Column:"
-Dependent on the results of the execution of the command(s).
+The current column is set as described for the command(s).
 .It "Options:"
 None.
 .El
@@ -1642,7 +1720,7 @@ Move forward
 .Li count
 end-of-bigwords.
 #ifdef REFERENCE
-Move the cursor forwards to the end of a bigword by repeating the
+Move the cursor forward to the end of a bigword by repeating the
 following algorithm: if the current position is the end of a
 bigword or the character at that position cannot be part of a bigword,
 move to the last character of the following bigword.
@@ -1687,7 +1765,7 @@ character oriented.
 .It "Line:"
 Unchanged.
 .It "Column:"
-Set to the character searched for.
+Set to the searched-for character.
 .It "Options:"
 None.
 .El
@@ -1724,7 +1802,7 @@ None.
 #endif
 .SP
 .It Sy "[count] H"
-Move to the line
+Move to the screen line
 .Li "count - 1"
 lines below the top of the screen.
 #ifdef REFERENCE
@@ -1745,7 +1823,9 @@ Set to the line
 .Li "count - 1"
 lines below the top of the screen.
 .It "Column:"
-Set to the first nonblank character of the line.
+Set to the first nonblank character of the
+.Em screen
+line.
 .It "Options:"
 None.
 .El
@@ -1771,10 +1851,20 @@ None.
 #endif
 .SP
 .It Sy "[count] J"
+#ifdef MANUAL
 Join lines.
+#endif
 #ifdef REFERENCE
 Join the current line with the next line.
-If the current line ends with al whitespace character, all whitespace
+If
+.Li count
+is specified,
+.Li count
+lines are joined; a minimum of two lines are always joined,
+regardless of the value of
+.Li count .
+.Pp
+If the current line ends with a whitespace character, all whitespace
 is stripped from the next line.
 Otherwise, if the next line starts with a open parenthesis
 .Pq Dq Li "\&(" ,
@@ -1787,13 +1877,6 @@ or exclamation point
 .Pq Dq Li "\&!" ,
 insert two spaces.
 Otherwise, insert a single space.
-If
-.Li count
-is specified,
-.Li count
-lines are joined; a minimum of two lines are always joined, regardless
-of the value of
-.Li count .
 .Pp
 It is not an error to join lines past the end of the file,
 i.e. lines that don't exist.
@@ -1810,7 +1893,7 @@ None.
 #endif
 .SP
 .It Sy "[count] L"
-Move to the line
+Move to the screen line
 .Li "count - 1"
 lines above the bottom of the screen.
 #ifdef REFERENCE
@@ -1829,16 +1912,18 @@ line oriented.
 .It "Line:"
 Set to the line
 .Li "count - 1"
-lines below the top of the screen.
+lines above the bottom of the screen.
 .It "Column:"
-Set to the first nonblank character of the line.
+Set to the first nonblank character of the
+.Em screen
+line.
 .It "Options:"
 None.
 .El
 #endif
 .SP
 .It Sy " M"
-Move to the line in the middle of the screen.
+Move to the screen line in the middle of the screen.
 #ifdef REFERENCE
 .Pp
 The
@@ -1861,7 +1946,9 @@ command was ignored.
 .It "Line:"
 Set to the line in the middle of the screen.
 .It "Column:"
-Set to the first nonblank character of the line.
+Set to the first nonblank character of the
+.Em screen
+line.
 .It "Options:"
 None.
 .El
@@ -1903,9 +1990,9 @@ options.
 .It Sy "[buffer] P"
 Insert text from a buffer.
 #ifdef REFERENCE
-Insert text from the specified buffer (the unnamed buffer by default)
+Text from the buffer (the unnamed buffer by default) is inserted
 before the current column or, if the buffer is line oriented,
-the current line.
+before the current line.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -1998,7 +2085,8 @@ Search backwards,
 times,
 through the current line for the character
 .Em after
-the specified <character>.
+the specified
+.Li <character> .
 #ifdef REFERENCE
 .Pp
 The
@@ -2014,7 +2102,7 @@ Unchanged.
 .It "Column:"
 Set to the character
 .Em after
-the character searched for.
+the searched-for character.
 .It "Options:"
 None.
 .El
@@ -2029,7 +2117,7 @@ moved to it.
 .It "Line:"
 Unchanged.
 .It "Column:"
-The first character.
+The first character in the line.
 .It "Options:"
 None.
 .El
@@ -2040,7 +2128,7 @@ Move forward
 .Li count
 bigwords.
 #ifdef REFERENCE
-Move the cursor forwards to the beginning of a bigword by repeating the
+Move the cursor forward to the beginning of a bigword by repeating the
 following algorithm: if the current position is within a bigword or the
 character at that position cannot be part of a bigword, move to the first
 character of the next bigword.
@@ -2059,7 +2147,7 @@ character oriented.
 .It "Line:"
 The line containing the word selected.
 .It "Column:"
-The last character of the word selected.
+The first character of the word selected.
 .It "Options:"
 None.
 .El
@@ -2124,8 +2212,8 @@ commands (i.e.
 .Sy xit
 or
 .Sy ZZ )
-in a row) will override this check and the editor will exit,
-unless the write fails.
+in a row will override this check and the editor will exit,
+ignoring any files that have not yet been edited.
 #endif
 .SP
 .It Sy "[count] [["
@@ -2142,7 +2230,7 @@ The
 command may be used as the motion component of other
 .Nm \&vi
 commands, in which case any text copied into a buffer is
-character oriented, unless the starting position is column 0
+character oriented, unless the starting position is column 0,
 in which case it is line oriented.
 .Pp
 This is an error if the cursor is on the first line of the file.
@@ -2177,7 +2265,7 @@ The
 command may be used as the motion component of other
 .Nm \&vi
 commands, in which case any text copied into a buffer is
-character oriented, unless the starting position is column 0
+character oriented, unless the starting position is column 0,
 in which case it is line oriented.
 .Pp
 This is an error if the cursor is on the first line of the file.
@@ -2198,7 +2286,7 @@ option.
 .El
 #endif
 .SP
-.It Sy "^"
+.It Sy "\&^"
 Move to first nonblank character on the current line.
 #ifdef REFERENCE
 .Pp
@@ -2224,10 +2312,6 @@ Move down
 .Li "count - 1"
 lines, to the first nonblank character.
 #ifdef REFERENCE
-.Pp
-The
-.Sy \&_
-command is a non-relative movement.
 The
 .Sy \&_
 command may be used as the motion component of other
@@ -2352,7 +2436,9 @@ is specified, it is applied to the
 .It "Line:"
 Set to the line where the region starts.
 .It "Column:"
-Set to the character after where the region starts.
+Set to the first character in the line after the last character in the
+region.
+If no such character exists, set to the last character before the region.
 .It "Options:"
 None.
 .El
@@ -2390,7 +2476,8 @@ None.
 .It Sy "[count] f<character>"
 Search forward,
 .Li count
-times, through the rest of the current line for <character>.
+times, through the rest of the current line for
+.Li <character> .
 #ifdef REFERENCE
 .Pp
 The
@@ -2404,7 +2491,7 @@ character oriented.
 .It "Line:"
 Unchanged.
 .It "Column:"
-Set to the character searched for.
+Set to the searched-for character.
 .It "Options:"
 None.
 .El
@@ -2448,7 +2535,9 @@ The line is referred to by
 .Pp
 Historically,
 .Li <character>
-was restricted to lower-case letters only.
+was restricted to lower-case letters only,
+.Nm \&nvi
+permits the use of any character.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -2496,9 +2585,9 @@ options.
 .It Sy "[buffer] p"
 Append text from a buffer.
 #ifdef REFERENCE
-Append text from the specified buffer (the unnamed buffer by default)
-after the current column or, if the buffer is line oriented, after
-the current line.
+Text from the buffer (the unnamed buffer by default) is appended
+after the current column or, if the buffer is line oriented,
+after the current line.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -2519,22 +2608,27 @@ The next
 .Li count
 characters in the line are replaced with
 .Li <character> .
-Replacing characters with <newline> characters results in creating
-new, empty lines into the file.
+Replacing characters with
+.Li <newline>
+characters results in creating new, empty lines into the file.
 .Pp
 If
 .Li <character>
-is <escape>, the command is cancelled.
+is
+.Li <escape> ,
+the command is cancelled.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
-Unchanged unless the replacement character is a <newline>,
+Unchanged unless the replacement character is a
+.Li <newline> ,
 in which case it is set to the current line plus
 .Li "count - 1" .
 .It "Column:"
 Set to the last character replaced,
-unless the replacement character is a <newline>,
-in which case the cursor is in column 1 of the line.
+unless the replacement character is a
+.Li <newline> ,
+in which case the cursor is in column 1 of the last line inserted.
 .It "Options:"
 None.
 .El
@@ -2569,7 +2663,7 @@ Search forward,
 .Li count
 times, through the current line for the character immediately
 .Em before
-<character>.
+.Li <character> .
 #ifdef REFERENCE
 .Pp
 The
@@ -2585,7 +2679,7 @@ Unchanged.
 .It "Column:"
 Set to the character
 .Em before
-the character searched for.
+the searched-for character.
 .It "Options:"
 None.
 .El
@@ -2615,7 +2709,7 @@ Set to the position of the first line changed, if the reversal affects
 only one line or represents an addition or change; otherwise, the line
 preceding the deleted text.
 .It "Column:"
-Set to the first nonblank character on line.
+Set to the cursor position before the change was made.
 .It "Options:"
 None.
 .El
@@ -2626,7 +2720,7 @@ Move forward
 .Li count
 words.
 #ifdef REFERENCE
-Move the cursor forwards to the beginning of a word by repeating the
+Move the cursor forward to the beginning of a word by repeating the
 following algorithm: if the current position is at the
 beginning of a word, move to the first character of the next word.
 If no subsequent word exists on the current line, move to the first
@@ -2696,8 +2790,8 @@ None.
 .El
 #endif
 .SP
-.It Sy "[count1] z [count2] [-|.|+|^|<carriage-return>"
-Redraw, optionally repositioning, the screen.
+.It Sy "[count1] z [count2] [-|.|+|^|<carriage-return>]"
+Redraw, optionally repositioning and resizing the screen.
 #ifdef REFERENCE
 Redraw the screen with a window
 .Li count2
@@ -2705,13 +2799,16 @@ lines long, containing line
 .Li count1
 placed as specified by character:
 .Dq Li \&+
-or <carriage-return> specifies the top of the screen,
+or
+.Li <carriage-return>
+specifies the top of the screen,
 .Dq Li .
 specifies the center of the screen, and
 .Dq Li \&-
 or
 .Dq Li \&^
 specifies the bottom of the screen.
+.Pp
 If
 .Li count1
 is not specified, it defaults to the current line, and the action
@@ -2734,7 +2831,7 @@ commands.
 .Pp
 If
 .Li count2
-is not specified, it default to the current window size.
+is not specified, it defaults to the current window size.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -2797,9 +2894,9 @@ command as a motion component and for the cursor to not move.
 .It "Line:"
 Unchanged.
 .It "Column:"
-Set to the character on the column position identified by
+Set to the character occupying the column position identified by
 .Li count ,
-if that position exists in the line.
+if the position exists in the line.
 If the column length of the current line is less than
 .Li count ,
 the cursor is moved to the last character in the line.
@@ -2809,7 +2906,7 @@ None.
 #endif
 .SP
 .It Sy "[count] }"
-Move forwards
+Move forward
 .Li count
 paragraphs.
 #ifdef REFERENCE
@@ -2845,7 +2942,7 @@ character(s).
 #ifdef REFERENCE
 This is the historic semantic for the
 .Sy \&~
-command; only in effect if the
+command and it is only in effect if the
 .Sy tildeop
 option is not set.
 .Pp
@@ -2855,9 +2952,10 @@ No other characters are affected.
 .Pp
 Historically, the
 .Sy \&~
-command did not move past the end of the current line.
-As it has no associated motion, by default, it is difficult to change
-the case of large blocks of text.
+command did not take an associated count, nor did it move past the
+end of the current line.
+As it had no associated motion it was difficult to change the case
+of large blocks of text.
 In
 .Nm \&nvi ,
 if the cursor is on the last character of a line, and there are
@@ -2874,7 +2972,7 @@ characters, or, end of file.
 .It "Column:"
 Set to the character after
 .Li count
-characters, or, end of file.
+characters, or, end-of-file.
 .It "Options:"
 Affected by the
 .Sy tildeop
@@ -2892,7 +2990,7 @@ Only in effect if the
 .Sy tildeop
 option is set.
 .Pp
-Lowercase alphabetic characters are changed to uppercase,
+Lowercase characters are changed to uppercase,
 and uppercase characters are changed to lowercase.
 No other characters are affected.
 .Pp
@@ -2919,14 +3017,18 @@ operations and map character expansion.
 Interrupts are also enabled when running commands outside of
 .Nm \&vi .
 .Pp
-If the <interrupt> character is used to interrupt while entering an
+If the
+.Li <interrupt>
+character is used to interrupt while entering an
 .Nm \&ex
 command, the command is aborted, the cursor returns to its previous
 position, and
 .Nm \&vi
 remains in command mode.
 .Pp
-Generally, if the <interrupt> character is used to interrupt any
+Generally, if the
+.Li <interrupt>
+character is used to interrupt any
 operation, any changes made before the interrupt are left in place.
 .Pp
 .Bl -tag -width "XOptions:" -compact
@@ -2985,10 +3087,20 @@ and
 as character and word erase characters, respectively, regardless of
 the current terminal settings.
 This implementation accepts, in addition to these two characters,
-the current terminal characters for these operations.
+the current terminal characters for those operations.
 #endif
 .Pp
 .Bl -tag -width "XXXX" -compact
+.It Sy "<nul>"
+#ifdef MANUAL
+Replay the previous input.
+#endif
+#ifdef REFERENCE
+If the first character of the input is a
+.Li <nul> ,
+the previous input is replayed, as if just entered.
+#endif
+.SP
 .It Sy "<control-D>"
 #ifdef MANUAL
 Erase the previous autoindent character.
@@ -3033,9 +3145,12 @@ characters on the line.
 #endif
 .SP
 .It Sy "<control-T>"
-Insert sufficient <tab> and <space> characters to move the cursor
-forward to a column immediately after a column which is an even
-multiple of the
+Insert sufficient
+.Li <tab>
+and
+.Li <space>
+characters to move the cursor forward to a column immediately
+after the next column which is an even multiple of the
 .Sy shiftwidth
 option.
 #ifdef REFERENCE
@@ -3043,7 +3158,7 @@ option.
 Historically,
 .Nm \&vi
 did not permit the
-.Li \&^T
+.Li <control-T>
 command to be used unless the cursor was at the first column of a new
 line or it was preceded only by
 .Sy autoindent
@@ -3078,20 +3193,24 @@ Erase the current line.
 .It Sy "<control-W>"
 .It Sy "<word erase>
 Erase the last word.
-The definition of word in this case is dependent on the
+The definition of word is dependent on the
 .Sy altwerase
 and
 .Sy ttywerase
 options.
 .SP
 .It Sy "<control-X>[0-9A-Fa-f]*"
-Insert a character with the hexadecimal value specified into the text.
+Insert a character with the specified hexadecimal value into the text.
 .SP
 .It Sy "<interrupt>"
 Interrupt text input mode, returning to command mode.
 #ifdef REFERENCE
-If the <interrupt> character is used to interrupt inserting text
-into the file, it is as if the <escape> character was used; all
-text input up to the interruption is resolved into the file.
+If the
+.Li <interrupt>
+character is used to interrupt inserting text into the file,
+it is as if the
+.Li <escape>
+character was used; all text input up to the interruption is
+resolved into the file.
 #endif
 .El

@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.17 1994/05/21 11:01:38 bostic Exp $ (Berkeley) $Date: 1994/05/21 11:01:38 $
+.\"     $Id: set.opt.roff,v 8.18 1994/05/23 14:33:01 bostic Exp $ (Berkeley) $Date: 1994/05/23 14:33:01 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -104,16 +104,23 @@ to the right of the cursor is aligned as described above.
 .Pp
 The indent characters are themselves somewhat special.
 If you do not enter more characters on the new line before moving moving to
-another line, or entering <escape>, the indent character will be deleted and
-the line will be empty.
-For example, if you enter <carriage-return> twice in succession, the line
-created by the first <carriage-return> will not have any characters in it,
+another line, or entering
+.Li <escape> ,
+the indent character will be deleted and the line will be empty.
+For example, if you enter
+.Li <carriage-return>
+twice in succession,
+the line created by the first
+.Li <carriage-return>
+will not have any characters in it,
 regardless of the indentation of the previous or subsequent line.
 .Pp
 Indent characters also require that you enter additional erase characters
 to delete them.
-For example, if you have an indented line, containing only blanks, the first
-<word-erase> character you enter will erase up to end of the indent characters,
+For example,
+if you have an indented line, containing only blanks, the first
+.Li <word-erase>
+character you enter will erase up to end of the indent characters,
 and the second will erase back to the beginning of the line.
 (Historically, only the
 .Sy \&<control-D>
@@ -237,7 +244,12 @@ Discard control characters.
 #endif
 #ifdef REFERENCE
 If this option is set, all control characters that are not currently being
-specially interpreted, other than <tab>, <newline>, and <form-feed>, are
+specially interpreted, other than
+.Li <tab> ,
+.Li <newline> ,
+and
+.Li <form-feed> ,
+are
 discarded from commands read in by
 .Nm \&ex
 from command files, and from input text entered to
@@ -379,7 +391,7 @@ style) expressions.
 #endif
 #ifdef REFERENCE
 This option causes all regular expressions to be treated as POSIX
-1003.2 extended regular expressions (which are similar to historic
+1003.2 Extended Regular Expressions (which are similar to historic
 .Xr egrep 1
 style expressions).
 #endif
@@ -403,7 +415,9 @@ the tab expansion done by the operating system and/or the terminal
 itself.
 As
 .Nm nex/nvi
-never writes tabs to the terminal, unlike historic versions of
+never writes
+.Li <tab>
+characters to the terminal, unlike historic versions of
 .Nm ex/vi ,
 this option does not currently have any affect.
 #endif
@@ -560,7 +574,8 @@ it is read for editing, looking for any
 commands that have been placed in those lines.
 After the startup information has been processed, and before the user
 starts editing the file, any commands embedded in the file are executed.
-Commands are recognized by the letters
+.Pp
+Commands were recognized by the letters
 .Dq \&e
 or
 .Dq \&v
@@ -575,6 +590,7 @@ an
 .Nm \&ex
 command, and another
 .Dq \&: .
+.Pp
 This option is a security problem of immense proportions,
 and should not be used under any circumstances.
 #endif
@@ -624,11 +640,14 @@ commands.
 The value of this option must be a character string consisting
 of zero or more character pairs.
 .Pp
-In the text to be edited, the character string <newline>.<char-pair>,
-(where <char-pair> is one of the character pairs in the option's value)
+In the text to be edited, the character string
+.Li "<newline>.<char-pair>" ,
+(where
+.Li <char-pair>
+is one of the character pairs in the option's value)
 defines a paragraph boundary.
 For example, if the option were set to
-.Dq "LaA<space>##" ,
+.Li "LaA<space>##" ,
 then all of the following additional paragraph boundaries would be
 recognized:
 .ne 3v
@@ -765,8 +784,11 @@ The
 .Sy sections
 option should be set to a character string consisting of zero or
 more character pairs.
-In the text to be edited, the character string <newline>.<char-pair>,
-(where <char-pair> is one of the character pairs in the option's value),
+In the text to be edited, the character string
+.Li "<newline>.<char-pair>" ,
+(where
+.Li <char-pair>
+is one of the character pairs in the option's value),
 defines a section boundary in the same manner that
 .Sy paragraph
 option boundaries are defined.
@@ -941,9 +963,9 @@ option for more information.
 #endif
 .SP
 .It Sy "tildeop"
-Change the
+Modify the
 .Sy \&~
-command from taking a character count to taking an associated motion.
+command to take an associated motion.
 .SP
 .It Sy "timeout, to [on]"
 #ifdef MANUAL
@@ -1094,8 +1116,13 @@ attempts to keep the lines less than or equal to 72 columns wide.)
 Lines are split at the previous whitespace character closest to the
 number.
 Any trailing whitespace characters before that character are deleted.
-If the line is split because of an inserted <space> or <tab> character,
-and you then enter another <space> character, it is discarded.
+If the line is split because of an inserted
+.Li <space>
+or
+.Li <tab>
+character, and you then enter another
+.Li <space>
+character, it is discarded.
 .Pp
 If wrapmargin is set to 0,
 or if there is no blank character upon which to split the line,

@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.31 1994/05/21 10:34:06 bostic Exp $ (Berkeley) $Date: 1994/05/21 10:34:06 $
+.\"     $Id: vi.ref,v 8.32 1994/05/23 14:33:10 bostic Exp $ (Berkeley) $Date: 1994/05/23 14:33:10 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -91,7 +91,9 @@ in a startup file or environmental variable.
 .Pp
 First, the file
 .Pa /etc/vi.exrc
-is read.
+is read, as long as it is owned by root or the effective user ID
+of the user running vi.
+.Pp
 Second, the environmental variable
 .Ev NEXINIT
 (or the variable
@@ -99,56 +101,35 @@ Second, the environmental variable
 if
 .Ev NEXINIT
 isn't set) is interpreted.
+.Pp
 Third, if neither
 .Ev NEXINIT
 or
 .Ev EXINIT
-was set, the file
+was set, and the
+.Ev HOME
+environmental variable is set, the file
 .Pa $HOME/.nexrc
 (or the file
 .Pa $HOME/.exrc ,
 if
 .Pa $HOME/.nexrc
-doesn't exist) is read.
-Fourth, the file
+doesn't exist) is read, as long as the effective user ID of the user
+running vi is root or is the same as the owner of the file.
+.Pp
+Fourth, if the
+.Sy exrc
+option was turned on by one of the previous startup information
+sources, the file
 .Pa .nexrc
 (or the file
 .Pa .exrc ,
 if
 .Pa .nexrc
-doesn't exist) is read.
+doesn't exist) is read, as long as the effective user ID of the user
+running vi is the same as the owner of the file.
 .Pp
-Startup files will not be read if they are owned by anyone other
-than the real user-id of the user running
-.Nm \&vi ,
-(or by
-.Dq root
-in the case of the file
-.Pa /etc/vi.exrc )
-or if they are writable by anyone other than the owner.
-Home directory startup files (i.e.
-.Pa $HOME/.nexrc
-and
-.Pa $HOME/.exrc )
-will not be read if the
-.Dq HOME
-environmental variable is not set.
-Local startup files (i.e.
-.Pa .nexrc
-and
-.Pa .exrc )
-will not be read if the
-.Sy exrc
-option is turned off in the
-.Pa /etc/vi.exrc ,
-.Pa $HOME/.nexrc ,
-or
-.Pa $HOME/.exrc
-files, or in the
-.Ev NEXINIT
-or
-.Ev EXINIT
-environmental variables.
+No startup file is read if it is writable by anyone other than its owner.
 It is not an error for any of the startup environmental variables
 or files not to exist.
 .Pp
@@ -169,7 +150,7 @@ Finally, if the
 .Fl
 option)
 is specified, or if standard input is redirected from a file,
-all environmental variables and startup files will be ignored.
+all environmental variables and startup files are ignored.
 .Pp
 Once all environmental variables are interpreted,
 and all startup files are read,
@@ -208,7 +189,7 @@ or the user enters the
 command.
 The use of the
 .Pa /var/tmp
-directory may be changed setting the
+directory may be changed by setting the
 .Sy recdir
 option in the user's or system startup information.
 (Note, however, that if a memory based file system is used as the backup
@@ -221,19 +202,23 @@ In addition, if directory
 .Dq "sticky-bit"
 semantics are available, the directory should have the sticky bit set so
 that files may only be removed by their owners.
-The recovery directory must be both read and write-able by any user.
+The recovery directory must be read, write, and executable by any user,
+i.e. mode 1777.
+.Dq
 .Pp
 If the recovery directory does not exist,
 .Nm ex/vi
 attempts to create it.
 This can result in the recovery directory being owned by a normal user,
-and that user can then remove other user's recovery and backup files.
+and that user will then be able to remove other user's recovery and backup
+files.
 This is annoying, but should not be a security issue as they cannot
-read the files.
+otherwise access or modify the files.
 .Pp
 The recovery file has all of the necessary information in it to enable the
 user to recover the edit session.
-In addition, it has all of the necessary email headers for sendmail.
+In addition, it has all of the necessary email headers for
+.Xr sendmail 8 .
 When the system is rebooted, all of the files in
 .Pa /var/tmp/vi.recover
 named
@@ -241,10 +226,13 @@ named
 should be sent by email,
 using the
 .Fl t
-flag of sendmail (or a similar mechanism in other mailers).
+option of
+.Nm sendmail
+(or a similar mechanism in other mailers).
 A simple way to do this is to insert the following script into your
 .Pa /etc/rc.local
 (or other startup) file:
+.sp
 .ne 8v
 .Bd -literal -offset indent -compact
 # Recover nvi editor files.
@@ -267,8 +255,8 @@ command,
 will automatically email the recovery information to the user.
 .Pp
 If your system doesn't have the
-.Xr sendmail 8
-program (or a mailer program which supports the equivalent interface)
+.Nm sendmail
+utility (or a mailer program which supports its interface)
 the source file
 .Pa nvi/recover.c
 will have to be modified to use your local mail delivery programs.
@@ -313,8 +301,9 @@ Non-printable characters, for which
 returns true, and which are less than octal \e076, are displayed
 as the string
 .Dq ^<character> ,
-where <character> is the character that is the character's value
-offset from the
+where
+.Li <character>
+is the character that is the character's value offset from the
 .Dq \&@
 character.
 For example, the octal character \e001 is displayed as
@@ -343,16 +332,14 @@ text insert mode, the cursor is positioned on the first column of
 characters which take up more than one column on the screen.
 .Sh MULTIPLE SCREENS
 .Nm Nvi
-supports multiple screens by dividing the window up into multiple
-editing regions.
+supports multiple screens by dividing the window up into regions.
 It also supports stacks of screens by permitting the user to change
-the set of current screens that are currently displayed.
+the set of screens that are currently displayed.
 .Pp
 The command
 .Sy split
-divides the current
-.Dq screen
-into two regions of approximately equal size.
+divides the current screen into two regions of approximately equal
+size.
 If a list of files are specified as arguments to the
 .Sy split
 command, the list of files to be edited is initialized as if the
@@ -361,9 +348,9 @@ command had been used.
 If no files are specified, the new screen will begin by editing the same
 file as the previous screen.
 .Pp
-When two screens are editing the same file, changes in one screen are
-reflected in all other screens editing that file.
-Exiting any screen without saving the changes (or explicitly discarding
+When more than one screen is editing a file, changes in any screen are
+reflected in all other screens editing the same file.
+Exiting any screen without saving any changes (or explicitly discarding
 them) is permitted until the last screen editing the file is exited.
 .Pp
 The command
@@ -378,7 +365,7 @@ command
 is used to switch between screens.
 Each
 .Sy \&^W
-moves to the next lower screen in the window, or, to the first screen
+moves to the next lower screen in the window, or to the first screen
 in the window if there are no lower screens.
 .Pp
 The
@@ -402,13 +389,13 @@ The
 command
 .Dq foregrounds
 the first screen in the list of backgrounded screens that is associated
-with the its
+with its
 .Li file
-argument
+argument.
 If no file argument is specified, the first screen on the list is
 foregrounded.
 Foregrounding consists of backgrounding the current screen, and replacing
-its space in the window with the previously backgrounded screen.
+its space in the window with the foregrounded screen.
 .Pp
 If the last screen in the window is exited, and there are backgrounded
 screens, the first screen on the list of backgrounded screens takes over
@@ -442,8 +429,11 @@ style regular expressions, and ERE's are
 .Xr egrep 1
 style regular expressions.)
 .Pp
-There are some special strings and characters that can be used in
-RE's:
+There are some strings and characters that have special meanings
+in the
+.Nm ex/vi
+version of RE's:
+.sp
 .Bl -enum -compact
 .It
 An empty RE (e.g.
@@ -561,9 +551,13 @@ then the last replacement pattern is used again.
 .Pp
 In
 .Nm \&vi ,
-inserting a <control-M> into the replacement string will cause the
-matched line to be split into two lines at that point.
-(The <control-M> will be discarded.)
+inserting a
+.Li <control-M>
+into the replacement string will cause the matched line to be
+split into two lines at that point.
+(The
+.Li <control-M>
+will be discarded.)
 .Sh GENERAL EDITOR DESCRIPTION
 When
 .Nm \&ex
@@ -571,10 +565,28 @@ or
 .Nm \&vi
 are executed, the text of a file is read (or a temporary file is created),
 and then all editing changes happen to that copy of the file.
-No changes effect the actual file until the file is written out,
+No changes affect the actual file until the file is written out,
 either using a write command or another command which is affected by the
 .Sy autowrite
 option.
+.Pp
+All files are locked (using the
+.Xr flock 2
+or
+.Xr fcntl 2
+interfaces) during the edit session, to avoid inadvertently making
+modifications to multiple copies of the file.
+If a lock cannot be obtained for a file because it is locked by another
+process, the edit session is read-only (as if the
+.Sy readonly
+option or the
+.Fl R
+flag had been specified).
+If a lock cannot be obtained for other reasons, the edit session will
+continue, but the file status information
+(see the
+.Sy <control->G
+command) will reflect this fact.
 .Pp
 Both
 .Nm \&ex
@@ -624,8 +636,9 @@ into text input mode:
 .Sy o
 and
 .Sy s .
-Once in input mode, entering an <escape> character terminates input
-and returns to command mode.
+Once in input mode, entering an
+.Li <escape>
+character terminates input and returns to command mode.
 .Pp
 The following words have special meanings in both the
 .Nm \&ex
@@ -636,15 +649,19 @@ command descriptions:
 .Bl -tag -width "XXXX" -compact
 .It Sy "<interrupt>"
 The interrupt character is used to interrupt the current operation.
-This character is normally <control-C>, however, whatever character
-is set for the current terminal is used.
+Normally
+.Li <control-C> ,
+whatever character is set for the current terminal is used.
 .sp
 .It Sy "<literal next>"
 The literal next character is used to escape the subsequent character
 from any special meaning.
-This character is normally <control-V>.
+This character is always
+.Li <control-V> .
 If the terminal is not set up to do XON/XOFF flow control,
-then <control-Q> may be used as well.
+then
+.Li <control-Q>
+is used to mean literal next as well.
 .sp
 .It Sy "current pathname"
 The pathname of the file currently being edited by vi.
@@ -677,19 +694,21 @@ Commands that change or delete text can save the changed or deleted
 text into a specific buffer, for later use.
 Buffers are named with a single character, preceded by a double quote,
 e.g.
-.Pq .Dq Li \&"<character> .
+.Dq Li \&"<character> .
 Historic implementations of
 .Nm \&ex/vi
-limited <character> to the alphanumeric characters;
+limited
+.Li <character>
+to the alphanumeric characters;
 .Nm \&nex/nvi
 permits the use of any character.
 .Pp
 The buffers named by uppercase characters are the same as buffers
-named by the lowercase characters (e.g. using the buffer named by
-the English character
+named by the lowercase characters, e.g. the buffer named by the
+English character
 .Dq Li \&A
-is the same as using the buffer named
-.Dq Li \&a ),
+is the same as the buffer named by the character
+.Dq Li \&a ,
 with the exception that, if the buffer contents are being changed
 (as with a text deletion or copying command), the text is
 .Em appended
@@ -714,11 +733,11 @@ into buffer
 .Dq \&3 ,
 and so on.
 In
-.Nm \&vi , 
-text may be explicitly stored or appended into the numeric buffers.
+.Nm \&vi ,
+text may be explicitly stored into the numeric buffers.
 In this case, the buffer rotation described above occurs before the
-replacement (or appending to) of the buffer's contents.
-(Text cannot be explicitly stored or appended into the numeric buffers, in
+replacement of the buffer's contents.
+(Text cannot be explicitly stored into the numeric buffers, in
 .Nm \&ex ,
 because of ambiguities it would cause in the
 .Nm \&ex
@@ -748,7 +767,7 @@ The
 .Nm \&vi
 command
 .Sy "display buffers"
-notes for each buffer it's current orientation.
+notes for each buffer its current orientation.
 Generally, the only importance attached to this orientation is that
 if the buffer is subsequently inserted into the text, line oriented
 buffers create new lines for each of the lines they contain, and
@@ -762,6 +781,7 @@ cursor position.
 The unnamed buffer is a text storage area which is used by commands
 that take a buffer as an argument when no buffer is specified by the
 user.
+There is no way to explicitly reference this buffer.
 .El
 .bp
 #include <vi.cmd.roff>
@@ -799,7 +819,8 @@ is a positive number, refers to the N-th line of the file.
 .It
 The address
 .Dq Li '<character>
-refers to the line marked with name <character>.
+refers to the line marked with name
+.Li <character> .
 (See the
 .Sy k
 or
@@ -901,11 +922,21 @@ A percent sign
 .Pq Dq Li "\&%"
 is equivalent to the address range
 .Dq Li 1,$ .
+.El
 .Pp
 .Nm \&Ex
 commands require zero, one, or two addresses.
 It is an error to specify an address to a command which requires zero
 addresses.
+.Pp
+If the user provides more than the expected number of addresses to any
+.Nm \&ex
+command, the first addresses specified are discarded.
+For example,
+.Dq Li "1,2,3,5 print"
+prints lines 3 through 5, because the
+.Sy print
+command only takes two addresses.
 .Pp
 The addresses in a range are separated from each other by a comma
 .Pq Dq "\&,"
@@ -923,15 +954,6 @@ The first address must be less than or equal to the second address.
 The first address must be greater than or equal to the first line of the
 file, and the last address must be less than or equal to the last line
 of the file.
-.Pp
-If the user provides more than the expected number of addresses to any
-.Nm \&ex
-command, the first addresses specified are discarded.
-For example,
-.Dq Li "1,2,3,5 print"
-prints lines 3 through 5, because the
-.Sy print
-command only takes two addresses.
 .bp
 #include <ex.cmd.roff>
 .bp
@@ -950,14 +972,16 @@ will edit any format file.
 Line lengths are limited by available memory,
 and file sizes are limited by available disk space.
 The command
-.Dq "<control-X>[0-9A-Fa-f]* ,"
+.Dq Li "<control-X>[0-9A-Fa-f]* ,"
 in input mode, will insert any legal character value into the text.
 .It "Split screens"
 The command
 .Dq ":sp[lit] [file ...]"
-splits the screen in vi mode.
+splits the screen in
+.Nm \&vi
+mode.
 The key
-.Dq "<control-W>"
+.Li <control-W>
 switches between the foreground screens,
 and the
 .Dq ":resize count"
@@ -969,8 +993,8 @@ backgrounds the current screen,
 and the command
 .Dq ":fg [file]"
 foregrounds the backgrounded screen
-that is editing the specified file, or, by default, the first background
-screen on the queue.
+that is editing the specified file,
+or, by default, the first background screen on the queue.
 The command
 .Dq ":di[splay] s[creens]"
 lists the background screens.
@@ -978,19 +1002,20 @@ lists the background screens.
 .\"The command
 .\".Dq ":sc[ript] [file ...]"
 .\"runs a shell in the screen.
-.\"Editing is unchanged, with the exception that a <carriage-return>
+.\"Editing is unchanged, with the exception that a
+.\".Li <carriage-return>
 .\"enters the current line (stripped of any prompt) as input to the
 .\"shell.
 .It "Tag stacks"
 Tags are now maintained in a stack.
 The command
-.Dq "<control-T>"
+.Li <control-T>
 returns to the previous tag location.
 The command
 .Dq ":tagpop [number \| file]"
-returns to the most recent tag
-location by default, or, optionally to a specific tag number in the
-tag stack, or the most recent tag from the specified file.
+returns to the most recent tag location by default,
+or, optionally to a specific tag number in the tag stack,
+or the most recent tag from the specified file.
 Use the command
 .Dq ":di[splay] t[ags]"
 to view the tags stack.
@@ -1000,30 +1025,36 @@ returns to the top of the tag stack.
 .It "New displays"
 The command
 .Dq ":di[splay] b[uffers] \| s[creens] \| t[ags]"
-can be
-used to display, respectively, the current cut buffers,
+can be used to display, respectively, the current cut buffers,
 the backgrounded screens, and the tags stack.
 .It "Infinite undo"
-The changes made during an edit session may be rolled backward and
-forward.
-A '.' command immediately after a 'u' command continues either forward
-or backward depending on whether the 'u' command was an undo or a redo.
+The changes made during an edit session may be rolled backward and forward.
+A
+.Sy \&.
+command immediately after a
+.Sy u
+command continues either forward or backward depending on whether the
+.Sy u
+command was an undo or a redo.
 .It "Usage information"
-The command
+The
 .Dq ":exu[sage] [cmd]"
 and
 .Dq "viu[sage] [key]"
-provide usage
-information for all of the ex and vi commands by default, or, optionally,
-for a specific command or key.
-.It "Extended regular expressions"
+commands provide usage information for all of the
+.Nm \&ex
+and
+.Nm \&vi
+commands by default, or, optionally, for a specific command or key.
+.It "Extended Regular Expressions"
 The
 .Dq ":set extended"
-command treats search and other command regular
-expressions as extended (egrep(1) style) regular expressions.
+option causes regular expressions to be interpreted as as extended (i.e.
+.Xr egrep 1
+style) regular expressions.
 .It "Word search"
 The command
-.Dq "<control-A>"
+.Li <control-A>
 searches for the word referenced by the cursor.
 .It "Number increment"
 The command

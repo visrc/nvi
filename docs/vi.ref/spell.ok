@@ -42,6 +42,7 @@ Todo
 USD.doc
 UUNET
 Vx
+Whitespace
 XOFF
 XON
 XOptions
@@ -146,9 +147,11 @@ nk
 nomagic
 nooption
 nsert
+nul
 nvi
 nvi.tar.Z
 nvi.tar.z
+nz
 oin
 op
 ove
