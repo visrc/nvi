@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.19 1992/04/22 08:11:53 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:11:53 $";
+static char sccsid[] = "$Id: main.c,v 5.20 1992/04/26 18:32:33 bostic Exp $ (Berkeley) $Date: 1992/04/26 18:32:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -87,10 +87,9 @@ main(argc, argv)
 			exit(1);
 #ifdef DEBUG
 		case 'T':		/* Trace. */
-			if ((tracefp = fopen(optarg, "w")) == NULL) {
-				msg("%s: %s", optarg, strerror(errno));
-				endmsg();
-			}
+			if ((tracefp = fopen(optarg, "w")) == NULL)
+				(void)fprintf(stderr,
+				    "%s: %s", optarg, strerror(errno));
 			(void)fprintf(tracefp, "trace: open %s\n", optarg);
 			break;
 #endif
@@ -117,24 +116,32 @@ main(argc, argv)
 	/* Initialize the key sequence list. */
 	seq_init();
 
-	/* Start curses; after seq_init so we can map keys. */
-	initscr();
-	resume_curses(1);
-
 	/* Catch HUP, TSTP, WINCH */
 	(void)signal(SIGHUP, onhup);
-	(void)signal(SIGTSTP, onstop);
-	(void)signal(SIGWINCH, onwinch);
+#ifdef notdef
+	(void)signal(SIGTSTP, onstop);			/* CCC */
+	(void)signal(SIGWINCH, onwinch);		/* CCC */
+#endif
+
+	if (mode == MODE_VI)
+		scr_init();
 
 	/*
-	 * Initialize the options -- must be done after initscr(), so that
-	 * we can alter LINES and COLS if necessary.
+	 * Initialize the options -- must be done after scr_init(),
+	 * so that we can alter LINES and COLS if necessary.
+	 * XXX
+	 * -- WRONG --
+	 * Options has to put LINES/COLUMNS into the environment so
+	 * that the curses package finds them.
 	 */
 	opts_init();
 
 #ifndef NO_DIGRAPH
 	digraph_init();
 #endif
+
+	/* Initialize special key table. */
+	gb_init();
 
 	/*
 	 * Source the system, ~user and local .exrc files.
@@ -193,39 +200,35 @@ main(argc, argv)
 
 	/* Now we do the immediate ex command that we noticed before. */
 	if (excmdarg)
-		(void)ex_cmd(excmdarg);
+		(void)ex_cstring(excmdarg, strlen(excmdarg), 0);
 
 	/*
 	 * Repeatedly call ex() or vi() (depending on the mode) until the
 	 * mode is set to MODE_QUIT.
 	 */
 	while (mode != MODE_QUIT) {
+
+		/* Maybe we just aborted a change? */
 		if (setjmp(jmpenv))
-			/* Maybe we just aborted a change? */
 			abortdo();
+
 		(void)signal(SIGINT, trapint);
 
 		switch (mode) {
-		  case MODE_VI:
+		case MODE_VI:
 			vi();
 			break;
-
-		  case MODE_EX:
+		case MODE_EX:
 			ex();
 			break;
-#ifdef DEBUG
-		  default:
-			msg("mode = %d?", mode);
-			mode = MODE_QUIT;
-#endif
 		}
 	}
 
-	/* free up the cut buffers */
+	/* Free up the cut buffers. */
 	cutend();
 
 	/* End the window. */
-	endcurses();
+	endwin();
 
 	exit(0);
 	/* NOTREACHED */
