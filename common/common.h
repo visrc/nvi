@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.16 1992/04/18 18:31:13 bostic Exp $ (Berkeley) $Date: 1992/04/18 18:31:13 $
+ *	$Id: common.h,v 5.17 1992/04/19 10:53:11 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:53:11 $
  */
 
 #include <sys/types.h>
@@ -199,7 +199,7 @@ extern void	vi();
 /*----------------------------------------------------------------------*/
 /* These are used to handle VI commands 				*/
 
-extern MARK	v_1ex();	/* : */
+extern MARK	v_ex();		/* : */
 extern MARK	v_mark();	/* m */
 extern MARK	v_quit();	/* Q */
 extern MARK	v_redraw();	/* ^L ^R */
