@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.13 1993/10/27 17:52:13 bostic Exp $ (Berkeley) $Date: 1993/10/27 17:52:13 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.14 1993/10/28 14:16:20 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:16:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,8 +34,9 @@ ex_substitute(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	regex_t *re, lre;
+	size_t blen, len;
 	int delim, eval, reflags, replaced;
-	char *arg, *sub, *rep, *p, *t;
+	char *arg, *bp, *sub, *rep, *p, *t;
 
 	/* Skip leading white space. */
 	for (arg = cmdp->argv[0]; isblank(*arg); ++arg);
@@ -63,7 +64,7 @@ ex_substitute(sp, ep, cmdp)
 	 *
 	 * QUOTING NOTE:
 	 *
-	 * Only toss an escaped character if it escapes a delimiter.
+	 * Only toss an escape character if it escapes a delimiter.
 	 * This means that "s/A/\\\\f" replaces "A" with "\\f".  It
 	 * would be nice to be more regular, i.e. for each layer of
 	 * escaping a single escape character is removed, but that's
@@ -81,26 +82,69 @@ ex_substitute(sp, ep, cmdp)
 		*t++ = *p++;
 	}
 
-	/* Get the replacement string, toss escaped characters. */
-	if (sp->repl != NULL)
-		free(sp->repl);
+	/*
+	 * Get the replacement string.
+	 *
+	 * The special character ~ (\~ if nomagic set) inserts the
+	 * previous replacement string into the current replacement
+	 * string.
+	 *
+	 * QUOTING NOTE:
+	 *
+	 * Only toss an escape character if it escapes a delimiter
+	 * or if O_MAGIC is set and it escapes a tilde.
+	 */
 	if (*p == '\0') {
+		if (sp->repl != NULL)
+			FREE(sp->repl, sp->repl_len);
 		sp->repl = NULL;
 		sp->repl_len = 0;
 	} else {
-		for (rep = t = p;;) {
+		/*
+		 * Count ~'s to figure out how much space we need.  We could
+		 * special case nonexistent last patterns or whether or not
+		 * O_MAGIC is set, but it's probably not worth the effort.
+		 */
+		for (rep = p, len = 0;
+		    p[0] != '\0' && p[0] != delim; ++p, ++len)
+			if (p[0] == '~')
+				len += sp->repl_len;
+		GET_SPACE(sp, bp, blen, len);
+		for (t = bp, len = 0, p = rep;;) {
 			if (p[0] == '\0' || p[0] == delim) {
 				if (p[0] == delim)
 					++p;
 				*t = '\0';
 				break;
 			}
-			if (p[0] == '\\' && p[1] == delim)
-				++p;
+			if (p[0] == '\\') {
+				if (p[1] == delim)
+					++p;
+				else if (p[1] == '~') {
+					++p;
+					if (!O_ISSET(sp, O_MAGIC))
+						goto tilde;
+				}
+			} else if (p[0] == '~' && O_ISSET(sp, O_MAGIC)) {
+tilde:				++p;
+				memmove(t, sp->repl, sp->repl_len);
+				t += sp->repl_len;
+				len += sp->repl_len;
+				continue;
+			}
 			*t++ = *p++;
+			++len;
 		}
-		sp->repl = strdup(rep);
-		sp->repl_len = strlen(rep);
+		if (sp->repl != NULL)
+			FREE(sp->repl, sp->repl_len);
+		if ((sp->repl = malloc(len)) == NULL) {
+			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+			FREE_SPACE(sp, bp, blen);
+			return (1);
+		}
+		memmove(sp->repl, bp, len);
+		sp->repl_len = len;
+		FREE_SPACE(sp, bp, blen);
 	}
 
 	/* If the substitute string is empty, use the last one. */
@@ -616,59 +660,123 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 	char **lbp;
 	size_t *lbclenp, *lblenp;
 {
+	enum { C_NOTSET, C_LOWER, C_ONELOWER, C_ONEUPPER, C_UPPER } conv;
 	size_t lbclen, lblen;		/* Local copies. */
 	size_t mlen;			/* Match length. */
 	size_t rpl;			/* Remaining replacement length. */
 	char *rp;			/* Replacement pointer. */
 	int ch;
 	int no;				/* Match replacement offset. */
-	char *p;			/* Build buffer pointer. */
+	char *p, *t;			/* Buffer pointers. */
 	char *lb;			/* Local copies. */
 
 	lb = *lbp;			/* Get local copies. */
 	lbclen = *lbclenp;
 	lblen = *lblenp;
 
-	rp = sp->repl;			/* Set up replacment info. */
-	rpl = sp->repl_len;
-	for (p = lb + lbclen; rpl--;) {
-		ch = *rp++;
-		if (ch == '&') {	/* Entire pattern. */
-			no = 0;
-			goto sub;
-					/* Partial pattern. */
-		} else if (ch == '\\' && isdigit(*rp)) {
-			no = *rp++ - '0';
+	/*
+	 * QUOTING NOTE:
+	 *
+	 * There are some special sequences that vi provides in the
+	 * replacement patterns.
+	 *	 & string the RE matched (\& if nomagic set)
+	 *	\# n-th regular subexpression	
+	 *	\E end \U, \L conversion
+	 *	\e end \U, \L conversion
+	 *	\l convert the next character to lower-case
+	 *	\L convert to lower-case, until \E, \e, or end of replacement
+	 *	\u convert the next character to upper-case
+	 *	\U convert to upper-case, until \E, \e, or end of replacement
+	 *
+	 * Otherwise, since this is the lowest level of replacement, discard
+	 * all escape characters.  This (hopefully) follows historic practice.
+	 */
+#define	ADDCH(ch) {							\
+	if (sp->special[ch] == K_CR || sp->special[ch] == K_NL) {	\
+		NEEDNEWLINE(sp);					\
+		sp->newl[sp->newl_cnt++] = lbclen;			\
+	} else if (conv != C_NOTSET) {					\
+		switch (conv) {						\
+		case C_ONELOWER:					\
+			conv = C_NOTSET;				\
+			/* FALLTHROUGH */				\
+		case C_LOWER:						\
+			if (isupper(ch))				\
+				ch = tolower(ch);			\
+			break;						\
+		case C_ONEUPPER:					\
+			conv = C_NOTSET;				\
+			/* FALLTHROUGH */				\
+		case C_UPPER:						\
+			if (islower(ch))				\
+				ch = toupper(ch);			\
+			break;						\
+		default:						\
+			abort();					\
+		}							\
+	}								\
+	NEEDSP(sp, 1, p);						\
+	*p++ = ch;							\
+	++lbclen;							\
+}
+	conv = C_NOTSET;
+	for (rp = sp->repl, rpl = sp->repl_len, p = lb + lbclen; rpl--;) {
+		switch (ch = *rp++) {
+		case '&':
+			if (O_ISSET(sp, O_MAGIC)) {
+				no = 0;
+				goto subzero;
+			}
+			break;
+		case '\\':
+			if (rpl == 0)
+				break;
 			--rpl;
-sub:			if (sp->match[no].rm_so != -1 &&
-			    sp->match[no].rm_eo != -1) {
+			switch (*rp) {
+			case '&':
+				if (!O_ISSET(sp, O_MAGIC)) {
+					++rp;
+					goto subzero;
+				}
+				break;
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9':
+				no = *rp++ - '0';
+subzero:			if (sp->match[no].rm_so == -1 ||
+			    	    sp->match[no].rm_eo == -1)
+					continue;
 				mlen =
 				    sp->match[no].rm_eo - sp->match[no].rm_so;
-				NEEDSP(sp, mlen, p);
-				memmove(p, ip + sp->match[no].rm_so, mlen);
-				p += mlen;
-				lbclen += mlen;
+				for (t = ip + sp->match[no].rm_so; mlen--; ++t)
+					ADDCH(*t);
+				continue;
+			case 'e':
+			case 'E':
+				++rp;
+				conv = C_NOTSET;
+				continue;
+			case 'l':
+				++rp;
+				conv = C_ONELOWER;
+				continue;
+			case 'L':
+				++rp;
+				conv = C_LOWER;
+				continue;
+			case 'u':
+				++rp;
+				conv = C_ONEUPPER;
+				continue;
+			case 'U':
+				++rp;
+				conv = C_UPPER;
+				continue;
+			default:
+				++rp;
+				break;
 			}
-		} else {		/* Newline, ordinary characters. */
-			if (sp->special[ch] == K_CR ||
-			    sp->special[ch] == K_NL) {
-				NEEDNEWLINE(sp);
-				sp->newl[sp->newl_cnt++] = lbclen;
-			}
-			/*
-			 * QUOTING NOTE:
-			 *
-			 * Toss all escape characters, this is the lowest level
-			 * of replacement.  Historic practice is the guideline.
-			 */
-			else if (ch == '\\' && rpl != 0) {
- 				ch = *rp++;
-				--rpl;
-			}
-			NEEDSP(sp, 1, p);
- 			*p++ = ch;
-			++lbclen;
 		}
+		ADDCH(ch);
 	}
 
 	*lbp = lb;			/* Update caller's information. */
