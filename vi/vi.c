@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.28 1993/11/07 15:19:17 bostic Exp $ (Berkeley) $Date: 1993/11/07 15:19:17 $";
+static char sccsid[] = "$Id: vi.c,v 8.29 1993/11/11 11:10:50 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: vi.c,v 8.28 1993/11/07 15:19:17 bostic Exp $ (Berke
 static int getcmd __P((SCR *, EXF *,
 		VICMDARG *, VICMDARG *, VICMDARG *, int *));
 static inline int
-	   getcount __P((SCR *, CHAR_T *, u_long *));
+	   getcount __P((SCR *, ARG_CHAR_T, u_long *));
 static inline int
 	   getkey __P((SCR *, CHAR_T *, u_int));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
@@ -48,8 +48,8 @@ vi(sp, ep)
 {
 	MARK abs, fm, tm, m;
 	VICMDARG cmd, *vp;
-	int comcount, eval;
 	u_int flags;
+	int comcount, eval;
 
 	/* Start vi. */
 	if (v_init(sp, ep))
@@ -66,7 +66,7 @@ vi(sp, ep)
 	F_SET(sp->frp, FR_EDITED);
 
 	for (eval = 0, vp = &cmd;;) {
-		if (!TERM_KEY_MORE(sp) && log_cursor(sp, ep))
+		if (!TERM_MORE(sp->gp->key) && log_cursor(sp, ep))
 			goto err;
 
 		/*
@@ -86,9 +86,8 @@ vi(sp, ep)
 		if (F_ISSET(vp, VC_ISDOT) && comcount)
 			DOTMOTION->count = 1;
 
-		flags = vp->kp->flags;
-
 		/* Get any associated keyword. */
+		flags = vp->kp->flags;
 		if (LF_ISSET(V_KEYNUM | V_KEYW) &&
 		    getkeyword(sp, ep, vp, flags))
 			goto err;
@@ -225,11 +224,11 @@ vi(sp, ep)
 		sp->lno = m.lno;
 		sp->cno = m.cno;
 
-		if (!TERM_KEY_MORE(sp)) {
+		if (!TERM_MORE(sp->gp->key)) {
 			(void)msg_rpt(sp, 1);
 
 			if (0)
-err:				TERM_KEY_FLUSH(sp);
+err:				TERM_FLUSH(sp->gp->key);
 		}
 
 		/* Refresh the screen. */
@@ -248,8 +247,8 @@ err:				TERM_KEY_FLUSH(sp);
 	return (v_end(sp) || eval);
 }
 
-#define	KEY(key) {							\
-	if (getkey(sp, &key, 0))					\
+#define	KEY(key, map) {							\
+	if (getkey(sp, &key, map))					\
 		return (1);						\
 }
 
@@ -278,19 +277,19 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	u_int flags;
 	CHAR_T key;
 
-	/* Clean up the command structure. */
+	/* Refresh the command structure. */
 	memset(&vp->vp_startzero, 0,
 	    (char *)&vp->vp_endzero - (char *)&vp->vp_startzero);
 
+	if (getkey(sp, &key, TXT_MAPCOMMAND))
+		return (1);
+
 	/* An escape bells the user only if already in command mode. */
-	if (ismotion == NULL) {
-		if (getkey(sp, &key, TXT_MAPCOMMAND)) {
-			if (sp->special[key] == K_ESCAPE)
-				msgq(sp, M_BERR, "Already in command mode");
-			return (1);
-		}
-	} else
-		KEY(key);
+	if (sp->special[key] == K_ESCAPE) {
+		if (ismotion == NULL)
+			msgq(sp, M_BERR, "Already in command mode");
+		return (1);
+	}
 	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
 		return (1);
@@ -298,12 +297,9 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		KEY(key);
-		if (!isalnum(key))
-			goto ebuf;
-		vp->buffer = key;
+		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
-		KEY(key);
+		KEY(key, TXT_MAPCOMMAND);
 	}
 
 	/*
@@ -311,26 +307,23 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	 * it's a command.
 	 */
 	if (isdigit(key) && key != '0') {
-		if (getcount(sp, &key, &vp->count))
+		if (getcount(sp, key, &vp->count))
 			return (1);
 		F_SET(vp, VC_C1SET);
 		*comcountp = 1;
+		KEY(key, TXT_MAPCOMMAND);
 	} else
 		*comcountp = 0;
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
 		if (F_ISSET(vp, VC_BUFFER)) {
-			msgq(sp, M_ERR,
-			    "Only one buffer can be specified.");
+			msgq(sp, M_ERR, "Only one buffer can be specified.");
 			return (1);
 		}
-		KEY(key);
-		if (!isalnum(key))
-			goto ebuf;
-		vp->buffer = key;
+		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
-		KEY(key);
+		KEY(key, TXT_MAPCOMMAND);
 	}
 
 	/*
@@ -379,40 +372,28 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 			goto usage;
 
 		/* Required buffer. */
-		if (LF_ISSET(V_RBUF)) {
-			KEY(key);
-			if (key > UCHAR_MAX) {
-ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
-				return (1);
-			}
-			vp->buffer = key;
-		}
+		if (LF_ISSET(V_RBUF))
+			KEY(vp->buffer, 0);
 
 		/*
-		 * Special case: '[' and ']' commands.  Doesn't the fact
-		 * that the *single* characters don't mean anything but
-		 * the *doubled* characters do just frost your shorts?
+		 * Special case: '[', ']' and 'Z' commands.  Doesn't the
+		 * fact that the *single* characters don't mean anything
+		 * but the *doubled* characters do just frost your shorts?
 		 */
-		if (vp->key == '[' || vp->key == ']') {
-			KEY(key);
-			if (vp->key != key)
-				goto usage;
-		}
-		/* Special case: 'Z' command. */
-		if (vp->key == 'Z') {
-			KEY(key);
+		if (vp->key == '[' || vp->key == ']' || vp->key == 'Z') {
+			KEY(key, TXT_MAPCOMMAND);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
-			KEY(key);
-			if (isdigit(key)) {
-				if (getcount(sp, &key, &vp->count2))
+			KEY(vp->character, 0);
+			if (isdigit(vp->character)) {
+				if (getcount(sp, key, &vp->count2))
 					return (1);
 				F_SET(vp, VC_C2SET);
 			}
-			vp->character = key;
+			KEY(vp->character, 0);
 		}
 	}
 
@@ -428,7 +409,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", ismotion != NULL ?
 
 	/* Required character. */
 	if (LF_ISSET(V_CHAR))
-		KEY(vp->character);
+		KEY(vp->character, 0);
 
 	return (0);
 }
@@ -543,7 +524,7 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		 * we use; see v_match() for an example.
 		 *
 		 * !!!
-		 * Historic vi changed the cursor as part of this which made
+		 * Historic vi changed the cursor as part of this, which made
 		 * no sense.  For example, "yj" would move the cursor but "yk"
 		 * would not.
 		 */
@@ -552,6 +533,10 @@ getmotion(sp, ep, dm, vp, fm, tm)
 			m = *fm;
 			*fm = *tm;
 			*tm = m;
+#ifdef HISTORIC_MOVE_TO_START_OF_BLOCK
+			sp->lno = fm->lno;
+			sp->cno = fm->cno;
+#endif
 		}
 	}
 
@@ -569,6 +554,10 @@ getmotion(sp, ep, dm, vp, fm, tm)
 
 #define	innum(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
 
+/*
+ * getkeyword --
+ *	Get the "word" the cursor is on.
+ */
 static int
 getkeyword(sp, ep, kp, flags)
 	SCR *sp;
@@ -673,16 +662,52 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 }
 
 /*
+ * getcount --
+ *	Return the next count.
+ */
+static inline int
+getcount(sp, fkey, countp)
+	SCR *sp;
+	ARG_CHAR_T fkey;
+	u_long *countp;
+{
+	u_long count, tc;
+	CHAR_T key;
+
+	key = fkey;
+	count = tc = 0;
+	do {
+		/* Assume that overflow results in a smaller number. */
+		tc = count * 10 + key - '0';
+		if (count > tc) {
+			/* Toss to the next non-digit. */
+			do {
+				if (getkey(sp, &key,
+				    TXT_MAPCOMMAND | TXT_MAPNODIGIT))
+					return (1);
+			} while (isdigit(key));
+			msgq(sp, M_ERR, "Number larger than %lu", ULONG_MAX);
+			return (1);
+		}
+		count = tc;
+		if (getkey(sp, &key, TXT_MAPCOMMAND | TXT_MAPNODIGIT))
+			return (1);
+	} while (isdigit(key));
+	*countp = count;
+	return (0);
+}
+
+/*
  * getkey --
  *	Return the next key.
  */
 static inline int
-getkey(sp, keyp, flags)
+getkey(sp, keyp, map)
 	SCR *sp;
 	CHAR_T *keyp;
-	u_int flags;
+	u_int map;
 {
-	switch (term_key(sp, keyp, flags)) {
+	switch (term_key(sp, keyp, map)) {
 	case INP_OK:
 		break;
 	case INP_EOF:
@@ -692,49 +717,4 @@ getkey(sp, keyp, flags)
 		return (1);
 	}
 	return (sp->special[*keyp] == K_ESCAPE);
-}
-
-/*
- * getcount --
- *	Return the next count.
- *
- * !!!
- * Note that the TXT_MAPCOMMAND flag is set during this routine.  The reason
- * is that we're going to the next non-digit, and we want that character to
- * have been been mapped since we push it back on the stack.  The problem we
- * could have is if a user has mapped a digit into something.  Historical vi
- * was a bit odd in this area.  It permitted the mapping of 1-9 (the digit 0
- * was a special case as it didn't (and doesn't) indicate the start of a count)
- * but then ignored those mappings.  The result of all this, is that, in this
- * implementation we don't ignore the mappings.
- */
-static inline int
-getcount(sp, keyp, countp)
-	SCR *sp;
-	CHAR_T *keyp;
-	u_long *countp;
-{
-	u_long count, tc;
-
-	count = tc = 0;
-	do {
-		/* Assume that overflow results in a smaller number. */
-		tc = count * 10 + *keyp - '0';
-		if (count > tc) {
-			/* Toss to the next non-digit. */
-			do {
-				if (getkey(sp, keyp, TXT_MAPCOMMAND))
-					return (1);
-			} while (isdigit(*keyp));
-			(void)term_push(sp, sp->gp->key, keyp, 1);
-			msgq(sp, M_ERR,
-			    "Number larger than %lu", ULONG_MAX);
-			return (1);
-		}
-		count = tc;
-		if (getkey(sp, keyp, TXT_MAPCOMMAND))
-			return (1);
-	} while (isdigit(*keyp));
-	*countp = count;
-	return (0);
 }
