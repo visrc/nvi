@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.9 1992/04/05 16:58:35 bostic Exp $ (Berkeley) $Date: 1992/04/05 16:58:35 $";
+static char sccsid[] = "$Id: ex.c,v 5.10 1992/04/05 19:02:46 bostic Exp $ (Berkeley) $Date: 1992/04/05 19:02:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -223,10 +223,8 @@ excmd(exc)
 	for (; isspace(*exc); ++exc);
 
 	/* If no command, then do the last specified of p, l, or #. */
-	if (!*exc) {
+	if (!*exc)
 		cp = lastcmd;
-		goto address;
-	}
 
 	/*
 	 * Figure out how long the command name is.  There are a few
@@ -261,6 +259,43 @@ excmd(exc)
 		return (1);
 	}
 
+	/*
+	 * Set the default addresses.  It's an error to specify an address
+	 * for a command that doesn't take addresses.  If two addresses are
+	 * specified for a command that only takes one, lose the first one.
+	 * A nasty special case here, the '!' command takes 0, 1, or 2
+	 * addresses.
+	 */
+	if (cp->flags & E_ADDR1)
+		switch(cmd.addrcnt) {
+		case 0:				/* Default to cursor. */
+			cmd.addrcnt = 1;
+			cmd.addr1 = cursor;
+			break;
+		case 1:
+			break;
+		case 2:				/* Lose the first address. */
+			cmd.addrcnt = 1;
+			cmd.addr1 = cmd.addr2;
+		}
+	else if (cp->flags & E_ADDR2)
+		switch(cmd.addrcnt) {
+		case 0:				/* Default to cursor. */
+			if (strcmp(cp->name, "!")) {
+				cmd.addrcnt = 2;
+				cmd.addr1 = cmd.addr2 = cursor;
+			}
+			break;
+		case 1:				/* Default to first address. */
+			cmd.addrcnt = 2;
+			cmd.addr2 = cmd.addr1;
+			break;
+		case 2:
+			break;
+		}
+	else if (cmd.addrcnt)			/* Error. */
+		goto usage;
+		
 	for (count = 0, p = cp->syntax; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
@@ -333,6 +368,13 @@ end2:			break;
 				}
 				exc = ep;
 			}
+			/*
+			 * Fix up the addresses.  Count's only occur with
+			 * commands taking two addresses.  Replace the first
+			 * with the second and recompute the second.
+			 */
+			cmd.addr1 = cmd.addr2;
+			cmd.addr2 = cmd.addr1 + count;
 			break;
 		case 'l':				/* line */
 			/*
@@ -379,62 +421,13 @@ countchk:		if (*++p != 'N') {		/* N */
 	 * Shouldn't be anything left, and no more required fields.
 	 * That means neither 'l' or 'r' in the syntax.
 	 */
-	if (*exc || strpbrk(p, "lr"))
-		goto usage;
-
-	/*
-	 * Fix up the addresses.
-	 *
-	 * It's an error if an address is specified for a command that doesn't
-	 * take an address.  If two addresses are specified and the command
-	 * only needs one, lose the first one.
-	 */
-address:
-	switch(cp->flags & (E_ADDR1|E_ADDR2)) {
-	case 0:
-		if (cmd.addrcnt) {
-			msg("Illegal address; usage: %s.", cp->usage);
-			return (1);
-		}
-		if (count) {
-usage:			msg("Usage: %s.", cp->usage);
-			return (1);
-		}
-		break;
-	case E_ADDR1:
-		if (cmd.addrcnt == 2) {
-			cmd.addrcnt = 1;
-			cmd.addr1 = cmd.addr2;
-		}
-		break;
-	case E_ADDR2:
-		break;
+	if (*exc || strpbrk(p, "lr")) {
+usage:		msg("Usage: %s.", cp->usage);
+		return (1);
 	}
 
-	/*
-	 * Set the default address if none provided.  If count specified,
-	 * it overrides any addresses.
-	 */
-	if (cp->flags & (E_ADDR1|E_ADDR2)) {
-		if (cmd.addrcnt == 0) {
-			cmd.addrcnt = 1;
-			cmd.addr1 = cursor;
-		}
-		if (count)
-			switch(cmd.addrcnt) {
-			case 1:
-				if (count) {
-					cmd.addrcnt = 2;
-					cmd.addr1 = cursor + count;
-				}
-				break;
-			case 2:
-				cmd.addr2 = cmd.addr1 + count;
-				break;
-			}
-	}
-			
 	/* Verify that the addresses are legal. */
+address:
 	switch(cmd.addrcnt) {
 	case 2:
 		num = markline(cmd.addr2);
@@ -448,7 +441,7 @@ usage:			msg("Usage: %s.", cp->usage);
 		}
 		/* FALLTHROUGH */
 	case 1:
-oneaddr:	num = markline(cmd.addr1);
+		num = markline(cmd.addr1);
 		if (num == 0 && !(flags & E_ZERO)) {
 			msg("The %s command doesn't permit an address of 0.",
 			    cp->name);
