@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.21 1995/01/11 18:52:33 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:52:33 $";
+static char sccsid[] = "$Id: ex.c,v 9.22 1995/01/11 18:59:04 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:59:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1677,10 +1677,9 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 	EX_PRIVATE *exp;
 	MARK m;
 	long total, val;
-	u_int flags;
 	size_t cmdlen;
 	int isneg;
-	int (*sf) __P((SCR *, MARK *, MARK *, char *, char **, u_int *));
+	int (*sf) __P((SCR *, MARK *, MARK *, char *, char **, u_int));
 	char *cmd, *endp;
 
 	exp = EXP(sp);
@@ -1759,8 +1758,8 @@ search:		F_SET(exp, EX_ABSMARK);
 		*isaddrp = 1;
 		m.lno = sp->lno;
 		m.cno = sp->cno;
-		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
-		if (sf(sp, &m, &m, cmd, &endp, &flags))
+		if (sf(sp, &m, &m,
+		    cmd, &endp, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
 			return (1);
 		cur->lno = m.lno;
 		cur->cno = m.cno;

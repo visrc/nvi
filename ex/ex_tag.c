@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.14 1995/01/11 17:55:42 bostic Exp $ (Berkeley) $Date: 1995/01/11 17:55:42 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.15 1995/01/11 18:59:01 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:59:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -62,7 +62,6 @@ ex_tagfirst(sp, tagarg)
 	FREF *frp;
 	MARK m;
 	long tl;
-	u_int flags;
 	int sval;
 	char *p, *tag, *name, *search;
 
@@ -102,11 +101,12 @@ ex_tagfirst(sp, tagarg)
 		 */
 		m.lno = 1;
 		m.cno = 0;
-		flags = SEARCH_FILE | SEARCH_TAG;
-		sval = f_search(sp, &m, &m, search, NULL, &flags);
+		sval = f_search(sp, &m, &m,
+		    search, NULL, SEARCH_FILE | SEARCH_TAG);
 		if (sval && (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			sval = f_search(sp, &m, &m, search, NULL, &flags);
+			sval = f_search(sp, &m, &m,
+			    search, NULL, SEARCH_FILE | SEARCH_TAG);
 		}
 		if (sval)
 			tag_msg(sp, TAG_SEARCH, tag);
@@ -162,7 +162,6 @@ ex_tagpush(sp, cmdp)
 	FREF *frp;
 	MARK m;
 	TAG *tp;
-	u_int flags;
 	int sval;
 	long tl;
 	char *name, *p, *search, *tag;
@@ -268,11 +267,12 @@ err:		free(tag);
 		 */
 		m.lno = 1;
 		m.cno = 0;
-		flags = SEARCH_FILE | SEARCH_TAG;
-		sval = f_search(sp, &m, &m, search, NULL, &flags);
+		sval = f_search(sp, &m, &m,
+		    search, NULL, SEARCH_FILE | SEARCH_TAG);
 		if (sval && (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			sval = f_search(sp, &m, &m, search, NULL, &flags);
+			sval = f_search(sp, &m, &m,
+			    search, NULL, SEARCH_FILE | SEARCH_TAG);
 			p[1] = '(';
 		}
 		if (sval)

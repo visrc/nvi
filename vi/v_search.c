@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.8 1995/01/11 16:22:23 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:23 $";
+static char sccsid[] = "$Id: v_search.c,v 9.9 1995/01/11 18:59:33 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:59:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -288,17 +288,17 @@ search(sp, vp, ptrn, len, flags, dir)
 	char *notused;
 
 	if (ISMOTION(vp))
-		flags |= SEARCH_EOL;
+		LF_SET(SEARCH_EOL);
 
 	switch (dir) {
 	case BACKWARD:
 		if (b_search(sp,
-		    &vp->m_start, &vp->m_stop, ptrn, &notused, &flags))
+		    &vp->m_start, &vp->m_stop, ptrn, &notused, flags))
 			return (1);
 		break;
 	case FORWARD:
 		if (f_search(sp,
-		    &vp->m_start, &vp->m_stop, ptrn, &notused, &flags))
+		    &vp->m_start, &vp->m_stop, ptrn, &notused, flags))
 			return (1);
 		break;
 	case NOTSET:
