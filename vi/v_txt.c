@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.23 1995/11/07 10:26:55 bostic Exp $ (Berkeley) $Date: 1995/11/07 10:26:55 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.24 1995/11/07 20:29:08 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:29:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1239,8 +1239,12 @@ ret:	/* If replaying text, keep going. */
 	if (LF_ISSET(TXT_REPLAY))
 		goto replay;
 
-	/* Resolve any messages. */
-	if (vip->totalcount != 0 && !filec_redraw && vs_resolve(sp))
+	/*
+	 * If not working on the colon command line, and not doing file
+	 * completion, and there have been messages, resolve them.
+	 */
+	if (!F_ISSET(sp, S_INPUT_INFO) &&
+	    vip->totalcount != 0 && !filec_redraw && vs_resolve(sp))
 		return (1);
 
 	/*
