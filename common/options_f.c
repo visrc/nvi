@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.8 1995/01/11 15:58:20 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:20 $";
+static char sccsid[] = "$Id: options_f.c,v 9.9 1995/01/11 18:45:54 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:45:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,6 +105,26 @@ DECL(f_columns)
 	O_VAL(sp, O_COLUMNS) =  val;
 
 	F_SET(sp, S_SCR_RESIZE);
+	return (0);
+}
+
+DECL(f_extended)
+{
+	if (turnoff)
+		O_CLR(sp, O_EXTENDED);
+	else
+		O_SET(sp, O_EXTENDED);
+	F_SET(sp, S_RE_RECOMPILE);
+	return (0);
+}
+
+DECL(f_ignorecase)
+{
+	if (turnoff)
+		O_CLR(sp, O_IGNORECASE);
+	else
+		O_SET(sp, O_IGNORECASE);
+	F_SET(sp, S_RE_RECOMPILE);
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 9.5 1995/01/11 15:58:19 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:19 $
+ *	$Id: options.h,v 9.6 1995/01/11 18:45:05 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:45:05 $
  */
 
 struct _option {
@@ -68,6 +68,8 @@ void	opts_dump __P((SCR *, enum optdisp));
 int	f_altwerase __P((SCR *, OPTION *, char *, u_long));
 int	f_cdpath __P((SCR *, OPTION *, char *, u_long));
 int	f_columns __P((SCR *, OPTION *, char *, u_long));
+int	f_extended __P((SCR *, OPTION *, char *, u_long));
+int	f_ignorecase __P((SCR *, OPTION *, char *, u_long));
 int	f_leftright __P((SCR *, OPTION *, char *, u_long));
 int	f_lines __P((SCR *, OPTION *, char *, u_long));
 int	f_lisp __P((SCR *, OPTION *, char *, u_long));
