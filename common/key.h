@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.46 2001/06/13 19:54:06 skimo Exp $ (Berkeley) $Date: 2001/06/13 19:54:06 $
+ *	$Id: key.h,v 10.47 2001/06/17 11:08:37 skimo Exp $ (Berkeley) $Date: 2001/06/17 11:08:37 $
  */
 
 #include "multibyte.h"
@@ -60,19 +60,19 @@ typedef	u_int		ARG_CHAR_T;
 #define WC		"%lc"
 #else
 #define FILE2INT(sp,n,nlen,w,wlen) \
-    w = n, wlen = nlen, 0
+    (w = n, wlen = nlen, 0)
 #define INT2FILE(sp,w,wlen,n,nlen) \
-    n = w, nlen = wlen, 0
+    (n = w, nlen = wlen, 0)
 #define CHAR2INTB(sp,n,nlen,w,wlen,buf) \
-    w = n, wlen = nlen, 0
+    (w = n, wlen = nlen, 0)
 #define INT2CHAR(sp,w,wlen,n,nlen) \
-    n = w, nlen = wlen, 0
+    (n = w, nlen = wlen, 0)
 #define INT2SYS(sp,w,wlen,n,nlen) \
-    n = w, nlen = wlen, 0
+    (n = w, nlen = wlen, 0)
 #define INPUT2INT(sp,n,nlen,w,wlen) \
-    w = n, wlen = nlen, 0
+    (w = n, wlen = nlen, 0)
 #define INT2DISP(sp,w,wlen,n,nlen) \
-    n = w, nlen = wlen, 0
+    (n = w, nlen = wlen, 0)
 #define CONST const
 #define ISCNTRL(ch) \
     iscntrl((ch))

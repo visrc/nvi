@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.19 2001/06/06 19:40:33 skimo Exp $ (Berkeley) $Date: 2001/06/06 19:40:33 $";
+static const char sccsid[] = "$Id: conv.c,v 1.20 2001/06/17 11:08:37 skimo Exp $ (Berkeley) $Date: 2001/06/17 11:08:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,10 +64,13 @@ raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen,
 	char *bp = buffer;						\
 	outleft = CONV_BUFFER_SIZE;					\
 	errno = 0;							\
-	if (iconv(id, (char **)&str, &left, &bp, &outleft) == -1 &&	\
-		errno != E2BIG)						\
+	if (iconv(id, (char **)&str, &left, &bp, &outleft) == -1 /*&&	\
+		errno != E2BIG*/)					\
 	    goto err;							\
-	len = CONV_BUFFER_SIZE - outleft;				\
+	if ((len = CONV_BUFFER_SIZE - outleft) == 0) {			\
+	    error = CONV_INCOMPLETE;					\
+	    goto err;							\
+	}				    				\
 	src = buffer;							\
     } while (0)
 
@@ -85,6 +88,7 @@ default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw,
     iconv_t	id = (iconv_t)-1;
     char	buffer[CONV_BUFFER_SIZE];
     size_t	left = len;
+    int		error = 1;
 
     MEMSET(&mbs, 0, 1);
     BINC_RETW(NULL, *tostr, *blen, nlen);
@@ -99,6 +103,7 @@ default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw,
     for (i = 0, j = 0; j < len; ) {
 	n = mbrtowc((*tostr)+i, src+j, len-j, &mbs);
 	/* NULL character converted */
+	if (n == -2) error = CONV_INCOMPLETE;
 	if (n == -1 || n == -2) goto err;
 	if (n == 0) n = 1;
 	j += n;
@@ -125,7 +130,7 @@ err:
 	iconv_close(id);
     *dst = cw->bp1;
 
-    return 1;
+    return error;
 }
 
 int 

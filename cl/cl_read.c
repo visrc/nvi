@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.23 2001/06/10 10:23:42 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:42 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.24 2001/06/17 11:08:36 skimo Exp $ (Berkeley) $Date: 2001/06/17 11:08:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,6 +61,9 @@ cl_event(sp, evp, flags, ms)
 	int changed, nr;
 	CHAR_T *wp;
 	size_t wlen;
+	int rc;
+	void 	*bp;
+	size_t blen;
 
 	/*
 	 * Queue signal based events.  We never clear SIGHUP or SIGTERM events,
@@ -106,21 +109,33 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 		tp = &t;
 	}
 
+	bp = clp->ibuf;
+	blen = SIZE(clp->ibuf);
+
 	/* Read input characters. */
+read:
 	switch (cl_read(sp, LF_ISSET(EC_QUOTED | EC_RAW),
-	    (char *)clp->ibuf, sizeof(clp->ibuf)/sizeof(CHAR_T), &nr, tp)) {
+	    bp, blen, &nr, tp)) {
 	case INP_OK:
-		INPUT2INT(sp, (char *)clp->ibuf, nr, wp, wlen);
+		if ((rc = INPUT2INT(sp, (char *)clp->ibuf, 
+				    nr + SIZE(clp->ibuf) - blen, wp, wlen))
+			== CONV_INCOMPLETE) {
+		    bp += nr;
+		    blen -= nr;
+		    goto read;
+		}
 		MEMMOVEW(clp->ibuf, wp, wlen);
 		evp->e_csp = clp->ibuf;
 		evp->e_len = wlen;
 		evp->e_event = E_STRING;
+		if (rc == 0)
+		    break;
+		/* else fall through */
+	case INP_ERR:
+		evp->e_event = E_ERR;
 		break;
 	case INP_EOF:
 		evp->e_event = E_EOF;
-		break;
-	case INP_ERR:
-		evp->e_event = E_ERR;
 		break;
 	case INP_INTR:
 		goto retest;
