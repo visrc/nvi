@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.17 1995/01/30 12:04:40 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:04:40 $
+ *	$Id: screen.h,v 9.18 1995/02/02 15:01:17 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:01:17 $
  */
 
 /*
@@ -68,6 +68,8 @@ struct _fref {
 struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
 	CIRCLEQ_ENTRY(_scr) q;		/* Screens. */
+
+	int	 refcnt;		/* Reference count. */
 
 	GS	*gp;			/* Pointer to global area. */
 
@@ -171,7 +173,9 @@ struct _scr {
  * here because we have to know (and in the curses case set the environment)
  * the screen size before we initialize the screen functions.  (SCR *) MUST
  * be the first argument to these routines.
- */					/* Beep/bell/flash the terminal. */
+ */
+#define	SCR_ROUTINES_N	9
+					/* Beep/bell/flash the terminal. */
 	int	(*e_bell) __P((SCR *));
 					/* Display a busy message. */
 	int	(*e_busy) __P((SCR *, char const *));
@@ -249,16 +253,18 @@ struct _scr {
 #define	S_BELLSCHED	0x0010000	/* Bell scheduled. */
 #define	S_CONTINUE	0x0020000	/* Need to ask the user to continue. */
 #define	S_EXSILENT	0x0040000	/* Ex batch script. */
-#define	S_GLOBAL	0x0080000	/* Doing a global command. */
-#define	S_INPUT		0x0100000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0200000	/* If have been interrupted. */
-#define	S_RE_RECOMPILE	0x0400000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x0800000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x1000000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x2000000	/* Window is a shell script. */
+#define	S_GLOBAL	0x0080000	/* Ex global: in the command. */
+#define	S_GLOBAL_ABORT	0x0100000	/* Ex global: file/screen changed. */
+#define	S_INPUT		0x0200000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0400000	/* If have been interrupted. */
+#define	S_RE_RECOMPILE	0x0800000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x1000000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x2000000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x4000000	/* Window is a shell script. */
 	u_int32_t flags;
 };
 
 /* Generic routines to create/end a screen. */
 int	screen_end __P((SCR *));
 int	screen_init __P((SCR *, SCR **));
+void	screen_fcopy __P((SCR *, void (*[SCR_ROUTINES_N])(), int));
