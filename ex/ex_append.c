@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.21 1993/02/16 20:10:00 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:00 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.22 1993/02/21 19:43:33 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:43:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ ca(ep, cmdp, cmd)
 
 	/* Insert lines until no more lines, or "." line. */
 	for (; !ex_gb(ep, 0, &p, &len,
-	    GB_NL|GB_NLECHO) && p != NULL; ++m.lno) {
+	    GB_BEAUTIFY | GB_NL | GB_NLECHO) && p != NULL; ++m.lno) {
 		if (p[0] == '.' && p[1] == '\0')
 			break;
 		add(ep, &m, p, len);
