@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.9 1993/05/03 14:22:40 bostic Exp $ (Berkeley) $Date: 1993/05/03 14:22:40 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.10 1993/05/06 01:03:55 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:03:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 }
 
 #define	SCREEN_UPDATE(sp, ep, lno, mode) {				\
-	if (sp->change(sp, ep, lno, mode) || sp->refresh(sp, ep))	\
+	if (sp->change(sp, ep, lno, mode) || sp->srefresh(sp, ep))	\
 		ERR;							\
 }
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.33 1993/05/04 17:50:03 bostic Exp $ (Berkeley) $Date: 1993/05/04 17:50:03 $
+ *	$Id: screen.h,v 5.34 1993/05/06 01:04:15 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:04:15 $
  */
 
 /*
@@ -211,7 +211,7 @@ typedef struct _scr {
 		     int, u_int));
 	int	 (*position) __P((struct _scr *,
 		     struct _exf *, recno_t *, u_long, enum position));
-	int	 (*refresh) __P((struct _scr *, struct _exf *));
+	int	 (*srefresh) __P((struct _scr *, struct _exf *));
 	size_t	 (*relative) __P((struct _scr *, struct _exf *, recno_t));
 	int	 (*split) __P((struct _scr *, struct _exf *));
 	int	 (*up) __P((struct _scr *,

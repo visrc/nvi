@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.63 1993/05/05 16:23:08 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:23:08 $";
+static char sccsid[] = "$Id: vi.c,v 5.64 1993/05/06 01:03:57 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:03:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ vi(sp, ep)
 		return (1);
 
 	/* Paint the screen. */
-	if (sp->refresh(sp, ep))
+	if (sp->srefresh(sp, ep))
 		return (v_end(sp));
 
 	/* Command initialization. */
@@ -173,7 +173,7 @@ vi(sp, ep)
 err:				flush_mappedkey(sp);
 
 			/* Refresh the screen. */
-			if (sp->refresh(sp, ep)) {
+			if (sp->srefresh(sp, ep)) {
 				eval = 1;
 				break;
 			}
@@ -193,7 +193,7 @@ err:				flush_mappedkey(sp);
 	(k) = getkey(sp, TXT_MAPCOMMAND);				\
 	if (F_ISSET(sp, S_UPDATE_MODE)) {				\
 		F_CLR(sp, S_UPDATE_MODE);				\
-		sp->refresh(sp, ep);					\
+		sp->srefresh(sp, ep);					\
 	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
 		(k) = getkey(sp, TXT_MAPCOMMAND);			\
@@ -584,7 +584,7 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 	 */
 	if (beg != sp->cno) {
 		sp->cno = beg;
-		sp->refresh(sp, ep);
+		sp->srefresh(sp, ep);
 	}
 
 	/*
