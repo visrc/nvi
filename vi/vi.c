@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.18 1995/01/30 18:10:33 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:10:33 $";
+static char sccsid[] = "$Id: vi.c,v 9.19 1995/01/31 09:50:12 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:50:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -329,7 +329,7 @@ intr:				if (term_flush(sp, CH_MAPPED))
 					msgq(sp, M_ERR,
 				"167|Interrupted: mapped keys discarded");
 				else
-					ex_message(sp, NULL, EXM_INTERRUPTED);
+					msgq(sp, M_ERR, "245|Interrupted");
 				CLR_INTERRUPT(sp);
 			}
 			if (F_ISSET(sp, S_SCR_RESIZE))

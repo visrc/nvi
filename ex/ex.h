@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.10 1995/01/30 12:03:23 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:03:23 $
+ *	$Id: ex.h,v 9.11 1995/01/31 09:51:03 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:51:03 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -172,7 +172,7 @@ int	argv_exp3 __P((SCR *, EXCMDARG *, char *, size_t));
 int	argv_free __P((SCR *));
 
 /* Ex common messages. */
-enum exmtype { EXM_INTERRUPTED, EXM_NOPREVRE, EXM_NORC, EXM_USAGE };
+enum exmtype { EXM_NOPREVRE, EXM_NORC, EXM_USAGE };
 void	ex_message __P((SCR *, const EXCMDLIST *, enum exmtype));
 
 /* Ex parser function prototypes. */
