@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.10 1993/05/11 17:14:07 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:07 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.11 1993/05/12 11:16:29 bostic Exp $ (Berkeley) $Date: 1993/05/12 11:16:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,8 +243,13 @@ fileexpand(sp, ep, globp, word, wordlen)
 				p += ep->nlen;
 				break;
 			case '#':
-				len = strlen(sp->altfname);
-				memmove(p, sp->altfname, len);
+				if (sp->altfname != NULL) {
+					len = strlen(sp->altfname);
+					memmove(p, sp->altfname, len);
+				} else {
+					len = sp->eprev->nlen;
+					memmove(p, sp->eprev->name, len);
+				}
 				p += len;
 				break;
 			case '\\':
