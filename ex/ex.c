@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.120 1994/05/01 13:40:36 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:40:36 $";
+static char sccsid[] = "$Id: ex.c,v 8.121 1994/05/02 13:54:29 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:54:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,6 +99,8 @@ ex(sp, ep)
 		case INP_EOF:
 		case INP_ERR:
 			F_SET(sp, S_EXIT_FORCE);
+			/* FALLTHROUGH */
+		case INP_INTR:
 			goto ret;
 		}
 
@@ -217,6 +219,8 @@ ex_icmd(sp, ep, cmd, len)
 	char *cmd;
 	size_t len;
 {
+	int rval;
+
 	/*
 	 * Ex goes through here for each vi :colon command and for each ex
 	 * command, however, globally executed commands don't go through
@@ -224,8 +228,10 @@ ex_icmd(sp, ep, cmd, len)
 	 * interruptible flags now.
 	 */
 	F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
-
-	return (ex_cmd(sp, ep, cmd, len));
+	rval = ex_cmd(sp, ep, cmd, len);
+	if (F_ISSET(sp, S_INTERRUPTED))
+		term_flush(sp, "Interrupted", CH_MAPPED);
+	return (rval);
 }
 
 /* Special command structure for :s as a repeat substitution command. */
@@ -1163,22 +1169,22 @@ addr2:	switch (exc.addrcnt) {
 		 */
 		if (arg1_len == NULL && save_cmdlen == 0)
 			return (0);
-		if (IN_VI_MODE(sp) && term_push(sp, "\n", 1, 0, 0))
+		if (IN_VI_MODE(sp) && term_push(sp, "\n", 1, 0))
 			goto err;
 		if (save_cmdlen != 0)
-			if (term_push(sp, save_cmd, save_cmdlen, 0, 0))
+			if (term_push(sp, save_cmd, save_cmdlen, 0))
 				goto err;
 		if (arg1 != NULL) {
 			if (IN_VI_MODE(sp) && save_cmdlen != 0 &&
-			    term_push(sp, "|", 1, 0, 0))
+			    term_push(sp, "|", 1, 0))
 				goto err;
-			if (term_push(sp, arg1, arg1_len, 0, 0))
+			if (term_push(sp, arg1, arg1_len, 0))
 				goto err;
 			if (file_lline(sp, ep, &sp->frp->lno))
 				goto err;
 			F_SET(sp->frp, FR_CURSORSET);
 		}
-		if (IN_VI_MODE(sp) && term_push(sp, ":", 1, 0, 0))
+		if (IN_VI_MODE(sp) && term_push(sp, ":", 1, 0))
 			goto err;
 		return (0);
 	}
@@ -1269,7 +1275,7 @@ err:	if (save_cmdlen == 0)
 	if (save_cmdlen != 0)
 		msgq(sp, M_ERR,
 		    "Ex command failed: remaining command input discarded.");
-	term_map_flush(sp, "Ex command failed");
+	term_flush(sp, "Ex command failed", CH_MAPPED);
 	return (1);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.44 1994/04/26 17:01:16 bostic Exp $ (Berkeley) $Date: 1994/04/26 17:01:16 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.45 1994/05/02 13:54:58 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:54:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -469,9 +469,6 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
-	/* Set up interrupts. */
-	teardown = !intr_init(sp);
-
 	/*
 	 * bp:		if interactive, line cache
 	 * blen:	if interactive, line cache length
@@ -822,9 +819,6 @@ endmatch:	if (!linechanged)
 	if (0) {
 ret1:		rval = 1;
 	}
-
-	if (teardown)
-		intr_end(sp);
 
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
