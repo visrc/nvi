@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.10 1996/05/07 19:58:59 bostic Exp $ (Berkeley) $Date: 1996/05/07 19:58:59 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.11 1996/05/13 10:20:03 bostic Exp $ (Berkeley) $Date: 1996/05/13 10:20:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,8 +107,8 @@ vs_columns(sp, lp, lno, cnop, diffp)
 	recno_t lno;
 	size_t *cnop, *diffp;
 {
-	size_t chlen, cno, last, len, scno, tab_off;
-	int ch, listset;
+	size_t chlen, cno, curoff, last, len, scno;
+	int ch, leftright, listset;
 	char *p;
 
 	/* Need the line to go any further. */
@@ -125,40 +125,51 @@ done:		if (diffp != NULL)		/* XXX */
 		return (0);
 	}
 
+	/* Store away the values of the list and leftright edit options. */
 	listset = O_ISSET(sp, O_LIST);
+	leftright = O_ISSET(sp, O_LEFTRIGHT);
 
+	/*
+	 * Initialize the pointer into the buffer and screen and current
+	 * offsets.
+	 */
 	p = lp;
-	scno = tab_off = 0;
+	curoff = scno = 0;
 
 	/* Leading number if O_NUMBER option set. */
 	if (O_ISSET(sp, O_NUMBER))
 		scno += O_NUMBER_LENGTH;
 
+	/* Macro to return the display length of any signal character. */
 #define	CHLEN(val) (ch = *(u_char *)p++) == '\t' &&			\
 	    !listset ? TAB_OFF(val) : KEY_LEN(sp, ch);
+
+	/*
+	 * If folding screens (the historic vi screen format), past the end
+	 * of the current screen, and the character was a tab, reset the
+	 * current screen column to 0, and the total screen columns to the
+	 * last column of the screen.  Otherwise, display the rest of the
+	 * character in the next screen.
+	 */
 #define	TAB_RESET {							\
-	/*								\
-	 * If past the end of the screen, and the character was a tab,	\
-	 * reset the screen column to 0.  Otherwise, display the rest	\
-	 * of the character on the next line.				\
-	 */								\
-	if ((tab_off += chlen) >= sp->cols)				\
+	curoff += chlen;						\
+	if (!leftright && curoff >= sp->cols)				\
 		if (ch == '\t') {					\
-			tab_off = 0;					\
+			curoff = 0;					\
 			scno -= scno % sp->cols;			\
 		} else							\
-			tab_off -= sp->cols;				\
+			curoff -= sp->cols;				\
 }
 	if (cnop == NULL)
 		while (len--) {
-			chlen = CHLEN(tab_off);
+			chlen = CHLEN(curoff);
 			last = scno;
 			scno += chlen;
 			TAB_RESET;
 		}
 	else
 		for (cno = *cnop;; --cno) {
-			chlen = CHLEN(tab_off);
+			chlen = CHLEN(curoff);
 			last = scno;
 			scno += chlen;
 			TAB_RESET;
@@ -166,13 +177,14 @@ done:		if (diffp != NULL)		/* XXX */
 				break;
 		}
 
-	/* Trailing '$' if O_LIST option set. */
-	if (O_ISSET(sp, O_LIST) && cnop == NULL)
+	/* Add the trailing '$' if the O_LIST option set. */
+	if (listset && cnop == NULL)
 		scno += KEY_LEN(sp, '$');
 
 	/*
-	 * The input screen code needs to know how much additional room
-	 * tabs required.
+	 * The text input screen code needs to know how much additional
+	 * room the last two characters required, so that it can handle
+	 * tab character displays correctly.
 	 */
 	if (diffp != NULL)
 		*diffp = scno - last;
@@ -222,8 +234,8 @@ vs_colpos(sp, lno, cno)
 	recno_t lno;
 	size_t cno;
 {
-	size_t chlen, len, llen, off, scno, tab_off;
-	int ch, listset;
+	size_t chlen, curoff, len, llen, off, scno;
+	int ch, leftright, listset;
 	char *lp, *p;
 
 	/* Need the line to go any further. */
@@ -233,7 +245,9 @@ vs_colpos(sp, lno, cno)
 	if (lp == NULL || llen == 0)
 		return (0);
 
+	/* Store away the values of the list and leftright edit options. */
 	listset = O_ISSET(sp, O_LIST);
+	leftright = O_ISSET(sp, O_LEFTRIGHT);
 
 	/* Discard screen (logical) lines. */
 	off = cno / sp->cols;
@@ -243,26 +257,27 @@ vs_colpos(sp, lno, cno)
 			scno += CHLEN(scno);
 
 		/*
-		 * If reached the end of the physical line, return
-		 * the last physical character in the line.
+		 * If reached the end of the physical line, return the last
+		 * physical character in the line.
 		 */
 		if (len == 0)
 			return (llen - 1);
 
 		/*
-		 * If the character was a tab, reset the screen column to 0.
-		 * Otherwise, the rest of the character is displayed on the
-		 * next line.
+		 * If folding screens (the historic vi screen format), past
+		 * the end of the current screen, and the character was a tab,
+		 * reset the current screen column to 0.  Otherwise, the rest
+		 * of the character is displayed in the next screen.
 		 */
-		if (ch == '\t')
+		if (leftright && ch == '\t')
 			scno = 0;
 		else
 			scno -= sp->cols;
 	}
 
 	/* Step through the line until reach the right character or EOL. */
-	for (tab_off = scno; len--;) {
-		chlen = CHLEN(tab_off);
+	for (curoff = scno; len--;) {
+		chlen = CHLEN(curoff);
 
 		/*
 		 * If we've reached the specific character, there are three
