@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.51 1993/05/05 17:17:05 bostic Exp $ (Berkeley) $Date: 1993/05/05 17:17:05 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.52 1993/05/05 20:07:34 bostic Exp $ (Berkeley) $Date: 1993/05/05 20:07:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -382,7 +382,7 @@ slow:	/* Find the current line in the map. */
 	 * If doing left-right scrolling, and the cursor movement has
 	 * changed the screen being displayed, fix it.
 	 */
-	if (O_ISSET(sp, O_LEFTRIGHT)) {
+	if (!ISINFOLINE(sp, smp) && O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = svi_screens(sp, ep, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
 			for (smp = HMAP; smp <= TMAP; ++smp)
