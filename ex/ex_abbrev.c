@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 10.2 1995/05/05 18:48:22 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:48:22 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 10.3 1995/06/09 12:51:29 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ ex_abbr(sp, cmdp)
 	switch (cmdp->argc) {
 	case 0:
 		if (seq_dump(sp, SEQ_ABBREV, 0) == 0)
-			msgq(sp, M_INFO, "233|No abbreviations to display");
+			msgq(sp, M_INFO, "105|No abbreviations to display");
 		return (0);
 	case 2:
 		break;
@@ -71,13 +71,13 @@ ex_abbr(sp, cmdp)
 	 */
 	if (!inword(cmdp->argv[0]->bp[cmdp->argv[0]->len - 1])) {
 		msgq(sp, M_ERR,
-		    "234|Abbreviations must end with a \"word\" character");
+		    "106|Abbreviations must end with a \"word\" character");
 			return (1);
 	}
 	for (p = cmdp->argv[0]->bp; *p != '\0'; ++p)
 		if (isblank(p[0])) {
 			msgq(sp, M_ERR,
-			    "235|Abbreviations may not contain tabs or spaces");
+			    "107|Abbreviations may not contain tabs or spaces");
 			return (1);
 		}
 	if (cmdp->argv[0]->len > 2)
@@ -85,7 +85,7 @@ ex_abbr(sp, cmdp)
 		    len = cmdp->argv[0]->len - 2; len; --len, ++p)
 			if (inword(p[0]) != inword(p[1])) {
 				msgq(sp, M_ERR,
-"236|Abbreviations may not mix word/non-word characters, except at the end");
+"108|Abbreviations may not mix word/non-word characters, except at the end");
 				return (1);
 			}
 
@@ -116,7 +116,7 @@ ex_unabbr(sp, cmdp)
 	if (!F_ISSET(sp->gp, G_ABBREV) ||
 	    seq_delete(sp, ap->bp, ap->len, SEQ_ABBREV)) {
 		p = msg_print(sp, ap->bp, &nf);
-		msgq(sp, M_ERR, "237|\"%s\" is not an abbreviation", ap->bp);
+		msgq(sp, M_ERR, "109|\"%s\" is not an abbreviation", ap->bp);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 		return (1);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 10.3 1995/06/08 18:53:43 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:43 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 10.4 1995/06/09 12:51:47 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,7 @@ ex_preserve(sp, cmdp)
 	NEEDFILE(sp, cmdp->cmd);
 
 	if (!F_ISSET(sp->ep, F_RCV_ON)) {
-		msgq(sp, M_ERR, "147|Preservation of this file not possible");
+		msgq(sp, M_ERR, "142|Preservation of this file not possible");
 		return (1);
 	}
 
@@ -61,7 +61,7 @@ ex_preserve(sp, cmdp)
 	if (rcv_sync(sp, RCV_SNAPSHOT))
 		return (1);
 
-	msgq(sp, M_INFO, "148|File preserved");
+	msgq(sp, M_INFO, "143|File preserved");
 	return (0);
 }
 

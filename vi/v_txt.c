@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.3 1995/06/08 19:02:04 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:04 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.4 1995/06/09 12:52:31 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -362,7 +362,7 @@ v_txt_ev(sp, evp, completep)
 		if (++vip->im_abcnt > MAX_ABBREVIATION_EXPANSION) {
 			if (v_event_flush(sp, CH_ABBREVIATED))
 				msgq(sp, M_ERR,
-"116|Abbreviation exceeded expansion limit: characters discarded");
+"191|Abbreviation exceeded expansion limit: characters discarded");
 			vip->im_abcnt = 0;
 			goto ret;
 		}
@@ -978,7 +978,7 @@ ins_ch:		/*
 		    iscntrl(evp->e_c) &&
 		    evp->e_value != K_FORMFEED && evp->e_value != K_TAB) {
 			msgq(sp, M_BERR,
-			    "183|Illegal character; quote to enter");
+			    "192|Illegal character; quote to enter");
 			break;
 		}
 
@@ -1500,7 +1500,7 @@ txt_backup(sp, tiqh, tp)
 
 	/* Get a handle on the previous TEXT structure. */
 	if ((ntp = tp->q.cqe_prev) == (void *)tiqh) {
-		msgq(sp, M_BERR, "184|Already at the beginning of the insert");
+		msgq(sp, M_BERR, "193|Already at the beginning of the insert");
 		return (tp);
 	}
 
@@ -2054,5 +2054,5 @@ static void
 txt_nomorech(sp)
 	SCR *sp;
 {
-	msgq(sp, M_BERR, "182|No more characters to erase");
+	msgq(sp, M_BERR, "194|No more characters to erase");
 }

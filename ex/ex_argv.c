@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.3 1995/06/08 18:53:31 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:31 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.4 1995/06/09 12:51:33 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -312,7 +312,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			exp = EXP(sp);
 			if (exp->lastbcomm == NULL) {
 				msgq(sp, M_ERR,
-				    "123|No previous command to replace \"!\"");
+				    "115|No previous command to replace \"!\"");
 				return (1);
 			}
 			len += tlen = strlen(exp->lastbcomm);
@@ -324,7 +324,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 		case '%':
 			if ((t = sp->frp->name) == NULL) {
 				msgq(sp, M_ERR,
-				    "124|No filename to substitute for %%");
+				    "116|No filename to substitute for %%");
 				return (1);
 			}
 			tlen = strlen(t);
@@ -337,7 +337,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 		case '#':
 			if ((t = sp->alt_name) == NULL) {
 				msgq(sp, M_ERR,
-				    "125|No filename to substitute for #");
+				    "117|No filename to substitute for #");
 				return (1);
 			}
 			len += tlen = strlen(t);
@@ -554,7 +554,7 @@ err:		if (ifp != NULL)
 		/* Assume that all shells have -c. */
 		execl(sh_path, sh, "-c", bp, NULL);
 		p = msg_print(sp, sh_path, &nf1);
-		msgq(sp, M_SYSERR, "126|Error: execl: %s", p);
+		msgq(sp, M_SYSERR, "118|Error: execl: %s", p);
 		if (nf1)
 			FREE_SPACE(sp, p, 0);
 		_exit(127);
@@ -620,7 +620,7 @@ err:		if (ifp != NULL)
 
 	if (ferror(efp)) {
 ioerr:		p = msg_print(sp, sh, &nf1);
-		msgq(sp, M_ERR, "127|I/O error: %s", p);
+		msgq(sp, M_ERR, "119|I/O error: %s", p);
 		if (nf1)
 			FREE_SPACE(sp, p, 0);
 binc_err:	rval = 1;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.3 1995/06/08 18:53:57 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:57 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.4 1995/06/09 12:51:58 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,7 +200,7 @@ ex_ncheck(sp, force)
 	    sp->cargv != NULL && sp->cargv[1] != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
-"170|More files to edit; use n[ext] to go to the next file, q[uit]! to quit");
+"167|More files to edit; use n[ext] to go to the next file, q[uit]! to quit");
 		return (1);
 	}
 	return (0);
@@ -220,26 +220,26 @@ ex_message(sp, p, which)
 {
 	switch (which) {
 	case EXM_EMPTYBUF:
-		msgq(sp, M_ERR, "129|Buffer %s is empty", p);
+		msgq(sp, M_ERR, "168|Buffer %s is empty", p);
 		break;
 	case EXM_INTERRUPT:
 		msgq(sp, M_ERR, v_event_flush(sp, CH_MAPPED) ?
-		    "167|Interrupted: mapped keys discarded" :
-		    "245|Interrupted");
+		    "169|Interrupted: mapped keys discarded" :
+		    "170|Interrupted");
 		break;
 	case EXM_NOPREVBUF:
-		msgq(sp, M_ERR, "128|No previous buffer to execute");
+		msgq(sp, M_ERR, "171|No previous buffer to execute");
 		break;
 	case EXM_NOPREVRE:
-		msgq(sp, M_ERR, "230|No previous regular expression");
+		msgq(sp, M_ERR, "172|No previous regular expression");
 		break;
 	case EXM_NORC:
 		msgq(sp, M_ERR,
-	"103|The %s command requires that a file have already been read in",
+	"173|The %s command requires that a file have already been read in",
 		    p);
 		break;
 	case EXM_USAGE:
-		msgq(sp, M_ERR, "130|Usage: %s", p);
+		msgq(sp, M_ERR, "174|Usage: %s", p);
 		break;
 	}
 }

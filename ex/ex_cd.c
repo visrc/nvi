@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 10.2 1995/05/05 18:49:44 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:49:44 $";
+static char sccsid[] = "$Id: ex_cd.c,v 10.3 1995/06/09 12:51:35 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,7 +59,7 @@ ex_cd(sp, cmdp)
 	if (F_ISSET(sp->ep, F_MODIFIED) &&
 	    !FL_ISSET(cmdp->iflags, E_C_FORCE) && sp->frp->name[0] != '/') {
 		msgq(sp, M_ERR,
-    "131|File modified since last complete write; write or use ! to override");
+    "120|File modified since last complete write; write or use ! to override");
 		return (1);
 	}
 
@@ -70,7 +70,7 @@ ex_cd(sp, cmdp)
 			if ((pw = getpwuid(getuid())) == NULL ||
 			    pw->pw_dir == NULL || pw->pw_dir[0] == '\0') {
 				msgq(sp, M_ERR,
-			   "132|Unable to find home directory location");
+			   "121|Unable to find home directory location");
 				return (1);
 			}
 			dir = pw->pw_dir;
@@ -109,7 +109,7 @@ ex_cd(sp, cmdp)
 			if (getcwd(buf, sizeof(buf)) != NULL)
 				p = msg_print(sp, buf, &nf);
 				msgq(sp, M_INFO,
-				    "133|New current directory: %s", p);
+				    "122|New current directory: %s", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 			return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.5 1995/06/08 19:02:20 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:20 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.6 1995/06/09 12:52:49 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ vs_split(sp, new)
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
 	if (half < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "221|Screen must be larger than %d to split",
+		msgq(sp, M_ERR, "222|Screen must be larger than %d to split",
 		     MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -279,7 +279,7 @@ vs_bg(csp)
 		return (1);
 	if (sp == NULL) {
 		msgq(csp, M_ERR,
-		    "222|You may not background your only displayed screen");
+		    "225|You may not background your only displayed screen");
 		return (1);
 	}
 
@@ -461,7 +461,7 @@ vs_resize(sp, count, adj)
 				goto toobig;
 			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count) {
 toosmall:			msgq(sp, M_BERR,
-				    "227|The screen can only shrink to %d rows",
+				    "226|The screen can only shrink to %d rows",
 				    MINIMUM_SCREEN_ROWS);
 				return (1);
 			}
@@ -472,8 +472,8 @@ toosmall:			msgq(sp, M_BERR,
 	/* Update the underlying screens. */
 	if (sp->gp->scr_resize(s, -count, s_off, g, count, g_off)) {
 toobig:		msgq(sp, M_BERR, adj == A_DECREASE ?
-		    "225|The screen cannot shrink" :
-		    "226|The screen cannot grow");
+		    "227|The screen cannot shrink" :
+		    "228|The screen cannot grow");
 		return (1);
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 10.3 1995/06/08 19:02:09 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:09 $";
+static char sccsid[] = "$Id: v_util.c,v 10.4 1995/06/09 12:52:36 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ v_eof(sp, mp)
 		if (mp->lno >= lno)
 			v_message(sp, NULL, VIM_EOF);
 		else
-			msgq(sp, M_BERR, "192|Movement past the end-of-file");
+			msgq(sp, M_BERR, "195|Movement past the end-of-file");
 	}
 }
 
@@ -80,7 +80,7 @@ v_eol(sp, mp)
 		if (mp->cno == len - 1)
 			v_message(sp, NULL, VIM_EOL);
 		else
-			msgq(sp, M_BERR, "195|Movement past the end-of-line");
+			msgq(sp, M_BERR, "196|Movement past the end-of-line");
 	}
 }
 
@@ -94,7 +94,7 @@ void
 v_nomove(sp)
 	SCR *sp;
 {
-	msgq(sp, M_BERR, "196|No cursor movement made");
+	msgq(sp, M_BERR, "197|No cursor movement made");
 }
 
 /*
@@ -109,9 +109,9 @@ v_sof(sp, mp)
 	MARK *mp;
 {
 	if (mp == NULL || mp->lno == 1)
-		msgq(sp, M_BERR, "197|Already at the beginning of the file");
+		msgq(sp, M_BERR, "198|Already at the beginning of the file");
 	else
-		msgq(sp, M_BERR, "198|Movement past the beginning of the file");
+		msgq(sp, M_BERR, "199|Movement past the beginning of the file");
 }
 
 /*
@@ -124,7 +124,7 @@ void
 v_sol(sp)
 	SCR *sp;
 {
-	msgq(sp, M_BERR, "199|Already in the first column");
+	msgq(sp, M_BERR, "200|Already in the first column");
 }
 
 /*
@@ -159,22 +159,22 @@ v_message(sp, p, which)
 	switch (which) {
 	case VIM_COMBUF:
 		msgq(sp, M_ERR,
-		    "203|Buffers should be specified before the command");
+		    "201|Buffers should be specified before the command");
 		break;
 	case VIM_EOF:
-		msgq(sp, M_BERR, "190|Already at end-of-file");
+		msgq(sp, M_BERR, "202|Already at end-of-file");
 		break;
 	case VIM_EOL:
-		msgq(sp, M_BERR, "193|Already at end-of-line");
+		msgq(sp, M_BERR, "203|Already at end-of-line");
 		break;
 	case VIM_NOCOM:
 	case VIM_NOCOM_B:
 		msgq(sp,
 		    which == VIM_NOCOM_B ? M_BERR : M_ERR,
-		    "206|%s isn't a vi command", p);
+		    "204|%s isn't a vi command", p);
 		break;
 	case VIM_USAGE:
-		msgq(sp, M_ERR, "177|Usage: %s", p);
+		msgq(sp, M_ERR, "205|Usage: %s", p);
 		break;
 	}
 }

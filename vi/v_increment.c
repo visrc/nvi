@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 10.2 1995/05/05 18:55:07 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:07 $";
+static char sccsid[] = "$Id: v_increment.c,v 10.3 1995/06/09 12:52:25 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -141,7 +141,7 @@ decimal:	base = 10;
 		end = beg;
 		ntype = fmt[DEC];
 		if (!isdigit(p[end])) {
-nonum:			msgq(sp, M_ERR, "213|Cursor not in a number");
+nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 			return (1);
 		}
 	}
@@ -268,10 +268,10 @@ inc_err(sp, nret)
 		abort();
 		/* NOREACHED */
 	case NUM_OVER:
-		msgq(sp, M_ERR, "178|Resulting number too large");
+		msgq(sp, M_ERR, "182|Resulting number too large");
 		break;
 	case NUM_UNDER:
-		msgq(sp, M_ERR, "179|Resulting number too small");
+		msgq(sp, M_ERR, "183|Resulting number too small");
 		break;
 	}
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.2 1995/05/05 18:51:43 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:43 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.3 1995/06/09 12:51:50 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ ex_script(sp, cmdp)
 	/* Vi only command. */
 	if (!F_ISSET(sp, S_VI)) {
 		msgq(sp, M_ERR,
-		    "153|The script command is only available in vi mode");
+		    "150|The script command is only available in vi mode");
 		return (1);
 	}
 
@@ -336,7 +336,7 @@ sscr_exec(sp, lno)
 	/* Delete any prompt. */
 	if (sscr_matchprompt(sp, p, len, &tlen)) {
 		if (tlen == len) {
-empty:			msgq(sp, M_BERR, "154|No command to execute");
+empty:			msgq(sp, M_BERR, "151|No command to execute");
 			goto err1;
 		}
 		p += (len - tlen);

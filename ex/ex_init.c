@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.3 1995/06/08 18:53:42 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:42 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.4 1995/06/09 12:51:38 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -403,16 +403,16 @@ denied:	a = msg_print(sp, path, &nf1);
 		switch (etype) {
 		case ROOTOWN:
 			msgq(sp, M_ERR,
-			    "043|%s/%s: not sourced: not owned by you or root",
+			    "125|%s/%s: not sourced: not owned by you or root",
 			    b, a);
 			break;
 		case OWN:
 			msgq(sp, M_ERR,
-			    "044|%s/%s: not sourced: not owned by you", b, a);
+			    "126|%s/%s: not sourced: not owned by you", b, a);
 			break;
 		case WRITER:
 			msgq(sp, M_ERR,
-    "045|%s/%s: not sourced: writeable by a user other than the owner", b, a);
+    "127|%s/%s: not sourced: writeable by a user other than the owner", b, a);
 			break;
 		}
 		if (nf2)
@@ -421,15 +421,15 @@ denied:	a = msg_print(sp, path, &nf1);
 		switch (etype) {
 		case ROOTOWN:
 			msgq(sp, M_ERR,
-			    "046|%s: not sourced: not owned by you or root", a);
+			    "128|%s: not sourced: not owned by you or root", a);
 			break;
 		case OWN:
 			msgq(sp, M_ERR,
-			    "047|%s: not sourced: not owned by you", a);
+			    "129|%s: not sourced: not owned by you", a);
 			break;
 		case WRITER:
 			msgq(sp, M_ERR,
-	    "048|%s: not sourced: writeable by a user other than the owner", a);
+	    "130|%s: not sourced: writeable by a user other than the owner", a);
 			break;
 		}
 

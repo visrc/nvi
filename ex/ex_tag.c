@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.3 1995/06/08 18:53:53 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:53 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.4 1995/06/09 12:51:55 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -147,7 +147,7 @@ ex_tagpush(sp, cmdp)
 		break;
 	case 0:
 		if (exp->tlast == NULL) {
-			msgq(sp, M_ERR, "162|No previous tag entered");
+			msgq(sp, M_ERR, "158|No previous tag entered");
 			return (1);
 		}
 		break;
@@ -320,7 +320,7 @@ ex_tagpop(sp, cmdp)
 			    tp != NULL && --off > 1; tp = tp->q.tqe_next);
 			if (tp == NULL) {
 				msgq(sp, M_ERR,
-"165|Less than %s entries on the tags stack; use :display t[ags]",
+"159|Less than %s entries on the tags stack; use :display t[ags]",
 				    arg);
 				return (1);
 			}
@@ -341,7 +341,7 @@ ex_tagpop(sp, cmdp)
 			if (tp == NULL) {
 				p = msg_print(sp, arg, &nf);
 				msgq(sp, M_ERR,
-"166|No file named %s on the tags stack; use :display t[ags]",
+"160|No file named %s on the tags stack; use :display t[ags]",
 				    p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
@@ -445,7 +445,7 @@ ex_tagdisplay(sp)
 
 	exp = EXP(sp);
 	if ((tp = exp->tagq.tqh_first) == NULL) {
-		msgq(sp, M_INFO, "260|No tags to display");
+		msgq(sp, M_INFO, "161|No tags to display");
 		return (0);
 	}
 
@@ -695,7 +695,7 @@ tag_get(sp, tag, tagp, filep, searchp)
 
 	if (p == NULL) {
 		p = msg_print(sp, tag, &nf1);
-		msgq(sp, M_ERR, "168|%s: tag not found", p);
+		msgq(sp, M_ERR, "162|%s: tag not found", p);
 		if (nf1)
 			FREE_SPACE(sp, p, 0);
 		if (echk)
@@ -731,7 +731,7 @@ tag_get(sp, tag, tagp, filep, searchp)
 malformed:	free(*tagp);
 		p = msg_print(sp, tag, &nf1);
 		t = msg_print(sp, tfp->name, &nf2);
-		msgq(sp, M_ERR, "169|%s: corrupted tag in %s", p, t);
+		msgq(sp, M_ERR, "163|%s: corrupted tag in %s", p, t);
 		if (nf1)
 			FREE_SPACE(sp, p, 0);
 		if (nf2)
@@ -970,14 +970,14 @@ tag_msg(sp, msg, tag)
 	switch (msg) {
 	case TAG_BADLNO:
 		p = msg_print(sp, tag, &nf);
-		msgq(sp, M_ERR, "071|%s: the tag line doesn't exist", p);
+		msgq(sp, M_ERR, "164|%s: the tag line doesn't exist", p);
 		break;
 	case TAG_EMPTY:
-		msgq(sp, M_INFO, "164|The tags stack is empty");
+		msgq(sp, M_INFO, "165|The tags stack is empty");
 		break;
 	case TAG_SEARCH:
 		p = msg_print(sp, tag, &nf);
-		msgq(sp, M_ERR, "161|%s: search pattern not found", p);
+		msgq(sp, M_ERR, "166|%s: search pattern not found", p);
 		break;
 	default:
 		abort();

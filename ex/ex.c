@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.2 1995/06/08 18:53:17 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:17 $";
+static char sccsid[] = "$Id: ex.c,v 10.3 1995/06/09 12:51:22 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -519,7 +519,7 @@ loop:	switch (gp->cm_state) {
 				if (!isalpha(*ecp->cp))
 					break;
 			if ((namelen = ecp->cp - p) == 0) {
-				msgq(sp, M_ERR, "099|Unknown command name");
+				msgq(sp, M_ERR, "080|Unknown command name");
 				goto err;
 			}
 		}
@@ -642,7 +642,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		 */
 		if (F_ISSET(ecp->cmd, E_NOPERM)) {
 			msgq(sp, M_ERR,
-			    "101|The %s command is not currently supported",
+			    "081|The %s command is not currently supported",
 			    ecp->cmd->name);
 			goto err;
 		}
@@ -708,7 +708,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	/* Check for ex mode legality. */
 	if (F_ISSET(sp, S_EX) && (F_ISSET(ecp->cmd, E_VIONLY) || newscreen)) {
 		msgq(sp, M_ERR,
-		    "095|%s: command not available in ex mode", ecp->cmd->name);
+		    "082|%s: command not available in ex mode", ecp->cmd->name);
 		goto err;
 	}
 
@@ -1171,7 +1171,7 @@ end_case23:		break;
 				goto err;
 			}
 			if (ltmp == 0 && *p != '0') {
-				msgq(sp, M_ERR, "104|Count may not be zero");
+				msgq(sp, M_ERR, "083|Count may not be zero");
 				goto err;
 			}
 			ecp->clen -= (t - ecp->cp);
@@ -1215,7 +1215,7 @@ end_case23:		break;
 			if (!isaddr) {
 				p = msg_print(sp, ecp->cp, &nf);
 				msgq(sp, M_ERR,
-				     "105|%s: bad line specification", p);
+				     "084|%s: bad line specification", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 				goto err;
@@ -1310,7 +1310,7 @@ arg_cnt_chk:		if (*++p != 'N') {		/* N */
 			goto addr_verify;
 		default:
 			msgq(sp, M_ERR,
-			    "106|Internal syntax table error (%s: %s)",
+			    "085|Internal syntax table error (%s: %s)",
 			    ecp->cmd->name, KEY_NAME(sp, *p));
 		}
 	}
@@ -1327,7 +1327,7 @@ arg_cnt_chk:		if (*++p != 'N') {		/* N */
 	 * i.e neither 'l' or 'r' in the syntax string.
 	 */
 	if (ecp->clen != 0 || strpbrk(p, "lr")) {
-usage:		msgq(sp, M_ERR, "107|Usage: %s", ecp->cmd->usage);
+usage:		msgq(sp, M_ERR, "086|Usage: %s", ecp->cmd->usage);
 		goto err;
 	}
 
@@ -1486,7 +1486,7 @@ addr_verify:
 	/* Make sure no function left global temporary space locked. */
 	if (F_ISSET(gp, G_TMP_INUSE)) {
 		F_CLR(gp, G_TMP_INUSE);
-		msgq(sp, M_ERR, "109|%s: temporary buffer not released",
+		msgq(sp, M_ERR, "087|%s: temporary buffer not released",
 		    ecp->cmd->name);
 	}
 #endif
@@ -1513,7 +1513,7 @@ func_restart:
 		if (ecp->flagoff < 0) {
 			if (sp->lno <= -ecp->flagoff) {
 				msgq(sp, M_ERR,
-				    "110|Flag offset to before line 1");
+				    "088|Flag offset to before line 1");
 				goto err;
 			}
 		} else {
@@ -1523,7 +1523,7 @@ func_restart:
 			}
 			if (!file_eline(sp, sp->lno + ecp->flagoff)) {
 				msgq(sp, M_ERR,
-				    "111|Flag offset past end-of-file");
+				    "089|Flag offset past end-of-file");
 				goto err;
 			}
 		}
@@ -1643,7 +1643,7 @@ func_restart:
 				if (!at_found) {
 					at_found = 1;
 					msgq(sp, M_ERR,
-"283|@ with range pending when file/screen changed; commands discarded");
+"090|@ with range pending when file/screen changed; commands discarded");
 				}
 				break;
 			case AGV_AT_NORANGE:
@@ -1654,7 +1654,7 @@ func_restart:
 				if (!gv_found) {
 					gv_found = 1;
 					msgq(sp, M_ERR,
-"283|Global/v command pending when file/screen changed; commands discarded");
+"091|Global/v command pending when file/screen changed; commands discarded");
 				}
 			default:
 				abort();
@@ -1694,11 +1694,11 @@ err:	/*
 		}
 	if (ecp->save_cmdlen != 0 || gp->ecq.lh_first != &gp->excmd) {
 		msgq(sp, M_ERR,
-		    "112|Ex command failed: pending commands discarded");
+		    "092|Ex command failed: pending commands discarded");
 		ex_discard(sp);
 	}
 	if (v_event_flush(sp, CH_MAPPED))
-		msgq(sp, M_ERR, "091|Ex command failed: mapped keys discarded");
+		msgq(sp, M_ERR, "093|Ex command failed: mapped keys discarded");
 	return (0);
 }
 
@@ -1887,7 +1887,7 @@ ret:	if (F_ISSET(ecp, E_VISEARCH))
 
 	if (ecp->addrcnt == 2 && ecp->addr2.lno < ecp->addr1.lno) {
 		msgq(sp, M_ERR,
-		    "113|The second address is smaller than the first");
+		    "094|The second address is smaller than the first");
 		*errp = 1;
 	}
 	return (0);
@@ -1973,7 +1973,7 @@ ex_line(sp, ecp, mp, isaddrp, errp)
 		F_SET(ecp, E_ABSMARK);
 
 		if (ecp->clen == 1) {
-			msgq(sp, M_ERR, "114|No mark name supplied");
+			msgq(sp, M_ERR, "095|No mark name supplied");
 			*errp = 1;
 			return (0);
 		}
@@ -1993,7 +1993,7 @@ ex_line(sp, ecp, mp, isaddrp, errp)
 		 */
 		if (ecp->clen < 2 ||
 		    ecp->cp[1] != '/' && ecp->cp[1] != '?') {
-			msgq(sp, M_ERR, "115|\\ not followed by / or ?");
+			msgq(sp, M_ERR, "096|\\ not followed by / or ?");
 			*errp = 1;
 			return (0);
 		}
@@ -2139,7 +2139,7 @@ search:		mp->lno = sp->lno;
 		if (total < 0) {
 			if (-total > mp->lno) {
 				msgq(sp, M_ERR,
-			    "117|Reference to a line number less than 0");
+			    "097|Reference to a line number less than 0");
 				*errp = 1;
 				return (0);
 			}
@@ -2199,7 +2199,7 @@ ex_unknown(sp, cmd, len)
 	bp[len] = '\0';
 	memmove(bp, cmd, len);
 	p = msg_print(sp, bp, &nf);
-	msgq(sp, M_ERR, "100|The %s command is unknown", p);
+	msgq(sp, M_ERR, "098|The %s command is unknown", p);
 	if (nf)
 		FREE_SPACE(sp, p, 0);
 	FREE_SPACE(sp, bp, blen);
@@ -2298,10 +2298,10 @@ ex_badaddr(sp, cp, ba, nret)
 		msgq(sp, M_SYSERR, NULL);
 		return;
 	case NUM_OVER:
-		msgq(sp, M_ERR, "254|Address value overflow");
+		msgq(sp, M_ERR, "099|Address value overflow");
 		return;
 	case NUM_UNDER:
-		msgq(sp, M_ERR, "255|Address value underflow");
+		msgq(sp, M_ERR, "100|Address value underflow");
 		return;
 	}
 
@@ -2316,27 +2316,27 @@ ex_badaddr(sp, cp, ba, nret)
 
 	switch (ba) {
 	case A_COMBO:
-		msgq(sp, M_ERR, "253|Illegal address combination");
+		msgq(sp, M_ERR, "101|Illegal address combination");
 		break;
 	case A_EOF:
 		if (file_lline(sp, &lno))
 			return;
 		if (lno != 0) {
 			msgq(sp, M_ERR,
-			    "119|Illegal address: only %lu lines in the file",
+			    "102|Illegal address: only %lu lines in the file",
 			    lno);
 			break;
 		}
 		/* FALLTHROUGH */
 	case A_EMPTY:
-		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
+		msgq(sp, M_ERR, "103|Illegal address: the file is empty");
 		break;
 	case A_NOTSET:
 		abort();
 		/* NOTREACHED */
 	case A_ZERO:
 		msgq(sp, M_ERR,
-		    "108|The %s command doesn't permit an address of 0",
+		    "104|The %s command doesn't permit an address of 0",
 		    cp->name);
 		break;
 	}

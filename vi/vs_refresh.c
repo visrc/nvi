@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.2 1995/06/08 19:02:17 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:17 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.3 1995/06/09 12:52:42 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -725,11 +725,11 @@ vs_modeline(sp)
 	SCR *sp;
 {
 	static const char *modes[] = {
-		"288|Append",			/* SM_APPEND */
-		"289|Change",			/* SM_CHANGE */
-		"290|Command",			/* SM_COMMAND */
-		"291|Insert",			/* SM_INSERT */
-		"292|Replace",			/* SM_REPLACE */
+		"215|Append",			/* SM_APPEND */
+		"216|Change",			/* SM_CHANGE */
+		"217|Command",			/* SM_COMMAND */
+		"218|Insert",			/* SM_INSERT */
+		"219|Replace",			/* SM_REPLACE */
 	};
 	GS *gp;
 	size_t cols, curlen, endpoint, len, midpoint, oldy, oldx;

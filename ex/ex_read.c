@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.3 1995/06/08 18:53:47 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:47 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.4 1995/06/09 12:51:48 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,7 +184,7 @@ ex_read(sp, cmdp)
 		default:
 			p = msg_print(sp, cmdp->argv[0]->bp, &nf);
 			msgq(sp, M_ERR,
-			    "149|%s expanded into too many file names", p);
+			    "144|%s expanded into too many file names", p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
 usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
@@ -209,16 +209,16 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 	}
 	if (!S_ISREG(sb.st_mode)) {
 		(void)fclose(fp);
-		msgq(sp, M_ERR, "150|Only regular files may be read");
+		msgq(sp, M_ERR, "145|Only regular files may be read");
 		return (1);
 	}
 
 	/* Try and get a lock. */
 	if (file_lock(sp, NULL, NULL, fileno(fp), 0) == LOCK_UNAVAIL)
-		msgq(sp, M_ERR, "264|%s: read lock was unavailable", name);
+		msgq(sp, M_ERR, "146|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	sp->gp->scr_busy(sp, "285|Reading...", 1);
+	sp->gp->scr_busy(sp, "147|Reading...", 1);
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
 	sp->gp->scr_busy(sp, NULL, 0);
 
@@ -301,7 +301,7 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 
 	if (success_msg) {
 		p = msg_print(sp, name, &nf);
-		msgq(sp, M_INFO, "152|%s: %lu lines, %lu characters",
+		msgq(sp, M_INFO, "148|%s: %lu lines, %lu characters",
 		    p, lcnt, ccnt);
 		if (nf)
 			FREE_SPACE(sp, p, 0);

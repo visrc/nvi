@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.3 1995/06/08 19:02:10 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:10 $";
+static char sccsid[] = "$Id: vi.c,v 10.4 1995/06/09 12:52:38 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -305,7 +305,7 @@ interrupt:			(void)gp->scr_bell(sp);
 		 * state before the map was interpreted.  Beauty!
 		 */
 		if (evp->e_value == K_ESCAPE) {
-			msgq(sp, M_BERR, "211|Already in command mode");
+			msgq(sp, M_BERR, "207|Already in command mode");
 			break;
 		}
 
@@ -711,7 +711,7 @@ no_motion:	/*
 		if (F_ISSET(gp, G_TMP_INUSE)) {
 			F_CLR(gp, G_TMP_INUSE);
 			msgq(sp, M_ERR,
-			    "202|vi: temporary buffer not released");
+			    "209|vi: temporary buffer not released");
 		}
 #endif
 		/*
@@ -980,7 +980,7 @@ count:		tmp = *vip->cm_countp;
 	case VS_GET_COUNT_DISCARD:
 		if (!isdigit(evp->e_c)) {
 			msgq(sp, M_ERR,
-			    "214|Number larger than %lu", ULONG_MAX);
+			    "211|Number larger than %lu", ULONG_MAX);
 			goto err;
 		}
 		break;
@@ -1061,7 +1061,7 @@ esc:		if (!F_ISSET(vip, VIP_PARTIAL))
 	if (0) {
 err:		if (v_event_flush(sp, CH_MAPPED))
 			msgq(sp, M_ERR,
-			    "163|Vi command failed: mapped keys discarded");
+			    "212|Vi command failed: mapped keys discarded");
 		goto cmd;
 	}
 
@@ -1203,7 +1203,7 @@ v_keyword(sp)
 	for (moved = 0,
 	    beg = sp->cno; beg < len && isspace(p[beg]); moved = 1, ++beg);
 	if (beg >= len) {
-err:		msgq(sp, M_BERR, "212|Cursor not in a word");
+err:		msgq(sp, M_BERR, "213|Cursor not in a word");
 		return (1);
 	}
 	if (moved) {
@@ -1261,7 +1261,7 @@ v_scr_init(sp)
 		if (sp->t_rows > sp->rows - 1) {
 			sp->t_minrows = sp->t_rows = sp->rows - 1;
 			msgq(sp, M_INFO,
-			    "218|Windows option value is too large, max is %u",
+			    "214|Windows option value is too large, max is %u",
 			    sp->t_rows);
 		}
 		sp->t_maxrows = sp->rows - 1;

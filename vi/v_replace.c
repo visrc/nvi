@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.3 1995/06/08 19:01:59 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:01:59 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.4 1995/06/09 12:52:27 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,7 +187,7 @@ v_rcheck(sp, lno, pp, lenp)
 		return (1);
 	}
 	if (*lenp == 0) {
-		msgq(sp, M_BERR, "185|No characters to replace");
+		msgq(sp, M_BERR, "186|No characters to replace");
 		return (1);
 	}
 	return (0);

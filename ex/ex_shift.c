@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 10.2 1995/05/05 18:51:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:57 $";
+static char sccsid[] = "$Id: ex_shift.c,v 10.3 1995/06/09 12:51:52 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,7 @@ shift(sp, cmdp, rl)
 	NEEDFILE(sp, cmdp->cmd);
 
 	if (O_VAL(sp, O_SHIFTWIDTH) == 0) {
-		msgq(sp, M_INFO, "155|shiftwidth option set to 0");
+		msgq(sp, M_INFO, "152|shiftwidth option set to 0");
 		return (0);
 	}
 

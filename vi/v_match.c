@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 10.2 1995/05/05 18:55:19 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:19 $";
+static char sccsid[] = "$Id: v_match.c,v 10.3 1995/06/09 12:52:26 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,7 @@ v_match(sp, vp)
 	 */
 	for (off = vp->m_start.cno;; ++off) {
 		if (off >= len) {
-nomatch:		msgq(sp, M_BERR, "180|No match character on this line");
+nomatch:		msgq(sp, M_BERR, "184|No match character on this line");
 			return (1);
 		}
 		switch (startc = p[off]) {
@@ -127,7 +127,7 @@ nomatch:		msgq(sp, M_BERR, "180|No match character on this line");
 			break;
 	}
 	if (cnt) {
-		msgq(sp, M_BERR, "181|Matching character not found");
+		msgq(sp, M_BERR, "185|Matching character not found");
 		return (1);
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.3 1995/06/08 18:53:50 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:50 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.4 1995/06/09 12:51:53 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -428,9 +428,9 @@ s(sp, cmdp, s, re, flags)
 				--s;
 			if (errno == ERANGE) {
 				if (lno == LONG_MAX)
-					msgq(sp, M_ERR, "156|Count overflow");
+					msgq(sp, M_ERR, "153|Count overflow");
 				else if (lno == LONG_MIN)
-					msgq(sp, M_ERR, "157|Count underflow");
+					msgq(sp, M_ERR, "154|Count underflow");
 				else
 					msgq(sp, M_SYSERR, NULL);
 				return (1);
@@ -463,7 +463,7 @@ s(sp, cmdp, s, re, flags)
 		case 'r':
 			if (LF_ISSET(SUB_FIRST)) {
 				msgq(sp, M_ERR,
-		    "158|Regular expression specified; r flag meaningless");
+		    "155|Regular expression specified; r flag meaningless");
 				return (1);
 			}
 			if (!F_ISSET(sp, S_RE_SEARCH)) {
@@ -484,7 +484,7 @@ usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 
 noargs:	if (F_ISSET(sp, S_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 		msgq(sp, M_ERR,
-"159|The #, l and p flags may not be combined with the c flag in vi mode");
+"156|The #, l and p flags may not be combined with the c flag in vi mode");
 		return (1);
 	}
 
@@ -845,7 +845,7 @@ endmatch:	if (!linechanged)
 	rval = 0;
 	if (!matched) {
 		if (!F_ISSET(sp, S_EX_GLOBAL)) {
-			msgq(sp, M_ERR, "160|No match found");
+			msgq(sp, M_ERR, "157|No match found");
 			goto err;
 		}
 	} else if (!lflag && !nflag && !pflag)

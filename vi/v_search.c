@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.3 1995/06/08 19:02:02 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:02 $";
+static char sccsid[] = "$Id: v_search.c,v 10.4 1995/06/09 12:52:29 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -345,7 +345,7 @@ v_s_setup(sp, vp, ptrn, flags, dir)
 			return (1);
 		break;
 	case NOTSET:
-		msgq(sp, M_ERR, "187|No previous search pattern");
+		msgq(sp, M_ERR, "189|No previous search pattern");
 		return (1);
 	default:
 		abort();
@@ -404,7 +404,7 @@ v_correct(sp, vp, isdelta)
 	 */
 	if (vp->m_start.lno == vp->m_stop.lno &&
 	    vp->m_start.cno == vp->m_stop.cno) {
-		msgq(sp, M_BERR, "189|Search wrapped to original position");
+		msgq(sp, M_BERR, "190|Search wrapped to original position");
 		return (1);
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 10.2 1995/05/05 18:54:27 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:27 $";
+static char sccsid[] = "$Id: getc.c,v 10.3 1995/06/09 12:52:21 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ cs_init(sp, csp)
 		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
-			msgq(sp, M_BERR, "173|Empty file");
+			msgq(sp, M_BERR, "177|Empty file");
 		else
 			FILE_LERR(sp, csp->cs_lno);
 		return (1);

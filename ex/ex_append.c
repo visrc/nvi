@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.3 1995/06/08 18:53:27 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:27 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.4 1995/06/09 12:51:31 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -217,7 +217,7 @@ ex_aci(sp, cmdp, cmd)
 		/* Go into canonical mode. */
 		if (gp->scr_canon(sp, 1)) {
 			msgq(sp, M_ERR,
-		    "281|Cannot enter ex text input mode from current mode");
+		    "110|Cannot enter ex text input mode from current mode");
 			return (1);
 		}
 

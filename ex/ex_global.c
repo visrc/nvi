@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.3 1995/06/08 18:53:40 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:40 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.4 1995/06/09 12:51:37 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ ex_g_setup(sp, cmdp, cmd)
 
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		msgq(sp, M_ERR,
-	"102|The %s command can't be used as part of a global or v command",
+	"124|The %s command can't be used as part of a global or v command",
 		    cmdp->cmd->name);
 		return (1);
 	}

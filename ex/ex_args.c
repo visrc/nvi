@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 10.3 1995/06/08 18:53:29 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:29 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.4 1995/06/09 12:51:32 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ ex_next(sp, cmdp)
 
 	/* Check for file to move to. */
 	if (cmdp->argc == 0 && (sp->cargv == NULL || sp->cargv[1] == NULL)) {
-		msgq(sp, M_ERR, "120|No more files to edit");
+		msgq(sp, M_ERR, "111|No more files to edit");
 		return (1);
 	}
 
@@ -179,7 +179,7 @@ ex_prev(sp, cmdp)
 	FREF *frp;
 
 	if (sp->cargv == sp->argv) {
-		msgq(sp, M_ERR, "121|No previous files to edit");
+		msgq(sp, M_ERR, "112|No previous files to edit");
 		return (1);
 	}
 
@@ -229,7 +229,7 @@ ex_rew(sp, cmdp)
 	 * Historic practice -- you can rewind to the current file.
 	 */
 	if (sp->argv == NULL) {
-		msgq(sp, M_ERR, "122|No previous files to rewind");
+		msgq(sp, M_ERR, "113|No previous files to rewind");
 		return (1);
 	}
 
@@ -262,7 +262,7 @@ ex_args(sp, cmdp)
 	char **ap;
 
 	if (sp->argv == NULL) {
-		(void)msgq(sp, M_ERR, "263|No file list to display");
+		(void)msgq(sp, M_ERR, "114|No file list to display");
 		return (0);
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 10.2 1995/05/05 18:50:46 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:46 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 10.3 1995/06/09 12:51:43 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ ex_mkexrc(sp, cmdp)
 	if (!FL_ISSET(cmdp->iflags, E_C_FORCE) && !stat(fname, &sb)) {
 		p = msg_print(sp, fname, &nf);
 		msgq(sp, M_ERR,
-		    "141|%s exists, not written; use ! to override", p);
+		    "137|%s exists, not written; use ! to override", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 		return (1);
@@ -105,7 +105,7 @@ ex_mkexrc(sp, cmdp)
 	}
 
 	p = msg_print(sp, fname, &nf);
-	msgq(sp, M_INFO, "142|New exrc file: %s", p);
+	msgq(sp, M_INFO, "138|New exrc file: %s", p);
 	if (nf)
 		FREE_SPACE(sp, p, 0);
 	return (0);
@@ -114,7 +114,7 @@ e1:	sverrno = errno;
 	(void)fclose(fp);
 e2:	p = msg_print(sp, fname, &nf);
 	errno = sverrno;
-	msgq(sp, M_SYSERR, "143|%s", p);
+	msgq(sp, M_SYSERR, "%s", p);
 	if (nf)
 		FREE_SPACE(sp, p, 0);
 	return (1);
