@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.1 1993/06/09 22:26:58 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:58 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.2 1994/02/26 17:13:04 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:13:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,15 +15,30 @@ static char sccsid[] = "$Id: v_ex.c,v 8.1 1993/06/09 22:26:58 bostic Exp $ (Berk
 #include "vcmd.h"
 
 /*
- * v_ex --
- *	Run ex.
+ * v_ex -- :
+ *	Execute a colon command line.
  */
 int
-v_ex(sp, ep, vp, fm, tm, rp)
+v_ex(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
-	return (sp->s_ex_run(sp, ep, rp));
+	return (sp->s_ex_run(sp, ep, &vp->m_final));
+}
+
+/*
+ * v_exmode -- Q
+ *	Switch the editor into EX mode.
+ */
+int
+v_exmode(sp, ep, vp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+{
+	sp->saved_vi_mode = F_ISSET(sp, S_VI_CURSES | S_VI_XAW);
+	F_CLR(sp, S_SCREENS);
+	F_SET(sp, S_EX);
+	return (0);
 }
