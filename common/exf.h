@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.56 1993/05/16 15:07:51 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:07:51 $
+ *	$Id: exf.h,v 5.57 1993/06/01 23:02:06 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:02:06 $
  */
 
 					/* Undo direction. */
@@ -21,9 +21,6 @@ typedef struct _exf {
 	char	*tname;			/* Temporary file name. */
 	size_t	 nlen;			/* File name length. */
 	u_char	 refcnt;		/* Reference count. */
-
-	recno_t	 lno;			/* Last/starting physical line. */
-	size_t	 cno;			/* Last/starting physical column. */
 
 					/* Underlying database state. */
 	DB	*db;			/* File db structure. */
