@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.16 1993/05/12 22:47:47 bostic Exp $ (Berkeley) $Date: 1993/05/12 22:47:47 $";
+static char sccsid[] = "$Id: log.c,v 5.17 1993/05/15 10:09:42 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:09:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -376,6 +376,7 @@ log_backward(sp, ep, rp)
 			memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
 			if (file_dline(sp, ep, lno))
 				goto err;
+			++sp->rptlines[L_DELETED];
 			break;
 		case LOG_LINE_DELETE:
 			didop = 1;
@@ -384,6 +385,7 @@ log_backward(sp, ep, rp)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
+			++sp->rptlines[L_ADDED];
 			break;
 		case LOG_LINE_RESET_F:
 			break;
@@ -394,6 +396,7 @@ log_backward(sp, ep, rp)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
+			++sp->rptlines[L_CHANGED];
 			break;
 		case LOG_MARK:
 			didop = 1;
@@ -473,6 +476,7 @@ log_setline(sp, ep)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
+			++sp->rptlines[L_CHANGED];
 		case LOG_MARK:
 			memmove(&m,
 			    p + sizeof(u_char) + sizeof(u_char), sizeof(MARK));
@@ -545,12 +549,14 @@ log_forward(sp, ep, rp)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
+			++sp->rptlines[L_ADDED];
 			break;
 		case LOG_LINE_DELETE:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
 			if (file_dline(sp, ep, lno))
 				goto err;
+			++sp->rptlines[L_DELETED];
 			break;
 		case LOG_LINE_RESET_B:
 			break;
@@ -561,6 +567,7 @@ log_forward(sp, ep, rp)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
+			++sp->rptlines[L_CHANGED];
 			break;
 		case LOG_MARK:
 			didop = 1;
