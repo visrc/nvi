@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.5 1994/11/14 09:52:18 bostic Exp $ (Berkeley) $Date: 1994/11/14 09:52:18 $";
+static char sccsid[] = "$Id: main.c,v 9.6 1994/11/14 10:18:59 bostic Exp $ (Berkeley) $Date: 1994/11/14 10:18:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -167,10 +167,6 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
-	/* List recovery files if -r specified without file arguments. */
-	if (flagchk == 'r' && argv[0] == NULL)
-		exit(rcv_list(sp));
-
 	/* Build and initialize the GS structure. */
 	__global_list = gp = gs_init();
 
@@ -282,6 +278,17 @@ main(argc, argv)
 			goto errexit;
 		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
 			goto done;
+	}
+
+	/*
+	 * List recovery files if -r specified without file arguments.
+	 * Note, options must be initialized and startup information
+	 * read before doing this.
+	 */
+	if (flagchk == 'r' && argv[0] == NULL) {
+		if (rcv_list(sp))
+			goto errexit;
+		goto done;
 	}
 
 	/*

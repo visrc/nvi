@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 9.1 1994/11/09 18:38:03 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:03 $";
+static char sccsid[] = "$Id: recover.c,v 9.2 1994/11/14 10:19:02 bostic Exp $ (Berkeley) $Date: 1994/11/14 10:19:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -489,13 +489,11 @@ rcv_list(sp)
 	int found, nf;
 	char *p, *t, file[MAXPATHLEN], path[MAXPATHLEN];
 
-	/*
-	 * XXX
-	 * Messages aren't yet set up.
-	 */
 	if (chdir(O_STR(sp, O_RECDIR)) || (dirp = opendir(".")) == NULL) {
-		(void)fprintf(stderr,
-		    "vi: %s: %s\n", O_STR(sp, O_RECDIR), strerror(errno));
+		p = msg_print(sp, O_STR(sp, O_RECDIR), &nf);
+		msgq(sp, M_SYSERR, "recdir: %s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
