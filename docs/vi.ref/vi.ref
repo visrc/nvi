@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.61 1995/02/08 16:40:29 bostic Exp $ (Berkeley) $Date: 1995/02/08 16:40:29 $
+.\"     $Id: vi.ref,v 8.62 1995/02/15 17:41:26 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:41:26 $
 .\"
 .\"
 .so ref.so
@@ -483,6 +483,7 @@ The
 .CO Edit ,
 .CO Ex ,
 .CO Next ,
+.CO Previous ,
 .CO Tag
 and
 .CO Visual
@@ -1253,6 +1254,7 @@ The
 .CO Edit ,
 .CO Ex ,
 .CO Next ,
+.CO Previous ,
 .CO Tag
 and
 .CO Visual

@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.35 1995/02/09 18:27:32 bostic Exp $ (Berkeley) $Date: 1995/02/09 18:27:32 $
+.\"	$Id: ex.cmd.roff,v 8.36 1995/02/15 17:41:23 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:41:23 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -1071,6 +1071,13 @@ write.
 This check can be overridden by appending the
 .QT !
 character to the command name.
+.sp
+Capitalizing the first letter of the command, i.e.
+.CO Previous ,
+while in
+.CO vi
+mode, will edit the file in a new screen.
+In this case, any modifications to the current file are ignored.
 .SS
 .SP Line:
 Set as described for the
