@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 10.8 1995/10/16 15:33:42 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:42 $";
+static char sccsid[] = "$Id: v_increment.c,v 10.9 1995/10/17 08:12:25 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:12:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,6 @@ v_increment(sp, vp)
 	VICMD *vp;
 {
 	enum nresult nret;
-	recno_t lno;
 	u_long ulval;
 	long change, ltmp, lval;
 	size_t beg, blen, end, len, nlen, wlen;

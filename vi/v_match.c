@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 10.6 1995/10/16 15:33:50 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:50 $";
+static char sccsid[] = "$Id: v_match.c,v 10.7 1995/10/17 08:12:28 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:12:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,6 @@ v_match(sp, vp)
 {
 	VCS cs;
 	MARK *mp;
-	recno_t lno;
 	size_t cno, len, off;
 	int cnt, isempty, matchc, startc, (*gc)__P((SCR *, VCS *));
 	char *p;

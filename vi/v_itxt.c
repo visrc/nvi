@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.6 1995/10/16 15:33:43 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:43 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.7 1995/10/17 08:12:26 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:12:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,6 @@ v_ia(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
 	size_t len;
 	u_int32_t flags;
 	int isempty;
@@ -150,7 +149,6 @@ v_ii(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
 	size_t len;
 	u_int32_t flags;
 	int isempty;
@@ -259,7 +257,6 @@ v_change(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
 	size_t blen, len;
 	u_int32_t flags;
 	int isempty, lmode, rval;
@@ -405,7 +402,6 @@ v_Replace(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
 	size_t len;
 	u_int32_t flags;
 	int isempty;
@@ -441,7 +437,6 @@ v_subst(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
 	size_t len;
 	u_int32_t flags;
 	int isempty;
