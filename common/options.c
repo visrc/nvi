@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.26 1993/11/15 09:15:45 bostic Exp $ (Berkeley) $Date: 1993/11/15 09:15:45 $";
+static char sccsid[] = "$Id: options.c,v 8.27 1993/11/30 11:11:33 bostic Exp $ (Berkeley) $Date: 1993/11/30 11:11:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -654,6 +654,7 @@ opts_save(sp, fp)
 			    "set %s=%-3d\n", op->name, O_VAL(sp, cnt));
 			break;
 		case OPT_STR:
+			(void)fprintf(fp, "set ");
 			for (p = op->name; (ch = *p) != '\0'; ++p) {
 				if (isblank(ch))
 					(void)putc('\\', fp);
