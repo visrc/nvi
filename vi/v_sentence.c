@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.12 1994/03/15 09:58:43 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:58:43 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.13 1994/05/08 10:07:24 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:07:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -340,9 +340,9 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 	 * the buffer is in line mode, and the starting position is the last
 	 * character of the previous line.
 	 *
-	 * VC_D and non-motion commands move to the end of the range.
-	 * VC_Y stays at the start.  Ignore VC_C and VC_S.  Adjust the
-	 * start of the range for motion commands.
+	 * VC_Y, VC_D and non-motion commands move to the end of the range.
+	 * Ignore VC_C and VC_S.  Adjust the start of the range for motion
+	 * commands.
 	 */
 	if (ISMOTION(vp))
 		if (vp->m_start.cno == 0 &&
@@ -356,6 +356,6 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 			F_SET(vp, VM_LMODE);
 		} else
 			--vp->m_start.cno;
-	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
+	vp->m_final = vp->m_stop;
 	return (0);
 }
