@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.26 1993/05/16 18:45:44 bostic Exp $ (Berkeley) $Date: 1993/05/16 18:45:44 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.27 1993/05/16 19:34:46 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:34:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,17 +43,18 @@ svi_change(sp, ep, lno, op)
 	if (lno > TMAP->lno)
 		return (0);
 
-	/* If the line is before the map... */
+	/*
+	 * If the line is before the map, and it's a decrement, decrement
+	 * the map.  If it's an increment, increment the map.  Otherwise,
+	 * ignore it.
+	 */
 	if (lno < HMAP->lno) {
-		/* If decremented line is before the map, map decrements. */
 		if (op == LINE_DELETE)
 			for (p = HMAP; p <= TMAP; ++p)
 				--p->lno;
-		/* If incremented line is before the map, map increments. */
-		if (op == LINE_INSERT)
+		else if (op == LINE_INSERT)
 			for (p = HMAP; p <= TMAP; ++p)
 				++p->lno;
-		/* Else, ignore. */
 		return (0);
 	}
 
