@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.18 1996/04/27 11:41:08 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:08 $";
+static const char sccsid[] = "$Id: api.c,v 8.19 1996/06/08 12:22:19 bostic Exp $ (Berkeley) $Date: 1996/06/08 12:22:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -398,7 +398,7 @@ api_opts_get(sp, name, value)
 	switch (op->type) {
 	case OPT_0BOOL:
 	case OPT_1BOOL:
-		MALLOC_RET(sp, *value, char *, strlen(op->name) + 2);
+		MALLOC_RET(sp, *value, char *, strlen(op->name) + 2 + 1);
 		(void)sprintf(*value,
 		    "%s%s", O_ISSET(sp, offset) ? "" : "no", op->name);
 		break;
@@ -412,7 +412,7 @@ api_opts_get(sp, name, value)
 			value[0] = '\0';
 		} else {
 			MALLOC_RET(sp,
-			    *value, char *, strlen(O_STR(sp, offset)));
+			    *value, char *, strlen(O_STR(sp, offset)) + 1);
 			(void)sprintf(*value, "%s", O_STR(sp, offset));
 		}
 		break;
