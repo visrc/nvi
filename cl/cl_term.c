@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.7 1995/09/22 12:54:14 bostic Exp $ (Berkeley) $Date: 1995/09/22 12:54:14 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.8 1995/09/28 13:02:29 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -283,14 +283,15 @@ restart:	EX_INIT_IGNORE(sp);
  * cl_ssize --
  *	Return the terminal size.
  *
- * PUBLIC: int cl_ssize __P((SCR *, int, recno_t *, size_t *));
+ * PUBLIC: int cl_ssize __P((SCR *, int, recno_t *, size_t *, int *));
  */
 int
-cl_ssize(sp, sigwinch, rowp, colp)
+cl_ssize(sp, sigwinch, rowp, colp, changedp)
 	SCR *sp;
 	int sigwinch;
 	recno_t *rowp;
 	size_t *colp;
+	int *changedp;
 {
 #ifdef TIOCGWINSZ
 	struct winsize win;
@@ -298,6 +299,10 @@ cl_ssize(sp, sigwinch, rowp, colp)
 	size_t col, row;
 	int rval;
 	char *p;
+
+	/* Assume it's changed. */
+	if (changedp != NULL)
+		*changedp = 1;
 
 	/*
 	 * !!!
@@ -324,8 +329,11 @@ cl_ssize(sp, sigwinch, rowp, colp)
 		 * without window resizing support.  The user just lost,
 		 * but there's nothing we can do.
 		 */
-		if (row == 0 || col == 0)
-			return (1);
+		if (row == 0 || col == 0) {
+			if (changedp != NULL)
+				*changedp = 0;
+			return (0);
+		}
 
 		/*
 		 * SunOS systems deliver SIGWINCH when windows are uncovered
@@ -336,8 +344,11 @@ cl_ssize(sp, sigwinch, rowp, colp)
 		 * ignore the signal if there's no change.
 		 */
 		if (sp != NULL &&
-		    row == O_VAL(sp, O_LINES) && col == O_VAL(sp, O_COLUMNS))
-			return (1);
+		    row == O_VAL(sp, O_LINES) && col == O_VAL(sp, O_COLUMNS)) {
+			if (changedp != NULL)
+				*changedp = 0;
+			return (0);
+		}
 
 		if (rowp != NULL)
 			*rowp = row;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_read.c,v 10.3 1995/09/21 12:05:32 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:32 $";
+static char sccsid[] = "$Id: cl_read.c,v 10.4 1995/09/28 13:01:22 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:01:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ cl_event(sp, evp, flags, timeout)
 {
 	struct timeval t, *tp;
 	CL_PRIVATE *clp;
-	int nr;
+	int changed, nr;
 
 	/*
 	 * Queue signal based events.  We never clear SIGHUP or SIGTERM events,
@@ -75,11 +75,13 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 		}
 		if (F_ISSET(clp, CL_SIGWINCH)) {
 			F_CLR(clp, CL_SIGWINCH);
-			if (!cl_ssize(sp, 1, &evp->e_lno, &evp->e_cno)) {
+			if (cl_ssize(sp, 1, &evp->e_lno, &evp->e_cno, &changed))
+				return (1);
+			if (changed) {
 				evp->e_event = E_RESIZE;
 				return (0);
 			}
-			/* No change, so ignore the signal. */
+			/* No real change, ignore the signal. */
 		}
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.10 1995/09/28 10:38:23 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:38:23 $";
+static char sccsid[] = "$Id: options.c,v 10.11 1995/09/28 13:02:52 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -368,7 +368,8 @@ opts_init(sp, oargs, rows, cols)
 	 * Note, the windows option code will correct any too-large value
 	 * or when the O_LINES value is 1.
 	 */
-	v = sp->gp->scr_baud(sp);
+	if (sp->gp->scr_baud(sp, &v))
+		return (1);
 	if (v <= 600)
 		v = 8;
 	else if (v <= 1200)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.6 1995/09/21 12:06:12 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:12 $";
+static char sccsid[] = "$Id: options_f.c,v 10.7 1995/09/28 13:03:14 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:03:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -505,8 +505,12 @@ DECL(f_ttywerase)
  */
 DECL(f_w300)
 {
+	u_long v;
+
 	/* Historical behavior for w300 was < 1200. */
-	if (sp->gp->scr_baud(sp) >= 1200)
+	if (sp->gp->scr_baud(sp, &v))
+		return (1);
+	if (v >= 1200)
 		return (0);
 
 	if (CALL(f_window))
@@ -527,7 +531,8 @@ DECL(f_w1200)
 	u_long v;
 
 	/* Historical behavior for w1200 was == 1200. */
-	v = sp->gp->scr_baud(sp);
+	if (sp->gp->scr_baud(sp, &v))
+		return (1);
 	if (v < 1200 || v > 4800)
 		return (0);
 
@@ -549,7 +554,8 @@ DECL(f_w9600)
 	u_long v;
 
 	/* Historical behavior for w9600 was > 1200. */
-	v = sp->gp->scr_baud(sp);
+	if (sp->gp->scr_baud(sp, &v))
+		return (1);
 	if (v <= 4800)
 		return (0);
 

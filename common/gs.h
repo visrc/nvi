@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.10 1995/09/21 10:55:56 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:55:56 $
+ *	$Id: gs.h,v 10.11 1995/09/28 13:02:45 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:45 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -142,7 +142,7 @@ struct _gs {
 					/* Toggle a screen attribute. */
 	int	(*scr_attr) __P((SCR *, scr_attr_t, int));
 					/* Terminal baud rate. */
-	int	(*scr_baud) __P((SCR *));
+	int	(*scr_baud) __P((SCR *, u_long *));
 					/* Beep/bell/flash the terminal. */
 	int	(*scr_bell) __P((SCR *));
 					/* Display a busy message. */
@@ -162,7 +162,7 @@ struct _gs {
 	int	(*scr_fmap)		/* Set a function key. */
 	    __P((SCR *, seq_t, CHAR_T *, size_t, CHAR_T *, size_t));
 					/* Get terminal key value. */
-	int	(*scr_keyval) __P((SCR *, scr_keyval_t, CHAR_T *));
+	int	(*scr_keyval) __P((SCR *, scr_keyval_t, CHAR_T *, int *));
 					/* Insert a line. */
 	int	(*scr_insertln) __P((SCR *));
 					/* Handle an option change. */
@@ -182,7 +182,7 @@ struct _gs {
 					/* Split the screen. */
 	int	(*scr_split) __P((SCR *, SCR *, int));
 					/* Suspend the editor. */
-	int	(*scr_suspend) __P((SCR *));
+	int	(*scr_suspend) __P((SCR *, int *));
 					/* Print usage message. */
 	void	(*scr_usage) __P((void));
 };

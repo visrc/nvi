@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.13 1995/09/24 15:57:59 bostic Exp $ (Berkeley) $Date: 1995/09/24 15:57:59 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.14 1995/09/28 13:01:29 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:01:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,7 @@ main(argc, argv)
 #endif
 
 	/* Figure out how big the screen is. */
-	if (cl_ssize(NULL, 0, &rows, &cols))
+	if (cl_ssize(NULL, 0, &rows, &cols, NULL))
 		exit (1);
 
 	/* Ex wants stdout to be buffered. */

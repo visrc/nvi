@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.11 1995/09/25 08:31:54 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:31:54 $";
+static char sccsid[] = "$Id: key.c,v 10.12 1995/09/28 13:03:03 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:03:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,9 +163,12 @@ v_keyval(sp, name, val)
 {
 	KEYLIST *kp;
 	CHAR_T ch;
+	int dne;
 
 	/* Get the key's value from the screen. */
-	if (sp->gp->scr_keyval(sp, name, &ch))
+	if (sp->gp->scr_keyval(sp, name, &ch, &dne))
+		return;
+	if (dne)
 		return;
 
 	/* Check for duplication. */

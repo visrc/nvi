@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 10.4 1995/09/21 12:07:35 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:35 $";
+static char sccsid[] = "$Id: ex_stop.c,v 10.5 1995/09/28 13:03:23 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:03:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,9 +36,15 @@ ex_stop(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
+	int allowed;
+
 	/* For some strange reason, the force flag turns off autowrite. */
 	if (!FL_ISSET(cmdp->iflags, E_C_FORCE) && file_aw(sp, FS_ALL))
 		return (1);
 
-	return (sp->gp->scr_suspend(sp));
+	if (sp->gp->scr_suspend(sp, &allowed))
+		return (1);
+	if (!allowed)
+		ex_message(sp, NULL, EXM_NOSUSPEND);
+	return (0);
 }

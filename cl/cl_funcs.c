@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.18 1995/09/28 10:38:08 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:38:08 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.19 1995/09/28 13:02:21 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ cl_addstr(sp, str, len)
 {
 	CL_PRIVATE *clp;
 	size_t oldy, oldx;
-	int iv, rval;
+	int iv;
 
 	EX_ABORT(sp);
 	VI_INIT_ABORT(sp);
@@ -65,11 +65,12 @@ cl_addstr(sp, str, len)
 			F_CLR(clp, CL_LLINE_IV);
 	}
 
-	if (rval = (addnstr(str, len) == ERR))
-		msgq(sp, M_ERR, "Error: addstr: %.*s", (int)len, str);
+	if (addnstr(str, len) == ERR)
+		return (1);
+
 	if (iv)
 		(void)standend();
-	return (rval);
+	return (0);
 }
 
 /*
@@ -100,9 +101,13 @@ cl_attr(sp, attribute, on)
 				(void)tputs(clp->smso, 1, cl_putchar);
 			else
 				(void)tputs(clp->rmso, 1, cl_putchar);
-			return (0);
+			break;
 		case S_VI:
-			return (on ? standout() == ERR : standend() == ERR);
+			if (on)
+				(void)standout();
+			else
+				(void)standend();
+			break;
 		}
 		break;
 	default:
@@ -115,11 +120,12 @@ cl_attr(sp, attribute, on)
  * cl_baud --
  *	Return the baud rate.
  *
- * PUBLIC: int cl_baud __P((SCR *));
+ * PUBLIC: int cl_baud __P((SCR *, u_long *));
  */
 int
-cl_baud(sp)
+cl_baud(sp, ratep)
 	SCR *sp;
+	u_long *ratep;
 {
 	CL_PRIVATE *clp;
 
@@ -141,11 +147,16 @@ cl_baud(sp)
 	case B200:
 	case B300:
 	case B600:
-		return (600);
+		*ratep = 600;
+		break;
 	case B1200:
-		return (1200);
+		*ratep = 1200;
+		break;
+	default:
+		*ratep = 9600;
+		break;
 	}
-	return (9600);
+	return (0);
 }
 
 /*
@@ -175,9 +186,9 @@ cl_bell(sp)
 	 * beeped or the screen flashed.
 	 */
 	if (O_ISSET(sp, O_FLASH))
-		flash();
+		(void)flash();
 	else
-		beep();
+		(void)beep();
 	return (0);
 }
 
@@ -441,13 +452,14 @@ cl_insertln(sp)
  * cl_keyval --
  *	Return the value for a special key.
  *
- * PUBLIC: int cl_keyval __P((SCR *, scr_keyval_t, CHAR_T *));
+ * PUBLIC: int cl_keyval __P((SCR *, scr_keyval_t, CHAR_T *, int *));
  */
 int
-cl_keyval(sp, val, chp)
+cl_keyval(sp, val, chp, dnep)
 	SCR *sp;
 	scr_keyval_t val;
 	CHAR_T *chp;
+	int *dnep;
 {
 	CL_PRIVATE *clp;
 
@@ -458,19 +470,24 @@ cl_keyval(sp, val, chp)
 	clp = CLP(sp);
 	switch (val) {
 	case KEY_VEOF:
-		return ((*chp = clp->orig.c_cc[VEOF]) == _POSIX_VDISABLE);
+		*dnep = (*chp = clp->orig.c_cc[VEOF]) == _POSIX_VDISABLE;
+		break;
 	case KEY_VERASE:
-		return ((*chp = clp->orig.c_cc[VERASE]) == _POSIX_VDISABLE);
+		*dnep = (*chp = clp->orig.c_cc[VERASE]) == _POSIX_VDISABLE;
+		break;
 	case KEY_VKILL:
-		return ((*chp = clp->orig.c_cc[VKILL]) == _POSIX_VDISABLE);
+		*dnep = (*chp = clp->orig.c_cc[VKILL]) == _POSIX_VDISABLE;
+		break;
 #ifdef VWERASE
 	case KEY_VWERASE:
-		return ((*chp = clp->orig.c_cc[VWERASE]) == _POSIX_VDISABLE);
+		*dnep = (*chp = clp->orig.c_cc[VWERASE]) == _POSIX_VDISABLE;
+		break;
 #endif
 	default:
-		return (1);
+		*dnep = 1;
+		break;
 	}
-	/* NOTREACHED */
+	return (0);
 }
 
 /*
@@ -537,8 +554,7 @@ int
 cl_rename(sp)
 	SCR *sp;
 {
-	/* Curses doesn't care if you rename the file. */
-	return (0);
+	return (0);			/* Curses doesn't care. */
 }
 
 /*
@@ -608,22 +624,24 @@ cl_split(old, new, to_up)
  * cl_suspend --
  *	Suspend a screen.
  *
- * PUBLIC: int cl_suspend __P((SCR *));
+ * PUBLIC: int cl_suspend __P((SCR *, int *));
  */
 int
-cl_suspend(sp)
+cl_suspend(sp, allowedp)
 	SCR *sp;
+	int *allowedp;
 {
 	struct termios t;
 	CL_PRIVATE *clp;
 	GS *gp;
 	size_t oldy, oldx;
-	int rval;
+	int changed;
 
 	EX_INIT_ABORT(sp);
 	VI_INIT_ABORT(sp);
 
-	rval = 0;
+	*allowedp = 1;
+
 	switch (F_ISSET(sp, S_EX | S_VI)) {
 	case S_EX:
 		/*
@@ -650,8 +668,10 @@ cl_suspend(sp)
 		}
 
 		/* Stop the process group. */
-		if (rval = kill(0, SIGTSTP))
+		if (kill(0, SIGTSTP)) {
 			msgq(sp, M_SYSERR, "suspend: kill");
+			return (1);
+		}
 
 		/* Time passes ... */
 
@@ -659,7 +679,7 @@ cl_suspend(sp)
 		if (F_ISSET(gp, G_STDIN_TTY) &&
 		    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
 			msgq(sp, M_SYSERR, "suspend: tcsetattr current");
-			rval = 1;
+			return (1);
 		}
 		break;
 	case S_VI:
@@ -677,8 +697,10 @@ cl_suspend(sp)
 		(void)endwin();
 
 		/* Stop the process group. */
-		if (rval = kill(0, SIGTSTP))
+		if (kill(0, SIGTSTP)) {
 			msgq(sp, M_SYSERR, "suspend: kill");
+			return (1);
+		}
 
 		/* Time passes ... */
 
@@ -687,22 +709,24 @@ cl_suspend(sp)
 		(void)cl_refresh(sp, 1);
 
 		/* If the screen changed size, set the SIGWINCH bit. */
-		if (!cl_ssize(sp, 1, NULL, NULL))
+		if (cl_ssize(sp, 1, NULL, NULL, &changed))
+			return (1);
+		if (changed)
 			F_SET(CLP(sp), CL_SIGWINCH);
 		break;
 	default:
 		abort();
 	}
-	return (rval);
+	return (0);
 }
 
 /*
  * cl_usage --
  *	Print out the curses usage messages.
  * 
- * PUBLIC: void cl_usage __P((void));
+ * PUBLIC: int cl_usage __P((void));
  */
-void
+int
 cl_usage()
 {
 #define	USAGE "\
@@ -710,6 +734,7 @@ usage: ex [-eFRrsv] [-c command] [-t tag] [-w size] [file ...]\n\
 usage: vi [-eFlRrv] [-c command] [-t tag] [-w size] [file ...]\n"
 	(void)fprintf(stderr, "%s", USAGE);
 #undef	USAGE
+	return (0);
 }
 
 #ifdef DEBUG
