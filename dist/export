@@ -30,7 +30,7 @@ cvs export $option -d $dir vi
     perl -pi -e "s(%H%)($date)" README
 )
 (cd $dir/ex
-    perl -pi -e "s/\\\$Revision: 8.2 $/$version/" version.h
+    perl -pi -e "s/\\\$Revision: 8.3 $/$version/" version.h
     perl -pi -e "s(%H%)($date)" version.h
 )
 tar czf $dir.tar.gz $dir

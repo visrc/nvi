@@ -331,7 +331,7 @@ AC_ARG_ENABLE(threads,
 	[vi_cv_threads="yes"], [vi_cv_threads="no"])
 AC_MSG_RESULT($vi_cv_threads)
 if test "$vi_cv_threads" = "yes"; then
-	LIBS="$LIBS -pthread"
+	LIBS="$LIBS -lpthread"
 	AC_CACHE_VAL(vi_cv_have_pthreads, [dnl
 	AC_TRY_LINK([#include <pthread.h>],
 		[pthread_self()],
