@@ -1,6 +1,6 @@
-#	$Id: README,v 8.151 1997/08/03 16:25:19 bostic Exp $ (Berkeley) $Date: 1997/08/03 16:25:19 $
+#	$Id: README,v 8.152 1997/08/03 16:46:14 bostic Exp $ (Berkeley) $Date: 1997/08/03 16:46:14 $
 
-This is version 1.79 (%H%) of nex/nvi, a reimplementation of the ex/vi
+This is version 1.80 (%H%) of nex/nvi, a reimplementation of the ex/vi
 text editors originally distributed as part of the Fourth Berkeley
 Software Distribution (4BSD), by the University of California, Berkeley.
 
