@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.56 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
+static const char sccsid[] = "$Id: exf.c,v 10.57 2000/07/19 18:31:51 skimo Exp $ (Berkeley) $Date: 2000/07/19 18:31:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -468,8 +468,10 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 		free(ep->rcv_path);
 		ep->rcv_path = NULL;
 	}
-	if (ep->db != NULL)
+	if (ep->db != NULL) {
 		(void)ep->db->close(ep->db, DB_NOSYNC);
+		ep->db = NULL;
+	}
 	free(ep);
 
 	return (open_err && !LF_ISSET(FS_OPENERR) ?
@@ -722,12 +724,14 @@ file_end(sp, ep, force)
 	 *
 	 * Close the db structure.
 	 */
-	if (ep->db->close != NULL && 
-	    (sp->db_error = ep->db->close(ep->db, DB_NOSYNC)) != 0 && 
-	    !force) {
-		msgq_str(sp, M_DBERR, frp->name, "241|%s: close");
-		++ep->refcnt;
-		return (1);
+	if (ep->db->close != NULL) {
+		if ((sp->db_error = ep->db->close(ep->db, DB_NOSYNC)) != 0 && 
+		    !force) {
+			msgq_str(sp, M_DBERR, frp->name, "241|%s: close");
+			++ep->refcnt;
+			return (1);
+		}
+		ep->db = NULL;
 	}
 
 	/* COMMITTED TO THE CLOSE.  THERE'S NO GOING BACK... */

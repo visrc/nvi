@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.53 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
+static const char sccsid[] = "$Id: msg.c,v 10.54 2000/07/19 18:31:52 skimo Exp $ (Berkeley) $Date: 2000/07/19 18:31:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -783,8 +783,10 @@ void
 msg_close(gp)
 	GS *gp;
 {
-	if (gp->msg != NULL)
+	if (gp->msg != NULL) {
 		(void)gp->msg->close(gp->msg, 0);
+		gp->msg = NULL;
+	}
 }
 
 /*
