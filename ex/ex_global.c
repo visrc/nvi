@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.27 1993/12/27 17:02:01 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:02:01 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.28 1994/01/08 12:14:07 bostic Exp $ (Berkeley) $Date: 1994/01/08 12:14:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -277,8 +277,10 @@ interrupted:		msgq(sp, M_INFO, "Interrupted.");
 		}
 	}
 
-	/* Set the cursor to the new value. */
-	sp->lno = exp->range_lno;
+	/* Set the cursor to the new value, making sure it exists. */
+	if (file_lline(sp, ep, &lno))
+		return (1);
+	sp->lno = lno < exp->range_lno ? (lno ? lno : 1) : exp->range_lno;
 	if (0) {
 err:		rval = 1;
 	}
