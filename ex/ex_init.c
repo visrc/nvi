@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.14 1996/03/14 21:25:31 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:25:31 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.15 1996/03/19 21:18:54 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:18:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -269,10 +269,15 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
 	size_t len;
 	int ex_flags, nocopy;
 {
+	GS *gp;
 	EXCMD *ecp;
 
-	/* Build an EXCMD structure and put it on the command queue. */
-	CALLOC_RET(sp, ecp, EXCMD *, 1, sizeof(EXCMD));
+	gp = sp->gp;
+	if (EXCMD_RUNNING(gp)) {
+		CALLOC_RET(sp, ecp, EXCMD *, 1, sizeof(EXCMD));
+		LIST_INSERT_HEAD(&gp->ecq, ecp, q);
+	} else
+		ecp = &gp->excmd;
 
 	if (nocopy)
 		ecp->cp = str;
@@ -291,7 +296,6 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
 	F_INIT(ecp,
 	    ex_flags ? E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY : 0);
 
-	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
 	return (0);
 }
 
