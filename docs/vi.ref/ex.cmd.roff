@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.27 1994/09/03 11:22:41 bostic Exp $ (Berkeley) $Date: 1994/09/03 11:22:41 $
+.\"	$Id: ex.cmd.roff,v 8.28 1994/09/19 12:27:02 bostic Exp $ (Berkeley) $Date: 1994/09/19 12:27:02 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -468,13 +468,9 @@ option to be toggled for the duration of the command.
 Unchanged.
 .SP Options:
 Affected by the
-.OP altwerase ,
-.OP autoindent ,
-.OP beautify ,
-.OP showmatch ,
-.OP ttywerase
+.OP autoindent
 and
-.OP wrapmargin
+.OP number
 options.
 .SE
 .KY args
@@ -521,13 +517,9 @@ set to the line before the target line, or to the first
 line of the file if there are no lines preceding the target line.
 .SP Options:
 Affected by the
-.OP altwerase ,
-.OP autoindent ,
-.OP beautify ,
-.OP showmatch ,
-.OP ttywerase
+.OP autoindent
 and
-.OP wrapmargin
+.OP number
 options.
 .SE
 .KY cd
@@ -798,15 +790,10 @@ option setting to be toggled for the duration of this command.
 Set to the last line input; if no lines were input,
 set to the line before the target line, or to the first line
 of the file if there are no lines preceding the target line.
-.SP Options:
 Affected by the
-.OP altwerase ,
-.OP autoindent ,
-.OP beautify ,
-.OP showmatch ,
-.OP ttywerase
+.OP autoindent
 and
-.OP wrapmargin
+.OP number
 options.
 .SE
 .KY join
