@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.2 1994/11/12 13:10:13 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:13 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.3 1994/11/12 14:15:42 bostic Exp $ (Berkeley) $Date: 1994/11/12 14:15:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -114,6 +114,7 @@ ex_tagfirst(sp, tagarg)
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
+	F_SET(sp, S_SCR_CENTER);
 	return (0);
 }
 
@@ -278,6 +279,7 @@ err:		free(tag);
 		sp->cno = m.cno;
 		break;
 	}
+	F_SET(sp, S_SCR_CENTER);
 	return (0);
 }
 
