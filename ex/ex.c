@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.75 1993/02/28 14:00:24 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:24 $";
+static char sccsid[] = "$Id: ex.c,v 5.76 1993/02/28 16:28:38 bostic Exp $ (Berkeley) $Date: 1993/02/28 16:28:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -631,16 +631,19 @@ addr2:	switch(cmd.addrcnt) {
 	if (!FF_ISSET(ep, F_DUMMY | F_IN_GLOBAL))
 		(void)log_cursor(ep);
 
-	/*
-	 * Do the command.  If the world changes, or we're just starting
-	 * up, we're done.
-	 */
+	/* Save the current mode. */
 	saved_mode = FF_ISSET(ep, F_MODE_EX | F_MODE_VI | F_FILE_RESET);
+
+	/* Do the command. */
 	if ((cp->fn)(ep, &cmd))
 		return (1);
+
+	/* If the world changed, we're done. */
 	if (saved_mode != FF_ISSET(ep, F_MODE_EX | F_MODE_VI | F_FILE_RESET))
 		return (0);
-	if (FF_ISSET(ep, F_DUMMY))
+
+	/* If just starting up, or not in ex mode, we're done. */
+	if (FF_ISSET(ep, F_DUMMY) || !FF_ISSET(ep, F_MODE_EX))
 		return (0);
 
 	/*
