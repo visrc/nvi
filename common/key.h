@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.10 1992/10/30 12:31:40 bostic Exp $ (Berkeley) $Date: 1992/10/30 12:31:40 $
+ *	$Id: key.h,v 5.11 1992/11/01 22:58:51 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:58:51 $
  */
 
 #define	K_CR		1
@@ -24,18 +24,30 @@ extern u_char special[];		/* Special characters. */
 #define	GB_NLECHO	0x020		/* Echo the newline. */
 #define	GB_OFF		0x040		/* Leave first buffer char empty. */
 
-#define	ISQ(off)	qb[(off)]
-#define	QINIT		bzero(qb, cblen);
-#define	QSET(off)	qb[(off)] = 1
-
-extern u_long cblen;			/* Buffer lengths. */
-extern u_char *qb;			/* Quote buffer. */
+#define	ISQ(off)	gb_qb[(off)]
+#define	QINIT		bzero(gb_qb, gb_blen);
+#define	QSET(off)	gb_qb[(off)] = 1
 
 extern u_char *atkeybuf;		/* Base of shared at buffer. */
 extern u_char *atkeyp;			/* Next char of shared at buffer. */
 extern u_long atkeybuflen;		/* Remaining keys in shared @ buffer. */
 
-int	gb __P((int, u_char **, size_t *, u_int));
-int	gb_inc __P((void));
+/*
+ * The routines that fill a buffer from the terminal share these three data
+ * structures.  They are a buffer to hold the return value, a quote buffer
+ * so we know which characters are quoted, and a widths buffer.  The last is
+ * used internally to hold the widths of each character.  Any new routines
+ * will need to support these too.
+ */
+extern u_char *gb_cb;			/* Return buffer. */
+extern u_char *gb_qb;			/* Quote buffer. */
+extern u_char *gb_wb;			/* Widths buffer. */
+extern u_long gb_blen;			/* Buffer lengths. */
+
+					/* Real routines. */
+int	ex_gb __P((int, u_char **, size_t *, u_int));
+int	v_gb __P((int, u_char **, size_t *, u_int));
+
+int	gb_inc __P((void));		/* Support routines. */
 void	gb_init __P((void));
 int	getkey __P((u_int));

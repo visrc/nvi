@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.31 1992/10/29 14:42:53 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:53 $";
+static char sccsid[] = "$Id: key.c,v 5.32 1992/11/01 22:58:04 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:58:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: key.c,v 5.31 1992/10/29 14:42:53 bostic Exp $ (Berk
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -31,14 +32,11 @@ static char sccsid[] = "$Id: key.c,v 5.31 1992/10/29 14:42:53 bostic Exp $ (Berk
 
 u_char special[UCHAR_MAX];		/* Special characters. */
 
-u_long cblen;				/* Buffer lengths. */
-u_char *qb;				/* Quote buffer. */
-static u_char *cb;			/* Return buffer. */
-static u_char *wb;			/* Widths buffer. */
+u_char *gb_cb;				/* Return buffer. */
+u_char *gb_qb;				/* Quote buffer. */
+u_char *gb_wb;				/* Widths buffer. */
+u_long gb_blen;				/* Buffer lengths. */
 
-static int	key_inc __P((void));
-static void	modeline __P((int));
-static void	position __P((int));
 static int	ttyread __P((u_char *, int, int));
 
 /*
@@ -79,220 +77,22 @@ gb_init()
 int
 gb_inc()
 {
-	cblen += 256;
-	if ((cb = realloc(cb, cblen)) == NULL ||
-	    (qb = realloc(qb, cblen)) == NULL ||
-	    (wb = realloc(wb, cblen)) == NULL) {
+	gb_blen += 256;
+	if ((gb_cb = realloc(gb_cb, gb_blen)) == NULL ||
+	    (gb_qb = realloc(gb_qb, gb_blen)) == NULL ||
+	    (gb_wb = realloc(gb_wb, gb_blen)) == NULL) {
 			bell();
 			msg("Input too long: %s.", strerror(errno));
-			if (cb)
-				free(cb);
-			if (qb)
-				free(qb);
-			if (wb)
-				free(wb);
-			cb = qb = wb = NULL;
-			cblen = 0;
+			if (gb_cb)
+				free(gb_cb);
+			if (gb_qb)
+				free(gb_qb);
+			if (gb_wb)
+				free(gb_wb);
+			gb_cb = gb_qb = gb_wb = NULL;
+			gb_blen = 0;
 			return (1);
 		}
-	return (0);
-}
-
-/*
- * gb --
- *	Fill a buffer from the terminal.
- */
-int
-gb(prompt, storep, lenp, flags)
-	int prompt;
-	u_char **storep;
-	size_t *lenp;
-	u_int flags;
-	
-{
-	register int ch, cnt, quoted;
-	register u_char *p;
-	size_t clen, col, len;
-	char *dp, oct[5];
-
-	col = 0;
-
-	if (mode == MODE_VI)
-		MOVE(SCREENSIZE(curf), 0);
-
-	/* Display any prompt. */
-	if (prompt) {
-		if (mode == MODE_VI)
-			addch(prompt);
-		else {
-			(void)putchar(prompt);
-			(void)fflush(stdout);
-		}
-		++col;
-	}
-	if (mode == MODE_VI) {
-		clrtoeol();
-		refresh();
-	}
-
-	/* Read in a line. */
-	p = flags & GB_OFF ? cb + 1 : cb;
-	for (len = quoted = 0;;) {
-		if (len >= cblen && gb_inc())
-			return (1);
-			
-		ch = getkey(quoted ? 0 : flags & (GB_MAPCOMMAND | GB_MAPINPUT));
-		if (quoted)
-			goto insch;
-
-		switch(special[ch]) {
-		case K_ESCAPE:
-			if (!(flags & GB_ESC))
-				goto insch;
-			/* FALLTHROUGH */
-		case K_CR:
-		case K_NL:
-			if (flags & GB_NL) {
-				*p++ = '\n';
-				if (len >= cblen && gb_inc())
-					return (1);
-			}
-			if (mode != MODE_VI) {
-				(void)putchar('\n');
-				(void)fflush(stdout);
-			}
-			goto done;
-		case K_VERASE:
-			if (!len) {
-				if (flags & GB_BS) {
-					*storep = NULL;
-					return (0);
-				}
-				break;
-			}
-			--p;
-			--len;
-			if (mode == MODE_VI) {
-				col -= wb[len];
-				MOVE(SCREENSIZE(curf), col);
-				clrtoeol();
-				refresh();
-			} else {
-				for (cnt = wb[len]; cnt > 0; --cnt, --col)
-					(void)printf("\b \b");
-				(void)fflush(stdout);
-			}
-			break;
-		case K_VKILL:
-			if (!len) {
-				bell();
-				break;
-			}
-			if (mode == MODE_VI) {
-				if (prompt) {
-					col = len = 1;
-					MOVE(SCREENSIZE(curf), 1);
-				} else {
-					col = len = 0;
-					MOVE(SCREENSIZE(curf), 0);
-				}
-				clrtoeol();
-				refresh();
-			} else {
-				while (len)
-					for (cnt = wb[--len];
-					    cnt > 0; --cnt, --col)
-						(void)printf("\b \b");
-				(void)fflush(stdout);
-			}
-			p = cb;
-			break;
-		case K_VLNEXT:
-			if (mode == MODE_VI) {
-				addbytes("^", 1);
-				MOVE(SCREENSIZE(curf), col);
-				refresh();
-			} else {
-				(void)putchar('^');
-				(void)putchar('\b');
-				(void)fflush(stdout);
-			}
-			quoted = 1;
-			break;
-		case K_VWERASE:
-			if (!len) {
-				bell();
-				break;
-			}
-			if (mode == MODE_VI) {
-				while (len && isspace(*--p))
-					col -= wb[--len];
-				for (; len && !isspace(*p); --p)
-					col -= wb[--len];
-				MOVE(SCREENSIZE(curf), col);
-				clrtoeol();
-				refresh();
-			} else {
-				while (len && isspace(*--p))
-					for (cnt = wb[--len];
-					    cnt > 0; --cnt, --col)
-						(void)printf("\b \b");
-				for (; len && !isspace(*p); --p)
-					for (cnt = wb[--len];
-					    cnt > 0; --cnt, --col)
-						(void)printf("\b \b");
-				(void)fflush(stdout);
-			}
-			if (len)
-				++p;
-			break;
-		default:
-insch:			if (quoted) {
-				QSET(len);
-				quoted = 0;
-			}
-			/* Add & echo the char. */
-			if (ch == '\t') {
-				clen = 
-				    LVAL(O_TABSTOP) - (col % LVAL(O_TABSTOP));
-				dp = "          ";
-			} else {
-				clen = asciilen[ch];
-				dp = asciiname[ch];
-			}
-			/*
-			 * XXX
-			 * We limit vi command lines to the screen width.
-			 * Should handle longer lines for complex commands.
-			 */
-			if (col == curf->cols) {
-				if (mode == MODE_VI) {
-					bell();
-					break;
-				}
-				(void)putchar('\n');
-				col = 0;
-			}
-			if (mode == MODE_VI)
-				addbytes(dp, clen);
-			else
-				(void)printf("%.*s", dp, clen);
-
-			if (mode == MODE_VI)
-				refresh();
-			else
-				(void)fflush(stdout);
-
-			*p++ = ch;
-			col += wb[len++] = clen;
-			break;
-		}
-	}
-
-done:	*p = '\0';
-	if (lenp)
-		*lenp = p - cb;
-	*storep = cb;
 	return (0);
 }
 
@@ -311,7 +111,7 @@ getkey(flags)
 	static u_char *mapoutput;	/* Mapped key return. */
 	int ch;
 	SEQ *sp;
-	int inuse, ispartial, nr;
+	int ispartial, nr;
 
 	/* If in the middle of an @ macro, return the next char. */
 	if (atkeybuflen) {
