@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.5 1992/10/18 13:10:46 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:10:46 $";
+static char sccsid[] = "$Id: v_util.c,v 5.6 1992/10/24 14:27:13 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:27:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,8 +18,9 @@ static char sccsid[] = "$Id: v_util.c,v 5.5 1992/10/18 13:10:46 bostic Exp $ (Be
 #include <unistd.h>
 
 #include "vi.h"
-#include "options.h"
 #include "vcmd.h"
+#include "options.h"
+#include "screen.h"
 #include "extern.h"
 
 /*
@@ -38,7 +39,7 @@ v_eof(mp)
 			msg("Already at end-of-file.");
 		else {
 			lno = file_lline(curf);
-			if (mp->lno == lno)
+			if (mp->lno >= lno)
 				msg("Already at end-of-file.");
 			else
 				msg("Movement past the end-of-file.");
@@ -50,11 +51,26 @@ v_eof(mp)
  *	Vi end-of-line error.
  */
 void
-v_eol()
+v_eol(mp)
+	MARK *mp;	
 {
+	size_t len;
+	u_char *p;
+
 	bell();
 	if (ISSET(O_VERBOSE))
-		msg("Already at end-of-line.");
+		if (mp == NULL)
+			msg("Already at end-of-line.");
+		else {
+			if ((p = file_gline(curf, mp->lno, &len)) == NULL) {
+				GETLINE_ERR(mp->lno);
+				return;
+			}
+			if (mp->cno == len - 1)
+				msg("Already at end-of-line.");
+			else
+				msg("Movement past the end-of-line.");
+		}
 }
 
 /*
@@ -80,7 +96,7 @@ static struct termios save;
  * v_startex --
  *	Enter into ex mode.
  */
-void
+int
 v_startex()
 {
 	struct termios t;
@@ -88,7 +104,7 @@ v_startex()
 	getyx(stdscr, oldy, oldx);
 
 	/* Go to the ex window line and clear it. */
-	move(LINES - 1, 0);
+	MOVE(SCREENSIZE(curf), 0);
 	clrtoeol();
 	refresh();
 
@@ -112,17 +128,18 @@ v_startex()
 
 	/* Initialize the global that let vi know what happened in ex. */
 	ex_prstate = PR_NONE;
+
+	return (0);
 }
 
 /*
  * v_leaveex --
  *	Leave into ex mode.
  */
-void
+int
 v_leaveex()
 {
-	extern int needexerase;
-	register int cnt;
+	int cnt;
 
 	/* Make sure ex got everything out. */
 	(void)fflush(stdout);
@@ -131,9 +148,10 @@ v_leaveex()
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &save);
 
 	/* Put the cursor back. */
-	move(oldy, oldx);
-	refresh();
+	MOVE(oldy, oldx);
+TRACE("v_leaveex: move to y %u x %u\n", oldy, oldx);
 
+#ifdef notdef
 	/*
 	 * Clear the mode line.
 	 *
@@ -144,11 +162,11 @@ v_leaveex()
 	 * a way to force a line to be updated.
 	 */
 	getyx(curscr, oldy, oldx);
-	wmove(curscr, LINES - 1, 0);
-	for (cnt = COLS; cnt--;)
+	wmove(curscr, SCREENSIZE(curf), 0);
+	for (cnt = COLS; --cnt;)
 		waddch(curscr, 'x');
 	wmove(curscr, oldy, oldx);
-	touchline(stdscr, LINES - 1, 0, COLS - 1);
+#endif
 
 	/*
 	 * Wrote a carriage return; repaint everything.  Since we waited
@@ -160,6 +178,8 @@ v_leaveex()
 	if (ex_prstate == PR_PRINTED) {
 		wrefresh(curscr);
 		needexerase = 0;
-	} else
+	} else {
+		touchline(stdscr, SCREENSIZE(curf), 0, COLS - 1);
 		needexerase = 1;
+	}
 }
