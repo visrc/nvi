@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 8.7 1995/02/07 09:24:56 bostic Exp $ (Berkeley) $Date: 1995/02/07 09:24:56 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 8.8 1995/02/09 15:24:14 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:24:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ static char sccsid[] = "$Id: cl_funcs.c,v 8.7 1995/02/07 09:24:56 bostic Exp $ (
 int
 cl_addnstr(sp, str, len)
 	SCR *sp;
-	char *str;
+	const char *str;
 	size_t len;
 {
 	CINIT;
@@ -67,7 +67,7 @@ cl_addnstr(sp, str, len)
 int
 cl_addstr(sp, str)
 	SCR *sp;
-	char *str;
+	const char *str;
 {
 	CINIT;
 

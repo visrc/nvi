@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.4 1995/01/30 15:14:32 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:14:32 $";
+static char sccsid[] = "$Id: cl_screen.c,v 8.5 1995/02/09 15:24:08 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:24:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ cl_init(sp)
 	char *p;
 
 	CALLOC_RET(sp, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
-	CLP(sp) = clp;
+	sp->cl_private = clp;
 
 #ifdef SYSV_CURSES
 	/*

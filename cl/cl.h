@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 8.3 1995/01/30 15:14:21 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:14:21 $
+ *	$Id: cl.h,v 8.4 1995/02/09 15:24:04 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:24:04 $
  */
 
 typedef struct _cl_private {
@@ -23,8 +23,8 @@ int	cl_copy __P((SCR *, SCR *));
 int	cl_init __P((SCR *));
 
 /* Curses support function prototypes. */
-int	cl_addnstr __P((SCR *, char *, size_t));
-int	cl_addstr __P((SCR *, char *));
+int	cl_addnstr __P((SCR *, const char *, size_t));
+int	cl_addstr __P((SCR *, const char *));
 int	cl_bell __P((SCR *));
 int	cl_clear __P((SCR *));
 int	cl_clrtoeol __P((SCR *));
