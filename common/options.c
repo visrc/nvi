@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.26 1996/02/22 19:55:04 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:04 $";
+static char sccsid[] = "$Id: options.c,v 10.27 1996/02/25 18:21:01 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:21:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -373,7 +373,11 @@ opts_init(sp, oargs)
 	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
 		switch (op->type) {
 		case OPT_0BOOL:
+			break;
 		case OPT_1BOOL:
+			O_SET(sp, cnt);
+			O_D_SET(sp, cnt);
+			break;
 		case OPT_NUM:
 			o_set(sp, cnt, OS_DEF, NULL, O_VAL(sp, cnt));
 			break;
