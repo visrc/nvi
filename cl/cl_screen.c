@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.19 1995/10/31 10:52:14 bostic Exp $ (Berkeley) $Date: 1995/10/31 10:52:14 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.20 1995/10/31 14:47:32 bostic Exp $ (Berkeley) $Date: 1995/10/31 14:47:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -327,6 +327,13 @@ cl_vi_end(gp)
 	/* End curses window. */
 	(void)endwin();
 
+	/*
+	 * Force restoration of terminal modes.  Some implementations of
+	 * endwin() don't do this for you.
+	 */
+#ifdef FORCE_TERM_RESET
+	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
+#endif
 	return (0);
 }
 
