@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.3 1993/08/22 09:59:10 bostic Exp $ (Berkeley) $Date: 1993/08/22 09:59:10 $";
+static char sccsid[] = "$Id: v_match.c,v 8.4 1993/08/23 13:09:03 bostic Exp $ (Berkeley) $Date: 1993/08/23 13:09:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ v_match(sp, ep, vp, fm, tm, rp)
 	if (len == 0)
 		goto nomatch;
 
-	switch (startc = p[fm->cno]) {
+retry:	switch (startc = p[fm->cno]) {
 	case '(':
 		matchc = ')';
 		gc = cs_next;
@@ -79,11 +79,12 @@ v_match(sp, ep, vp, fm, tm, rp)
 			    "No proximity match for motion commands.");
 			return (1);
 		}
-		if (findmatchc(fm, p, len, rp)) {
+		if (len == 0 || findmatchc(fm, p, len, rp)) {
 nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 			return (1);
 		}
-		return (0);
+		fm->cno = rp->cno;
+		goto retry;
 	}
 
 	cs.cs_lno = fm->lno;
@@ -139,10 +140,10 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 /*
  * findmatchc --
  *	If we're not on a character we know how to match, try and find the
- *	closest character from the set "{}[]()".  The historic vi would also
- *	look for a character to match against, but in an inexplicable and
- *	apparently random fashion.  We search forward, then backward, and go
- *	to the closest one.  Ties go left because differently handed people
+ *	closest character from the set "{}[]()".  The historic vi did this
+ *	as well, but it only searched forward from the cursor.  This seems
+ *	wrong, so we search both forward and backward on the line, going
+ *	to the closest hit.  Ties go left because differently handed people
  *	have been traditionally discriminated against by our society.
  */
 static int
@@ -164,7 +165,6 @@ findmatchc(fm, p, len, rp)
 			break;
 		}
 
-	--len;
 	for (off = fm->cno + 1, t = &p[off]; off++ < len;)
 		if (strchr("{}[]()", *t++)) {
 			right = off - 1;
