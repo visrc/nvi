@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.29 1994/09/03 11:22:02 bostic Exp $ (Berkeley) $Date: 1994/09/03 11:22:02 $
+.\"     $Id: set.opt.roff,v 8.30 1994/09/15 10:14:57 bostic Exp $ (Berkeley) $Date: 1994/09/15 10:14:57 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -437,8 +437,14 @@ This option only permits you to disallow messages for the edit session.
 See the
 .XR mesg 1
 utility for more information.
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms meta [~{[*?$`'Q\e]
 .KY meta
-.IP "meta [""""$'*?[\e`}]"
+.IP "\*(ms"
+.tr QQ
 The set of characters that
 .CO ex
 checks for when doing file name expansion.
@@ -449,7 +455,7 @@ commands,
 the arguments are expanded using the program defined by the
 .OP shell
 option.
-The default set of characters is a union of the meta characters
+The default set of characters is a union of meta characters
 from the Version 7 and the Berkeley C shell.
 .KY msgcat
 .IP "msgcat [./]"
