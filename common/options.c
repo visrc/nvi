@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.4 1994/11/10 16:51:35 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:51:35 $";
+static char sccsid[] = "$Id: options.c,v 9.5 1994/11/17 20:42:30 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:42:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -387,13 +387,14 @@ opts_set(sp, argv, setdef, usage)
 	char *usage;
 {
 	enum optdisp disp;
+	enum nresult nret;
 	OABBREV atmp, *ap;
 	OPTLIST const *op;
 	OPTLIST otmp;
 	OPTION *spo;
 	u_long value, turnoff;
 	int ch, equals, nf, offset, qmark, rval;
-	char *endp, *name, *p, *sep;
+	char *endp, *name, *omsg, *p, *sep;
 
 	disp = NO_DISPLAY;
 	for (rval = 0; argv[0]->len != 0; ++argv) {
@@ -541,9 +542,30 @@ found:		if (op == NULL) {
 				F_SET(spo, OPT_SELECTED);
 				break;
 			}
-			value = strtol(sep, &endp, 10);
-			if (*endp && !isblank(*endp)) {
+
+			if (!isdigit(sep[0]))
+				goto badnum;
+			if ((nret =
+			    nget_uslong(sp, &value, sep, &endp)) != NUM_OK) {
 				p = msg_print(sp, sep, &nf);
+				switch (nret) {
+				case NUM_ERR:
+					msgq(sp, M_SYSERR, "%s", p);
+					break;
+				case NUM_OVER:
+					msgq(sp, M_ERR,
+					    "XXX|%s: option value overflow", p);
+					break;
+				case NUM_UNDER:
+					abort();
+					/* NOTREACHED */
+				}
+				if (nf)
+					FREE_SPACE(sp, p, 0);
+				break;
+			}
+			if (*endp && !isblank(*endp)) {
+badnum:				p = msg_print(sp, sep, &nf);
 				msgq(sp, M_ERR,
 				    "057|set: illegal number %s", p);
 				if (nf)
