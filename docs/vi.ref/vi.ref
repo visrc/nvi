@@ -8,7 +8,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: vi.ref,v 8.86 1996/10/10 19:37:04 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:37:04 $
+.\"     $Id: vi.ref,v 8.87 1996/10/10 21:43:17 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:43:17 $
 .\"
 .\"
 .so ref.so
@@ -543,38 +543,19 @@ not yet have this bit set.
 This is due to the method in which the files are created.)
 Such files should be deleted when the system reboots.
 .pp
-A simple way to do this cleanup is to insert the following Bourne
-shell script into your
+A simple way to do this cleanup is to run the Bourne shell script
+.CO recover ,
+from your
 .LI /etc/rc.local
-(or other startup) file.
+(or other system startup) file.
 The script should work with the historic Bourne shell,
 a POSIX 1003.2 shell or the Korn shell.
-(A copy of this script is included as
-.LI nvi/install/recover.script
-in the
+The
+.CO recover
+script is installed as part of the
 .EV nex nvi
-distribution.)
-.sp
-.(b
-.ft C
-.so ../../../recover/recover.script
-.ft R
-.)b
-.sp
+installation process.
 .pp
-If you are not using the default value for the
-.OP recdir
-option, be sure to substitute the value you're using for the
-.LI RECDIR
-value in the recovery script.
-.pp
-If the path of your system's
-.CO sendmail
-program (or whatever mailer you're using) is not
-.LI /usr/lib/sendmail ,
-be sure to substitute the correct pathname for the
-.LI SENDMAIL
-value in the recovery script.
 Consult the manual page for details on recovering preserved or
 aborted editing sessions.
 .SH 1 "Sizing the Screen"
