@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.37 1996/10/29 12:11:18 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:11:18 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.38 1996/11/27 11:59:18 bostic Exp $ (Berkeley) $Date: 1996/11/27 11:59:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,9 +28,7 @@ static const char sccsid[] = "$Id: cl_main.c,v 10.37 1996/10/29 12:11:18 bostic 
 #include <unistd.h>
 
 #include "../common/common.h"
-#ifdef RUNNING_IP
 #include "../ip/ip.h"
-#endif
 #include "cl.h"
 #include "pathnames.h"
 
@@ -73,7 +71,6 @@ main(argc, argv)
 	 * no way to portably call getopt twice, so arguments parsed here must
 	 * be removed from the argument list.
 	 */
-#ifdef RUNNING_IP
 	ip_arg = NULL;
 	for (p_av = t_av = argv;;) {
 		if (*t_av == NULL) {
@@ -107,9 +104,6 @@ main(argc, argv)
 	 */
 	if (ip_arg != NULL)
 		exit (ip_main(argc, argv, gp, ip_arg));
-#else
-	ip_arg = argv[0];
-#endif
 		
 	/* Create and initialize the CL_PRIVATE structure. */
 	clp = cl_init(gp);
