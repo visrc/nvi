@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.26 1992/11/06 18:07:06 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:07:06 $";
+static char sccsid[] = "$Id: exf.c,v 5.27 1992/11/07 12:50:21 bostic Exp $ (Berkeley) $Date: 1992/11/07 12:50:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -328,6 +328,9 @@ file_stop(ep, force)
 		msg("Created file %s not removed.", ep->name);
 		return (1);
 	}
+
+	/* Only retain the ignore bit. */
+	ep->flags &= F_IGNORE;
 	return (0);
 }
 
