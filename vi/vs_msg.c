@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.42 1995/11/17 11:08:56 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:08:56 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.43 1995/11/17 12:54:06 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:54:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -532,11 +532,18 @@ vs_ex_resolve(sp, continuep)
 			return (0);
 	}
 
-	/* If ex wrote on the screen, repaint from scratch. */
+	/* If ex wrote on the screen, refresh the screen image. */
 	if (F_ISSET(sp, S_SCR_EXWROTE))
 		F_SET(vip, VIP_N_EX_PAINT);
 
-	/* If ex changed the underlying file, the map is wrong. */
+	/*
+	 * If we're not the bottom of the split screen stack, the screen
+	 * image itself is wrong, so redraw everything.
+	 */
+	if (sp->q.cqe_next != (void *)&sp->gp->dq)
+		F_SET(sp, S_SCR_REDRAW);
+
+	/* If ex changed the underlying file, the map itself is wrong. */
 	if (F_ISSET(vip, VIP_N_EX_REDRAW))
 		F_SET(sp, S_SCR_REFORMAT);
 
