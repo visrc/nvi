@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.24 1992/04/27 16:02:43 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:02:43 $";
+static char sccsid[] = "$Id: ex.c,v 5.25 1992/04/28 13:42:49 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:42:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -164,7 +164,7 @@ ex_cmd(exc)
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
 	u_long lcount, num;
-	int flags;
+	int flags, uselastcmd;
 	char *ep;
 
 #ifdef DEBUG
@@ -217,8 +217,11 @@ ex_cmd(exc)
 			msg("The %.*s command is unknown.", cmdlen, p);
 			return (1);
 		}
-	} else
+		uselastcmd = 0;
+	} else {
 		cp = lastcmd;
+		uselastcmd = 1;
+	}
 
 	/* Some commands aren't permitted in .exrc files. */
 	if (reading_exrc && !(cp->flags & E_EXRCOK)) {
@@ -437,6 +440,7 @@ countchk:		if (*++p != 'N') {		/* N */
 	 * Shouldn't be anything left, and no more required fields.
 	 * That means neither 'l' or 'r' in the syntax.
 	 */
+	for (; *exc && isspace(*exc); ++exc);
 	if (*exc || strpbrk(p, "lr")) {
 usage:		msg("Usage: %s.", cp->usage);
 		return (1);
@@ -474,7 +478,7 @@ addr2:	switch(cmd.addrcnt) {
 	}
 
 	/* If doing a default command, vi just moves to the line. */
-	if (mode == MODE_VI && cp == lastcmd) {
+	if (mode == MODE_VI && uselastcmd) {
 		cursor = cmd.addr1;
 		return (0);
 	}
