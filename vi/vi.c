@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.47 1996/05/18 12:21:36 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:21:36 $";
+static const char sccsid[] = "$Id: vi.c,v 10.48 1996/06/08 14:36:46 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:36:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ vi(spp)
 
 	for (vip = VIP(sp), rval = 0;;) {
 		/* Resolve messages. */
-		if (!MAPPED_KEYS_WAITING(sp) && vs_resolve(sp))
+		if (!MAPPED_KEYS_WAITING(sp) && vs_resolve(sp, 0))
 			goto ret;
 
 		/*
@@ -374,7 +374,7 @@ intr:			CLR_INTERRUPT(sp);
 			 * If the current screen is still displayed, it will
 			 * want a new status line.
 			 */
-			if (F_ISSET(sp, SC_STATUS) && vs_resolve(sp))
+			if (F_ISSET(sp, SC_STATUS) && vs_resolve(sp, 0))
 				goto ret;
 
 			/* Switch screens. */
@@ -1197,7 +1197,6 @@ v_key(sp, command_events, evp, ec_flags)
 			break;
 		case E_QUIT:
 		case E_WRITE:
-		case E_WRITEQUIT:
 			if (command_events)
 				return (GC_EVENT);
 			/* FALLTHROUGH */
