@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.38 1993/05/09 15:58:41 bostic Exp $ (Berkeley) $Date: 1993/05/09 15:58:41 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.39 1993/05/12 17:45:28 bostic Exp $ (Berkeley) $Date: 1993/05/12 17:45:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,8 +21,8 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.38 1993/05/09 15:58:41 bostic Exp $ (
 
 /*
  * ex_bang -- :[line [,line]] ! command
- *	Pass the rest of the line after the ! character to the
- *	program named by the SHELL environment variable.
+ *	Pass the rest of the line after the ! character to
+ *	the program named by the SHELL environment variable.
  */
 int
 ex_bang(sp, ep, cmdp)
@@ -30,11 +30,9 @@ ex_bang(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	struct termios savet;
 	register int ch, len, modified;
 	register char *p, *t;
 	MARK rm;
-	int rval;
 	char *com;
 
 	/* Make sure we got something. */
@@ -129,8 +127,8 @@ ex_bang(sp, ep, cmdp)
 		(void)fprintf(sp->stdfp, "%s\n", com);
 
 	/*
-	 * If no addresses were specified, just run the command, otherwise
-	 * pipe lines from the file through the command.
+	 * If no addresses were specified, just run the command,
+	 * otherwise pipe lines from the file through the command.
 	 */
 	if (cmdp->addrcnt != 0) {
 		if (filtercmd(sp, ep,
@@ -141,36 +139,13 @@ ex_bang(sp, ep, cmdp)
 		return (0);
 	}
 
-	/* Save ex/vi terminal settings, and restore the original ones. */
-	(void)tcgetattr(STDIN_FILENO, &savet);
-	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &sp->gp->original_termios);
-
-	/* Start with a new line. */
-	(void)write(STDOUT_FILENO, "\n", 1);
-
-	rval = esystem(sp, O_STR(sp, O_SHELL), com) ? 1 : 0;
+	/* Run the command. */
+	if (ex_run_process(sp, com))
+		return (1);
 
 	/* Ex terminates with a bang. */
-	switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
-	case S_MODE_EX:
-		(void)write(STDOUT_FILENO, "!\n", 2);
-		break;
-	case S_MODE_VI:
-#define	CSTRING	"Enter any key to continue:"
-		(void)write(STDOUT_FILENO, CSTRING, sizeof(CSTRING) - 1);
-		break;
-	default:
-		abort();
-	}
+	if (F_ISSET(sp, S_MODE_EX))
+		(void)fprintf(sp->stdfp, "!\n");
 
-	/* Restore ex/vi terminal settings. */
-	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &savet);
-
-	if (F_ISSET(sp, S_MODE_VI))
-		(void)term_key(sp, 0);
-
-	/* Repaint the screen. */
-	F_SET(sp, S_REFRESH);
-
-	return (rval);
+	return (0);
 }
