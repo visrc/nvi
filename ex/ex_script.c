@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 9.2 1994/11/13 16:25:53 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:25:53 $";
+static char sccsid[] = "$Id: ex_script.c,v 9.3 1994/12/02 10:00:28 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:00:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,6 +105,7 @@ sscr_init(sp)
 	sc->sh_term.c_oflag &= ~OPOST;
 	sc->sh_term.c_cflag &= ~(ECHO|ECHOE|ECHONL|ECHOK);
 
+#ifdef TIOCGWINSZ
 	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &sc->sh_win) == -1) {
 		msgq(sp, M_SYSERR, "tcgetattr");
 		goto err;
@@ -115,6 +116,13 @@ sscr_init(sp)
 		msgq(sp, M_SYSERR, "openpty");
 		goto err;
 	}
+#else
+	if (openpty(&sc->sh_master,
+	    &sc->sh_slave, sc->sh_name, &sc->sh_term, NULL) == -1) {
+		msgq(sp, M_SYSERR, "openpty");
+		goto err;
+	}
+#endif
 
 	/*
 	 * Don't use vfork() here, because the signal semantics differ from

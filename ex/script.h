@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: script.h,v 9.1 1994/11/09 18:42:54 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:42:54 $
+ *	$Id: script.h,v 9.2 1994/12/02 10:00:29 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:00:29 $
  */
 
 struct _script {
@@ -14,6 +14,8 @@ struct _script {
 	char	*sh_prompt;		/* Prompt. */
 	size_t	 sh_prompt_len;		/* Prompt length. */
 	char	 sh_name[64];		/* Pty name */
+#ifdef TIOCGWINSZ
 	struct winsize sh_win;		/* Window size. */
+#endif
 	struct termios sh_term;		/* Terminal information. */
 };
