@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.53 1993/02/28 13:59:05 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:05 $";
+static char sccsid[] = "$Id: main.c,v 5.54 1993/03/01 12:44:26 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:44:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,7 +39,6 @@ static char sccsid[] = "$Id: main.c,v 5.53 1993/02/28 13:59:05 bostic Exp $ (Ber
 #include "pathnames.h"
 #include "screen.h"
 #include "seq.h"
-#include "tag.h"
 #include "term.h"
 
 #ifdef DEBUG
@@ -211,10 +210,10 @@ main(argc, argv)
 			eflush(ep);
 			exit(1);
 		}
-	}
+	} else
+		ep->enext = file_first(1);
 
 	/* Get a real EXF structure. */
-	ep->enext = file_first(1);
 	if ((tep = file_switch(ep, 0)) == NULL) {
 		eflush(ep);
 		exit(1);
