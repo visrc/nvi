@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.9 1992/10/17 15:23:37 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:23:37 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.10 1992/10/18 13:09:04 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:09:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,5 +113,5 @@ underflow:			bell();
 	ecursor = *fm;
 	ecursor.cno += vp->klen;
 			
-	return (change(fm, &ecursor, nbuf, len));
+	return (change(fm, &ecursor, (u_char *)nbuf, len));
 }
