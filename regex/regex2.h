@@ -157,15 +157,19 @@ struct re_guts {
 #		define	BAD	04	/* something wrong */
 	int nbol;		/* number of ^ used */
 	int neol;		/* number of $ used */
+#if 0
 	int ncategories;	/* how many character categories */
 	cat_t *categories;	/* ->catspace[-CHAR_MIN] */
+#endif
 	RCHAR_T *must;		/* match must contain this string */
 	int mlen;		/* length of must */
 	size_t nsub;		/* copy of re_nsub */
 	int backrefs;		/* does it use back references? */
 	sopno nplus;		/* how deep does it nest +s? */
 	/* catspace must be last */
+#if 0
 	cat_t catspace[1];	/* actually [NC] */
+#endif
 };
 
 /* misc utilities */

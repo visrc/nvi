@@ -237,9 +237,11 @@ int cflags;
 	g->must = NULL;
 	g->mlen = 0;
 	g->nsub = 0;
+#if 0
 	g->ncategories = 1;	/* category 0 is "everything else" */
 	g->categories = &g->catspace[-(CHAR_MIN)];
 	(void) memset((char *)g->catspace, 0, NC*sizeof(cat_t));
+#endif
 	g->backrefs = 0;
 
 	/* do it */
@@ -962,14 +964,18 @@ ordinary(p, ch)
 register struct parse *p;
 register int ch;
 {
+/*
 	register cat_t *cap = p->g->categories;
+*/
 
 	if ((p->g->cflags&REG_ICASE) && isalpha(ch) && othercase(ch) != ch)
 		bothcases(p, ch);
 	else {
 		EMIT(OCHAR, (unsigned char)ch);
+/*
 		if (cap[ch] == 0)
 			cap[ch] = p->g->ncategories++;
+*/
 	}
 }
 
@@ -1405,7 +1411,9 @@ categorize(p, g)
 struct parse *p;
 register struct re_guts *g;
 {
+/*
 	register cat_t *cats = g->categories;
+*/
 	register int c;
 	register int c2;
 	register cat_t cat;
@@ -1414,6 +1422,7 @@ register struct re_guts *g;
 	if (p->error != 0)
 		return;
 
+/*
 	for (c = CHAR_MIN; c <= CHAR_MAX; c++)
 		if (cats[c] == 0 && isinsets(g, c)) {
 			cat = g->ncategories++;
@@ -1422,6 +1431,7 @@ register struct re_guts *g;
 				if (cats[c2] == 0 && samesets(g, c, c2))
 					cats[c2] = cat;
 		}
+*/
 }
 
 /*
