@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.47 1993/02/28 14:00:54 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:54 $";
+static char sccsid[] = "$Id: key.c,v 5.48 1993/02/28 17:47:58 bostic Exp $ (Berkeley) $Date: 1993/02/28 17:47:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -218,8 +218,8 @@ ret:	if (flags & GB_BEAUTIFY && ISSET(O_BEAUTIFY)) {
 	return (ch);
 }
 
-static int __check_sig_winch;
-static int __set_sig_winch;
+static int __check_sig_winch;				/* GLOBAL */
+static int __set_sig_winch;				/* GLOBAL */
 static void onwinch __P((int));
 
 static int
