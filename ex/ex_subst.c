@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.2 1993/06/21 10:57:20 bostic Exp $ (Berkeley) $Date: 1993/06/21 10:57:20 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.3 1993/06/21 15:01:18 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:01:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,7 +185,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 	MARK from, to;
 	recno_t elno, lno, lastline;
 	size_t blen, cnt, last, lbclen, lblen, len, offset;
-	int eflags, eval, linechanged, quit;
+	int do_eol_match, eflags, eval, linechanged, quit;
 	int cflag, gflag, lflag, nflag, pflag, rflag;
 	char *bp, *lb;
 
@@ -301,6 +301,9 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		 */
 		linechanged = 0;
 
+		/* New line, do EOL match. */
+		do_eol_match = 1;
+
 		/* It's not nul terminated, but we pretend it is. */
 		eflags = REG_STARTEND;
 
@@ -388,9 +391,24 @@ skipmatch:	eval = regexec(re,
 		/* Set the change flag so we know this line was modified. */
 		linechanged = 1;
 
-		/* Move the pointers past the matched bytes. */
+		/*
+		 * Move the pointers past the matched bytes.  One very special
+		 * case is that it's possible to match strings of 0 length.
+		 * A common example is trying to use " *" to replace groups of
+		 * spaces with a single space.  Guarantee that we move forward,
+		 * but not if we're matching the 0 length string after the last
+		 * character in the line.
+		 */
 skip:		s += sp->match[0].rm_eo;
 		len -= sp->match[0].rm_eo;
+		if (len && sp->match[0].rm_so == sp->match[0].rm_eo) {
+			BUILD(sp, s, 1)
+			++s;
+			--len;
+		}
+
+		/* Only the first search matches anchored expression. */
+		eflags |= REG_NOTBOL;
 
 		/*
 		 * If doing a global change with confirmation, we have to
@@ -398,7 +416,7 @@ skip:		s += sp->match[0].rm_eo;
 		 * so the screen update routines can find it, but start at
 		 * the old offset.
 		 */
-		if (linechanged && gflag && cflag) {
+		if (linechanged && cflag && gflag) {
 			/* Save offset. */
 			offset = lbclen;
 			
@@ -421,15 +439,11 @@ skip:		s += sp->match[0].rm_eo;
 				offset -= last;
 
 				sp->newl_cnt = 0;
-				linechanged = 1;
 			}
 
-			/* Store the changed line. */
-			if (linechanged)
-				if (file_sline(sp, ep, lno, lb + last, lbclen))
-					goto ret1;
-
-			/* Get a new copy of the line. */
+			/* Store and retrieve the line. */
+			if (file_sline(sp, ep, lno, lb + last, lbclen))
+				goto ret1;
 			if ((s = file_gline(sp, ep, lno, &len)) == NULL) {
 				GETLINE_ERR(sp, lno);
 				goto ret1;
@@ -450,17 +464,40 @@ skip:		s += sp->match[0].rm_eo;
 			/* Start in the middle of the line. */
 			sp->match[0].rm_so = offset;
 			sp->match[0].rm_eo = len;
-			goto skipmatch;
+
+			/*
+			 * If it's global, continue.
+			 *
+			 * NB: It's possible to match 0-length strings, and we
+			 * behave as if such a string matches the space before
+			 * the first character in the string and after the last
+			 * character in the string.  (This is how the historic
+			 * vi did it.)  So, do one more check after reaching
+			 * the end of the string.  Set REG_NOTEOL so the '$'
+			 * pattern only matches once.  One possible bug is that
+			 * the '$' pattern will match BEFORE the empty match
+			 * after the last character matches.  (The '^' matching
+			 * doesn't share the problem because the first match
+			 * will force you past the matching location.) I don't
+			 * see any reasonable way to fix this now.
+			 */
+			if (do_eol_match) {
+				if (offset == len) {
+					do_eol_match = 0;
+					eflags |= REG_NOTEOL;
+				}
+				goto skipmatch;
+			}
 		}
 
-		/*
-		 * If it's a global change, and there's something left in the
-		 * line, check it.  Note, we don't worry about REG_NOTEOL; if
-		 * we match to '$', len with be 0.
-		 */
-		if (len && gflag) {
-			eflags |= REG_NOTBOL;
+		/* If it's global ... (see comment immediately above). */
+		if (gflag && do_eol_match) {
+			if (!len) {
+				do_eol_match = 0;
+				eflags |= REG_NOTEOL;
+			}
 			goto nextmatch;
+			
 		}
 
 		/* Copy any remaining bytes into the build buffer. */
