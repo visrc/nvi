@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.16 1996/04/10 11:28:52 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:28:52 $";
+static const char sccsid[] = "$Id: search.c,v 10.17 1996/04/26 17:14:21 bostic Exp $ (Berkeley) $Date: 1996/04/26 17:14:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -418,24 +418,24 @@ search_msg(sp, msg)
 {
 	switch (msg) {
 	case S_EMPTY:
-		msgq(sp, M_INFO, "072|File empty; nothing to search");
+		msgq(sp, M_ERR, "072|File empty; nothing to search");
 		break;
 	case S_EOF:
-		msgq(sp, M_INFO,
+		msgq(sp, M_ERR,
 		    "073|Reached end-of-file without finding the pattern");
 		break;
 	case S_NOPREV:
 		msgq(sp, M_ERR, "074|No previous search pattern");
 		break;
 	case S_NOTFOUND:
-		msgq(sp, M_INFO, "075|Pattern not found");
+		msgq(sp, M_ERR, "075|Pattern not found");
 		break;
 	case S_SOF:
-		msgq(sp, M_INFO,
+		msgq(sp, M_ERR,
 		    "076|Reached top-of-file without finding the pattern");
 		break;
 	case S_WRAP:
-		msgq(sp, M_VINFO, "077|Search wrapped");
+		msgq(sp, M_ERR, "077|Search wrapped");
 		break;
 	default:
 		abort();
