@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.63 1994/07/22 19:49:33 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:49:33 $";
+static char sccsid[] = "$Id: options.c,v 8.64 1994/07/27 20:16:41 bostic Exp $ (Berkeley) $Date: 1994/07/27 20:16:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -377,7 +377,8 @@ opts_set(sp, usage, argv)
 			if (ch == '=' || ch == '?') {
 				if (p == name) {
 					if (usage != NULL)
-						msgq(sp, M_ERR, usage);
+						msgq(sp,
+						    M_ERR, "Usage: %s", usage);
 					return (1);
 				}
 				sep = p;
