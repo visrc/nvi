@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.27 1994/05/21 09:50:52 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:52 $";
+static char sccsid[] = "$Id: v_search.c,v 8.28 1994/07/19 17:20:30 bostic Exp $ (Berkeley) $Date: 1994/07/19 17:20:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,6 +243,25 @@ correct(sp, ep, vp, flags)
 	enum direction dir;
 	MARK m;
 	size_t len;
+
+	/*
+	 * !!!
+	 * We may have wrapped if wrapscan was set, and we may have returned
+	 * to the the position where the cursor started.  Historic vi didn't
+	 * handle this well; yank wouldn't beep, but the first put after the
+	 * yank would move the cursor right one column, without inserting any
+	 * text, *and the second would put a copy of the current line.  The
+	 * change and delete commands would beep, but would leave the cursor
+	 * on the command line.  I believe that there are macros that depend
+	 * on delete, at least, failing.  For now, all commands using search
+	 * as a motion component, where the search returns to the original
+	 * position, fail.
+	 */
+	if (vp->m_start.lno == vp->m_stop.lno &&
+	    vp->m_start.cno == vp->m_stop.cno) {
+		msgq(sp, M_BERR, "Search wrapped to original position");
+		return (1);
+	}
 
 	/*
 	 * !!!
