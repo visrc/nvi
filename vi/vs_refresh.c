@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.2 1992/10/17 15:26:08 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:26:08 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.3 1992/10/20 18:25:01 bostic Exp $ (Berkeley) $Date: 1992/10/20 18:25:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,9 +48,10 @@ scr_init()
 void
 scr_end()
 {
-	move(LINES - 1, 0);
-	clrtoeol();
-	refresh();
+	if (move(LINES - 1, 0) != ERR) {
+		clrtoeol();
+		refresh();
+	}
 	endwin();
 }
 
@@ -69,6 +70,7 @@ scr_ref()
 
 	/* Put up the cursor, row/column information. */
 	scr_cchange(curf);
+	scr_modeline(curf, 0);
 } 
 
 /*
@@ -76,15 +78,18 @@ scr_ref()
  *	Change the screen as necessary for a mode change, with refresh.
  */
 void
-scr_modeline(ep)
+scr_modeline(ep, isinput)
 	EXF *ep;
+	int isinput;
 {
+#define	RULERSIZE	15
+#define	MODESIZE	(RULERSIZE + 15)
+
+	static char buf[RULERSIZE];
 	size_t oldy, oldx;
 	int when;
 	char *p;
 
-#define	RULERSIZE	15
-#define	MODESIZE	(RULERSIZE + 15)
 	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || COLS <= RULERSIZE)
 		return;
 
@@ -93,46 +98,19 @@ scr_modeline(ep)
 	clrtoeol();
 
 	/* Display the ruler and mode. */
-	if (ISSET(O_RULER) && COLS > RULERSIZE) {
-		static char buf[RULERSIZE];
-
+	if (ISSET(O_RULER) && COLS > RULERSIZE &&
+	    move(LINES - 1, COLS / 2 - RULERSIZE / 2) != ERR) {
 		memset(buf, ' ', sizeof(buf) - 1);
 		(void)snprintf(buf,
 		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
 		buf[strlen(buf)] = ' ';
-		move(LINES - 1, COLS / 2 - RULERSIZE / 2);
 		addstr(buf);
 	}
 
 	/* Show the mode. */
-	if (ISSET(O_SHOWMODE) && COLS > MODESIZE) {
-		when = WHEN_VICMD;
-		switch(when & WHENMASK) {
-		case WHEN_VICMD:
-			p = "Command";
-			break;
-		case WHEN_VIINP:
-			p = "Input";
-			break;
-		case WHEN_VIREP:
-		case WHEN_REP1:
-			p = "Replace";
-			break;
-		case WHEN_CUT:
-			p = "Buffer";
-			break;
-		case WHEN_MARK:
-			p = "Mark";
-			break;
-	#ifdef DEBUG
-		default:
-			p = "Unknown";
-			break;
-	#endif
-		}
-		move(LINES - 1, COLS - 8);
-		addstr(p);
-	}
+	if (ISSET(O_SHOWMODE) && COLS > MODESIZE &&
+	    move(LINES - 1, COLS - 7) != ERR)
+		addstr(isinput ? "Input" : "Command");
 	move(oldy, oldx);
 }
 
