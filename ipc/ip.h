@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.15 1996/12/16 09:40:26 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:40:26 $
+ *	$Id: ip.h,v 8.16 1996/12/17 20:05:49 bostic Exp $ (Berkeley) $Date: 1996/12/17 20:05:49 $
  */
 
 extern int vi_ofd;		/* Output file descriptor. */
@@ -94,16 +94,18 @@ typedef struct _ip_buf {
 #define	VI_MOUSE_MOVE	21	/* Mouse click move: IPO_INT, IPO_INT. */
 #define	VI_QUIT		22	/* Quit. */
 #define	VI_RESIZE	23	/* Screen resize: IPO_INT, IPO_INT. */
-#define	VI_SIGHUP	24	/* SIGHUP. */
-#define	VI_SIGTERM	25	/* SIGTERM. */
-#define	VI_STRING	26	/* Input string: IPO_STR. */
-#define	VI_TAG		27	/* Tag. */
-#define	VI_TAGAS	28	/* Tag to a string: IPO_STR. */
-#define	VI_TAGSPLIT	29	/* Split to a tag. */
-#define	VI_UNDO		30	/* Undo. */
-#define	VI_WQ		31	/* Write and quit. */
-#define	VI_WRITE	32	/* Write. */
-#define	VI_WRITEAS	33	/* Write as another file: IPO_STR. */
+#define	VI_SEL_END	24	/* Select end: IPO_INT, IPO_INT. */
+#define	VI_SEL_START	25	/* Select start: IPO_INT, IPO_INT. */
+#define	VI_SIGHUP	26	/* SIGHUP. */
+#define	VI_SIGTERM	27	/* SIGTERM. */
+#define	VI_STRING	28	/* Input string: IPO_STR. */
+#define	VI_TAG		29	/* Tag. */
+#define	VI_TAGAS	30	/* Tag to a string: IPO_STR. */
+#define	VI_TAGSPLIT	31	/* Split to a tag. */
+#define	VI_UNDO		32	/* Undo. */
+#define	VI_WQ		33	/* Write and quit. */
+#define	VI_WRITE	34	/* Write. */
+#define	VI_WRITEAS	35	/* Write as another file: IPO_STR. */
 
 #define	VI_SEARCH_EXT	0x001	/* VI_C_SEARCH: ignore case. */
 #define	VI_SEARCH_IC	0x002	/* VI_C_SEARCH: ignore case. */
@@ -133,7 +135,8 @@ typedef struct _ip_buf {
 #define	SI_RENAME	15	/* Rename the screen: IPO_STR. */
 #define	SI_REWRITE	16	/* Rewrite a line: IPO_INT. */
 #define	SI_SCROLLBAR	17	/* Reset the scrollbar: 3 * IPO_INT. */
-#define	SI_SPLIT	18	/* Split the screen. */
-#define	SI_EVENT_MAX	18
+#define	SI_SELECT	18	/* Select area: IPO_STR. */
+#define	SI_SPLIT	19	/* Split the screen. */
+#define	SI_EVENT_MAX	19
 
 #include "ip_extern.h"
