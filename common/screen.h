@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.36 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $
+ *	$Id: screen.h,v 10.37 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $
  */
 
 /*
@@ -54,6 +54,12 @@ struct _win {
 	/* For now, can be either char or CHAR_T buffer */
 	char	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Temporary buffer size. */
+
+	char	*l_lp;			/* Log buffer. */
+	size_t	 l_len;			/* Log buffer length. */
+
+	char	*conv_bp;
+	size_t   conv_blen;
 
 /* Flags. */
 #define	W_TMP_INUSE	0x0001		/* Temporary buffer in use. */

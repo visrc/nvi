@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.12 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $
+ *	$Id: exf.h,v 10.13 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $
  */
 					/* Undo direction. */
 /*
@@ -29,8 +29,6 @@ struct _exf {
 	db_recno_t	 c_nlines;	/* Cached lines in the file. */
 
 	DB	*log;			/* Log db structure. */
-	char	*l_lp;			/* Log buffer. */
-	size_t	 l_len;			/* Log buffer length. */
 	db_recno_t	 l_high;	/* Log last + 1 record number. */
 	db_recno_t	 l_cur;		/* Log current record number. */
 	MARK	 l_cursor;		/* Log cursor position. */

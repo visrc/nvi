@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.31 2000/07/21 22:09:28 skimo Exp $ (Berkeley) $Date: 2000/07/21 22:09:28 $";
+static const char sccsid[] = "$Id: db.c,v 10.32 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,6 +94,8 @@ db_get(sp, lno, flags, pp, lenp)
 	CHAR_T *wp;
 	size_t wlen;
 	size_t nlen;
+	char *bp;
+	size_t blen;
 
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
@@ -156,16 +158,21 @@ db_get(sp, lno, flags, pp, lenp)
 
 nocache:
 	nlen = 1024;
-retry:
+	GET_SPACE_GOTO(sp, bp, blen, nlen);
+	if (0) {
+retry:		ADD_SPACE_GOTO(sp, bp, blen, nlen);
+	}
+	/*
 	BINC_GOTO(sp, (char *)ep->c_lp, ep->c_blen, nlen);
+	*/
 
 	/* Get the line from the underlying database. */
 	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
 	memset(&data, 0, sizeof(data));
-	data.data = ep->c_lp;
-	data.ulen = ep->c_blen;
+	data.data = bp;
+	data.ulen = blen;
 	data.flags = DB_DBT_USERMEM;
 	switch (ep->db->get(ep->db, NULL, &key, &data, 0)) {
 	case ENOMEM:
@@ -181,6 +188,8 @@ err3:		if (lenp != NULL)
 			*lenp = 0;
 		if (pp != NULL)
 			*pp = NULL;
+		if (bp != NULL)
+			FREE_SPACE(sp, bp, blen);
 		return (1);
 	case 0:
 		;
@@ -201,6 +210,8 @@ err3:		if (lenp != NULL)
 		*lenp = wlen;
 	if (pp != NULL)
 		*pp = ep->c_lp;
+	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
 	return (0);
 }
 

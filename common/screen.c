@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.19 2000/07/19 20:31:58 skimo Exp $ (Berkeley) $Date: 2000/07/19 20:31:58 $";
+static const char sccsid[] = "$Id: screen.c,v 10.20 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,6 +69,8 @@ screen_init(gp, orig, spp)
 	if (orig == NULL) {
 		sp->searchdir = NOTSET;
 	} else {
+		sp->wp = orig->wp;
+
 		/* Alternate file name. */
 		if (orig->alt_name != NULL &&
 		    (sp->alt_name = strdup(orig->alt_name)) == NULL)

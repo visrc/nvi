@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.15 2000/07/21 22:09:28 skimo Exp $ (Berkeley) $Date: 2000/07/21 22:09:28 $";
+static const char sccsid[] = "$Id: log.c,v 10.16 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,8 +94,8 @@ log_init(sp, ep)
 	 * buffers because the global ones are almost by definition
 	 * going to be in use when the log runs.
 	 */
-	ep->l_lp = NULL;
-	ep->l_len = 0;
+	sp->wp->l_lp = NULL;
+	sp->wp->l_len = 0;
 	ep->l_cursor.lno = 1;		/* XXX Any valid recno. */
 	ep->l_cursor.cno = 0;
 	ep->l_high = ep->l_cur = 1;
@@ -130,11 +130,11 @@ log_end(sp, ep)
 		(void)(ep->log->close)(ep->log,DB_NOSYNC);
 		ep->log = NULL;
 	}
-	if (ep->l_lp != NULL) {
-		free(ep->l_lp);
-		ep->l_lp = NULL;
+	if (sp->wp->l_lp != NULL) {
+		free(sp->wp->l_lp);
+		sp->wp->l_lp = NULL;
 	}
-	ep->l_len = 0;
+	sp->wp->l_len = 0;
 	ep->l_cursor.lno = 1;		/* XXX Any valid recno. */
 	ep->l_cursor.cno = 0;
 	ep->l_high = ep->l_cur = 1;
@@ -184,15 +184,15 @@ log_cursor1(sp, type)
 	EXF *ep;
 
 	ep = sp->ep;
-	BINC_RET(sp, ep->l_lp, ep->l_len, sizeof(u_char) + sizeof(MARK));
-	ep->l_lp[0] = type;
-	memmove(ep->l_lp + sizeof(u_char), &ep->l_cursor, sizeof(MARK));
+	BINC_RET(sp, sp->wp->l_lp, sp->wp->l_len, sizeof(u_char) + sizeof(MARK));
+	sp->wp->l_lp[0] = type;
+	memmove(sp->wp->l_lp + sizeof(u_char), &ep->l_cursor, sizeof(MARK));
 
 	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
-	data.data = ep->l_lp;
+	data.data = sp->wp->l_lp;
 	data.size = sizeof(u_char) + sizeof(MARK);
 	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
@@ -264,17 +264,17 @@ log_line(sp, lno, action)
 		if (db_get(sp, lno, DBG_FATAL, &lp, &len))
 			return (1);
 	BINC_RET(sp,
-	    ep->l_lp, ep->l_len, 
+	    sp->wp->l_lp, sp->wp->l_len, 
 	    len * sizeof(CHAR_T) + sizeof(u_char) + sizeof(db_recno_t));
-	ep->l_lp[0] = action;
-	memmove(ep->l_lp + sizeof(u_char), &lno, sizeof(db_recno_t));
-	MEMMOVEW(ep->l_lp + sizeof(u_char) + sizeof(db_recno_t), lp, len);
+	sp->wp->l_lp[0] = action;
+	memmove(sp->wp->l_lp + sizeof(u_char), &lno, sizeof(db_recno_t));
+	MEMMOVEW(sp->wp->l_lp + sizeof(u_char) + sizeof(db_recno_t), lp, len);
 
 	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
-	data.data = ep->l_lp;
+	data.data = sp->wp->l_lp;
 	data.size = len * sizeof(CHAR_T) + 
 		    sizeof(u_char) + sizeof(db_recno_t);
 	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
@@ -338,16 +338,16 @@ log_mark(sp, lmp)
 		ep->l_cursor.lno = OOBLNO;
 	}
 
-	BINC_RET(sp, ep->l_lp,
-	    ep->l_len, sizeof(u_char) + sizeof(LMARK));
-	ep->l_lp[0] = LOG_MARK;
-	memmove(ep->l_lp + sizeof(u_char), lmp, sizeof(LMARK));
+	BINC_RET(sp, sp->wp->l_lp,
+	    sp->wp->l_len, sizeof(u_char) + sizeof(LMARK));
+	sp->wp->l_lp[0] = LOG_MARK;
+	memmove(sp->wp->l_lp + sizeof(u_char), lmp, sizeof(LMARK));
 
 	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
-	data.data = ep->l_lp;
+	data.data = sp->wp->l_lp;
 	data.size = sizeof(u_char) + sizeof(LMARK);
 	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
@@ -376,14 +376,14 @@ vi_log_get(SCR *sp, db_recno_t *lnop, size_t *size)
 
 	nlen = 1024;
 retry:
-	BINC_RET(sp, ep->l_lp, ep->l_len, nlen);
+	BINC_RET(sp, sp->wp->l_lp, sp->wp->l_len, nlen);
 
 	memset(&key, 0, sizeof(key));
 	key.data = lnop;		/* Initialize db request. */
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
-	data.data = ep->l_lp;
-	data.ulen = ep->l_len;
+	data.data = sp->wp->l_lp;
+	data.ulen = sp->wp->l_len;
 	data.flags = DB_DBT_USERMEM;
 	switch (ep->log->get(ep->log, NULL, &key, &data, 0)) {
 	case ENOMEM:
@@ -437,7 +437,7 @@ log_backward(sp, rp)
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_backward", ep->l_cur, data.data);
 #endif
-		switch (*(p = (u_char *)ep->l_lp)) {
+		switch (*(p = (u_char *)sp->wp->l_lp)) {
 		case LOG_CURSOR_INIT:
 			if (didop) {
 				memmove(rp, p + sizeof(u_char), sizeof(MARK));
@@ -541,7 +541,7 @@ log_setline(sp)
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_setline", ep->l_cur, data.data);
 #endif
-		switch (*(p = (u_char *)ep->l_lp)) {
+		switch (*(p = (u_char *)sp->wp->l_lp)) {
 		case LOG_CURSOR_INIT:
 			memmove(&m, p + sizeof(u_char), sizeof(MARK));
 			if (m.lno != sp->lno || ep->l_cur == 1) {
@@ -629,7 +629,7 @@ log_forward(sp, rp)
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_forward", ep->l_cur, data.data);
 #endif
-		switch (*(p = (u_char *)ep->l_lp)) {
+		switch (*(p = (u_char *)sp->wp->l_lp)) {
 		case LOG_CURSOR_END:
 			if (didop) {
 				++ep->l_cur;
