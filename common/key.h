@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.32 1994/03/13 13:00:54 bostic Exp $ (Berkeley) $Date: 1994/03/13 13:00:54 $
+ *	$Id: key.h,v 8.33 1994/03/14 11:02:41 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:02:41 $
  */
 
 /* Structure to return a character and associated information. */
@@ -112,10 +112,12 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	CURSOR_CH	' '			/* Cursor character. */
 #define	END_CH		'$'			/* End of a range. */
 #define	HEX_CH		'x'			/* Leading hex number. */
+#define	LITERAL_CH	'\026'			/* Standard literal ^V. */
 #define	NOT_DIGIT_CH	'a'			/* A non-isdigit() character. */
 #define	NO_CH		'n'			/* No. */
 #define	QUIT_CH		'q'			/* Quit. */
 #define	YES_CH		'y'			/* Yes. */
+
 #define	CONFSTRING	"confirm? [ynq]"
 #define	CONTMSG		"Enter return to continue: "
 #define	CONTMSG_I	"Enter return to continue [q to quit]: "
@@ -152,7 +154,6 @@ int		__term_key_val __P((SCR *, ARG_CHAR_T));
 void		term_ab_flush __P((SCR *, char *));
 int		term_init __P((SCR *));
 enum input	term_key __P((SCR *, CH *, u_int));
-int		term_key_ch __P((SCR *, int, CHAR_T *));
 int		term_key_queue __P((SCR *));
 void		term_map_flush __P((SCR *, char *));
 int		term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
