@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.26 1996/02/28 19:59:28 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:59:28 $";
+static char sccsid[] = "$Id: main.c,v 10.27 1996/02/29 10:40:09 bostic Exp $ (Berkeley) $Date: 1996/02/29 10:40:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -277,13 +277,10 @@ editor(gp, argc, argv)
 	if (!silent) {			/* Read EXINIT, exrc files. */
 		if (ex_exrc(sp))
 			goto err;
-		if (EXCMD_RUNNING(gp)) {
-			(void)ex_cmd(sp);
-			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
-				if (screen_end(sp))
-					goto err;
-				goto done;
-			}
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
+			if (screen_end(sp))
+				goto err;
+			goto done;
 		}
 	}
 
