@@ -1,11 +1,138 @@
-#	$Id: README,v 5.1 1993/01/24 20:09:59 bostic Exp $ (Berkeley) $Date: 1993/01/24 20:09:59 $
+#	$Id: README,v 5.2 1993/01/31 11:18:57 bostic Exp $ (Berkeley) $Date: 1993/01/31 11:18:57 $
 
-This is the new version of ex/vi, which will be distributed as "nvi"
-in 4.4BSD.  This software is currently being distributed for test and
-review ONLY, and may not be redistributed by anyone for any purpose
-whatsoever.  This software will be made freely redistributable by when
-.4BSD is released, if not sooner.
+A new version of ex/vi, which will be distributed as "nvi" and "nex" in
+4.4BSD, can now be retrieved by anonymous ftp from vangogh.cs.berkeley.edu,
+in the directory hidden/nvi.tar.Z.  It's being distributed for development
+and review only -- please don't redistribute it to anyone without talking
+to me first!
 
 This software is derived from software contributed to UC Berkeley by
-Steve Kirkendall, the author of elvis.  Without his original work,
-this work would have been much more difficult.
+Steve Kirkendall, the author of the vi clone elvis.  Without his work,
+this work would have been far more difficult.
+
+I apologize for taking so long to make it available.  The USL lawsuit
+takes up an amazing amount of our group's resources, and programming
+time is pretty hard to come by.
+
+Finally, your name is on this list because we, at some point, talked
+over the possibility of you testing, or your company distributing, this
+version of vi.  If you are no longer interested in hearing about this,
+let me know and I'll drop your address from the list.
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
++ Comments:
+
+This software is alpha software, at best.  I believe that most of the
+necessary functionality for ex/vi is in it, but it's definitely not ready
+for prime time.  My expectation is that it will be ready to go with two
+or so months of bug-fixing.  Code fixes will be, of course, very much
+appreciated, but if you don't have time, please send me as much
+information as you can as to how to reproduce the bug, and I'll fix it
+here.  In particular, the screen routines are nasty stuff, and you
+probably don't want to mess with them.
+
+This software is not yet 8-bit clean, although it only disallows NULLs.
+This isn't difficult to fix, and was deliberately left in during the
+initial development.
+
+The ex/vi recovery on system crash has not yet been implemented.  (This
+isn't difficult, it only requires some extensions to the current logging
+interface.)
+
++ Other code you'll probably need:
+
+Included in the directory nvi/db is a copy of the 4.4BSD version of the
+dbopen(3) routines.  This is a complete database access methods package,
+that is used as the underlying file interface by ex/vi.  You will have to
+make this work on your system.  It shouldn't be too hard; the db/port
+subdirectory has files that should make it work.  Change the db.h header
+file in db/port to include compat.h and you're mostly done.  The header
+file "cdefs.h", from db/port, will also be necessary to make nvi compile.
+
+Included in the directory nvi/stdio is a copy of the 4.4BSD version of
+the stdio(3) routines.  This is necessary to get one bit of functionality,
+the ability to replace the underlying read/write routines in a stdio
+stream with your own.  The way this works is that when vi wants to use
+an ex routine, it sets it up so that the output of ex goes to its own
+function which knows how to display the stuff on the screen.  This way
+vi never has to leave curses (resulting in much nicer screen displays)
+and ex can simply use printf and friends without regard for what's really
+going on.
+
++ Other code you may need:
+
+Included in the directory nvi/curses is a copy of the 4.4BSD version of
+the curses(3) routines.  This is an updated implementation of the
+traditional BSD curses package.  You should not have to make this work,
+as your System V or 4BSD curses package should work okay.  The reason to
+compile and load this with the new version of ex/vi is if your curses
+package doesn't implement scrolling as a screen optimization.  (Older
+versions of BSD curses didn't, and this makes ex/vi intolerably slow,
+since it ends up repainting the entire screen on every update.  Some
+System V versions of curses don't do this right, either.)
+
++ Porting status:
+
+The curses and nvi code have NOT been ported to other systems, yet.  The
+dbopen code is running on lots of systems and is pretty portable.  Please
+send me back whatever fixes you have to make to nvi and curses to make
+them run, and I'll integrate them into the package so that you don't have
+to do it twice!
+
+I will be porting this software to SunOS in the near future, which will
+limit the amount of software that is included in the package as well as
+writing complete Makefiles, so you may want to wait for that to happen.  
+
++ A quick tour:
+
+The main directory, nvi, contains some source files for various pieces
+of code that are shared by both ex and vi, mostly logging code or code
+translating line numbers into requests to the dbopen(3) database code.
+It also has the code for adding, deleting, and changing "records" in
+the underlying database.
+
+The nvi/ex directory is the ex source code.  Lots of this code is used by
+vi, however.  Generally, if the functionality is shared by both ex and
+vi, it's in nvi/ex, if it's vi only, it's in nvi/vi.  Files are generally
+named by the command(s) they support, but occasionally by the
+functionality they support.
+
++ Data structures:
+
+There are a few major data structures:
+
+EXF	In nvi/exf.h.  This structure describes a file, and is the
+	cookie that is passed around or used by pretty much everything.
+	In addition, all of the screen information is included inside
+	this structure, although that is expected to change in the
+	near future.
+
+TEXT	In nvi/cut.h.  This structure describes a portion of a line,
+	and is used by the input routines and as the line part of a
+	cut buffer.
+
+CB	In nvi/cut.h.	A cut buffer.
+
+IB	In nvi/cut.h.	An input buffer, which is only used by the
+	input routines in the vi code.
+
+MARK	In nvi/mark.h.  A cursor position, consisting of a line number
+	and a column number.
+
+EXCMDARG
+	In nvi/ex/excmd.h.stub.  The structure that gets passed around
+	to the functions that implement the ex commands.  (The main
+	ex command loop (see nvi/ex/ex.c) builds this up and then passes
+	it to the ex functions.)
+
+VICMDARG
+	In nvi/vi/vcmd.h.  The structure that gets passed around to the
+	functions that implement the vi commands.  (The main vi command
+	loop (see nvi/vi/vi.c) builds this up and then passes it to the
+	ex functions.)
+
+
+Good luck,
+	Keith Bostic				bostic@cs.berkeley.edu
+						510-642-8524
+
