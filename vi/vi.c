@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.22 1995/02/02 16:51:06 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:51:06 $";
+static char sccsid[] = "$Id: vi.c,v 9.23 1995/02/06 14:24:11 bostic Exp $ (Berkeley) $Date: 1995/02/06 14:24:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,7 @@ vi(sp)
 	vp = &cmd;
 	memset(vp, 0, sizeof(VICMDARG));
 
-	/* Cause reset of strange attraction. */
+	/* Reset strange attraction. */
 	F_SET(vp, VM_RCM_SET);
 
 	for (gp = sp->gp, vip = VIP(sp), eval = 0;;) {
@@ -213,16 +213,16 @@ vi(sp)
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
 		if (F_ISSET(gp, G_TMP_INUSE)) {
+			F_CLR(gp, G_TMP_INUSE);
 			msgq(sp, M_ERR,
 			    "202|vi: temporary buffer not released");
-			return (1);
 		}
 #endif
 		/*
 		 * If that command took us out of vi or changed the screen,
 		 * then exit the loop without further action.
 		 */
-		 if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
+		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
 		/*
