@@ -1,32 +1,42 @@
-This file describes how to build and install NVI 1.65 (or later) for the
-LynxOS 2.4.0 operating system.
+This file describes how to build and install the Berkeley `nvi' editor for
+the LynxOS 2.4.0 operating system.
 
 Note that even though LynxOS 2.4.0 is available for a variety of different
-hardware platforms, I personally have only tried building NVI on LynxOS/x86
-(2.4.0 version), so that is the only platform that I am sure that you can
-build NVI on at the present time, however I know of no reason why these
-procedures should not work also when attempting to build NVI on other LynxOS
-hardware platforms (e.g. Sparc, PowerPC, and mc68000).
+hardware platforms, I personally have only tried building nvi on LynxOS/x86
+and LynxOS/PowerPC (using LynxOS 2.4.0 in both cases), so those are the only
+platforms that I am sure that you can build nvi on at the present time, how-
+ever I know of no reason why these procedures should not work also when
+attempting to build nvi on other LynxOS hardware platforms (e.g. Sparc, and
+mc680x0).
 
 Also note that these procedures may not work on versions of LynxOS prior
 to 2.4.0.  (As I understand it, a good deal of work went into making the
-2.4.0 release more POSIX-compliant, and I have no idea what building glitches
-you might run into if you try to build NVI on a pre-2.4.0 version of LynxOS.)
+2.4.0 release more POSIX-compliant, and I have no idea what build glitches,
+if any, you might run into if you try to build nvi on a pre-2.4.0 version
+of LynxOS.)
 
-Anyway, the most important consideration when building NVI on LynxOS is
+Anyway, the most important consideration when building nvi on LynxOS is
 your selection of a C compiler.  DO NOT try to use either the /bin/cc or
-the /bin/gcc compiler (i.e. GCC version 1.42) to build NVI.  These two
+the /bin/gcc compiler (i.e. GCC version 1.42) to build nvi.  These two
 compilers are ancient, crusty, buggy, and should probably not be used for
-any actual compiling of any actual C code.  Rather than using either of
-these two C compilers, I strongly advise you to use the C compiler which
-is normally installed (on LynxOS 2.4.0) as:
+anything.  Rather than using either of these two C compilers, I strongly
+advise you to use the more up-to-date version of the GNU C compiler which
+is distributed with LynxOS.  The most up-to-date version of GCC distributed
+with LynxOS 2.4.0 for the x86, m680x0, and Sparc processor families is
+normally installed as:
 
 	/cygnus/94q4-lynxos-x86/bin/gcc
 
+In the case of LynxOS 2.4.0 for the RS/6000 and/or PowerPC processor families,
+the pathname of the most up-to-date version of GCC which is distributed with
+LynxOS 2.4.0 is actually /cygnus/95q2-lynxos-ppc/bin/gcc, so if you are on a
+PowerPC, use that pathname for GCC instead of the one shown above.
+
 You can probably just setup your $PATH (*before* you do the configure step
-for NVI) so that this compiler will appear in your path before the /bin/cc
-and /bin/gcc compilers, but I personally would take no chances.  What _I_
-did when _I_ built NVI was the following:
+for nvi) so that the more up-to-date version of the GNU C compiler will
+appear in your path before the /bin/cc and/or /bin/gcc compilers, but I
+personally would take no chances.  What I did when I built nvi was the
+following:
 
 	su root
 	cd /bin
@@ -35,36 +45,65 @@ did when _I_ built NVI was the following:
 	mv gcc gcc.save
 	ln -s /cygnus/94q4-lynxos-x86/bin/gcc ./gcc
 
-This will insure that anything you compile from now on *will* be compiled
-with the Cygnus 94q4 version of GCC.  (This compiler is also rather old,
-but it is still newer and more bug-free and more ANSI conformant that those
-other two C compilers which currently ship with LynxOS.)
+These steps should work for the x86, sparc, and 680x0 versions of LynxOS 2.4.0,
+however if you are using LynxOS 2.4.0 on a PowerPC, you should do the follow-
+ing steps instead:
 
-Anyway, that's the most important thing about building NVI 1.65 (or later)
-on LynxOS 2.4.0.  Make sure that you use a decent C compiler.  If you are
-building NVI version 1.65.alpha, then write to me at the address below and
-I will send you the patches you will need to configure & build NVI 1.65.alpha
-for LynxOS 2.4.0.  If you are building some later version of NVI, you may
-not even need any patches (but that is up to Keith Bostic).
+	su root
+	cd /bin
+	ln -s /cygnus/95q2-lynxos-ppc/bin/gcc ./cc
+	mv gcc gcc.save
+	ln -s /cygnus/95q2-lynxos-ppc/bin/gcc ./gcc
 
-A final note:  You may (and probably will) get a number of warnings during
-your build of NVI which claim that the types of one or more parameters given
-in calls to the following functions are incorrect pointer types:
+(Note that on LynxOS 2.4.0 for the PowerPC, there is no pre-existing /bin/cc
+file, so in that case, you don't even have to bother trying to make a backup
+of the /bin/cc compiler, because it won't even be present on your system.)
 
-	bcopy
-	wait
-	waitpid
-	ioctl
-	db_eget
-	db_get
+Performing the steps shown above will insure that anything you compile from
+now on will be compiled with the most up-to-date version of GCC which is
+shipped with your Lynx operating system.  (Note that the versions of GCC
+which are currently shipping with LynxOS 2.4.0 are also somewhat out-of-date
+themselves, but they are still quite a bit newer and more bug-free and more
+ANSI conformant that those other two C compilers which currently ship with
+LynxOS.)
 
-These warnings are to be expected.  They are (I believe) just due to some
-small and insignificant bugs in the LynxOS 2.4.0 system include files, and
-these warnings should not concern you.  Also, you will probably get two
-warnings when compiling the file vi/v_txt.c, both of which will say some-
-thing like ``comparison of distinct pointer types lacks a cast''.  I haven't
-really looked into this problem yet, but they are only warnings, and I
-believe that they are probably benign.
+Anyway, that's the most important thing about building nvi on LynxOS 2.4.0.
+Just make sure that you use a decent C compiler.
+
+If you are building nvi on a PowerPC or RS/6000 system, it is also very im-
+portant that you apply the two small patches given at the end of this file
+to your /usr/include/stdarg.h file.  These patches fix two serious bugs in
+that file which you really want to have fixed anyway, because without these
+fixes, anything that you compile which uses <stdarg.h> and/or ANSI standard
+variable length argument lists will very likely malfunction at run-time.
+
+Regardless of which LynxOS platform you are using (i.e. x86, PowerPC, Sparc,
+or m680x0) you may also want to apply the other small patch given below to
+your /usr/include/ioctl.h file.  This will prevent a few warnings during the
+build of nvi, but other than that, should have little if any noticable effect.
+
+You can apply either or both of these patches simply by doing the following:
+
+	su root
+	cd /usr/include
+	/bin/patch < this-file
+
+Where `this-file' is the actual full pathname of the file you are now reading,
+wherever it may reside on your own system.
+
+I should mention also that LynxOS does not normally ship with any `sendmail'
+type mail transfer program installed, either under /usr/lib/ or anywhere else
+for that matter.  This isn't really a big problem, but nvi normally wants and
+expects to have a sendmail type mail transfer program available so that it
+can send users notifications (by mail) whenever a partially edited file is
+preserved by the editor in response to a sudden system crash, a sudden system
+shutdown, or an unexpected serial-line hangup.  You can configure and build
+nvi without any sendmail program installed on your system, but you will get
+warnings about its absence when you are doing the initial configure step
+prior to actually building nvi.  If you want to have a fully-functional nvi
+which does send users mail whenever partially edited files are preserved,
+then you should get the sendmail sources (via ftp from ftp.cs.berkeley.edu),
+build and install sendmail, and then reconfigure, rebuild, and reinstall nvi.
 
 Please contact me at the address below if you find any bugs in the LynxOS
 port of NVI.  Thanks.
@@ -72,5 +111,51 @@ port of NVI.  Thanks.
 Ron Guilmette
 Roseville, California
 <rfg@monkeys.com>
-May 15, 1996
+May 18, 1996
 
+
+cut here for LynxOS 2.4.0 system include files patches
+-----------------------------------------------------------------------------
+*** ioctl.h	Fri Apr 26 16:50:51 1996
+--- ioctl.h	Sat May 18 17:55:16 1996
+***************
+*** 572,576 ****
+  
+  #ifndef __LYNXOS
+! extern int ioctl	_AP((int, int, char *));
+  #endif
+  
+--- 572,576 ----
+  
+  #ifndef __LYNXOS
+! extern int ioctl	_AP((int, int, ...));
+  #endif
+  
+*** stdarg.h	Fri Apr 26 16:51:02 1996
+--- stdarg.h	Sat May 18 19:34:13 1996
+***************
+*** 88,92 ****
+  	(((sizeof(TYPE) + sizeof(int) - 1) / sizeof(int)) * sizeof(int))
+  
+! #define va_start(AP, LASTARG)	(AP = ((char *) __builtin_next_arg ()))
+  
+  void va_end(va_list);		/* Defined in libgcc.a */
+--- 88,92 ----
+  	(((sizeof(TYPE) + sizeof(int) - 1) / sizeof(int)) * sizeof(int))
+  
+! #define va_start(AP, LASTARG)	(AP = ((char *) __builtin_next_arg (LASTARG)))
+  
+  void va_end(va_list);		/* Defined in libgcc.a */
+***************
+*** 162,166 ****
+  	(((sizeof(TYPE) + sizeof(int) - 1) / sizeof(int)) * sizeof(int))
+  
+! #define va_start(AP, LASTARG)	(AP = ((char *) __builtin_next_arg ()))
+  
+  void va_end(va_list);		/* Defined in libgcc.a */
+--- 162,166 ----
+  	(((sizeof(TYPE) + sizeof(int) - 1) / sizeof(int)) * sizeof(int))
+  
+! #define va_start(AP, LASTARG)	(AP = ((char *) __builtin_next_arg (LASTARG)))
+  
+  void va_end(va_list);		/* Defined in libgcc.a */
