@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.19 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $";
+static const char sccsid[] = "$Id: log.c,v 10.20 2000/08/29 15:52:37 skimo Exp $ (Berkeley) $Date: 2000/08/29 15:52:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -453,6 +453,13 @@ log_backward(sp, rp)
 		return (1);
 	}
 
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
+	}
+	ep->l_win = sp->wp;
+		
+
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
 	for (didop = 0;;) {
@@ -467,6 +474,7 @@ log_backward(sp, rp)
 			if (didop) {
 				memmove(rp, p + sizeof(u_char), sizeof(MARK));
 				F_CLR(ep, F_NOLOG);
+				ep->l_win = NULL;
 				return (0);
 			}
 			break;
@@ -521,6 +529,7 @@ log_backward(sp, rp)
 	}
 
 err:	F_CLR(ep, F_NOLOG);
+	ep->l_win = NULL;
 	return (1);
 }
 
@@ -557,6 +566,12 @@ log_setline(sp)
 	if (ep->l_cur == 1)
 		return (1);
 
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
+	}
+	ep->l_win = sp->wp;
+
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
 	for (;;) {
@@ -571,6 +586,7 @@ log_setline(sp)
 			memmove(&m, p + sizeof(u_char), sizeof(MARK));
 			if (m.lno != sp->lno || ep->l_cur == 1) {
 				F_CLR(ep, F_NOLOG);
+				ep->l_win = NULL;
 				return (0);
 			}
 			break;
@@ -579,6 +595,7 @@ log_setline(sp)
 			if (m.lno != sp->lno) {
 				++ep->l_cur;
 				F_CLR(ep, F_NOLOG);
+				ep->l_win = NULL;
 				return (0);
 			}
 			break;
@@ -611,6 +628,7 @@ log_setline(sp)
 	}
 
 err:	F_CLR(ep, F_NOLOG);
+	ep->l_win = NULL;
 	return (1);
 }
 
@@ -645,6 +663,12 @@ log_forward(sp, rp)
 		return (1);
 	}
 
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
+	}
+	ep->l_win = sp->wp;
+
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
 	for (didop = 0;;) {
@@ -660,6 +684,7 @@ log_forward(sp, rp)
 				++ep->l_cur;
 				memmove(rp, p + sizeof(u_char), sizeof(MARK));
 				F_CLR(ep, F_NOLOG);
+				ep->l_win = NULL;
 				return (0);
 			}
 			break;
@@ -729,6 +754,7 @@ log_forward(sp, rp)
 	}
 
 err:	F_CLR(ep, F_NOLOG);
+	ep->l_win = NULL;
 	return (1);
 }
 
