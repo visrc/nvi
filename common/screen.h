@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.98 1994/04/13 09:40:50 bostic Exp $ (Berkeley) $Date: 1994/04/13 09:40:50 $
+ *	$Id: screen.h,v 8.99 1994/04/24 14:10:01 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:10:01 $
  */
 
 /*
@@ -135,6 +135,8 @@ struct _scr {
 	TEXTH	 *tiqp;			/* Ex/vi: text input queue reference. */
 
 	SCRIPT	*script;		/* Vi: script mode information .*/
+
+	recno_t	 defscroll;		/* Vi: ^D, ^U scroll information. */
 
 	struct timeval	 busy_tod;	/* ITIMER_REAL: busy time-of-day. */
 	char const	*busy_msg;	/* ITIMER_REAL: busy message. */
