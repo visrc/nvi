@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.52 1996/03/28 18:06:20 bostic Exp $ (Berkeley) $Date: 1996/03/28 18:06:20 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.53 1996/03/29 10:21:36 bostic Exp $ (Berkeley) $Date: 1996/03/29 10:21:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,7 +151,9 @@ vs_update(sp, m1, m2)
 	const char *m1, *m2;
 {
 	GS *gp;
-	size_t len, mlen, oldy, oldx;
+	size_t len, mlen;
+
+	gp = sp->gp;
 
 	/*
 	 * This routine displays a message on the bottom line of the screen,
@@ -167,8 +169,7 @@ vs_update(sp, m1, m2)
 		(void)ex_fflush(sp);
 	}
 
-	gp = sp->gp;
-	(void)gp->scr_cursor(sp, &oldy, &oldx);
+	/* Clear the bottom line. */
 	(void)gp->scr_move(sp, LASTLINE(sp), 0);
 	(void)gp->scr_clrtoeol(sp);
 
@@ -188,8 +189,6 @@ vs_update(sp, m1, m2)
 			mlen = (sp->cols - 2) - len;
 		(void)gp->scr_addstr(sp, m2, mlen);
 	}
-
-	(void)gp->scr_move(sp, oldy, oldx);
 	(void)sp->gp->scr_refresh(sp, 0);
 }
 
@@ -285,12 +284,6 @@ vs_msg(sp, mtype, line, len)
 		return;
 	}
 
-	/*
-	 * Refresh the screen, we may have been delaying it while
-	 * keys were coming in fast.
-	 */
-	(void)gp->scr_refresh(sp, 0);
-
 	/* Save the cursor position. */
 	(void)gp->scr_cursor(sp, &oldy, &oldx);
 
@@ -374,10 +367,7 @@ vs_msg(sp, mtype, line, len)
 			break;
 	}
 
-ret:	/* Restore the cursor position. */
-	(void)gp->scr_move(sp, oldy, oldx);
-
-	/* Refresh the screen. */
+ret:	(void)gp->scr_move(sp, oldy, oldx);
 	(void)gp->scr_refresh(sp, 0);
 }
 
