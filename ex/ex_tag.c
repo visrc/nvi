@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.9 1992/05/15 11:07:21 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:07:21 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.10 1992/06/07 13:47:38 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:47:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,8 @@ ex_tag(cmdp)
 	EXCMDARG *cmdp;
 {
 	static char *lasttag;
-	MARK m, *mp;
 	EXF *ep;
+	MARK m, *mp;
 	TAG *tag;
 	
 	DEFMODSYNC;
@@ -41,17 +41,26 @@ ex_tag(cmdp)
 			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		/* FALLTHROUGH */
+		break;
 	case 0:
-		if ((tag = tag_push(lasttag)) == NULL)
+		if (lasttag == NULL) {
+			msg("No previous tag entered.");
 			return (1);
+		}
 		break;
 	}
 
-	if (strcmp(curf->name, tag->fname)) {
-		if (!file_stop(curf, 0))
+	if ((tag = tag_push(lasttag)) == NULL)
+		return (1);
+
+	/* The tag code can be entered from main, i.e. "vi -t tag". */
+	if (curf == NULL) {
+		file_ins(file_first(), tag->fname, 0);
+		file_start(file_first());
+	} else if (strcmp(curf->name, tag->fname)) {
+		if (file_stop(curf, 0))
 			return (1);
-		file_ins(curf, tag->fname);
+		file_ins(curf, tag->fname, 1);
 		file_start(file_next(curf));
 	}
 
@@ -61,6 +70,7 @@ ex_tag(cmdp)
 		msg("Tag search pattern not found.");
 		return (1);
 	}
-	cursor = *mp;
+	curf->lno = mp->lno;
+	curf->cno = mp->cno;
 	return (0);
 }
