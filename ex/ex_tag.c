@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.18 1995/02/02 19:05:33 bostic Exp $ (Berkeley) $Date: 1995/02/02 19:05:33 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.19 1995/02/08 19:38:43 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,6 +40,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 9.18 1995/02/02 19:05:33 bostic Exp $ (B
 #include "vi.h"
 #include "excmd.h"
 #include "tag.h"
+#include "../svi/svi_screen.h"
 
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
@@ -142,6 +143,56 @@ ex_tagfirst(sp, tagarg)
 }
 
 /*
+ * ex_N_tagpush --
+ *	ex_tagpush for new screens.
+ */
+int
+ex_N_tagpush(sp, cmdp)
+	SCR *sp;
+	EXCMDARG *cmdp;
+{
+	SCR *new, *top, *bot;
+
+	/* Get a new screen. */
+	if (svi_split(sp, &top, &bot))
+		return (1);
+	new = sp == top ? bot : top;
+
+	if (ex_tagpush(new, cmdp)) {
+		if (sp == top)
+			(void)svi_join(new, sp, NULL, NULL);
+		else
+			(void)svi_join(new, NULL, sp, NULL);
+		(void)screen_end(new);
+
+		/*
+		 * XXX
+		 * Nothing's changed, so don't flash the screen.  Note, this
+		 * doesn't belong here at all, and should be moved elsewhere.
+		 */
+		F_CLR(sp, S_SCR_REDRAW);
+		return (1);
+	}
+
+	/* Add the new screen to the queue. */
+	SIGBLOCK(sp->gp);
+	if (sp == bot) {
+		/* Split up, link in before the parent. */
+		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
+	} else {
+		/* Split down, link in after the parent. */
+		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
+	}
+	SIGUNBLOCK(sp->gp);
+
+	/* Set up the switch. */
+	sp->nextdisp = new;
+	F_SET(sp, S_SSWITCH);
+
+	return (0);
+}
+
+/*
  * ex_tagpush -- :tag [file]
  *	Move to a new tag.
  *
@@ -167,6 +218,11 @@ ex_tagpush(sp, cmdp)
 	int sval;
 	long tl;
 	char *name, *p, *search, *tag;
+
+	if (F_ISSET(cmdp, E_NEWSCREEN)) {
+		F_CLR(cmdp, E_NEWSCREEN);
+		return (ex_N_tagpush(sp, cmdp));
+	}
 
 	exp = EXP(sp);
 	switch (cmdp->argc) {

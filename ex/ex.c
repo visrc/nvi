@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.35 1995/02/08 15:30:20 bostic Exp $ (Berkeley) $Date: 1995/02/08 15:30:20 $";
+static char sccsid[] = "$Id: ex.c,v 9.36 1995/02/08 19:38:31 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -263,7 +263,6 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	size_t cmdlen;
 	u_int pflags;
 {
-	SCR *new, *top, *bot;
 	enum nresult nret;
 	enum { NOTSET, NEEDSEP_N, NEEDSEP_NR, NONE } sep;
 	EX_PRIVATE *exp;
@@ -274,7 +273,7 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	recno_t lno;
 	size_t arg1_len, blen, len, save_cmdlen;
 	long flagoff, ltmp;
-	int ch, cnt, delim, flags, isaddr, namelen, newscreen, nf;
+	int ch, cnt, delim, flags, isaddr, namelen, nf;
 	int nl, notempty, optnum, uselastcmd, tmp, vi_address;
 	char *arg1, *bp, *p, *s, *save_cmd, *t;
 
@@ -293,10 +292,7 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	else
 		F_CLR(EXP(sp), EX_VLITONLY);
 
-loop:	new = NULL;
-	newscreen = 0;
-
-	if (nl) {
+loop:	if (nl) {
 		nl = 0;
 		++sp->if_lno;
 	}
@@ -439,15 +435,6 @@ done:		if (bp != NULL)
 			}
 		}
 
-		/* 
-		 * Capital letters beginning commands indicate that the
-		 * command should be executed in a new window.
-		 */
-		if (isupper(p[0])) {
-			newscreen = 1;
-			p[0] = tolower(p[0]);
-		}
-
 		/*
 		 * !!!
 		 * Historic vi permitted flags to immediately follow any
@@ -464,6 +451,11 @@ done:		if (bp != NULL)
 		 * any command that started with 'p'.  Probably wanted the
 		 * P command for backward compatibility, and the code just
 		 * made Preserve and Put work by accident.
+		 *
+		 * !!!
+		 * Capital letters beginning the command names ex, edit, tag
+		 * and visual (in vi mode) indicate the command should happen
+		 * in a new screen.
 		 */
 		tmp = 0;
 		switch (p[0]) {
@@ -481,9 +473,13 @@ done:		if (bp != NULL)
 				goto skip;
 			}
 			break;
+		case 'E': case 'N': case 'T': case 'V':
+			F_SET(&exc, E_NEWSCREEN);
+			p[0] = tolower(p[0]);
+			break;
 		case 'P':
 			tmp = 1;
-			*p = 'p';
+			p[0] = 'p';
 			break;
 		}
 
@@ -520,11 +516,13 @@ done:		if (bp != NULL)
 				}
 				/* FALLTHROUGH */
 			default:
-				if (tmp)
-					*p = 'P';
+unknown:			if (F_ISSET(&exc, E_NEWSCREEN) || tmp)
+					p[0] = toupper(p[0]);
 				ex_unknown(sp, p, namelen);
 				goto err;
 			}
+		if (F_ISSET(&exc, E_NEWSCREEN) && !F_ISSET(cp, E_NEWSCREEN))
+			goto unknown;
 
 		/*
 		 * Hook for commands that are either not yet implemented
@@ -600,15 +598,6 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		F_SET(&exc, E_F_HASH);
 	} else
 		optnum = 0;
-
-	/* Check for newscreen legality. */
-	if (newscreen &&
-	    (F_ISSET(sp, S_EX | S_GLOBAL) || !F_ISSET(cp, E_NEWSCREEN))) {
-		msgq(sp, M_ERR,
-    "270|New screens not available in globals, ex mode or with the %s command",
-		    cp->name);
-		goto err;
-	}
 
 	/* Check for ex mode legality. */
 	if (F_ISSET(sp, S_EX) && F_ISSET(cp, E_VIONLY)) {
@@ -1397,35 +1386,9 @@ addr2:	switch (exc.addrcnt) {
 		sep = NONE;
 	}
 
-	/* If creating a new screen for this function, do it now. */
-	if (newscreen) {
-		if (svi_split(sp, &top, &bot))
-			goto err;
-		new = sp == top ? bot : top;
-	}
-
 	/* Call the underlying function for the ex command. */
-	if (cp->fn(newscreen ? new : sp, &exc))
+	if (cp->fn(sp, &exc))
 		goto err;
-
-	/*
-	 * If created a new screen, add it to the displayed queue and
-	 * set up the switch.
-	 */
-	if (newscreen) {
-		SIGBLOCK(sp->gp);
-		if (sp == bot) {
-			/* Split up, link in before the parent. */
-			CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
-		} else {
-			/* Split down, link in after the parent. */
-			CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
-		}
-		SIGUNBLOCK(sp->gp);
-
-		sp->nextdisp = new;
-		F_SET(sp, S_SSWITCH);
-	}
 
 	/*
 	 * If executing a global command that contains text input commands,
@@ -1565,15 +1528,6 @@ addr2:	switch (exc.addrcnt) {
 	goto loop;
 	/* NOTREACHED */
 
-	/* Discard any created screen. */
-err:	if (newscreen && new != NULL) {
-		if (sp == top)
-			(void)svi_join(new, sp, NULL, NULL);
-		else
-			(void)svi_join(new, NULL, sp, NULL);
-		(void)screen_end(new);
-	}
-
 	/*
 	 * On error, we discard any keys we have left, as well as any keys
 	 * that were mapped.  The test of save_cmdlen isn't necessarily
@@ -1581,7 +1535,7 @@ err:	if (newscreen && new != NULL) {
 	 * string was a single command or not.  Try and guess, it's useful
 	 * to know if part of the command was discarded.
 	 */
-	if (save_cmdlen == 0)
+err:	if (save_cmdlen == 0)
 		for (; cmdlen; --cmdlen) {
 			ch = *cmd++;
 			if (IS_ESCAPE(sp, ch) && cmdlen > 1) {

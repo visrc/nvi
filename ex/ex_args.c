@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 9.5 1995/02/08 12:47:42 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:47:42 $";
+static char sccsid[] = "$Id: ex_args.c,v 9.6 1995/02/08 19:38:38 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,6 +30,9 @@ static char sccsid[] = "$Id: ex_args.c,v 9.5 1995/02/08 12:47:42 bostic Exp $ (B
 
 #include "vi.h"
 #include "excmd.h"
+#include "../svi/svi_screen.h"
+
+static int ex_N_next __P((SCR *, EXCMDARG *));
 
 /*
  * ex_next -- :next [+cmd] [files]
@@ -51,10 +54,28 @@ ex_next(sp, cmdp)
 	int noargs;
 	char **ap;
 
+	/* Check modification. */
 	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
 
-	/* Any other arguments are a replacement file list. */
+	/* Check for file to move to. */
+	if (cmdp->argc == 0 && (sp->cargv == NULL || sp->cargv[1] == NULL)) {
+		msgq(sp, M_ERR, "120|No more files to edit");
+		return (1);
+	}
+
+	if (F_ISSET(cmdp, E_NEWSCREEN)) {
+		/* By default, edit the next file in the old argument list. */
+		if (cmdp->argc == 0) {
+			if (argv_exp0(sp,
+			    cmdp, sp->cargv[1], strlen(sp->cargv[1])))
+				return (1);
+			return (ex_edit(sp, cmdp));
+		}
+		return (ex_N_next(sp, cmdp));
+	}
+
+	/* Any arguments are a replacement file list. */
 	if (cmdp->argc) {
 		/* Free the current list. */
 		if (!F_ISSET(sp, S_ARGNOFREE) && sp->argv != NULL) {
@@ -75,16 +96,12 @@ ex_next(sp, cmdp)
 				return (1);
 		*ap = NULL;
 
-		/* Switch to the first one. */
+		/* Switch to the first file. */
 		sp->cargv = sp->argv;
 		if ((frp = file_add(sp, *sp->cargv)) == NULL)
 			return (1);
 		noargs = 0;
 	} else {
-		if (sp->cargv == NULL || sp->cargv[1] == NULL) {
-			msgq(sp, M_ERR, "120|No more files to edit");
-			return (1);
-		}
 		if ((frp = file_add(sp, sp->cargv[1])) == NULL)
 			return (1);
 		if (F_ISSET(sp, S_ARGRECOVER))
@@ -97,6 +114,71 @@ ex_next(sp, cmdp)
 		return (1);
 	if (noargs)
 		++sp->cargv;
+	return (0);
+}
+
+/*
+ * ex_N_next --
+ *	New screen version of ex_next.
+ */
+static int
+ex_N_next(sp, cmdp)
+	SCR *sp;
+	EXCMDARG *cmdp;
+{
+	SCR *bot, *new, *top;
+	ARGS **argv;
+	FREF *frp;
+	char **ap, **s_argv;
+
+	/* Any arguments are a replacement file list. */
+	sp->cargv = NULL;
+	CALLOC_RET(sp, s_argv, char **, cmdp->argc + 1, sizeof(char *));
+	for (ap = s_argv, argv = cmdp->argv; argv[0]->len != 0; ++ap, ++argv)
+		if ((*ap = v_strdup(sp, argv[0]->bp, argv[0]->len)) == NULL)
+			return (1);
+	*ap = NULL;
+
+	/* Get a new screen. */
+	if (svi_split(sp, &top, &bot))
+		return (1);
+	new = sp == top ? bot : top;
+
+	/* Switch to the first file. */
+	new->cargv = new->argv = s_argv;
+	if ((frp = file_add(new, *new->cargv)) == NULL ||
+	    file_init(new, frp, NULL,
+	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0))) {
+		if (sp == top)
+			(void)svi_join(new, sp, NULL, NULL);
+		else
+			(void)svi_join(new, NULL, sp, NULL);
+		(void)screen_end(new);
+
+		/*
+		 * XXX
+		 * Nothing's changed, so don't flash the screen.  Note, this
+		 * doesn't belong here at all, and should be moved elsewhere.
+		 */
+		F_CLR(sp, S_SCR_REDRAW);
+		return (1);
+	}
+
+	/* Add the new screen to the queue. */
+	SIGBLOCK(sp->gp);
+	if (sp == bot) {
+		/* Split up, link in before the parent. */
+		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
+	} else {
+		/* Split down, link in after the parent. */
+		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
+	}
+	SIGUNBLOCK(sp->gp);
+
+	/* Set up the switch. */
+	sp->nextdisp = new;
+	F_SET(sp, S_SSWITCH);
+
 	return (0);
 }
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 9.4 1995/02/08 12:48:54 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:48:54 $";
+static char sccsid[] = "$Id: ex_edit.c,v 9.5 1995/02/08 19:38:40 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,12 +30,16 @@ static char sccsid[] = "$Id: ex_edit.c,v 9.4 1995/02/08 12:48:54 bostic Exp $ (B
 
 #include "vi.h"
 #include "excmd.h"
+#include "../svi/svi_screen.h"
+
+static int ex_N_edit __P((SCR *, EXCMDARG *));
 
 /*
  * ex_edit --	:e[dit][!] [+cmd] [file]
+ *		:ex[!] [+cmd] [file]
  *		:vi[sual][!] [+cmd] [file]
  *
- * Edit a file; if none specified, re-edit the current file.  The second
+ * Edit a file; if none specified, re-edit the current file.  The third
  * form of the command can only be executed while in vi mode.  See the
  * hack in ex.c:ex_cmd().
  *
@@ -48,9 +52,20 @@ ex_edit(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
-	ARGS *ap;
 	FREF *frp;
 	int setalt;
+
+	/*
+	 * Check for modifications.
+	 *
+	 * !!!
+	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
+	 */
+	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
+		return (1);
+
+	if (F_ISSET(cmdp, E_NEWSCREEN))
+		return (ex_N_edit(sp, cmdp));
 
 	frp = sp->frp;
 	switch (cmdp->argc) {
@@ -70,28 +85,85 @@ ex_edit(sp, cmdp)
 		setalt = 0;
 		break;
 	case 1:
-		ap = cmdp->argv[0];
-		if ((frp = file_add(sp, ap->bp)) == NULL)
+		if ((frp = file_add(sp, cmdp->argv[0]->bp)) == NULL)
 			return (1);
 		setalt = 1;
-		set_alt_name(sp, ap->bp);
+		set_alt_name(sp, cmdp->argv[0]->bp);
 		break;
 	default:
 		abort();
 	}
 
-	/*
-	 * Check for modifications.
-	 *
-	 * !!!
-	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
-	 */
-	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
-		return (1);
-
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, (setalt ? FS_SETALT : 0) |
 	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
+	return (0);
+}
+
+/*
+ * ex_N_edit --
+ *	New screen version of ex_edit.
+ */
+static int
+ex_N_edit(sp, cmdp)
+	SCR *sp;
+	EXCMDARG *cmdp;
+{
+	SCR *bot, *new, *top;
+	FREF *frp;
+
+	switch (cmdp->argc) {
+	case 0:
+		/* Edit a temporary file. */
+		if ((frp = file_add(sp, NULL)) == NULL)
+			return (1);
+		break;
+	case 1:
+		if ((frp = file_add(sp, cmdp->argv[0]->bp)) == NULL)
+			return (1);
+		break;
+	default:
+		abort();
+	}
+
+	/* Get a new screen. */
+	if (svi_split(sp, &top, &bot))
+		return (1);
+	new = sp == top ? bot : top;
+
+	/* Switch files. */
+	if (file_init(new, frp, NULL,
+	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0))) {
+		if (sp == top)
+			(void)svi_join(new, sp, NULL, NULL);
+		else
+			(void)svi_join(new, NULL, sp, NULL);
+		(void)screen_end(new);
+
+		/*
+		 * XXX
+		 * Nothing's changed, so don't flash the screen.  Note, this
+		 * doesn't belong here at all, and should be moved elsewhere.
+		 */
+		F_CLR(sp, S_SCR_REDRAW);
+		return (1);
+	}
+
+	/* Add the new screen to the queue. */
+	SIGBLOCK(sp->gp);
+	if (sp == bot) {
+		/* Split up, link in before the parent. */
+		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
+	} else {
+		/* Split down, link in after the parent. */
+		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
+	}
+	SIGUNBLOCK(sp->gp);
+
+	/* Set up the switch. */
+	sp->nextdisp = new;
+	F_SET(sp, S_SSWITCH);
+
 	return (0);
 }
