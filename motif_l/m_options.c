@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.2 1996/12/10 17:07:22 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:22 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.3 1996/12/10 21:07:55 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:07:55 $";
 #endif /* not lint */
 
 #include <X11/X.h>
@@ -22,6 +22,9 @@ static const char sccsid[] = "$Id: m_options.c,v 8.2 1996/12/10 17:07:22 bostic 
 #include <Xm/TextF.h>
 #include <Xm/ToggleBG.h>
 #include <Xm/RowColumn.h>
+
+#include "ipc_motif.h"
+#include "../include/ipc_mextern.h"
 
 /*
  * Types
@@ -167,7 +170,7 @@ static	void	change_toggle( w, option )
 #if defined(SelfTest)
     printf( "sending command <<%s>>\n", buffer );
 #else
-    _vi_send_command_string( buffer );
+    __vi_send_command_string( buffer );
 #endif
 }
 
@@ -189,7 +192,7 @@ static	void	change_string( w, option )
 #if defined(SelfTest)
     printf( "sending command <<%s>>\n", buffer );
 #else
-    _vi_send_command_string( buffer );
+    __vi_send_command_string( buffer );
 #endif
 }
 
@@ -289,7 +292,6 @@ static	Widget	create_options_dialog( parent, title )
 {
     Widget	box, form, form2;
     int		i;
-    extern	void _vi_cancel_cb();
 
     box = XtVaCreatePopupShell( title,
 				xmDialogShellWidgetClass,
@@ -298,7 +300,7 @@ static	Widget	create_options_dialog( parent, title )
 				XmNallowShellResize,	False,
 				0
 				);
-    XtAddCallback( box, XmNpopdownCallback, _vi_cancel_cb, 0 );
+    XtAddCallback( box, XmNpopdownCallback, __vi_cancel_cb, 0 );
 
     form = XtVaCreateWidget( "form", 
 			     xmRowColumnWidgetClass,
@@ -351,13 +353,13 @@ static	Widget	create_options_dialog( parent, title )
 
 
 /* module entry point
- *	_vi_show_options_dialog( parent, title )
+ *	__vi_show_options_dialog( parent, title )
  */
 
 #if defined(__STDC__)
-void	_vi_show_options_dialog( Widget parent, String title )
+void	__vi_show_options_dialog( Widget parent, String title )
 #else
-void	_vi_show_options_dialog( parent, title )
+void	__vi_show_options_dialog( parent, title )
 Widget	parent;
 String	title;
 #endif
@@ -377,19 +379,13 @@ String	title;
     XtPopup( shell, XtGrabNone );
 #else
     /* wait until it goes away */
-    _vi_modal_dialog( db );
+    __vi_modal_dialog( db );
 #endif
 }
 
 
 
 #if defined(SelfTest)
-
-#if XtSpecificationRelease == 4
-#define	ArgcType	Cardinal *
-#else
-#define	ArgcType	int *
-#endif
 
 #if defined(__STDC__)
 static void show_options( Widget w, XtPointer data, XtPointer cbs )
@@ -400,7 +396,7 @@ XtPointer	data;
 XtPointer	cbs;
 #endif
 {
-    _vi_show_options_dialog( data, "Preferences" );
+    __vi_show_options_dialog( data, "Preferences" );
 }
 
 main( int argc, char *argv[] )

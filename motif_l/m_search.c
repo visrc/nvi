@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.2 1996/12/10 17:07:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:23 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.3 1996/12/10 21:07:46 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:07:46 $";
 #endif /* not lint */
 
 /* context */
@@ -194,7 +194,7 @@ static	void	send_command( w )
 
     strcpy( buffer, "/" );
     strcat( buffer, pattern );
-    _vi_send_command_string( buffer );
+    __vi_send_command_string( buffer );
     }
 #endif
 }
@@ -523,9 +523,9 @@ static	Widget	create_search_dialog( parent, title )
  */
 
 #if defined(__STDC__)
-void 	_vi_show_search_dialog( Widget parent, String title )
+void 	__vi_show_search_dialog( Widget parent, String title )
 #else
-void	_vi_show_search_dialog( parent, data, cbs )
+void	__vi_show_search_dialog( parent, data, cbs )
 Widget	parent;
 String	title;
 #endif
@@ -547,19 +547,13 @@ String	title;
 }
 
 
-void	_vi_next_search()
+void	__vi_next_search()
 {
     next_func( NULL );
 }
 
 
 #if defined(SelfTest)
-
-#if XtSpecificationRelease == 4
-#define	ArgcType	Cardinal *
-#else
-#define	ArgcType	int *
-#endif
 
 #if defined(__STDC__)
 static void show_search( Widget w, XtPointer data, XtPointer cbs )
@@ -570,7 +564,7 @@ XtPointer	data;
 XtPointer	cbs;
 #endif
 {
-    _vi_show_search_dialog( data, "Search" );
+    __vi_show_search_dialog( data, "Search" );
 }
 
 main( int argc, char *argv[] )
