@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.10 1994/04/29 10:21:22 bostic Exp $ (Berkeley) $Date: 1994/04/29 10:21:22 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.11 1994/05/01 23:12:07 bostic Exp $ (Berkeley) $Date: 1994/05/01 23:12:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,7 +113,7 @@ ex_print(sp, ep, fp, tp, flags)
 			if (from <= 999999)
 				col = ex_printf(EXCOOKIE, "%6ld  ", from);
 			else
-				col = ex_printf(EXCOOKIE, "TOOBIG  ", from);
+				col = ex_printf(EXCOOKIE, "TOOBIG  ");
 		else
 			col = 0;
 
