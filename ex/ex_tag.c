@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.36 1994/03/14 10:39:47 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:39:47 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.37 1994/03/15 09:41:50 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:41:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -799,10 +799,8 @@ linear_search(string, front, back)
 		switch (compare(string, front, back)) {
 		case EQUAL:		/* Found it. */
 			return (front);
-			break;
 		case LESS:		/* No such string. */
 			return (NULL);
-			break;
 		case GREATER:		/* Keep going. */
 			break;
 		}
