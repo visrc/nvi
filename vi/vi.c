@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.47 1993/02/19 11:14:12 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:14:12 $";
+static char sccsid[] = "$Id: vi.c,v 5.48 1993/02/20 14:18:28 bostic Exp $ (Berkeley) $Date: 1993/02/20 14:18:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,8 @@ vi(ep)
 		 * until the next keystroke.  If a vi message is waiting,
 		 * display it.
 		 */
-err:		v_msgflush(ep);
+err:		if (!FF_ISSET(ep, F_MSGWAIT))
+			v_msgflush(ep);
 
 		if (!FF_ISSET(ep, F_NEEDMERASE))
 			scr_modeline(ep, 0);
