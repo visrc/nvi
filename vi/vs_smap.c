@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.45 1994/07/19 13:04:30 bostic Exp $ (Berkeley) $Date: 1994/07/19 13:04:30 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.46 1994/08/14 20:38:57 bostic Exp $ (Berkeley) $Date: 1994/08/14 20:38:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,7 @@ static char sccsid[] = "$Id: vs_smap.c,v 8.45 1994/07/19 13:04:30 bostic Exp $ (
 #include <regex.h>
 
 #include "vi.h"
-#include "vcmd.h"
+#include "../vi/vcmd.h"
 #include "svi_screen.h"
 
 static int	svi_deleteln __P((SCR *, int));
