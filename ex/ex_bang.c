@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.15 1993/11/12 16:42:10 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:42:10 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.16 1993/11/13 08:36:27 bostic Exp $ (Berkeley) $Date: 1993/11/13 08:36:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,6 @@ ex_bang(sp, ep, cmdp)
 {
 	enum filtertype ftype;
 	recno_t lno;
-	CHAR_T ch;
 	MARK rm;
 	size_t blen, len;
 	int rval;
