@@ -157,6 +157,7 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/clib/memset.c \
 	$(visrcdir)/clib/mkstemp.c \
 	$(visrcdir)/clib/mmap.c \
+	$(visrcdir)/clib/snprintf.c \
 	$(visrcdir)/clib/strdup.c \
 	$(visrcdir)/clib/strpbrk.c \
 	$(visrcdir)/clib/strsep.c \

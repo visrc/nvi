@@ -559,8 +559,8 @@ dnl Checks for library functions.
 AC_REPLACE_FUNCS(bsearch gethostname memchr memset)
   AC_CHECK_FUNCS(mkstemp mmap strdup strpbrk)
 AC_REPLACE_FUNCS(mkstemp mmap strdup strpbrk)
-  AC_CHECK_FUNCS(vsnprintf)
-AC_REPLACE_FUNCS(vsnprintf)
+  AC_CHECK_FUNCS(snprintf vsnprintf)
+AC_REPLACE_FUNCS(snprintf vsnprintf)
 
 AC_CHECK_FUNCS(select)
 AC_CHECK_FUNCS(setenv, [need_env=no], [need_env=yes])
