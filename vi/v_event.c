@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.6 1996/12/05 22:03:45 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:03:45 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.7 1996/12/05 23:16:58 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:16:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,9 +107,12 @@ v_etagsplit(sp, vp)
 {
 	EXCMD cmd;
 
+	if (v_curword(sp))
+		return (1);
+
 	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, OOBLNO, 0);
 	F_SET(&cmd, E_NEWSCREEN);
-	argv_exp0(sp, &cmd, vp->ev.e_csp, vp->ev.e_len);
+	argv_exp0(sp, &cmd, VIP(sp)->keyw, strlen(VIP(sp)->keyw));
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
