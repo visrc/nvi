@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.24 1995/10/31 10:51:23 bostic Exp $ (Berkeley) $Date: 1995/10/31 10:51:23 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.25 1995/11/06 09:58:12 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:58:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,8 +91,7 @@ cl_attr(sp, attribute, on)
 
 	switch (attribute) {
 	case SA_INVERSE:
-		switch (F_ISSET(sp, S_EX | S_VI)) {
-		case S_EX:
+		if (F_ISSET(sp, S_EX | S_EX_CANON)) {
 			clp = CLP(sp);
 			if (clp->smso == NULL)
 				return (1);
@@ -101,13 +100,11 @@ cl_attr(sp, attribute, on)
 			else
 				(void)tputs(clp->rmso, 1, cl_putchar);
 			(void)fflush(stdout);
-			break;
-		case S_VI:
+		} else {
 			if (on)
 				(void)standout();
 			else
 				(void)standend();
-			break;
 		}
 		break;
 	default:
@@ -172,26 +169,20 @@ cl_bell(sp)
 	EX_INIT_ABORT(sp);
 	VI_INIT_ABORT(sp);
 
-	/*
-	 * Screens not supporting standalone ex mode should discard tests for
-	 * S_EX, and use an EX_ABORT macro.
-	 */
-	if (F_ISSET(sp, S_EX)) {
+	if (F_ISSET(sp, S_EX | S_EX_CANON))
 		(void)write(STDOUT_FILENO, "\07", 1);		/* \a */
-		return (0);
+	else {
+		/*
+		 * Vi has an edit option which determines if the terminal
+		 * should be beeped or the screen flashed.
+		 */
+		if (O_ISSET(sp, O_FLASH))
+			(void)flash();
+		else
+			(void)beep();
 	}
-
-	/*
-	 * Vi has an edit option which determines if the terminal should be
-	 * beeped or the screen flashed.
-	 */
-	if (O_ISSET(sp, O_FLASH))
-		(void)flash();
-	else
-		(void)beep();
 	return (0);
 }
-
 
 /*
  * cl_clrtoeol --

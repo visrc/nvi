@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 10.6 1995/10/19 18:53:18 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:53:18 $
+ *	$Id: screen.h,v 10.7 1995/11/06 09:58:32 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:58:32 $
  */
 
 /*
@@ -161,15 +161,16 @@ struct _scr {
 #define	S_ARGNOFREE	0x00000800	/* Argument list wasn't allocated. */
 #define	S_ARGRECOVER	0x00001000	/* Argument list is recovery files. */
 #define	S_AT_SET	0x00002000	/* Last at buffer set. */
-#define	S_EX_GLOBAL	0x00004000	/* Ex: executing a global command. */
-#define	S_EX_SILENT	0x00008000	/* Ex: batch script. */
-#define	S_EX_WROTE	0x00010000	/* Ex: did output to canonical tty. */
-#define	S_INPUT		0x00020000	/* Doing text input. */
-#define	S_INPUT_INFO	0x00040000	/* Doing text input on info line. */
-#define	S_RE_RECOMPILE	0x00080000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x00100000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x00200000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x00400000	/* Window is a shell script. */
-#define	S_STATUS	0x00800000	/* Schedule welcome message. */
+#define	S_EX_CANON	0x00004000	/* Ex: temporary switch into ex mode. */
+#define	S_EX_GLOBAL	0x00008000	/* Ex: executing a global command. */
+#define	S_EX_SILENT	0x00010000	/* Ex: batch script. */
+#define	S_EX_WROTE	0x00020000	/* Ex: did output to canonical tty. */
+#define	S_INPUT		0x00040000	/* Doing text input. */
+#define	S_INPUT_INFO	0x00080000	/* Doing text input on info line. */
+#define	S_RE_RECOMPILE	0x00100000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x00200000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x00400000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x00800000	/* Window is a shell script. */
+#define	S_STATUS	0x01000000	/* Schedule welcome message. */
 	u_int32_t flags;
 };

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.24 1995/10/19 18:53:03 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:53:03 $";
+static char sccsid[] = "$Id: vi.c,v 10.25 1995/11/06 09:57:22 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:57:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -883,6 +883,8 @@ v_init(sp)
 	/* Start up the underlying screen. */
 	if (sp->gp->scr_screen(sp, S_VI))
 		return (1);
+	F_CLR(sp, S_EX | S_EX_CANON | S_SCREEN_READY);
+	F_SET(sp, S_VI);
 
 	/* Invalidate the cursor, the line size cache. */
 	VI_SCR_CFLUSH(vip);

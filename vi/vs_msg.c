@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.28 1995/11/05 15:05:11 bostic Exp $ (Berkeley) $Date: 1995/11/05 15:05:11 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.29 1995/11/06 09:57:42 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:57:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ vs_busy(sp, msg, btype)
 	const char *p;
 
 	/* Ex doesn't display busy messages. */
-	if (F_ISSET(sp, S_EX))
+	if (F_ISSET(sp, S_EX | S_EX_CANON))
 		return;
 
 	gp = sp->gp;
@@ -154,7 +154,7 @@ vs_update(sp, m1, m2)
 	 * It's used by the ex read and ! commands when the user's command is
 	 * expanded, and by the ex substitution confirmation prompt.
 	 */
-	if (F_ISSET(sp, S_EX)) {
+	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
 		(void)ex_printf(sp,
 		    "%s\n", m1 == NULL? "" : m1, m2 == NULL ? "" : m2);
 		(void)ex_fflush(sp);
@@ -212,7 +212,7 @@ vs_msg(sp, mtype, line, len)
 
 	/* If no text is supplied, flush any buffered output. */
 	if (line == NULL) {
-		if (F_ISSET(sp, S_EX))
+		if (F_ISSET(sp, S_EX | S_EX_CANON))
 			(void)fflush(stdout);
 		return;
 	}
@@ -238,11 +238,13 @@ vs_msg(sp, mtype, line, len)
 	 * XXX
 	 * THIS IS WAY WRONG -- WE HAVE NO WAY TO RETURN THE ERROR!!!
 	 */
-	if (F_ISSET(sp, S_EX)) {
-		if (!F_ISSET(sp, S_SCREEN_READY) &&
-		    gp->scr_screen(sp, S_EX))
-			return;
-		F_SET(sp, S_EX_WROTE | S_SCREEN_READY);
+	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
+		if (!F_ISSET(sp, S_SCREEN_READY)) {
+			if (gp->scr_screen(sp, S_EX))
+				return;
+			F_SET(sp, S_SCREEN_READY);
+		}
+		F_SET(sp, S_EX_WROTE);
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 1);
 		(void)printf("%.*s", (int)len, line);
@@ -503,21 +505,23 @@ vs_ex_resolve(sp, continuep)
 	/* Flush ex messages. */
 	(void)ex_fflush(sp);
 
-	/* If in vi and there's 0 or 1 lines of output, simply continue. */
+	gp = sp->gp;
 	vip = VIP(sp);
-	if (F_ISSET(sp, S_VI) && vip->totalcount < 2)
-		return (0);
 
 	/* If we switched into ex mode, return into vi mode. */
-	gp = sp->gp;
-	if (F_ISSET(sp, S_EX)) {
+	if (F_ISSET(sp, S_EX_CANON)) {
 		/* Check to see if we have to wait for ex. */
 		if (vs_ex_wrchk(sp))
 			return (1);
 		if (gp->scr_screen(sp, S_VI))
 			return (1);
+		F_CLR(sp, S_EX_CANON);
 		F_SET(sp, S_SCR_REDRAW);
 	} else {
+		/* If 0 or 1 lines of output, simply continue. */
+		if (!F_ISSET(sp, S_EX_CANON) && vip->totalcount < 2)
+			return (0);
+
 		/*
 		 * If not interrupted, put up the return-to-continue message
 		 * and wait.

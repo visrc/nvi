@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.23 1995/11/02 12:04:56 bostic Exp $ (Berkeley) $Date: 1995/11/02 12:04:56 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.24 1995/11/06 09:58:02 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:58:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,10 +67,8 @@ cl_screen(sp, flags)
 	 * "leaves" vi to enter ex, when it exits ex we'll just fall back into
 	 * vi.
 	 */
-	if (F_ISSET(clp, CL_SCR_EX)) {
-		F_CLR(sp, S_EX);
+	if (F_ISSET(clp, CL_SCR_EX))
 		F_CLR(clp, CL_SCR_EX);
-	}
 
 	/*
 	 * Fake leaving vi mode.
@@ -85,7 +83,6 @@ cl_screen(sp, flags)
 		(void)refresh();
 		need_nl = 1;
 
-		F_CLR(sp, S_VI);
 		F_CLR(clp, CL_SCR_VI);
 	}
 
@@ -93,15 +90,12 @@ cl_screen(sp, flags)
 	if (LF_ISSET(S_EX)) {
 		if (cl_ex_init(sp))
 			return (1);
-		F_SET(sp, S_EX);
-
 		if (need_nl)
 			(void)write(STDOUT_FILENO, "\n", 1);
 	} else {
 		if (cl_vi_init(sp))
 			return (1);
 		clearok(curscr, 1);
-		F_SET(sp, S_VI);
 	}
 	return (0);
 }

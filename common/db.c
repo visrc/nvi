@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.13 1995/11/05 15:36:18 bostic Exp $ (Berkeley) $Date: 1995/11/05 15:36:18 $";
+static char sccsid[] = "$Id: db.c,v 10.14 1995/11/06 09:58:22 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:58:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -517,7 +517,7 @@ scr_update(sp, lno, op, current)
 	EXF *ep;
 	SCR *tsp;
 
-	if (F_ISSET(sp, S_EX))
+	if (F_ISSET(sp, S_EX | S_EX_CANON))
 		return (0);
 
 	ep = sp->ep;
