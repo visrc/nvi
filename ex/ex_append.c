@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.16 1995/10/16 15:25:34 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:34 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.17 1995/10/18 10:17:26 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:17:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,14 +153,14 @@ ex_aci(sp, cmdp, cmd)
 	 * necessary if the text insert command was the last of the global
 	 * commands.
 	 */
-	if (cmdp->clen != 0) {
-		for (p = cmdp->cp, len = cmdp->clen; len > 0; p = t) {
+	if (cmdp->save_cmdlen != 0) {
+		for (p = cmdp->save_cmd,
+		    len = cmdp->save_cmdlen; len > 0; p = t) {
 			for (t = p; len > 0 && t[0] != '\n'; ++t, --len);
 			if (t != p || len == 0) {
 				if (F_ISSET(sp, S_EX_GLOBAL) &&
 				    t - p == 1 && p[0] == '.') {
 					++t;
-					--len;
 					break;
 				}
 				if (db_append(sp, 1, lno++, p, t - p))
@@ -185,8 +185,8 @@ ex_aci(sp, cmdp, cmd)
 		 * input function below.
 		 */
 		if (len != 0)
-			cmdp->cp= t;
-		cmdp->clen = len;
+			cmdp->save_cmd = t;
+		cmdp->save_cmdlen = len;
 	}
 
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
