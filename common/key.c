@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.78 1994/07/19 11:48:07 bostic Exp $ (Berkeley) $Date: 1994/07/19 11:48:07 $";
+static char sccsid[] = "$Id: key.c,v 8.79 1994/08/02 08:30:25 bostic Exp $ (Berkeley) $Date: 1994/08/02 08:30:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,19 +60,17 @@ static int __term_read_grow __P((SCR *, IBUF *, int));
  *	^Q: quote the next character (if not used in flow control).
  *	^V: quote the next character
  *
- * regardless of the user's choices for these characters.  The user's
- * erase and kill characters worked in addition to these characters.
- * This implementation wires down the above characters, but in addition
- * permits the VERASE, VKILL and VWERASE characters described by the
- * user's termios structure.
+ * regardless of the user's choices for these characters.  The user's erase
+ * and kill characters worked in addition to these characters.  Nvi wires
+ * down the above characters, but in addition permits the VEOF, VERASE, VKILL
+ * and VWERASE characters described by the user's termios structure.
  *
  * Ex was not consistent with this scheme, as it historically ran in tty
  * cooked mode.  This meant that the scroll command and autoindent erase
  * characters were mapped to the user's EOF character, and the character
  * and word deletion characters were the user's tty character and word
  * deletion characters.  This implementation makes it all consistent, as
- * described above for vi.  I don't do EOF mapping for ex, but I think I'm
- * unlikely to get caught on that one.
+ * described above for vi.
  *
  * XXX
  * THIS REQUIRES THAT ALL SCREENS SHARE A SPECIAL KEY SET.
@@ -98,11 +96,12 @@ KEYLIST keylist[] = {
 	{K_VLNEXT,	'\026'},	/* ^V */
 	{K_VWERASE,	'\027'},	/* ^W */
 	{K_ZERO,	   '0'},	/*  0 */
-	{K_NOTUSED, 0},			/* VERASE, VKILL, VWERASE */
+	{K_NOTUSED, 0},			/* VEOF, VERASE, VKILL, VWERASE */
+	{K_NOTUSED, 0},
 	{K_NOTUSED, 0},
 	{K_NOTUSED, 0},
 };
-static int nkeylist = (sizeof(keylist) / sizeof(keylist[0])) - 3;
+static int nkeylist = (sizeof(keylist) / sizeof(keylist[0])) - 4;
 
 /*
  * term_init --
@@ -125,6 +124,9 @@ term_init(sp)
 	key_init(sp);
 
 	gp = sp->gp;
+#ifdef VEOF
+	term_key_set(gp, VEOF, K_CNTRLD);
+#endif
 #ifdef VERASE
 	term_key_set(gp, VERASE, K_VERASE);
 #endif
@@ -134,6 +136,7 @@ term_init(sp)
 #ifdef VWERASE
 	term_key_set(gp, VWERASE, K_VWERASE);
 #endif
+
 	/* Sort the special key list. */
 	qsort(keylist, nkeylist, sizeof(keylist[0]), keycmp);
 
