@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.70 1994/05/03 21:45:51 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:45:51 $";
+static char sccsid[] = "$Id: key.c,v 8.71 1994/05/04 20:20:21 bostic Exp $ (Berkeley) $Date: 1994/05/04 20:20:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,7 @@ static KEYLIST keylist[] = {
 	{K_NOTUSED, 0},
 	{K_NOTUSED, 0},
 };
-static int nkeylist = (sizeof(keylist) / sizeof(keylist[0])) - 4;
+static int nkeylist = (sizeof(keylist) / sizeof(keylist[0])) - 3;
 
 /*
  * term_init --
