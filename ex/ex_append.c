@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.7 1994/03/08 19:39:07 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:07 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.8 1994/03/11 10:44:08 bostic Exp $ (Berkeley) $Date: 1994/03/11 10:44:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,6 +81,7 @@ aci(sp, ep, cmdp, cmd)
 	MARK m;
 	TEXT *tp;
 	recno_t cnt;
+	u_int flags;
 	int rval, aiset;
 
 	/*
@@ -104,6 +105,11 @@ aci(sp, ep, cmdp, cmd)
 		--m.lno;
 		cmd = APPEND;
 	}
+
+	LF_INIT(TXT_CR | TXT_NLECHO);
+	if (O_ISSET(sp, O_BEAUTIFY))
+		LF_SET(TXT_BEAUTIFY);
+		
 	if (cmd == CHANGE)
 		for (;; ++m.lno) {
 			if (m.lno > cmdp->addr2.lno) {
@@ -111,8 +117,7 @@ aci(sp, ep, cmdp, cmd)
 				--m.lno;
 				break;
 			}
-			switch (sp->s_get(sp, ep, &sp->tiq, 0,
-			    TXT_BEAUTIFY | TXT_CR | TXT_NLECHO)) {
+			switch (sp->s_get(sp, ep, &sp->tiq, 0, flags)) {
 			case INP_OK:
 				break;
 			case INP_EOF:
@@ -138,8 +143,7 @@ aci(sp, ep, cmdp, cmd)
 
 	if (cmd == APPEND)
 		for (;; ++m.lno) {
-			switch (sp->s_get(sp, ep, &sp->tiq, 0,
-			    TXT_BEAUTIFY | TXT_CR | TXT_NLECHO)) {
+			switch (sp->s_get(sp, ep, &sp->tiq, 0, flags)) {
 			case INP_OK:
 				break;
 			case INP_EOF:
