@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.170 1994/10/09 10:04:05 bostic Exp $ (Berkeley) $Date: 1994/10/09 10:04:05 $";
+static char sccsid[] = "$Id: ex.c,v 8.171 1994/10/09 15:22:01 bostic Exp $ (Berkeley) $Date: 1994/10/09 15:22:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1552,24 +1552,18 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	 *
 	 *	:3;/pattern/cmd
 	 *
-	 * will search for foo from line 3.  In addition, if cmd is not
-	 * a valid command, the current line will be left at 3, not at
-	 * the original address.
+	 * will search for pattern from line 3.  In addition, if cmd is
+	 * not a valid command, the current line will be left at 3, not
+	 * at the original address.
 	 *
 	 * Extra addresses are discarded, starting with the first.
 	 *
 	 * !!!
 	 * If any addresses are missing, they default to the current line.
-	 * This was true for leading and trailing comma delimited
-	 * addresses, historically, and for trailing semicolon delimited
-	 * addresses.  We make it true for leading semicolon addresses as
-	 * well, for consistency.
-	 *
-	 * !!!
-	 * Absolute <blank> separated addresses were additive, for example,
-	 * "2 2 3p" was the same as "7p", or, "/ZZZ/ 2" was the same as
-	 * "/ZZZ/+2".  However, "2 /ZZZ/" was an error.  It was also legal
-	 * to insert single signs, so "3 - 2" was legal, adn equal to 4.
+	 * This was historically true for both leading and trailing comma
+	 * delimited addresses, and for trailing semicolon delimited
+	 * addresses.  For consistency, we make it true for leading semicolon
+	 * addresses as well.
 	 */
 	 for (excp->addrcnt = 0, addr_found = 0; cmdlen > 0;)
 		switch (*cmd) {
@@ -1612,44 +1606,17 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 			++cmd;
 			--cmdlen;
 			break;
-		case '+': case '-':
-		case '0': case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':
-			if (addr_found) {
-/* 8-bit XXX */			lno = strtol(cmd, &endp, 10);
-				if (endp == cmd) {
-					lno = *cmd == '+' ? 1 : -1;
-					--cmdlen;
-					++cmd;
-				} else {
-					cmdlen -= (endp - cmd);
-					cmd = endp;
-				}
-				switch (excp->addrcnt) {
-				case 0:
-					abort();
-					break;
-				case 1:
-					excp->addr1.lno += lno;
-					break;
-				case 2:
-					excp->addr2.lno += lno;
-					break;
-				}
-				break;
-			}
-			/* FALLTHROUGH */
 		default:
 			if (ep_line(sp, ep, &cur, &cmd, &cmdlen, &tmp))
 				return (1);
 			if (!tmp)
 				goto done;
+
 			if (addr_found) {
 				msgq(sp, M_ERR,
 				    "253|Illegal address combination");
 				return (1);
 			}
-
 			switch (excp->addrcnt) {
 			case 0:
 				excp->addr1 = cur;
@@ -1690,7 +1657,8 @@ done:	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
  * it later.
  *
  * XXX
- * This is not exactly historic practice, although it's fairly close.
+ * This is probably still not exactly historic practice, although I think
+ * it's fairly close.
  */
 static int
 ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
@@ -1703,11 +1671,11 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 {
 	EX_PRIVATE *exp;
 	MARK m;
-	long total;
+	long total, val;
 	u_int flags;
 	size_t cmdlen;
 	int (*sf) __P((SCR *, EXF *, MARK *, MARK *, char *, char **, u_int *));
-	char *cmd, *endp;
+	char *cmd, *endp, *omsg, *umsg;
 
 	exp = EXP(sp);
 	*addr_found = 0;
@@ -1815,40 +1783,111 @@ search:		F_SET(exp, EX_ABSMARK);
 	}
 
 	/*
-	 * Evaluate any offset.  Offsets are +/[-^] any number, or any number
-	 * of +/[-^] signs, or any combination thereof.  If no address found
-	 * yet, offset is relative to ".".
+	 * If there's an offset, evaluate it.  If no address yet found,
+	 * the offset is relative to ".".
 	 */
-	for (total = 0;
-	    cmdlen > 0 && (cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '^');) {
+	total = 0;
+	omsg = "254|Address value overflow";
+	umsg = "255|Address value underflow";
+	for (; cmdlen > 0 && isblank(cmd[0]); ++cmd, --cmdlen);
+	if (cmdlen != 0 && (isdigit(cmd[0]) ||
+	    cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '^')) {
 		if (!*addr_found) {
+			*addr_found = 1;
 			cur->lno = sp->lno;
 			cur->cno = sp->cno;
-			*addr_found = 1;
 		}
-
-		if (cmdlen > 1 && isdigit(cmd[1])) {
-/* 8-bit XXX */		total += strtol(cmd, &endp, 10);
-			cmdlen -= (endp - cmd);
-			cmd = endp;
-		} else {
-			total += cmd[0] == '+' ? 1 : -1;
-			--cmdlen;
-			++cmd;
-		}
+		if (ex_offset(sp, &cmd, &cmdlen, &total, omsg, umsg))
+			return (1);
 	}
 
 	if (*addr_found) {
-		if (total < 0 && -total > cur->lno) {
-			msgq(sp, M_ERR,
+		/*
+		 * We don't check for underflow, a value less than 0 is
+		 * bad enough.
+		 *
+		 * XXX
+		 * This code incorrectly assumes that a recno_t will fit
+		 * into an unsigned long.  Since it's the largest integral
+		 * type we can depend on having, there aren't many other
+		 * choices.
+		 */
+		if (total < 0) {
+			if (-total > cur->lno) {
+				msgq(sp, M_ERR,
 			    "117|Reference to a line number less than 0");
+				return (1);
+			}
+		} else if (add_uslong(sp,
+		    (u_long)cur->lno, (u_long)total, omsg))
 			return (1);
-		}
-		cur->lno += total;
 
+		cur->lno += total;
 		*cmdp = cmd;
 		*cmdlenp = cmdlen;
 	}
+	return (0);
+}
+
+
+/*
+ * ex_offset --
+ *	Evaluate an offset, defined as:
+ *
+ *		[+-^<blank>]*[<blank>]*[0-9]*
+ *
+ * The rough translation is any number of signs, optionally followed
+ * by numbers, or a number by itself, all <blank> separated.
+ *
+ * !!!
+ * All address offsets were additive, e.g. "2 2 3p" was the same as "7p",
+ * or, "/ZZZ/ 2" was the same as "/ZZZ/+2".  Note, however, "2 /ZZZ/"
+ * was an error.  It was also legal to insert signs without numbers, so
+ * "3 - 2" was legal, and equal to 4.
+ *
+ * !!!
+ * Offsets were historically permitted for any line address, e.g. the
+ * command "1,2 copy 2 2 2 2" copied lines 1,2 after line 8.
+ *
+ * !!!
+ * Offsets were historically permitted for search commands -- they were
+ * handled as addresses, so the command "/pattern/2 2 2" was legal, and
+ * referenced the 6th line after pattern.
+ */
+int
+ex_offset(sp, off, offlen, rval, omsg, umsg)
+	SCR *sp;
+	char **off;
+	size_t *offlen;
+	long *rval;
+	char *omsg, *umsg;
+{
+	long total, val;
+	size_t len;
+	char *p, *endp;
+
+	for (total = 0, p = *off, len = *offlen;;) {
+		for (; len > 0 && isblank(p[0]); ++p, --len);
+		if (len == 0 ||
+		    !isdigit(p[0]) && p[0] != '+' && p[0] != '-' && p[0] != '^')
+			break;
+		if (!isdigit(p[0]) && !isdigit(p[1])) {
+			total += p[0] == '+' ? 1 : -1;
+			--len;
+			++p;
+		} else {
+			if (get_slong(sp, total, &val,
+			    p[0] == '-' || p[0] == '^',
+			    isdigit(p[0]) ? p : p + 1, &endp, omsg, umsg))
+				return (1);
+			total += val;
+			len -= (endp - p);
+			p = endp;
+		}
+	}
+	*off = p;
+	*offlen = len;
+	*rval = total;
 	return (0);
 }
 
