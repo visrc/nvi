@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.58 1996/05/10 16:55:47 bostic Exp $ (Berkeley) $Date: 1996/05/10 16:55:47 $
+.\"     $Id: set.opt.roff,v 8.59 1996/05/16 09:10:23 bostic Exp $ (Berkeley) $Date: 1996/05/16 09:10:23 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -405,11 +405,11 @@ If that is not possible for the terminal, setting this option causes
 error messages to be announced by ringing the terminal bell.
 .KY exrc
 .IP "exrc, ex [off]"
-If this option is turned off in the system or $HOME startup files,
-the local startup files are never read (unless they are the same
-as the system or $HOME startup files).
-Turning it on has no effect, i.e. the normal checks for local startup
-files are performed, regardless.
+If this option is turned on in the EXINIT environment variables,
+or the system or $HOME startup files,
+the local startup files are read,
+unless they are the same as the system or $HOME startup files or
+fail to pass the standard permission checks.
 See the section entitled
 .QB "Startup Information"
 for more information.
