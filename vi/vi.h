@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.24 1992/12/05 11:11:14 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:14 $
+ *	$Id: vi.h,v 5.25 1992/12/20 15:09:45 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:09:45 $
  */
 
 #include "exf.h"
@@ -73,7 +73,6 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	V_RCM_SET	0x02000	/* Set RCM absolutely. */
 #define	V_RCM_SETFNB	0x04000	/* Set RCM to first non-blank character. */
 #define	V_RCM_SETLAST	0x08000	/* Set RCM to last character. */
-#define	V_REMEMBER	0x10000	/* Remember the previous command. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
