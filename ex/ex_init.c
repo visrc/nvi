@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.14 1993/04/19 15:29:49 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:29:49 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.15 1993/04/20 18:42:09 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:42:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,12 +37,16 @@ ex_init(sp, ep)
 			sp->lno = 1;
 		sp->cno = 0;
 		F_CLR(sp, F_NOSETPOS);
-	} else if (file_gline(sp, ep, ep->lno, &len) == NULL) {
-		if ((sp->lno = file_lline(sp, ep)) == 0)
-			sp->lno = 1;
-		sp->cno = 0;
-	} else if (sp->cno >= len)
-		sp->cno = 0;
+	} else {
+		sp->lno = ep->lno;
+		sp->cno = ep->cno;
+		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
+			if ((sp->lno = file_lline(sp, ep)) == 0)
+				sp->lno = 1;
+			sp->cno = 0;
+		} else if (sp->cno >= len)
+			sp->cno = 0;
+	}
 
 	/*
 	 * After location established, run any initial command.  Failure
@@ -70,8 +74,9 @@ int
 ex_end(sp)
 	SCR *sp;
 {
-	/* Save cursor location. */
+	/* Save the cursor location. */
 	sp->ep->lno = sp->lno;
 	sp->ep->cno = sp->cno;
+
 	return (0);
 }
