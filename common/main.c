@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.20 1993/09/30 12:01:25 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:25 $";
+static char sccsid[] = "$Id: main.c,v 8.21 1993/10/04 18:08:38 bostic Exp $ (Berkeley) $Date: 1993/10/04 18:08:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -88,8 +88,10 @@ main(argc, argv)
 	/* Structures shared by screens so stored in the GS structure. */
 	if ((gp->key = malloc(sizeof(IBUF))) == NULL)
 		err(1, NULL);
+	memset(gp->key, 0, sizeof(IBUF));
 	if ((gp->tty = malloc(sizeof(IBUF))) == NULL)
 		err(1, NULL);
+	memset(gp->tty, 0, sizeof(IBUF));
 
 	if ((gp->cuts = malloc((UCHAR_MAX + 2) * sizeof(CB))) == NULL)
 		err(1, NULL);
