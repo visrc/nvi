@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.35 1993/11/22 19:43:38 bostic Exp $ (Berkeley) $Date: 1993/11/22 19:43:38 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.36 1993/11/28 16:22:03 bostic Exp $ (Berkeley) $Date: 1993/11/28 16:22:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,6 +74,11 @@ svi_refresh(sp, ep)
 		if (sp != tsp &&
 		    (F_ISSET(tsp, paintbits) ||
 		    ep == tsp->ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY))) {
+			/* If no messages, display the file status line. */
+			if (tsp->q.cqe_next != (void *)&tsp->gp->dq &&
+			    (tsp->msgq.lh_first == NULL ||
+			    F_ISSET(tsp->msgq.lh_first, M_EMPTY)))
+				status(tsp, tsp->ep, tsp->lno, 0);
 			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
@@ -757,7 +762,7 @@ svi_modeline(sp, ep)
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
 
-	/* Display the dividing line. */
+	/* Display a dividing line if not the bottom screen. */
 	if (sp->q.cqe_next != (void *)&sp->gp->dq)
 		svi_divider(sp);
 
