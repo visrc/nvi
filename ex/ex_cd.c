@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.7 1994/03/18 20:06:27 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:06:27 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.8 1994/03/19 11:15:41 bostic Exp $ (Berkeley) $Date: 1994/03/19 11:15:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -69,11 +69,11 @@ ex_cd(sp, ep, cmdp)
 	 * is probably correct; if user's have set CDPATH to not include
 	 * the current directory, they probably had a reason.
 	 */
+	exp = EXP(sp);
 	if (dir[0] == '/' || exp->cdq.tqh_first == NULL) {
 		if (chdir(dir) < 0)
 			goto err;
 	} else {
-		exp = EXP(sp);
 		for (cdp = exp->cdq.tqh_first;
 		    cdp != NULL; cdp = cdp->q.tqe_next) {
 			(void)snprintf(buf,
