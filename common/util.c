@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.14 1992/05/18 09:11:14 bostic Exp $ (Berkeley) $Date: 1992/05/18 09:11:14 $";
+static char sccsid[] = "$Id: util.c,v 5.15 1992/05/21 13:05:37 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:05:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: util.c,v 5.14 1992/05/18 09:11:14 bostic Exp $ (Ber
 
 #include "vi.h"
 #include "exf.h"
+#include "mark.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -148,33 +149,6 @@ onwinch(signo)
 		(void)write(STDERR_FILENO, buf, len);
 		exit(1);
 	}
-}
-
-/*
- * onstop --
- *	Handle STOP signals.
- */
-/* ARGSUSED */
-void
-onstop(signo)
-	int signo;
-{
-	sigset_t set;
-
-	move(LINES - 1, 0);
-	clrtoeol();
-	refresh();
-
-	(void)sigemptyset(&set);
-	(void)sigaddset(&set, SIGTSTP);
-	(void)sigprocmask(SIG_UNBLOCK, &set, NULL);
-	(void)signal(SIGTSTP, SIG_DFL);
-	kill(0, SIGTSTP);
-
-	/* Time passes... */
-
-	(void)signal(SIGTSTP, onstop);
-	wrefresh(curscr);
 }
 
 /*
