@@ -111,7 +111,6 @@ MARK m_z(m, cnt, key)
 	{
 		topline = 1L;
 	}
-	redrawrange(0L, INFINITY, INFINITY);
 
 	/* The cursor doesn't move */
 	return m;
@@ -136,7 +135,6 @@ MARK m_scroll(m, cnt, key)
 	  case ctrl('F'):
 	  case ctrl('B'):
 		SETDEFCNT(1);
-		redrawrange(0, INFINITY, INFINITY);
 		cnt = cnt * (LINES - 1) - 1; /* keeps one old line on screen */
 		break;
 
@@ -175,7 +173,7 @@ MARK m_scroll(m, cnt, key)
 			m = MARK_FIRST;
 		}
 		tmp = MARK_AT_LINE(cnt) + markidx(m);
-		redraw(tmp, FALSE);
+		scr_ref();
 		if (markline(m) > BOTLINE)
 		{
 			m = MARK_AT_LINE(BOTLINE);
@@ -192,7 +190,7 @@ MARK m_scroll(m, cnt, key)
 			m = MARK_LAST;
 		}
 		tmp = MARK_AT_LINE(cnt) + markidx(m);
-		redraw(tmp, FALSE);
+		scr_ref();
 		if (markline(m) < topline)
 		{
 			m = MARK_AT_LINE(topline);
