@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.34 1993/05/06 01:04:15 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:04:15 $
+ *	$Id: screen.h,v 5.35 1993/05/06 11:39:25 bostic Exp $ (Berkeley) $Date: 1993/05/06 11:39:25 $
  */
 
 /*
@@ -121,9 +121,9 @@ typedef struct _scr {
 	size_t	 exlinecount;		/* Ex/vi overwrite count. */
 	size_t	 extotalcount;		/* Ex/vi overwrite count. */
 	size_t	 exlcontinue;		/* Ex/vi line continue value. */
-#ifdef FWOPEN_NOT_AVAILABLE
+
+					/* FWOPEN_NOT_AVAILABLE */
 	int	 trapped_fd;		/* Ex/vi trapped file descriptor. */
-#endif
 
 	u_int	 nkeybuf;		/* # of keys in the input buffer. */
 	char	*mappedkey;		/* Mapped key return. */
