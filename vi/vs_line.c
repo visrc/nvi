@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.4 1993/04/12 14:43:25 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:43:25 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.5 1993/04/13 16:30:14 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:30:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,7 +102,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	cname = sp->cname;
 	for (; len; --len) {
 		/* Get the next character and figure out its length. */
-		if ((ch = *p++) == '\t' && !O_ISSET(sp, O_LIST))
+		if ((ch = *(u_char *)p++) == '\t' && !O_ISSET(sp, O_LIST))
 			chlen = TAB_OFF(sp, count_cols);
 		else
 			chlen = cname[ch].len;
