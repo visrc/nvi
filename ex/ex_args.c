@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.17 1992/10/10 13:57:45 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:45 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.18 1992/10/26 09:07:56 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:07:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ ex_next(cmdp)
 	 * next command will succeed.  Toss the last file.
 	 */
 	if (cmdp->argc || file_next(curf) != NULL) {
-		if (file_stop(curf, 0))
+		if (file_modify(curf, 0) || file_stop(curf, 0))
 			return (1);
 	} else {
 		msg("No more files to edit.");
@@ -71,7 +71,7 @@ ex_prev(cmdp)
 	}
 
 	DEFMODSYNC;
-	if (file_stop(curf, 0))
+	if (file_modify(curf, 0) || file_stop(curf, 0))
 		return (1);
 	return (file_start(ep));
 }
@@ -91,7 +91,7 @@ ex_rew(cmdp)
 
 	DEFMODSYNC;
 
-	if (file_stop(curf, 0))
+	if (file_modify(curf, 0) || file_stop(curf, 0))
 		return (1);
 	return (file_start(file_first()));
 }
