@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.21 1995/02/09 15:22:31 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:31 $
+ *	$Id: screen.h,v 9.22 1995/02/16 11:11:31 bostic Exp $ (Berkeley) $Date: 1995/02/16 11:11:31 $
  */
 
 /*
@@ -107,8 +107,6 @@ struct _scr {
 	void	*sex_private;		/* Ex screen private area. */
 	void	*vi_private;		/* Vi private area. */
 	void	*svi_private;		/* Vi screen private area. */
-	void	*cl_private;		/* Curses support private area. */
-	void	*xaw_private;		/* XAW support private area. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	char	*alt_name;		/* Ex/vi: alternate file name. */

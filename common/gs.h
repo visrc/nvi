@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 9.8 1995/02/09 15:22:15 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:15 $
+ *	$Id: gs.h,v 9.9 1995/02/16 11:12:25 bostic Exp $ (Berkeley) $Date: 1995/02/16 11:12:25 $
  */
 
 /*
@@ -52,14 +52,17 @@ struct _gs {
 	struct termios
 		 original_termios;	/* Original terminal values. */
 
-#define	INDX_ALRM	0		/* Offsets in the saved array. */
+#define	INDX_ALRM	0		/* Offsets in the array. */
 #define	INDX_HUP	1
 #define	INDX_INT	2
 #define	INDX_TERM	3
 #define	INDX_WINCH	4
 #define	INDX_MAX	5
 	struct sigaction
-		 oact[INDX_MAX];	/* Saved signal action information. */
+		 oact[INDX_MAX];	/* Original signal information. */
+
+	void	*cl_private;		/* Curses support private area. */
+	void	*xaw_private;		/* XAW support private area. */
 
 	DB	*msg;			/* Messages DB. */
 	MSGH	 msgq;			/* User message list. */
