@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 8.1 1993/06/09 22:28:39 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:39 $";
+static char sccsid[] = "$Id: v_screen.c,v 8.2 1993/08/25 16:52:21 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,8 +26,6 @@ v_window(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	SCR *p;
-
-	*rp = *fm;
 
 	/*
 	 * Try for the next lower window, or, go back to the first
