@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.168 1994/09/27 12:38:33 bostic Exp $ (Berkeley) $Date: 1994/09/27 12:38:33 $";
+static char sccsid[] = "$Id: ex.c,v 8.169 1994/09/27 14:23:27 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:23:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -590,7 +590,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	 * look for all the possible terminations.  There are three exciting
 	 * special cases:
 	 *
-	 * 1: The bang, global, vglobal and the filter versions of the read and
+	 * 1: The bang, global, v and the filter versions of the read and
 	 *    write commands are delimited by newlines (they can contain shell
 	 *    pipes).
 	 * 2: The ex, edit, next and visual in vi mode commands all take ex
@@ -601,7 +601,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	 * Historically, '|' characters in the first argument of the ex, edit,
 	 * next, vi visual, and substitute commands didn't delimit the command.
 	 * And, in the filter cases for read and write, and the bang, global
-	 * and vglobal commands, they did not delimit the command at all.
+	 * and v commands, they did not delimit the command at all.
 	 *
 	 * For example, the following commands were legal:
 	 *
@@ -677,7 +677,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			save_cmd = cmd;
 		}
 	} else if (cp == &cmds[C_BANG] ||
-	    cp == &cmds[C_GLOBAL] || cp == &cmds[C_VGLOBAL]) {
+	    cp == &cmds[C_GLOBAL] || cp == &cmds[C_V]) {
 		cmd += cmdlen;
 		cmdlen = 0;
 	} else if (cp == &cmds[C_READ] || cp == &cmds[C_WRITE]) {

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.75 1994/08/31 17:39:14 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:39:14 $
+ *	$Id: ex.h,v 8.76 1994/09/27 14:22:52 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:22:52 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -250,9 +250,9 @@ EXPROTO(ex_unabbr);
 EXPROTO(ex_undo);
 EXPROTO(ex_unmap);
 EXPROTO(ex_usage);
+EXPROTO(ex_v);
 EXPROTO(ex_validate);
 EXPROTO(ex_version);
-EXPROTO(ex_vglobal);
 EXPROTO(ex_visual);
 EXPROTO(ex_viusage);
 EXPROTO(ex_wn);

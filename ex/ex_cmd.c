@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.61 1994/09/18 18:28:31 bostic Exp $ (Berkeley) $Date: 1994/09/18 18:28:31 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.62 1994/09/27 14:22:59 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:22:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -368,10 +368,10 @@ EXCMDLIST const cmds[] = {
 	    "!w1r",
 	    "unm[ap][!] word",
 	    "delete an input or command map"},
-/* C_VGLOBAL */
-	{"vglobal",	ex_vglobal,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
+/* C_V */
+	{"v",		ex_v,		E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "s",
-	    "[line [,line]] v[global] [;/]RE[;/] [commands]",
+	    "[line [,line]] v [;/]RE[;/] [commands]",
 	    "execute a global command on lines NOT matching an RE"},
 /* C_VERSION */
 	{"version",	ex_version,	E_NOGLOBAL|E_NORC,

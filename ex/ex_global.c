@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.45 1994/08/31 17:17:07 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:07 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.46 1994/09/27 14:23:26 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:23:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static char sccsid[] = "$Id: ex_global.c,v 8.45 1994/08/31 17:17:07 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 
-enum which {GLOBAL, VGLOBAL};
+enum which {GLOBAL, V};
 
 static int	global __P((SCR *, EXF *, EXCMDARG *, enum which));
 
@@ -46,20 +46,20 @@ ex_global(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	return (global(sp, ep,
-	    cmdp, F_ISSET(cmdp, E_FORCE) ? VGLOBAL : GLOBAL));
+	    cmdp, F_ISSET(cmdp, E_FORCE) ? V : GLOBAL));
 }
 
 /*
- * ex_vglobal -- [line [,line]] v[global] /pattern/ [commands]
+ * ex_v -- [line [,line]] v /pattern/ [commands]
  *	Exec on lines not matching a pattern.
  */
 int
-ex_vglobal(sp, ep, cmdp)
+ex_v(sp, ep, cmdp)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (global(sp, ep, cmdp, VGLOBAL));
+	return (global(sp, ep, cmdp, V));
 }
 
 static int
@@ -213,7 +213,7 @@ global(sp, ep, cmdp, cmd)
 		match[0].rm_eo = len;
 		switch(eval = regexec(re, t, 1, match, REG_STARTEND)) {
 		case 0:
-			if (cmd == VGLOBAL)
+			if (cmd == V)
 				continue;
 			break;
 		case REG_NOMATCH:
