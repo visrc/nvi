@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.69 1994/07/19 12:26:46 bostic Exp $ (Berkeley) $Date: 1994/07/19 12:26:46 $";
+static char sccsid[] = "$Id: recover.c,v 8.70 1994/07/19 14:49:57 bostic Exp $ (Berkeley) $Date: 1994/07/19 14:49:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -328,6 +328,7 @@ rcv_mailfile(sp, ep, issync, cp_path)
 	uid_t uid;
 	int fd;
 	char *dp, *p, *t, buf[4096], host[MAXHOSTNAMELEN], mpath[MAXPATHLEN];
+	char *t1, *t2, *t3;
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
 		msgq(sp, M_ERR, "Information on user id %u not found", uid);
@@ -386,26 +387,49 @@ rcv_mailfile(sp, ep, issync, cp_path)
 	if (write(fd, buf, len) != len)
 		goto werr;
 
-	len = snprintf(buf, sizeof(buf), "%s%.24s%s%s\n%s%s",
-	    "On ", ctime(&now),
-	    ", the user ", pw->pw_name,
-	    "was editing a file named ", t);
-	if (len > sizeof(buf) - 1)
-		goto lerr;
-	if (write(fd, buf, len) != len)
-		goto werr;
-
-	len = snprintf(buf, sizeof(buf), "\n%s%s%s\n\n%s\n%s\n\n",
-	    "on the machine ", host, ", when it was saved for\nrecovery.",
-	    "You can recover most, if not all, of the changes",
-	    "to this file using the -r option to nex or nvi.");
+	len = snprintf(buf, sizeof(buf), "%s%.24s%s%s%s%s%s%s%s%s%s%s%s\n\n",
+	    "On ", ctime(&now), ", the user ", pw->pw_name,
+	    " was editing a file named ", t, " on the machine ",
+	    host, ", when it was saved for recovery. ",
+	    "You can recover most, if not all, of the changes ",
+	    "to this file using the -r option to nex or nvi:\n\n",
+	    "\tnvi -r ", t);
 	if (len > sizeof(buf) - 1) {
 lerr:		msgq(sp, M_ERR, "recovery file buffer overrun");
 		goto err;
 	}
-	if (write(fd, buf, len) != len) {
-werr:		msgq(sp, M_SYSERR, "recovery file");
-		goto err;
+
+	/*
+	 * Format the message.  (Yes, I know it's silly.)
+	 * Requires that the message end in a <newline>.
+	 */
+#define	FMTCOLS	60
+	for (t1 = buf; len > 0; len -= t2 - t1, t1 = t2) {
+		/* Check for a short length. */
+		if (len <= FMTCOLS) {
+			t2 = t1 + (len - 1);
+			goto wout;
+		}
+
+		/* Check for a required <newline>. */
+		t2 = strchr(t1, '\n');
+		if (t2 - t1 <= FMTCOLS)
+			goto wout;
+
+		/* Find the closest space, if any. */
+		for (t3 = t2; t2 > t1; --t2)
+			if (*t2 == ' ') {
+				if (t2 - t1 <= FMTCOLS)
+					goto wout;
+				t3 = t2;
+			}
+		t2 = t3;
+
+wout:		*t2++ = '\n';
+		if (write(fd, t1, t2 - t1) != t2 - t1) {
+werr:			msgq(sp, M_SYSERR, "recovery file");
+			goto err;
+		}
 	}
 
 	if (issync)
