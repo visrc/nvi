@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.20 1993/10/28 14:23:37 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:23:37 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.21 1993/10/28 14:43:08 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:43:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,7 +55,7 @@ EXCMDLIST const cmds[] = {
 /* C_SUBAGAIN */
 	{"&",		ex_subagain,	E_ADDR2|E_NORC,
 	    "s",
-	    "[line [,line]] & [options] [count] [flags]",
+	    "[line [,line]] & [cgr] [count] [#lp]",
 	    "repeat the last subsitution"},
 /* C_STAR */
 	{"*",		ex_at,		0,
@@ -85,7 +85,7 @@ EXCMDLIST const cmds[] = {
 /* C_SUBTILDE */
 	{"~",		ex_subtilde,	E_ADDR2|E_NORC,
 	    "s",
-	    "[line [,line]] & [options] [count] [flags]",
+	    "[line [,line]] ~ [cgr] [count] [#lp]",
 	    "replace previous RE with previous replacement string,"},
 
 /* C_APPEND */
@@ -261,7 +261,7 @@ EXCMDLIST const cmds[] = {
 /* C_SUBSTITUTE */
 	{"substitute",	ex_substitute,	E_ADDR2|E_NORC,
 	    "s",
-	"[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [count] [#cglpr]]",
+"[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]",
 	    "substitute on lines matching a pattern"},
 /* C_SCRIPT */
 	{"script",	ex_script,	E_NOGLOBAL|E_NORC,
