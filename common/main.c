@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1991 The Regents of the University of California.
+ * Copyright (c) 1992 The Regents of the University of California.
  * All rights reserved.
  *
  * %sccs.include.redist.c%
@@ -7,21 +7,19 @@
 
 #ifndef lint
 char copyright[] =
-"%Z% Copyright (c) 1991 The Regents of the University of California.\n\
+"%Z% Copyright (c) 1992 The Regents of the University of California.\n\
  All rights reserved.\n";
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.55 1993/03/25 14:59:11 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:11 $";
+static char sccsid[] = "$Id: main.c,v 5.56 1993/03/26 13:37:49 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 
 #include <errno.h>
-#include <limits.h>
 #include <setjmp.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
@@ -35,10 +33,6 @@ static char sccsid[] = "$Id: main.c,v 5.55 1993/03/25 14:59:11 bostic Exp $ (Ber
 
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
-#include "pathnames.h"
-#include "seq.h"
-#include "term.h"
 
 static void err __P((const char *, ...));
 static void obsolete __P((char *[]));
@@ -76,8 +70,8 @@ main(argc, argv)
 	if ((gp = malloc(sizeof(GS))) == NULL)
 		err("%s", strerror(errno));
 	memset(gp, 0, sizeof(GS));
-	HEADER_INIT(gp->scrhdr, next, prev, SCR);
-	HEADER_INIT(gp->exfhdr, next, prev, EXF);
+	HDR_INIT(gp->scrhdr, next, prev, SCR);
+	HDR_INIT(gp->exfhdr, next, prev, EXF);
 	if (tcgetattr(STDIN_FILENO, &gp->original_termios))
 		err("%s: tcgetttr: %s", myname, strerror(errno));
 		
@@ -86,8 +80,8 @@ main(argc, argv)
 		err("%s", strerror(errno));
 	if (scr_def(NULL, sp))
 		goto err1;
-	HEADER_INIT(sp->seqhdr, next, prev, SEQ);
-	INSERT_TAIL(sp, (SCR *)&gp->scrhdr, next, prev, SCR);
+	HDR_INIT(sp->seqhdr, next, prev, SEQ);
+	HDR_APPEND(sp, (SCR *)&gp->scrhdr, next, prev, SCR);
 
 	sp->gp = gp;		/* All screens point to the GS structure. */
 

@@ -6,19 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.21 1993/03/25 14:59:14 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:14 $";
+static char sccsid[] = "$Id: search.c,v 5.22 1993/03/26 13:37:55 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <errno.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
-#include "options.h"
 
 static int	checkdelta __P((SCR *, EXF *, recno_t, recno_t));
 static int	resetup __P((SCR *, regex_t **, enum direction,

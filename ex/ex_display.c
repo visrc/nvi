@@ -6,12 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 5.5 1993/03/25 14:59:43 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:43 $";
+static char sccsid[] = "$Id: ex_display.c,v 5.6 1993/03/26 13:38:45 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:45 $";
 #endif /* not lint */
 
 #include <ctype.h>
-#include <limits.h>
-#include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -34,7 +32,7 @@ ex_bdisplay(sp, ep, cmdp)
 	for (cb = cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
 		if (cb->head == NULL)
 			continue;
-		db(sp, CHARNAME(sp, cnt), cb);
+		db(sp, charname(sp, cnt), cb);
 	}
 	if (cuts[DEFCB].head != NULL)
 		db(sp, "default buffer", &cuts[DEFCB]);

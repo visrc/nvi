@@ -6,22 +6,17 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.35 1993/03/25 14:59:39 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:39 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.36 1993/03/26 13:38:42 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <errno.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
-#include "screen.h"
-#include "term.h"
 
 /*
  * ex_next -- :next [files]
@@ -123,12 +118,12 @@ ex_args(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *list_ep;
+	EXF *tep;
 	int cnt, col, len, sep;
 
 	col = len = sep = 0;
-	for (cnt = 1, list_ep = file_first(sp, 1);
-	    list_ep; list_ep = file_next(sp, ep, 1)) {
+	for (cnt = 1, tep = file_first(sp, 1);
+	    tep != NULL; tep = file_next(sp, tep, 1)) {
 		/*
 		 * Ignore files that aren't in the "argument" list unless
 		 * they are the one we're currently editing.  I'm not sure
@@ -136,11 +131,10 @@ ex_args(sp, ep, cmdp)
 		 * showing the current file if it was the result of a ":e"
 		 * command seems wrong.
 		 */
-		if (F_ISSET(list_ep, F_IGNORE) && ep != list_ep)
+		if (F_ISSET(tep, F_IGNORE) && ep != tep)
 			continue;
-		col += len =
-		    strlen(list_ep->name) + sep + (ep == list_ep ? 2 : 0);
-		if (col >= ep->cno - 1) {
+		col += len = tep->nlen + sep + (ep == tep ? 2 : 0);
+		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
 			(void)fprintf(sp->stdfp, "\n");
@@ -148,10 +142,10 @@ ex_args(sp, ep, cmdp)
 			sep = 1;
 			(void)fprintf(sp->stdfp, " ");
 		}
-		if (ep == list_ep)
-			(void)fprintf(sp->stdfp, "[%s]", list_ep->name);
+		if (ep == tep)
+			(void)fprintf(sp->stdfp, "[%s]", tep->name);
 		else
-			(void)fprintf(sp->stdfp, "%s", list_ep->name);
+			(void)fprintf(sp->stdfp, "%s", tep->name);
 		++cnt;
 	}
 	if (cnt == 1)

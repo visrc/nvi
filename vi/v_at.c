@@ -6,15 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.16 1993/03/25 15:01:04 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:04 $";
+static char sccsid[] = "$Id: v_at.c,v 5.17 1993/03/26 13:40:18 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,7 +40,7 @@ v_at(sp, ep, vp, fm, tm, rp)
 		memset(sp->atkey_stack, 0, sizeof(sp->atkey_stack));
 	else if (sp->atkey_stack[key]) {
 		msgq(sp, M_ERROR, "Buffer %s already occurs in this command.",
-		    CHARNAME(sp, key));
+		    charname(sp, key));
 		return (1);
 	}
 

@@ -6,18 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.29 1993/03/25 15:01:27 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:27 $";
+static char sccsid[] = "$Id: v_search.c,v 5.30 1993/03/26 13:40:44 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 
 #include <curses.h>
 #include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "vi.h"
-#include "term.h"
 #include "vcmd.h"
 
 static int getptrn __P((SCR *, int, u_char **));

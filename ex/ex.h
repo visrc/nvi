@@ -4,16 +4,16 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.35 1993/03/25 15:00:19 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:19 $
+ *	$Id: ex.h,v 5.36 1993/03/26 13:39:22 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:22 $
  */
 
-struct excmdarg;
+struct _excmdarg;
 
 /* Ex command structure. */
-typedef struct {
-	char *name;			/* Command name. */
+typedef struct _excmdlist {
+	char	*name;			/* Command name. */
 					/* Underlying function. */
-	int (*fn) __P((SCR *, EXF *, struct excmdarg *));
+	int (*fn) __P((SCR *, EXF *, struct _excmdarg *));
 
 #define	E_ADDR1		0x00001		/* One address. */
 #define	E_ADDR2		0x00002		/* Two address. */
@@ -37,14 +37,14 @@ typedef struct {
 #define	E_SETLAST	0x10000		/* Reset last command. */
 #define	E_ZERO		0x20000		/* 0 is a legal addr1. */
 #define	E_ZERODEF	0x40000		/* 0 is default addr1 of empty files. */
-	u_int flags;
-	char *syntax;			/* Syntax script. */
-	char *usage;			/* Usage line. */
+	u_int	 flags;
+	char	*syntax;		/* Syntax script. */
+	char	*usage;			/* Usage line. */
 } EXCMDLIST;
 extern EXCMDLIST cmds[];		/* List of ex commands. */
 
 /* Structure passed around to functions implementing ex commands. */
-typedef struct excmdarg {
+typedef struct _excmdarg {
 	EXCMDLIST *cmd;		/* Command entry in command table. */
 	int addrcnt;		/* Number of addresses (0, 1 or 2). */
 	MARK addr1;		/* 1st address. */

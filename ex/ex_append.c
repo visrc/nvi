@@ -6,19 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.25 1993/03/25 14:59:39 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:39 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.26 1993/03/26 13:38:41 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
-#include <limits.h>
-#include <stdio.h>
-
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
-#include "screen.h"
-#include "term.h"
 
 enum which {APPEND, CHANGE};
 

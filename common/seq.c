@@ -6,21 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.23 1993/03/25 15:00:26 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:26 $";
+static char sccsid[] = "$Id: seq.c,v 5.24 1993/03/26 13:37:57 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:57 $";
 #endif /* not lint */
 
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
-#include "seq.h"
-#include "term.h"
 
 /*
  * seq_init --
@@ -112,7 +107,7 @@ seq_set(sp, name, input, output, stype, userdef)
 	}
 
 	/* Link into the sequence list. */
-	INSERT_HEAD(qp, (SEQ *)&sp->seqhdr, next, prev, SEQ);
+	HDR_INSERT(qp, (SEQ *)&sp->seqhdr, next, prev, SEQ);
 	return (0);
 
 mem4:	free(qp->input);
@@ -152,7 +147,7 @@ seq_delete(sp, input, stype)
 		sp->seq[*input] = NULL;
 
 	/* Unlink out of the sequence list. */
-	DELETE(qp, next, prev);
+	HDR_DELETE(qp, next, prev);
 
 	/* Free up the space. */
 	if (qp->name)

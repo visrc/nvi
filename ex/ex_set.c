@@ -6,17 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_set.c,v 5.9 1993/03/25 15:00:04 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:04 $";
+static char sccsid[] = "$Id: ex_set.c,v 5.10 1993/03/26 13:39:09 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
-#include <limits.h>
-#include <stdio.h>
-
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
 
 int
 ex_set(sp, ep, cmdp)

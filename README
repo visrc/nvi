@@ -1,4 +1,4 @@
-#	$Id: README,v 5.6 1993/02/16 11:52:23 bostic Exp $ (Berkeley) $Date: 1993/02/16 11:52:23 $
+#	$Id: README,v 5.7 1993/03/26 13:37:35 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:35 $
 
 An ALPHA version of the new ex/vi, which will be distributed as nvi in
 4.4BSD, can be retrieved by anonymous ftp from vangogh.cs.berkeley.edu,
@@ -62,13 +62,30 @@ describes their functionality.
 
 + Data structures:
 
-There are a few major data structures:
+There are three basic data structures in this editor.  The first is a
+single global structure (GS) which contains information common to all
+files and screens.  It's really pretty tiny, and functions more as a
+single place to hang things than anything else.
 
-EXF	In nvi/exf.h.  This structure describes a file, and is the
-	cookie that is passed around or used by pretty much everything.
-	In addition, all of the screen information is included inside
-	this structure, although that is expected to change in the
-	near future.
+The second and third structures are the file structures (EXF) and the
+screen structures (SCR).  They contain information theoretically unique
+to a screen or file, respectively.  The GS structure contains linked
+lists of EXF and SCR structures.  The structures can also be classed by
+persistence.  The GS structure never goes away and the SCR structure
+persists over instances of files.
+
+In general, we pass an SCR structure and an EXF structure around to editor
+functions.  The SCR structure is necessary for any routine that wishes to
+talk to the screen, the EXF structure is necessary for any routine that
+wants to modify the file.  The relationship between an SCR structure and
+its underlying EXF structure is not fixed, and there is (deliberately) no
+way to translate from one to the other.
+
+The naming is consistent across the program.  (Macros even depend on it,
+so don't try and change it!)  The global structure is "gp", the screen
+structure is "sp", and the file structure is "ep".
+
+A few others:
 
 TEXT	In nvi/cut.h.  This structure describes a portion of a line,
 	and is used by the input routines and as the line part of a

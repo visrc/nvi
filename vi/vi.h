@@ -4,11 +4,11 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.34 1993/03/25 15:01:47 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:47 $
+ *	$Id: vi.h,v 5.35 1993/03/26 13:41:05 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:41:05 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
-typedef struct {
+typedef struct _vicmdarg {
 				/* ZERO OUT. */
 	int buffer;		/* Buffer. */
 	int character;		/* Character. */
@@ -88,6 +88,14 @@ extern VIKEYS vikeys[MAXVIKEY + 1];
 /* Definition of a "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
+#define	EMPTYLINE	-1
+
+/* Vi getc functions. */
+int	getc_init __P((struct _scr *, struct _exf *, struct _mark *, int *));
+int	getc_next __P((struct _scr *, struct _exf *, enum direction, int *));
+void	getc_set __P((struct _scr *, struct _exf *, struct _mark *));
+
+/* Vi functions. */
 int	v_again __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_at __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_bottom __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));

@@ -6,24 +6,19 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.40 1993/03/25 15:01:24 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:24 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.41 1993/03/26 13:40:41 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <curses.h>
 #include <errno.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#define	SMAP_PRIVATE
 #include "vi.h"
-#include "options.h"
 #include "vcmd.h"
-
-#include "screen.h"
 
 /*
  * This code is the historic screen interface for the vi editor, with the
@@ -76,7 +71,7 @@ scr_def(orig, sp)
 		sp->inc_lastch = orig->inc_lastch;
 		sp->inc_lastval = orig->inc_lastval;
 
-		INSERT_TAIL(sp, orig, next, prev, SCR);
+		HDR_APPEND(sp, orig, next, prev, SCR);
 	} else {
 		sp->searchdir = NOTSET;
 		sp->csearchdir = CNOTSET;

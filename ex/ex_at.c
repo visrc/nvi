@@ -6,14 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.21 1993/03/25 14:59:41 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:41 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.22 1993/03/26 13:38:43 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
-#include <limits.h>
 #include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,7 +49,7 @@ ex_at(sp, ep, cmdp)
 	else if (sp->exat_stack[buffer]) {
 		msgq(sp, M_ERROR,
 		    "Buffer %s already occurs in this command.",
-		    CHARNAME(sp, buffer));
+		    charname(sp, buffer));
 		return (1);
 	}
 

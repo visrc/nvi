@@ -6,20 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.22 1993/03/25 14:59:52 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:52 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.23 1993/03/26 13:38:56 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
-#include <limits.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
-#include "screen.h"
 
 enum which {GLOBAL, VGLOBAL};
 static int global __P((SCR *, EXF *, EXCMDARG *, enum which));

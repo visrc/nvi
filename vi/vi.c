@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.52 1993/03/25 15:01:48 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:48 $";
+static char sccsid[] = "$Id: vi.c,v 5.53 1993/03/26 13:41:07 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:41:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,16 +14,10 @@ static char sccsid[] = "$Id: vi.c,v 5.52 1993/03/25 15:01:48 bostic Exp $ (Berke
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
-#include "log.h"
-#include "options.h"
-#include "screen.h"
-#include "term.h"
 #include "vcmd.h"
 
 static int getcmd __P((SCR *, EXF *, VICMDARG *, VICMDARG *));
@@ -245,7 +239,7 @@ getcmd(sp, ep, vp, ismotion)
 
 	KEY(sp, key, GB_MAPCOMMAND);
 	if (key < 0 || key > MAXVIKEY) {
-		msgq(sp, M_BELL, "%s isn't a command.", CHARNAME(sp, key));
+		msgq(sp, M_BELL, "%s isn't a command", charname(sp, key));
 		return (1);
 	}
 
@@ -301,7 +295,7 @@ getcmd(sp, ep, vp, ismotion)
 			    "No commands which set dot executed yet.");
 		} else
 			msgq(sp, M_ERROR,
-			    "%s isn't a command.", CHARNAME(sp, key));
+			    "%s isn't a command", charname(sp, key));
 		return (1);
 	}
 

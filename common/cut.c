@@ -6,22 +6,17 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.28 1993/03/25 14:58:58 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:58:58 $";
+static char sccsid[] = "$Id: cut.c,v 5.29 1993/03/26 13:37:36 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 
-#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
-#include "options.h"
-#include "pathnames.h"
 
 static int	cutline __P((SCR *, EXF *, recno_t, size_t, size_t, TEXT **));
 
@@ -58,7 +53,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	if (append = isupper(buffer))
 		if (!lmode && cb->flags & CB_LMODE)
 			msgq(sp, M_DISPLAY, "Buffer %s changed to line mode",
-			    CHARNAME(sp, buffer));
+			    charname(sp, buffer));
 
 	/* Free old buffer. */
 	if (cb->head != NULL && !append) {
@@ -103,7 +98,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 mem:			if (append)
 				msgq(sp,
 				    M_DISPLAY, "Contents of %s buffer lost.",
-				    CHARNAME(sp, buffer));
+				    charname(sp, buffer));
 			freetext(cb->head);
 			cb->head = NULL;
 			return (1);

@@ -6,21 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.25 1993/03/25 15:00:10 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:10 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.26 1993/03/26 13:39:15 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <errno.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
+#include "tag.h"
 #include "excmd.h"
-#include "options.h"
-#include "screen.h"
 
 static int tagchange __P((SCR *, EXF *, TAG *, int));
 

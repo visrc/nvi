@@ -6,21 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.29 1993/03/25 14:59:47 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:47 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.30 1993/03/26 13:38:50 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
-#include <limits.h>
-#include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
-#include "screen.h"
 
 enum which {EDIT, VISUAL};
 

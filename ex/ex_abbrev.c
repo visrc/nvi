@@ -6,18 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.17 1993/03/25 14:59:38 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:38 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.18 1993/03/26 13:38:40 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
-#include <limits.h>
-#include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "seq.h"
 
 /*
  * ex_abbr -- :abbreviate [key replacement]

@@ -6,16 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 5.4 1993/03/25 15:00:13 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:13 $";
+static char sccsid[] = "$Id: ex_util.c,v 5.5 1993/03/26 13:39:17 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
-#include <limits.h>
-#include <stdio.h>
-
 #include "vi.h"
-#include "options.h"
 
 u_char *
 ex_getline(sp, fp, lenp)

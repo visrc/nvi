@@ -6,17 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.17 1993/03/25 15:01:15 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:15 $";
+static char sccsid[] = "$Id: v_init.c,v 5.18 1993/03/26 13:40:29 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:29 $";
 #endif /* not lint */
 
 #include <curses.h>
-#include <limits.h>
-#include <stdio.h>
 
 #include "vi.h"
-#include "options.h"
-#include "screen.h"
-#include "term.h"
 #include "vcmd.h"
 
 #ifdef	FWOPEN_NOT_AVAILABLE
@@ -24,7 +19,6 @@ static char sccsid[] = "$Id: v_init.c,v 5.17 1993/03/25 15:01:15 bostic Exp $ (B
 #include <sys/syscall.h>			/* SYS_write. */
 
 #include <unistd.h>
-#include "pathnames.h"
 
 /*
  * The fwopen call substitutes a local routine for the write system call.

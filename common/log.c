@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.10 1993/03/25 14:59:09 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:09 $";
+static char sccsid[] = "$Id: log.c,v 5.11 1993/03/26 13:37:47 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,14 +14,10 @@ static char sccsid[] = "$Id: log.c,v 5.10 1993/03/25 14:59:09 bostic Exp $ (Berk
 
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
-#include "log.h"
-#include "screen.h"
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
 #define	LOG_ERR {							\

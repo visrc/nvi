@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.32 1993/03/25 15:01:38 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:38 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.33 1993/03/26 13:40:52 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,15 +14,10 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.32 1993/03/25 15:01:38 bostic Exp $ (B
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
-#include <limits.h>
-#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
-#include "options.h"
-#include "screen.h"
-#include "term.h"
 #include "vcmd.h"
 
 #define	N_AUTOINDENT	0x01		/* Autoindent set this line. */

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 5.6 1993/03/25 14:59:13 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:13 $
+ *	$Id: mark.h,v 5.7 1993/03/26 13:37:52 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:52 $
  */
 
 /*
@@ -15,7 +15,7 @@
  * number is of type recno_t, as that's the underlying type of the database.
  * The column number is of type size_t so that we can malloc a line.
  */
-typedef struct {
+typedef struct _mark {
 #define	OOBLNO		0			/* Out-of-band line number. */
 	recno_t lno;				/* Line number. */
 	size_t cno;				/* Column number. */
@@ -23,3 +23,13 @@ typedef struct {
 
 /* Set absolute movement mark. */
 #define	SETABSMARK(sp, ep, mp)	mark_set(sp, ep, '\'', mp)
+
+/* Mark routines. */
+void	mark_delete __P((struct _scr *,
+	    struct _exf *, struct _mark *, struct _mark *, int));
+struct _mark *
+	mark_get __P((struct _scr *, struct _exf *, int));
+void	mark_insert __P((struct _scr *,
+	    struct _exf *, struct _mark *, struct _mark *));
+void	mark_reset __P((struct _scr *, struct _exf *));
+int	mark_set __P((struct _scr *, struct _exf *, int, struct _mark *));

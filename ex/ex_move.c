@@ -6,17 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.22 1993/03/25 14:59:58 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:58 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.23 1993/03/26 13:39:01 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
-#include <limits.h>
-#include <stdio.h>
-
 #include "vi.h"
 #include "excmd.h"
-#include "screen.h"
 
 enum which {COPY, MOVE};
 static int cm __P((SCR *, EXF *, EXCMDARG *, enum which));

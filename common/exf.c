@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.49 1993/03/25 14:59:02 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:02 $";
+static char sccsid[] = "$Id: exf.c,v 5.50 1993/03/26 13:37:39 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -15,17 +15,12 @@ static char sccsid[] = "$Id: exf.c,v 5.49 1993/03/25 14:59:02 bostic Exp $ (Berk
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "log.h"
-#include "options.h"
-#include "screen.h"
-#include "pathnames.h"
 
 static void file_def __P((EXF *));
 
@@ -52,9 +47,9 @@ file_ins(sp, ep, name, append)
 	tep->nlen = strlen(tep->name);
 	
 	if (append) {
-		INSERT_TAIL(tep, ep, next, prev, EXF);
+		HDR_APPEND(tep, ep, next, prev, EXF);
 	} else {
-		INSERT_HEAD(tep, ep, next, prev, EXF);
+		HDR_INSERT(tep, ep, next, prev, EXF);
 	}
 	return (0);
 
@@ -83,7 +78,7 @@ file_set(sp, argc, argv)
 		if ((tep->name = strdup(*argv)) == NULL)
 			goto mem2;
 		tep->nlen = strlen(tep->name);
-		INSERT_TAIL(tep, (EXF *)&sp->gp->exfhdr, next, prev, EXF);
+		HDR_APPEND(tep, (EXF *)&sp->gp->exfhdr, next, prev, EXF);
 	}
 	return (0);
 

@@ -6,11 +6,9 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 5.6 1993/03/25 15:00:12 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:12 $";
+static char sccsid[] = "$Id: ex_usage.c,v 5.7 1993/03/26 13:39:17 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:17 $";
 #endif /* not lint */
 
-#include <limits.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "vi.h"
@@ -62,7 +60,7 @@ ex_viusage(sp, ep, cmdp)
 	kp = &vikeys[key];
 	if (kp->func == NULL) {
 nokey:		msgq(sp, M_ERROR,
-		    "The %s key has no current meaning", CHARNAME(sp, key));
+		    "The %s key has no current meaning", charname(sp, key));
 		return (1);
 	}
 

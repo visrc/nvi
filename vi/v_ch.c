@@ -6,17 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.22 1993/03/25 15:01:05 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:05 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.23 1993/03/26 13:40:19 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
-#include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "vi.h"
-#include "options.h"
 #include "vcmd.h"
 
 #define	NOPREV {							\
@@ -25,7 +22,7 @@ static char sccsid[] = "$Id: v_ch.c,v 5.22 1993/03/25 15:01:05 bostic Exp $ (Ber
 }
 
 #define	NOTFOUND(ch) {							\
-	msgq(sp, M_BELL, "%s not found.", CHARNAME(sp, ch));		\
+	msgq(sp, M_BELL, "%s not found.", charname(sp, ch));		\
 	return (1);							\
 }
 

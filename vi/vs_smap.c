@@ -6,18 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.8 1993/03/25 15:01:31 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:31 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.9 1993/03/26 13:40:48 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:48 $";
 #endif /* not lint */
 
 #include <curses.h>
-#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define	SMAP_PRIVATE
 #include "vi.h"
-#include "options.h"
-#include "screen.h"
 #include "vcmd.h"
 
 #define	HALFSCREEN(sp)	(SCREENSIZE(sp) / 2)	/* Half a screen. */
