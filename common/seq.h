@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 8.6 1993/11/27 15:51:44 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:51:44 $
+ *	$Id: seq.h,v 8.7 1993/12/02 10:30:24 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:30:24 $
  */
 
 /*
@@ -27,11 +27,12 @@ enum seqtype { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT };
 struct _seq {
 	LIST_ENTRY(_seq) q;		/* Linked list of all sequences. */
 	enum seqtype stype;		/* Sequence type. */
-	char	*name;			/* Name of the sequence, if any. */
-	char	*input;			/* Input key sequence. */
-	size_t	 ilen;			/* Input key sequence length. */
-	char	*output;		/* Output key sequence. */
-	size_t	 olen;			/* Output key sequence length. */
+	char	*name;			/* Sequence name (if any). */
+	size_t	 nlen;			/* Name length. */
+	char	*input;			/* Sequence input keys. */
+	size_t	 ilen;			/* Input keys length. */
+	char	*output;		/* Sequence output keys. */
+	size_t	 olen;			/* Output keys length. */
 
 #define	S_USERDEF	0x01		/* If sequence user defined. */
 	u_char	 flags;
@@ -39,9 +40,10 @@ struct _seq {
 
 int	 abbr_save __P((SCR *, FILE *));
 int	 map_save __P((SCR *, FILE *));
-int	 seq_delete __P((SCR *, char *, enum seqtype));
+int	 seq_delete __P((SCR *, char *, size_t, enum seqtype));
 int	 seq_dump __P((SCR *, enum seqtype, int));
 SEQ	*seq_find __P((SCR *, SEQ **, char *, size_t, enum seqtype, int *));
 void	 seq_init __P((SCR *));
 int	 seq_save __P((SCR *, FILE *, char *, enum seqtype));
-int	 seq_set __P((SCR *, char *, char *, char *, enum seqtype, int));
+int	 seq_set __P((SCR *, char *, size_t,
+	    char *, size_t, char *, size_t, enum seqtype, int));
