@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.46 1993/11/01 13:25:45 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:25:45 $
+ *	$Id: screen.h,v 8.47 1993/11/01 17:12:07 bostic Exp $ (Berkeley) $Date: 1993/11/01 17:12:07 $
  */
 
 /*
@@ -143,7 +143,6 @@ typedef struct _scr {
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 
-	HDR	 bhdr;			/* Ex/vi: line input. */
 	HDR	 txthdr;		/* Vi: text input TEXT header. */
 
 	char	*ibp;			/* Ex: line input buffer. */

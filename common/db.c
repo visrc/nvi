@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.10 1993/10/05 12:04:56 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:04:56 $";
+static char sccsid[] = "$Id: db.c,v 8.11 1993/11/01 17:11:51 bostic Exp $ (Berkeley) $Date: 1993/11/01 17:11:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,14 +49,6 @@ file_gline(sp, ep, lno, lenp)
 	    ((TEXT *)sp->txthdr.next)->lno <= lno &&
 	    ((TEXT *)sp->txthdr.prev)->lno >= lno) {
 		for (tp = sp->txthdr.next; tp->lno != lno; tp = tp->next);
-		if (lenp)
-			*lenp = tp->len;
-		return (tp->lb);
-	}
-	if (F_ISSET(sp, S_INPUT) &&
-	    ((TEXT *)sp->bhdr.next)->lno <= lno &&
-	    ((TEXT *)sp->bhdr.prev)->lno >= lno) {
-		for (tp = sp->bhdr.next; tp->lno != lno; tp = tp->next);
 		if (lenp)
 			*lenp = tp->len;
 		return (tp->lb);
