@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.40 1993/10/28 14:56:09 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:56:09 $
+ *	$Id: screen.h,v 8.41 1993/10/28 14:59:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:59:49 $
  */
 
 /*
@@ -182,9 +182,9 @@ typedef struct _scr {
 	char	*tlast;			/* Ex/vi: saved last tag. */
 
 					/* Ex/vi: search/substitute info. */
-	enum direction	searchdir;	/* File search direction. */
 	regex_t	 sre;			/* Last search RE. */
 	regex_t	 subre;			/* Last substitute RE. */
+	enum direction	searchdir;	/* File search direction. */
 	enum cdirection	csearchdir;	/* Character search direction. */
 	u_char	 lastckey;		/* Last search character. */
 	regmatch_t     *match;		/* Substitute match array. */
@@ -270,11 +270,12 @@ typedef struct _scr {
 #define	S_REFORMAT	0x0008000	/* Reformat the screen. */
 #define	S_REFRESH	0x0010000	/* Refresh the screen. */
 #define	S_RESIZE	0x0020000	/* Resize the screen. */
-#define	S_RE_SET	0x0040000	/* The file's RE has been set. */
-#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
-#define	S_TIMER_SET	0x0100000	/* If a busy timer is running. */
-#define	S_TERMSIGNAL	0x0200000	/* Termination signal received. */
-#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
+#define	S_SRE_SET	0x0040000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0080000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
+#define	S_TIMER_SET	0x0200000	/* If a busy timer is running. */
+#define	S_TERMSIGNAL	0x0400000	/* Termination signal received. */
+#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_RE_SET)
