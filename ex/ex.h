@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.74 1994/08/31 17:17:34 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:34 $
+ *	$Id: ex.h,v 8.75 1994/08/31 17:39:14 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:39:14 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -146,7 +146,7 @@ int	filtercmd __P((SCR *, EXF *,
 int	argv_init __P((SCR *, EXF *, EXCMDARG *));
 int	argv_exp0 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
 int	argv_exp1 __P((SCR *, EXF *, EXCMDARG *, char *, size_t, int));
-int	argv_exp2 __P((SCR *, EXF *, EXCMDARG *, char *, size_t, int));
+int	argv_exp2 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
 int	argv_exp3 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
 int	argv_free __P((SCR *));
 

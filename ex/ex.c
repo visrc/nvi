@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.158 1994/08/31 17:16:54 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:16:54 $";
+static char sccsid[] = "$Id: ex.c,v 8.159 1994/08/31 17:39:06 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:39:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1044,8 +1044,7 @@ end2:			break;
 			F_SET(&exc, E_COUNT);
 			break;
 		case 'f':				/* file */
-			if (argv_exp2(sp, ep,
-			    &exc, cmd, cmdlen, cp == &cmds[C_BANG]))
+			if (argv_exp2(sp, ep, &exc, cmd, cmdlen))
 				goto err;
 			goto countchk;
 		case 'l':				/* line */

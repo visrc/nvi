@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.39 1994/08/31 17:17:01 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:01 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.40 1994/08/31 17:39:12 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:39:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,13 +131,12 @@ ret:	FREE_SPACE(sp, bp, blen);
  *	the argument list.
  */
 int
-argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
+argv_exp2(sp, ep, excp, cmd, cmdlen)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *excp;
 	char *cmd;
 	size_t cmdlen;
-	int is_bang;
 {
 	size_t blen, len, n;
 	int rval;
@@ -155,7 +154,7 @@ argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
 	TRACE(sp, "file_argv: {%.*s}\n", (int)cmdlen, cmd);
 #endif
 
-	if (argv_fexp(sp, excp, cmd, cmdlen, p, &len, &bp, &blen, is_bang)) {
+	if (argv_fexp(sp, excp, cmd, cmdlen, p, &len, &bp, &blen, 0)) {
 		rval = 1;
 		goto err;
 	}
