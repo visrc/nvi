@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.75 1994/03/23 12:25:38 bostic Exp $ (Berkeley) $Date: 1994/03/23 12:25:38 $";
+static char sccsid[] = "$Id: main.c,v 8.76 1994/03/23 13:23:13 bostic Exp $ (Berkeley) $Date: 1994/03/23 13:23:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -388,7 +388,7 @@ main(argc, argv)
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 	if (sigaction(SIGALRM, &act, NULL)) {
-		msg(sp, M_SYSERR, "timer: sigaction");
+		msgq(sp, M_SYSERR, "timer: sigaction");
 		goto err;
 	}
 	act.sa_handler = h_hup;
