@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.21 1996/07/19 19:46:44 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:46:44 $";
+static const char sccsid[] = "$Id: api.c,v 8.22 1996/08/10 13:45:28 bostic Exp $ (Berkeley) $Date: 1996/08/10 13:45:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,12 +203,13 @@ api_setmark(sp, markname, mp)
  *	Return the first mark if next not set, otherwise return the
  *	subsequent mark.
  *
- * PUBLIC: int api_nextmark __P((SCR *, int, int *));
+ * PUBLIC: int api_nextmark __P((SCR *, int, char *));
  */
 int
 api_nextmark(sp, next, namep)
 	SCR *sp;
-	int next, *namep;
+	int next;
+	char *namep;
 {
 	LMARK *mp;
 
