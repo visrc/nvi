@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.28 1992/12/05 11:09:04 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:04 $";
+static char sccsid[] = "$Id: options.c,v 5.29 1992/12/20 15:08:28 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:08:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,133 +28,131 @@ static char sccsid[] = "$Id: options.c,v 5.28 1992/12/05 11:09:04 bostic Exp $ (
 #include "screen.h"
 #include "term.h"
 
+static int	f_columns __P((void *));
+static int	f_keytime __P((void *));
+static int	f_lines __P((void *));
+static int	f_ruler __P((void *));
+static int	f_shiftwidth __P((void *));
+static int	f_sidescroll __P((void *));
+static int	f_tabstop __P((void *));
+static int	f_wrapmargin __P((void *));
+
+static long	s_columns;
+static long	s_keytime;
+static long	s_lines;
+static long	s_scroll;
+static long	s_shiftwidth;
+static long	s_sidescroll;
+static long	s_tabstop;
+static long	s_wrapmargin;
+
 static int opts_abbcmp __P((const void *, const void *));
 static int opts_cmp __P((const void *, const void *));
 static int opts_print __P((struct _option *));
-
-/*
- * First array slot is the current value, second and third are the low and
- * and high ends of the range.
- *
- * XXX
- * Some of the limiting values are clearly randomly chosen, and have no
- * meaning.  How make O_REPORT just shut up?
- */
-static long o_columns[3] = {80, 32, 255};
-static long o_keytime[3] = {2, 0, 50};
-static long o_lines[3] = {25, 2, 66};
-static long o_report[3] = {5, 1, 127};
-static long o_scroll[3] = {12, 1, 127};
-static long o_shiftwidth[3] = {8, 1, 255};
-static long o_sidescroll[3] = {16, 1, 64};
-static long o_tabstop[3] = {8, 1, 40};
-static long o_taglength[3] = {0, 0, 30};
-static long o_window[3] = {24, 1, 24};
-static long o_wrapmargin[3] = {0, 0, 255};
+static int opts_print __P((struct _option *));
 
 OPTIONS opts[] = {
 /* O_AUTOINDENT */
-	"autoindent",	NULL,		OPT_0BOOL,
+	"autoindent",	NULL,		NULL,		OPT_0BOOL,
 /* O_AUTOPRINT */
-	"autoprint",	NULL,		OPT_1BOOL,
+	"autoprint",	NULL,		NULL,		OPT_1BOOL,
 /* O_AUTOTAB */
-	"autotab",	NULL,		OPT_1BOOL,
+	"autotab",	NULL,		NULL,		OPT_1BOOL,
 /* O_AUTOWRITE */
-	"autowrite",	NULL,		OPT_0BOOL,
+	"autowrite",	NULL,		NULL,		OPT_0BOOL,
 /* O_BEAUTIFY */
-	"beautify",	NULL,		OPT_0BOOL,
+	"beautify",	NULL,		NULL,		OPT_0BOOL,
 /* O_CC */
-	"cc",		"cc -c",	OPT_STR,
+	"cc",		"cc -c",	NULL,		OPT_STR,
 /* O_COLUMNS */
-	"columns",	&o_columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
+	"columns",	&s_columns,	f_columns,
+	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
 /* O_COMMENT */
-	"comment",	NULL,		OPT_0BOOL,
+	"comment",	NULL,		NULL,		OPT_0BOOL,
 /* O_DIGRAPH */
-	"digraph",	NULL,		OPT_0BOOL,
+	"digraph",	NULL,		NULL,		OPT_0BOOL,
 /* O_DIRECTORY */
-	"directory",	_PATH_TMP,	OPT_NOSAVE|OPT_STR,
+	"directory",	_PATH_TMP,	NULL,		OPT_NOSAVE|OPT_STR,
 /* O_EDCOMPATIBLE */
-	"edcompatible",	NULL,		OPT_0BOOL,
+	"edcompatible",	NULL,		NULL,		OPT_0BOOL,
 /* O_EQUALPRG */
-	"equalprg",	"fmt",		OPT_STR,
+	"equalprg",	"fmt",		NULL,		OPT_STR,
 /* O_ERRORBELLS */
-	"errorbells",	NULL,		OPT_1BOOL,
+	"errorbells",	NULL,		NULL,		OPT_1BOOL,
 /* O_EXRC */
-	"exrc",		NULL,		OPT_0BOOL,
+	"exrc",		NULL,		NULL,		OPT_0BOOL,
 /* O_EXREFRESH */
-	"exrefresh",	NULL,		OPT_1BOOL,
+	"exrefresh",	NULL,		NULL,		OPT_1BOOL,
 /* O_EXTENDED */
-	"extended",	NULL,		OPT_0BOOL,
+	"extended",	NULL,		NULL,		OPT_0BOOL,
 /* O_FLASH */
-	"flash",	NULL,		OPT_1BOOL,
+	"flash",	NULL,		NULL,		OPT_1BOOL,
 /* O_IGNORECASE */
-	"ignorecase",	NULL,		OPT_0BOOL,
+	"ignorecase",	NULL,		NULL,		OPT_0BOOL,
 /* O_KEYTIME */
-	"keytime",	&o_keytime,	OPT_NUM,
+	"keytime",	&s_keytime,	f_keytime,	OPT_NUM,
 /* O_LINES */
-	"lines",	&o_lines,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
+	"lines",	&s_lines,	f_lines,
+	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
 /* O_LIST */
-	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
+	"list",		NULL,		NULL,		OPT_0BOOL|OPT_REDRAW,
 /* O_MAGIC */
-	"magic",	NULL,		OPT_1BOOL,
+	"magic",	NULL,		NULL,		OPT_1BOOL,
 /* O_MAKE */
-	"make",		"make",		OPT_STR,
+	"make",		"make",		NULL,		OPT_STR,
 /* O_MESG */
-	"mesg",		NULL,		OPT_1BOOL,
+	"mesg",		NULL,		NULL,		OPT_1BOOL,
 /* O_NUMBER */
-	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
+	"number",	NULL,		NULL,		OPT_0BOOL|OPT_REDRAW,
 /* O_NUNDO */
-	"nundo",	NULL,		OPT_0BOOL,
+	"nundo",	NULL,		NULL,		OPT_0BOOL,
 /* O_PARAGRAPHS */
-	"paragraphs",	"IPLPPPQPP LIpplpipbp",	OPT_STR,
+	"paragraphs",
+	    "IPLPPPQPP LIpplpipbp",	NULL,		OPT_STR,
 /* O_PROMPT */
-	"prompt",	NULL,		OPT_1BOOL,
+	"prompt",	NULL,		NULL,		OPT_1BOOL,
 /* O_READONLY */
-	"readonly",	NULL,		OPT_0BOOL,
+	"readonly",	NULL,		NULL,		OPT_0BOOL,
 /* O_REPORT */
-	"report",	&o_report,	OPT_NUM,
+	"report",	NULL,		NULL,		OPT_NUM,
 /* O_RULER */
-	"ruler",	NULL,		OPT_0BOOL,
+	"ruler",	NULL,		f_ruler,	OPT_0BOOL,
 /* O_SCROLL */
-	"scroll",	&o_scroll,	OPT_NUM,
+	"scroll",	&s_scroll,	NULL,		OPT_NUM,
 /* O_SECTIONS */
-	"sections",	"NHSHH HUnhsh",	OPT_STR,
+	"sections",	"NHSHH HUnhsh",	NULL,		OPT_STR,
 /* O_SHELL */
-	"shell",	_PATH_BSHELL,	OPT_STR,
+	"shell",	_PATH_BSHELL,	NULL,		OPT_STR,
 /* O_SHIFTWIDTH */
-	"shiftwidth",	&o_shiftwidth,	OPT_NUM,
+	"shiftwidth",	&s_shiftwidth,	f_shiftwidth,	OPT_NUM,
 /* O_SHOWMATCH */
-	"showmatch",	NULL,		OPT_0BOOL,
+	"showmatch",	NULL,		NULL,		OPT_0BOOL,
 /* O_SHOWMODE */
-	"showmode",	NULL,		OPT_0BOOL,
+	"showmode",	NULL,		NULL,		OPT_0BOOL,
 /* O_SIDESCROLL */
-	"sidescroll",	&o_sidescroll,	OPT_NUM,
+	"sidescroll",	&s_sidescroll,	f_sidescroll,	OPT_NUM,
 /* O_SYNC */
-	"sync",		NULL,		OPT_0BOOL,
+	"sync",		NULL,		NULL,		OPT_0BOOL,
 /* O_TABSTOP */
-	"tabstop",	&o_tabstop,	OPT_NUM|OPT_REDRAW,
-/* O_TAGLENGTH */
-	"taglength",	&o_taglength,	OPT_NUM,
+	"tabstop",	&s_tabstop,	f_tabstop,	OPT_NUM|OPT_REDRAW,
 /* O_TERM */
-	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
+	"term",		"unknown",	NULL,		OPT_NOSAVE|OPT_STR,
 /* O_TERSE */
-	"terse",	NULL,		OPT_0BOOL,
+	"terse",	NULL,		NULL,		OPT_0BOOL,
 /* O_TIMEOUT */
-	"timeout",	NULL,		OPT_0BOOL,
+	"timeout",	NULL,		NULL,		OPT_0BOOL,
 /* O_VBELL */
-	"vbell",	NULL,		OPT_0BOOL,
+	"vbell",	NULL,		NULL,		OPT_0BOOL,
 /* O_VERBOSE */
-	"verbose",	NULL,		OPT_0BOOL,
+	"verbose",	NULL,		NULL,		OPT_0BOOL,
 /* O_WARN */
-	"warn",		NULL,		OPT_1BOOL,
-/* O_WINDOW */
-	"window",	&o_window,	OPT_NUM|OPT_REDRAW,
+	"warn",		NULL,		NULL,		OPT_1BOOL,
 /* O_WRAPMARGIN */
-	"wrapmargin",	&o_wrapmargin,	OPT_NUM,
+	"wrapmargin",	&s_wrapmargin,	f_wrapmargin,	OPT_NUM,
 /* O_WRAPSCAN */
-	"wrapscan",	NULL,		OPT_1BOOL,
+	"wrapscan",	NULL,		NULL,		OPT_1BOOL,
 /* O_WRITEANY */
-	"writeany",	NULL,		OPT_0BOOL,
+	"writeany",	NULL,		NULL,		OPT_0BOOL,
 	NULL,
 };
 
@@ -199,14 +197,12 @@ static ABBREV abbrev[] = {
 	"sw",	O_SHIFTWIDTH,
 	"sy",	O_SYNC,
 	"te",	O_TERM,
-	"tl",	O_TAGLENGTH,
 	"to",	O_KEYTIME,
 	"tr",	O_TERSE,
 	"ts",	O_TABSTOP,
 	"vb",	O_VBELL,
 	"ve",	O_VERBOSE,
 	"wa",	O_WARN,
-	"wi",	O_WINDOW,
 	"wm",	O_WRAPMARGIN,
 	"wr",	O_WRITEANY,
 	"ws",	O_WRAPSCAN,
@@ -223,7 +219,10 @@ opts_init()
 {
 	struct winsize win;
 	size_t row, col;
-	char *s;
+	char *s, *argv[2], obuf[100];
+
+	argv[0] = obuf;
+	argv[1] = NULL;
 
 	row = 80;
 	col = 24;
@@ -249,20 +248,20 @@ opts_init()
 	if ((s = getenv("COLUMNS")) != NULL)
 		col = strtol(s, NULL, 10);
 
-	/* Make sure we got values that we can live with. */
-	if (row < 2 || col < 40) {
-		msg("Screen rows %d cols %d: too small.\n", row, col);
+	(void)snprintf(obuf, sizeof(obuf), "ls=%u", row);
+	if (opts_set(argv))
 		return (1);
-	}
-
-	LVAL(O_LINES) = row;
-	LVAL(O_SCROLL) = row / 2 - 1;
-	LVAL(O_WINDOW) = row - 1;
-	LVAL(O_COLUMNS) = col;
+	(void)snprintf(obuf, sizeof(obuf), "co=%u", col);
+	if (opts_set(argv))
+		return (1);
+	(void)snprintf(obuf, sizeof(obuf), "sc=%u", row / 2 - 1);
+	if (opts_set(argv))
+		return (1);
 
 	if (s = getenv("SHELL")) {
-		PVAL(O_SHELL) = strdup(s);
-		FSET(O_SHELL, OPT_ALLOCATED);
+		(void)snprintf(obuf, sizeof(obuf), "shell=%s", s);
+		if (opts_set(argv))
+			return (1);
 	}
 
 	/* Disable the vbell option if we don't know how to do a vbell. */
@@ -277,7 +276,7 @@ opts_init()
  * opts_set --
  *	Change the values of one or more options.
  */
-void
+int
 opts_set(argv)
 	char **argv;
 {
@@ -285,10 +284,10 @@ opts_set(argv)
 	ABBREV atmp, *ap;
 	OPTIONS otmp, *op;
 	long value;
-	int all, ch, needredraw, off, resize;
-	char *ep, *equals, *name, sbuf[50];
+	int all, ch, off, rval;
+	char *ep, *equals, *name;
 	
-	for (all = needredraw = resize = 0; *argv; ++argv) {
+	for (all = rval = 0; *argv; ++argv) {
 		/*
 		 * The historic vi dumped the options for each occurrence of
 		 * "all" in the set list.  Stupid.
@@ -370,16 +369,17 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 		switch (op->flags & OPT_TYPE) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
-			if (equals)
+			if (equals) {
 				msg("set: option [no]%s is a boolean", name);
-			else {
-				FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
-				FSETP(op,
-				    (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
-				resize |= ISFSETP(op, OPT_SIZE);
-				needredraw |= ISFSETP(op, OPT_REDRAW);
+				break;
 			}
-			break;
+			FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
+			FSETP(op, (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
+			if (op->func && op->func(&value)) {
+				rval = 1;
+				break;
+			}
+			goto draw;
 		case OPT_NUM:
 			if (!equals) {
 				msg("set: option [no]%s requires a value",
@@ -391,53 +391,179 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				msg("set %s: illegal number %s", name, equals);
 				break;
 			}
-			if (value < MINLVALP(op)) {
-				msg("set %s: min value is %ld",
-				    name, MINLVALP(op));
-				break;
-			}
-			if (value > MAXLVALP(op)) {
-				msg("set %s: max value is %ld",
-				    name, MAXLVALP(op));
+			if (op->func && op->func(&value)) {
+				rval = 1;
 				break;
 			}
 			LVALP(op) = value;
 			FSETP(op, OPT_SET);
-			resize |= ISFSETP(op, OPT_SIZE);
-			needredraw |= ISFSETP(op, OPT_REDRAW);
-			break;
+			goto draw;
 		case OPT_STR:
 			if (!equals) {
 				msg("set: option [no]%s requires a value",
 				    name);
 				break;
 			}
+			if (op->func && op->func(&value)) {
+				rval = 1;
+				break;
+			}
 			if (ISFSETP(op, OPT_ALLOCATED))
 				free(PVALP(op));
 			PVALP(op) = strdup(equals);
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
-			resize |= ISFSETP(op, OPT_SIZE);
-			needredraw |= ISFSETP(op, OPT_REDRAW);
+draw:			if (curf != NULL &&
+			    ISFSETP(op, OPT_REDRAW | OPT_SIZE)) {
+				if (ISFSETP(op, OPT_REDRAW))
+					FF_SET(curf, F_REDRAW);
+				if (ISFSETP(op, OPT_SIZE))
+					FF_SET(curf, F_RESIZE);
+			}
 			break;
 		}
 	}
-
 	if (all)
 		opts_dump(1);
+	return (rval);
+}
 
-	/*
-	 * Rows and columns must be put in the environment so they override
-	 * curses default actions.
-	 */
-	if (resize) {
-		(void)scr_end(curf);
-		(void)snprintf(sbuf, sizeof(sbuf), "%ld", LVAL(O_LINES));
-		(void)setenv("ROWS", sbuf, 1);
-		(void)snprintf(sbuf, sizeof(sbuf), "%ld", LVAL(O_COLUMNS));
-		(void)setenv("COLUMNS", sbuf, 1);
-		(void)scr_init(curf);
-	} else if (needredraw)
-		(void)scr_ref(curf);
+static int
+f_columns(valp)
+	void *valp;
+{
+	u_long val;
+
+	val = *(u_long *)valp;
+
+#define	MINCOLUMNS	10
+	if (val < MINCOLUMNS) {
+		msg("Screen columns too small, less than %d.\n", MINCOLUMNS);
+		return (1);
+	}
+	if (val < LVAL(O_SHIFTWIDTH)) {
+		msg("Screen columns too small, less than shiftwidth.\n");
+		return (1);
+	}
+	if (val < LVAL(O_SIDESCROLL)) {
+		msg("Screen columns too small, less than sidescroll.\n");
+		return (1);
+	}
+	if (val < LVAL(O_TABSTOP)) {
+		msg("Screen columns too small, less than tabstop.\n");
+		return (1);
+	}
+	if (val < LVAL(O_WRAPMARGIN)) {
+		msg("Screen columns too small, less than wrapmargin.\n");
+		return (1);
+	}
+	return (0);
+}
+
+static int
+f_keytime(valp)
+	void *valp;
+{
+	u_long val;
+
+	val = *(u_long *)valp;
+
+#define	MAXKEYTIME	20
+	if (val > MAXKEYTIME) {
+		msg("Keytime too large, more than %d.\n", MAXKEYTIME);
+		return (1);
+	}
+	return (0);
+}
+
+static int
+f_lines(valp)
+	void *valp;
+{
+	u_long val;
+
+	val = *(u_long *)valp;
+
+#define	MINLINES	4
+	if (val < MINLINES) {
+		msg("Screen lines too small, less than %d.\n", MINLINES);
+		return (1);
+	}
+	return (0);
+}
+
+static int
+f_ruler(valp)
+	void *valp;
+{
+	if (curf != NULL)
+		scr_modeline(curf, 0);
+	return (0);
+}
+
+static int
+f_shiftwidth(valp)
+	void *valp;
+{
+	u_long val;
+
+	val = *(u_long *)valp;
+
+	if (val > LVAL(O_COLUMNS)) {
+		msg("Shiftwidth can't be larger than screen size.\n");
+		return (1);
+	}
+	return (0);
+}
+
+static int
+f_sidescroll(valp)
+	void *valp;
+{
+	u_long val;
+
+	val = *(u_long *)valp;
+
+	if (val > LVAL(O_COLUMNS)) {
+		msg("Sidescroll can't be larger than screen size.\n");
+		return (1);
+	}
+	return (0);
+}
+
+static int
+f_tabstop(valp)
+	void *valp;
+{
+	u_long val;
+
+	val = *(u_long *)valp;
+
+#define	MAXTABSTOP	20
+	if (val > MAXTABSTOP) {
+		msg("Tab stops can't be larger than %d.\n", MAXTABSTOP);
+		return (1);
+	}
+	if (val > LVAL(O_COLUMNS)) {
+		msg("Tab stops can't be larger than screen size.\n",
+		    MAXTABSTOP);
+		return (1);
+	}
+	return (0);
+}
+
+static int
+f_wrapmargin(valp)
+	void *valp;
+{
+	u_long val;
+
+	val = *(u_long *)valp;
+
+	if (val > LVAL(O_COLUMNS)) {
+		msg("Wrapmargin value can't be larger than screen size.\n");
+		return (1);
+	}
+	return (0);
 }
 
 /*
