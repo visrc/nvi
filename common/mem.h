@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 10.2 1995/05/05 18:42:53 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:53 $
+ *	$Id: mem.h,v 10.3 1995/10/17 09:06:18 bostic Exp $ (Berkeley) $Date: 1995/10/17 09:06:18 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -16,7 +16,7 @@
 	void *__bincp;							\
 	if ((nlen) > llen) {						\
 		if ((__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
-			goto binc_err;					\
+			goto alloc_err;					\
 		/*							\
 		 * !!!							\
 		 * Possible pointer conversion.				\
