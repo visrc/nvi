@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.8 1993/10/28 08:54:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:54:49 $
+ *	$Id: options.h,v 8.9 1993/11/06 12:12:37 bostic Exp $ (Berkeley) $Date: 1993/11/06 12:12:37 $
  */
 
 typedef struct _option {
@@ -28,6 +28,7 @@ typedef struct _optlist {
 
 #define	OPT_NEVER	0x01		/* Never display the option. */
 #define	OPT_NOSAVE	0x02		/* Mkexrc command doesn't save. */
+#define	OPT_NOSTR	0x04		/* String that takes a "no". */
 	u_int	 flags;
 } OPTLIST;
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.22 1993/11/02 18:44:45 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:44:45 $";
+static char sccsid[] = "$Id: options.c,v 8.23 1993/11/06 12:12:16 bostic Exp $ (Berkeley) $Date: 1993/11/06 12:12:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,7 @@ static OPTLIST const optlist[] = {
 /* O_REMAP */
 	{"remap",	NULL,		OPT_1BOOL,	0},
 /* O_REPORT */
-	{"report",	NULL,		OPT_NUM,	0},
+	{"report",	NULL,		OPT_NUM,	OPT_NOSTR},
 /* O_RULER */
 	{"ruler",	f_ruler,	OPT_0BOOL,	0},
 /* O_SCROLL */
@@ -119,7 +119,7 @@ static OPTLIST const optlist[] = {
 /* O_TABSTOP */
 	{"tabstop",	f_tabstop,	OPT_NUM,	0},
 /* O_TAGLENGTH */
-	{"taglength",	NULL,		OPT_NUM,	0},
+	{"taglength",	NULL,		OPT_NUM,	OPT_NOSTR},
 /* O_TAGS */
 	{"tags",	f_tags,		OPT_STR,	0},
 /* O_TERM */
@@ -143,7 +143,7 @@ static OPTLIST const optlist[] = {
 /* O_WINDOW */
 	{"window",	f_window,	OPT_NUM,	0},
 /* O_WRAPMARGIN */
-	{"wrapmargin",	f_wrapmargin,	OPT_NUM,	0},
+	{"wrapmargin",	f_wrapmargin,	OPT_NUM,	OPT_NOSTR},
 /* O_WRAPSCAN */
 	{"wrapscan",	NULL,		OPT_1BOOL,	0},
 /* O_WRITEANY */
@@ -402,7 +402,18 @@ found:		if (op == NULL) {
 				O_SET(sp, offset);
 			goto change;
 		case OPT_NUM:
+			/*
+			 * !!!
+			 * Extension to historic vi.  If the OPT_NOSTR flag is
+			 * set, a numeric option may be turned off by using a
+			 * "no" prefix, e.g. "nowrapmargin".  (We assume that
+			 * setting the value to 0 turns a numeric option off.)
+			 */
 			if (turnoff) {
+				if (F_ISSET(op, OPT_NOSTR)) {
+					value = 0;
+					goto nostr;
+				}
 				msgq(sp, M_ERR,
 				    "set: %s option isn't a boolean", name);
 				break;
@@ -419,7 +430,7 @@ found:		if (op == NULL) {
 				    "set %s: illegal number %s", name, equals);
 				break;
 			}
-			if (op->func != NULL) {
+nostr:			if (op->func != NULL) {
 				if (op->func(sp, spo, equals, value)) {
 					rval = 1;
 					break;
