@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.13 1995/01/30 12:00:57 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:00:57 $";
+static char sccsid[] = "$Id: v_search.c,v 9.14 1995/02/10 20:11:54 bostic Exp $ (Berkeley) $Date: 1995/02/10 20:11:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ search_addr(sp, vp, dir)
 	 */
 	if (F_ISSET(vp, VC_ISDOT))
 		return (search(sp, vp,
-		    NULL, len, SEARCH_MSG | SEARCH_SET, dir));
+		    NULL, len, SEARCH_PARSE | SEARCH_MSG | SEARCH_SET, dir));
 
 	/* Get the search pattern. */
 	if (svi_get(sp, sp->tiqp,
@@ -251,7 +251,7 @@ v_searchN(sp, vp)
 		dir = sp->searchdir;
 		break;
 	}
-	return (search(sp, vp, NULL, 0, SEARCH_MSG, dir));
+	return (search(sp, vp, NULL, 0, SEARCH_PARSE, dir));
 }
 
 /*
@@ -263,7 +263,7 @@ v_searchn(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	return (search(sp, vp, NULL, 0, SEARCH_MSG, sp->searchdir));
+	return (search(sp, vp, NULL, 0, SEARCH_PARSE, sp->searchdir));
 }
 
 /*
@@ -283,7 +283,7 @@ v_searchw(sp, vp)
 	GET_SPACE_RET(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 
-	rval = search(sp, vp, bp, 0, SEARCH_MSG | SEARCH_SET, FORWARD);
+	rval = search(sp, vp, bp, 0, SEARCH_SET, FORWARD);
 
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
@@ -302,6 +302,7 @@ search(sp, vp, ptrn, len, flags, dir)
 
 	if (ISMOTION(vp))
 		LF_SET(SEARCH_EOL);
+	LF_SET(SEARCH_MSG);
 
 	switch (dir) {
 	case BACKWARD:
