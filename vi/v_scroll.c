@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.23 1994/10/13 13:59:31 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:31 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.24 1994/10/26 09:45:34 bostic Exp $ (Berkeley) $Date: 1994/10/26 09:45:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,6 +77,16 @@ v_lgoto(sp, ep, vp)
 
 	if (F_ISSET(vp, VC_C1SET)) {
 		if (file_gline(sp, ep, vp->count, NULL) == NULL) {
+			/*
+			 * !!!
+			 * Historically, 1G was legal in an empty file.
+			 */
+			if (vp->count == 1) {
+				if (file_lline(sp, ep, &nlines))
+					return (1);
+				if (nlines == 0)
+					return (0);
+			}
 			v_eof(sp, ep, &vp->m_start);
 			return (1);
 		}
