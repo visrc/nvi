@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.47 1996/08/11 12:53:16 bostic Exp $ (Berkeley) $Date: 1996/08/11 12:53:16 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.48 1996/08/11 14:43:53 bostic Exp $ (Berkeley) $Date: 1996/08/11 14:43:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -473,6 +473,17 @@ cl_refresh(sp, repaint)
 	SCR *sp;
 	int repaint;
 {
+	CL_PRIVATE *clp;
+
+	clp = CLP(sp);
+
+	/*
+	 * If we received a killer signal, we're done, there's no point
+	 * in refreshing the screen.
+	 */
+	if (clp->killersig)
+		return (0);
+
 	/*
 	 * If repaint is set, the editor is telling us that we don't know
 	 * what's on the screen, so we have to repaint from scratch.
@@ -625,6 +636,16 @@ cl_suspend(sp, allowedp)
 	(void)kill(0, SIGTSTP);
 
 	/* Time passes ... */
+
+	/*
+	 * If we received a killer signal, we're done.  Leave everything
+	 * unchanged.  In addition, the terminal has already been reset
+	 * correctly, so leave it alone.
+	 */
+	if (clp->killersig) {
+		F_CLR(clp, CL_SCR_EX_INIT | CL_SCR_VI_INIT);
+		return (0);
+	}
 
 #ifdef HAVE_BSD_CURSES
 	/* Restore terminal settings. */
