@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.26 1996/03/18 09:26:46 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:26:46 $
+ *	$Id: gs.h,v 10.27 1996/03/19 20:22:55 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:22:55 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -117,19 +117,20 @@ struct _gs {
 
 #define	MAX_FAST_KEY	254		/* Max fast check character.*/
 #define	KEY_LEN(sp, ch)							\
-	((ch) <= MAX_FAST_KEY ?						\
-	    sp->gp->cname[ch].len : __v_key_len(sp, ch))
+	((unsigned char)(ch) <= MAX_FAST_KEY ?				\
+	    sp->gp->cname[(unsigned char)ch].len : __v_key_len(sp, ch))
 #define	KEY_NAME(sp, ch)						\
-	((ch) <= MAX_FAST_KEY ?						\
-	    sp->gp->cname[ch].name : __v_key_name(sp, ch))
+	((unsigned char)(ch) <= MAX_FAST_KEY ?				\
+	    sp->gp->cname[(unsigned char)ch].name : __v_key_name(sp, ch))
 	struct {
 		CHAR_T	 name[MAX_CHARACTER_COLUMNS + 1];
 		u_int8_t len;
 	} cname[MAX_FAST_KEY + 1];	/* Fast lookup table. */
 
 #define	KEY_VAL(sp, ch)							\
-	((ch) <= MAX_FAST_KEY ? sp->gp->special_key[ch] :		\
-	    (ch) > sp->gp->max_special ? 0 : __v_key_val(sp, ch))
+	((unsigned char)(ch) <= MAX_FAST_KEY ? 				\
+	    sp->gp->special_key[(unsigned char)ch] :			\
+	    (unsigned char)(ch) > sp->gp->max_special ? 0 : __v_key_val(sp,ch))
 	CHAR_T	 max_special;		/* Max special character. */
 	u_char				/* Fast lookup table. */
 	    special_key[MAX_FAST_KEY + 1];
