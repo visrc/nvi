@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.36 1992/12/25 16:45:53 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:45:53 $";
+static char sccsid[] = "$Id: exf.c,v 5.37 1993/02/11 20:13:46 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:13:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -190,7 +190,7 @@ file_locate(name)
 	EXF *p;
 
 	for (p = exfhdr.next; p != (EXF *)&exfhdr; p = p->next)
-		if (!bcmp(p->name, name, p->nlen))
+		if (!memcmp(p->name, name, p->nlen))
 			return (p);
 	return (NULL);
 }
