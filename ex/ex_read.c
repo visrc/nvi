@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.7 1993/08/25 16:44:58 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:44:58 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.8 1993/09/08 14:37:26 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:37:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,26 +39,24 @@ ex_read(sp, ep, cmdp)
 	int force, rval;
 	char *fname;
 
+	/*
+	 * !!!
+	 * Historic vi did not distinguish between "read !" and "read!".
+	 * We do so that users have some way to force use to read from a
+	 * special file.
+	 */
+	force = F_ISSET(cmdp, E_FORCE);
+
 	/* If nothing, just read the file. */
-	if ((p = cmdp->argv[0]) == NULL) {
+	for (p = cmdp->argv[0]; *p && isblank(*p); ++p);
+	if (*p == '\0') {
 		if (F_ISSET(sp->frp, FR_NONAME)) {
 			msgq(sp, M_ERR, "No filename from which to read.");
 			return (1);
 		}
 		fname = sp->frp->fname;
-		force = 0;
 		goto noargs;
 	}
-
-	/* If "read!" it's a force from a file. */
-	if (*p == '!') {
-		force = 1;
-		++p;
-	} else
-		force = 0;
-
-	/* Skip whitespace. */
-	for (; *p && isblank(*p); ++p);
 
 	/* If "read !" it's a pipe from a utility. */
 	if (*p == '!') {
@@ -67,7 +65,8 @@ ex_read(sp, ep, cmdp)
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		if (filtercmd(sp, ep, &cmdp->addr1, NULL, &rm, ++p, NOINPUT))
+		if (filtercmd(sp, ep,
+		    &cmdp->addr1, NULL, &rm, ++p, FILTER_READ))
 			return (1);
 		sp->lno = rm.lno;
 		return (0);
