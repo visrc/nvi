@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.7 1993/08/28 10:50:20 bostic Exp $ (Berkeley) $Date: 1993/08/28 10:50:20 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.8 1993/08/29 15:21:43 bostic Exp $ (Berkeley) $Date: 1993/08/29 15:21:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,10 +64,15 @@ svi_refresh(sp, ep)
 		 * During initialization, S_RESIZE will be set, but screen_init
 		 * will have never been called.  We can't just have screen_end
 		 * protect itself, because when we finish the edit session it
-		 * gets called after the last SCR structure has been free'd.
+		 * gets called after the last SCR structure has been free'd, so
+		 * sp is almost certainly NULL.
 		 */
-		if (sp->h_smap != NULL && screen_end(INFOLINE(sp)))
-			return (1);
+		if (sp->svi_private != NULL) {
+			FREE(HMAP, sp->w_rows * sizeof(SMAP));
+			FREE(sp->svi_private, sizeof(SVI_PRIVATE));
+			if (screen_end(INFOLINE(sp)))
+				return (1);
+		}
 		if (screen_init(sp))
 			return (1);
 		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
@@ -409,7 +414,7 @@ slow:	/* Find the current line in the map. */
 
 	/* Update all of the screen lines for this file line. */
 	for (; smp <= TMAP && smp->lno == LNO; ++smp)
-		if (svi_line(sp, ep, smp, NULL, 0, &y, &SCNO))
+		if (svi_line(sp, ep, smp, 0, &y, &SCNO))
 			return (1);
 
 	/* Not too bad, move the cursor. */
@@ -417,7 +422,7 @@ slow:	/* Find the current line in the map. */
 
 	/* Lost big, do what you have to do. */
 paint:	for (smp = HMAP; smp <= TMAP; ++smp)
-		if (svi_line(sp, ep, smp, NULL, 0, &y, &SCNO))
+		if (svi_line(sp, ep, smp, 0, &y, &SCNO))
 			return (1);
 	F_CLR(sp, S_REDRAW);
 

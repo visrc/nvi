@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.3 1993/08/16 10:26:33 bostic Exp $ (Berkeley) $Date: 1993/08/16 10:26:33 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.4 1993/08/29 15:21:03 bostic Exp $ (Berkeley) $Date: 1993/08/29 15:21:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,15 +47,24 @@ svi_split(sp, argv)
 		return (1);
 	}
 	if (scr_init(sp, tsp))
-		goto err;
+		goto mem1;
+	if ((tsp->svi_private = malloc(sizeof(SVI_PRIVATE))) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		goto mem2;
+	}
+
+#undef	HMAP
+#undef	TMAP
+#define	HMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->h_smap)
+#define	TMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->t_smap)
 
 	/*
 	 * Build a screen map for the child -- large enough to accomodate
 	 * the entire window.
 	 */
-	if ((tsp->h_smap = malloc(sp->w_rows * sizeof(SMAP))) == NULL) {
+	if ((HMAP(tsp) = malloc(SIZE_HMAP * sizeof(SMAP))) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		goto err;
+		goto mem3;
 	}
 
 	/* Split the screen, and link the screens together. */
@@ -66,11 +75,11 @@ svi_split(sp, argv)
 		tsp->w_rows = sp->w_rows;
 		tsp->s_off = sp->s_off + half;
 		tsp->sc_col = tsp->sc_row = 0;
-		tsp->t_smap = tsp->h_smap + (tsp->t_rows - 1);
+		TMAP(tsp) = HMAP(tsp) + (tsp->t_rows - 1);
 
 		sp->rows = half;		/* Parent. */
 		sp->t_rows = sp->rows - 1;
-		sp->t_smap = sp->h_smap + (sp->t_rows - 1);
+		TMAP(sp) = HMAP(sp) + (sp->t_rows - 1);
 
 		tsp->child = sp->child;
 		if (sp->child != NULL)
@@ -84,12 +93,12 @@ svi_split(sp, argv)
 		tsp->w_rows = sp->w_rows;
 		tsp->s_off = sp->s_off;
 		tsp->sc_col = tsp->sc_row = 0;
-		tsp->t_smap = tsp->h_smap + (tsp->t_rows - 1);
+		TMAP(tsp) = HMAP(tsp) + (tsp->t_rows - 1);
 
 		sp->rows = half;		/* Parent. */
 		sp->t_rows = sp->rows - 1;
 		sp->s_off = sp->s_off + half;
-		sp->t_smap = sp->h_smap + (sp->t_rows - 1);
+		TMAP(sp) = HMAP(sp) + (sp->t_rows - 1);
 
 		tsp->parent = sp->parent;
 		if (sp->parent != NULL)
@@ -117,22 +126,22 @@ svi_split(sp, argv)
 	if (argv != NULL && *argv != NULL) {
 		for (; *argv != NULL; ++argv)
 			if (file_add(tsp, NULL, *argv, 0) == NULL)
-				goto err;
+				goto mem4;
 		ep = NULL;
 	} else {
 		if (file_add(tsp, NULL, sp->frp->fname, 0) == NULL)
-			goto err;
+			goto mem4;
 		ep = sp->ep;
 	}
 
 	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
 		msgq(sp, M_ERR, "No files in the file list.");
-		goto err;
+		goto mem4;
 	}
 
 	/* Start the file. */
 	if ((tsp->ep = file_init(tsp, ep, tsp->frp, NULL)) == NULL)
-		goto err;
+		goto mem4;
 
 	/* Fill the child's screen map. */
 	(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);
@@ -140,7 +149,7 @@ svi_split(sp, argv)
 	/* Clear the information lines. */
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
-	MOVE(tsp, INFOLINE(sp), 0);
+	MOVE(tsp, INFOLINE(tsp), 0);
 	clrtoeol();
 
 	/* Refresh the parent screens, displaying the status line. */
@@ -155,6 +164,9 @@ svi_split(sp, argv)
 	F_SET(sp, S_SSWITCH);
 	return (0);
 
-err:	FREE(tsp, sizeof(SCR));
+mem4:	FREE(HMAP(tsp), SIZE_HMAP * sizeof(SMAP));
+mem3:	FREE(sp->svi_private, sizeof(SVI_PRIVATE));
+mem2:	(void)scr_end(tsp);
+mem1:	FREE(tsp, sizeof(SCR));
 	return (1);
 }
