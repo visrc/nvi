@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.29 1996/12/16 17:24:17 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:24:17 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.30 1996/12/16 18:38:44 bostic Exp $ (Berkeley) $Date: 1996/12/16 18:38:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,11 @@ static	XtAppContext	ctx;
 
 static void onchld __P((int));
 static void onexit __P((void));
+
+static  XutResource resource[] = {
+    { "iconForeground",	XutRKpixel,	&icon_fg	},
+    { "iconBackground",	XutRKpixel,	&icon_bg	},
+};
 
 
 /* resources for the vi widgets unless the user overrides them */
@@ -158,6 +163,13 @@ static	void	create_top_level_shell( argc, argv )
     /* might need to go technicolor... */
     XutInstallColormap( argv[0], top_level );
 
+    /* check the resource database for interesting resources */
+    XutConvertResources( top_level,
+			 vi_progname,
+			 resource,
+			 XtNumber(resource)
+			 );
+
     /* create our icon
      * do this *before* realizing the shell widget in case the -iconic
      * option was specified.
@@ -253,3 +265,4 @@ onexit()
 {
 	exit (0);
 }
+
