@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.14 1992/10/18 13:08:33 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:08:33 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.15 1992/10/30 23:12:20 bostic Exp $ (Berkeley) $Date: 1992/10/30 23:12:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,7 @@ static char sccsid[] = "$Id: v_ch.c,v 5.14 1992/10/18 13:08:33 bostic Exp $ (Ber
 #include "vcmd.h"
 #include "extern.h"
 
-enum csearchdir { NOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH };
+enum csearchdir { CNOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH };
 static enum csearchdir lastdir;
 static int lastkey;
 
@@ -49,7 +49,7 @@ v_chrepeat(vp, fm, tm, rp)
 	vp->character = lastkey;
 
 	switch(lastdir) {
-	case NOTSET:
+	case CNOTSET:
 		NOPREV;
 	case FSEARCH:
 		return (v_chF(vp, fm, tm, rp));
@@ -79,7 +79,7 @@ v_chrrepeat(vp, fm, tm, rp)
 	savedir = lastdir;
 
 	switch(lastdir) {
-	case NOTSET:
+	case CNOTSET:
 		NOPREV;
 	case FSEARCH:
 		rval = v_chf(vp, fm, tm, rp);
