@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.13 1996/06/12 14:41:07 bostic Exp $ (Berkeley) $Date: 1996/06/12 14:41:07 $ */
+/* $Id: port.h.in,v 8.14 2000/07/06 19:38:00 skimo Exp $ (Berkeley) $Date: 2000/07/06 19:38:00 $ */
 
 /*
  * Declare the basic types, if they aren't already declared.  Named and
@@ -182,4 +182,12 @@
 #else
 #define	BYTE_ORDER	LITTLE_ENDIAN
 #endif
+#endif
+
+#ifndef HAVE_MEMCPY
+#define memcpy memmove
+#endif
+
+#ifdef NEED_FPRINTF_PROTO
+extern  int     fprintf( FILE *, const char *, ... );
 #endif
