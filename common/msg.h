@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 9.3 1995/02/01 10:46:46 bostic Exp $ (Berkeley) $Date: 1995/02/01 10:46:46 $
+ *	$Id: msg.h,v 9.4 1995/02/10 15:19:03 bostic Exp $ (Berkeley) $Date: 1995/02/10 15:19:03 $
  */
 
 /*
@@ -41,7 +41,6 @@ struct _msg {
 };
 
 /* Messages. */
-void 	 msg_app __P((GS *, SCR *, int, char *, size_t));
 void 	 msg_close __P((GS *));
 int 	 msg_open __P((SCR *, char *));
 char	*msg_print __P((SCR *, const char *, int *));
