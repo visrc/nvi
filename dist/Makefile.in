@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.46 1996/04/26 08:12:46 bostic Exp $ (Berkeley) $Date: 1996/04/26 08:12:46 $
+#	$Id: Makefile.in,v 8.47 1996/04/29 21:04:20 bostic Exp $ (Berkeley) $Date: 1996/04/29 21:04:20 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -51,8 +51,6 @@ TKALL=	$(TKOBJS) $(VIOBJS) @LIBOBJS@
 tknvi: $(TKALL)
 	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
-install:
-
 clean:
 	-rm -f nex nvi tknvi core *.core *.o
 	rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
@@ -61,6 +59,60 @@ clean:
 distclean: clean
 	rm -f Makefile pathnames.h port.h
 	rm -f config.cache config.h config.log config.status
+
+chmod=	@vi_cv_path_chmod@
+cp=	@vi_cv_path_cp@
+ln=	@vi_cv_path_ln@
+mkdir=	@vi_cv_path_mkdir@
+mv=	@vi_cv_path_mv@
+rm=	@vi_cv_path_rm@
+strip=	@vi_cv_path_strip@
+
+prefix=	@prefix@
+exec_prefix=@exec_prefix@
+bindir=	@bindir@
+datadir=@datadir@
+transform=@program_transform_name@
+
+install: all install_init
+	$(mv) nvi $(bindir)/`echo nvi | sed '$(transform)'`
+	(cd $(bindir) && $(ln) \
+	    $(bindir)/`echo nvi | sed '$(transform)'` \
+	    $(bindir)/`echo nex | sed '$(transform)'`)
+	(cd $(bindir) && $(ln) \
+	    $(bindir)/`echo nvi | sed '$(transform)'` \
+	    $(bindir)/`echo nview | sed '$(transform)'`)
+
+install_asvi: all install_init
+	$(mv) nvi $(bindir)/`echo vi | sed '$(transform)'`
+	(cd $(bindir) && $(ln) \
+	    $(bindir)/`echo vi | sed '$(transform)'` \
+	    $(bindir)/`echo ex | sed '$(transform)'`)
+	(cd $(bindir) && $(ln) \
+	    $(bindir)/`echo vi | sed '$(transform)'` \
+	    $(bindir)/`echo view | sed '$(transform)'`)
+
+dmode=	755
+fmode=	444
+cat=	dutch english german ru_SU.KOI8-R swedish
+install_init:
+	[ -f $(chmod) ] && [ -f $(cp) ] && [ -f $(ln) ] && \
+	    [ -f $(mkdir) ] && [ -f $(mv) ] && [ -f $(rm) ] && [ -f $(strip) ]
+	$(rm) -rf $(datadir)/vi
+	$(mkdir) $(datadir)/vi && $(chmod) $(dmode) $(datadir)/vi
+	$(mkdir) $(datadir)/vi/catalog && \
+	    $(chmod) $(dmode) $(datadir)/vi/catalog
+	(cd $(srcdir)/catalog && $(cp) $(cat) $(datadir)/vi/catalog && \
+	    cd $(datadir)/vi/catalog && $(chmod) $(fmode) *)
+	$(mkdir) $(datadir)/vi/perl && $(chmod) $(dmode) $(datadir)/vi/perl
+	(cd $(srcdir)/perl_scripts && $(cp) *.pl $(datadir)/vi/perl && \
+	    cd $(datadir)/vi/perl && $(chmod) $(fmode) *.pl)
+	$(mkdir) $(datadir)/vi/tcl && $(chmod) $(dmode) $(datadir)/vi/tcl
+	(cd $(srcdir)/tcl_scripts && $(cp) *.tcl $(datadir)/vi/tcl && \
+	    cd $(datadir)/vi/tcl && $(chmod) $(fmode) *.tcl)
+	$(strip) nvi
+	$(chmod) 555 nvi
+	$(rm) nex
 
 # Vi curses sources.
 cl_bsd.o: $(srcdir)/cl/cl_bsd.c
