@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.8 1993/09/08 14:37:26 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:37:26 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.9 1993/10/31 14:45:06 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:45:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,7 @@ static char sccsid[] = "$Id: ex_read.c,v 8.8 1993/09/08 14:37:26 bostic Exp $ (B
 #include "excmd.h"
 
 /*
- * ex_read --	:read[!] [file]
+ * ex_read --	:read [file]
  *		:read [! cmd]
  *	Read from a file or utility.
  */
@@ -31,7 +31,6 @@ ex_read(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	register char *p;
 	struct stat sb;
 	FILE *fp;
 	MARK rm;
@@ -39,66 +38,58 @@ ex_read(sp, ep, cmdp)
 	int force, rval;
 	char *fname;
 
-	/*
-	 * !!!
-	 * Historic vi did not distinguish between "read !" and "read!".
-	 * We do so that users have some way to force use to read from a
-	 * special file.
-	 */
-	force = F_ISSET(cmdp, E_FORCE);
-
-	/* If nothing, just read the file. */
-	for (p = cmdp->argv[0]; *p && isblank(*p); ++p);
-	if (*p == '\0') {
-		if (F_ISSET(sp->frp, FR_NONAME)) {
-			msgq(sp, M_ERR, "No filename from which to read.");
-			return (1);
-		}
-		fname = sp->frp->fname;
-		goto noargs;
-	}
-
-	/* If "read !" it's a pipe from a utility. */
-	if (*p == '!') {
-		for (; *p && isblank(*p); ++p);
-		if (*p == '\0') {
+	/* If "read !", it's a pipe from a utility. */
+	if (F_ISSET(cmdp, E_FORCE)) {
+		if (cmdp->argv[0][0] == '\0') {
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
 		if (filtercmd(sp, ep,
-		    &cmdp->addr1, NULL, &rm, ++p, FILTER_READ))
+		    &cmdp->addr1, NULL, &rm, cmdp->argv[0], FILTER_READ))
 			return (1);
 		sp->lno = rm.lno;
 		return (0);
 	}
 
-	/* Build an argv. */
-	if (file_argv(sp, ep, p, &cmdp->argc, &cmdp->argv))
-		return (1);
+	/* If no file arguments, read the alternate file. */
+	if (cmdp->argv[0][0] == '\0') {
+		if (sp->alt_fname == NULL) {
+			msgq(sp, M_ERR,
+			    "No default filename from which to read.");
+			return (1);
+		}
+		fname = sp->alt_fname;
+	} else {
+		if (file_argv(sp, ep, cmdp->argv[0], &cmdp->argc, &cmdp->argv))
+			return (1);
 
-	switch (cmdp->argc) {
-	case 0:
-		fname = sp->frp->fname;
-		break;
-	case 1:
-		fname = (char *)cmdp->argv[0];
-		set_alt_fname(sp, fname);
-		break;
-	default:
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-		return (1);
+		switch (cmdp->argc) {
+		case 0:
+			fname = sp->frp->fname;
+			break;
+		case 1:
+			fname = (char *)cmdp->argv[0];
+			set_alt_fname(sp, fname);
+			break;
+		default:
+			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+			return (1);
+		}
 	}
 
-	/* Open the file. */
-noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
+	/*
+	 * !!!
+	 * Vi, historically did not permit reads from non-regular files,
+	 * nor did it distinguish between "read !" and "read!", so there
+	 * was no way to "force" it.
+	 */
+	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
-
-	/* If not a regular file, force must be set. */
-	if (!force && !S_ISREG(sb.st_mode)) {
-		msgq(sp, M_ERR,
-		    "%s is not a regular file -- use ! to read it.", fname);
+	if (!S_ISREG(sb.st_mode)) {
+		(void)fclose(fp);
+		msgq(sp, M_ERR, "Only regular files may be read.");
 		return (1);
 	}
 

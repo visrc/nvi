@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.41 1993/10/28 16:47:34 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:47:34 $";
+static char sccsid[] = "$Id: ex.c,v 8.42 1993/10/31 14:45:03 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:45:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -548,11 +548,11 @@ two:		switch (cmd.addrcnt) {
 		
 	for (lcount = 0, p = cp->syntax; *p != '\0'; ++p) {
 		/*
-		 * The read and write commands are sensitive to leading
-		 * whitespace, i.e. "write !" is different from "write!".
-		 * If not read or write, skip leading whitespace.
+		 * The write command is sensitive to leading whitespace,
+		 * i.e. "write !" is different from "write!".  If not write,
+		 * skip leading whitespace.
 		 */
-		if (cp != &cmds[C_READ] && cp != &cmds[C_WRITE])
+		if (cp != &cmds[C_WRITE])
 			for (; isblank(*exc); ++exc);
 
 		/*
