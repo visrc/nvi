@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 8.6 1993/09/16 09:26:22 bostic Exp $ (Berkeley) $Date: 1993/09/16 09:26:22 $";
+static char sccsid[] = "$Id: v_status.c,v 8.7 1993/09/27 18:00:34 bostic Exp $ (Berkeley) $Date: 1993/09/27 18:00:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,7 +59,11 @@ status(sp, ep, lno, showlast)
 	 * the read-only bit is set.
 	 */
 	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
-	mo = F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified";
+	if (F_ISSET(sp->frp, FR_NEWFILE)) {
+		mo = "new file";
+		F_CLR(sp->frp, FR_NEWFILE);
+	} else
+		mo = F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified";
 	if (showlast) {
 		if (file_lline(sp, ep, &last))
 			return (1);
