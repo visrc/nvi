@@ -6,14 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.3 1992/09/01 15:37:18 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:37:18 $";
+static char sccsid[] = "$Id: v_util.c,v 5.4 1992/10/10 14:04:45 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:04:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <termios.h>
+
 #include <curses.h>
-#include <unistd.h>
+#include <limits.h>
 #include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "options.h"
@@ -59,25 +61,6 @@ v_sof(mp)
 			msg("Movement past the beginning of the file.");
 }
 		
-/*
- * v_nonblank --
- *	Set the column number to be the first non-blank character of
- *	the line.
- */
-int
-v_nonblank(rp)
-	MARK *rp;
-{
-	register int cnt;
-	register char *p;
-	size_t len;
-
-	EGETLINE(p, rp->lno, len);
-	for (cnt = 0; len-- && isspace(*p); ++cnt, ++p);
-	rp->cno = cnt;
-	return (0);
-}
-
 static u_long oldy, oldx;
 static struct termios save;
 
