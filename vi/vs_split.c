@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.28 1996/06/30 17:47:03 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:47:03 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.29 1996/08/19 21:05:47 bostic Exp $ (Berkeley) $Date: 1996/08/19 21:05:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,9 +166,24 @@ vs_split(sp, new, ccl)
 	if ((new->defscroll = new->t_maxrows / 2) == 0)
 		new->defscroll = 1;
 
-	/* Draw the new screen from scratch, and add a status line. */
-	F_SET(new, SC_SCR_REFORMAT | SC_STATUS);
-
+	/*
+	 * Initialize the screen flags:
+	 *
+	 * If we're in vi mode in one screen, we don't have to reinitialize.
+	 * This isn't just a cosmetic fix.  The path goes like this:
+	 *
+	 *	return into vi(), SC_SSWITCH set
+	 *	call vs_refresh() with SC_STATUS set
+	 *	call vs_resolve to display the status message
+	 *	call vs_refresh() because the SC_SCR_VI bit isn't set
+	 *
+	 * Things go downhill at this point.
+	 *
+	 * Draw the new screen from scratch, and add a status line.
+	 */
+	F_SET(new,
+	    SC_SCR_REFORMAT | SC_STATUS |
+	    F_ISSET(sp, SC_EX | SC_VI | SC_SCR_VI | SC_SCR_EX));
 	return (0);
 }
 
