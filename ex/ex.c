@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.108 1994/04/06 12:27:34 bostic Exp $ (Berkeley) $Date: 1994/04/06 12:27:34 $";
+static char sccsid[] = "$Id: ex.c,v 8.109 1994/04/07 10:32:34 bostic Exp $ (Berkeley) $Date: 1994/04/07 10:32:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -353,7 +353,7 @@ loop:	if (nl) {
 		 * !!!
 		 * Historic vi permitted pretty much anything to follow the
 		 * substitute command, e.g. "s/e/E/|s|sgc3p" was fine.  Make
-		 * it work.
+		 * the command "sgc" work.
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			if (p[0] == 'k' && p[1] && !p[2]) {
