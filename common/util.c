@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.6 1992/04/17 08:48:40 bostic Exp $ (Berkeley) $Date: 1992/04/17 08:48:40 $";
+static char sccsid[] = "$Id: util.c,v 5.7 1992/04/18 10:06:19 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:06:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -62,6 +62,31 @@ parseptrn(ptrn)
 	return (ptrn);
 }
 
+/*
+ * ex_refresh --
+ *	This function calls refresh() if the option exrefresh is set.
+ */
+void
+ex_refresh()
+{
+	register char *p;
+
+	/*
+	 * If this ex command wrote ANYTHING, set exwrote so vi's : command
+	 * can tell that it must wait for a user keystroke before redrawing.
+	 */
+	for (p = kbuf; p < stdscr; p++)
+		if (*p == '\n')
+			exwrote = 1;
+
+	/* Now we do the refresh thing. */
+	if (ISSET(O_EXREFRESH))
+		refresh();
+	else
+		wqrefresh();
+	if (mode != MODE_VI)
+		msgwaiting = 0;
+}
 
 /*
  * onhup --

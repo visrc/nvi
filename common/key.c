@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.10 1992/04/16 17:58:27 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:58:27 $";
+static char sccsid[] = "$Id: key.c,v 5.11 1992/04/18 10:06:16 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:06:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,6 @@ static char sccsid[] = "$Id: key.c,v 5.10 1992/04/16 17:58:27 bostic Exp $ (Berk
 
 #include "vi.h"
 #include "curses.h"
-#include "excmd.h"
 #include "options.h"
 #include "extern.h"
 
@@ -86,30 +85,4 @@ ttyread(buf, len, time)
 			/* Read it. */
 			return (read(STDIN_FILENO, buf, len));
 		}
-}
-
-/*
- * ex_refresh --
- *	This function calls refresh() if the option exrefresh is set.
- */
-void
-ex_refresh()
-{
-	register char *p;
-
-	/*
-	 * If this ex command wrote ANYTHING, set exwrote so vi's : command
-	 * can tell that it must wait for a user keystroke before redrawing.
-	 */
-	for (p = kbuf; p < stdscr; p++)
-		if (*p == '\n')
-			exwrote = 1;
-
-	/* Now we do the refresh thing. */
-	if (ISSET(O_EXREFRESH))
-		refresh();
-	else
-		wqrefresh();
-	if (mode != MODE_VI)
-		msgwaiting = 0;
 }
