@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.39 1996/12/18 10:28:34 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:34 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.40 1997/08/03 15:37:27 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:37:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1196,11 +1196,11 @@ ctag_file(sp, tfp, name, dirp, dlenp)
 	    stat(name, &sb) && (p = strrchr(tfp->name, '/')) != NULL) {
 		*p = '\0';
 		len = snprintf(buf, sizeof(buf), "%s/%s", tfp->name, name);
-		*p = '/';
 		if (stat(buf, &sb) == 0) {
 			*dirp = tfp->name;
 			*dlenp = strlen(*dirp);
 		}
+		*p = '/';
 	}
 }
 
