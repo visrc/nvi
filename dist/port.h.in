@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.7 1996/02/28 10:49:50 bostic Exp $ (Berkeley) $Date: 1996/02/28 10:49:50 $ */
+/* $Id: port.h.in,v 8.8 1996/03/06 17:25:00 bostic Exp $ (Berkeley) $Date: 1996/03/06 17:25:00 $ */
 
 /*
  * Declare the basic types, if they aren't already declared.  Named and
@@ -11,6 +11,31 @@
 @u_int16_decl@
 @int32_decl@
 @u_int32_decl@
+#endif
+
+/*
+ * XXX
+ * Handle function prototypes.  This steps on name space that vi doesn't
+ * control, but all of the other solutions are worse.
+ */
+#undef	__P
+#if defined(__STDC__) || defined(__cplusplus)
+#define	__P(protos)	protos		/* ANSI C prototypes */
+#else
+#define	__P(protos)	()		/* K&R C preprocessor */
+#endif
+
+/* 
+ * XXX
+ * If we don't have mmap, we fake it with read and write, but we'll
+ * still need the header information.
+ */
+#ifndef HAVE_SYS_MMAN_H
+#define	MAP_SHARED	1		/* share changes */
+#define	MAP_PRIVATE	2		/* changes are private */
+#define	PROT_READ	0x1		/* pages can be read */
+#define	PROT_WRITE	0x2		/* pages can be written */
+#define	PROT_EXEC	0x4		/* pages can be executed */
 #endif
 
 /*
@@ -47,19 +72,6 @@
  */
 #ifndef	TCSASOFT			/* 4.4BSD extension. */
 #define	TCSASOFT	0
-#endif
-
-/* 
- * XXX
- * If we don't have mmap, we fake it with read and write, but we'll
- * still need the header information.
- */
-#ifndef HAVE_SYS_MMAN_H
-#define	MAP_SHARED	1		/* share changes */
-#define	MAP_PRIVATE	2		/* changes are private */
-#define	PROT_READ	0x1		/* pages can be read */
-#define	PROT_WRITE	0x2		/* pages can be written */
-#define	PROT_EXEC	0x4		/* pages can be executed */
 #endif
 
 /*
@@ -146,32 +158,4 @@
 #else
 #define	BYTE_ORDER	LITTLE_ENDIAN
 #endif
-#endif
-
-/*
- * XXX
- * Handle function prototypes.  This steps on name space that vi doesn't
- * control, but all of the other solutions are worse.
- */
-#undef	__P
-#if defined(__STDC__) || defined(__cplusplus)
-#define	__P(protos)	protos		/* ANSI C prototypes */
-#else
-#define	__P(protos)	()		/* K&R C preprocessor */
-#endif
-
-/* Define the paths. */
-#define	_PATH_BSHELL	"@vi_cv_path_shell@"
-#define	_PATH_EXRC	".exrc"
-#define	_PATH_MSGCAT	"./"
-#define	_PATH_NEXRC	".nexrc"
-#define	_PATH_PRESERVE	"@vi_cv_path_preserve@/vi.recover"
-#define	_PATH_SENDMAIL	"@vi_cv_path_sendmail@"
-#define	_PATH_SYSEXRC	"/etc/vi.exrc"
-#define	_PATH_TAGS	"tags"
-#ifndef _PATH_TMP
-#define	_PATH_TMP	"/tmp"
-#endif
-#ifndef _PATH_TTY
-#define	_PATH_TTY	"/dev/tty"
 #endif
