@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.12 1992/05/22 10:04:29 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:04:29 $";
+static char sccsid[] = "$Id: cut.c,v 5.13 1992/05/22 10:33:48 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:33:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -180,7 +180,7 @@ mem:			bell();
 /* Increase the buffer space as necessary. */
 #define	BFCHECK {							\
 	if (blen < len + cblp->len) {					\
-		blen += MAX(256, len + cblp->len);			\
+		blen += MAX(blen + 256, len + cblp->len);		\
 		if ((bp = realloc(bp, blen)) == NULL) {			\
 			msg("Error: %s", strerror(errno));		\
 			blen = 0;					\
