@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.10 1995/01/11 15:58:15 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:15 $";
+static char sccsid[] = "$Id: msg.c,v 9.11 1995/01/23 16:58:37 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -90,7 +90,7 @@ msgq(sp, mt, fmt, va_alist)
 		gp = sp->gp;
 		switch (mt) {
 		case M_BERR:
-			if (!IN_EX_MODE(sp) && !F_ISSET(sp, S_EXSILENT) &&
+			if (!F_ISSET(sp, S_EX) && !F_ISSET(sp, S_EXSILENT) &&
 			    F_ISSET(gp, G_STDIN_TTY) &&
 			    !O_ISSET(sp, O_VERBOSE)) {
 				F_SET(sp, S_BELLSCHED);

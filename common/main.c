@@ -10,11 +10,13 @@
 #ifndef lint
 static char copyright[] =
 "%Z% Copyright (c) 1992, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
+	The Regents of the University of California.  All rights reserved.\n\
+%Z% Copyright (c) 1994, 1995\n\
+	Keith Bostic.  All rights reserved.\n";
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.14 1995/01/11 15:58:10 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:10 $";
+static char sccsid[] = "$Id: main.c,v 9.15 1995/01/23 16:58:49 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,8 +25,6 @@ static char sccsid[] = "$Id: main.c,v 9.14 1995/01/11 15:58:10 bostic Exp $ (Ber
 #include <sys/time.h>
 
 #include <bitstring.h>
-#include <ctype.h>
-#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -35,54 +35,44 @@ static char sccsid[] = "$Id: main.c,v 9.14 1995/01/11 15:58:10 bostic Exp $ (Ber
 #include <termios.h>
 #include <unistd.h>
 
-#ifdef __STDC__
-#include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
 #include <pathnames.h>
 
 #include "vi.h"
-#include "excmd.h"
 #include "../ex/tag.h"
 #include "../sex/sex_screen.h"
 
 static void	 gs_end __P((GS *));
-static GS	*gs_init __P((void));
-static void	 obsolete __P((char *[]));
+static GS	*gs_init __P((char *));
+static int	 obsolete __P((char *, char *[]));
 static void	 usage __P((int));
+static void	 nomem __P((char *));
 
 GS *__global_list;			/* GLOBAL: List of screens. */
 
 int
-main(argc, argv)
+vi_main(argc, argv, e_ssize)
 	int argc;
 	char *argv[];
+	int (*e_ssize) __P((SCR *, int));
 {
 	extern int optind;
 	extern char *optarg;
-	static int reenter;		/* STATIC: Re-entrancy check. */
 	GS *gp;
 	FREF *frp;
 	SCR *sp;
-	u_int flags, saved_vi_mode;
+	u_int32_t saved_vi_mode;
+	u_int flags;
 	int ch, eval, flagchk, lflag, readonly, silent, snapshot;
-	char *excmdarg, *myname, *p, *tag_f, *trace_f, *wsizearg;
+	char *excmdarg, *myname,*p, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
-
-	/* If loaded at 0 and indirecting through a NULL pointer, stop. */
-	if (reenter++)
-		abort();
 
 #ifdef GDBATTACH
 	(void)printf("%u waiting...\n", getpid());
-	(void)read(0, &eval, 1);
+	(void)read(STDIN_FILENO, &eval, 1);
 #endif
-
 	/* Set screen type and mode based on the program name. */
 	readonly = 0;
 	if ((myname = strrchr(*argv, '/')) == NULL)
@@ -100,7 +90,8 @@ main(argc, argv)
 	saved_vi_mode = S_VI_CURSES;
 
 	/* Convert old-style arguments into new-style ones. */
-	obsolete(argv);
+	if (obsolete(myname, argv))
+		return (1);
 
 	/* Parse the arguments. */
 	flagchk = '\0';
@@ -150,6 +141,7 @@ main(argc, argv)
 		case 'v':		/* Vi mode. */
 			LF_CLR(S_SCREENS);
 			LF_SET(S_VI_CURSES);
+			saved_vi_mode = S_VI_CURSES;
 			break;
 		case 'w':
 			wsizearg = optarg;
@@ -165,12 +157,15 @@ main(argc, argv)
 		case '?':
 		default:
 			usage(LF_ISSET(S_EX));
+			return (1);
 		}
 	argc -= optind;
 	argv += optind;
 
 	/* Build and initialize the GS structure. */
-	__global_list = gp = gs_init();
+	__global_list = gp = gs_init(myname);
+	if (gp == NULL)
+		return (1);
 
 	/* Set initial command string. */
 	gp->icommand = excmdarg;
@@ -200,8 +195,11 @@ main(argc, argv)
 
 	if (trace_f != NULL) {		/* Trace file initialization. */
 #ifdef DEBUG
-		if ((gp->tracefp = fopen(trace_f, "w")) == NULL)
-			err(1, "%s", trace_f);
+		if ((gp->tracefp = fopen(trace_f, "w")) == NULL) {
+			(void)fprintf(stderr, "%s: %s: %s\n",
+			    gp->progname, trace_f, strerror(errno));
+			return (1);
+		}
 		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", trace_f);
 #else
 		msgq(sp, M_ERR,
@@ -230,9 +228,11 @@ main(argc, argv)
 	sp->saved_vi_mode = saved_vi_mode;
 	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
 
-	if (term_init(sp))		/* Terminal initialization. */
+	/* Set the one screen function that we have to know about. */
+	sp->e_ssize = e_ssize;
+	if (e_ssize(sp, 0))		/* Base screen initialization. */
 		goto errexit;
-	if (term_window(sp, 0))		/* Screen size initialization. */
+	if (term_init(sp))		/* Terminal initialization. */
 		goto errexit;
 
 	{ int oargs[4], *oargp = oargs;
@@ -245,14 +245,6 @@ main(argc, argv)
 	*oargp = -1;
 	if (opts_init(sp, oargs))	/* Options initialization. */
 		goto errexit;
-	}
-
-	if (silent) {			/* Ex batch mode. */
-		O_CLR(sp, O_AUTOPRINT);
-		O_CLR(sp, O_PROMPT);
-		O_CLR(sp, O_VERBOSE);
-		O_CLR(sp, O_WARN);
-		F_SET(sp, S_EXSILENT);
 	}
 	if (wsizearg != NULL) {
 		ARGS *av[2], a, b;
@@ -269,6 +261,13 @@ main(argc, argv)
 		if (opts_set(sp, av, 0, NULL))
 			 msgq(sp, M_ERR,
 		     "042|Unable to set command line window size option");
+	}
+	if (silent) {			/* Ex batch mode option values. */
+		O_CLR(sp, O_AUTOPRINT);
+		O_CLR(sp, O_PROMPT);
+		O_CLR(sp, O_VERBOSE);
+		O_CLR(sp, O_WARN);
+		F_SET(sp, S_EXSILENT);
 	}
 
 #ifdef DIGRAPHS
@@ -323,8 +322,10 @@ main(argc, argv)
 		if (sp->frp != NULL) {
 			MALLOC_NOMSG(sp,
 			    *--argv, char *, strlen(sp->frp->name) + 1);
-			if (*argv == NULL)
-				err(1, NULL);
+			if (*argv == NULL) {
+				nomem(gp->progname);
+				return (1);
+			}
 			(void)strcpy(*argv, sp->frp->name);
 		}
 		sp->argv = sp->cargv = argv;
@@ -355,19 +356,10 @@ main(argc, argv)
 
 	for (;;) {
 		/* Edit, ignoring errors -- other screens may succeed. */
-		switch (F_ISSET(sp, S_SCREENS)) {
-		case S_EX:
+		if (F_ISSET(sp, S_EX))
 			(void)sex_screen_edit(sp);
-			break;
-		case S_VI_CURSES:
+		else
 			(void)svi_screen_edit(sp);
-			break;
-		case S_VI_XAW:
-			(void)xaw_screen_edit(sp);
-			break;
-		default:
-			abort();
-		}
 
 		/*
 		 * Edit the next screen on the display queue, or, move
@@ -395,7 +387,7 @@ errexit:	eval = 1;
 	 */
 	gs_end(gp);
 
-	exit(eval);
+	return (eval);
 }
 
 /*
@@ -403,14 +395,17 @@ errexit:	eval = 1;
  *	Build and initialize the GS structure.
  */
 static GS *
-gs_init()
+gs_init(name)
+	char *name;
 {
 	GS *gp;
 	int fd;
 
 	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
-	if (gp == NULL)
-		err(1, NULL);
+	if (gp == NULL) {
+		nomem(name);
+		return (NULL);
+	}
 
 	/*
 	 * !!!
@@ -440,17 +435,21 @@ gs_init()
 	 */
 	if (F_ISSET(gp, G_STDIN_TTY)) {
 		if (tcgetattr(STDIN_FILENO, &gp->original_termios) == -1)
-			err(1, "tcgetattr");
+			goto tcfail;
 		F_SET(gp, G_TERMIOS_SET);
 	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {
-		if (tcgetattr(fd, &gp->original_termios) == -1)
-			err(1, "tcgetattr");
+		if (tcgetattr(fd, &gp->original_termios) == -1) {
+tcfail:			(void)fprintf(stderr,
+			    "%s: tcgetattr: %s\n", name, strerror(errno));
+			free(gp);
+			return (NULL);
+		}
 		F_SET(gp, G_TERMIOS_SET);
 		(void)close(fd);
 	}
+	gp->progname = name;
 	return (gp);
 }
-
 
 /*
  * gs_end --
@@ -464,15 +463,20 @@ gs_end(gp)
 	SCR *sp;
 	char *tty;
 
+	/* Turn off signals. */
+	sig_end(gp);
+
 	/* Default buffer storage. */
 	(void)text_lfree(&gp->dcb_store.textq);
 
 	/* Reset anything that needs resetting. */
 	if (gp->flags & G_SETMODE)			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			warn("ttyname");
+			(void)fprintf(stderr, "%s: ttyname: %s\n",
+			    gp->progname, strerror(errno));
 		else if (chmod(tty, gp->origmode) < 0)
-			warn("%s", tty);
+			(void)fprintf(stderr, "%s: %s: %s\n",
+			    gp->progname, tty, strerror(errno));
 
 	/* Close message catalogs. */
 	msg_close(gp);
@@ -499,15 +503,12 @@ gs_end(gp)
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
 		(void)fprintf(stderr, "%.*s.\n", (int)mp->len, mp->mbuf);
 
-	/*
-	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
-	 * OFF SIGNALS/TIMERS, SO IT MAY STILL BE REFERENCED.
-	 */
+	free(gp);
 }
 
-static void
-obsolete(argv)
-	char *argv[];
+static int
+obsolete(name, argv)
+	char *name, *argv[];
 {
 	size_t len;
 	char *p;
@@ -527,14 +528,14 @@ obsolete(argv)
 			if (argv[0][1] == '\0') {
 				MALLOC_NOMSG(NULL, argv[0], char *, 4);
 				if (argv[0] == NULL)
-					err(1, NULL);
+					goto nomem;
 				(void)strcpy(argv[0], "-c$");
 			} else  {
 				p = argv[0];
 				len = strlen(argv[0]);
 				MALLOC_NOMSG(NULL, argv[0], char *, len + 2);
 				if (argv[0] == NULL)
-					err(1, NULL);
+					goto nomem;
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
 				(void)strcpy(argv[0] + 2, p + 1);
@@ -542,14 +543,17 @@ obsolete(argv)
 		} else if (argv[0][0] == '-')
 			if (argv[0][1] == '\0') {
 				MALLOC_NOMSG(NULL, argv[0], char *, 3);
-				if (argv[0] == NULL)
-					err(1, NULL);
+				if (argv[0] == NULL) {
+nomem:					nomem(name);
+					return (1);
+				}
 				(void)strcpy(argv[0], "-s");
 			} else if ((argv[0][1] == 'c' ||
 			    argv[0][1] == 'T' || argv[0][1] == 't' ||
 			    argv[0][1] == 'w' || argv[0][1] == 'X') &&
 			    argv[0][2] == '\0')
 				++argv;
+	return (0);
 }
 
 static void
@@ -562,5 +566,11 @@ usage(is_ex)
     "vi [-eFlRrv] [-c command] [-t tag] [-w size] [files ...]"
 
 	(void)fprintf(stderr, "usage: %s\n", is_ex ? EX_USAGE : VI_USAGE);
-	exit(1);
+}
+
+static void
+nomem(name)
+	char *name;
+{
+	(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
 }

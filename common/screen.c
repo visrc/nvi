@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.3 1995/01/11 18:46:47 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:46:47 $";
+static char sccsid[] = "$Id: screen.c,v 9.4 1995/01/23 16:58:40 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,45 +113,30 @@ mem:				msgq(orig, M_SYSERR, NULL);
 		if (opts_copy(orig, sp))
 			goto err;
 
-		sp->s_bell		= orig->s_bell;
-		sp->s_bg		= orig->s_bg;
-		sp->s_busy		= orig->s_busy;
-		sp->s_change		= orig->s_change;
-		sp->s_clear		= orig->s_clear;
-		sp->s_colpos		= orig->s_colpos;
-		sp->s_column		= orig->s_column;
-		sp->s_confirm		= orig->s_confirm;
-		sp->s_crel		= orig->s_crel;
-		sp->s_edit		= orig->s_edit;
-		sp->s_end		= orig->s_end;
-		sp->s_ex_cmd		= orig->s_ex_cmd;
-		sp->s_ex_run		= orig->s_ex_run;
-		sp->s_ex_write		= orig->s_ex_write;
-		sp->s_fg		= orig->s_fg;
-		sp->s_fill		= orig->s_fill;
-		sp->s_get		= orig->s_get;
-		sp->s_key_read		= orig->s_key_read;
-		sp->s_fmap		= orig->s_fmap;
-		sp->s_position		= orig->s_position;
-		sp->s_rabs		= orig->s_rabs;
-		sp->s_rcm		= orig->s_rcm;
-		sp->s_refresh		= orig->s_refresh;
-		sp->s_scroll		= orig->s_scroll;
-		sp->s_split		= orig->s_split;
-		sp->s_suspend		= orig->s_suspend;
+		sp->e_bell = orig->e_bell;
+		sp->e_busy = orig->e_busy;
+		sp->e_change = orig->e_change;
+		sp->e_clrtoeos = orig->e_clrtoeos;
+		sp->e_confirm = orig->e_confirm;
+		sp->e_fmap = orig->e_fmap;
+		sp->e_refresh = orig->e_refresh;
+		sp->e_ssize = orig->e_ssize;
+		sp->e_suspend = orig->e_suspend;
 
 		F_SET(sp, F_ISSET(orig, S_SCREENS));
 	}
 
-	if (xaw_screen_copy(orig, sp))		/* Init S_VI_XAW screen. */
+	if (ex_screen_copy(orig, sp))		/* Ex. */
 		goto err;
-	if (svi_screen_copy(orig, sp))		/* Init S_VI_CURSES screen. */
+	if (v_screen_copy(orig, sp))		/* Vi. */
 		goto err;
-	if (sex_screen_copy(orig, sp))		/* Init S_EX screen. */
+	if (sex_screen_copy(orig, sp))		/* Ex screen. */
 		goto err;
-	if (v_screen_copy(orig, sp))		/* Init vi. */
+	if (svi_screen_copy(orig, sp))		/* Vi screen. */
 		goto err;
-	if (ex_screen_copy(orig, sp))		/* Init ex. */
+	if (cl_copy(orig, sp))			/* Curses support. */
+		goto err;
+	if (xaw_copy(orig, sp))			/* Athena widget support. */
 		goto err;
 
 	*spp = sp;
@@ -172,9 +157,7 @@ screen_end(sp)
 	int rval;
 
 	rval = 0;
-	if (xaw_screen_end(sp))			/* End S_VI_XAW screen. */
-		rval = 1;
-	if (svi_screen_end(sp))			/* End S_VI_CURSES screen. */
+	if (svi_screen_end(sp))			/* End S_VI screen. */
 		rval = 1;
 	if (sex_screen_end(sp))			/* End S_EX screen. */
 		rval = 1;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.10 1995/01/12 16:37:25 bostic Exp $ (Berkeley) $Date: 1995/01/12 16:37:25 $";
+static char sccsid[] = "$Id: key.c,v 9.11 1995/01/23 16:58:45 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -486,14 +486,14 @@ term_key(sp, chp, flags)
 
 	/*
 	 * If the queue is empty, read more keys in.  Since no timeout is
-	 * requested, s_key_read will either return an error or will read
+	 * requested, sex_key_read will either return an error or will read
 	 * some number of characters.
 	 */
 	gp = sp->gp;
 loop:	if (gp->i_cnt == 0) {
 		if (term_read_grow(sp))
 			return (INP_ERR);
-		if ((rval = sp->s_key_read(sp, &nr, flags, NULL)) != INP_OK)
+		if ((rval = sex_key_read(sp, &nr, flags, NULL)) != INP_OK)
 			return (rval);
 #if defined(DEBUG) && 0
 		TRACE(sp, "read: {%.*s}\n", gp->i_cnt, &gp->i_ch[gp->i_next]);
@@ -556,7 +556,7 @@ remap:		qp = seq_find(sp, NULL, &gp->i_ch[gp->i_next], gp->i_cnt,
 				tp = NULL;
 
 			if ((rval =
-			    sp->s_key_read(sp, &nr, flags, tp)) != INP_OK)
+			    sex_key_read(sp, &nr, flags, tp)) != INP_OK)
 				return (rval);
 			if (nr)
 				goto remap;
@@ -682,7 +682,7 @@ term_user_key(sp, chp)
 		return (rval);
 
 	/* Wait and read another key. */
-	if ((rval = sp->s_key_read(sp, &nr, NULL)) != INP_OK)
+	if ((rval = sex_key_read(sp, &nr, NULL)) != INP_OK)
 		return (rval);
 
 	/* Fill in the return information. */
@@ -713,7 +713,7 @@ term_key_queue(sp)
 	for (gp = sp->gp;;) {
 		if (term_read_grow(sp))
 			return (INP_ERR);
-		if ((rval = sp->s_key_read(sp, &nr, &t)) != INP_OK)
+		if ((rval = sex_key_read(sp, &nr, &t)) != INP_OK)
 			return (rval);
 		if (nr == 0)
 			break;
@@ -769,144 +769,4 @@ keycmp(ap, bp)
 	const void *ap, *bp;
 {
 	return (((KEYLIST *)ap)->ch - ((KEYLIST *)bp)->ch);
-}
-
-/*
- * term_window --
- *	Set the window size.
- */
-int
-term_window(sp, sigwinch)
-	SCR *sp;
-	int sigwinch;
-{
-#ifdef TIOCGWINSZ
-	struct winsize win;
-#endif
-	size_t col, row;
-	int nf, rval;
-	ARGS *argv[2], a, b;
-	char *p, *s, buf[2048];
-
-	/*
-	 * Get the screen rows and columns.  If the values are wrong, it's
-	 * not a big deal -- as soon as the user sets them explicitly the
-	 * environment will be set and the screen package will use the new
-	 * values.
-	 *
-	 * Try TIOCGWINSZ.
-	 */
-	row = col = 0;
-#ifdef TIOCGWINSZ
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1) {
-		row = win.ws_row;
-		col = win.ws_col;
-	}
-#endif
-	/* If here because of suspend or a signal, only trust TIOCGWINSZ. */
-	if (sigwinch) {
-		/*
-		 * Somebody didn't get TIOCGWINSZ right, or has suspend
-		 * without window resizing support.  The user just lost,
-		 * but there's nothing we can do.
-		 */
-		if (row == 0 || col == 0)
-			return (1);
-
-		/*
-		 * SunOS systems deliver SIGWINCH when windows are uncovered
-		 * as well as when they change size.  In addition, we call
-		 * here when continuing after being suspended since the window
-		 * may have changed size.  Since we don't want to background
-		 * all of the screens just because the window was uncovered,
-		 * ignore the signal if there's no change.
-		 */
-		if (row == O_VAL(sp, O_LINES) && col == O_VAL(sp, O_COLUMNS))
-			return (1);
-
-		goto sigw;
-	}
-
-	/*
-	 * !!!
-	 * If TIOCGWINSZ failed, or had entries of 0, try termcap.  This
-	 * routine is called before any termcap or terminal information
-	 * has been set up.  If there's no TERM environmental variable set,
-	 * let it go, at least ex can run.
-	 */
-	if (row == 0 || col == 0) {
-		if ((s = getenv("TERM")) == NULL)
-			goto noterm;
-#ifdef SYSV_CURSES
-		if (row == 0)
-			if ((rval = tigetnum("lines")) < 0)
-				msgq(sp, M_SYSERR, "tigetnum: lines");
-			else
-				row = rval;
-		if (col == 0)
-			if ((rval = tigetnum("cols")) < 0)
-				msgq(sp, M_SYSERR, "tigetnum: cols");
-			else
-				col = rval;
-#else
-		switch (tgetent(buf, s)) {
-		case -1:
-			msgq(sp, M_SYSERR, "tgetent: %s", s);
-			return (1);
-		case 0:
-			p = msg_print(sp, s, &nf);
-			msgq(sp, M_ERR, "096|%s: unknown terminal type", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-			return (1);
-		}
-		if (row == 0)
-			if ((rval = tgetnum("li")) < 0) {
-				p = msg_print(sp, s, &nf);
-				msgq(sp, M_ERR,
-			    "097|no \"li\" terminal capability for %s", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
-			} else
-				row = rval;
-		if (col == 0)
-			if ((rval = tgetnum("co")) < 0) {
-				p = msg_print(sp, s, &nf);
-				msgq(sp, M_ERR,
-			    "098|no \"co\" terminal capability for %s", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
-			} else
-				col = rval;
-#endif
-	}
-
-	/* If nothing else, well, it's probably a VT100. */
-noterm:	if (row == 0)
-		row = 24;
-	if (col == 0)
-		col = 80;
-
-	/* POSIX 1003.2 requires the environment to override. */
-	if ((s = getenv("LINES")) != NULL)
-		row = strtol(s, NULL, 10);
-	if ((s = getenv("COLUMNS")) != NULL)
-		col = strtol(s, NULL, 10);
-
-sigw:	a.bp = buf;
-	b.bp = NULL;
-	b.len = 0;
-	argv[0] = &a;
-	argv[1] = &b;;
-
-	/* Use the options code to accomplish the change. */
-	a.len = snprintf(buf, sizeof(buf), "lines=%u", row);
-	if (opts_set(sp, argv, 1, NULL))
-		return (1);
-	a.len = snprintf(buf, sizeof(buf), "columns=%u", col);
-	if (opts_set(sp, argv, 1, NULL))
-		return (1);
-
-	F_SET(sp, S_SCR_RESIZE);
-	return (0);
 }

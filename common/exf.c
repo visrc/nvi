@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.19 1995/01/12 16:34:44 bostic Exp $ (Berkeley) $Date: 1995/01/12 16:34:44 $";
+static char sccsid[] = "$Id: exf.c,v 9.20 1995/01/23 16:58:32 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -454,7 +454,7 @@ file_cinit(sp)
 
 		(void)sex_screen_icmd(sp, sp->gp->icommand);
 		sp->gp->icommand = NULL;
-	} else if (IN_EX_MODE(sp)) {
+	} else if (F_ISSET(sp, S_EX)) {
 		/* XXX:  If this fails, we're toast. */
 		(void)file_lline(sp, &sp->lno);
 		if (sp->lno == 0) {

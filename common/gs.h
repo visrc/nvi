@@ -6,16 +6,27 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 9.5 1995/01/11 15:58:05 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:05 $
+ *	$Id: gs.h,v 9.6 1995/01/23 16:58:35 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:35 $
  */
 
 struct _gs {
 	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
 
+	char	*progname;		/* Programe name. */
+
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios
 		 original_termios;	/* Original terminal values. */
+
+#define	INDX_ALRM	0		/* Offsets in the saved array. */
+#define	INDX_HUP	1
+#define	INDX_INT	2
+#define	INDX_TERM	3
+#define	INDX_WINCH	4
+#define	INDX_MAX	5
+	struct sigaction
+		 oact[INDX_MAX];	/* Saved signal action information. */
 
 	DB	*msg;			/* Messages DB. */
 	MSGH	 msgq;			/* User message list. */
@@ -32,7 +43,6 @@ struct _gs {
 	FILE	*tracefp;		/* Trace file pointer. */
 #endif
 
-/* INFORMATION SHARED BY ALL SCREENS. */
 	CHAR_T	 *i_ch;			/* Array of input characters. */
 	u_int8_t *i_chf;		/* Array of character flags (CH_*). */
 	size_t	  i_cnt;		/* Count of characters. */
@@ -66,14 +76,7 @@ struct _gs {
 	u_char				/* Fast lookup table. */
 	    special_key[MAX_FAST_KEY + 1];
 
-/* Interrupt macros. */
-#define	INTERRUPTED(sp)							\
-	(F_ISSET((sp), S_INTERRUPTED) || F_ISSET((sp)->gp, G_SIGINT))
-#define	CLR_INTERRUPT(sp) {						\
-	F_CLR((sp), S_INTERRUPTED);					\
-	F_CLR((sp)->gp, G_SIGINT);					\
-}
-
+/* Flags. */
 #define	G_ABBREV	0x0001		/* If have abbreviations. */
 #define	G_BELLSCHED	0x0002		/* Bell scheduled. */
 #define	G_RECOVER_SET	0x0004		/* Recover system initialized. */
@@ -99,12 +102,19 @@ extern GS *__global_list;		/* List of screens. */
  * a signal arriving after the fork and before the exec, causing both parent
  * and child to attempt recovery processing.
  */
-#define	SIGBLOCK(gp) \
+#define	INTERRUPTED(sp)							\
+	(F_ISSET((sp), S_INTERRUPTED) || F_ISSET((sp)->gp, G_SIGINT))
+#define	CLR_INTERRUPT(sp) {						\
+	F_CLR((sp), S_INTERRUPTED);					\
+	F_CLR((sp)->gp, G_SIGINT);					\
+}
+#define	SIGBLOCK(gp)							\
 	(void)sigprocmask(SIG_BLOCK, &(gp)->blockset, NULL);
-#define	SIGUNBLOCK(gp) \
+#define	SIGUNBLOCK(gp)							\
 	(void)sigprocmask(SIG_UNBLOCK, &(gp)->blockset, NULL);
 
 void	 busy_off __P((SCR *));
 int	 busy_on __P((SCR *, char const *));
-void	 sig_end __P((SCR *));
+void	 sig_end __P((GS *));
 int	 sig_init __P((SCR *));
+void	 sig_restore __P((SCR *));

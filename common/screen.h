@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.12 1995/01/12 19:53:43 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:53:43 $
+ *	$Id: screen.h,v 9.13 1995/01/23 16:58:41 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:41 $
  */
 
 /*
@@ -143,8 +143,9 @@ struct _scr {
 	void	*ex_private;		/* Ex private area. */
 	void	*sex_private;		/* Ex screen private area. */
 	void	*vi_private;		/* Vi private area. */
-	void	*svi_private;		/* Vi curses screen private area. */
-	void	*xaw_private;		/* Vi XAW screen private area. */
+	void	*svi_private;		/* Vi screen private area. */
+	void	*cl_private;		/* Curses support private area. */
+	void	*xaw_private;		/* XAW support private area. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	char	*alt_name;		/* Ex/vi: alternate file name. */
@@ -163,82 +164,48 @@ struct _scr {
 	u_int8_t c_suffix;		/* Edcompatible 'c' suffix value. */
 	u_int8_t g_suffix;		/* Edcompatible 'g' suffix value. */
 
-	u_int32_t saved_vi_mode;	/* Saved vi display type. */
+	u_int32_t
+		 saved_vi_mode;		/* Saved S_VI_* flags. */
 
 	OPTION	 opts[O_OPTIONCOUNT];	/* Options. */
 
 /*
- * SCREEN SUPPORT ROUTINES.
- *
- * A SCR * MUST be the first argument to these routines.
- */
-					/* Ring the screen bell. */
-	void	(*s_bell) __P((SCR *));
-					/* Background the screen. */
-	int	(*s_bg) __P((SCR *));
-					/* Put up a busy message. */
-	int	(*s_busy) __P((SCR *, char const *));
-					/* Change a screen line. */
-	int	(*s_change) __P((SCR *, recno_t, enum operation));
-					/* Clear the screen. */
-	int	(*s_clear) __P((SCR *));
-					/* Return column close to specified. */
-	size_t	(*s_colpos) __P((SCR *, recno_t, size_t));
-					/* Return the logical cursor column. */
-	int	(*s_column) __P((SCR *, size_t *));
+ * The following are editor routines that are called by "generic" functions
+ * in ex or in the common code, and which are handled differently by ex and
+ * vi, or by different vi screen types.  All the routines except e_ssize are
+ * necessary because ex and vi handle the problem differently.  E_ssize is
+ * here because we have to know (and in the curses case set the environment)
+ * the screen size before we initialize the screen functions.  (SCR *) MUST
+ * be the first argument to these routines.
+ */					/* Beep/bell/flash the terminal. */
+	int	(*e_bell) __P((SCR *));
+					/* Display a busy message. */
+	int	(*e_busy) __P((SCR *, char const *));
+					/* File line changed callback. */
+	int	(*e_change) __P((SCR *, recno_t, enum operation));
+					/* Clear to the end of the screen. */
+	int	(*e_clrtoeos) __P((SCR *));
 	enum confirm			/* Confirm an action with the user. */
-		(*s_confirm) __P((SCR *, MARK *, MARK *));
-					/* Change the relative screen size. */
-	int	(*s_crel) __P((SCR *, long));
-					/* Edit a file. */
-	int	(*s_edit) __P((SCR *));
-					/* End a screen. */
-	int	(*s_end) __P((SCR *));
-					/* Run a single ex command. */
-	int	(*s_ex_cmd) __P((SCR *, EXCMDARG *, MARK *));
-					/* Run user's ex commands. */
-	int	(*s_ex_run) __P((SCR *, MARK *));
-					/* Screen's ex write function. */
-	int	(*s_ex_write) __P((void *, const char *, int));
-					/* Foreground the screen. */
-	int	(*s_fg) __P((SCR *, CHAR_T *));
-					/* Fill the screen's map. */
-	int	(*s_fill) __P((SCR *, recno_t, enum position));
-					/* Map a function key. */
-	int	(*s_fmap) __P((SCR *,
-		    enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
-	enum input			/* Get a line from the user. */
-		(*s_get) __P((SCR *, TEXTH *, ARG_CHAR_T, u_int));
-	enum input			/* Get a key from the user. */
-		(*s_key_read) __P((SCR *, int *, u_int, struct timeval *));
-					/* Return column at screen position. */
-	int	(*s_position) __P((SCR *, MARK *, u_long, enum position));
-					/* Change the absolute screen size. */
-	int	(*s_rabs) __P((SCR *, long, enum adjust));
-					/* Return column close to selection. */
-	size_t	(*s_rcm) __P((SCR *, recno_t, int));
+		(*e_confirm) __P((SCR *, MARK *, MARK *));
+	int     (*e_fmap)		/* Set a function key. */
+	    __P((SCR *, enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
 					/* Refresh the screen. */
-	int	(*s_refresh) __P((SCR *));
-					/* Move down the screen. */
-	int	(*s_scroll) __P((SCR *, MARK *, recno_t, enum sctype));
-					/* Split the screen. */
-	int	(*s_split) __P((SCR *, ARGS *[], int));
-					/* Suspend the screen. */
-	int	(*s_suspend) __P((SCR *));
-					/* Set the window size. */
-	int	(*s_window) __P((SCR *, int));
+	int	(*e_refresh) __P((SCR *));
+					/* Set the screen size. */
+	int	(*e_ssize) __P((SCR *, int));
+					/* Suspend the editor. */
+	int	(*e_suspend) __P((SCR *));
 
-/* Editor screens. */
+/*
+ * Screen flags.
+ *
+ * Editor screens.
+ */
 #define	S_EX		0x0000001	/* Ex screen. */
 #define	S_VI_CURSES	0x0000002	/* Vi: curses screen. */
 #define	S_VI_XAW	0x0000004	/* Vi: Athena widgets screen. */
-
-#define	IN_EX_MODE(sp)			/* If in ex mode. */		\
-	(F_ISSET(sp, S_EX))
-#define	IN_VI_MODE(sp)			/* If in vi mode. */		\
-	(F_ISSET(sp, S_VI_CURSES | S_VI_XAW))
-#define	S_SCREENS			/* Screens. */			\
-	(S_EX | S_VI_CURSES | S_VI_XAW)
+#define	S_VI		(S_VI_CURSES | S_VI_XAW)
+#define	S_SCREENS	(S_EX | S_VI)
 
 /* Major screen/file changes. */
 #define	S_EXIT		0x0000008	/* Exiting (not forced). */
@@ -298,30 +265,6 @@ struct _scr {
 	u_int32_t flags;
 };
 
-/* Generic routines to start/stop a screen. */
-int	 screen_end __P((SCR *));
-int	 screen_init __P((SCR *, SCR **));
-
-/* Public interfaces to the underlying screens. */
-int	 ex_optchange __P((SCR *, int));
-int	 ex_screen_copy __P((SCR *, SCR *));
-int	 ex_screen_end __P((SCR *));
-
-int	 sex_optchange __P((SCR *, int));
-int	 sex_screen_copy __P((SCR *, SCR *));
-int	 sex_screen_edit __P((SCR *));
-int	 sex_screen_end __P((SCR *));
-
-int	 svi_optchange __P((SCR *, int));
-int	 svi_screen_copy __P((SCR *, SCR *));
-int	 svi_screen_edit __P((SCR *));
-int	 svi_screen_end __P((SCR *));
-
-int	 v_optchange __P((SCR *, int));
-int	 v_screen_copy __P((SCR *, SCR *));
-int	 v_screen_end __P((SCR *));
-
-int	 xaw_optchange __P((SCR *, int));
-int	 xaw_screen_copy __P((SCR *, SCR *));
-int	 xaw_screen_edit __P((SCR *));
-int	 xaw_screen_end __P((SCR *));
+/* Generic routines to create/end a screen. */
+int	screen_end __P((SCR *));
+int	screen_init __P((SCR *, SCR **));

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 9.6 1995/01/12 20:06:21 bostic Exp $ (Berkeley) $Date: 1995/01/12 20:06:21 $
+ *	$Id: util.h,v 9.7 1995/01/23 16:58:49 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:49 $
  */
 
 /*
@@ -60,6 +60,7 @@ int	 nonblank __P((SCR *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
 char	*tail __P((char *));
 CHAR_T	*v_strdup __P((SCR *, const CHAR_T *, size_t));
+int	 vi_main __P((int, char *[], int (*)(SCR *, int)));
 void	 vi_putchar __P((int));
 
 #ifdef DEBUG

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.10 1995/01/13 10:10:38 bostic Exp $ (Berkeley) $Date: 1995/01/13 10:10:38 $";
+static char sccsid[] = "$Id: options_f.c,v 9.11 1995/01/23 16:58:39 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -438,7 +438,7 @@ DECL(f_term)
 		return (1);
 
 	/* Reset the screen size. */
-	if (term_window(sp, 0))
+	if (sp->e_ssize(sp, 0))
 		return (1);
 	F_SET(sp, S_SCR_RESIZE);
 
