@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.1 1993/06/09 22:21:23 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:23 $";
+static char sccsid[] = "$Id: main.c,v 8.2 1993/06/21 09:47:12 bostic Exp $ (Berkeley) $Date: 1993/06/21 09:47:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -226,11 +226,12 @@ main(argc, argv)
 		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
 
 	/*
-	 * The commands we executed probably positioned the file.  This
-	 * isn't a wonderful test, but it's probably fairly safe.
+	 * The commands we executed probably positioned the file, so we
+	 * want the screen to load the address from the EXF structure.
+	 * This isn't a wonderful test, but it's probably fairly safe.
 	 */
-	if ((sp->lno != 1 || sp->cno != 0) && F_ISSET(sp->ep, F_NOSETPOS))
-		F_CLR(sp->ep, F_NOSETPOS);
+	if ((sp->lno != 1 || sp->cno != 0) && F_ISSET(sp->ep, F_EADDR_NONE))
+		F_CLR(sp->ep, F_EADDR_NONE);
 
 	/* Call a screen. */
 	while (sp != NULL)

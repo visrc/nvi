@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.3 1993/06/21 07:50:24 bostic Exp $ (Berkeley) $Date: 1993/06/21 07:50:24 $
+ *	$Id: exf.h,v 8.4 1993/06/21 09:46:33 bostic Exp $ (Berkeley) $Date: 1993/06/21 09:46:33 $
  */
 
 					/* Undo direction. */
@@ -48,23 +48,26 @@ typedef struct _exf {
 
 	char	*rcv_path;		/* Recover file name. */
 
-#define	F_ICOMMAND	0x0001		/* Initial command set. */
-#define	F_IGNORE	0x0002		/* File to be ignored. */
+#define	F_EADDR_LOAD	0x0001		/* Load the EXF line/column. */
+#define	F_EADDR_NONE	0x0002		/* EXF has no valid line column. */
 #define	F_FIRSTMODIFY	0x0004		/* File not yet modified. */
-#define	F_MODIFIED	0x0008		/* File is currently dirty. */
-#define	F_NAMECHANGED	0x0010		/* File name was changed. */
-#define	F_NOLOG		0x0020		/* Logging turned off. */
-#define	F_NONAME	0x0040		/* File has no name. */
-#define	F_NOSETPOS	0x0080		/* No line position. */
-#define	F_RDONLY	0x0100		/* File is read-only. */
+#define	F_ICOMMAND	0x0008		/* Initial command set. */
+#define	F_IGNORE	0x0010		/* File to be ignored. */
+#define	F_MODIFIED	0x0020		/* File is currently dirty. */
+#define	F_NAMECHANGED	0x0040		/* File name was changed. */
+#define	F_NOLOG		0x0080		/* Logging turned off. */
+#define	F_NONAME	0x0100		/* File has no name. */
 #define	F_RCV_ALRM	0x0200		/* File should be synced. */
 #define	F_RCV_NORM	0x0400		/* Don't remove the recovery file. */
 #define	F_RCV_ON	0x0800		/* File is recoverable. */
-#define	F_UNDO		0x1000		/* No change since last undo. */
+#define	F_RDONLY	0x1000		/* File is read-only. */
+#define	F_UNDO		0x2000		/* No change since last undo. */
 
 #define	F_CLOSECLR			/* Flags to clear on close. */	\
 	(F_MODIFIED | F_NAMECHANGED | F_NOLOG | F_RDONLY | F_RCV_NORM |	\
 	    F_RCV_ON | F_UNDO)
+#define	F_CLOSESET			/* Flags to set on close. */	\
+	(F_EADDR_LOAD)
 	u_int	 flags;
 } EXF;
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.2 1993/06/18 12:23:23 bostic Exp $ (Berkeley) $Date: 1993/06/18 12:23:23 $";
+static char sccsid[] = "$Id: exf.c,v 8.3 1993/06/21 09:47:11 bostic Exp $ (Berkeley) $Date: 1993/06/21 09:47:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,9 +185,14 @@ file_start(sp, ep, rcv_fname)
 	    (ep = file_get(sp, (EXF *)&sp->gp->exfhdr, NULL, 1)) == NULL)
 		return (NULL);
 
-	/* If already in play, up the count and return. */
+	/*
+	 * If already in play, up the count and return.  Reset the address
+	 * flags for the file -- the second and subsequent edit sessions
+	 * start from the default location.
+	 */
 	if (ep->refcnt > 0) {
 		++ep->refcnt;
+		F_SET(ep, F_EADDR_LOAD | F_EADDR_NONE);
 		return (ep);
 	}
 
@@ -339,6 +344,7 @@ file_stop(sp, ep, force)
 
 	/* Clean up the flags. */
 	F_CLR(ep, F_CLOSECLR);
+	F_SET(ep, F_CLOSESET);
 	return (0);
 }
 
@@ -473,7 +479,7 @@ file_def(sp, ep)
 	memset(ep, 0, sizeof(EXF));
 
 	ep->c_lno = OOBLNO;
-	F_SET(ep, F_FIRSTMODIFY | F_NOSETPOS);
+	F_SET(ep, F_EADDR_LOAD | F_EADDR_NONE | F_FIRSTMODIFY);
 
 	return (mark_init(sp, ep));
 }
