@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.61 1996/12/05 12:28:28 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:28:28 $";
+static const char sccsid[] = "$Id: vi.c,v 10.62 1996/12/05 14:28:27 bostic Exp $ (Berkeley) $Date: 1996/12/05 14:28:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,6 @@ static int	v_count __P((SCR *, VICMD *, ARG_CHAR_T, u_long *));
 static void	v_dtoh __P((SCR *));
 static int	v_init __P((SCR *));
 static gcret_t	v_key __P((SCR *, VICMD *, int, u_int32_t));
-static int	v_curword __P((SCR *));
 static int	v_motion __P((SCR *, VICMD *, VICMD *, int *));
 
 #if defined(DEBUG) && defined(COMLOG)
