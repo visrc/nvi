@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tcl.c,v 8.1 1995/11/11 12:44:33 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:44:33 $";
+static char sccsid[] = "$Id: ex_tcl.c,v 8.2 1995/11/15 12:35:44 bostic Exp $ (Berkeley) $Date: 1995/11/15 12:35:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,7 +68,7 @@ ex_tcl(sp, cmdp)
 		Tcl_DStringInit(&cmd);
 		for (lno = cmdp->addr1.lno; lno <= cmdp->addr2.lno; lno++) {
 			if (db_get(sp, lno, DBG_FATAL, &lp, &len)) {
-				result = TCL_ERR;
+				result = TCL_ERROR;
 				break;
 			}
 			Tcl_DStringAppend(&cmd, lp, len);
@@ -86,7 +86,7 @@ ex_tcl(sp, cmdp)
 				result = Tcl_Eval(sp->gp->interp,
 				    Tcl_DStringValue(&cmd));
 				if (result != TCL_OK) {
-					msgq(sp,M_ERR, "Tcl: %s", RESULTP);
+					msgq(sp, M_ERR, "Tcl: %s", RESULTP);
 					break;
 				}
 				Tcl_DStringInit(&cmd);
@@ -107,7 +107,7 @@ ex_tcl(sp, cmdp)
 	if (result == TCL_OK)
 		return (0);
 
-	msgq(sp,M_ERR, "Tcl: %s", RESULTP);
+	msgq(sp, M_ERR, "Tcl: %s", RESULTP);
 	return (1);
 #endif /* TCL_INTERP */
 }
