@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.69 1994/09/02 13:23:39 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:23:39 $";
+static char sccsid[] = "$Id: options.c,v 8.70 1994/09/02 20:27:14 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:27:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -313,12 +313,11 @@ opts_init(sp, oargs)
 
 	/*
 	 * XXX
-	 * Initialize ^D, ^U scrolling value here, after TERM.  (We didn't
-	 * have the options information when the screen was initialized.)
-	 * Initializing term should have created a LINES/COLUMNS value.
+	 * Initialize O_SCROLL here, after term; initializing term should
+	 * have created a LINES/COLUMNS value.
 	 */
-	sp->defscroll = O_VAL(sp, O_LINES) / 2;
-	(void)snprintf(b1, sizeof(b1), "scroll=%ld", sp->defscroll);
+	(void)snprintf(b1, sizeof(b1),
+	    "scroll=%ld", (O_VAL(sp, O_LINES) - 1) / 2);
 	SET_DEF(O_SCROLL, b1);
 
 	/*
