@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.20 1995/11/10 19:03:51 bostic Exp $ (Berkeley) $Date: 1995/11/10 19:03:51 $";
+static char sccsid[] = "$Id: main.c,v 10.21 1996/02/04 19:00:20 bostic Exp $ (Berkeley) $Date: 1996/02/04 19:00:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,15 +45,13 @@ static int	 v_obsolete __P((char *, char *[]));
  * editor --
  *	Main editor routine.
  *
- * PUBLIC: int editor __P((GS *, int, char *[], char *, recno_t, size_t));
+ * PUBLIC: int editor __P((GS *, int, char *[]));
  */
 int
-editor(gp, argc, argv, ttype, rows, cols)
+editor(gp, argc, argv)
 	GS *gp;
 	int argc;
-	char *argv[], *ttype;
-	recno_t rows;
-	size_t cols;
+	char *argv[];
 {
 	extern int optind;
 	extern char *optarg;
@@ -252,7 +250,7 @@ editor(gp, argc, argv, ttype, rows, cols)
 		*oargp++ = O_SHOWMATCH;
 	}
 	*oargp = -1;			/* Options initialization. */
-	if (opts_init(sp, oargs, ttype, rows, cols))
+	if (opts_init(sp, oargs))
 		goto err;
 	}
 	if (wsizearg != NULL) {
@@ -406,7 +404,7 @@ editor(gp, argc, argv, ttype, rows, cols)
 
 	/*
 	 * Main edit loop.  Vi handles split screens itself, we only return
-	 * here when switching editor modes.
+	 * here when switching editor modes or restarting the screen.
 	 */
 	while (sp != NULL)
 		if (F_ISSET(sp, S_EX) ? ex(&sp) : vi(&sp))
