@@ -6,12 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.13 1993/05/15 10:08:28 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:08:28 $";
+static char sccsid[] = "$Id: screen.c,v 5.14 1993/05/16 12:34:09 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:34:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -34,13 +35,24 @@ scr_init(orig, sp)
 	SCR *orig, *sp;
 {
 	extern CHNAME asciiname[];		/* XXX */
+	sigset_t bmask, omask;
 	int nore;
 
 /* INITIALIZED AT SCREEN CREATE. */
-	memset(sp, 0, sizeof(SCR));
 
-	if (orig != NULL)
+	/*
+	 * NULL the sp->ep field first, so the recovery timer won't access.
+	 * Block SIGALRM and SIGHUP when manipulating the SCR chain.
+	 */
+	memset(sp, 0, sizeof(SCR));
+	if (orig != NULL) {
+		sigemptyset(&bmask);
+		sigaddset(&bmask, SIGALRM);
+		sigaddset(&bmask, SIGHUP);
+		(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
 		HDR_APPEND(sp, orig, next, prev, SCR);
+		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
+	}
 
 	sp->olno = OOBLNO;
 	sp->lno = 1;
@@ -171,6 +183,8 @@ int
 scr_end(sp)
 	SCR *sp;
 {
+	sigset_t bmask, omask;
+
 	/* Free the memory map. */
 	if (sp->h_smap != NULL)
 		FREE(sp->h_smap, sp->w_rows * sizeof(SMAP));
@@ -214,7 +228,7 @@ scr_end(sp)
 				hdr_text_free(&cb->txthdr);
 	}
 
-	/* Free paragraph search list. *
+	/* Free paragraph search list. */
 	if (sp->paragraph != NULL)
 		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
 
@@ -304,8 +318,16 @@ scr_end(sp)
 		}
 	}
 
-	/* Remove the screen from the global chain of screens. */
+	/*
+	 * Remove the screen from the global chain of screens.
+	 * Block SIGALRM and SIGHUP when manipulating the SCR chain.
+	 */
+	sigemptyset(&bmask);
+	sigaddset(&bmask, SIGALRM);
+	sigaddset(&bmask, SIGHUP);
+	(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
 	HDR_DELETE(sp, next, prev, SCR);
+	(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 
 	/* Remove the screen from the chain of related screens. */
 	if (sp->parent != NULL) {
