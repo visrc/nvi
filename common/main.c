@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.45 1993/11/18 13:50:23 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:23 $";
+static char sccsid[] = "$Id: main.c,v 8.46 1993/11/19 10:54:05 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:54:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -61,7 +61,7 @@ main(argc, argv)
 	struct stat sb;
 	GS *gp;
 	FREF *frp;
-	SCR *nsp, *sp;
+	SCR *sp;
 	u_int flags;
 	int ch, eval, flagchk, readonly, snapshot;
 	char *excmdarg, *myname, *p, *rec_f, *tag_f, *trace_f, *wsizearg;
@@ -327,12 +327,21 @@ main(argc, argv)
 	}
 
 	for (;;) {
-		if (sp->s_edit(sp, sp->ep, &nsp))
+		if (sp->s_edit(sp, sp->ep))
 			goto err2;
 
-		/* If we're done, nsp will be NULL. */
-		if ((sp = nsp) == NULL)
-			break;
+		/*
+		 * Edit the next screen on the display queue, or, move
+		 * a screen from the hidden queue to the display queue.
+		 */
+		if ((sp = __global_list->dq.cqh_first) ==
+		    (void *)&__global_list->dq)
+			if ((sp = __global_list->hq.cqh_first) !=
+			    (void *)&__global_list->hq) {
+				CIRCLEQ_REMOVE(&sp->gp->hq, sp, q);
+				CIRCLEQ_INSERT_TAIL(&sp->gp->dq, sp, q);
+			} else
+				break;
 
 		/*
 		 * The screen type may have changed -- reinitialize the

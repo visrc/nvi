@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.62 1993/11/18 13:50:29 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:29 $
+ *	$Id: screen.h,v 8.63 1993/11/19 10:54:45 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:54:45 $
  */
 
 /*
@@ -184,7 +184,7 @@ struct _scr {
 					/* Move down the screen. */
 	int	 (*s_down) __P((SCR *, EXF *, MARK *, recno_t, int));
 					/* Edit a file. */
-	int	 (*s_edit) __P((SCR *, EXF *, SCR **));
+	int	 (*s_edit) __P((SCR *, EXF *));
 					/* End a screen. */
 	int	 (*s_end) __P((SCR *));
 					/* Run a single ex command. */
