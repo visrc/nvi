@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.11 1994/05/03 08:40:01 bostic Exp $ (Berkeley) $Date: 1994/05/03 08:40:01 $
+.\"	$Id: ex.cmd.roff,v 8.12 1994/05/18 19:39:06 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:39:06 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -1012,12 +1012,10 @@ option.
 #endif
 .SP
 .It Sy "pre[serve]"
-Save the file in a form that can later be recovered by using
+Save the file in a form that can later be recovered using the
 .Nm \&ex
-.Fl l
-and
 .Fl r
-options.
+option.
 #ifdef REFERENCE
 When the file is preserved, an email message is sent to the user.
 .Pp
@@ -1165,6 +1163,11 @@ Recover
 .Li file
 if it was previously saved.
 #ifdef REFERENCE
+If no saved file by that name exists, the
+.Sy recover
+command behaves similarly to the
+.Sy edit
+command.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
