@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.17 1996/04/30 20:22:07 bostic Exp $ (Berkeley) $Date: 1996/04/30 20:22:07 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.18 1996/05/12 18:07:42 bostic Exp $ (Berkeley) $Date: 1996/05/12 18:07:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,7 +195,7 @@ ex_scprint(sp, fp, tp)
 			return (1);
 	}
 
-	if (db_get(sp, fp->lno, DBG_FATAL, &p, &len))
+	if (db_get(sp, fp->lno, DBG_FATAL, (char **)&p, &len))
 		return (1);
 
 	if (ex_prchars(sp, p, &col, fp->cno, 0, ' '))
