@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.5 1993/08/25 16:37:33 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:37:33 $
+ *	$Id: common.h,v 8.6 1993/08/27 11:42:48 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:42:48 $
  */
 
 /* System includes. */
@@ -150,7 +150,7 @@ int	filtercmd __P((SCR *, EXF *, MARK *,
 char	*charname __P((SCR *, int));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_fname __P((SCR *, char *));
-int	 set_window_size __P((SCR *, u_int));
+int	 set_window_size __P((SCR *, u_int, int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.5 1993/08/25 16:38:37 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:38:37 $";
+static char sccsid[] = "$Id: util.c,v 8.6 1993/08/27 11:43:03 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:43:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -297,9 +297,10 @@ tail(path)
  *	Set the window size, the row may be provided as an argument.
  */
 int
-set_window_size(sp, set_row)
+set_window_size(sp, set_row, ign_env)
 	SCR *sp;
 	u_int set_row;
+	int ign_env;
 {
 	struct winsize win;
 	size_t col, row;
@@ -333,11 +334,17 @@ set_window_size(sp, set_row)
 		}
 	}
 
-	/* POSIX 1003.2 requires the environment to override. */
-	if ((s = getenv("ROWS")) != NULL)
-		row = strtol(s, NULL, 10);
-	if ((s = getenv("COLUMNS")) != NULL)
-		col = strtol(s, NULL, 10);
+	/*
+	 * POSIX 1003.2 requires the environment to override, however,
+	 * if we're here because of a signal, we don't want to use the
+	 * old values.
+	 */
+	if (!ign_env) {
+		if ((s = getenv("ROWS")) != NULL)
+			row = strtol(s, NULL, 10);
+		if ((s = getenv("COLUMNS")) != NULL)
+			col = strtol(s, NULL, 10);
+	}
 
 	/* But, if we got an argument for the rows, use it. */
 	if (set_row)
