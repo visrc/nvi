@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.15 1993/10/03 13:35:33 bostic Exp $ (Berkeley) $Date: 1993/10/03 13:35:33 $
+ *	$Id: common.h,v 8.16 1993/10/04 17:51:46 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:51:46 $
  */
 
 /* System includes. */
@@ -154,6 +154,7 @@ int	binc __P((SCR *, void *, size_t *, size_t));
 #endif
 
 /* Function prototypes that don't seem to belong anywhere else. */
+u_long	 baud_from_bval __P((SCR *));
 char	*charname __P((SCR *, ARG_CHAR_T));
 void	 busy_off __P((SCR *));
 void	 busy_on __P((SCR *, int, char const *));
