@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.24 1995/11/25 09:48:43 bostic Exp $ (Berkeley) $Date: 1995/11/25 09:48:43 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.25 1995/11/25 10:13:30 bostic Exp $ (Berkeley) $Date: 1995/11/25 10:13:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -65,7 +65,8 @@ int
 ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 	SCR *sp;
 	EXCMD *cmdp;
-	char *cmd, *msg;
+	char *cmd;
+	const char *msg;
 	int need_newline;
 {
 	const char *name;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.28 1995/11/25 09:48:42 bostic Exp $ (Berkeley) $Date: 1995/11/25 09:48:42 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.29 1995/11/25 10:13:29 bostic Exp $ (Berkeley) $Date: 1995/11/25 10:13:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,7 +55,7 @@ ex_bang(sp, cmdp)
 	MARK rm;
 	recno_t lno;
 	int rval;
-	char *msg;
+	const char *msg;
 
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
