@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.15 1995/09/21 12:05:27 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:27 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.16 1995/09/22 12:54:34 bostic Exp $ (Berkeley) $Date: 1995/09/22 12:54:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: cl_funcs.c,v 10.15 1995/09/21 12:05:27 bostic Exp $
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termcap.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -381,7 +382,7 @@ cl_ex_adjust(sp, action)
 			(void)tputs(clp->cuu1, 1, cl_putchar);
 		else if (clp->cup != NULL)
 			(void)tputs(tgoto(clp->cup,
-			    0, O_VAL(sp, O_LINES) - 2), 1, cl_putchar);
+			    0, LINES - 2, 1), cl_putchar);
 		else
 			return (0);
 		/* FALLTHROUGH */
@@ -669,7 +670,7 @@ cl_suspend(sp)
 		 * the editor to reject the command.
 		 */
 		getyx(stdscr, oldy, oldx);
-		(void)move(O_VAL(sp, O_LINES) - 1, 0);
+		(void)move(LINES - 1, 0);
 		(void)refresh();
 
 		/* Temporarily end the screen. */

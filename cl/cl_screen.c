@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.13 1995/09/21 12:05:29 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:29 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.14 1995/09/22 12:54:24 bostic Exp $ (Berkeley) $Date: 1995/09/22 12:54:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: cl_screen.c,v 10.13 1995/09/21 12:05:29 bostic Exp 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <term.h>
+#include <termcap.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -82,7 +82,7 @@ cl_screen(sp, flags)
 	 * info line, its contents may be valid, e.g. :file|append.
 	 */
 	if (F_ISSET(clp, CL_SCR_VI)) {
-		(void)move(O_VAL(sp, O_LINES) - 1, 0);
+		(void)move(LINES - 1, 0);
 		(void)refresh();
 		nl = 1;
 
@@ -425,8 +425,7 @@ fast:	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->ex_enter)) {
 
 	/* Move to the last line on the screen. */
 	if (clp->cup != NULL)
-		tputs(tgoto(clp->cup,
-		    0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
+		tputs(tgoto(clp->cup, 0, LINES - 1), 1, cl_putchar);
 
 	F_SET(clp, CL_SCR_EX | CL_SCR_EX_INIT);
 	return (0);
