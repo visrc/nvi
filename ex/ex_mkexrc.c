@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 10.7 1995/10/04 12:33:42 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:33:42 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 10.8 1995/10/17 08:05:59 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:05:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ ex_mkexrc(sp, cmdp)
 	struct stat sb;
 	FILE *fp;
 	int fd, sverrno;
-	char *fname, *p;
+	char *fname;
 
 	switch (cmdp->argc) {
 	case 0:
