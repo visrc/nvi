@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.3 1995/06/14 11:59:53 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:59:53 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.4 1995/06/15 14:51:03 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:51:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -326,7 +326,16 @@ cl_canon(sp, enter)
 	EX_NOOP(sp);
 	VI_INIT_IGNORE(sp);
 
-	return (enter ? cl_ex_tinit(sp) : cl_ex_tend(sp));
+	if (enter) {
+		/*
+		 * Move to the bottom of the screen, but don't clear the
+		 * line, it may have valid contents, e.g. :set|file|append.
+		 */
+		(void)move(O_VAL(sp, O_LINES) - 1, 0);
+		(void)refresh();
+		return (cl_ex_tinit(sp));
+	} else
+		return (cl_ex_tend(sp));
 }
 
 /*
@@ -359,26 +368,6 @@ cl_clrtoeol(sp)
 	VI_INIT_IGNORE(sp);
 
 	return (clrtoeol() == ERR);
-}
-
-/*
- * cl_clrtoeos --
- *	Clear from the current line to the end of the screen.
- *
- * XXX
- * This need not be supported by any screen model not supporting full ex
- * canonical mode.
- *
- * PUBLIC: int cl_clrtoeos __P((SCR *));
- */
-int
-cl_clrtoeos(sp)
-	SCR *sp;
-{
-	EX_NOOP(sp);
-	VI_INIT_IGNORE(sp);
-
-	return (clrtobot() == ERR);
 }
 
 /*
