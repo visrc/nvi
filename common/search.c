@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.10 1995/02/10 09:45:08 bostic Exp $ (Berkeley) $Date: 1995/02/10 09:45:08 $";
+static char sccsid[] = "$Id: search.c,v 9.11 1995/02/17 11:36:12 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -283,7 +283,7 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 	}
 
 	/* Turn on busy message. */
-	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
+	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Searching...");
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (INTERRUPTED(sp))
@@ -396,7 +396,7 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 		lno = fm->lno;
 
 	/* Turn on busy message. */
-	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
+	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Searching...");
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (INTERRUPTED(sp))

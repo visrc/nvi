@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.23 1995/02/15 16:19:43 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:19:43 $";
+static char sccsid[] = "$Id: main.c,v 9.24 1995/02/17 11:36:21 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -295,7 +295,7 @@ vi_main(argc, argv, e_ssize)
 		O_CLR(sp, O_PROMPT);
 		O_CLR(sp, O_VERBOSE);
 		O_CLR(sp, O_WARN);
-		F_SET(sp, S_EXSILENT);
+		F_SET(sp, S_EX_SILENT);
 	}
 
 #ifdef DIGRAPHS

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.14 1995/02/10 16:08:04 bostic Exp $ (Berkeley) $Date: 1995/02/10 16:08:04 $";
+static char sccsid[] = "$Id: msg.c,v 9.15 1995/02/17 11:35:52 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:35:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -100,7 +100,7 @@ msgq(sp, mt, fmt, va_alist)
 		gp = sp->gp;
 		switch (mt) {
 		case M_BERR:
-			if (!F_ISSET(sp, S_EX) && !F_ISSET(sp, S_EXSILENT) &&
+			if (!F_ISSET(sp, S_EX) && !F_ISSET(sp, S_EX_SILENT) &&
 			    F_ISSET(gp, G_STDIN_TTY) &&
 			    !O_ISSET(sp, O_VERBOSE)) {
 				F_SET(sp, S_BELLSCHED);
@@ -114,7 +114,7 @@ msgq(sp, mt, fmt, va_alist)
 			mt = M_INFO;
 			/* FALLTHROUGH */
 		case M_INFO:
-			if (F_ISSET(sp, S_EXSILENT))
+			if (F_ISSET(sp, S_EX_SILENT))
 				return;
 			break;
 		case M_ERR:
@@ -427,7 +427,7 @@ msg_rpt(sp, is_message)
 	char *bp, *p;
 
 	/* Change reports are turned off in batch mode. */
-	if (F_ISSET(sp, S_EXSILENT))
+	if (F_ISSET(sp, S_EX_SILENT))
 		return (0);
 
 	/* Reset changing line number. */

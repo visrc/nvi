@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 9.6 1995/02/08 14:17:28 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:17:28 $";
+static char sccsid[] = "$Id: recover.c,v 9.7 1995/02/17 11:36:03 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -216,7 +216,7 @@ rcv_init(sp)
 			goto err;
 
 		/* Turn on a busy message, and sync it to backing store. */
-		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
+		btear = F_ISSET(sp, S_EX_SILENT) ? 0 :
 		    !busy_on(sp, "Copying file for recovery...");
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			p = msg_print(sp, ep->rcv_path, &nf);
@@ -304,7 +304,7 @@ rcv_sync(sp, flags)
 	 */
 	rval = 0;
 	if (LF_ISSET(RCV_SNAPSHOT)) {
-		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
+		btear = F_ISSET(sp, S_EX_SILENT) ? 0 :
 		    !busy_on(sp, "Copying file for recovery...");
 		dp = O_STR(sp, O_RECDIR);
 		(void)snprintf(buf, sizeof(buf), "%s/vi.XXXXXX", dp);
