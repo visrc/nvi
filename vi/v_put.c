@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 9.2 1995/01/11 16:22:17 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:17 $";
+static char sccsid[] = "$Id: v_put.c,v 9.3 1995/01/30 16:54:04 bostic Exp $ (Berkeley) $Date: 1995/01/30 16:54:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,6 +55,8 @@ v_Put(sp, vp)
 		    &vp->m_start, &vp->m_final, 0))
 			return (1);
 		vp->m_start = vp->m_final;
+		if (INTERRUPTED(sp))
+			return (1);
 	}
 	return (0);
 }
@@ -84,6 +86,8 @@ v_put(sp, vp)
 		    &vp->m_start, &vp->m_final, 1))
 			return (1);
 		vp->m_start = vp->m_final;
+		if (INTERRUPTED(sp))
+			return (1);
 	}
 	return (0);
 }
