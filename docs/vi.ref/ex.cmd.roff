@@ -3,1365 +3,1272 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.14 1994/05/23 15:25:27 bostic Exp $ (Berkeley) $Date: 1994/05/23 15:25:27 $
+.\"	$Id: ex.cmd.roff,v 8.15 1994/05/25 13:13:45 bostic Exp $ (Berkeley) $Date: 1994/05/25 13:13:45 $
 .\"
 #ifdef REFERENCE
-.de SP
-.sp
-..
-.Sh EX DESCRIPTION
+.sh 1 "Ex Description"
 The following words have special meanings for
-.Nm \&ex
+.CO ex
 commands.
 .sp
-.Bl -tag -width "XXXX" -compact
-.It Sy "<eof>"
+.IP "<eof>"
 The end-of-file character is used to scroll the screen in the
-.Nm \&ex
+.CO ex
 editor.
 This character is normally
-.Li <control-D> ,
+.LI <control-D> ,
 however, whatever character is set for the current terminal is used.
-.SP
-.It Sy "line"
+.IP "line"
 A single-line address, given in any of the forms described in the
 section entitled
-.Dq "Ex Addressing" .
+.QB "Ex Addressing" .
 The default for
-.Li line
+.LI line
 is the current line.
-.SP
-.It Sy "range"
+.IP "range"
 A line, or a pair of line addresses, separated by a comma or semicolon.
 (See the section entitled
-.Dq "Ex Addressing"
+.QB "Ex Addressing"
 for more information.)
 The default for range is the current line
-.Em only ,
+.i only ,
 i.e.
-.Dq Li \&.,. .
+.QT \&.,. .
 A percent sign
-.Pq Dq Li "\&%"
+.PQ %
 stands for the range
-.Dq Li \&1,$ .
+.QT 1,$ .
 The starting address must be less than, or equal to, the ending address.
-.SP
-.It Sy "count"
+.IP "count"
 A positive integer, specifying the number of lines to be affected by
 the command; the default is 1.
 Generally, a count past the end-of-file may be specified, e.g. the
 command
-.Dq Li "p 3000"
+.QT "p 3000"
 in a 10 line file is acceptable, and will print from the current line
 through the last line in the file.
-.SP
-.It Sy "flags"
+.IP "flags"
 One or more of the characters
-.Dq \&# ,
-.Dq \&p ,
+.QQ # ,
+.QQ p ,
 and
-.Dq \&l .
+.QQ l .
 When a command that accepts these flags completes, the addressed line(s)
 are written out as if by the corresponding
-.Sy \&# ,
-.Sy \&l
+.CO # ,
+.CO l
 or
-.Sy \&p
+.CO p
 commands.
 In addition, any number of
-.Dq Li \&+
+.QT +
 or
-.Dq Li \&-
+.QT \-
 characters can be specified before, after, or during the flags, in which
 case the line written is not necessarily the one affected by the command,
 but rather the line addressed by the offset address specified.
 The default for
-.Li flags
+.LI flags
 is none.
-.SP
-.It Sy "file"
+.IP "file"
 A pattern used to derive a pathname; the default is the current file.
 File names are subjected to normal
-.Xr sh 1
+.XR sh 1
 word expansions.
-.Pp
+.pp
 Anywhere that a file name is specified, it is also possible to use
 the special string
-.Dq /tmp .
+.QT /tmp .
 This will be replaced with a temporary file name which can be used
 for temporary work, e.g.
-.Dq Li ":e /tmp"
+.QT ":e /tmp"
 creates and edits a new file.
-.El
-.Pp
+.pp
 If both a count and a range are specified for commands that use either,
 the starting line for the command is the
-.Em last
+.i last
 line addressed by the range, and
-.Li count - 1
+.LI count - 1
 subsequent lines are affected by the command, e.g. the command
-.Dq Li "2,3p4"
+.QT 2,3p4
 prints out lines 3, 4, 5 and 6.
-.Pp
+.pp
 When only a line or range is specified, with no command, the implied
 command is either a
-.Sy list ,
-.Sy number
+.CO list ,
+.CO number
 or
-.Sy print
+.CO print
 command.
 The command used is the most recent of the three commands to have be used
 (including any use as a flag).
 If none of these commands have been used before, the
-.Sy print
+.CO print
 command is the implied command.
 When no range or count is specified and the command line is a blank line,
 the current line is incremented by 1 and then the current line is displayed.
-.Pp
+.pp
 Zero or more whitespace characters may precede or follow the addresses,
 count, flags, or command name.
 Any object following a command name (such as buffer, file, etc.),
 that begins with an alphabetic character,
 should be separated from the command name by at least one whitespace
 character.
-.Pp
+.pp
 Any character, including
-.Li <carriage-return> ,
-.Dq Li \&%
+.LI <carriage-return> ,
+.QT %
 and
-.Dq Li \&#
+.QT #
 retain their literal value when preceded by a backslash.
 .bp
 #endif /* REFERENCE */
+#ifdef REFERENCE
+.sh 1 "Ex Commands"
+#else
 .Sh EX COMMANDS
+#endif
 The following section describes the commands available in the
-.Nm \&ex
+.CO ex
 editor.
 In each entry below, the tag line is a usage synopsis for the command.
 #ifdef REFERENCE
-.Pp
+.pp
 For each of the commands, the command can be entered as the abbreviation
 (those characters in the synopsis command word preceding the
-.Dq \&[
+.QQ [
 character),
 the full command (all characters shown for the command word,
 omitting the
-.Dq \&[
+.QQ [
 and
-.Dq \&]
+.QQ ]
 characters),
 or any leading subset of the full command down to the abbreviation.
 For example, the args command (shown as
-.Dq Li ar[gs]
+.QT ar[gs]
 in the synopsis)
 can be entered as
-.Dq Li \&ar ,
-.Dq Li arg
+.QT ar ,
+.QT arg
 or
-.Dq Li args .
-.Pp
+.QT args .
+.pp
 Each
-.Nm \&ex
+.CO ex
 command described below notes the new current line after it
 is executed, as well as any options that affect the command.
 #endif
 .sp
-.Bl -tag -width "XXXX" -compact
-.It Sy "<end-of-file>"
+.IP "<end-of-file>"
 Scroll the screen.
 #ifdef REFERENCE
 Write the next N lines, where N is the value of the
-.Sy scroll
+.OP scroll
 option.
 The command is the end-of-file terminal character, which may be
 different on different terminals.
 Traditionally, it is the
-.Dq Li <control-D>
+.LI <control-D>
 key.
-.Pp
+.pp
 Historically, the
-.Sy eof
+.CO eof
 command ignored any preceding count, and the
-.Li <end-of-file>
+.LI <end-of-file>
 character was ignored unless it was entered as the first character
 of the command.
 This implementation treats it as a command
-.Em only
+.i only
 if entered as the first character of the command line, and otherwise
 treats it as any other character.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the last line written.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "! argument(s)"
-.It Sy "[range]! argument(s)"
+.IP "! argument(s)"
+.Ip "[range]! argument(s)"
 Execute a shell command, or filter lines through a shell command.
 #ifdef REFERENCE
 In the first synopsis, the remainder of the line after the
-.Dq Li \&!
+.QT !
 character is passed to the program named by the
-.Sy shell
+.OP shell
 option, as a single argument.
-.Pp
+.sp
 Within the rest of the line,
-.Dq Li \&%
+.QT %
 and
-.Dq Li \&#
+.QT #
 are expanded into the current and alternate pathnames, respectively.
 The character
-.Dq Li \&!
+.QT !
 is expanded with the command text of the previous
-.Sy \&!
+.CO !
 command.
 (Therefore, the command
-.Sy \&!!
+.CO !!
 repeats the previous
-.Sy \&!
+.CO !
 command.)
 The special meanings of
-.Dq Li \&% ,
-.Dq Li \&# ,
+.QT % ,
+.QT # ,
 and
-.Dq Li \&!
+.QT !
 can be overridden by escaping them with a backslash.
 If no
-.Sy \&!
+.CO !
 or
-.Sy \&:!
+.CO :!
 command has yet been executed, it is an error to use an unescaped
-.Dq Li \&!
+.QT !
 character.
 The
-.Sy \&!
+.CO !
 command does
-.Em not
+.i not
 do shell expansion on the strings provided as arguments.
 If any of the above expansions change the command the user entered,
 the command is redisplayed at the bottom of the screen.
-.Pp
-.Nm \&Ex
+.sp
+.CO Ex
 then executes the program named by the
-.Sy shell
+.OP shell
 option, with a
-.Fl c
+.b \-c
 flag followed by the arguments (which are bundled into a single argument).
-.Pp
+.sp
 The
-.Sy \&!
+.CO !
 command is permitted in an empty file.
-.Pp
+.sp
 If the file has been modified since it was last completely written,
 the
-.Sy \&!
+.Co !
 command will warn you.
-.Pp
+.sp
 A single
-.Dq Li \&!
+.QT !
 character is displayed when the command completes.
-.Pp
+.sp
 In the second form of the
-.Sy \&!
+.CO !
 command, the remainder of the line after the
-.Dq Li \&!
+.QT !
 is passed to the program named by the
-.Sy shell
+.OP shell
 option, as described above.
 The specified lines are passed to the program as standard input,
 and the standard and standard error output of the program replace
 the original lines.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged if no range was specified, otherwise set to the first
 line of the range.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy autowrite
+.OP autowrite
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy \&"
+.IP \&"
 A comment.
 #ifdef REFERENCE
 Command lines beginning with the double-quote character
-.Pq Dq Li \&"
+.PQ \"
 are ignored.
 This permits comments in editor scripts and startup files.
 #endif
-.SP
-.It Sy "[range] nu[mber] [count] [flags]"
-.It Sy "[range] # [count] [flags]"
+.IP "[range] nu[mber] [count] [flags]"
+.Ip "[range] # [count] [flags]"
 Display the selected lines, each preceded with its line number.
 #ifdef REFERENCE
-.Pp
+.sp
 The line number format is
-.Dq \&%6d ,
+.QQ %6d ,
 followed by two spaces.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the last line displayed.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "@ buffer"
-.It Sy "* buffer"
+.IP "@ buffer"
+.Ip "* buffer"
 Execute a buffer.
 #ifdef REFERENCE
 Each line in the named buffer is executed as an
-.Nm \&ex
+.CO ex
 command.
 If no buffer is specified, or if the specified buffer is
-.Dq Li \&@
+.QT @
 or
-.Dq Li * ,
+.QT * ,
 the last buffer executed is used.
-.SP
-.It Sy "[range] <[< ...] [count] [flags]"
+.IP "[range] <[< ...] [count] [flags]"
 Shift lines left or right.
 #ifdef REFERENCE
 The specified lines are shifted to the left (for the
-.Sy <
+.CO <
 command) or right (for the
-.Sy >
+.CO >
 command), by the number of columns specified by the
-.Sy shiftwidth
+.OP shiftwidth
 option.
 Only leading whitespace characters are deleted when shifting left;
 once the first column of the line contains a nonblank character,
 the
-.Sy shift
-will succeed, but the line will not be modified.
-.Pp
+.CO shift
+command will succeed, but the line will not be modified.
+.sp
 If the command character
-.Dq Sy \&<
+.CO <
 or
-.Dq Sy \&>
+.CO >
 is repeated more than once, the command is repeated once for each
 additional command character.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 If the current line is set to one of the lines that are affected
 by the command, it is unchanged.
 Otherwise, it is set to the first nonblank character of the lowest
 numbered line shifted.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy shiftwidth
+.OP shiftwidth
 option.
-.El
+.SE
 #endif
-.SP
-.It Sy "[line] = [flags]"
+.IP "[line] = [flags]"
 Display the line number.
 #ifdef REFERENCE
 Display the line number of
-.Li line
+.LI line
 (which defaults to the last line in the file).
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] >[> ...] [count] [flags]"
+.IP "[range] >[> ...] [count] [flags]"
 Shift right.
 #ifdef REFERENCE
 The specified lines are shifted to the right by the number of columns
 specified by the
-.Sy shiftwidth
+.OP shiftwidth
 option, by inserting tab and space characters.
 Empty lines are not changed.
-.Pp
+.sp
 If the command character
-.Dq Sy \&>
+.QT >
 is repeated more than once, the command is repeated once for each
 additional command character.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the last line modified by the command.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "ab[brev] lhs rhs"
+.IP "ab[brev] lhs rhs"
 Add an abbreviation to the current abbreviation list.
 #ifdef REFERENCE
 In
-.Nm \&vi ,
+.CO vi ,
 if
-.Li lhs
+.LI lhs
 is entered such that it is preceded and followed by characters
 that cannot be part of a word, it is replaced by the string
-.Li rhs .
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.LI rhs .
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[line] a[ppend][!]"
+.IP "[line] a[ppend][!]"
 The input text is appended to the specified line.
 #ifdef REFERENCE
 If line 0 is specified, the text is inserted at the beginning of the file.
 Set to the last line input.
 If no lines are input, then set to
-.Li line ,
+.LI line ,
 or to the first line of the file if a
-.Li line
+.LI line
 of 0 was specified.
-Following the command name with
-.Dq Li \&!
-causes the
-.Sy autoindent
-editor option to be toggled for the duration of the command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+Following the command name with a
+.QT !
+character causes the
+.OP autoindent
+option to be toggled for the duration of the command.
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy altwerase ,
-.Sy autoindent ,
-.Sy beautify ,
-.Sy showmatch ,
-.Sy ttywerase
+.OP altwerase ,
+.OP autoindent ,
+.OP beautify ,
+.OP showmatch ,
+.OP ttywerase
 and
-.Sy wrapmargin
+.OP wrapmargin
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "ar[gs]"
+.IP "ar[gs]"
 Display the argument list.
 #ifdef REFERENCE
 The current argument is displayed inside of
-.Dq Li \&[
+.QT [
 and
-.Dq Li \&]
+.QT ]
 characters.
 The argument list is the list of operands specified on startup,
 which can be replaced using the
-.Sy next
+.CO next
 command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "bg"
-.Nm \&Vi
+.IP "bg"
+.CO Vi
 mode only.
 Background the current screen.
 #ifdef REFERENCE
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the current line when the screen was last edited.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] c[hange][!] [count]"
+.IP "[range] c[hange][!] [count]"
 Replace the lines with input text.
 #ifdef REFERENCE
-Following the command name with
-.Dq Li \&!
-causes the
-.Sy autoindent
-editor option to be toggled for the duration of the command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+Following the command name with a
+.QT !
+character causes the
+.OP autoindent
+option to be toggled for the duration of the command.
+.SS
+.SP Line:
 Set to the last line input, or, if no lines were input,
 set to the line before the target line, or to the first
 line of the file if there are no lines preceding the target line.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy altwerase ,
-.Sy autoindent ,
-.Sy beautify ,
-.Sy showmatch ,
-.Sy ttywerase
+.OP altwerase ,
+.OP autoindent ,
+.OP beautify ,
+.OP showmatch ,
+.OP ttywerase
 and
-.Sy wrapmargin
+.OP wrapmargin
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "chd[ir][!] [directory]"
-.It Sy "cd[!] [directory]"
+.IP "chd[ir][!] [directory]"
+.Ip "cd[!] [directory]"
 Change the current working directory.
 #ifdef REFERENCE
 The
-.Li directory
+.LI directory
 argument is subjected to
-.Xr sh 1
+.XR sh 1
 word expansions.
 When invoked with no directory argument and the
-.Ev HOME
+.LI HOME
 environment variable is set, the directory named by the
-.Ev HOME
+.LI HOME
 environment variable becomes the new current directory.
 Otherwise, the new current directory becomes the directory returned
 by the
-.Xr getpwent 3
+.XR getpwent 3
 routine.
-.Pp
+.sp
 The
-.Sy chdir
+.CO chdir
 command will fail if the file has been modified since the last complete
 write of the file.
 You can override this check by appending a
-.Dq Li \&!
-to the command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.QT !
+character to the command.
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy cdpath
+.OP cdpath
 option.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] co[py] line [flags]"
-.It Sy "[range] t line [flags]"
+.IP "[range] co[py] line [flags]"
+.Ip "[range] t line [flags]"
 Copy the specified lines (range) after the destination line.
 Line 0 may be specified to insert the lines at the beginning of
 the file.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] d[elete] [buffer] [count] [flags]"
+.IP "[range] d[elete] [buffer] [count] [flags]"
 Delete the lines from the file.
 #ifdef REFERENCE
 The deleted text is saved in the specified buffer, or, if no buffer
 is specified, in the unnamed buffer.
 If the command name is followed by a letter that could be interpreted
 as either a buffer name or a flag value (because neither a
-.Li count
+.LI count
 or
-.Li flags
+.LI flags
 values were given),
-.Nm \&ex
+.CO ex
 treats the letter as a
-.Li flags
+.LI flags
 value if the letter immediately follows the command name,
 without any whitespace separation.
 If the letter is preceded by whitespace characters,
 it treats it as a buffer name.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the line following the deleted lines,
 or to the last line if the deleted lines were at the end.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "di[splay] b[uffers] | s[creens] | t[ags]"
+.IP "di[splay] b[uffers] | s[creens] | t[ags]"
 Display buffers, screens or tags.
 #ifdef REFERENCE
 The
-.Sy display
+.CO display
 command takes one of three additional arguments, which are as follows:
-.Pp
-.Bl -tag -width "XXb[uffers]" -compact
-.It Dq Li b[uffers]
+.SS
+.SP b[uffers]
 Display all buffers (including named, unnamed, and numeric)
 that contain text.
-.It Dq Li s[creens]
+.SP s[creens]
 Display the file names of all background screens.
-.It Dq Li t[ags]
+.SP t[ags]
 Display the tags stack.
-.El
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SE
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "e[dit][!] [+cmd] [file]"
-.It Sy "ex[!] [+cmd] [file]"
+.IP "e[dit][!] [+cmd] [file]"
+.Ip "ex[!] [+cmd] [file]"
 Edit a different file.
 #ifdef REFERENCE
 If the current buffer has been modified since the last complete write,
 the command will fail.
 You can override this by appending a
-.Dq Li \&!
-to the command name.
-.Pp
+.QT !
+character to the command name.
+.sp
 If the
-.Dq Li +cmd
+.QT +cmd
 option is specified, that
-.Nm \&ex
+.CO ex
 command will be executed in the new file.
 Any
-.Nm \&ex
+.CO ex
 command may be used, although the most common use of this feature is
 to specify a line number or search pattern to set the initial location
 in the new file.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 If you have previously edited the file, the current line will be set
 to your last position in the file.
 If that position does not exist, or you have not previously edited the
 file, the current line will be set to the first line of the file if
 you are in
-.Nm \&vi
+.CO vi
 mode, and the last line of the file if you are in
-.Nm \&ex .
-.It "Options:"
+.CO ex .
+.SP Options:
 Affected by the
-.Sy autowrite
+.OP autowrite
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "exu[sage] [command]"
+.IP "exu[sage] [command]"
 Display usage for an
-.Nm \&ex
+.CO ex
 command.
 #ifdef REFERENCE
 If
-.Li command
+.LI command
 is specified, a usage statement for that command is displayed.
 Otherwise, usage statements for all
-.Nm \&ex
+.CO ex
 commands are displayed.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "f[ile] [file]"
+.IP "f[ile] [file]"
 Display and optionally change the file name.
 #ifdef REFERENCE
 If a file name is specified, the current pathname is changed to the
 specified name.
 The current pathname, the number of lines, and the current position
 in the file are displayed.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "fg [name]"
-.Nm \&Vi
+.IP "fg [name]"
+.CO Vi
 mode only.
 Foreground the specified screen.
 #ifdef REFERENCE
 Swap the current screen with the specified backgrounded screen.
 If no screen is specified, the first background screen is foregrounded.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the current line when the screen was last edited.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] g[lobal] /pattern/ [commands]"
-.It Sy "[range] v /pattern/ [commands]
+.IP "[range] g[lobal] /pattern/ [commands]"
+.Ip "[range] v /pattern/ [commands]
 Apply commands to lines matching (or not matching) a pattern.
 #ifdef REFERENCE
 The lines within the given range that match
-.Pq Li g[lobal] ,
+.PQ g[lobal] ,
 or do not match
-.Pq Li \&v
+.PQ v
 the given pattern are selected.
 Then, the specified
-.Nm \&ex
+.CO ex
 command(s) are executed with the current line
-.Pq Dq Li "\&."
+.PQ \&.
 set to each selected line.
 If no range is specified, the entire file is searched for matching,
 or not matching, lines.
-.Pp
+.sp
 Multiple commands can be specified, one per line, by escaping each
-.Li <newline>
+.LI <newline>
 character with a backslash, or by separating commands with a
-.Dq Li \&|
+.QT |
 character.
 If no commands are specified, the command defaults to the
-.Sy print
+.CO print
 command.
-.Pp
+.sp
 For the
-.Sy append ,
-.Sy change
+.CO append ,
+.CO change
 and
-.Sy insert
+.CO insert
 commands, the input text must be part of the global command line.
 In this case, the terminating period can be omitted if it ends the commands.
-.Pp
+.sp
 The
-.Sy visual
+.CO visual
 command may also be specified as one of the
-.Nm \&ex
+.CO ex
 commands.
 In this mode, input is taken from the terminal.
 Entering a
-.Sy \&Q
-in
-.Nm \&vi
-causes the next line matching the pattern to be selected and
-.Nm \&vi
+.CO Q
+command in
+.CO vi
+mode causes the next line matching the pattern to be selected and
+.CO vi
 to be reentered, until the list is exhausted.
-.Pp
+.sp
 The
-.Sy global ,
-.Sy \&v
+.CO global ,
+.CO v
 and
-.Sy undo
+.CO undo
 commands cannot be used as part of these commands.
-.Pp
+.sp
 The editor options
-.Sy autoprint ,
-.Sy autoindent ,
+.OP autoprint ,
+.OP autoindent ,
 and
-.Sy report
+.OP report
 are turned off for the duration of the
-.Sy global
+.CO global
 and
-.Sy \&v
+.CO v
 commands.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 The last line modified.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "he[lp]"
+.IP "he[lp]"
 Display a help message.
 #ifdef REFERENCE
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[line] i[nsert][!]"
+.IP "[line] i[nsert][!]"
 The input text is inserted before the specified line.
 #ifdef REFERENCE
-Following the command name with the character
-.Dq Li \&!
-causes the
-.Sy autoindent
-editor option setting to be toggled for the duration of this command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+Following the command name with a
+.QT !
+character causes the
+.OP autoindent
+option setting to be toggled for the duration of this command.
+.SS
+.SP Line:
 Set to the last line input; if no lines were input,
 set to the line before the target line, or to the first line
 of the file if there are no lines preceding the target line.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy altwerase ,
-.Sy autoindent ,
-.Sy beautify ,
-.Sy showmatch ,
-.Sy ttywerase
+.OP altwerase ,
+.OP autoindent ,
+.OP beautify ,
+.OP showmatch ,
+.OP ttywerase
 and
-.Sy wrapmargin
+.OP wrapmargin
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] j[oin][!] [count] [flags]"
+.IP "[range] j[oin][!] [count] [flags]"
 Join lines of text together.
 #ifdef REFERENCE
-.Pp
+.sp
 A
-.Li count
+.LI count
 specified to the
 .Sy join
 command specifies that the last line of the
-.Li range
+.LI range
 plus
-.Li count
+.LI count
 subsequent lines will be joined.
 (Note, this differs by one from the general rule where only
-.Li count - 1
+.LI count - 1
 subsequent lines are affected.)
-.Pp
+.sp
 If the current line ends with a whitespace character, all whitespace
 is stripped from the next line.
 Otherwise, if the next line starts with a open parenthesis
-.Pq Dq Li "\&(" ,
+.PQ ( ,
 do nothing.
 Otherwise, if the current line ends with a question mark
-.Pq Dq Li "\&?" ,
+.PQ ? ,
 period
-.Pq Dq Li "\&."
+.PQ \&.
 or exclamation point
-.Pq Dq Li "\&!" ,
+.PQ ! ,
 insert two spaces.
 Otherwise, insert a single space.
-.Pp
+.sp
 Appending a
-.Dq Li \&!
+.QT !
 character to the command name causes a simpler join with no
 white-space processing.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] l[ist] [count] [flags]"
+.IP "[range] l[ist] [count] [flags]"
 Display the lines unambiguously.
 #ifdef REFERENCE
 Tabs are displayed as
-.Dq Li \&^I ,
+.QT ^I ,
 and the end of the line is marked with a
-.Dq Li \&$
+.QT $
 character.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the last line displayed.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "map[!] [lhs rhs]"
+.IP "map[!] [lhs rhs]"
 Define or display maps (for
-.Nm \&vi
+.CO vi
 only).
 #ifdef REFERENCE
-.Pp
+.sp
 If
-.Dq Li lhs
+.QT lhs
 and
-.Dq Li rhs
+.QT rhs
 are not specified, the current set of command mode maps are displayed.
 If a
-.Dq Li \&!
+.QT !
 character is appended to to the command,
 the text input mode maps are displayed.
-.Pp
+.sp
 Otherwise, when the
-.Dq Li lhs
+.QT lhs
 character sequence is entered in
-.Nm \&vi ,
+.CO vi ,
 the action is as if the corresponding
-.Dq Li rhs
+.QT rhs
 had been entered.
-If the character
-.Dq Li \&!
-is appended to the command name,
+If a
+.QT !
+character is appended to the command name,
 the mapping is effective during text input mode,
 otherwise, it is effective during command mode.
 This allows
-.Dq Li lhs
+.QT lhs
 to have two different macro definitions at the same time: one for command
 mode and one for input mode.
-.Pp
+.sp
 Whitespace characters require escaping with a
-.Li <literal next>
+.LI <literal next>
 character to be entered in the
-.Li lhs
+.LI lhs
 string in visual mode.
-.Pp
+.sp
 Normally, keys in the
-.Li rhs
+.LI rhs
 string are remapped (see the
-.Sy remap
+.OP remap
 option),
 and it is possible to create infinite loops.
 However, keys which map to themselves are not further remapped,
 regardless of the setting of the
-.Sy remap
+.OP remap
 option.
 For example, the command
-.Dq Li ":map n nz."
+.QT ":map n nz."
 maps the
-.Dq Li \&n
+.QT n
 key to the
-.Sy \&n
+.CO n
 and
-.Sy \&z
+.CO z
 commands.
-.Pp
+.sp
 To exit an infinitely looping map, use the terminal
-.Li <interrupt>
+.LI <interrupt>
 character.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[line] ma[rk] <character>"
-.It Sy "[line] k <character>"
+.IP "[line] ma[rk] <character>"
+.Ip "[line] k <character>"
 Mark the line with the mark
-.Li <character> .
+.LI <character> .
 #ifdef REFERENCE
 The expressions
-.Dq Li '<character>
+.QT '<character>
 and
-.Dq Li `<character>
+.QT `<character>
 can then be used as an address in any command that uses one.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] m[ove] line"
+.IP "[range] m[ove] line"
 Move the specified lines after the target line.
 #ifdef REFERENCE
 A target line of 0 places the lines at the beginning of the file.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the first of the moved lines.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "mk[exrc][!] file"
+.IP "mk[exrc][!] file"
 Write the abbreviations, editor options and maps to the specified
 file.
 #ifdef REFERENCE
 Information is written in a form which can later be read back in
 using the
-.Nm \&ex
-.Sy source
+.CO ex
+.CO source
 command.
 If
-.Li file
+.LI file
 already exists, the
-.Sy mkexrc
+.CO mkexrc
 command will fail.
 This check can be overridden by appending a
-.Dq Li \&!
+.QT !
 character to the command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "n[ext][!] [file ...]"
+.IP "n[ext][!] [file ...]"
 Edit the next file from the argument list.
 #ifdef REFERENCE
 The
-.Sy next
+.CO next
 command will fail if the file has been modified since the last complete
 write.
 This check can be overridden by appending the
-.Dq Li \&!
+.QT !
 character to the command name.
 The argument list can optionally be replaced by specifying a new one
 as arguments to this command.
 In this case, editing starts with the first file on the new list.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set as described for the
-.Sy edit
+.CO edit
 command.
-.It "Options:"
+.SP Options:
 Affected by the options
-.Sy autowrite
+.OP autowrite
 and
-.Sy writeany .
-.El
+.OP writeany .
+.SE
 #endif
-.SP
-.It Sy "[line] o[pen] /pattern/ [flags]"
+.IP "[line] o[pen] /pattern/ [flags]"
 Enter open mode.
 #ifdef REFERENCE
 Open mode is the same as being in
-.Nm \&vi ,
+.CO vi ,
 but with a one-line window.
 All the standard
-.Nm \&vi
+.CO vi
 commands are available.
 If a match is found for the optional RE argument,
 the cursor is set to the start of the matching pattern.
-.Pp
-.Em "This command is not yet implemented."
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.sp
+.i "This command is not yet implemented."
+.SS
+.SP Line:
 Unchanged, unless the optional RE is specified, in which case it is
 set to the line where the matching pattern is found.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy open
+.OP open
 option.
-.El
+.SE
 #endif
-.SP
-.It Sy "pre[serve]"
+.IP "pre[serve]"
 Save the file in a form that can later be recovered using the
-.Nm \&ex
-.Fl r
+.CO ex
+.b \-r
 option.
 #ifdef REFERENCE
 When the file is preserved, an email message is sent to the user.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "prev[ious][!]"
+.IP "prev[ious][!]"
 Edit the previous file from the argument list.
 #ifdef REFERENCE
 The
-.Sy previous
+.CO previous
 command will fail if the file has been modified since the last complete
 write.
 This check can be overridden by appending the
-.Dq Li \&!
+.QT !
 character to the command name.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set as described for the
-.Sy edit
+.CO edit
 command.
-.It "Options:"
+.SP Options:
 Affected by the options
-.Sy autowrite
+.OP autowrite
 and
-.Sy writeany .
+.OP writeany .
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] p[rint] [count] [flags]"
+.IP "[range] p[rint] [count] [flags]"
 Display the specified lines.
 #ifdef REFERENCE
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the last line displayed.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[line] pu[t] [buffer]"
+.IP "[line] pu[t] [buffer]"
 Append buffer contents to the current line.
 #ifdef REFERENCE
 If a buffer is specified, its contents are appended to the line,
 otherwise, the contents of the unnamed buffer are used.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the line after the current line.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "q[uit][!]"
+.IP "q[uit][!]"
 End the editing session.
 #ifdef REFERENCE
 If the file has been modified since the last complete write, the
-.Sy quit
+.CO quit
 command will fail.
 This check may be overridden by appending a
-.Dq Li \&!
+.QT !
 character to the command.
-.Pp
+.sp
 If there are more files to edit, the
-.Sy quit
+.CO quit
 command will fail.
 Appending a
-.Dq Li \&!
+.QT !
 character to the command name or entering two
-.Dq quit
+.CO quit
 commands (i.e.
-.Sy wq ,
-.Sy quit ,
-.Sy xit
+.CO wq ,
+.CO quit ,
+.CO xit
 or
-.Sy ZZ )
+.CO ZZ )
 in a row) will override this check and the editor will exit.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[line] r[ead][!] [file]"
+.IP "[line] r[ead][!] [file]"
 Read a file.
 #ifdef REFERENCE
 A copy of the specified file is appended to the line.
 If
-.Li line
+.LI line
 is 0, the copy is inserted at the beginning of the file.
 If no file is specified, the current file is read; if there is no
 current file, then
-.Li file
+.LI file
 becomes the current file.
 If there is no current file and no
-.Li file
+.LI file
 is specified, then the
-.Sy read
+.CO read
 command will fail.
-.Pp
+.sp
 If
-.Dq Li file
+.LI file
 is preceded by a
-.Dq Li ! ,
-.Dq Li file
+.QT !
+character,
+.LI file
 is treated as if it were a shell command, and passed to the program
 named by the
-.Ev SHELL
+.LI SHELL
 environment variable.
 The standard and standard error outputs of that command are read into
 the file after the specified line.
 The special meaning of the
-.Dq Li \&!
+.QT !
 character can be overridden by escaping it with a backslash
-.Pq Dq Li "\&\e"
+.PQ \e
 character.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 When executed from
-.Nm \&ex ,
+.CO ex ,
 the current line is set to the last line read.
 When executed from
-.Nm \&vi ,
+.CO vi ,
 the current line is set to the first line read.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "rec[over] file"
+.IP "rec[over] file"
 Recover
-.Li file
+.LI file
 if it was previously saved.
 #ifdef REFERENCE
 If no saved file by that name exists, the
-.Sy recover
+.CO recover
 command behaves similarly to the
-.Sy edit
+.CO edit
 command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set as described for the
-.Sy edit
+.CO edit
 command.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "res[ize] [+|-]size"
-.Nm \&Vi
+.IP "res[ize] [+|-]size"
+.CO Vi
 mode only.
 Grow or shrink the current screen.
 #ifdef REFERENCE
 If
-.Li size
+.LI size
 is a positive, signed number, the current screen is grown by that many lines.
 If
-.Li size
+.LI size
 is a negative, signed number, the current screen is shrunk by that many lines.
 If
-.Li size
+.LI size
 is not signed, the current screen is set to the specified
-.Li size .
+.LI size .
 Applicable only to split screens.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "rew[ind][!]"
+.IP "rew[ind][!]"
 Rewind the argument list.
 #ifdef REFERENCE
 If the current file has been modified since the last complete write,
 the
-.Sy rewind
+.CO rewind
 command will fail.
 This check may be overridden by appending the
-.Dq Li \&!
+.QT !
 character to the command.
-.Pp
+.sp
 Otherwise, the current file is set to the first file in the argument
 list.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set as described for the
-.Sy edit
+.CO edit
 command.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy autowrite
+.OP autowrite
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
+.IP "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
 Display or set editor options.
 #ifdef REFERENCE
 When no arguments are specified, the editor option
-.Sy term ,
+.OP term ,
 and any editor options whose values have been changed from the
 default settings are displayed.
 If the argument
-.Dq Li all
+.LI all
 is specified, the values of all of editor options are displayed.
-.Pp
+.sp
 Specifying an option name followed by the character
-.Dq Li \&?
+.QT ?
 causes the current value of that option to be displayed.
 The
-.Dq Li \&?
+.QT ?
 can be separated from the option name by whitespace characters.
 The
-.Dq Li \&?
+.QT ?
 is necessary only for Boolean valued options.
 Boolean options can be given values by the form
-.Dq Li "set option"
+.QT "set option"
 to turn them on, or
-.Dq Li "set nooption"
+.QT "set nooption"
 to turn them off.
 String and numeric options can be assigned by the form
-.Dq Li "set option=value" .
+.QT "set option=value" .
 Any whitespace characters in strings can be included literally by preceding
 each with a backslash.
 More than one option can be set or listed by a single set command,
 by specifying multiple arguments, each separated from the next by
 whitespace characters.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "sh[ell]"
+.IP "sh[ell]"
 Run a shell program.
 #ifdef REFERENCE
 The program named by the
-.Ev shell
-environment variable is run with a
-.Fl i
-(interactive) flag.
+.OP shell
+option is run with a
+.b \-i
+(for interactive) flag.
 Editing is resumed when that program exits.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "so[urce] file"
+.IP "so[urce] file"
 Read and execute
-.Nm \&ex
+.CO ex
 commands from a file.
 #ifdef REFERENCE
-.Sy Source
+.CO Source
 commands may be nested.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "sp[lit] [file ...]"
-.Nm \&Vi
+.IP "sp[lit] [file ...]"
+.CO Vi
 mode only.
 Split the screen.
 #ifdef REFERENCE
@@ -1370,553 +1277,522 @@ If the cursor is in the lower half of the screen, the screen will split
 up, i.e. the new screen will be above the old one.
 If the cursor is in the upper half of the screen, the new screen will be
 below the old one.
-.Pp
+.sp
 If
-.Li file
+.LI file
 is specified, the new screen is editing that file, otherwise, both
 screens are editing the same file, and changes in each will be
 be reflected in the other.
 The argument list for the new screen consists of the list of files
 specified as arguments to this command, or, the current pathname if
 no files are specified.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 If
-.Li file
+.LI file
 is specified, set as for the
-.Sy edit
+.CO edit
 command, otherwise unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
-.It Sy "[range] & [options] [count] [flags]"
-.It Sy "[range] ~ [options] [count] [flags]"
+.IP "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
+.Ip "[range] & [options] [count] [flags]"
+.Ip "[range] ~ [options] [count] [flags]"
 Make substitutions.
 #ifdef REFERENCE
 Replace the first instance of
-.Li pattern
+.LI pattern
 with the string
-.Li replace
+.LI replace
 on the specified line(s).
 If the
-.Dq Li /pattern/repl/
+.QT /pattern/repl/
 argument is not specified, the
-.Dq Li /pattern/repl/
+.QT /pattern/repl/
 from the previous
-.Sy substitute
+.CO substitute
 command is used.
-.Pp
+.sp
 If
-.Li options
+.LI options
 includes the letter
-.Dq Li \&c
+.QT c
 (confirm), you will be prompted for confirmation before each replacement
 is done.
 An affirmative response (in English, a
-.Dq Li \&y
+.QT y
 character) causes the replacement to be made.
 A quit response (in English, a
-.Dq Li \&q
+.QT q
 character) causes the
-.Sy substitute
+.CO substitute
 command to be terminated.
 Any other response causes the replacement to not be made, and the
-.Sy substitute
+.CO substitute
 command continues.
 If
-.Li options
+.LI options
 includes the letter
-.Dq Li \&g
+.QT g
 (global), all nonoverlapping instances of
-.Li pattern
+.LI pattern
 in the line are replaced.
-.Pp
+.sp
 The
-.Sy \&&
+.CO &
 version of the command is the same as not specifying a pattern
 or replacement string to the
-.Sy substitute
+.CO substitute
 command, and the
-.Dq Li \&&
+.QT &
 is replaced by the pattern and replacement information from the
 previous substitute command.
-.Pp
+.sp
 The
-.Sy \&~
+.CO ~
 version of the command is the same as
-.Sy \&&
+.CO &
 and
-.Sy \&s ,
+.CO s ,
 except that the search pattern used is the last RE used in
-.Em any
+.i any
 command, not necessarily the one used in the last
-.Sy substitute
+.CO substitute
 command.
-.Pp
-.ne 6v
+.sp
 For example, in the sequence
-.Bd -literal -offset indent -compact
+.ft C
+.(b
 s/red/blue/
 /green
 ~
-.Ed
+.)b
+.ft R
 the
-.Dq Li \&~
+.QT ~
 is equivalent to
-.Dq Li s/green/blue/ .
-.Pp
+.QT s/green/blue/ .
+.sp
 The
-.Sy substitute
+.CO substitute
 command may be interrupted, using the terminal interrupt character.
 All substitutions completed before the interrupt are retained.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the last line upon which a substitution was made.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "su[spend][!]"
-.It Sy "st[op][!]"
-.It Sy <suspend>
+.IP "su[spend][!]"
+.Ip "st[op][!]"
+.Ip <suspend>
 Suspend the edit session.
 #ifdef REFERENCE
 Appending a
-.Dq Li \&!
+.QT !
 character to these commands turns off the
-.Sy autowrite
+.OP autowrite
 option for the command.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy autowrite
+.OP autowrite
 option.
-.El
+.SE
 #endif
-.SP
-.It Sy "ta[g][!] tagstring"
+.IP "ta[g][!] tagstring"
 Edit the file containing the specified tag.
 #ifdef REFERENCE
 Search for the tagstring, which can be in a different file.
 If the tag is in a different file, then the new file is edited.
 If the current file has been modified since the last complete write,
 the
-.Sy tag
+.CO tag
 command will fail.
 This check can be overridden by appending the
-.Dq Li \&!
+.QT !
 character to the command name.
-.Pp
+.sp
 The
-.Sy tag
+.CO tag
 command searches for
-.Li tagstring
+.LI tagstring
 in the tags file(s) specified by the
-.Sy tags
+.Op tags
 option.
 (See
-.Xr ctags 1
+.XR ctags 1
 for more information on tags files.)
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the line indicated by the tag.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy autowrite ,
-.Sy taglength ,
-.Sy tags
+.OP autowrite ,
+.OP taglength ,
+.OP tags
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "tagp[op][!] [file | number]"
+.IP "tagp[op][!] [file | number]"
 Pop to the specified tag in the tags stack.
 #ifdef REFERENCE
 If neither
-.Li file
+.LI file
 or
-.Li number
+.LI number
 is specified, the
-.Sy tagpop
+.CO tagpop
 command pops to the most recent entry on the tags stack.
 If
-.Li file
+.LI file
 or
-.Li number
+.LI number
 is specified, the
-.Sy tagpop
+.CO tagpop
 command pops to the most recent entry in the tags stack for that file,
 or numbered entry in the tags stack, respectively.
 (See the
-.Sy display
+.CO display
 command for information on displaying the tags stack.)
-.Pp
+.sp
 If the file has been modified since the last complete write, the
-.Sy tagpop
+.CO tagpop
 command will fail.
 This check may be overridden by appending a
-.Dq Li \&!
+.QT !
 character to the command name.
 #ifdef REFERENCE
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the line indicated by the tag.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy autowrite ,
+.OP autowrite ,
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "tagt[op][!]"
+.IP "tagt[op][!]"
 Pop to the least recent tag on the tags stack, clearing the tags stack.
-.Pp
+.sp
 If the file has been modified since the last complete write, the
-.Sy tagpop
+.CO tagpop
 command will fail.
 This check may be overridden by appending a
-.Dq Li \&!
+.QT !
 character to the command name.
 #ifdef REFERENCE
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the line indicated by the tag.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy autowrite ,
+.OP autowrite ,
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "una[bbrev] lhs"
+.IP "una[bbrev] lhs"
 Delete an abbreviation.
 #ifdef REFERENCE
 Delete
-.Li lhs
+.LI lhs
 from the current list of abbreviations.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "u[ndo]"
+.IP "u[ndo]"
 Undo the last change made to the file.
 Changes made by
-.Sy global ,
-.Sy v ,
-.Sy visual
+.CO global ,
+.CO v ,
+.CO visual
 and map sequences are considered a single command.
 If repeated, the
-.Sy \&u
+.CO u
 command alternates between these two states, and is its own inverse.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Set to the last line modified by the command.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "unm[ap][!] lhs"
+.IP "unm[ap][!] lhs"
 Unmap a mapped string.
 #ifdef REFERENCE
 Delete the command mode map definition for
-.Li lhs .
+.LI lhs .
 If a
-.Dq Li \&!
+.QT !
 character is appended to the command name, delete the text input mode
 map definition instead.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "ve[rsion]"
+.IP "ve[rsion]"
 Display the version of the
-.Nm \&ex/vi
+.CO ex/vi
 editor.
-.SP
-.It Sy "[line] vi[sual] [type] [count] [flags]"
-.Nm \&Ex
+.IP "[line] vi[sual] [type] [count] [flags]"
+.CO Ex
 mode only.
 Enter
-.Nm \&vi .
+.CO vi .
 #ifdef REFERENCE
 The
-.Li type
+.LI type
 is optional, and can be
-.Dq Li \&- ,
-.Dq Li \&+
+.QT \- ,
+.QT +
 or
-.Dq Li \&^ ,
+.QT ^ ,
 as in the
-.Nm \&ex
-.Sy \&z
+.CO ex
+.CO z
 command, to specify the the position of the specified line in the screen
 window.
 (The default is to place the line at the top of the screen window.)
 A
-.Li count
+.LI count
 specifies the number of lines that will initially be displayed.
-(The default is the value of the editor option
-.Sy window .)
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+(The default is the value of the
+.OP window
+editor option.)
+.SS
+.SP Line:
 Unchanged unless
-.Li line
+.LI line
 is specified, in which case it is set to that line.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "vi[sual][!] [+cmd] [file]"
-.Nm \&Vi
+.IP "vi[sual][!] [+cmd] [file]"
+.CO Vi
 mode only.
 Edit a new file.
 #ifdef REFERENCE
 Identical to the
-.Dq Li "edit[!] [+cmd] [file]"
+.QT "edit[!] [+cmd] [file]"
 command.
 #endif
-.SP
-.It Sy "viu[sage] [command]"
+.IP "viu[sage] [command]"
 Display usage for a
-.Nm \&vi
+.CO vi
 command.
 #ifdef REFERENCE
 If
-.Li command
+.LI command
 is specified, a usage statement for that command is displayed.
 Otherwise, usage statements for all
-.Nm \&vi
+.CO vi
 commands are displayed.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] w[rite][!] [>>] [file]"
-.It Sy "[range] w[rite] [!] [file]"
-.It Sy "[range] wn[!] [>>] [file]"
-.It Sy "[range] wq[!] [>>] [file]"
+.IP "[range] w[rite][!] [>>] [file]"
+.Ip "[range] w[rite] [!] [file]"
+.Ip "[range] wn[!] [>>] [file]"
+.Ip "[range] wq[!] [>>] [file]"
 Write the file.
 #ifdef REFERENCE
 The specified lines (the entire file, if no range is given) is written
 to
-.Li file .
+.LI file .
 If
-.Li file
+.LI file
 is not specified, the current pathname is used.
 If
-.Li file
+.LI file
 is specified, and it exists, or if the current pathname was set using the
-.Sy file
+.CO file
 command, and the file already exists, these commands will fail.
 Appending a
-.Dq Li \&!
+.QT !
 character to the command name will override this check and the write
 will be attempted, regardless.
-.Pp
+.sp
 Specifying the optional
-.Dq Li \&>>
+.QT >>
 string will cause the write to be appended to the file, in which case
 no tests are made for the file already existing.
-.Pp
+.sp
 If the file is preceded by a
-.Dq Li \&!
+.QT !
 character, the program named in the SHELL environment variable is
 invoked with file as its second argument, and the specified lines
 are passed as standard input to that command.
 The
-.Dq Li \&!
+.QT !
 in this usage must be separated from command name by at least one
 whitespace character.
 The special meaning of the
-.Dq Li \&!
+.QT !
 may be overridden by escaping it with a backslash
-.Pq Dq Li "\&\e"
+.PQ \e
 character.
-.Pp
+.sp
 The
-.Sy wq
+.CO wq
 version of the write command will exit the editor after writing the file,
 if there are no further files to edit.
 Appending a
-.Dq Li \&!
+.QT !
 character to the command name or entering two
-.Dq quit
+.QQ quit
 commands (i.e.
-.Sy wq ,
-.Sy quit ,
-.Sy xit
+.CO wq ,
+.CO quit ,
+.CO xit
 or
-.Sy ZZ )
+.CO ZZ )
 in a row) will override this check and the editor will exit,
 ignoring any files that have not yet been edited.
-.Pp
+.sp
 The
-.Sy wn
+.CO wn
 version of the write command will move to the next file after writing
 the file, unless the write fails.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy readonly
+.OP readonly
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] x[it][!] [file]"
+.IP "[range] x[it][!] [file]"
 Write the file if it has been modified.
 #ifdef REFERENCE
 The specified lines are written to
-.Li file ,
+.LI file ,
 if the file has been modified since the last complete write to any
 file.
 If no
-.Li range
+.LI range
 is specified, the entire file is written.
-.Pp
+.sp
 The
-.Sy xit
+.CO xit
 command will exit the editor after writing the file,
 if there are no further files to edit.
 Appending a
-.Dq Li \&!
+.QT !
 character to the command name or entering two
-.Dq quit
+.QQ quit
 commands (i.e.
-.Sy wq ,
-.Sy quit ,
-.Sy xit
+.CO wq ,
+.CO quit ,
+.CO xit
 or
-.Sy ZZ )
+.CO ZZ )
 in a row) will override this check and the editor will exit,
 ignoring any files that have not yet been edited.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 Affected by the
-.Sy readonly
+.OP readonly
 and
-.Sy writeany
+.OP writeany
 options.
-.El
+.SE
 #endif
-.SP
-.It Sy "[range] ya[nk] [buffer] [count]"
+.IP "[range] ya[nk] [buffer] [count]"
 Copy the specified lines to a buffer.
 #ifdef REFERENCE
 If no buffer is specified, the unnamed buffer is used.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
+.SS
+.SP Line:
 Unchanged.
-.It "Options:"
+.SP Options:
 None.
-.El
+.SE
 #endif
-.SP
-.It Sy "[line] z [type] [count] [flags]"
+.IP "[line] z [type] [count] [flags]"
 Adjust the window.
 #ifdef REFERENCE
 If no
-.Li type
+.LI type
 is specified, then
-.Li count
+.LI count
 lines following the specified line are displayed.
 The default
-.Li count
+.LI count
 is the value of the
-.Sy window
+.OP window
 option.
 The
-.Li type
+.LI type
 argument changes the position at which
-.Li line
+.LI line
 is displayed on the screen by changing the number of lines
 displayed before and after
-.Li line .
+.LI line .
 The following
-.Li type
+.LI type
 characters may be used:
-.Pp
-.Bl -tag -width "XXXX" -compact
-.It Dq Li \&-
+.SS
+.SP \-
 Place line at the bottom of the screen.
-.It Dq Li \&+
+.SP +
 Place line at the top of the screen.
-.It Dq Li \&.
+.SP \&.
 Place line in the middle of the screen.
-.It Dq Li \&^
+.SP ^
 Write out count lines starting
-.Li "count * 2"
+.LI "count * 2"
 lines before
-.Li line ;
+.LI line ;
 the net effect of this is that a
-.Dq Li \&z^
+.QT z^
 command following a
-.Sy \&z
+.CO z
 command writes the previous page.
-.It Dq Li \&=
+.SP =
 Center
-.Li line
+.LI line
 on the screen with a line of hyphens displayed immediately before and
 after it.
 The number of preceding and following lines of text displayed are
 reduced to account for those lines.
-.El
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Current line:"
+.SE
+.SS
+.SP Line:
 Set to the last line displayed, with the exception of the
 .Dq Li \&=
-.Li type ,
+.LI type ,
 where the current line is set to the line specified by the command.
-.It "Options:"
+.SP Options:
 Affected by the
 .Sy window
 option.
-.El
+.SE
 #endif
-.El

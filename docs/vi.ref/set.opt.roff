@@ -3,60 +3,58 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.18 1994/05/23 14:33:01 bostic Exp $ (Berkeley) $Date: 1994/05/23 14:33:01 $
+.\"     $Id: set.opt.roff,v 8.19 1994/05/25 13:13:49 bostic Exp $ (Berkeley) $Date: 1994/05/25 13:13:49 $
 .\"
 #ifdef REFERENCE
-.de SP
-.sp
-..
-#endif
+.sh 1 "Set Options"
+#else
 .Sh SET OPTIONS
+#endif
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
 This section describes the options, their abbreviations and their
 default values.
-.Pp
+.pp
 In each entry below, the first part of the tag line is the full name
 of the option, followed by any equivalent abbreviations.
 #ifdef REFERENCE
 (Regardless of the abbreviations, it is only necessary to use the
 minimum number of characters necessary to distinguish an abbreviation
 from all other commands for it to be accepted, in
-.Nm nex/nvi .
+.EV nex nvi .
 Historically, only the full name and the official abbreviations
 were accepted by
-.Nm ex/vi .
+.EV ex vi .
 Using full names in your startup files and environmental variables will
 probably make them more portable.)
 #endif
 The part in square brackets is the default value of the option.
 Most of the options are boolean, i.e. they are either on or off,
 and do not have an associated value.
-.Pp
+.pp
 Options apply to both
-.Nm \&ex
+.CO ex
 and
-.Nm \&vi
+.CO vi
 modes, unless otherwise specified.
 #ifdef REFERENCE
-.Pp
+.pp
 For information on modifying the options or to display the options and
 their current values, see the
-.Dq set
+.QQ set
 command in the section entitled
-.Dq "Ex Commands" .
+.QB "Ex Commands" .
 #endif
 .sp
-.Bl -tag -width "XXXX" -compact
-.It Sy "altwerase [off]"
-.Nm \&Vi
+.IP "altwerase [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Select an alternate word erase algorithm.
 #endif
 #ifdef REFERENCE
 Change how
-.Nm \&vi
+.CO vi
 does word erase during text input.
 When this option is set, text is broken up into three classes:
 alphabetic, numeric and underscore characters, other nonblank
@@ -65,310 +63,299 @@ Changing from one class to another marks the end of a word.
 In addition, the class of the first character erased is ignored
 (which is exactly what you want when erasing pathname components).
 #endif
-.SP
-.It Sy "autoindent, ai [off]"
+.IP "autoindent, ai [off]"
 #ifdef MANUAL
 Automatically indent new lines.
 #endif
 #ifdef REFERENCE
 If this option is set, whenever you create a new line (using the
-.Nm \&vi
-.Sy \&A ,
-.Sy \&a ,
-.Sy \&C ,
-.Sy \&c ,
-.Sy \&I ,
-.Sy \&i ,
-.Sy \&O ,
-.Sy \&o ,
-.Sy \&R ,
-.Sy \&r ,
-.Sy \&S ,
+.CO vi
+.CO A ,
+.CO a ,
+.CO C ,
+.CO c ,
+.CO I ,
+.CO i ,
+.CO O ,
+.CO o ,
+.CO R ,
+.CO r ,
+.CO S ,
 and
-.Sy \&s
+.CO s
 commands, or the
-.Nm \&ex
-.Sy append ,
-.Sy change ,
+.CO ex
+.CO append ,
+.CO change ,
 and
-.Sy insert
+.CO insert
 commands) the new line is automatically indented to align the cursor with
 the first nonblank character of the line from which you created it.
 Lines are indented using tab characters to the extent possible (based on
 the value of the
-.Sy tabstop
+.OP tabstop
 option) and then using space characters as necessary.
 For commands inserting text into the middle of a line, any blank characters
 to the right of the cursor are discarded, and the first nonblank character
 to the right of the cursor is aligned as described above.
-.Pp
+.pp
 The indent characters are themselves somewhat special.
 If you do not enter more characters on the new line before moving moving to
 another line, or entering
-.Li <escape> ,
+.LI <escape> ,
 the indent character will be deleted and the line will be empty.
 For example, if you enter
-.Li <carriage-return>
+.LI <carriage-return>
 twice in succession,
 the line created by the first
-.Li <carriage-return>
+.LI <carriage-return>
 will not have any characters in it,
 regardless of the indentation of the previous or subsequent line.
-.Pp
+.sp
 Indent characters also require that you enter additional erase characters
 to delete them.
 For example,
 if you have an indented line, containing only blanks, the first
-.Li <word-erase>
+.LI <word-erase>
 character you enter will erase up to end of the indent characters,
 and the second will erase back to the beginning of the line.
 (Historically, only the
-.Sy \&<control-D>
+.CO <control-D>
 key would erase the indent characters.
 Both the
-.Sy \&<control-D>
+.CO <control-D>
 key and the usual erase keys work in
-.Nm nvi .)
+.CO nvi .)
 In addition, if the cursor is positioned at the end of the indent
 characters, the keys
-.Dq 0<control-D>
+.QT 0<control-D>
 will erase all of the indent characters for the current line,
 resetting the indentation level to 0.
 Similarly, the keys
-.Dq ^<control-D>
+.QT ^<control-D>
 will erase all of the indent characters for the current line,
 leaving the indentation level for future created lines unaffected.
-.Pp
-Finally, if
-.Sy autoindent
-is set, the
-.Sy \&S
+.sp
+Finally, if the
+.OP autoindent
+option is set, the
+.CO S
 and
-.Sy \&cc
+.CO cc
 commands change from the first nonblank of the line to the end of the
 line, instead of from the beginning of the line to the end of the line.
 #endif
-.SP
-.It Sy "autoprint, ap [off]"
-.Nm \&Ex
+.IP "autoprint, ap [off]"
+.CO Ex
 only.
 #ifdef MANUAL
 Display the current line automatically.
 #endif
 #ifdef REFERENCE
 Cause the current line to be automatically displayed after the
-.Nm \&ex
+.CO ex
 commands
-.Sy \&< ,
-.Sy \&> ,
-.Sy copy ,
-.Sy delete ,
-.Sy join ,
-.Sy move ,
-.Sy put ,
-.Sy \&t ,
-.Sy Undo ,
+.CO < ,
+.CO > ,
+.CO copy ,
+.CO delete ,
+.CO join ,
+.CO move ,
+.CO put ,
+.CO t ,
+.CO Undo ,
 and
-.Sy undo .
+.CO undo .
 This automatic display is suppressed during
-.Sy global
+.CO global
 and
-.Sy vglobal
+.CO vglobal
 commands, and for any command where optional flags are used to explicitly
 display the line.
 #endif
-.SP
-.It Sy "autowrite, aw [off]"
+.IP "autowrite, aw [off]"
 #ifdef MANUAL
 Write modified files automatically when changing files.
 #endif
 #ifdef REFERENCE
 If this option is set, the
-.Nm \&vi
-.Sy \&! ,
-.Sy \&^^ ,
-.Sy \&^]
+.CO vi
+.CO ! ,
+.CO ^^ ,
+.CO ^]
 and
-.Sy \&<control-Z>
+.CO <control-Z>
 commands, and the
-.Nm \&ex
-.Sy edit ,
-.Sy next ,
-.Sy rewind ,
-.Sy stop ,
-.Sy suspend ,
-.Sy tag ,
-.Sy tagpop ,
+.CO ex
+.CO edit ,
+.CO next ,
+.CO rewind ,
+.CO stop ,
+.CO suspend ,
+.CO tag ,
+.CO tagpop ,
 and
-.Sy tagtop
+.CO tagtop
 commands automatically write the current file back to the current file name
 if it has been modified since it was last written.
 If the write fails, the command fails and goes no further.
-.Pp
-Appending the optional force flag
-.Dq \&!
+.sp
+Appending the optional force flag character
+.QT !
 to the
-.Nm \&ex
+.CO ex
 commands
-.Sy next ,
-.Sy rewind ,
-.Sy stop ,
-.Sy suspend ,
-.Sy tag ,
-.Sy tagpop ,
+.CO next ,
+.CO rewind ,
+.CO stop ,
+.CO suspend ,
+.CO tag ,
+.CO tagpop ,
 and
-.Sy tagtop
+.CO tagtop
 stops the automatic write from being attempted.
-.Pp
+.sp
 (Historically, the
-.Sy next
+.CO next
 command ignored the optional force flag.)
 Note, the
-.Nm \&ex
+.CO ex
 commands
-.Sy edit ,
-.Sy quit ,
-.Sy shell ,
+.CO edit ,
+.CO quit ,
+.CO shell ,
 and
-.Sy xit
+.CO xit
 are
-.Em not
+.i not
 affected by the
-.Sy autowrite
+.OP autowrite
 option.
 #endif
-.SP
-.It Sy "beautify, bf [off]"
+.IP "beautify, bf [off]"
 #ifdef MANUAL
 Discard control characters.
 #endif
 #ifdef REFERENCE
 If this option is set, all control characters that are not currently being
 specially interpreted, other than
-.Li <tab> ,
-.Li <newline> ,
+.LI <tab> ,
+.LI <newline> ,
 and
-.Li <form-feed> ,
+.LI <form-feed> ,
 are
 discarded from commands read in by
-.Nm \&ex
+.CO ex
 from command files, and from input text entered to
-.Nm \&vi
+.CO vi
 (either into the file or to the colon command line).
 Text files read by
-.Nm ex/vi
+.EV ex vi
 are
-.Em not
+.i not
 affected by the
-.Sy beautify
+.OP beautify
 option.
 #endif
-.SP
-.It Sy "cdpath [environment variable CDPATH, or current directory]"
+.IP "cdpath [environment variable CDPATH, or current directory]"
 #ifdef MANUAL
 The directory paths used as path prefixes for the
-.Sy cd
+.CO cd
 command.
 #endif
 #ifdef REFERENCE
 This option is used to specify a colon separated list of directories
 which are used as path prefixes for any relative path names used as
 arguments for the
-.Sy cd
+.CO cd
 command.
 The value of this option defaults to the value of the environmental
 variable
-.Ev CDPATH
+.LI CDPATH
 if it is set, otherwise to the current directory.
 For compatibility with the POSIX 1003.2 shell, the
-.Sy cd
+.CO cd
 command does
-.Em not
+.i not
 check the current directory as a path prefix for relative path names
 unless it is explicitly specified.
 It may be so specified by entering an empty string or a
-.Dq \&.
-into the
-.Ev CDPATH
+.QT \&.
+character into the
+.LI CDPATH
 variable or the option value.
 #endif
-.SP
-.It Sy "columns, co [80]"
+.IP "columns, co [80]"
 #ifdef MANUAL
 Set the number of columns in the screen.
 #endif
 #ifdef REFERENCE
 The number of columns in the screen.
 Setting this option causes
-.Nm ex/vi
+.EV ex vi
 to set (or reset) the environmental variable
-.Ev COLUMNS .
+.LI COLUMNS .
 See the section entitled
-.Dq "Screen Sizing"
+.QB "Screen Sizing"
 more information.
 #endif
-.SP
-.It Sy "comment [off]"
-.Nm \&Vi
+.IP "comment [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Skip leading comments in files.
 #endif
 #ifdef REFERENCE
 If the first non-empty line of the file begins with the string
-.Dq \&/\&* ,
+.QT /\&* ,
 this option causes
-.Nm \&vi
+.CO vi
 to skip to the end of that C comment (probably a terribly boring
 legal notice) before displaying the file.
 #endif
-.SP
-.It Sy "directory, dir [environment variable TMPDIR, or /tmp]"
+.IP "directory, dir [environment variable TMPDIR, or /tmp]"
 #ifdef MANUAL
 The directory where temporary files are created.
 #endif
 #ifdef REFERENCE
 The directory where temporary files are created.
 The environmental variable
-.Ev TMPDIR
+.LI TMPDIR
 is used as the default value if it exists, otherwise
-.Pa /tmp
+.LI /tmp
 is used.
 #endif
-.SP
-.It Sy "edcompatible, ed [off]"
+.IP "edcompatible, ed [off]"
 Remember the values of the
-.Dq \&c
+.QQ c
 and
-.Dq \&g
+.QQ g
 suffices to the
-.Sy substitute
+.CO substitute
 commands, instead of initializing them as unset for each new
 command.
 #ifdef REFERENCE
 Specifying pattern and replacement strings to the
-.Sy substitute
+.CO substitute
 command unsets the
-.Dq \&c
+.QQ c
 and
-.Dq \&g
+.QQ g
 suffices as well.
 #endif
-.SP
-.It Sy "errorbells, eb [off]"
-.Nm \&Ex
+.IP "errorbells, eb [off]"
+.CO Ex
 only.
 #ifdef MANUAL
 Announce error messages with a bell.
 #endif
 #ifdef REFERENCE
-.Nm \&Ex
+.CO Ex
 error messages are normally presented in inverse video.
 If that is not possible for the terminal, setting this option causes
 error messages to be announced by ringing the terminal bell.
 #endif
-.SP
-.It Sy "exrc, ex [off]"
+.IP "exrc, ex [off]"
 #ifdef MANUAL
 Never read startup files in the local directory.
 #endif
@@ -379,24 +366,22 @@ as the system or $HOME startup files).
 Turning it on has no effect, i.e. the normal checks for local startup
 files are performed, regardless.
 See the section entitled
-.Dq "Startup Information"
+.QB "Startup Information"
 for more information.
 #endif
-.SP
-.It Sy "extended [off]"
+.IP "extended [off]"
 #ifdef MANUAL
 Regular expressions are extended (i.e.
-.Xr egrep 1
+.XR egrep 1
 style) expressions.
 #endif
 #ifdef REFERENCE
 This option causes all regular expressions to be treated as POSIX
 1003.2 Extended Regular Expressions (which are similar to historic
-.Xr egrep 1
+.XR egrep 1
 style expressions).
 #endif
-.SP
-.It Sy "flash [on]"
+.IP "flash [on]"
 #ifdef MANUAL
 Flash the screen instead of beeping the keyboard on error.
 #endif
@@ -404,8 +389,7 @@ Flash the screen instead of beeping the keyboard on error.
 This option causes the screen to flash instead of beeping the keyboard,
 on error, if the terminal has the capability.
 #endif
-.SP
-.It Sy "hardtabs, ht [8]"
+.IP "hardtabs, ht [8]"
 #ifdef MANUAL
 Set the spacing between hardware tab settings.
 #endif
@@ -414,32 +398,29 @@ This option defines the spacing between hardware tab settings, i.e.
 the tab expansion done by the operating system and/or the terminal
 itself.
 As
-.Nm nex/nvi
+.EV nex nvi
 never writes
-.Li <tab>
+.LI <tab>
 characters to the terminal, unlike historic versions of
-.Nm ex/vi ,
+.EV ex vi ,
 this option does not currently have any affect.
 #endif
-.SP
-.It Sy "ignorecase, ic [off]"
+.IP "ignorecase, ic [off]"
 #ifdef MANUAL
 Ignore case differences in regular expressions.
 #endif
 #ifdef REFERENCE
 This option causes regular expressions, both in
-.Nm \&ex
+.CO ex
 commands and in searches,
 to be evaluated in a case-insensitive manner.
 #endif
-.SP
-.It Sy "keytime [6]"
+.IP "keytime [6]"
 The 10th's of a second
-.Nm ex/vi
+.EV ex vi
 waits for a subsequent key to complete a key mapping.
-.SP
-.It Sy "leftright [off]"
-.Nm \&Vi
+.IP "leftright [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Do left-right scrolling.
@@ -447,13 +428,12 @@ Do left-right scrolling.
 #ifdef REFERENCE
 This option causes the screen to be scrolled left-right to view
 lines longer than the screen, instead of the traditional
-.Nm \&vi
+.CO vi
 screen interface which folds long lines at the right-hand margin
 of the terminal.
 #endif
-.SP
-.It Sy "lines, li [24]"
-.Nm \&Vi
+.IP "lines, li [24]"
+.CO Vi
 only.
 #ifdef MANUAL
 Set the number of lines in the screen.
@@ -461,160 +441,151 @@ Set the number of lines in the screen.
 #ifdef REFERENCE
 The number of lines in the screen.
 Setting this option causes
-.Nm ex/vi
+.EV ex vi
 to set (or reset) the environmental variable
-.Ev LINES .
+.LI LINES .
 See the section entitled
-.Dq "Screen Sizing"
+.QB "Screen Sizing"
 for more information.
 #endif
-.SP
-.It Sy "lisp [off]"
-.Nm \&Vi
+.IP "lisp [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Modify various search commands and options to work with Lisp.
 #endif
 #ifdef REFERENCE
 This option changes the behavior of the
-.Nm \&vi
-.Sy \&( ,
-.Sy \&) ,
-.Sy \&{ ,
-.Sy \&} ,
-.Sy \&[[
+.CO vi
+.CO ( ,
+.CO ) ,
+.CO { ,
+.CO } ,
+.CO [[
 and
-.Sy \&]]
+.CO ]]
 commands to match the Lisp language.
 Also, the
-.Sy autoindent
+.OP autoindent
 option's behavior is changed to be appropriate for Lisp.
 #endif
-.Pp
-.Em "This option is not yet implemented."
-.SP
-.It Sy "list [off]"
+.sp
+.i "This option is not yet implemented."
+.IP "list [off]"
 #ifdef MANUAL
 Display lines in an unambiguous fashion.
 #endif
 #ifdef REFERENCE
 This option causes lines to be displayed in an unambiguous fashion.
 Specifically, tabs are displayed as control characters, i.e.
-.Dq \&^I ,
+.QT ^I ,
 and the ends of lines are marked with a
-.Dq \&$
+.QT $
 character.
 #endif
-.SP
-.It Sy "magic [on]"
+.IP "magic [on]"
 #ifdef MANUAL
 Treat certain characters specially in regular expressions.
 #endif
 #ifdef REFERENCE
 This option is on by default.
 Turning the
-.Sy magic
+.OP magic
 option off causes all regular expression characters except for
-.Dq \&^
+.QT ^
 and
-.Dq \&$ ,
+.QT $ ,
 to be treated as ordinary characters.
 To re-enable characters individually, when the
-.Sy magic
+.OP magic
 option is off,
-precede them with an
-.Dq \&\e .
+precede them with an backslash
+.QT \e
+character.
 See the section entitled
-.Dq "Regular Expressions and Replacement Strings"
+.QB "Regular Expressions and Replacement Strings"
 for more information.
 #endif
-.SP
-.It Sy "matchtime [7]"
-.Nm \&Vi
+.IP "matchtime [7]"
+.CO Vi
 only.
 The 10th's of a second
-.Nm ex/vi
+.EV ex vi
 pauses on the matching character when the
-.Sy showmatch
+.OP showmatch
 option is set.
-.SP
-.It Sy "mesg [on]"
+.IP "mesg [on]"
 #ifdef MANUAL
 Permit messages from other users.
 #endif
 #ifdef REFERENCE
 This option allows other users to contact you using the
-.Xr talk 1
+.XR talk 1
 and
-.Xr write 1
+.XR write 1
 utilities, while you are editing.
-.Nm Ex/vi
+.EV Ex vi
 does not turn message on, i.e. if messages were turned off when the
 editor was invoked, they will stay turned off.
 This option only permits you to disallow messages for the edit session.
 See the
-.Xr mesg 1
+.XR mesg 1
 utility for more information.
 #endif
-.SP
-.It Sy "modelines, modeline [off]"
+.IP "modelines, modeline [off]"
 #ifdef MANUAL
 Read the first and last few lines of each file for
-.Nm ex
+.CO ex
 commands.
 #endif
 #ifdef REFERENCE
 If the
-.Sy modelines
+.OP modelines
 option is set,
-.Nm ex/vi
+.EV ex vi
 has historically scanned the first and last five lines of each file as
 it is read for editing, looking for any
-.Nm \&ex
+.CO ex
 commands that have been placed in those lines.
 After the startup information has been processed, and before the user
 starts editing the file, any commands embedded in the file are executed.
-.Pp
+.sp
 Commands were recognized by the letters
-.Dq \&e
+.QQ e
 or
-.Dq \&v
+.QQ v
 followed by
-.Dq \&x
+.QQ x
 or
-.Dq \&i ,
+.QQ i ,
 at the beginning of a line or following a tab or space character,
 and followed by a
-.Dq \&: ,
+.QQ : ,
 an
-.Nm \&ex
+.CO ex
 command, and another
-.Dq \&: .
-.Pp
+.QQ : .
+.sp
 This option is a security problem of immense proportions,
 and should not be used under any circumstances.
 #endif
-.Pp
-.Em "This option will never be implemented."
-.SP
-.It Sy "number, nu [off]"
+.sp
+.i "This option will never be implemented."
+.IP "number, nu [off]"
 Precede each line displayed with its current line number.
-.SP
-.It Sy "octal [off]"
+.IP "octal [off]"
 Display unknown characters as octal numbers, instead of the default
 hexadecimal.
-.SP
-.It Sy "open [on]"
-.Nm \&Ex
+.IP "open [on]"
+.CO Ex
 only.
 If this option is not set, the
-.Sy open
+.CO open
 and
-.Sy visual
+.CO visual
 commands are disallowed.
-.SP
-.It Sy "optimize, opt [on]"
-.Nm \&Vi
+.IP "optimize, opt [on]"
+.CO Vi
 only.
 #ifdef MANUAL
 Optimize text throughput to dumb terminals.
@@ -625,54 +596,51 @@ carriage returns when printing more than one (logical) line of output,
 greatly speeding output on terminals without addressable cursors when text
 with leading white space is printed.
 #endif
-.Pp
-.Em "This option is not yet implemented."
-.SP
-.It Sy "paragraphs, para [IPLPPPQPP LIpplpipbp]"
-.Nm \&Vi
+.sp
+.i "This option is not yet implemented."
+.IP "paragraphs, para [IPLPPPQPP LIpplpipbp]"
+.CO Vi
 only.
 Define additional paragraph boundaries for the
-.Sy \&{
+.CO {
 and
-.Sy \&}
+.CO }
 commands.
 #ifdef REFERENCE
 The value of this option must be a character string consisting
 of zero or more character pairs.
-.Pp
+.sp
 In the text to be edited, the character string
-.Li "<newline>.<char-pair>" ,
+.LI "<newline>.<char-pair>" ,
 (where
-.Li <char-pair>
+.LI <char-pair>
 is one of the character pairs in the option's value)
 defines a paragraph boundary.
 For example, if the option were set to
-.Li "LaA<space>##" ,
+.LI "LaA<space>##" ,
 then all of the following additional paragraph boundaries would be
 recognized:
-.ne 3v
-.Bd -literal -offset indent -compact
+.sp
+.(l
 <newline>.La
 <newline>.A<space>
 <newline>.##
-.Ed
+.)l
 #endif
-.SP
-.It Sy "prompt [on]"
-.Nm \&Ex
+.IP "prompt [on]"
+.CO Ex
 only.
 #ifdef MANUAL
 Display a command prompt.
 #endif
 #ifdef REFERENCE
 This option causes
-.Nm \&ex
+.CO ex
 to prompt for command input with a
-.Dq \&:
+.QT :
 character; when it's not set, no prompt is displayed.
 #endif
-.SP
-.It Sy "readonly, ro [off]"
+.IP "readonly, ro [off]"
 #ifdef MANUAL
 Mark the file as read-only.
 #endif
@@ -680,15 +648,13 @@ Mark the file as read-only.
 This option causes a force flag to be required to attempt to write
 the file back to the original file name.
 Setting this option is equivalent to using the
-.Fl R
+.b \-R
 command line option, or editing a file which lacks write permission.
 #endif
-.SP
-.It Sy "recdir [/var/tmp/vi.recover]"
+.IP "recdir [/var/tmp/vi.recover]"
 The directory where recovery files are stored.
-.SP
-.It Sy "redraw, re [off]"
-.Nm \&Vi
+.IP "redraw, re [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Simulate an intelligent terminal on a dumb one.
@@ -696,14 +662,13 @@ Simulate an intelligent terminal on a dumb one.
 #ifdef REFERENCE
 The editor simulates (using great amounts of output), an intelligent
 terminal on a dumb terminal (e.g. during insertions in
-.Nm \&vi
+.CO vi
 the characters to the right of the cursor are refreshed as each input
 character is typed).
 #endif
-.Pp
-.Em "This option is not yet implemented."
-.SP
-.It Sy "remap [on]"
+.sp
+.i "This option is not yet implemented."
+.IP "remap [on]"
 #ifdef MANUAL
 Remap keys until resolved.
 #endif
@@ -712,25 +677,24 @@ If this option is set,
 it's possible to define macros in terms of other macros.
 Otherwise, each key is only remapped up to one time.
 For example, if
-.Dq \&A
+.QT A
 is mapped to
-.Dq \&B ,
+.QT B ,
 and
-.Dq \&B
+.QT B
 is mapped to
-.Dq \&C ,
+.QT C ,
 The keystroke
-.Dq \&A
+.QT A
 will be mapped to
-.Dq \&C
-if
-.Sy remap
-is set, and to
-.Dq \&B
+.QT C
+if the
+.OP remap
+option is set, and to
+.QT B
 if it is not set.
 #endif
-.SP
-.It Sy "report [5]"
+.IP "report [5]"
 #ifdef MANUAL
 Set the number of lines about which the editor reports changes
 or yanks.
@@ -742,139 +706,127 @@ For everything but the yank command, the value is the largest value
 about which the editor is silent, i.e. by default, 6 lines must be
 deleted before the user is notified.
 However, if the number of lines yanked is greater than
-.Em "or equal to"
+.i "or equal to"
 the set value, it is reported to the user.
 #endif
-.SP
-.It Sy "ruler [off]"
-.Nm \&Vi
+.IP "ruler [off]"
+.CO Vi
 only.
 Display a row/column ruler on the colon command line.
-.SP
-.It Sy "scroll, scr [window / 2]"
+.IP "scroll, scr [window / 2]"
 #ifdef MANUAL
 Set the number of lines scrolled.
 #endif
 #ifdef REFERENCE
 Set the number of lines scrolled by the
-.Nm \&vi
-commands
-.Sy \&<control-D>
+.CO vi
+.CO <control-D>
 and
-.Sy \&<control-U> .
-.Pp
+.CO <control-U>
+commands.
+.sp
 Historically, the
-.Nm ex
-.Sy z
+.CO ex
+.CO z
 command, when specified without a count, used two times the size of the
 scroll value; the POSIX 1003.2 standard specified the window size, which
 is a better choice.
 #endif
-.SP
-.It Sy "sections, sect [NHSHH HUnhsh]"
-.Nm \&Vi
+.IP "sections, sect [NHSHH HUnhsh]"
+.CO Vi
 only.
 Define additional section boundaries for the
-.Sy \&[[
+.CO [[
 and
-.Sy \&]]
+.CO ]]
 commands.
 #ifdef REFERENCE
 The
-.Sy sections
+.OP sections
 option should be set to a character string consisting of zero or
 more character pairs.
 In the text to be edited, the character string
-.Li "<newline>.<char-pair>" ,
+.LI "<newline>.<char-pair>" ,
 (where
-.Li <char-pair>
+.LI <char-pair>
 is one of the character pairs in the option's value),
 defines a section boundary in the same manner that
-.Sy paragraph
+.OP paragraph
 option boundaries are defined.
 #endif
-.SP
-.It Sy "shell, sh [environment variable SHELL, or /bin/sh]"
+.IP "shell, sh [environment variable SHELL, or /bin/sh]"
 Select the shell used by the editor.
 #ifdef REFERENCE
 The specified path is the pathname of the shell invoked by the
-.Nm \&vi
-.Sy \&!
+.CO vi
+.CO !
 shell escape command and by the
-.Nm \&ex
-.Sy shell
+.CO ex
+.CO shell
 command.
 This program is also used to resolve any shell meta-characters in
-.Nm \&ex
+.CO ex
 commands.
 #endif
-.SP
-.It Sy "shiftwidth, sw [8]"
+.IP "shiftwidth, sw [8]"
 Set the autoindent and shift command indentation width.
 #ifdef REFERENCE
 This width is used by the
-.Sy autoindent
+.OP autoindent
 option and by the
-.Sy \&< ,
-.Sy \&> ,
+.CO < ,
+.CO > ,
 and
-.Sy shift
+.CO shift
 commands.
 #endif
-.SP
-.It Sy "showdirty [off]"
-.Nm \&Vi
+.IP "showdirty [off]"
+.CO Vi
 only.
 Display an asterisk on the colon command line if the file has been modified.
-.SP
-.It Sy "showmatch, sm [off]"
-.Nm \&Vi
+.IP "showmatch, sm [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Note matching
-.Dq \&{
+.QT {
 and
-.Dq \&(
+.QT (
 for
-.Dq \&}
+.QT }
 and
-.Dq \&)
+.QT )
 characters.
 #endif
 #ifdef REFERENCE
 This option causes
-.Nm \&vi ,
+.CO vi ,
 when a
-.Dq \&}
+.QT }
 or
-.Dq \&)
+.QT )
 is entered, to briefly move the cursor the matching
-.Dq \&{
+.QT {
 or
-.Dq \&( .
+.QT ( .
 See the
-.Sy matchtime
+.OP matchtime
 option for more information.
 #endif
-.SP
-.It Sy "showmode [off]"
-.Nm \&Vi
+.IP "showmode [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Display the current editor mode (command or input).
 #endif
 #ifdef REFERENCE
 This option causes
-.Nm \&vi
-to display the strings
-.Dq Command
-or
-.Dq Input
-on the colon command line, based on the current mode of the editor.
+.CO vi
+to display a string identifying the current editor mode on the
+colon command line.
 #endif
-.SP
-.It Sy "sidescroll [16]"
-.Nm \&Vi
+.IP "sidescroll [16]"
+.CO Vi
 only.
 #ifdef MANUAL
 Set the amount a left-right scroll will shift.
@@ -882,49 +834,45 @@ Set the amount a left-right scroll will shift.
 #ifdef REFERENCE
 Sets the number of columns that are shifted to the left or right,
 when
-.Nm \&vi
+.CO vi
 is doing left-right scrolling and the left or right margin is
 crossed.
 See the
-.Sy leftright
+.OP leftright
 option for more information.
 #endif
-.SP
-.It Sy "slowopen, slow [off]"
+.IP "slowopen, slow [off]"
 #ifdef MANUAL
 Delay display updating during text input.
 #endif
 #ifdef REFERENCE
 This option affects the display algorithm used by
-.Nm \&vi ,
+.CO vi ,
 holding off display updating during input of new text to improve
 throughput when the terminal in use is slow and unintelligent.
 #endif
-.Pp
-.Em "This option is not yet implemented."
-.SP
-.It Sy "sourceany [off]"
+.sp
+.i "This option is not yet implemented."
+.IP "sourceany [off]"
 #ifdef MANUAL
 Read startup files not owned by the current user.
 #endif
 #ifdef REFERENCE
 If this option is turned on,
-.Nm \&vi
+.CO vi
 historically read startup files that were owned by someone other than
 the editor user.
 See the section entitled
-.Dq "Startup Information"
+.QB "Startup Information"
 for more information.
 This option is a security problem of immense proportions,
 and should not be used under any circumstances.
 #endif
-.Pp
-.Em "This option will never be implemented."
-.SP
-.It Sy "tabstop, ts [8]"
+.sp
+.i "This option will never be implemented."
+.IP "tabstop, ts [8]"
 This option sets tab widths for the editor display.
-.SP
-.It Sy "taglength, tl [0]"
+.IP "taglength, tl [0]"
 #ifdef MANUAL
 Set the number of significant characters in tag names.
 #endif
@@ -934,8 +882,7 @@ significant in a tag name.
 Setting the value to 0 makes all of the characters in the tag name
 significant.
 #endif
-.SP
-.It Sy "tags, tag [tags /var/db/libc.tags /sys/kern/tags]"
+.IP "tags, tag [tags /var/db/libc.tags /sys/kern/tags]"
 #ifdef MANUAL
 Set the list of tags files.
 #endif
@@ -943,145 +890,134 @@ Set the list of tags files.
 Sets the list of tags files, in search order,
 which are used when the editor searches for a tag.
 #endif
-.SP
-.It Sy "term, ttytype, tty [environment variable TERM]"
+.IP "term, ttytype, tty [environment variable TERM]"
 Set the terminal type.
 #ifdef REFERENCE
 Setting this option causes
-.Nm ex/vi
+.EV ex vi
 to set (or reset) the environmental variable
-.Ev TERM .
+.LI TERM .
 #endif
-.SP
-.It Sy "terse [off]"
+.IP "terse [off]"
 This option has historically made editor messages less verbose.
 It has no effect in this implementation.
 #ifdef REFERENCE
 See the
-.Sy verbose
+.OP verbose
 option for more information.
 #endif
-.SP
-.It Sy "tildeop"
+.IP "tildeop"
 Modify the
-.Sy \&~
+.CO ~
 command to take an associated motion.
-.SP
-.It Sy "timeout, to [on]"
+.IP "timeout, to [on]"
 #ifdef MANUAL
 Time out on keys which may be mapped.
 #endif
 #ifdef REFERENCE
 If this option is set,
-.Nm ex/vi
+.EV ex vi
 waits for a specific period for a subsequent key to complete a key
 mapping (see the
-.Sy keytime
+.OP keytime
 option).
 If the option is not set, the editor waits until enough keys are
 entered to resolve the ambiguity, regardless of how long it takes.
 #endif
-.SP
-.It Sy "ttywerase [off]"
-.Nm \&Vi
+.IP "ttywerase [off]"
+.CO Vi
 only.
 #ifdef MANUAL
 Select an alternate erase algorithm.
 #endif
 #ifdef REFERENCE
 This option changes how
-.Nm \&vi
+.CO vi
 does word erase during text input.
 If this option is set, text is broken up into two classes,
 blank characters and nonblank characters.
 Changing from one class to another marks the end of a word.
 #endif
-.SP
-.It Sy "verbose [off]"
+.IP "verbose [off]"
 .NM \&Vi
 only.
 #ifdef MANUAL
 Display an error message for every error.
 #endif
 #ifdef REFERENCE
-.Nm \&Vi
+.CO Vi
 historically bells the terminal for many obvious mistakes, e.g. trying
 to move past the left-hand margin, or past the end of the file.
 If this option is set, an error message is displayed for all errors.
 #endif
-.SP
-.It Sy "w300 [no default]"
-.Nm \&Vi
+.IP "w300 [no default]"
+.CO Vi
 only.
 Set the window size if the baud rate is less than 1200 baud.
 #ifdef REFERENCE
 See the
-.Sy window
+.OP window
 option for more information.
 #endif
-.SP
-.It Sy "w1200 [no default]"
-.Nm \&Vi
+.IP "w1200 [no default]"
+.CO Vi
 only.
 Set the window size if the baud rate is equal to 1200 baud.
 #ifdef REFERENCE
 See the
-.Sy window
+.OP window
 option for more information.
 #endif
-.SP
-.It Sy "w9600 [no default]"
-.Nm \&Vi
+.IP "w9600 [no default]"
+.CO Vi
 only.
 Set the window size if the baud rate is greater than 1200 baud.
 #ifdef REFERENCE
 See the
-.Sy window
+.OP window
 option for more information.
 #endif
-.SP
-.It Sy "warn [on]"
-.Nm \&Ex
+.IP "warn [on]"
+.CO Ex
 only.
 This option causes a warning message to the terminal if the file has
 been modified, since it was last written, before a
-.Sy \&!
+.CO !
 command.
-.SP
-.It Sy "window, w, wi [environment variable LINES]"
+.IP "window, w, wi [environment variable LINES]"
 #ifdef MANUAL
 Set the window size for the screen.
 #endif
 #ifdef REFERENCE
 This option determines the default number of lines in a screenful,
 as written by the
-.Sy \&z
+.CO z
 command.
 It also determines the number of lines scrolled by the
-.Nm \&vi
+.CO vi
 commands
-.Sy \&<control-F>
+.CO <control-F>
 and
-.Sy \&<control-B> .
+.CO <control-B> .
 The value of window can be unrelated to the real screen size,
 although it starts out as the number of lines on the screen (see
 the section entitled
-.Dq "Screen Sizing"
+.QB "Screen Sizing"
 for more information).
 Setting the value of the
-.Sy window
+.OP window
 option is the same as using the
-.Fl w
+.b \-w
 command line option.
-.Pp
-If the value of
-.Sy window
-(as set by the
-.Sy window ,
-.Sy w300 ,
-.Sy w1200
+.sp
+If the value of the
+.OP window
+option (as set by the
+.OP window ,
+.OP w300 ,
+.OP w1200
 or
-.Sy w9600
+.OP w9600
 options) is smaller than the actual size of the screen, large screen
 movements will result in displaying only that smaller number of lines
 on the screen.
@@ -1090,46 +1026,44 @@ filled.)
 This can provide a performance improvement when viewing different
 places in one or more files over a slow link.
 #endif
-.SP
-.It Sy "wrapmargin, wm [0]"
-.Nm \&Vi
+.IP "wrapmargin, wm [0]"
+.CO Vi
 only.
 #ifdef MANUAL
 Break lines automatically when they reach the right-hand margin.
 #endif
 #ifdef REFERENCE
-If the value of
-.Sy wrapmargin
-is non-zero,
-.Nm \&vi
+If the value of the
+.OP wrapmargin
+option is non-zero,
+.CO vi
 will split lines so that they end at least that number of characters
 before the right-hand margin of the screen.
 (Note, the value of
-.Sy wrapmargin
+.OP wrapmargin
 is
-.Em not
+.i not
 a text length.
 In a screen that's 80 columns wide, the command
-.Dq Li ":set wrapmargin=8"
+.QT ":set wrapmargin=8"
 attempts to keep the lines less than or equal to 72 columns wide.)
-.Pp
+.sp
 Lines are split at the previous whitespace character closest to the
 number.
 Any trailing whitespace characters before that character are deleted.
 If the line is split because of an inserted
-.Li <space>
+.LI <space>
 or
-.Li <tab>
+.LI <tab>
 character, and you then enter another
-.Li <space>
+.LI <space>
 character, it is discarded.
-.Pp
+.sp
 If wrapmargin is set to 0,
 or if there is no blank character upon which to split the line,
 the line is not broken.
 #endif
-.SP
-.It Sy "wrapscan, ws [on]"
+.IP "wrapscan, ws [on]"
 #ifdef MANUAL
 Set searches to wrap around the end or beginning of the file.
 #endif
@@ -1138,20 +1072,18 @@ This option causes searches to wrap around the end or the beginning
 of the file, and back to the starting point.
 Otherwise, the end or beginning of the file terminates the search.
 #endif
-.SP
-.It Sy "writeany, wa [off]"
+.IP "writeany, wa [off]"
 #ifdef MANUAL
 Turn off file-overwriting checks.
 #endif
 #ifdef REFERENCE
 If this option is set, file-overwriting checks that would usually be
 made before the
-.Sy write
+.CO write
 and
-.Sy xit
+.CO xit
 commands, or before an automatic write (see the
-.Sy autowrite
+.OP autowrite
 option), are not made.
 This allows a write to any file, provided the file permissions allow it.
 #endif
-.El
