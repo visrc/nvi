@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.40 1996/09/14 16:28:37 bostic Exp $ (Berkeley) $Date: 1996/09/14 16:28:37 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.41 1996/09/15 15:55:05 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:55:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,10 +87,10 @@ vs_refresh(sp, forcepaint)
 	 * XXX
 	 * This is fairly evil.  Status lines are written using the vi message
 	 * mechanism, since we have no idea how long they are.  Since we may be
-	 * painting screens other than the current one, we don't want want to
-	 * make the user wait.  We depend heavily on there not being any other
-	 * lines currently waiting to be displayed and the message truncation
-	 * code in the msgq_status routine working.
+	 * painting screens other than the current one, we don't want to make
+	 * the user wait.  We depend heavily on there not being any other lines
+	 * currently waiting to be displayed and the message truncation code in
+	 * the msgq_status routine working.
 	 */
 	for (tsp = sp->gp->dq.cqh_first;
 	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
