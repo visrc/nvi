@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 8.4 1995/01/30 15:19:45 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:19:45 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 8.5 1995/01/30 15:31:45 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:31:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -192,10 +192,7 @@ cl_inverse(sp, on)
 
 /*
  * cl_linverse --
- *	Return the character at the current cursor.
- *
- * XXX
- * This is completely wrong, and should be deleted.
+ *	Change a line to inverse video.
  */
 int
 cl_linverse(sp, lno)
@@ -231,6 +228,8 @@ cl_linverse(sp, lno)
 		ch = winch(stdscr);
 		if (isspace(ch)) {
 			++spcnt;
+			if (++col >= sp->cols)
+				break;
 			(void)move(lno, col);
 		} else {
 			if (spcnt) {
@@ -239,9 +238,9 @@ cl_linverse(sp, lno)
 					(void)addnstr(" ", 1);
 			}
 			(void)addnstr(&ch, 1);
+			if (++col >= sp->cols)
+				break;
 		}
-		if (++col >= sp->cols)
-			break;
 	}
 	standend();
 	return (0);
