@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_yank.c,v 10.7 1996/05/17 14:18:07 bostic Exp $ (Berkeley) $Date: 1996/05/17 14:18:07 $";
+static const char sccsid[] = "$Id: v_yank.c,v 10.8 1996/05/18 12:21:36 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:21:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,10 @@ v_yank(sp, vp)
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, &vp->m_start,
 	    &vp->m_stop, F_ISSET(vp, VM_LMODE) ? CUT_LINEMODE : 0))
 		return (1);
+
+	/* Cursor movements reset the relative cursor position. */
+	F_CLR(vp, VM_RCM_MASK);
+	F_SET(vp, VM_RCM_SET);
 
 	sp->rptlines[L_YANKED] += (vp->m_stop.lno - vp->m_start.lno) + 1;
 	return (0);

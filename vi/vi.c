@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.46 1996/05/17 14:56:17 bostic Exp $ (Berkeley) $Date: 1996/05/17 14:56:17 $";
+static const char sccsid[] = "$Id: vi.c,v 10.47 1996/05/18 12:21:36 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:21:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,21 +201,13 @@ vi(spp)
 
 		/*
 		 * Do any required motion; v_motion sets the from MARK and the
-		 * line mode flag.  We save off the RCM mask and only restore
-		 * it if it no RCM flags are set by the motion command.  This
-		 * means that the motion command is expected to determine where
-		 * the cursor ends up!
+		 * line mode flag, as well as the VM_RCM flags.
 		 */
-		if (F_ISSET(vp, V_MOTION)) {
-			flags = F_ISSET(vp, VM_RCM_MASK);
-			F_CLR(vp, VM_RCM_MASK);
-			if (v_motion(sp, DOTMOTION, vp, &mapped)) {
-				if (INTERRUPTED(sp))
-					goto intr;
-				goto err;
-			}
-			if (!F_ISSET(vp, VM_RCM_MASK))
-				F_SET(vp, flags);
+		if (F_ISSET(vp, V_MOTION) &&
+		    v_motion(sp, DOTMOTION, vp, &mapped)) {
+			if (INTERRUPTED(sp))
+				goto intr;
+			goto err;
 		}
 
 		/*
@@ -482,7 +474,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	    v_key(sp, ismotion == NULL, &ev, EC_MAPCOMMAND)) != GC_OK) {
 		if (gcret == GC_EVENT)
 			vp->ev = ev;
-		return (gcret);	
+		return (gcret);
 	}
 	if (ev.e_value == K_ESCAPE)
 		goto esc;
@@ -717,6 +709,7 @@ v_motion(sp, dm, vp, mappedp)
 	VICMD motion;
 	size_t len;
 	u_long cnt;
+	u_int flags;
 	int tilde_reset, notused;
 
 	/*
@@ -804,10 +797,26 @@ v_motion(sp, dm, vp, mappedp)
 			tilde_reset = 0;
 
 		/*
-		 * Copy the key flags into the local structure, except for
-		 * the RCM flags, the motion command will set the RCM flags
-		 * in the vp structure as necessary.
+		 * Copy the key flags into the local structure, except for the
+		 * RCM flags -- the motion command will set the RCM flags in
+		 * the vp structure if necessary.  This means that the motion
+		 * command is expected to determine where the cursor ends up!
+		 * However, we save off the current RCM mask and restore it if
+		 * it no RCM flags are set by the motion command, with a small
+		 * modification.
+		 *
+		 * We replace the VM_RCM_SET flag with the VM_RCM flag.  This
+		 * is so that cursor movement doesn't set the relative position
+		 * unless the motion command explicitly specified it.  This
+		 * appears to match historic practice, but I've never been able
+		 * to develop a hard-and-fast rule.
 		 */
+		flags = F_ISSET(vp, VM_RCM_MASK);
+		if (LF_ISSET(VM_RCM_SET)) {
+			LF_SET(VM_RCM);
+			LF_CLR(VM_RCM_SET);
+		}
+		F_CLR(vp, VM_RCM_MASK);
 		F_SET(&motion, motion.kp->flags & ~VM_RCM_MASK);
 
 		/*
@@ -857,12 +866,19 @@ v_motion(sp, dm, vp, mappedp)
 		F_SET(vp, F_ISSET(&motion, VM_COMMASK | VM_RCM_MASK));
 
 		/*
+		 * If the motion command set no relative motion flags, use
+		 * the (slightly) modified previous values.
+		 */
+		if (!F_ISSET(vp, VM_RCM_MASK))
+			F_SET(vp, flags);
+
+		/*
 		 * Commands can change behaviors based on the motion command
 		 * used, for example, the ! command repeated the last bang
 		 * command if N or n was used as the motion.
 		 */
 		vp->rkp = motion.kp;
-		
+
 		/*
 		 * Motion commands can reset all of the cursor information.
 		 * If the motion is in the reverse direction, switch the
