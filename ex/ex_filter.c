@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.12 1993/09/13 19:35:35 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:35:35 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.13 1993/09/13 19:36:02 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:36:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: ex_filter.c,v 8.12 1993/09/13 19:35:35 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 
-static void	filter_intr __P((int));
 static int	filter_wait __P((SCR *, pid_t, char *, int));
 static int	filter_ldisplay __P((SCR *, FILE *));
 
@@ -347,15 +346,4 @@ filter_ldisplay(sp, fp)
 		return (1);
 	}
 	return (0);
-}
-
-/*
- * filter_intr --
- *	Ignore an interrupt signal.
- */
-static void
-filter_intr(signo)
-	int signo;
-{
-	return;
 }
