@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.19 1993/11/01 10:49:49 bostic Exp $ (Berkeley) $Date: 1993/11/01 10:49:49 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.20 1993/11/01 18:54:25 bostic Exp $ (Berkeley) $Date: 1993/11/01 18:54:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,18 +28,14 @@ static int	svi_sm_cursor __P((SCR *, EXF *, SMAP **));
  *	Make a change to the screen.
  */
 int
-svi_change(sp, ep, lno, screenchanged, op)
+svi_change(sp, ep, lno, op)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
-	int *screenchanged;
 	enum operation op;
 {
 	SMAP *p;
 	size_t oldy, oldx;
-
-	if (screenchanged != NULL)
-		*screenchanged = 0;
 
 	/* Appending is the same as inserting, if the line is incremented. */
 	if (op == LINE_APPEND) {
@@ -79,8 +75,7 @@ svi_change(sp, ep, lno, screenchanged, op)
 		return (0);
 	}
 
-	if (screenchanged != NULL)
-		*screenchanged = 1;
+	F_SET(SVP(sp), SVI_SCREENDIRTY);
 
 	/* Flush cached information from svi_screens(). */
 	SVP(sp)->ss_lno = OOBLNO;

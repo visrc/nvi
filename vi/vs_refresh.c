@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.23 1993/10/28 17:04:50 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:50 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.24 1993/11/01 18:54:11 bostic Exp $ (Berkeley) $Date: 1993/11/01 18:54:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,8 +23,31 @@ static char sccsid[] = "$Id: vs_refresh.c,v 8.23 1993/10/28 17:04:50 bostic Exp 
 static int	svi_modeline __P((SCR *, EXF *));
 static int	svi_msgflush __P((SCR *));
 
+int
+svi_refresh(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	SCR *tsp;
+
+	/* Paint any related screens that have changed. */
+	for (tsp = sp->child; tsp != NULL; tsp = tsp->child)
+		if (tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
+			(void)svi_paint(tsp, ep);
+			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
+		}
+	for (tsp = sp->parent; tsp != NULL; tsp = tsp->parent)
+		if (tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
+			(void)svi_paint(tsp, ep);
+			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
+		}
+	/* Always refresh the current screen, it may be a cursor movement. */
+	F_CLR(sp, SVI_SCREENDIRTY);
+	return (svi_paint(sp, ep));
+}
+
 /*
- * svi_refresh --
+ * svi_paint --
  *	This is the guts of the vi curses screen code.  The idea is that
  *	the SCR structure passed in contains the new coordinates of the
  *	screen.  What makes this hard is that we don't know how big
@@ -34,7 +57,7 @@ static int	svi_msgflush __P((SCR *));
  *	what you're doing.  It's subtle and quick to anger.
  */
 int
-svi_refresh(sp, ep)
+svi_paint(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
