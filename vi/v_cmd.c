@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.32 1992/11/03 15:19:55 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:19:55 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.33 1992/11/06 20:06:14 bostic Exp $ (Berkeley) $Date: 1992/11/06 20:06:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,7 +78,8 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 023  ^S */
 	{},
 /* 024  ^T */
-	{},
+	v_tagpop,	V_RCM_SET,
+	    "tag pop: ^T",
 /* 025  ^U */
 	v_hpageup,	V_CNT|V_RCM_SETFNB,
 	    "half page up (set count): [count]^U",
@@ -99,8 +100,8 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 034  ^\ */
 	{},
 /* 035  ^] */
-	v_tag,		V_KEYW|V_RCM_SET,
-	    "tag cursor word: ^]",
+	v_tagpush,	V_KEYW|V_RCM_SET,
+	    "tag push cursor word: ^]",
 /* 036  ^^ */
 	v_switch,	0,
 	    "change to previous file: ^^",
