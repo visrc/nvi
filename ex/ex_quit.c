@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.11 1993/02/16 20:10:12 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:12 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.12 1993/02/21 18:49:01 bostic Exp $ (Berkeley) $Date: 1993/02/21 18:49:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,11 +27,14 @@ ex_quit(ep, cmdp)
 
 	force = cmdp->flags & E_FORCE;
 
-	MODIFY_CHECK(ep, force);
+	/* Historic practice: quit! doesn't do autowrite. */
+	if (!force)
+		MODIFY_CHECK(ep, 0);
 
+	/* Historic practice: quit! doesn't check for other files. */
 	if (!force && file_next(ep, 0)) {
 		msg(ep, M_ERROR,
-"More files; use \":n\" to go to the next file, \":q!\" to quit.");
+	"More files; use \":n\" to go to the next file, \":q!\" to quit.");
 		return (1);
 	}
 
