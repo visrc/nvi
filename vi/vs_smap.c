@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.42 1994/07/17 12:27:29 bostic Exp $ (Berkeley) $Date: 1994/07/17 12:27:29 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.43 1994/07/17 13:16:59 bostic Exp $ (Berkeley) $Date: 1994/07/17 13:16:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -481,7 +481,7 @@ svi_sm_scroll(sp, ep, rp, count, scmd)
 	recno_t count;
 	enum sctype scmd;
 {
-	SMAP *smp, svmap;
+	SMAP *smp;
 
 	/*
 	 * Invalidate the cursor.  The line is probably going to change,
@@ -493,7 +493,6 @@ svi_sm_scroll(sp, ep, rp, count, scmd)
 	/* Find the cursor in the screen. */
 	if (svi_sm_cursor(sp, ep, &smp))
 		return (1);
-	svmap = *smp;
 
 	switch (scmd) {
 	case CNTRL_B:
@@ -1042,10 +1041,8 @@ svi_sm_cursor(sp, ep, smpp)
 	SMAP *p;
 
 	/* See if the cursor is not in the map. */
-	if (sp->lno < HMAP->lno || sp->lno > TMAP->lno) {
-		*smpp = NULL;
-		return (0);
-	}
+	if (sp->lno < HMAP->lno || sp->lno > TMAP->lno)
+		return (1);
 
 	/* Find the first occurence of the line. */
 	for (p = HMAP; p->lno != sp->lno; ++p);
@@ -1066,8 +1063,7 @@ svi_sm_cursor(sp, ep, smpp)
 	}
 
 	/* It was past the end of the map after all. */
-	*smpp = NULL;
-	return (0);
+	return (1);
 }
 
 /*
