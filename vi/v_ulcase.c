@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.5 1992/05/07 12:49:38 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:38 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.6 1992/05/15 10:54:20 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:54:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,50 +14,64 @@ static char sccsid[] = "$Id: v_ulcase.c,v 5.5 1992/05/07 12:49:38 bostic Exp $ (
 #include <ctype.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "vcmd.h"
 #include "extern.h"
 
 /*
- * v_ulcase -- ~
- *	This function toggles upper & lower case letters.
+ * v_ulcase -- [count]~
+ *	This function toggles upper & lower case letters.  This command
+ *	in historic vi ignored the count.  It really should have had an
+ *	associated motion, but it's too late to change it now.
  */
-MARK *
-v_ulcase(m, cnt)
-	MARK *m;			/* Where to make the change. */
-	register long cnt;	/* Number of chars to flip. */
+int
+v_ulcase(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
-	MARK rval;
-	register char ch, *from, *to;
-	long scnt;
-	int madechange;
-	char lbuf[1024];
+	register int ch;
+	register char *p;
+	size_t cno, len;
+	recno_t lno;
+	u_long cnt;
+	int change;
+	char *start;
 
-	SETDEFCNT(1);
+	lno = cp->lno;
+	cno = cp->cno;
 
-	/* Fetch the current version of the line. */
-	from = file_line(curf, m->lno, NULL);
+	EGETLINE(start, lno, len);
+	p = start + cno;
 
-	scnt = cnt;
-	madechange = 0;
-	for (from += m->cno, to = lbuf; cnt--; to)  {
-		if ((ch = *from++) == '\0')
-			break;
-		if (isupper(ch)) {
-			*to++ = tolower(ch);
-			madechange = 1;
-		} else if (islower(ch)) {
-			*to++ = toupper(ch);
-			madechange = 1;
+	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+
+	for (change = 0; cnt--; ++cno) {
+		if (cno == len) {
+			if (change && file_sline(curf, lno, start, len)) {
+				rp->lno = lno;
+				rp->cno = cno;
+				return (1);
+			}
+			GETLINE(start, ++lno, len);
+			if (start == NULL) {
+				rp->lno = --lno;
+				rp->cno = len - 1;
+				return (0);
+			}
+			change = 0;
+			cno = 0;
+			p = start;
+		}
+		ch = *p;
+		if (islower(ch)) {
+			*p++ = toupper(ch);
+			change = 1;
+		} else if (isupper(ch)) {
+			*p++ = tolower(ch);
+			change = 1;
 		} else
-			*to++ = ch;
+			++p;
 	}
-
-	rval.lno = m->lno;
-	rval.cno = m->cno + scnt;
-	if (madechange) {
-		lbuf[scnt] = '\0';
-		change(m, &rval, lbuf, scnt);
-	}
-	return (&rval);
+	rp->lno = lno;
+	rp->cno = cno;
+	return (change && file_sline(curf, lno, start, len));
 }
