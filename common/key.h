@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 9.7 1995/01/30 17:37:11 bostic Exp $ (Berkeley) $Date: 1995/01/30 17:37:11 $
+ *	$Id: key.h,v 9.8 1995/01/30 19:01:56 bostic Exp $ (Berkeley) $Date: 1995/01/30 19:01:56 $
  */
 
 /*
@@ -127,9 +127,9 @@ typedef enum { CONF_NO, CONF_QUIT, CONF_YES } conf_t;
 #define	CH_YES		'y'			/* Yes. */
 
 #define	STR_CONFIRM	"confirm? [ynq]"
-#define	STR_CMSG	"Enter return to continue: "
+#define	STR_CMSG	"Press any key to continue: "
 #define	STR_CMSG_S	" cont?"
-#define	STR_QMSG	"Enter return to continue [q to quit]: "
+#define	STR_QMSG	"Press any key to continue [q to quit]: "
 
 /* Flags describing how input is handled. */
 #define	TXT_AICHARS	0x00000001	/* Leading autoindent chars. */
