@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.49 1993/05/17 14:57:44 bostic Exp $ (Berkeley) $Date: 1993/05/17 14:57:44 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.50 1993/05/27 19:19:55 bostic Exp $ (Berkeley) $Date: 1993/05/27 19:19:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,13 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.49 1993/05/17 14:57:44 bostic Exp $ (B
 }
 
 /*
+ * Repeated input in the historic vi is mostly wrong and this isn't very
+ * backward compatible.  For example, if the user entered "3Aab\ncd" in
+ * the historic vi, the "ab" was repeated 3 times, and the "\ncd" was then
+ * appended to the result.
+ */
+
+/*
  * v_iA -- [count]A
  *	Append text to the end of the line.
  */
@@ -48,25 +55,28 @@ v_iA(sp, ep, vp, fm, tm, rp)
 	SET_TXT_STD(sp, TXT_APPENDEOL);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
+	lno = fm->lno;
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		/* Move the cursor to the end of the line. */
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		/* Move the cursor to the end of the line + 1. */
+		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno != 0) {
-				GETLINE_ERR(sp, fm->lno);
+				GETLINE_ERR(sp, lno);
 				return (1);
 			}
+			lno = 1;
 			len = 0;
 		} else 
 			sp->cno = len;
 
-		/* Set flag to put an extra space at the end of the line. */
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
+		sp->lno = lno = rp->lno;
+		sp->cno = rp->cno;
 	}
 	return (0);
 }
@@ -91,20 +101,22 @@ v_ia(sp, ep, vp, fm, tm, rp)
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
+	lno = fm->lno;
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/*
 		 * Move the cursor one column to the right and
 		 * repaint the screen.
 		 */
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno != 0) {
-				GETLINE_ERR(sp, fm->lno);
+				GETLINE_ERR(sp, lno);
 				return (1);
 			}
-			LF_SET(TXT_APPENDEOL);
+			lno = 1;
 			len = 0;
+			LF_SET(TXT_APPENDEOL);
 		} else if (len) {
 			if (len == sp->cno + 1) {
 				LF_SET(TXT_APPENDEOL);
@@ -113,11 +125,14 @@ v_ia(sp, ep, vp, fm, tm, rp)
 				++sp->cno;
 		} else
 			LF_SET(TXT_APPENDEOL);
+
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_REPLAY);
+		sp->lno = lno = rp->lno;
+		sp->cno = rp->cno;
 	}
 	return (0);
 }
@@ -142,18 +157,20 @@ v_iI(sp, ep, vp, fm, tm, rp)
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
+	lno = fm->lno;
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/*
 		 * Move the cursor to the start of the line and repaint
 		 * the screen.
 		 */
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno != 0) {
-				GETLINE_ERR(sp, fm->lno);
+				GETLINE_ERR(sp, lno);
 				return (1);
 			}
+			lno = 1;
 			len = 0;
 		} else {
 			for (t = p, wlen = len; wlen-- && isspace(*t); ++t);
@@ -161,11 +178,14 @@ v_iI(sp, ep, vp, fm, tm, rp)
 		}
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
+
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_REPLAY);
+		sp->lno = lno = rp->lno;
+		sp->cno = rp->cno;
 	}
 	return (0);
 }
@@ -190,8 +210,9 @@ v_ii(sp, ep, vp, fm, tm, rp)
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
+	lno = fm->lno;
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno != 0) {
@@ -199,14 +220,24 @@ v_ii(sp, ep, vp, fm, tm, rp)
 				return (1);
 			}
 			len = 0;
+			lno = 1;
 		}
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
+		else if (LF_ISSET(TXT_REPLAY))
+			if (len == sp->cno + 1) {
+				LF_SET(TXT_APPENDEOL);
+				sp->cno = len;
+			} else
+				++sp->cno;
+
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_REPLAY);
+		sp->lno = lno = rp->lno;
+		sp->cno = rp->cno;
 	}
 	return (0);
 }
@@ -252,11 +283,14 @@ insert:			p = "";
 			sp->cno = 0;
 			ai_line = sp->lno + 1;
 		}
+
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, NULL, p, len, rp, 0, ai_line, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
+		sp->lno = lno = rp->lno;
+		sp->cno = rp->cno;
 	}
 	return (0);
 }
@@ -302,13 +336,14 @@ insert:			p = "";
 			sp->cno = 0;
 			ai_line = sp->lno - 1;
 		}
+
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, NULL, p, len, rp, 0, ai_line, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
-		if (O_ISSET(sp, O_AUTOINDENT))
-			LF_SET(TXT_AUTOINDENT);
+		sp->lno = lno = rp->lno;
+		sp->cno = rp->cno;
 	}
 	return (0);
 }
