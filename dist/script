@@ -4,21 +4,21 @@ setenv S /usr/src/nvi
 setenv PRINTER ps
 
 # build the docs
-cd $S/USD.doc/vi.ref && \
+cd $S/docs/USD.doc/vi.ref && \
     make clean paper.ps vi.ref.txt && chmod 444 vi.ref.txt vi.ref.ps && \
     rm index index.so
-cd $S/USD.doc/vi.man && make clean vi.0 vi.0.ps && chmod 444 vi.0 vi.0.ps
+cd $S/docs/USD.doc/vi.man && make clean vi.0 vi.0.ps && chmod 444 vi.0 vi.0.ps
 
 # increment the version numbers
 setenv X VERSION
 cd $S && sco $X && echo "go to $VERSION" | sccs delget $X
 setenv X README
-cd $S/docs && sco $X && vi $X; echo "go to $VERSION" | sccs delget $X
+cd $S && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
 cd $S/docs && vi changelog
 
 # build the distribution
 cd $S/build && make -f Makefile.in distrib
-cd $S/catalog; make clean all; rm dump; chmod 444 vi_english*
+cd $S/catalog && make clean all && rm dump && chmod 444 vi_english*
 
 # build a version
 cd $S && rm -rf build.local && mkdir build.local && \
