@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.8 1993/08/29 15:21:43 bostic Exp $ (Berkeley) $Date: 1993/08/29 15:21:43 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.9 1993/08/30 09:41:33 bostic Exp $ (Berkeley) $Date: 1993/08/30 09:41:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ svi_refresh(sp, ep)
 	 * won't work.  In fact, because no line change will be less than
 	 * HALFSCREEN(sp), we always ending up "filling" the map, with a
 	 * P_MIDDLE flag, which isn't what the user wanted.  Tiny screens
-	 * can go into the "fill" portions of the smap code, no problem.
+	 * can go into the "fill" portions of the smap code, however.
 	 */
 	if (sp->t_rows <= 2) {
 		if (LNO < HMAP->lno) {
@@ -414,7 +414,7 @@ slow:	/* Find the current line in the map. */
 
 	/* Update all of the screen lines for this file line. */
 	for (; smp <= TMAP && smp->lno == LNO; ++smp)
-		if (svi_line(sp, ep, smp, 0, &y, &SCNO))
+		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
 
 	/* Not too bad, move the cursor. */
@@ -422,7 +422,7 @@ slow:	/* Find the current line in the map. */
 
 	/* Lost big, do what you have to do. */
 paint:	for (smp = HMAP; smp <= TMAP; ++smp)
-		if (svi_line(sp, ep, smp, 0, &y, &SCNO))
+		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
 	F_CLR(sp, S_REDRAW);
 
