@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.33 1995/01/12 12:10:58 bostic Exp $ (Berkeley) $Date: 1995/01/12 12:10:58 $
+.\"	$Id: ex.cmd.roff,v 8.34 1995/02/08 16:40:33 bostic Exp $ (Berkeley) $Date: 1995/02/08 16:40:33 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -643,6 +643,12 @@ Any
 command may be used, although the most common use of this feature is
 to specify a line number or search pattern to set the initial location
 in the new file.
+.sp
+Using a capital letter form of the command, i.e.
+.CO Edit
+or
+.CO Ex ,
+while in vi mode, will edit the file in a new screen.
 .SS
 .SP Line:
 If you have previously edited the file, the current line will be set
@@ -999,6 +1005,10 @@ character to the command name.
 The argument list can optionally be replaced by specifying a new one
 as arguments to this command.
 In this case, editing starts with the first file on the new list.
+.sp
+Using a capital letter form of the command, i.e.
+.CO Next ,
+while in vi mode, will edit the next file in a new screen.
 .SS
 .SP Line:
 Set as described for the
@@ -1299,35 +1309,6 @@ Unchanged.
 .SP Options:
 None.
 .SE
-.KY split
-.IP "sp[lit] [file ...]"
-.CO Vi
-mode only.
-Split the screen.
-The current screen is split into two screens, of approximately equal size.
-If the cursor is in the lower half of the screen, the screen will split
-up, i.e. the new screen will be above the old one.
-If the cursor is in the upper half of the screen, the new screen will be
-below the old one.
-.sp
-If
-.LI file
-is specified, the new screen is editing that file, otherwise, both
-screens are editing the same file, and changes in each will be
-be reflected in the other.
-The argument list for the new screen consists of the list of files
-specified as arguments to this command, or, the current pathname if
-no files are specified.
-.SS
-.SP Line:
-If
-.LI file
-is specified, set as for the
-.CO edit
-command, otherwise unchanged.
-.SP Options:
-None.
-.SE
 .KY substitute
 .IP "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
 .KY &
@@ -1469,6 +1450,10 @@ option.
 (See
 .XR ctags 1
 for more information on tags files.)
+.sp
+Using a capital form of the command, i.e.
+.CO Tag ,
+while in vi mode, will edit the file in a new screen.
 .SS
 .SP Line:
 Set to the line indicated by the tag.
@@ -1629,6 +1614,10 @@ Edit a new file.
 Identical to the
 .QT "edit[!] [+cmd] [file]"
 command.
+.sp
+Using a capital form of the command, i.e.
+.CO Visual ,
+will edit the file in a new screen.
 .KY viusage
 .IP "viu[sage] [command]"
 Display usage for a

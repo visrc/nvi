@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.60 1995/02/08 15:51:58 bostic Exp $ (Berkeley) $Date: 1995/02/08 15:51:58 $
+.\"     $Id: vi.ref,v 8.61 1995/02/08 16:40:29 bostic Exp $ (Berkeley) $Date: 1995/02/08 16:40:29 $
 .\"
 .\"
 .so ref.so
@@ -479,7 +479,7 @@ supports multiple screens by dividing the window into regions.
 It also supports stacks of screens by permitting the user to change
 the set of screens that are currently displayed.
 .pp
-The commands
+The
 .CO Edit ,
 .CO Ex ,
 .CO Next ,
@@ -491,6 +491,10 @@ and
 mode)
 commands divide the current screen into two regions of approximately
 equal size and then perform their usual action in a new screen area.
+If the cursor is in the lower half of the screen, the screen will split
+up, i.e. the new screen will be above the old one.
+If the cursor is in the upper half of the screen, the new screen will be
+below the old one.
 .pp
 When more than one screen is editing a file, changes in any screen are
 reflected in all other screens editing the same file.
