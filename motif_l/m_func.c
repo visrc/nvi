@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.21 1996/12/18 10:25:27 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:25:27 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.22 1996/12/18 14:55:54 bostic Exp $ (Berkeley) $Date: 1996/12/18 14:55:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,15 +259,14 @@ static int
 vi_rename(ipbp)
 	IP_BUF *ipbp;
 {
-	const char *tail;
-	Widget	shell;
+	Widget shell;
+	size_t len;
+	const char *tail, *p;
 
 	/* For the icon, use the tail. */
-	if ((tail = strrchr(ipbp->str1, '/')) == NULL || *(tail + 1) == '\0')
-		tail = ipbp->str1;
-	else
-		tail++;
-
+	for (p = ipbp->str1, len = ipbp->len1; len > 1; ++p, --len)
+		if (p[0] == '/')
+			tail = p + 1;
 	/*
 	 * XXX
 	 * Future:  Attach a title to each screen.  For now, we change
