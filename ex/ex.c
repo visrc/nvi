@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.58 1996/10/31 09:29:02 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:29:02 $";
+static const char sccsid[] = "$Id: ex.c,v 10.59 1996/12/11 13:04:17 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2351,21 +2351,21 @@ ex_comlog(sp, ecp)
 	SCR *sp;
 	EXCMD *ecp;
 {
-	TRACE(sp, "ecmd: %s", ecp->cmd->name);
+	trace(sp, "ecmd: %s", ecp->cmd->name);
 	if (ecp->addrcnt > 0) {
-		TRACE(sp, " a1 %d", ecp->addr1.lno);
+		trace(sp, " a1 %d", ecp->addr1.lno);
 		if (ecp->addrcnt > 1)
-			TRACE(sp, " a2: %d", ecp->addr2.lno);
+			trace(sp, " a2: %d", ecp->addr2.lno);
 	}
 	if (ecp->lineno)
-		TRACE(sp, " line %d", ecp->lineno);
+		trace(sp, " line %d", ecp->lineno);
 	if (ecp->flags)
-		TRACE(sp, " flags 0x%x", ecp->flags);
+		trace(sp, " flags 0x%x", ecp->flags);
 	if (F_ISSET(&exc, E_BUFFER))
-		TRACE(sp, " buffer %c", ecp->buffer);
+		trace(sp, " buffer %c", ecp->buffer);
 	if (ecp->argc)
 		for (cnt = 0; cnt < ecp->argc; ++cnt)
-			TRACE(sp, " arg %d: {%s}", cnt, ecp->argv[cnt]->bp);
-	TRACE(sp, "\n");
+			trace(sp, " arg %d: {%s}", cnt, ecp->argv[cnt]->bp);
+	trace(sp, "\n");
 }
 #endif

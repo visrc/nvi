@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.11 1996/09/15 15:57:57 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:57 $";
+static const char sccsid[] = "$Id: util.c,v 10.12 1996/12/11 13:03:14 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:03:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -188,43 +188,3 @@ nget_slong(valp, p, endp, base)
 	}
 	return (NUM_ERR);
 }
-
-#ifdef DEBUG
-#ifdef __STDC__
-#include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-
-/*
- * TRACE --
- *	debugging trace routine.
- *
- * PUBLIC: void TRACE __P((SCR *, const char *, ...));
- */
-void
-#ifdef __STDC__
-TRACE(SCR *sp, const char *fmt, ...)
-#else
-TRACE(sp, fmt, va_alist)
-	SCR *sp;
-	char *fmt;
-	va_dcl
-#endif
-{
-	FILE *tfp;
-	va_list ap;
-
-	if ((tfp = sp->gp->tracefp) == NULL)
-		return;
-#ifdef __STDC__
-	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
-	(void)vfprintf(tfp, fmt, ap);
-	va_end(ap);
-
-	(void)fflush(tfp);
-}
-#endif

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.8 1996/03/06 19:50:29 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:29 $";
+static const char sccsid[] = "$Id: log.c,v 10.9 1996/12/11 13:03:05 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:03:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,7 +195,7 @@ log_cursor1(sp, type)
 		LOG_ERR;
 
 #if defined(DEBUG) && 0
-	TRACE(sp, "%lu: %s: %u/%u\n", ep->l_cur,
+	trace(sp, "%lu: %s: %u/%u\n", ep->l_cur,
 	    type == LOG_CURSOR_INIT ? "log_cursor_init" : "log_cursor_end",
 	    sp->lno, sp->cno);
 #endif
@@ -275,23 +275,23 @@ log_line(sp, lno, action)
 #if defined(DEBUG) && 0
 	switch (action) {
 	case LOG_LINE_APPEND:
-		TRACE(sp, "%u: log_line: append: %lu {%u}\n",
+		trace(sp, "%u: log_line: append: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_DELETE:
-		TRACE(sp, "%lu: log_line: delete: %lu {%u}\n",
+		trace(sp, "%lu: log_line: delete: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_INSERT:
-		TRACE(sp, "%lu: log_line: insert: %lu {%u}\n",
+		trace(sp, "%lu: log_line: insert: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_RESET_F:
-		TRACE(sp, "%lu: log_line: reset_f: %lu {%u}\n",
+		trace(sp, "%lu: log_line: reset_f: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_RESET_B:
-		TRACE(sp, "%lu: log_line: reset_b: %lu {%u}\n",
+		trace(sp, "%lu: log_line: reset_b: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
 	}
@@ -343,7 +343,7 @@ log_mark(sp, lmp)
 		LOG_ERR;
 
 #if defined(DEBUG) && 0
-	TRACE(sp, "%lu: mark %c: %lu/%u\n",
+	trace(sp, "%lu: mark %c: %lu/%u\n",
 	    ep->l_cur, lmp->name, lmp->lno, lmp->cno);
 #endif
 	/* Reset high water mark. */
@@ -679,35 +679,35 @@ log_trace(sp, msg, rno, p)
 	switch (*p) {
 	case LOG_CURSOR_INIT:
 		memmove(&m, p + sizeof(u_char), sizeof(MARK));
-		TRACE(sp, "%lu: %s:  C_INIT: %u/%u\n", rno, msg, m.lno, m.cno);
+		trace(sp, "%lu: %s:  C_INIT: %u/%u\n", rno, msg, m.lno, m.cno);
 		break;
 	case LOG_CURSOR_END:
 		memmove(&m, p + sizeof(u_char), sizeof(MARK));
-		TRACE(sp, "%lu: %s:   C_END: %u/%u\n", rno, msg, m.lno, m.cno);
+		trace(sp, "%lu: %s:   C_END: %u/%u\n", rno, msg, m.lno, m.cno);
 		break;
 	case LOG_LINE_APPEND:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%lu: %s:  APPEND: %lu\n", rno, msg, lno);
+		trace(sp, "%lu: %s:  APPEND: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_INSERT:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%lu: %s:  INSERT: %lu\n", rno, msg, lno);
+		trace(sp, "%lu: %s:  INSERT: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_DELETE:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%lu: %s:  DELETE: %lu\n", rno, msg, lno);
+		trace(sp, "%lu: %s:  DELETE: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_RESET_F:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%lu: %s: RESET_F: %lu\n", rno, msg, lno);
+		trace(sp, "%lu: %s: RESET_F: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_RESET_B:
 		memmove(&lno, p + sizeof(u_char), sizeof(recno_t));
-		TRACE(sp, "%lu: %s: RESET_B: %lu\n", rno, msg, lno);
+		trace(sp, "%lu: %s: RESET_B: %lu\n", rno, msg, lno);
 		break;
 	case LOG_MARK:
 		memmove(&lm, p + sizeof(u_char), sizeof(LMARK));
-		TRACE(sp,
+		trace(sp,
 		    "%lu: %s:    MARK: %u/%u\n", rno, msg, lm.lno, lm.cno);
 		break;
 	default:

@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.48 1996/10/11 18:28:28 bostic Exp $ (Berkeley) $Date: 1996/10/11 18:28:28 $";
+static const char sccsid[] = "$Id: main.c,v 10.49 1996/12/11 13:03:20 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:03:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -174,14 +174,9 @@ editor(gp, argc, argv)
 		case 's':
 			silent = 1;
 			break;
-#ifdef DEBUG
+#ifdef TRACE
 		case 'T':		/* Trace. */
-			if ((gp->tracefp = fopen(optarg, "w")) == NULL) {
-				v_estr(gp->progname, errno, optarg);
-				goto err;
-			}
-			(void)fprintf(gp->tracefp,
-			    "\n===\ntrace: open %s\n", optarg);
+			(void)trace_init(optarg);
 			break;
 #endif
 		case 't':		/* Tag. */
@@ -511,10 +506,9 @@ v_end(gp)
 	if (gp->tmp_bp != NULL)
 		free(gp->tmp_bp);
 
-#if defined(DEBUG)
-	/* Close debugging file descriptor. */
-	if (gp->tracefp != NULL)
-		(void)fclose(gp->tracefp);
+#if defined(TRACE)
+	/* Close tracing file descriptor. */
+	trace_end();
 #endif
 #endif
 }
