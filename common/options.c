@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.44 1994/03/16 10:54:55 bostic Exp $ (Berkeley) $Date: 1994/03/16 10:54:55 $";
+static char sccsid[] = "$Id: options.c,v 8.45 1994/03/17 15:37:22 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:37:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,6 +57,8 @@ static OPTLIST const optlist[] = {
 	{"autowrite",	NULL,		OPT_0BOOL,	0},
 /* O_BEAUTIFY	    4BSD */
 	{"beautify",	NULL,		OPT_0BOOL,	0},
+/* O_CDPATH	  4.4BSD */
+	{"cdpath",	f_cdpath,	OPT_STR,	0},
 /* O_COLUMNS	  4.4BSD */
 	{"columns",	f_columns,	OPT_NUM,	OPT_NOSAVE},
 /* O_COMMENT	  4.4BSD */
@@ -258,6 +260,10 @@ opts_init(sp)
 		else if (op->type == OPT_1BOOL)
 			O_SET(sp, cnt);
 
+	if ((s = getenv("CDPATH")) != NULL) {
+		(void)snprintf(b1, sizeof(b1), "cdpath=%s", s);
+		SET_DEF(O_CDPATH, b1);
+	}
 	/*
 	 * !!!
 	 * Vi historically stored temporary files in /var/tmp.  We store them
