@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.148 1994/08/08 10:14:30 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:14:30 $";
+static char sccsid[] = "$Id: ex.c,v 8.149 1994/08/08 14:57:09 bostic Exp $ (Berkeley) $Date: 1994/08/08 14:57:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -981,7 +981,7 @@ end2:			break;
 			 * historic ex, and were used as buffers, not flags.
 			 */
 			if ((cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '#') &&
-			    index(p, '1') != NULL)
+			    strchr(p, '1') != NULL)
 				break;
 			/*
 			 * !!!
