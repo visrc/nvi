@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.27 1996/02/26 10:42:43 bostic Exp $ (Berkeley) $Date: 1996/02/26 10:42:43 $
+dnl	$Id: configure.in,v 8.28 1996/02/26 14:06:11 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:06:11 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -58,7 +58,7 @@ AC_CACHE_VAL(vi_cv_path_preserve, [dnl
 		vi_cv_path_preserve=/var/tmp
 	else
 	if test -d /usr/tmp; then
-		vi_cv_path_preserve=/var/tmp
+		vi_cv_path_preserve=/usr/tmp
 	else
 		vi_cv_path_preserve=no
 	fi
