@@ -519,7 +519,7 @@ sopno lev;			/* PLUS nesting level */
 	for (ss = startst; !hard && ss < stopst; ss++)
 		switch (OP(s = m->g->strip[ss])) {
 		case OCHAR:
-			if (sp == stop || *sp++ != (char)OPND(s))
+			if (sp == stop || *sp++ != (RCHAR_T)OPND(s))
 				return(NULL);
 			break;
 		case OANY:
@@ -904,8 +904,8 @@ register states aft;		/* states already known reachable after */
 			break;
 		case OCHAR:
 			/* only characters can match */
-			assert(!NONCHAR(ch) || ch != (char)OPND(s));
-			if (ch == (char)OPND(s))
+			assert(!NONCHAR(ch) || ch != (RCHAR_T)OPND(s));
+			if (ch == (RCHAR_T)OPND(s))
 				FWD(aft, bef, 1);
 			break;
 		case OBOL:

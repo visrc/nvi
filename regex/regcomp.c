@@ -1657,7 +1657,7 @@ register struct re_guts *g;
 		while (OP(s = *scan++) != OCHAR)
 			continue;
 		assert(cp < g->must + g->mlen);
-		*cp++ = (char)OPND(s);
+		*cp++ = (RCHAR_T)OPND(s);
 	}
 	assert(cp == g->must + g->mlen);
 	*cp++ = '\0';		/* just on general principles */
