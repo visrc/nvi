@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.3 1996/05/13 17:23:06 bostic Exp $ (Berkeley) $Date: 1996/05/13 17:23:06 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.4 1996/05/13 17:24:15 bostic Exp $ (Berkeley) $Date: 1996/05/13 17:24:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -703,7 +703,7 @@ parse(sp, csc, tqp, matchesp)
 		if (i != 3 || p == NULL || t == NULL)
 			continue;
 
-done:		/* The rest of the string is the search pattern. */
+		/* The rest of the string is the search pattern. */
 		search = p;
 		slen = strlen(p);
 
