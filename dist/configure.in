@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.12 1996/02/23 10:58:42 bostic Exp $ (Berkeley) $Date: 1996/02/23 10:58:42 $
+dnl	$Id: configure.in,v 8.13 1996/02/23 11:12:40 bostic Exp $ (Berkeley) $Date: 1996/02/23 11:12:40 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -148,8 +148,9 @@ lflags="-O"
 case "$host_os" in
 aix*)	  LIBS="$LIBS -lbsd";;
 aux*)	  lflags="-O2 -ZP";;
-bsd4.4)	  LIBS="$LIBS -lutil";;
-bsdi2\.1) LIBS="$LIBS -lipc";;
+bsd4.4)	  lflags="-O2" LIBS="$LIBS -lutil";;
+bsdi2\.1) lflags="-O2" LIBS="$LIBS -lipc";;
+bsdi*)	  lflags="-O2"
 dgux*)	  LIBS="$LIBS -ldgc";;
 hpux*)	  lflags="+O1";;
 irix*)	  lflags="-cckr -O2" LIBS="$LIBS -lc_s -lbsd";;
