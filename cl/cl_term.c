@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 9.6 1995/02/12 18:38:19 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:38:19 $";
+static char sccsid[] = "$Id: cl_term.c,v 9.7 1995/04/13 17:19:53 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,10 @@ static char sccsid[] = "$Id: cl_term.c,v 9.6 1995/02/12 18:38:19 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
+#include "common.h"
 #include "cl.h"
-#include "excmd.h"
+
+static int cl_putenv __P((char *));
 
 /*
  * XXX
@@ -233,7 +234,7 @@ cl_term_end(sp)
 int
 cl_fmap(sp, stype, from, flen, to, tlen)
 	SCR *sp;
-	enum seqtype stype;
+	seq_t stype;
 	CHAR_T *from, *to;
 	size_t flen, tlen;
 {
@@ -241,9 +242,7 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 	int nf;
 	char *p, *t, keyname[64];
 
-	/* If the terminal isn't initialized, there's nothing to do. */
-	if (!F_ISSET(CLP(sp), CL_CURSES_INIT))
-		return (0);
+	VI_INIT;
 
 #ifdef SYSV_CURSES
 	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(from + 1));
@@ -297,23 +296,118 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 }
 
 /*
- * cl_ssize --
- *	Set the terminal size.
+ * cl_keypad --
+ *	Put the keypad/cursor arrows into or out of application mode.
  */
 int
-cl_ssize(sp, sigwinch)
+cl_keypad(on)
+	int on;
+{
+#ifdef SYSV_CURSES
+	keypad(stdscr, on ? TRUE : FALSE);
+#else
+	char *sbp, *t, sbuf[128];
+
+	sbp = sbuf;
+	if ((t = tgetstr(on ? "ks" : "ke", &sbp)) != NULL) {
+		(void)tputs(t, 0, cl_putchar);
+		(void)fflush(stdout);
+	}
+#endif
+	return (0);
+}
+
+/*
+ * cl_optchange --
+ *	Curses screen specific "option changed" routine.
+ */
+int
+cl_optchange(sp, opt)
+	SCR *sp;
+	int opt;
+{
+	CL_PRIVATE *clp;
+	char buf[1024];
+
+	clp = CLP(sp);
+	switch (opt) {
+	case O_COLUMNS:
+		/* Set the columns value in the environment for curses. */
+		(void)snprintf(buf,
+		    sizeof(buf), "COLUMNS=%lu", O_VAL(sp, O_COLUMNS));
+		if (cl_putenv(buf))
+			return (1);
+
+		VI_INIT;
+		F_SET(clp, CL_SIGWINCH);
+		break;
+	case O_LINES:
+		/* Set the rows value in the environment for curses. */
+		(void)snprintf(buf,
+		    sizeof(buf), "LINES=%lu", O_VAL(sp, O_LINES));
+		if (cl_putenv(buf))
+			return (1);
+
+		VI_INIT;
+		F_SET(clp, CL_SIGWINCH);
+		break;
+	case O_TERM:
+		/* Set the terminal value in the environment for curses. */
+		(void)snprintf(buf, sizeof(buf), "TERM=%s", O_VAL(sp, O_TERM));
+		if (cl_putenv(buf))
+			return (1);
+		
+		VI_INIT;
+
+		/* Toss any saved visual bell information. */
+		if (clp->VB != NULL) {
+			free(clp->VB);
+			clp->VB = NULL;
+		}
+
+		/* Restart curses.  If this fails, we're done. */
+		if (F_ISSET(sp, S_EX)) {
+			cl_ex_end(sp);
+			if (cl_ex_init(sp)) {
+				v_end(sp->gp);
+				exit (1);
+			}
+		} else {
+			cl_vi_end(sp);
+			if (cl_vi_init(sp)) {
+				v_end(sp->gp);
+				exit (1);
+			}
+		}
+		F_SET(clp, CL_SIGWINCH);
+		break;
+	}
+	return (0);
+}
+
+
+/*
+ * cl_ssize --
+ *	Return the terminal size.
+ */
+int
+cl_ssize(sp, sigwinch, rowp, colp)
 	SCR *sp;
 	int sigwinch;
+	recno_t *rowp;
+	size_t *colp;
 {
 #ifdef TIOCGWINSZ
 	struct winsize win;
 #endif
 	size_t col, row;
 	int nf, rval;
-	ARGS *argv[2], a, b;
 	char *p, *s, buf[2048];
 
 	/*
+	 * !!!
+	 * sp may be NULL.
+	 *
 	 * Get the screen rows and columns.  If the values are wrong, it's
 	 * not a big deal -- as soon as the user sets them explicitly the
 	 * environment will be set and the screen package will use the new
@@ -346,10 +440,15 @@ cl_ssize(sp, sigwinch)
 		 * all of the screens just because the window was uncovered,
 		 * ignore the signal if there's no change.
 		 */
-		if (row == O_VAL(sp, O_LINES) && col == O_VAL(sp, O_COLUMNS))
+		if (sp != NULL &&
+		    row == O_VAL(sp, O_LINES) && col == O_VAL(sp, O_COLUMNS))
 			return (1);
 
-		goto sigw;
+		if (rowp != NULL)
+			*rowp = row;
+		if (colp != NULL)
+			*colp = col;
+		return (0);
 	}
 
 	/*
@@ -418,18 +517,36 @@ noterm:	if (row == 0)
 	if ((s = getenv("COLUMNS")) != NULL)
 		col = strtol(s, NULL, 10);
 
-sigw:	a.bp = buf;
-	b.bp = NULL;
-	b.len = 0;
-	argv[0] = &a;
-	argv[1] = &b;;
-
-	/* Use the options code to accomplish the change. */
-	a.len = snprintf(buf, sizeof(buf), "lines=%u", row);
-	if (opts_set(sp, argv, 1, NULL))
-		return (1);
-	a.len = snprintf(buf, sizeof(buf), "columns=%u", col);
-	if (opts_set(sp, argv, 1, NULL))
-		return (1);
+	if (rowp != NULL)
+		*rowp = row;
+	if (colp != NULL)
+		*colp = col;
 	return (0);
+}
+
+/*
+ * cl_putenv --
+ *	Put a value into the environment.  We use putenv(3) because it's
+ *	more portable.  The following hack is because some moron decided
+ *	to keep a reference to the memory passed to putenv(3), instead of
+ *	having it allocate its own.  Someone clearly needs to get promoted
+ *	into management.
+ */
+static int
+cl_putenv(s)
+	char *s;
+{
+	/* XXX: Memory leak. */
+	return ((s = strdup(s)) == NULL ? 1 : putenv(s));
+}
+
+/*
+ * cl_putchar --
+ *	Functional version of putchar, for tputs.
+ */
+void
+cl_putchar(ch)
+	int ch;
+{
+	(void)putchar(ch);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.7 1995/02/16 12:03:52 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:03:52 $";
+static char sccsid[] = "$Id: cl_screen.c,v 8.8 1995/04/13 17:19:48 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,19 +29,26 @@ static char sccsid[] = "$Id: cl_screen.c,v 8.7 1995/02/16 12:03:52 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
+#include "common.h"
 #include "cl.h"
-#include "../svi/svi_screen.h"
 
+static int	cl_common __P((SCR *));
+
+/*
+ * cl_vi_init --
+ *	Initialize the vi screen.
+ */
 int
-cl_init(sp)
+cl_vi_init(sp)
 	SCR *sp;
 {
-	CL_PRIVATE *clp;
-	SVI_PRIVATE *svp;
+	GS *gp;
 	struct termios t;
 	int nf;
 	char *p;
+
+	if (sp->gp->cl_private == NULL && cl_common(sp))
+		return (1);
 
 #ifdef SYSV_CURSES
 	/*
@@ -141,13 +148,14 @@ cl_init(sp)
 	 *
 	 * XXX
 	 * We don't check to see if the user had signals enabled to start with.
-	 * If they didn't, it's unclear what we're supposed to do here, but it
-	 * is also pretty unlikely.
+	 * If they didn't, it's unclear what we're supposed to do here, but it's
+	 * also pretty unlikely.
 	 */
+	gp = sp->gp;
 	if (!tcgetattr(STDIN_FILENO, &t)) {
-		if (sp->gp->original_termios.c_iflag & IXON)
+		if (gp->original_termios.c_iflag & IXON)
 			t.c_iflag |= IXON;
-		if (sp->gp->original_termios.c_iflag & IXOFF)
+		if (gp->original_termios.c_iflag & IXOFF)
 			t.c_iflag |= IXOFF;
 
 		t.c_lflag |= ISIG;
@@ -160,66 +168,43 @@ cl_init(sp)
 		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
 	}
 
-	/* Fill in the general functions that the screen owns. */
-	sp->e_bell = cl_bell;
-	sp->e_fmap = cl_fmap;
-	sp->e_suspend = cl_suspend;
-
-	/* Fill in the private functions that the screen owns. */
-	svp = SVP(sp);
-	svp->scr_addnstr = cl_addnstr;
-	svp->scr_addstr = cl_addstr;
-	svp->scr_clear = cl_clear;
-	svp->scr_clrtoeol = cl_clrtoeol;
-	svp->scr_cursor = cl_cursor;
-	svp->scr_deleteln = cl_deleteln;
-	svp->scr_end = cl_end;
-	svp->scr_insertln = cl_insertln;
-	svp->scr_inverse = cl_inverse;
-	svp->scr_linverse = cl_linverse;
-	svp->scr_move = cl_move;
-	svp->scr_refresh = cl_refresh;
-	svp->scr_restore = cl_restore;
-	svp->scr_size = cl_ssize;
-
-	/* Allocate private space. */
-	CALLOC_RET(sp, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
-	sp->gp->cl_private = clp;
-
 	/* Things are now initialized -- set the bit. */
-	F_SET(clp, CL_CURSES_INIT);
+	F_SET(CLP(sp), CL_VI_INIT);
 
 	/*
 	 * The historic 4BSD curses had an uneasy relationship with termcap.
 	 * Termcap used a static buffer to hold the terminal information,
 	 * which was was then used by the curses functions.  We want to use
 	 * it too, for lots of random things, but we've put it off until after
-	 * initscr() was called and the CL_CURSES_INIT bit was set.  Do it now.
+	 * initscr() was called and the CL_VI_INIT bit was set.  Do it now.
 	 */
 	if (cl_term_init(sp)) {
-		(void)cl_end(sp);
+		(void)cl_vi_end(sp);
 		return (1);
 	}
 
 	/* Put the cursor keys into application mode. */
-	(void)cl_keypad(sp, 1);
+	(void)cl_keypad(1);
 
 	return (0);
 }
 
+/*
+ * cl_vi_end --
+ *	Shutdown the vi screen.
+ */
 int
-cl_end(sp)
+cl_vi_end(sp)
 	SCR *sp;
 {
+	/* Restore signals. */
+	cl_sig_end(sp);
+
 	/* Restore the cursor keys to normal mode. */
-	(void)cl_keypad(sp, 0);
+	(void)cl_keypad(0);
 
-	/* Restore the terminal. */
+	/* Restore the terminal, and map sequences. */
 	cl_term_end(sp);
-
-	/* Free private space. */
-	FREE(CLP(sp), sizeof(CL_PRIVATE));
-	sp->gp->cl_private = NULL;
 
 	/* Move to the bottom of the screen. */
 	if (move(sp->t_maxrows, 0) == OK) {		/* XXX */
@@ -236,28 +221,273 @@ cl_end(sp)
 			msgq(sp, M_ERR, "Error: endwin");
 		return (1);
 	}
+
+	/* Free private space. */
+	free(sp->gp->cl_private);
+	sp->gp->cl_private = NULL;
+
 	return (0);
 }
 
 /*
- * cl_keypad --
- *	Put the keypad/cursor arrows into or out of application mode.
+ * cl_ex_init --
+ *	Initialize the ex screen.
  */
 int
-cl_keypad(sp, on)
+cl_ex_init(sp)
 	SCR *sp;
-	int on;
 {
-#ifdef SYSV_CURSES
-	keypad(stdscr, on ? TRUE : FALSE);
-#else
-	char *sbp, *t, sbuf[128];
+	CL_PRIVATE *clp;
+	size_t len;
+	char *s, *t, buf[128], tbuf[2048];
 
-	sbp = sbuf;
-	if ((t = tgetstr(on ? "ks" : "ke", &sbp)) != NULL) {
-		(void)tputs(t, 0, vi_putchar);
-		(void)fflush(stdout);
+	if (!F_ISSET(sp->gp, G_STDIN_TTY))
+		return (1);
+
+	clp = CLP(sp);
+	if (clp == NULL) {
+		if (cl_common(sp))
+			return (1);
+		clp = CLP(sp);
 	}
+
+	/* Get the termcap entry. */
+	if (tgetent(tbuf, O_STR(sp, O_TERM)) != 1)
+		return (1);
+
+	/* Get CE. */
+	t = buf;
+	if ((t = tgetstr("ce", &t)) != NULL && (len = strlen(t)) != 0) {
+		MALLOC_NOMSG(sp, s, char *, len + 1);
+		if (s != NULL) {
+			memmove(s, buf, len);
+			s[len] = '\0';
+			clp->CE = s;
+		}
+	}
+
+	/* Get CM. */
+	t = buf;
+	if ((t = tgetstr("cm", &t)) != NULL && (len = strlen(t)) != 0) {
+		MALLOC_NOMSG(sp, s, char *, len + 1);
+		if (s != NULL) {
+			memmove(s, buf, len);
+			s[len] = '\0';
+			clp->CM = s;
+		}
+	}
+
+	/* Get SE. */
+	t = buf;
+	if ((t = tgetstr("se", &t)) != NULL && (len = strlen(t)) != 0) {
+		MALLOC_NOMSG(sp, s, char *, len + 1);
+		if (s != NULL) {
+			memmove(s, buf, len);
+			s[len] = '\0';
+			clp->SE = s;
+		}
+	}
+
+	/* Get SO. */
+	t = buf;
+	if ((t = tgetstr("so", &t)) != NULL && (len = strlen(t)) != 0) {
+		MALLOC_NOMSG(sp, s, char *, len + 1);
+		if (s != NULL) {
+			memmove(s, buf, len);
+			s[len] = '\0';
+			clp->SO = s;
+		}
+	}
+
+	/* SE and SO are paired. */
+	if (clp->SE == NULL || clp->SO == NULL) {
+		if (clp->SE != NULL) {
+			free(clp->SE);
+			clp->SE = NULL;
+		}
+		if (clp->SO != NULL) {
+			free(clp->SO);
+			clp->SO = NULL;
+		}
+	}
+
+	/* Get UP. */
+	t = buf;
+	if ((t = tgetstr("up", &t)) != NULL && (len = strlen(t)) != 0) {
+		MALLOC_NOMSG(sp, s, char *, len + 1);
+		if (s != NULL) {
+			memmove(s, buf, len);
+			s[len] = '\0';
+			clp->UP = s;
+		}
+	}
+
+	/* Initialize the tty. */
+	if (cl_ex_tinit(sp))
+		return (1);
+
+	/* Things are now initialized -- set the bit. */
+	F_SET(clp, CL_EX_INIT);
+
+	/* Move to the last line on the screen. */
+	if (clp->UP != NULL && clp->CM != NULL)
+		tputs(tgoto(clp->CM, 0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
+
+	return (0);
+}
+
+/*
+ * cl_ex_end --
+ *	Shutdown the ex screen.
+ */
+int
+cl_ex_end(sp)
+	SCR *sp;
+{
+	CL_PRIVATE *clp;
+
+	/* Restore signals. */
+	cl_sig_end(sp);
+
+	/* Restore the tty. */
+	if (cl_ex_tend(sp))
+		return (1);
+
+	clp = CLP(sp);
+	if (clp->CE != NULL)
+		free(clp->CE);
+	if (clp->CM != NULL)
+		free(clp->CM);
+	if (clp->UP != NULL)
+		free(clp->UP);
+	if (clp->SE != NULL)
+		free(clp->SE);
+	if (clp->SO != NULL)
+		free(clp->SO);
+
+	/* Free private space. */
+	free(clp);
+	sp->gp->cl_private = NULL;
+
+	return (0);
+}
+
+/*
+ * cl_ex_tinit --
+ *	Enter ex terminal mode.  Separated out because it's used by the vi
+ *	code to run ex commands that don't run through vi.
+ */
+int
+cl_ex_tinit(sp)
+	SCR *sp;
+{
+	struct termios term;
+	CL_PRIVATE *clp;
+
+	/* Save the current settings. */
+	clp = CLP(sp);
+	if (tcgetattr(STDIN_FILENO, &clp->exterm)) {
+		msgq(sp, M_SYSERR, "tcgetattr");
+		return (1);
+	}
+
+	/*
+	 * Turn on canonical mode, with normal input and output processing.
+	 * Start with the original terminal settings as the user probably
+	 * had them (including any local extensions) set correctly for the
+	 * current terminal.
+	 *
+	 * !!!
+	 * We can't get everything that we need portably; for example, ONLCR,
+	 * mapping <newline> to <carriage-return> on output isn't required
+	 * by POSIX 1003.1b-1993.  If this turns out to be a problem, then
+	 * we'll either have to play some games on the mapping, or we'll have
+	 * to make all ex printf's output \r\n instead of \n.
+	 */
+	term = sp->gp->original_termios;
+	term.c_lflag  |= ECHO | ECHOE | ECHOK | ICANON | IEXTEN | ISIG;
+#ifdef ECHOCTL
+	term.c_lflag |= ECHOCTL;
 #endif
+#ifdef ECHOKE
+	term.c_lflag |= ECHOKE;
+#endif
+	term.c_iflag |= ICRNL;
+	term.c_oflag |= OPOST;
+#ifdef ONLCR
+	term.c_oflag |= ONLCR;
+#endif
+	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &term)) {
+		msgq(sp, M_SYSERR, "tcsetattr");
+		return (1);
+	}
+	return (0);
+}
+
+/*
+ * cl_ex_tend --
+ *	Leave ex terminal mode.  Separated out because it's used by the vi
+ *	code to run ex commands that don't run through vi.
+ */
+int
+cl_ex_tend(sp)
+	SCR *sp;
+{
+	CL_PRIVATE *clp;
+
+	clp = CLP(sp);
+	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->exterm)) {
+		msgq(sp, M_SYSERR, "tcsetattr");
+		return (1);
+	}
+	return (0);
+}
+
+/*
+ * cl_common --
+ *	Allocation and common initialization for the CL private structure.
+ */
+static int
+cl_common(sp)
+	SCR *sp;
+{
+	GS *gp;
+	CL_PRIVATE *clp;
+
+	gp = sp->gp;
+
+	CALLOC_RET(sp, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
+	gp->cl_private = clp;
+
+	TAILQ_INIT(&clp->eventq);
+
+	/* Start catching signals. */
+	if (cl_sig_init(sp))
+		return (1);
+
+	/* Initialize the functions. */
+	gp->scr_addnstr = cl_addnstr;
+	gp->scr_addstr = cl_addstr;
+	gp->scr_bell = cl_bell;
+	gp->scr_busy = cl_busy;
+	gp->scr_canon = cl_canon;
+	gp->scr_clear = cl_clear;
+	gp->scr_clrtoeol = cl_clrtoeol;
+	gp->scr_clrtoeos = cl_clrtoeos;
+	gp->scr_confirm = cl_confirm;
+	gp->scr_continue = cl_continue;
+	gp->scr_cursor = cl_cursor;
+	gp->scr_deleteln = cl_deleteln;
+	gp->scr_exadjust = cl_exadjust;
+	gp->scr_exinit = cl_ex_init;
+	gp->scr_fmap = cl_fmap;
+	gp->scr_insertln = cl_insertln;
+	gp->scr_inverse = cl_inverse;
+	gp->scr_move = cl_move;
+	gp->scr_msgflush = F_ISSET(sp, S_EX) ? cl_ex_msgflush : cl_vi_msgflush;
+	gp->scr_refresh = cl_refresh;
+	gp->scr_repaint = cl_repaint;
+	gp->scr_suspend = F_ISSET(sp, S_EX) ? cl_ex_suspend : cl_vi_suspend;
+
 	return (0);
 }
