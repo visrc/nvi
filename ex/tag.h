@@ -8,7 +8,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: tag.h,v 10.3 1996/04/10 11:31:32 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:32 $
+ *	$Id: tag.h,v 10.4 1996/05/08 11:36:36 bostic Exp $ (Berkeley) $Date: 1996/05/08 11:36:36 $
  */
 
 /*
@@ -67,9 +67,9 @@ struct _tagf {			/* Tag files. */
  * Each Q is a TAGQ, or tag "query", which is the result of one tag or cscope
  * command.  Each Q references one or more TAG's, or tagged file locations.
  *
+ * tag:		put a new Q at the head	(^])
  * tagnext:	T1 -> T2 inside Q	(^N)
  * tagprev:	T2 -> T1 inside Q	(^P)
- * tagpush:	put a new Q at the head	(^])
  * tagpop:	discard Q		(^T)
  * tagtop:	discard all Q
  */
