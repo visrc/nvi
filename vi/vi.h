@@ -1,10 +1,12 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
+ * Copyright (c) 1994, 1995
+ *	Keith Bostic.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.5 1994/11/20 12:50:08 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:50:08 $
+ *	$Id: vi.h,v 9.6 1995/01/11 16:22:42 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:42 $
  */
 
 typedef struct _vikeys VIKEYS;
