@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.2 1994/11/17 18:53:08 bostic Exp $ (Berkeley) $Date: 1994/11/17 18:53:08 $";
+static char sccsid[] = "$Id: v_search.c,v 9.3 1994/11/17 20:12:41 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:12:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: v_search.c,v 9.2 1994/11/17 18:53:08 bostic Exp $ (
 #include <sys/time.h>
 
 #include <bitstring.h>
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <signal.h>
@@ -30,11 +31,12 @@ static char sccsid[] = "$Id: v_search.c,v 9.2 1994/11/17 18:53:08 bostic Exp $ (
 #include "vcmd.h"
 #include "excmd.h"
 
-static int addr_search __P((SCR *, VICMDARG *, enum direction));
 static int correct __P((SCR *, VICMDARG *, int));
 static int getptrn __P((SCR *, ARG_CHAR_T, char **, size_t *));
 static int search __P((SCR *,
     VICMDARG *, char *, size_t, u_int, enum direction));
+static int search_addr __P((SCR *, VICMDARG *, enum direction));
+static int search_z __P((SCR *, char *, size_t));
 
 /*
  * v_searchb -- [count]?RE[? offset]
@@ -45,7 +47,7 @@ v_searchb(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	return (addr_search(sp, vp, BACKWARD));
+	return (search_addr(sp, vp, BACKWARD));
 }
 
 /*
@@ -57,11 +59,11 @@ v_searchf(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	return (addr_search(sp, vp, FORWARD));
+	return (search_addr(sp, vp, FORWARD));
 }
 
 static int
-addr_search(sp, vp, dir)
+search_addr(sp, vp, dir)
 	SCR *sp;
 	VICMDARG *vp;
 	enum direction dir;
@@ -136,15 +138,20 @@ addr_search(sp, vp, dir)
 			++ptrn;
 			--len;
 			break;
-		case 'z':	/* Push the z command on the stack. */
-			if (!ISMOTION(vp) &&
-			    term_push(sp, ptrn, len, CH_NOMAP | CH_QUOTED))
-				return (1);
-			len = 0;
-			break;
+		case 'z':	/* Execute a z command. */
+			if (ISMOTION(vp)) {
+				len = 0;
+				break;
+			}
+			if (!search_z(sp, ptrn, len)) {
+				nb = 1;
+				len = 0;
+				break;
+			}
+			/* FALLTHROUGH */
 		default:
 			msgq(sp, M_ERR,
-		    "188|Characters after search string and/or line offset");
+    "188|Characters after search string, line offset, and/or z command");
 err:			sp->lno = save.lno;
 			sp->cno = save.cno;
 			return (1);
@@ -165,6 +172,59 @@ err:			sp->lno = save.lno;
 		}
 	}
 	return (0);
+}
+
+/* 
+ * search_z --
+ *	Execute a z command trailing a search command.
+ */
+static int
+search_z(sp, p, len)
+	SCR *sp;
+	char *p;
+	size_t len;
+{
+	VICMDARG v;
+	size_t tlen;
+	int notused, type;
+	char *t;
+
+	/*
+	 * We have to argument checking, otherwise, some jerk could put some
+	 * random command at the end of the search command.  And yes, I agree
+	 * it's hard not to ask `So what?'  Petty annoyances aside, pipe the
+	 * command through the command parser so we catch things like number
+	 * overflows.
+	 */
+	for (t = p + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
+		if (!isdigit(*t))
+			break;
+	if (tlen &&
+	    (*t == '-' || *t == '.' || *t == '+' || *t == '^')) {
+		++t;
+		--tlen;
+		type = 1;
+	} else
+		type = 0;
+	if (tlen)
+		return (1);
+
+	/* Default to z+. */
+	if (!type &&
+	    term_push(sp, "+", 1, CH_NOMAP | CH_QUOTED))
+		return (1);
+	if (term_push(sp, p, len, CH_NOMAP | CH_QUOTED))
+		return (1);
+	switch (v_cmd(sp, NULL, &v, NULL, &notused, &notused)) {
+	case GC_ERR:
+	case GC_ERR_NOFLUSH:
+		return (1);
+	case GC_OK:
+		break;
+	}
+	F_SET(&v, VC_C1SET);
+	v.count = sp->lno;
+	return ((v.kp->func)(sp, &v));
 }
 
 /*

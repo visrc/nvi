@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.6 1994/11/16 19:46:27 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:46:27 $";
+static char sccsid[] = "$Id: vi.c,v 9.7 1994/11/17 20:12:51 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:12:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,15 +30,15 @@ static char sccsid[] = "$Id: vi.c,v 9.6 1994/11/16 19:46:27 bostic Exp $ (Berkel
 #include "vi.h"
 #include "vcmd.h"
 
-enum gcret { GC_ERR, GC_ERR_NOFLUSH, GC_OK } gcret;
-static enum gcret
-	 getcmd __P((SCR *, VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
-static __inline VIKEYS const *getalias __P((SCR *, VICMDARG *, VIKEYS const *));
-static __inline int getcount __P((SCR *, ARG_CHAR_T, u_long *));
-static __inline int getkey __P((SCR *, CH *, u_int));
-static int getkeyword __P((SCR *, VICMDARG *, u_int));
-static int getmotion __P((SCR *, VICMDARG *, VICMDARG *, int *));
-static void v_comlog __P((SCR *, VICMDARG *));
+static __inline VIKEYS const
+		*v_alias __P((SCR *, VICMDARG *, VIKEYS const *));
+static void	 v_comlog __P((SCR *, VICMDARG *));
+static __inline int
+		 v_count __P((SCR *, ARG_CHAR_T, u_long *));
+static __inline int
+		 v_key __P((SCR *, CH *, u_int));
+static int	 v_keyword __P((SCR *, VICMDARG *, u_int));
+static int	 v_motion __P((SCR *, VICMDARG *, VICMDARG *, int *));
 
 /*
  * Side-effect:
@@ -114,7 +114,7 @@ vi(sp)
 		 * put leading <escape> characters in maps to clean up vi
 		 * state before the map was interpreted.
 		 */
-		switch (getcmd(sp, DOT, vp, NULL, &comcount, &mapped)) {
+		switch (v_cmd(sp, DOT, vp, NULL, &comcount, &mapped)) {
 		case GC_ERR:
 			goto err;
 		case GC_ERR_NOFLUSH:
@@ -150,7 +150,7 @@ vi(sp)
 		vp->m_start.cno = vp->m_stop.cno = vp->m_final.cno = sp->cno;
 
 		/*
-		 * Do any required motion; getmotion sets the from MARK and the
+		 * Do any required motion; v_motion sets the from MARK and the
 		 * line mode flag.  We save off the RCM mask and only restore
 		 * it if it no RCM flags are set by the motion command.  This
 		 * means that the motion command is expected to determine where
@@ -159,7 +159,7 @@ vi(sp)
 		if (F_ISSET(vp, V_MOTION)) {
 			flags = F_ISSET(vp, VM_RCM_MASK);
 			F_CLR(vp, VM_RCM_MASK);
-			if (getmotion(sp, DOTMOTION, vp, &mapped))
+			if (v_motion(sp, DOTMOTION, vp, &mapped))
 				goto err;
 			if (F_ISSET(vp, VM_NOMOTION))
 				goto err;
@@ -311,7 +311,7 @@ enoflush:		(void)msg_rpt(sp, 1);
 }
 
 #define	KEY(key, map) {							\
-	if (getkey(sp, &ikey, map))					\
+	if (v_key(sp, &ikey, map))					\
 		return (1);						\
 	if (ikey.value == K_ESCAPE)					\
 		goto esc;						\
@@ -332,7 +332,7 @@ VIKEYS const tmotion = {
 };
 
 /*
- * getcmd --
+ * v_cmd --
  *
  * The command structure for vi is less complex than ex (and don't think
  * I'm not grateful!)  The command syntax is:
@@ -344,8 +344,8 @@ VIKEYS const tmotion = {
  *
  *	[count] key [character]
  */
-static enum gcret
-getcmd(sp, dp, vp, ismotion, comcountp, mappedp)
+enum gcret
+v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	SCR *sp;
 	VICMDARG *dp, *vp;
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
@@ -394,7 +394,7 @@ getcmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	 * it's a command.
 	 */
 	if (isdigit(key) && key != '0') {
-		if (getcount(sp, key, &vp->count))
+		if (v_count(sp, key, &vp->count))
 			return (GC_ERR);
 		F_SET(vp, VC_C1SET);
 		*comcountp = 1;
@@ -431,7 +431,7 @@ getcmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	kp = &vikeys[vp->key = key];
 
 	/* Check for command aliases. */
-	if (kp->func == NULL && (kp = getalias(sp, vp, kp)) == NULL)
+	if (kp->func == NULL && (kp = v_alias(sp, vp, kp)) == NULL)
 		return (GC_ERR);
 
 	/* The tildeop option makes the ~ command take a motion. */
@@ -538,7 +538,7 @@ usage:			if (ismotion == NULL)
 	if (vp->key == 'z') {
 		KEY(vp->character, 0);
 		if (isdigit(vp->character)) {
-			if (getcount(sp, vp->character, &vp->count2))
+			if (v_count(sp, vp->character, &vp->count2))
 				return (GC_ERR);
 			F_SET(vp, VC_C2SET);
 			KEY(vp->character, 0);
@@ -561,7 +561,7 @@ usage:			if (ismotion == NULL)
 
 	/* Get any associated keyword. */
 	if (F_ISSET(kp, V_KEYNUM | V_KEYW) &&
-	    getkeyword(sp, vp, F_ISSET(kp, V_KEYNUM | V_KEYW)))
+	    v_keyword(sp, vp, F_ISSET(kp, V_KEYNUM | V_KEYW)))
 		return (GC_ERR);
 
 	return (GC_OK);
@@ -580,11 +580,11 @@ esc:	switch (cpart) {
 }
 
 /*
- * getalias --
+ * v_alias --
  *	Check for a command alias.
  */
 static VIKEYS const *
-getalias(sp, vp, kp)
+v_alias(sp, vp, kp)
 	SCR *sp;
 	VICMDARG *vp;
 	VIKEYS const *kp;
@@ -617,12 +617,12 @@ getalias(sp, vp, kp)
 }
 
 /*
- * getmotion --
+ * v_motion --
  *
  * Get resulting motion mark.
  */
 static int
-getmotion(sp, dm, vp, mappedp)
+v_motion(sp, dm, vp, mappedp)
 	SCR *sp;
 	VICMDARG *dm, *vp;
 	int *mappedp;
@@ -644,7 +644,7 @@ getmotion(sp, dm, vp, mappedp)
 		F_CLR(&motion, VM_COMMASK);
 	} else {
 		memset(&motion, 0, sizeof(VICMDARG));
-		if (getcmd(sp, NULL, &motion, vp, &notused, mappedp) != GC_OK)
+		if (v_cmd(sp, NULL, &motion, vp, &notused, mappedp) != GC_OK)
 			return (1);
 	}
 
@@ -803,11 +803,11 @@ err:		rval = 1;
 #define	innum(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
 
 /*
- * getkeyword --
+ * v_keyword --
  *	Get the "word" the cursor is on.
  */
 static int
-getkeyword(sp, vp, flags)
+v_keyword(sp, vp, flags)
 	SCR *sp;
 	VICMDARG *vp;
 	u_int flags;
@@ -931,11 +931,11 @@ noword:			msgq(sp, M_BERR,
 }
 
 /*
- * getcount --
+ * v_count --
  *	Return the next count.
  */
 static __inline int
-getcount(sp, fkey, countp)
+v_count(sp, fkey, countp)
 	SCR *sp;
 	ARG_CHAR_T fkey;
 	u_long *countp;
@@ -951,7 +951,7 @@ getcount(sp, fkey, countp)
 		if (count > tc) {
 			/* Toss to the next non-digit. */
 			do {
-				if (getkey(sp, &ikey,
+				if (v_key(sp, &ikey,
 				    TXT_MAPCOMMAND | TXT_MAPNODIGIT))
 					return (1);
 			} while (isdigit(ikey.ch));
@@ -960,7 +960,7 @@ getcount(sp, fkey, countp)
 			return (1);
 		}
 		count = tc;
-		if (getkey(sp, &ikey, TXT_MAPCOMMAND | TXT_MAPNODIGIT))
+		if (v_key(sp, &ikey, TXT_MAPCOMMAND | TXT_MAPNODIGIT))
 			return (1);
 	} while (isdigit(ikey.ch));
 	*countp = count;
@@ -968,11 +968,11 @@ getcount(sp, fkey, countp)
 }
 
 /*
- * getkey --
+ * v_key --
  *	Return the next key.
  */
 static __inline int
-getkey(sp, ikeyp, map)
+v_key(sp, ikeyp, map)
 	SCR *sp;
 	CH *ikeyp;
 	u_int map;
