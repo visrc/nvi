@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.19 1995/02/02 15:34:16 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:34:16 $
+ *	$Id: screen.h,v 9.20 1995/02/06 14:20:47 bostic Exp $ (Berkeley) $Date: 1995/02/06 14:20:47 $
  */
 
 /*
@@ -113,7 +113,6 @@ struct _scr {
 	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
 	FILE	*stdfp;			/* Ex output file pointer. */
-	FILE	*sv_stdfp;		/* Saved copy. */
 
 	char	*if_name;		/* Ex input file name, for messages. */
 	recno_t	 if_lno;		/* Ex input file line, for messages. */
