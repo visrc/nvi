@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.71 2001/06/25 15:19:05 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:05 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.72 2002/03/02 23:18:33 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:18:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,7 +78,7 @@ addstr4(SCR *sp, void *str, size_t len, int wide)
 int
 cl_waddstr(SCR *sp, const CHAR_T *str, size_t len)
 {
-    addstr4(sp, (void *)str, len, 1);
+    return addstr4(sp, (void *)str, len, 1);
 }
 
 /*
@@ -90,7 +90,7 @@ cl_waddstr(SCR *sp, const CHAR_T *str, size_t len)
 int
 cl_addstr(SCR *sp, const char *str, size_t len)
 {
-    addstr4(sp, (void *)str, len, 0);
+    return addstr4(sp, (void *)str, len, 0);
 }
 
 /*
