@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.47 1993/04/17 12:13:39 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:13:39 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.48 1993/04/18 09:35:38 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:35:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,7 @@ static int	svi_msgflush __P((SCR *));
 /*
  * svi_refresh --
  *	This is the guts of the vi curses screen code.  The idea is that
- *	the EXF structure passed in contains the new coordinates of the
+ *	the SCR structure passed in contains the new coordinates of the
  *	screen.  What makes this hard is that we don't know how big
  *	characters are, doing input can put the cursor in illegal places,
  *	and we're frantically trying to avoid repainting unless it's
@@ -95,7 +95,7 @@ svi_refresh(sp, ep)
 	 * P_MIDDLE flag, which isn't what the user wanted.  Tiny screens
 	 * can go into the "fill" portions of the smap code, no problem.
 	 */
-	 if (sp->t_rows <= 2) {
+	if (sp->t_rows <= 2) {
 		if (LNO < HMAP->lno) {
 			if (svi_sm_fill(sp, ep, LNO, P_TOP))
 				return (1);
@@ -230,8 +230,8 @@ adjust:	if (LNO == HMAP->lno) {
 	 * If a character is deleted from the line, we don't know how
 	 * wide it was, so reparse.
 	 */
-	if (F_ISSET(sp, (S_CHARDELETED | S_CUR_INVALID))) {
-		F_CLR(sp, S_CHARDELETED | S_CUR_INVALID);
+	if (F_ISSET(sp, S_CUR_INVALID)) {
+		F_CLR(sp, S_CUR_INVALID);
 		goto slow;
 	}
 
@@ -264,6 +264,14 @@ adjust:	if (LNO == HMAP->lno) {
 		return (1);
 	}
 
+	/* This is just a test. */
+#ifdef DEBUG
+	if (CNO >= len) {
+		msgq(sp, M_ERR, "Error: %s/%d: cno (%u) >= len (%u)",
+		     tail(__FILE__), __LINE__, CNO, len);
+		return (1);
+	}
+#endif
 	/*
 	 * The basic scheme here is to look at the characters in between
 	 * the old and new positions and decide how big they are on the
@@ -286,7 +294,7 @@ adjust:	if (LNO == HMAP->lno) {
 
 		/*
 		 * Count up the widths of the characters.  If it's a tab
-		 * character, just do it the the slow way.
+		 * character, go do it the the slow way.
 		 */
 		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
 			if ((ch = *(u_char *)p--) == '\t')
@@ -322,24 +330,14 @@ adjust:	if (LNO == HMAP->lno) {
 		/*
 		 * 4b: Cursor moved right.
 		 *
-		 * Point to the old character.
+		 * Point to the first character to the right.
 		 */
-		p += OCNO;
-		cnt = (CNO - OCNO) + 1;
-#ifdef DEBUG
-		if (CNO >= len) {
-			msgq(sp, M_ERR,
-			    "Error: %s/%d: cno (%u) >= len (%u)",
-			     tail(__FILE__), __LINE__, CNO, len);
-			return (1);
-		}
-#endif
-		/* Save the width of the original character. */
-		len = cname[*p].len;
+		p += OCNO + 1;
+		cnt = CNO - OCNO;
 
 		/*
 		 * Count up the widths of the characters.  If it's a tab
-		 * character, just do it the the slow way.
+		 * character, go do it the the slow way.
 		 */
 		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
 			if ((ch = *(u_char *)p++) == '\t')
@@ -347,9 +345,9 @@ adjust:	if (LNO == HMAP->lno) {
 
 		/*
 		 * Increment the screen cursor by the total width of the
-		 * characters minus the width of the original character.
+		 * characters.
 		 */
-		SCNO += cwtotal - len;
+		SCNO += cwtotal;
 
 		/*
 		 * If the new column moved us out of the current screen,
