@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.17 1993/10/10 13:10:28 bostic Exp $ (Berkeley) $Date: 1993/10/10 13:10:28 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.18 1993/11/01 08:18:30 bostic Exp $ (Berkeley) $Date: 1993/11/01 08:18:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -860,7 +860,7 @@ svi_sm_cursor(sp, ep, smp)
 	EXF *ep;
 	SMAP **smp;
 {
-	SMAP *p, tmp;
+	SMAP *p;
 
 	/* See if the cursor is not in the map. */
 	if (sp->lno < HMAP->lno || sp->lno > TMAP->lno) {
