@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.11 1993/10/26 17:46:43 bostic Exp $ (Berkeley) $Date: 1993/10/26 17:46:43 $";
+static char sccsid[] = "$Id: v_search.c,v 8.12 1993/10/28 12:31:13 bostic Exp $ (Berkeley) $Date: 1993/10/28 12:31:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -270,7 +270,7 @@ bcorrect(sp, ep, vp, fm, rp, flags)
 
 /*
  * fcorrect --
- *	Handle shift command with a forward search as the motion.
+ *	Handle command with a forward search as the motion.
  */
 static int
 fcorrect(sp, ep, vp, fm, rp, flags)
