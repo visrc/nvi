@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.47 1993/04/19 15:23:18 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:23:18 $
+ *	$Id: exf.h,v 5.48 1993/05/01 09:35:43 bostic Exp $ (Berkeley) $Date: 1993/05/01 09:35:43 $
  */
 
 					/* Undo direction. */
@@ -57,6 +57,9 @@ typedef struct _exf {
 #define	F_NOSETPOS	0x0040		/* No line position. */
 #define	F_RDONLY	0x0080		/* File is read-only. */
 #define	F_UNDO		0x0100		/* No change since last undo. */
+
+#define	F_CLOSECLR			/* Flags to clear on close. */	\
+	(F_MODIFIED | F_NAMECHANGED | F_NOLOG | F_RDONLY | F_UNDO)
 	u_int	 flags;
 } EXF;
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.54 1993/04/17 11:44:18 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:44:18 $";
+static char sccsid[] = "$Id: exf.c,v 5.55 1993/05/01 09:35:32 bostic Exp $ (Berkeley) $Date: 1993/05/01 09:35:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -271,6 +271,8 @@ file_stop(sp, ep, force)
 		free(ep->tname);
 	}
 
+	/* Clean up the flags. */
+	F_CLR(ep, F_CLOSECLR);
 	return (0);
 }
 
