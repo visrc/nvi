@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.11 1994/03/14 10:47:12 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:47:12 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.12 1994/03/15 17:18:45 bostic Exp $ (Berkeley) $Date: 1994/03/15 17:18:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,48 +153,27 @@ svi_screens(sp, ep, lp, llen, lno, cnop)
 			TAB_RESET;
 		}
 	else
-		for (cno = *cnop; len-- && cno--;) {
+		for (cno = *cnop; len--; --cno) {
 			SET_CHLEN;
 			scno += chlen;
 			TAB_RESET;
+			if (cno == 0)
+				break;
 		}
 	return (scno);
 }
 
 /*
- * svi_rcm_public --
- *	Return the physical column from the line that will display a
- *	character closest to the currently most attractive character
- *	position, taking into account the screen offset.
- *
- *	The extra interface is because it's called by vi, which doesn't
- *	have a handle on the SMAP structure.
- */
-size_t
-svi_rcm_public(sp, ep, lno)
-	SCR *sp;
-	EXF *ep;
-	recno_t lno;
-{
-	return (svi_rcm_private(sp, ep, lno, HMAP->off));
-}
-
-/*
- * svi_rcm_private --
+ * svi_rcm --
  *	Return the physical column from the line that will display a
  *	character closest to the currently most attractive character
  *	position (which is stored as a screen column).
- *
- *	The offset is for the commands that move logical distances, i.e.
- *	if it's a logical scroll the closest physical distance is based
- *	on the logical line, not the physical line.
  */
 size_t
-svi_rcm_private(sp, ep, lno, off)
+svi_rcm(sp, ep, lno)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
-	size_t off;
 {
 	size_t cno, len;
 
@@ -206,7 +185,7 @@ svi_rcm_private(sp, ep, lno, off)
 	}
 
 	/* First character is easy, and common. */
-	if (sp->rcmflags != RCM_LAST && off == 1 && sp->rcm == 0)
+	if (sp->rcmflags != RCM_LAST && HMAP->off == 1 && sp->rcm == 0)
 		return (0);
 
 	/* Last character is easy, and common. */
@@ -214,8 +193,23 @@ svi_rcm_private(sp, ep, lno, off)
 		return (file_gline(sp,
 		    ep, lno, &len) == NULL || len == 0 ? 0 : len - 1);
 
-	/* Get svi_cm_private() to do the hard work. */
-	return (svi_cm_private(sp, ep, lno, 1, sp->rcm));
+	/*
+	 * Get svi_cm_private() to do the hard work.  If doing leftright
+	 * scrolling, we use the current screen offset, otherwise, use
+	 * the first screen, i.e. an offset of 1.
+	 *
+	 * XXX
+	 * I'm not sure that an offset of 1 is right.  What happens is that
+	 * the vi main loop calls us for the VM_RCM case.  By using an offset
+	 * of 1, we're assuming that every VM_RCM command changes lines, and
+	 * that we want to position on the first screen for that line.  This
+	 * is currently the way it works, but it's not clean. I'd prefer it if
+	 * we could find the SMAP entry the cursor references, and use that
+	 * screen offset.  Unfortunately, that's not going to be easy, as we
+	 * don't keep that information around and it may be expensive to get.
+	 */
+	return (svi_cm_private(sp, ep, lno,
+	    O_ISSET(sp, O_LEFTRIGHT) ? HMAP->off : 1, sp->rcm));
 }
 
 /*
