@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.4 1993/11/30 11:14:41 bostic Exp $ (Berkeley) $Date: 1993/11/30 11:14:41 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.5 1993/12/02 10:48:42 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:48:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,22 +27,19 @@ ex_abbr(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	char *input, *output;
-
 	switch (cmdp->argc) {
 	case 0:
 		if (seq_dump(sp, SEQ_ABBREV, 0) == 0)
-			msgq(sp, M_INFO, "No abbreviations.");
+			msgq(sp, M_INFO, "No abbreviations to display.");
 		return (0);
 	case 2:
-		input = cmdp->argv[0];
-		output = cmdp->argv[1];
 		break;
 	default:
 		abort();
 	}
 
-	if (seq_set(sp, NULL, input, output, SEQ_ABBREV, 1))
+	if (seq_set(sp, NULL, 0, cmdp->argv[0]->bp, cmdp->argv[0]->len,
+	    cmdp->argv[1]->bp, cmdp->argv[1]->len, SEQ_ABBREV, 1))
 		return (1);
 	F_SET(sp, S_ABBREV);
 	return (0);
@@ -58,12 +55,12 @@ ex_unabbr(sp, ep, cmdp)
 	EXF *ep;
         EXCMDARG *cmdp;
 {
-	char *input;
+	ARGS *ap;
 
-	input = cmdp->argv[0];
-	if (!F_ISSET(sp, S_ABBREV) || seq_delete(sp, input, SEQ_ABBREV)) {
-		msgq(sp, M_ERR,
-		    "\"%s\" is not an abbreviation.", input);
+	ap = cmdp->argv[0];
+	if (!F_ISSET(sp, S_ABBREV) ||
+	    seq_delete(sp, ap->bp, ap->len, SEQ_ABBREV)) {
+		msgq(sp, M_ERR, "\"%s\" is not an abbreviation.", ap->bp);
 		return (1);
 	}
 	return (0);

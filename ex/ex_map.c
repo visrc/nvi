@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.5 1993/11/29 14:15:17 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:17 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.6 1993/12/02 10:48:12 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:48:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,8 +39,9 @@ ex_map(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	char *input, *output;
 	enum seqtype stype;
+	CHAR_T *input;
+	size_t nlen;
 	int key;
 	char *name, buf[10];
 
@@ -53,8 +54,7 @@ ex_map(sp, ep, cmdp)
 			    stype == SEQ_INPUT ? "input" : "command");
 		return (0);
 	case 2:
-		input = cmdp->argv[0];
-		output = cmdp->argv[1];
+		input = cmdp->argv[0]->bp;
 		break;
 	default:
 		abort();
@@ -64,9 +64,10 @@ ex_map(sp, ep, cmdp)
 	 * If the mapped string is #[0-9] (and wasn't quoted in any
 	 * way, then map to a function key.
 	 */
+	nlen = 0;
 	if (input[0] == '#' && isdigit(input[1]) && !input[2]) {
 		key = atoi(input + 1);
-		(void)snprintf(buf, sizeof(buf), "f%d", key);
+		nlen = snprintf(buf, sizeof(buf), "f%d", key);
 #ifdef notdef
 		if (FKEY[key]) {		/* CCC */
 			input = FKEY[key];
@@ -94,7 +95,8 @@ ex_map(sp, ep, cmdp)
 				return (1);
 			}
 	}
-	return (seq_set(sp, name, input, output, stype, 1));
+	return (seq_set(sp, name, nlen, input, cmdp->argv[0]->len,
+	    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, 1));
 }
 
 /*
@@ -107,12 +109,9 @@ ex_unmap(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	char *input;
-
-	input = cmdp->argv[0];
-	if (seq_delete(sp,
-	    input, F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
-		msgq(sp, M_INFO, "\"%s\" isn't mapped.", input);
+	if (seq_delete(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len,
+	    F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
+		msgq(sp, M_INFO, "\"%s\" isn't mapped.", cmdp->argv[0]->bp);
 		return (1);
 	}
 	return (0);
