@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.17 1996/12/04 10:15:51 bostic Exp $ (Berkeley) $Date: 1996/12/04 10:15:51 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.18 1996/12/04 22:48:59 bostic Exp $ (Berkeley) $Date: 1996/12/04 22:48:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1205,12 +1205,6 @@ Cardinal        *cardinal;
     ipb.val1 = ypos;
     ipb.val2 = xpos;
     (void)ip_send("12", &ipb);
-
-    /*
-     * RAZ: there is now a IPO_MOVE command waiting in the queue from the
-     * core editor.  It should probably be read and applied before doing
-     * anything else?
-     */
 
     /* click-click, and we go for words, lines, etc */
     if ( ev->time - last_click < multi_click_length )
