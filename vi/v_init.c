@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.18 1994/01/09 16:47:16 bostic Exp $ (Berkeley) $Date: 1994/01/09 16:47:16 $";
+static char sccsid[] = "$Id: v_init.c,v 8.19 1994/02/25 19:04:34 bostic Exp $ (Berkeley) $Date: 1994/02/25 19:04:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,6 +38,7 @@ v_screen_copy(orig, sp)
 	if (orig == NULL) {
 		nvip->inc_lastch = '+';
 		nvip->inc_lastval = 1;
+		nvip->csearchdir = CNOTSET;
 	} else {
 		ovip = VIP(orig);
 
@@ -58,6 +59,9 @@ v_screen_copy(orig, sp)
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
+
+		nvip->lastckey = ovip->lastckey;
+		nvip->csearchdir = ovip->csearchdir;
 	}
 	return (0);
 }
