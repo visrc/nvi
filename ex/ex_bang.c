@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.26 1995/11/13 08:42:40 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:42:40 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.27 1995/11/13 08:55:18 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:55:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -171,21 +171,9 @@ ex_bang(sp, cmdp)
 		}
 	}
 
-	/*
-	 * Ex terminates with a bang, even if the command fails.  Vi didn't
-	 * historically.  May have had to switch into ex mode, so we saved
-	 * the original S_VI flags value.
-	 */
-	if (!F_ISSET(sp, S_VI)) {
-		if (!F_ISSET(sp, S_EX_SILENT))
-			(void)ex_puts(sp, "!\n");
-
-		/*
-		 * Make sure all ex messages are flushed out so they aren't
-		 * confused with any autoprint output.
-		 */
-		(void)ex_fflush(sp);
-	}
+	/* Ex terminates with a bang, even if the command fails. */
+	if (!F_ISSET(sp, S_VI) && !F_ISSET(sp, S_EX_SILENT))
+		(void)ex_puts(sp, "!\n");
 
 	/*
 	 * XXX

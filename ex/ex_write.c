@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.13 1995/10/17 11:00:16 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:00:16 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.14 1995/11/13 08:55:19 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:55:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -173,6 +173,11 @@ exwr(sp, cmdp, cmd)
 		    &cmdp->addr2, &rm, cmdp->argv[1]->bp, FILTER_WRITE))
 			return (1);
 		sp->lno = rm.lno;
+
+		/* Ex terminates with a bang, even if the command fails. */
+		if (!F_ISSET(sp, S_VI) && !F_ISSET(sp, S_EX_SILENT))
+			(void)ex_puts(sp, "!\n");
+
 		return (0);
 	}
 
