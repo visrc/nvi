@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.14 1996/09/15 15:19:30 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:19:30 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.15 1996/09/25 09:55:50 bostic Exp $ (Berkeley) $Date: 1996/09/25 09:55:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ static const char sccsid[] = "$Id: v_itxt.c,v 10.14 1996/09/15 15:19:30 bostic E
 		(void)log_cursor(sp);					\
 }
 
-static u_int32_t set_txt_std __P((SCR *, VICMD *, u_int));
+static u_int32_t set_txt_std __P((SCR *, VICMD *, u_int32_t));
 
 /*
  * v_iA -- [count]A
