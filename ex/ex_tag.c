@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.42 2000/04/30 16:55:39 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:55:39 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.43 2000/06/29 19:41:52 skimo Exp $ (Berkeley) $Date: 2000/06/29 19:41:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -959,7 +959,8 @@ ctag_search(sp, search, slen, tag)
 		m.lno = 1;
 		m.cno = 0;
 		if (f_search(sp, &m, &m,
-		    search, slen, NULL, SEARCH_FIRST | SEARCH_TAG))
+		    search, slen, NULL, 
+		    SEARCH_FIRST | SEARCH_TAG | SEARCH_PARSE))
 			if ((p = strrchr(search, '(')) != NULL) {
 				slen = p - search;
 				if (f_search(sp, &m, &m, search, slen,
