@@ -1,10 +1,10 @@
 /*-
- * Copyright (c) 1992, 1993
+ * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 8.11 1993/11/22 20:27:02 bostic Exp $ (Berkeley) $Date: 1993/11/22 20:27:02 $
+ *	$Id: tag.h,v 8.12 1994/04/17 16:48:52 bostic Exp $ (Berkeley) $Date: 1994/04/17 16:48:52 $
  */
 
 struct _tagf {				/* Tag file. */
