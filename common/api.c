@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.1 1995/02/16 13:07:08 bostic Exp $ (Berkeley) $Date: 1995/02/16 13:07:08 $";
+static char sccsid[] = "$Id: api.c,v 8.2 1995/02/16 13:09:06 bostic Exp $ (Berkeley) $Date: 1995/02/16 13:09:06 $";
 #endif /* not lint */
 
 #include "api.h"
@@ -293,35 +293,5 @@ api_getmotion(sp)
 	 * XXX
 	 * This one may be hard, I'll have to think about it.
 	 */
-	return (0);
-}
-
-/*
- * api_getcurpath --
- *	Return a pointer to the current pathname.
- */
-int
-api_getcurpath(sp, pp, lenp)
-	SCR *sp;
-	char **pp;
-	size_t *lenp;
-{
-	*pp = sp->frp->name;
-	*lenp = *pp == NULL ? 0 : strlen(*pp);
-	return (0);
-}
-
-/*
- * api_getaltpath --
- *	Return a pointer to the alternate pathname.
- */
-int
-api_getaltpath(sp, pp, lenp)
-	SCR *sp;
-	char **pp;
-	size_t *lenp;
-{
-	*pp = sp->alt_name;
-	*lenp = *pp == NULL ? 0 : strlen(*pp);
 	return (0);
 }
