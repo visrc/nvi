@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.3 1996/02/20 19:17:58 bostic Exp $ (Berkeley) $Date: 1996/02/20 19:17:58 $
+dnl	$Id: configure.in,v 8.4 1996/02/20 20:17:20 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:17:20 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -145,6 +145,7 @@ AC_SUBST(lflags)
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(bsearch)
 AC_REPLACE_FUNCS(fchmod)
+AC_REPLACE_FUNCS(gethostname)
 AC_REPLACE_FUNCS(getopt)
 AC_REPLACE_FUNCS(memchr)
 AC_REPLACE_FUNCS(memmove)
