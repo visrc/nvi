@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.64 1994/06/27 11:21:55 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:55 $";
+static char sccsid[] = "$Id: recover.c,v 8.65 1994/07/16 17:32:51 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:32:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -269,6 +269,7 @@ rcv_sync(sp, ep, flags)
 	}
 
 	/* REQUEST: snapshot the file or send email. */
+	btear = 0;
 	if (LF_ISSET(RCV_SNAPSHOT | RCV_EMAIL))
 		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
 		    !busy_on(sp, "Copying file for recovery...");
