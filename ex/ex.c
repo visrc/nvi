@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.63 1993/02/18 12:45:38 bostic Exp $ (Berkeley) $Date: 1993/02/18 12:45:38 $";
+static char sccsid[] = "$Id: ex.c,v 5.64 1993/02/19 15:30:22 bostic Exp $ (Berkeley) $Date: 1993/02/19 15:30:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -293,7 +293,7 @@ ex_cmd(ep, exc)
 	 * this little chicken and egg problem -- if we read the file first,
 	 * we won't know how to display it.  If we read/set the exrc stuff
 	 * first, we can't allow any command that requires file state.
-	 * Historic vi generally took the easy way out, by dropping core.
+	 * Historic vi generally took the easy way out and dropped core.
  	 */
 	if (ep == NULL &&
 	    flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
@@ -550,7 +550,13 @@ addr2:	switch(cmd.addrcnt) {
 		/* FALLTHROUGH */
 	case 1:
 		num = cmd.addr1.lno;
-		if (num == 0 && !(flags & E_ZERO)) {
+		/*
+		 * If it's a "default vi command", zero is okay.  Historic
+		 * vi allowed this, note, it's also the hack that allows
+		 * "vi + nonexistent_file" to work.
+		 */
+		if (num == 0 && (mode != MODE_VI || uselastcmd != 1) &&
+		    flags & E_ZERO) {
 			msg(ep, M_ERROR,
 			    "The %s command doesn't permit an address of 0.",
 			    cp->name);
@@ -570,7 +576,7 @@ addr2:	switch(cmd.addrcnt) {
 
 	/* If doing a default command, vi just moves to the line. */
 	if (mode == MODE_VI && uselastcmd) {
-		ep->lno = cmd.addr1.lno;
+		ep->lno = cmd.addr1.lno ? cmd.addr1.lno : 1;
 		ep->cno = cmd.addr1.cno;
 		return (0);
 	}
