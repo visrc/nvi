@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.57 1994/03/25 11:36:45 bostic Exp $ (Berkeley) $Date: 1994/03/25 11:36:45 $";
+static char sccsid[] = "$Id: key.c,v 8.58 1994/04/09 18:09:53 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:09:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: key.c,v 8.57 1994/03/25 11:36:45 bostic Exp $ (Berk
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <locale.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,8 +33,8 @@ static char sccsid[] = "$Id: key.c,v 8.57 1994/03/25 11:36:45 bostic Exp $ (Berk
 #include "vi.h"
 #include "seq.h"
 
-static int	keycmp __P((const void *, const void *));
-static void	termkeyset __P((GS *, int, int));
+static int	 keycmp __P((const void *, const void *));
+static void	 termkeyset __P((GS *, int, int));
 
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.
@@ -146,7 +147,6 @@ int
 term_init(sp)
 	SCR *sp;
 {
-	extern CHNAME const asciiname[];	/* XXX */
 	GS *gp;
 	KEYLIST *kp;
 	TKLIST const *tkp;
@@ -155,12 +155,13 @@ term_init(sp)
 
 	/*
 	 * XXX
-	 * 8-bit, ASCII only, for now.  Recompilation should get you
-	 * any 8-bit character set, as long as nul isn't a character.
+	 * 8-bit only, for now.  Recompilation should get you any
+	 * 8-bit character set, as long as nul isn't a character.
 	 */
-	gp = sp->gp;
-	gp->cname = asciiname;			/* XXX */
+	(void)setlocale(LC_ALL, "");
+	key_init(sp);
 
+	gp = sp->gp;
 #ifdef VERASE
 	termkeyset(gp, VERASE, K_VERASE);
 #endif
@@ -177,8 +178,6 @@ term_init(sp)
 	qsort(keylist, nkeylist, sizeof(keylist[0]), keycmp);
 
 	/* Initialize the fast lookup table. */
-	CALLOC_RET(sp,
-	    gp->special_key, u_char *, MAX_FAST_KEY + 1, sizeof(u_char));
 	for (gp->max_special = 0, kp = keylist, cnt = nkeylist; cnt--; ++kp) {
 		if (gp->max_special < kp->value)
 			gp->max_special = kp->value;
@@ -272,6 +271,105 @@ termkeyset(gp, name, val)
 		keylist[nkeylist].value = val;
 		++nkeylist;
 	}
+}
+
+/*
+ * key_init --
+ *	Build the fast-lookup key display array.
+ */
+void
+key_init(sp)
+	SCR *sp;
+{
+	CHAR_T ch;
+
+	/*
+	 * XXX
+	 * Assume that nul is not a legal character.
+	 */
+	for (ch = 0; ch <= MAX_FAST_KEY; ++ch) {
+		(void)__key_name(sp, ch);
+		(void)memmove(sp->gp->cname[ch].name,
+		    sp->cname, sp->gp->cname[ch].len = sp->clen);
+	}
+}
+
+/*
+ * __key_len --
+ *	Return the length of the string that will display the key.
+ *	This routine is the backup for the KEY_LEN() macro.
+ */
+size_t
+__key_len(sp, ch)
+	SCR *sp;
+	ARG_CHAR_T ch;
+{
+	(void)__key_name(sp, ch);
+	return (sp->clen);
+}
+
+/*
+ * __key_name --
+ *	Return the string that will display the key.  This routine
+ *	is the backup for the KEY_NAME() macro.
+ */
+CHAR_T *
+__key_name(sp, ach)
+	SCR *sp;
+	ARG_CHAR_T ach;
+{
+	static const CHAR_T hexdigit[] = "0123456789abcdef";
+	static const CHAR_T octdigit[] = "01234567";
+	CHAR_T ch, *chp, mask;
+	size_t len;
+	int cnt, shift;
+
+	/*
+	 * Historical mappings.  Printable characters are left alone.  Control
+	 * characters less than '\177' are represented as '^' followed by the
+	 * character offset from the '@' character in the ASCII map.  '\177' is
+	 * represented as '^' followed by '?'.
+	 *
+	 * XXX
+	 * The following code depends on the current locale being identical to
+	 * the ASCII map from '\100' to '\076' (\076 since that's the largest
+	 * character for which we can offset from '@' and get something that's
+	 * a printable character in ASCII.  I'm told that this is a reasonable
+	 * assumption...
+	 *
+	 * XXX
+	 * This code will only work with CHAR_T's that are multiples of 8-bit
+	 * bytes.
+	 */
+	ch = ach;
+	if (isprint(ch)) {
+		sp->cname[0] = ch;
+		len = 1;
+	} else if (ch <= '\076' && iscntrl(ch)) {
+		sp->cname[0] = '^';
+		sp->cname[1] = ch == '\177' ? '?' : '@' + ch;
+		len = 2;
+	} else if (O_ISSET(sp, O_OCTAL)) {
+#define	BITS	(sizeof(CHAR_T) * 8)
+#define	SHIFT	(BITS - BITS % 3)
+#define	TOPMASK	(BITS % 3 == 2 ? 3 : 1) << BITS - BITS % 3
+		sp->cname[0] = '\\';
+		sp->cname[1] = octdigit[(ch & TOPMASK) >> SHIFT];
+		shift = SHIFT - 3;
+		for (len = 2, mask = 7 << SHIFT - 3,
+		    cnt = BITS / 3; cnt-- > 0; mask >>= 3, shift -= 3)
+			sp->cname[len++] = octdigit[(ch & mask) >> shift];
+	} else {
+		sp->cname[0] = '0';
+		sp->cname[1] = 'x';
+		for (len = 2, chp = (u_int8_t *)&ch,
+		    cnt = sizeof(CHAR_T); cnt-- > 0; ++chp) {
+			sp->cname[len++] = hexdigit[(*chp & 0xf0) >> 4];
+			sp->cname[len++] = hexdigit[*chp & 0x0f];
+		}
+	}
+	sp->cname[sp->clen = len] = '\0';
+	return (sp->cname);
 }
 
 /*
@@ -569,7 +667,7 @@ not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 	/* Fill in the return information. */
 	chp->ch = ch;
 	chp->flags = tty->chf[tty->next];
-	chp->value = term_key_val(sp, ch);
+	chp->value = KEY_VAL(sp, ch);
 
 	/* Delete the character from the queue. */
 	QREM_HEAD(tty, 1);
@@ -648,7 +746,7 @@ term_user_key(sp, chp)
 	tty = sp->gp->tty;
 	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
 	chp->flags = 0;
-	chp->value = term_key_val(sp, chp->ch);
+	chp->value = KEY_VAL(sp, chp->ch);
 
 	QREM_TAIL(tty, 1);
 	return (INP_OK);
@@ -681,12 +779,12 @@ term_key_queue(sp)
 }
 
 /*
- * __term_key_val --
+ * __key_val --
  *	Fill in the value for a key.  This routine is the backup
- *	for the term_key_val() macro.
+ *	for the KEY_VAL() macro.
  */
 int
-__term_key_val(sp, ch)
+__key_val(sp, ch)
 	SCR *sp;
 	ARG_CHAR_T ch;
 {

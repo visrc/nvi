@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.95 1994/04/07 11:55:06 bostic Exp $ (Berkeley) $Date: 1994/04/07 11:55:06 $
+ *	$Id: screen.h,v 8.96 1994/04/09 18:08:54 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:08:54 $
  */
 
 /*
@@ -141,6 +141,10 @@ struct _scr {
 	struct sigaction intr_act;	/* Interrupt saved signal state. */
 	struct termios	 intr_term;	/* Interrupt saved terminal state. */
 	int	 intr_level;		/* 0-N: Interrupt level. */
+
+					/* Display character. */
+	CHAR_T	 cname[MAX_CHARACTER_COLUMNS + 1];
+	size_t	 clen;			/* Length of display character. */
 
 	void	*ex_private;		/* Ex private area. */
 	void	*sex_private;		/* Ex screen private area. */

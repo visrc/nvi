@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.26 1994/03/14 11:01:50 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:01:50 $";
+static char sccsid[] = "$Id: seq.c,v 8.27 1994/04/09 18:09:03 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:09:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -232,37 +232,36 @@ seq_dump(sp, stype, isname)
 	enum seqtype stype;
 	int isname;
 {
-	CHNAME const *cname;
 	SEQ *qp;
 	int cnt, len, olen;
-	char *p;
+	CHAR_T *p;
 
 	cnt = 0;
-	cname = sp->gp->cname;
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (stype != qp->stype)
 			continue;
 		++cnt;
 		for (p = qp->input,
-		    olen = qp->ilen, len = 0; olen > 0; --olen)
-			len += ex_printf(EXCOOKIE, "%s", cname[*p++].name);
+		    olen = qp->ilen, len = 0; olen > 0; --olen, ++p)
+			len += ex_printf(EXCOOKIE, "%s", KEY_NAME(sp, *p));
 		for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
 			len -= ex_printf(EXCOOKIE, " ");
 
 		if (qp->output != NULL)
 			for (p = qp->output,
-			    olen = qp->olen, len = 0; olen > 0; --olen)
+			    olen = qp->olen, len = 0; olen > 0; --olen, ++p)
 				len +=
-				    ex_printf(EXCOOKIE, "%s", cname[*p++].name);
+				    ex_printf(EXCOOKIE, "%s", KEY_NAME(sp, *p));
 		else
 			len = 0;
 
 		if (isname && qp->name != NULL) {
 			for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
 				len -= ex_printf(EXCOOKIE, " ");
-			for (p = qp->name, olen = qp->nlen; olen > 0; --olen)
+			for (p = qp->name,
+			    olen = qp->nlen; olen > 0; --olen, ++p)
 				(void)ex_printf(EXCOOKIE,
-				    "%s", cname[*p++].name);
+				    "%s", KEY_NAME(sp, *p));
 		}
 		(void)ex_printf(EXCOOKIE, "\n");
 	}
@@ -294,7 +293,7 @@ seq_save(sp, fp, prefix, stype)
 		for (p = qp->input, olen = qp->ilen; olen > 0; --olen) {
 			ch = *p++;
 			if (ch == LITERAL_CH || ch == '|' ||
-			    isblank(ch) || term_key_val(sp, ch) == K_NL)
+			    isblank(ch) || KEY_VAL(sp, ch) == K_NL)
 				(void)putc(LITERAL_CH, fp);
 			(void)putc(ch, fp);
 		}
@@ -304,7 +303,7 @@ seq_save(sp, fp, prefix, stype)
 			    olen = qp->olen; olen > 0; --olen) {
 				ch = *p++;
 				if (ch == LITERAL_CH || ch == '|' ||
-				    term_key_val(sp, ch) == K_NL)
+				    KEY_VAL(sp, ch) == K_NL)
 					(void)putc(LITERAL_CH, fp);
 				(void)putc(ch, fp);
 			}
