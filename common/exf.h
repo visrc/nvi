@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.29 1993/02/16 20:16:16 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:16 $
+ *	$Id: exf.h,v 5.30 1993/02/19 11:12:43 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:12:43 $
  */
 
 #ifndef _EXF_H_
@@ -33,20 +33,12 @@ typedef struct exf {
 	u_char rcmflags;
 
 	/*
-	 * Support functions.
-	 *
 	 * s_confirm:	confirm an action, yes or no.
 	 * s_end:	end the session.
-	 * s_change:	notify the screen of a line change.
-	 * s_relative:	return the most attractive character on the line.
-	 * s_update:	update the screen.
 	 */
 	enum confirmation
 		(*s_confirm)	__P((struct exf *, MARK *, MARK *));
 	int	(*s_end)	__P((struct exf *));
-	int	(*scr_change)	__P((struct exf *, recno_t, u_int));
-	int	(*scr_update)	__P((struct exf *));
-	size_t	(*scr_relative)	__P((struct exf *, recno_t));
 
 					/* Underlying database state. */
 	DB *db;				/* File db structure. */
