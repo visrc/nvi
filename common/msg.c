@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.59 2001/11/01 10:28:25 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:25 $";
+static const char sccsid[] = "$Id: msg.c,v 10.60 2002/03/27 10:06:56 skimo Exp $ (Berkeley) $Date: 2002/03/27 10:06:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -374,6 +374,10 @@ msgq_wstr(SCR *sp, mtype_t mtype, CHAR_T *str, char *fmt)
 	size_t nlen;
 	char *nstr;
 
+	if (str == NULL) {
+		msgq(sp, mtype, fmt);
+		return;
+	}
 	INT2CHAR(sp, str, STRLEN(str) + 1, nstr, nlen);
 	msgq_str(sp, mtype, nstr, fmt);
 }
