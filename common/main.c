@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.12 1992/04/14 09:24:38 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:24:38 $";
+static char sccsid[] = "$Id: main.c,v 5.13 1992/04/15 09:09:34 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:09:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -146,13 +146,13 @@ main(argc, argv)
 	 * Check the correct order for these.
 	 */
 	reading_exrc = 1;
-	(void)exfile(_PATH_SYSEXRC, 0);
+	(void)ex_cfile(_PATH_SYSEXRC, 0);
 	if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
-		(void)exfile(path, 0);
+		(void)ex_cfile(path, 0);
 	}
 	if (ISSET(O_EXRC))
-		(void)exfile(_NAME_EXRC, 0);
+		(void)ex_cfile(_NAME_EXRC, 0);
 	reading_exrc = 0;
 
 	/* Source the EXINIT environment variable. */
@@ -160,7 +160,7 @@ main(argc, argv)
 		if ((p = strdup(p)) == NULL)
 			msg("Error: %s", strerror(errno));
 		else {
-			(void)exstring(p, strlen(p));
+			(void)ex_cstring(p, strlen(p));
 			free(p);
 		}
 
@@ -197,7 +197,7 @@ main(argc, argv)
 
 	/* Now we do the immediate ex command that we noticed before. */
 	if (excmdarg)
-		(void)excmd(excmdarg);
+		(void)ex_cmd(excmdarg);
 
 	/*
 	 * Repeatedly call ex() or vi() (depending on the mode) until the
