@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 9.2 1995/01/11 16:18:49 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:18:49 $";
+static char sccsid[] = "$Id: vs_line.c,v 9.3 1995/01/12 18:18:00 bostic Exp $ (Berkeley) $Date: 1995/01/12 18:18:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,8 +50,7 @@ svi_line(sp, smp, yp, xp)
 {
 	SMAP *tsmp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
-	size_t offset_in_char, offset_in_line;
-	size_t oldy, oldx;
+	size_t offset_in_char, offset_in_line, oldy, oldx;
 	int ch, is_cached, is_infoline, is_partial, is_tab;
 	int list_tab, list_dollar;
 	char *p, nbuf[10];
@@ -228,11 +227,12 @@ empty:					ADDCH(ch);
 			    TAB_OFF(sp, scno) : KEY_LEN(sp, ch);
 			if (scno < cols_per_screen)
 				continue;
-			/*
-			 * Reset cols_per_screen to second and subsequent line
-			 * length.
-			 */
 			scno -= cols_per_screen;
+
+			/*
+			 * Reset the cols_per_screen to second and subsequent
+			 * line length.
+			 */
 			cols_per_screen = sp->cols;
 
 			/*
