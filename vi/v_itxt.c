@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.25 1993/01/30 17:31:59 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:31:59 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.26 1993/02/11 18:26:18 bostic Exp $ (Berkeley) $Date: 1993/02/11 18:26:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -98,6 +98,7 @@ v_ia(vp, fm, tm, rp)
 				GETLINE_ERR(fm->lno);
 				return (1);
 			}
+			flags = N_APPENDEOL;
 			len = 0;
 		} else if (len) {
 			if (len == curf->cno + 1) {
@@ -264,10 +265,8 @@ v_Change(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
+	int flags;
 	u_char *p;
-
-	if (cut(curf, VICB(vp), fm, tm, 1))
-		return (1);
 
 	/*
 	 * There are two cases -- if a count is supplied, we do a line
@@ -276,10 +275,16 @@ v_Change(vp, fm, tm, rp)
 	 */
 	tm->lno = fm->lno + (vp->flags & VC_C1SET ? vp->count - 1 : 0);
 	if (fm->lno != tm->lno) {
+		/* Make sure that the to line is real. */
 		if (file_gline(curf, tm->lno, NULL) == NULL) {
 			GETLINE_ERR(tm->lno);
 			return (1);
 		}
+
+		/* Cut the line. */
+		if (cut(curf, VICB(vp), fm, tm, 1))
+			return (1);
+
 		/* Insert a line while we still can... */
 		if (file_iline(curf, fm->lno, (u_char *)"", 0))
 			return (1);
@@ -296,15 +301,21 @@ v_Change(vp, fm, tm, rp)
 		return (newtext(vp, NULL, p, len, rp, OOBLNO, 0));
 	}
 
-	if ((p = file_gline(curf, tm->lno, &len)) == NULL) {
+	/* The line may be empty, but that's okay. */
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
 		if (file_lline(curf) != 0) {
 			GETLINE_ERR(tm->lno);
 			return (1);
 		}
-		tm->cno = 0;
-	} else
+		flags = N_APPENDEOL;
+		len = 0;
+	} else {
+		if (cut(curf, VICB(vp), fm, tm, 1))
+			return (1);
 		tm->cno = len;
-	return (newtext(vp, tm, p, len, rp, OOBLNO, N_EMARK | N_OVERWRITE));
+		flags = N_EMARK | N_OVERWRITE;
+	}
+	return (newtext(vp, fm, p, len, rp, OOBLNO, flags));
 }
 
 /*
@@ -317,18 +328,21 @@ v_change(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	int lmode;
+	int flags, lmode;
 	u_char *p;
 
 	lmode = vp->flags & VC_LMODE;
-	if (cut(curf, VICB(vp), fm, tm, lmode))
-		return (1);
 
 	/*
 	 * If the movement is off the line, delete the range, insert a new
 	 * line and go into insert mode.
 	 */
 	if (fm->lno != tm->lno) {
+		/* Cut the line. */
+		if (cut(curf, VICB(vp), fm, tm, lmode))
+			return (1);
+
+		/* Insert a line while we still can... */
 		if (file_iline(curf, fm->lno, (u_char *)"", 0))
 			return (1);
 		++fm->lno;
@@ -350,9 +364,15 @@ v_change(vp, fm, tm, rp)
 			GETLINE_ERR(fm->lno);
 			return (1);
 		}
+		flags = N_APPENDEOL;
 		len = 0;
+	} else {
+		/* Cut the line. */
+		if (cut(curf, VICB(vp), fm, tm, lmode))
+			return (1);
+		flags = N_EMARK | N_OVERWRITE;
 	}
-	return (newtext(vp, tm, p, len, rp, OOBLNO, N_EMARK | N_OVERWRITE));
+	return (newtext(vp, tm, p, len, rp, OOBLNO, flags));
 }
 
 /*
@@ -366,7 +386,7 @@ v_Replace(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	int notfirst;
+	int flags, notfirst;
 	u_char *p;
 
 	*rp = *fm;
@@ -377,8 +397,10 @@ v_Replace(vp, fm, tm, rp)
 				GETLINE_ERR(fm->lno);
 				return (1);
 			}
+			flags = N_APPENDEOL;
 			len = 0;
-		}
+		} else
+			flags = N_OVERWRITE | N_REPLACE;
 		/*
 		 * Special case.  The historic vi handled [count]R badly, in
 		 * that R would replace some number of characters, and then
@@ -387,19 +409,16 @@ v_Replace(vp, fm, tm, rp)
 		 * counts R commands.  Move back to where the user stopped
 		 * replacing after each R command.
 		 */
-		if (notfirst) {
-			if (len) {
-				++rp->cno;
-				curf->lno = rp->lno;
-				curf->cno = rp->cno;
-				vp->flags |= VC_ISDOT;
-			}
+		if (notfirst && len) {
+			++rp->cno;
+			curf->lno = rp->lno;
+			curf->cno = rp->cno;
+			vp->flags |= VC_ISDOT;
 		}
 		notfirst = 1;
 		tm->lno = rp->lno;
 		tm->cno = len ? len : 0;
-		if (newtext(vp,
-		    tm, p, len, rp, OOBLNO, N_OVERWRITE | N_REPLACE))
+		if (newtext(vp, tm, p, len, rp, OOBLNO, flags))
 			return (1);
 	}
 	return (0);
@@ -415,6 +434,7 @@ v_subst(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
+	int flags;
 	u_char *p;
 
 	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
@@ -423,17 +443,19 @@ v_subst(vp, fm, tm, rp)
 			return (1);
 		}
 		len = 0;
-	}
+		flags = N_APPENDEOL;
+	} else
+		flags = N_EMARK | N_OVERWRITE;
 
 	tm->lno = fm->lno;
 	tm->cno = fm->cno + (vp->flags & VC_C1SET ? vp->count : 1);
 	if (tm->cno > len)
 		tm->cno = len;
 
-	if (cut(curf, VICB(vp), fm, tm, 0))
+	if (p != NULL && cut(curf, VICB(vp), fm, tm, 0))
 		return (1);
 
-	return (newtext(vp, tm, p, len, rp, OOBLNO, N_EMARK | N_OVERWRITE));
+	return (newtext(vp, tm, p, len, rp, OOBLNO, flags));
 }
 
 /* Allocate a new TEXT structure. */
