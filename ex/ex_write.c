@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.24 1993/04/05 07:11:56 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:56 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.25 1993/04/12 14:39:08 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:39:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,10 +39,22 @@ ex_write(sp, ep, cmdp)
 	int fd, flags, force;
 	char *fname;
 
+	p = cmdp->string ? cmdp->string : "";
+
+	/* If "write!" it's a force to a file. */
+	if (*p == '!') {
+		++p;
+		force = 1;
+	} else
+		force = 0;
+
+	/* Skip whitespace. */
+	for (; *p && isspace(*p); ++p);
+
 	/* If nothing, just write the file back. */
-	if ((p = cmdp->string) == NULL) {
+	if (!*p) {
 		if (F_ISSET(ep, F_NONAME)) {
-			msgq(sp, M_ERROR, "No filename to which to write.");
+			msgq(sp, M_ERR, "No filename to which to write.");
 			return (1);
 		}
 		if (F_ISSET(ep, F_NAMECHANGED)) {
@@ -51,24 +63,14 @@ ex_write(sp, ep, cmdp)
 			force = 0;
 			goto noargs;
 		} else
-			return (file_sync(sp, ep, 0));
+			return (file_sync(sp, ep, force));
 	}
-
-	/* If "write!" it's a force to a file. */
-	if (*p == '!') {
-		force = 1;
-		++p;
-	} else
-		force = 0;
-
-	/* Skip whitespace. */
-	for (; *p && isspace(*p); ++p);
 
 	/* If "write !" it's a pipe to a utility. */
 	if (*p == '!') {
 		for (; *p && isspace(*p); ++p);
 		if (*p == '\0') {
-			msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
 		if (filtercmd(sp, ep,
@@ -99,24 +101,24 @@ ex_write(sp, ep, cmdp)
 		fname = (char *)cmdp->argv[0];
 		break;
 	default:
-		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* If the file exists, must either be a ! or a >> flag. */
 noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "%s already exists -- use ! to overwrite it.", fname);
 		return (1);
 	}
 
 	if ((fd = open(fname, flags | O_CREAT | O_WRONLY, DEFFILEMODE)) < 0) {
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (ex_writefp(sp, ep, fname, fp, &cmdp->addr1, &cmdp->addr2, 1))
@@ -165,11 +167,11 @@ ex_writefp(sp, ep, fname, fp, fm, tm, success_msg)
 				break;
 		}
 	if (fclose(fp)) {
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (success_msg)
-		msgq(sp, M_DISPLAY, "%s: %lu lines, %lu characters.",
+		msgq(sp, M_INFO, "%s: %lu lines, %lu characters.",
 		    fname, tm->lno == 0 ? 0 : tm->lno - fm->lno + 1, ccnt);
 	return (0);
 }
