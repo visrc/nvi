@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.29 1994/03/11 10:41:14 bostic Exp $ (Berkeley) $Date: 1994/03/11 10:41:14 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.30 1994/03/14 10:45:24 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.29 1994/03/11 10:41:14 bostic Exp $ (B
 		LF_SET(TXT_TTYWERASE);					\
 }
 
-/* 
+/*
  * !!!
  * There's a problem with the way that we do logging for change commands with
  * implied motions (e.g. A, I, O, cc, etc.).  Since the main vi loop logs the
@@ -529,7 +529,7 @@ v_CS(sp, ep, vp, iflags)
 		sp->lno = vp->m_start.lno;
 		sp->cno = 0;
 		LF_SET(TXT_APPENDEOL);
-	} else { 
+	} else {
 		/* The line may be empty, but that's okay. */
 		if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
