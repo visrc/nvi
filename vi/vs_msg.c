@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.73 1996/06/28 15:28:13 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:13 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.74 1996/08/16 18:56:39 bostic Exp $ (Berkeley) $Date: 1996/08/16 18:56:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -572,7 +572,7 @@ vs_ex_resolve(sp, continuep)
 			return (0);
 		}
 
-	/* Clear the required wait flag -- we're going to wait. */
+	/* Clear the required wait flag, it's no longer needed. */
 	F_CLR(sp, SC_EX_WAIT_YES);
 
 	/*
