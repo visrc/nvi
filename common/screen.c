@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.9 1993/05/08 16:08:13 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:08:13 $";
+static char sccsid[] = "$Id: screen.c,v 5.10 1993/05/09 14:13:45 bostic Exp $ (Berkeley) $Date: 1993/05/09 14:13:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -344,7 +344,9 @@ cut_copy(a, b)
 				FREE(tp, sizeof(TEXT));
 				return (1);
 			}
-			memmove(atp->lb, tp->lb, tp->len = atp->len);
+			tp->lb_len = tp->len = atp->len;
+			tp->wd = NULL;
+			memmove(tp->lb, atp->lb, atp->len);
 			HDR_INSERT(tp, &bcb->txthdr, next, prev, TEXT);
 		}
 		bcb->len = acb->len;
