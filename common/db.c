@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.4 1993/08/06 22:14:36 bostic Exp $ (Berkeley) $Date: 1993/08/06 22:14:36 $";
+static char sccsid[] = "$Id: db.c,v 8.5 1993/08/06 22:56:17 bostic Exp $ (Berkeley) $Date: 1993/08/06 22:56:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,33 +17,7 @@ static char sccsid[] = "$Id: db.c,v 8.4 1993/08/06 22:14:36 bostic Exp $ (Berkel
 #include "vi.h"
 #include "recover.h"
 
-/*
- * UPDATE_SCREENS --
- *	Macro to walk the screens and update all of them that are backed
- *	by the file that just changed.  Always update the current screen
- *	last, so that the cursor ends up in the right place.
- */
-#define	UPDATE_SCREENS(op) {						\
-	if (ep->refcnt != 1) {						\
-		SCR *__tsp;						\
-		for (__tsp = sp->parent;				\
-		    __tsp != NULL; __tsp = __tsp->parent)		\
-			if (__tsp->ep == ep &&				\
-			    __tsp->s_change != NULL) {			\
-				(void)sp->s_change(__tsp, ep, lno, op);	\
-				(void)sp->s_refresh(__tsp, ep);		\
-			}						\
-		for (__tsp = sp->child;					\
-		    __tsp != NULL; __tsp = __tsp->child)		\
-			if (__tsp->ep == ep &&				\
-			    __tsp->s_change != NULL) {			\
-				(void)sp->s_change(__tsp, ep, lno, op);	\
-				(void)sp->s_refresh(__tsp, ep);		\
-			}						\
-	}								\
-	if (sp->s_change != NULL)					\
-		(void)sp->s_change(sp, ep, lno, op);			\
-}
+static inline int scr_update __P((SCR *, EXF *, recno_t, enum operation, int));
 
 /*
  * file_gline --
@@ -176,8 +150,7 @@ file_dline(sp, ep, lno)
 	F_SET(ep, F_MODIFIED);
 
 	/* Update screen. */
-	UPDATE_SCREENS(LINE_DELETE);
-	return (0);
+	return (scr_update(sp, ep, lno, LINE_DELETE, 1));
 }
 
 /*
@@ -252,9 +225,7 @@ file_aline(sp, ep, update, lno, p, len)
 	 * is called to copy the new lines from the cut buffer into the file,
 	 * it has to know not to update the screen again.
 	 */ 
-	if (update)
-		UPDATE_SCREENS(LINE_APPEND);
-	return (0);
+	return (scr_update(sp, ep, lno, LINE_APPEND, update));
 }
 
 /*
@@ -312,8 +283,7 @@ file_iline(sp, ep, lno, p, len)
 	log_line(sp, ep, lno, LOG_LINE_INSERT);
 
 	/* Update screen. */
-	UPDATE_SCREENS(LINE_INSERT);
-	return (0);
+	return (scr_update(sp, ep, lno, LINE_INSERT, 1));
 }
 
 /*
@@ -362,8 +332,7 @@ file_sline(sp, ep, lno, p, len)
 	log_line(sp, ep, lno, LOG_LINE_RESET_F);
 	
 	/* Update screen. */
-	UPDATE_SCREENS(LINE_RESET);
-	return (0);
+	return (scr_update(sp, ep, lno, LINE_RESET, 1));
 }
 
 /*
@@ -413,5 +382,59 @@ file_lline(sp, ep, lnop)
 	*lnop = (F_ISSET(sp, S_INPUT) &&
 	    ((TEXT *)sp->txthdr.prev)->lno > lno ?
 	    ((TEXT *)sp->txthdr.prev)->lno : lno);
+	return (0);
+}
+
+/*
+ * scr_update --
+ *	Walk the screens and update all of them that are backed by the
+ *	file that just changed.  Do the current screen last so that the
+ *	cursor ends up in the right place.
+ *
+ * XXX
+ * Don't refresh the current screen, assume that it will be refreshed
+ * by the caller when the caller is done.  This is wrong, we shouldn't
+ * have to refresh all of the screens this much.  It should be possible
+ * to just have an scr_refresh() routine that refreshed all related
+ * screens, and replace all occurrences of s_refresh with it?
+ *
+ * XXX
+ * This routine probably depends on the "current" flag not being unset
+ * during editing -- it seems to me that there may be ways to make the
+ * cursor end up on the wrong screen after an update.  I think the
+ * underlying assumption is that the "current" screen will be refreshed
+ * after the updates to the other screens are done:
+ *
+ *	the user edits the text using v_ntext(), and the
+ *		current screen is updated as keys are entered.
+ *	the current screen is resolved, related screens
+ *		updated here
+ *	the current screen is refreshed and the cursor returns
+ *		to the right position.
+ */
+static inline int
+scr_update(sp, ep, lno, op, current)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;
+	enum operation op;
+	int current;
+{
+	SCR *tsp;
+
+	if (ep->refcnt != 1) {
+		for (tsp = sp->parent; tsp != NULL; tsp = tsp->parent)
+			if (tsp->ep == ep && tsp->s_change != NULL) {
+				(void)sp->s_change(tsp, ep, lno, op);
+				(void)sp->s_refresh(tsp, ep);
+			}
+		for (tsp = sp->child; tsp != NULL; tsp = tsp->child)
+			if (tsp->ep == ep && tsp->s_change != NULL) {
+				(void)sp->s_change(tsp, ep, lno, op);
+				(void)sp->s_refresh(tsp, ep);
+			}
+	}
+	if (current && sp->s_change != NULL)
+		return (sp->s_change(sp, ep, lno, op));
 	return (0);
 }
