@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.5 1994/11/10 16:21:14 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:21:14 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.6 1994/11/19 11:55:02 bostic Exp $ (Berkeley) $Date: 1994/11/19 11:55:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1802,12 +1802,11 @@ txt_showmatch(sp)
 	for (cnt = 1;;) {
 		if (cs_prev(sp, &cs))
 			return;
-		if (cs.cs_lno < m.lno ||
-		    cs.cs_lno == m.lno && cs.cs_cno < m.cno)
-			return;
 		if (cs.cs_flags != 0) {
 			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF) {
-				(void)sp->s_bell(sp);
+				msgq(sp, M_BERR,
+				    "Unmatched %s", KEY_NAME(sp, endc));
+				(void)sp->s_refresh(sp);
 				return;
 			}
 			continue;
@@ -1818,7 +1817,10 @@ txt_showmatch(sp)
 			break;
 	}
 
-	/* Move to the match. */
+	/* If the match is on the screen, move to it. */
+	if (cs.cs_lno < m.lno ||
+	    cs.cs_lno == m.lno && cs.cs_cno < m.cno)
+		return;
 	m.lno = sp->lno;
 	m.cno = sp->cno;
 	sp->lno = cs.cs_lno;
