@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.43 1996/02/28 18:45:02 bostic Exp $ (Berkeley) $Date: 1996/02/28 18:45:02 $
+dnl	$Id: configure.in,v 8.44 1996/02/28 19:20:28 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:20:28 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -9,6 +9,19 @@ AC_C_CROSS()
 AC_PROG_CPP()
 AC_PROG_INSTALL()
 AC_CANONICAL_HOST
+
+dnl If the user wants a debugging environment, set CFLAGS now.
+dnl Some compilers won't mix optimizing and debug flags.
+AC_MSG_CHECKING(for debugging)
+AC_CACHE_VAL(vi_cv_debug, [dnl
+AC_ARG_ENABLE(debug,
+	[  --enable-debug          Build a debugging version.],
+	[vi_cv_debug="yes"], [vi_cv_debug="no"])])
+if test "$vi_cv_debug" = yes; then
+	CFLAGS=${CFLAGS-"-g"}
+	CPPFLAGS=${CPPFLAGS-"-DDEBUG"}
+fi
+AC_MSG_RESULT($vi_cv_debug)
 
 dnl Compilers, compiler flags and libraries per architecture.
 dnl XXX
@@ -129,7 +142,7 @@ AC_ARG_ENABLE(tclinterp,
 if test "$vi_cv_tclinterp" = yes; then
 	if test "$vi_cv_tcltk" = yes; then
 		LIBS=$TKLIBS
-		AC_DEFINE(HAVE_TCL_INTERP)
+		CPPFLAGS="-DHAVE_TCL_INTERP $CPPFLAGS"
 	else
 		echo
 		echo "Fatal error: the Tcl/Tk libraries not found."
