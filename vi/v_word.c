@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.18 1994/03/15 14:30:00 bostic Exp $ (Berkeley) $Date: 1994/03/15 14:30:00 $";
+static char sccsid[] = "$Id: v_word.c,v 8.19 1994/07/15 17:45:18 bostic Exp $ (Berkeley) $Date: 1994/07/15 17:45:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -528,17 +528,12 @@ ret:	if (cs.cs_lno == vp->m_start.lno && cs.cs_cno == vp->m_start.cno) {
 	vp->m_stop.cno = cs.cs_cno;
 
 	/*
-	 * Non-motion commands move to the end of the range.  VC_D commands
-	 * move to the end of the range.  VC_Y stays at the start unless the
-	 * end of the range is on a different line, when it moves to the end
-	 * of the range.  Ignore VC_C and VC_S.  Motion commands adjust the
-	 * starting point to the character before the current one.
+	 * All commands move to the end of the range.  Motion commands
+	 * adjust the starting point to the character before the current
+	 * one.
 	 */
 	vp->m_final = vp->m_stop;
-	if (ISMOTION(vp)) {
+	if (ISMOTION(vp))
 		--vp->m_start.cno;
-		if (F_ISSET(vp, VC_Y) && vp->m_start.lno == vp->m_stop.lno)
-			vp->m_final = vp->m_start;
-	}
 	return (0);
 }
