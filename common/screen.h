@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.32 1993/05/04 15:58:53 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:58:53 $
+ *	$Id: screen.h,v 5.33 1993/05/04 17:50:03 bostic Exp $ (Berkeley) $Date: 1993/05/04 17:50:03 $
  */
 
 /*
@@ -85,8 +85,8 @@ typedef struct _scr {
 	struct _scr	*snext;		/* Next screen to display. */
 
 					/* Physical screen information. */
-	struct _smap	*h_smap;	/* Head of screen/row map. */
-	struct _smap	*t_smap;	/* Tail of screen/row map. */
+	struct _smap	*h_smap;	/* First entry in screen/row map. */
+	struct _smap	*t_smap;	/*  Last entry in screen/row map. */
 
 	recno_t	 lno;			/* 1-N:     cursor file line. */
 	recno_t	 olno;			/* 1-N: old cursor file line. */
