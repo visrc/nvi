@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 5.15 1993/03/26 13:40:37 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:37 $";
+static char sccsid[] = "$Id: v_put.c,v 5.16 1993/04/20 18:44:27 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:44:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,21 @@ v_Put(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	/*
+	 * Historical whackadoo.  The dot command `puts' the numbered buffer
+	 * after the last one put.  For example, `"4p .' would put buffer #4
+	 * and buffer #5.  If the user continued to enter '.', the #9 buffer
+	 * would be repeatedly output.  This was not documented, and is a bit
+	 * tricky to reconstruct.  Historical versions of vi also dropped the
+	 * contents of the default buffer after each put, so after `"4p' the
+	 * default buffer would be empty.  This makes no sense to me, so we
+	 * don't bother.
+	 *
+	 * This code assumes sequential order of numeric characters.
+	 */
+	if (F_ISSET(vp, VC_ISDOT) && vp->buffer >= '1' && vp->buffer <= '8')
+		++vp->buffer;
+
 	return (put(sp, ep, VICB(vp), fm, rp, 0));
 }
 
@@ -39,5 +54,8 @@ v_put(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	if (F_ISSET(vp, VC_ISDOT) && vp->buffer >= '1' && vp->buffer <= '8')
+		++vp->buffer;
+
 	return (put(sp, ep, VICB(vp), fm, rp, 1));
 }
