@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.30 1992/12/20 15:54:14 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:14 $";
+static char sccsid[] = "$Id: options.c,v 5.31 1992/12/20 20:21:42 bostic Exp $ (Berkeley) $Date: 1992/12/20 20:21:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -37,14 +37,15 @@ static int	f_sidescroll __P((void *));
 static int	f_tabstop __P((void *));
 static int	f_wrapmargin __P((void *));
 
-static long	s_columns;
-static long	s_keytime;
-static long	s_lines;
-static long	s_scroll;
-static long	s_shiftwidth;
-static long	s_sidescroll;
-static long	s_tabstop;
-static long	s_wrapmargin;
+static long	s_columns	= 80;
+static long	s_keytime	=  2;
+static long	s_lines		= 24;
+static long	s_report	=  5;
+static long	s_scroll	= 12;
+static long	s_shiftwidth	=  8;
+static long	s_sidescroll	= 16;
+static long	s_tabstop	=  8;
+static long	s_wrapmargin	=  0;
 
 static int opts_abbcmp __P((const void *, const void *));
 static int opts_cmp __P((const void *, const void *));
@@ -114,7 +115,7 @@ OPTIONS opts[] = {
 /* O_READONLY */
 	"readonly",	NULL,		NULL,		OPT_0BOOL,
 /* O_REPORT */
-	"report",	NULL,		NULL,		OPT_NUM,
+	"report",	&s_report,	NULL,		OPT_NUM,
 /* O_RULER */
 	"ruler",	NULL,		f_ruler,	OPT_0BOOL,
 /* O_SCROLL */
@@ -540,6 +541,10 @@ f_tabstop(valp)
 
 	val = *(u_long *)valp;
 
+	if (val == 0) {
+		msg("Tab stops can't be set to 0.\n");
+		return (1);
+	}
 #define	MAXTABSTOP	20
 	if (val > MAXTABSTOP) {
 		msg("Tab stops can't be larger than %d.\n", MAXTABSTOP);
