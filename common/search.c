@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.35 1993/05/10 19:10:58 bostic Exp $ (Berkeley) $Date: 1993/05/10 19:10:58 $";
+static char sccsid[] = "$Id: search.c,v 5.36 1993/05/12 17:10:53 bostic Exp $ (Berkeley) $Date: 1993/05/12 17:10:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,8 +38,8 @@ resetup(sp, rep, dir, ptrn, epp, deltap, wordoffsetp, flags)
 	int *wordoffsetp;
 	u_int flags;
 {
-	int eval, re_flags, replaced;
-	char *endp, delim[2];
+	int delim, eval, re_flags, replaced;
+	char *p, *t;
 
 	/* Set return information the default. */
 	*deltap = 0;
@@ -67,12 +67,19 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/* Set delimiter. */
-		delim[0] = *ptrn++;
-		delim[1] = '\0';
+		delim = *ptrn++;
 
-		/* Find terminating delimiter. */
-		endp = ptrn;
-		ptrn = strsep(&endp, delim);
+		/* Find terminating delimiter, handling escaped delimiters. */
+		for (p = t = ptrn;;)
+			if (p[1] && p[0] == '\\') {
+				++p;
+				*t++ = *p++;
+			} else if (p[0] == '\0' || p[0] == delim) {
+				*t = '\0';
+				++p;
+				break;
+			} else
+				*t++ = *p++;
 
 		/*
 		 * If characters after the terminating delimiter, it may
@@ -81,16 +88,16 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		 * change the end pointer to reference a NULL.  Don't just
 		 * whack the string, in case it's text space.
 		 */
-		if (endp != NULL && *endp != '\0') {
+		if (*p) {
 			if (LF_ISSET(SEARCH_TERM)) {
 				msgq(sp, M_ERR,
 				    "Characters after search string.");
 				return (1);
 			}
-			if (get_delta(sp, &endp, deltap))
+			if (get_delta(sp, &p, deltap))
 				return (1);
 			if (epp != NULL)
-				*epp = endp;
+				*epp = p;
 		} else {
 			/*
 			 * STATIC: NEVER WRITTEN.
