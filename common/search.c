@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.5 1995/01/11 18:47:14 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:47:14 $";
+static char sccsid[] = "$Id: search.c,v 9.6 1995/01/11 18:54:30 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:54:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,14 +45,13 @@ static void	smsg __P((SCR *, enum smsgtype));
  *	Set up a search for a regular expression.
  */
 static int
-resetup(sp, rep, dir, ptrn, epp, flagp)
+resetup(sp, rep, dir, ptrn, epp, flags)
 	SCR *sp;
 	regex_t **rep;
 	enum direction dir;
 	char *ptrn, **epp;
-	u_int *flagp;
-{
 	u_int flags;
+{
 	int delim, eval, re_flags, replaced;
 	char *p, *t;
 
@@ -61,7 +60,6 @@ resetup(sp, rep, dir, ptrn, epp, flagp)
 	 * character is supplied.  Only the pattern was saved, historic vi
 	 * did not reuse any addressing information/delta supplied.
 	 */
-	flags = *flagp;
 	if (ptrn == NULL)
 		goto prev;
 	if (ptrn[1] == '\0') {
@@ -228,23 +226,21 @@ ctag_conv(sp, ptrnp, replacedp)
 }
 
 int
-f_search(sp, fm, rm, ptrn, eptrn, flagp)
+f_search(sp, fm, rm, ptrn, eptrn, flags)
 	SCR *sp;
 	MARK *fm, *rm;
 	char *ptrn, **eptrn;
-	u_int *flagp;
+	u_int flags;
 {
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len;
-	u_int flags;
 	int btear, eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, &lno))
 		return (1);
-	flags = *flagp;
 	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
 			smsg(sp, S_EMPTY);
@@ -252,7 +248,7 @@ f_search(sp, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, FORWARD, ptrn, eptrn, flagp))
+	if (resetup(sp, &re, FORWARD, ptrn, eptrn, flags))
 		return (1);
 
 	/*
@@ -364,23 +360,21 @@ f_search(sp, fm, rm, ptrn, eptrn, flagp)
 }
 
 int
-b_search(sp, fm, rm, ptrn, eptrn, flagp)
+b_search(sp, fm, rm, ptrn, eptrn, flags)
 	SCR *sp;
 	MARK *fm, *rm;
 	char *ptrn, **eptrn;
-	u_int *flagp;
+	u_int flags;
 {
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len, last;
-	u_int flags;
 	int btear, eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, &lno))
 		return (1);
-	flags = *flagp;
 	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
 			smsg(sp, S_EMPTY);
@@ -388,7 +382,7 @@ b_search(sp, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, flagp))
+	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, flags))
 		return (1);
 
 	/* If in the first column, start searching on the previous line. */
