@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.20 1993/12/02 18:47:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 18:47:51 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.21 1993/12/02 19:49:52 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:49:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -474,7 +474,14 @@ err:		(void)close(output[0]);
 
 	rval = 0;
 
-	/* Copy process output into a buffer. */
+	/*
+	 * Copy process output into a buffer.
+	 *
+	 * !!!
+	 * Historic vi apparently discarded leading \n and \r's from
+	 * the shell output stream.  We don't on the grounds that any
+	 * shell that does that is broken.
+	 */
 	for (p = bp, len = 0, ch = EOF;
 	    --blen && (ch = getc(ifp)) != EOF; *p++ = ch, ++len);
 	if (ch != EOF) {
