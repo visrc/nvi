@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.19 1993/10/05 12:05:00 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:00 $";
+static char sccsid[] = "$Id: search.c,v 8.20 1993/10/27 14:55:27 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:55:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: search.c,v 8.19 1993/10/05 12:05:00 bostic Exp $ (B
 #include "vi.h"
 
 static int	check_delta __P((SCR *, EXF *, long, recno_t));
-static int	check_word __P((SCR *, char **, int *));
 static int	ctag_conv __P((SCR *, char **, int *));
 static int	get_delta __P((SCR *, char **, long *, u_int *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
@@ -122,7 +121,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		}
 
 		/* Replace any word search pattern. */
-		if (check_word(sp, &ptrn, &replaced))
+		if (search_word(sp, &ptrn, &replaced))
 			return (1);
 	} else if (LF_ISSET(SEARCH_TAG)) {
 		if (ctag_conv(sp, &ptrn, &replaced))
@@ -511,11 +510,11 @@ err:	busy_off(sp);
 }
 
 /*
- * check_word --
+ * search_word --
  *	Vi special cases the pattern "\<ptrn\>", doing "word" searches.
  */
-static int
-check_word(sp, ptrnp, replacedp)
+int
+search_word(sp, ptrnp, replacedp)
 	SCR *sp;
 	char **ptrnp;
 	int *replacedp;
