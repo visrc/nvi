@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.6 1992/10/24 14:27:13 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:27:13 $";
+static char sccsid[] = "$Id: v_util.c,v 5.7 1992/10/26 17:48:06 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:48:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,7 +149,6 @@ v_leaveex()
 
 	/* Put the cursor back. */
 	MOVE(oldy, oldx);
-TRACE("v_leaveex: move to y %u x %u\n", oldy, oldx);
 
 #ifdef notdef
 	/*
