@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.8 1995/01/08 12:20:15 bostic Exp $ (Berkeley) $Date: 1995/01/08 12:20:15 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.9 1995/01/10 18:52:59 bostic Exp $ (Berkeley) $Date: 1995/01/10 18:52:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,11 +37,10 @@ static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int *));
 static void	 txt_err __P((SCR *, TEXTH *));
 static int	 txt_hex __P((SCR *, TEXT *));
-static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *,
 		    TEXT *, CHAR_T *, TEXT *, u_int, int *));
 static void	 txt_nomorech __P((SCR *));
-static int	 txt_outdent __P((SCR *, TEXT *));
+static int	 txt_dent __P((SCR *, TEXT *, int));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
 static int	 txt_resolve __P((SCR *, TEXTH *, u_int));
@@ -706,7 +705,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			case C_NOTSET:		/* ^D */
 				if (sp->cno > tp->ai + tp->offset)
 					goto ins_ch;
-				(void)txt_outdent(sp, tp);
+				(void)txt_dent(sp, tp, 0);
 				break;
 			default:
 				abort();
@@ -878,7 +877,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 		case K_CNTRLT:			/* Add autoindent char. */
 			if (!LF_ISSET(TXT_CNTRLT))
 				goto ins_ch;
-			if (txt_indent(sp, tp))
+			if (txt_dent(sp, tp, 1))
 				goto err;
 			goto ebuf_chk;
 #ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_SUSPEND
@@ -1012,7 +1011,17 @@ insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 
 			tp->lb[sp->cno++] = ch;
 
-			/* Check to see if we've crossed the margin. */
+			/*
+			 * Check to see if we've crossed the margin.
+			 *
+			 * !!!
+			 * In the historic vi, the wrapmargin value was figured
+			 * out using the display widths of the characters, i.e.
+			 * <tab> characters were counted as two characters if
+			 * the list edit option is set, but as the tabstop edit
+			 * option number of characters otherwise.  That's what
+			 * the s_column() function gives us, so we use it.
+			 */
 			if (margin) {
 				if (sp->s_column(sp, &col))
 					goto err;
@@ -1571,161 +1580,157 @@ nothex:		tp->lb[sp->cno] = savec;
 }
 
 /*
- * Txt_indent and txt_outdent are truly strange.  ^T and ^D do movements
- * to the next or previous shiftwidth value, i.e. for a 1-based numbering,
- * with shiftwidth=3, ^T moves a cursor on the 7th, 8th or 9th column to
- * the 10th column, and ^D moves it back.
+ * Text indentation is truly strange.  ^T and ^D do movements to the next or
+ * previous shiftwidth value, i.e. for a 1-based numbering, with shiftwidth=3,
+ * ^T moves a cursor on the 7th, 8th or 9th column to the 10th column, and ^D
+ * moves it back.
  *
  * !!!
- * The ^T and ^D characters in historical vi only had special meaning when
- * they were the first characters typed after entering text input mode.
- * Since normal erase characters couldn't erase autoindent (in this case
- * ^T) characters, this meant that inserting text into previously existing
- * text was quite strange, ^T only worked if it was the first keystroke,
- * and then it could only be erased by using ^D.  This implementation treats
- * ^T specially anywhere it occurs in the input, and permits the standard
- * erase characters to erase characters inserted using it.
+ * The ^T and ^D characters in historical vi had special meaning only when they
+ * were the first characters entered after entering text input mode.  As normal
+ * erase characters couldn't erase autoindent characters (^T in this case), it
+ * meant that inserting text into previously existing text was strange -- ^T
+ * only worked if it was the first keystroke(s), and then could only be erased
+ * using ^D.  This implementation treats ^T specially anywhere it occurs in the
+ * input, and permits the standard erase characters to erase the characters it
+ * inserts.
+ *
+ * !!!
+ * A fun test is to try:
+ *	:se sw=4 ai list
+ *	i<CR>^Tx<CR>^Tx<CR>^Tx<CR>^Dx<CR>^Dx<CR>^Dx<esc>
+ * Historic vi loses some of the '$' marks on the line ends, but otherwise gets
+ * it right.
  *
  * XXX
- * Technically, txt_indent, txt_outdent should part of the screen interface,
- * as they require knowledge of the size of a space character on the screen.
- * (Not the size of tabs, because tabs are logically composed of spaces.)
- * They're left in the text code  because they're complicated, not to mention
- * the gruesome awareness that if spaces aren't a single column on the screen
- * for any language, we're into some serious, ah, for lack of a better word,
- * "issues".
- */
-
-/*
- * txt_indent --
- *	Handle ^T indents.
- */
-static int
-txt_indent(sp, tp)
-	SCR *sp;
-	TEXT *tp;
-{
-	u_long sw, ts;
-	size_t cno, off, scno, spaces, tabs;
-
-	ts = O_VAL(sp, O_TABSTOP);
-	sw = O_VAL(sp, O_SHIFTWIDTH);
-
-	/* Get the current screen column. */
-	for (off = scno = 0; off < sp->cno; ++off)
-		if (tp->lb[off] == '\t')
-			scno += STOP_OFF(scno, ts);
-		else
-			++scno;
-
-	/* Count up spaces/tabs needed to get to the target. */
-	for (cno = scno, scno += STOP_OFF(scno, sw), tabs = 0;
-	    cno + STOP_OFF(cno, ts) <= scno; ++tabs)
-		cno += STOP_OFF(cno, ts);
-	spaces = scno - cno;
-
-	/* Put space/tab characters in place of any overwrite characters. */
-	for (; tp->owrite && tabs; --tp->owrite, --tabs, ++tp->ai)
-		tp->lb[sp->cno++] = '\t';
-	for (; tp->owrite && spaces; --tp->owrite, --spaces, ++tp->ai)
-		tp->lb[sp->cno++] = ' ';
-
-	if (!tabs && !spaces)
-		return (0);
-
-	/* Make sure there's enough room. */
-	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + spaces + tabs);
-
-	/* Move the insert characters out of the way. */
-	if (tp->insert)
-		memmove(tp->lb + sp->cno + spaces + tabs,
-		    tp->lb + sp->cno, tp->insert);
-
-	/* Add new space/tab characters. */
-	for (; tabs--; ++tp->len, ++tp->ai)
-		tp->lb[sp->cno++] = '\t';
-	for (; spaces--; ++tp->len, ++tp->ai)
-		tp->lb[sp->cno++] = ' ';
-	return (0);
-}
-
-/*
- * txt_outdent --
- *	Handle ^D outdents.
+ * Technically, txt_dent should be part of the screen interface, as it requires
+ * knowledge of character sizes, including <space>s, on the screen.  It's here
+ * because it's a complicated little beast, and I didn't want to shove it down
+ * into the screen.  It's probable that KEY_LEN will call into the screen once
+ * there are screens with different character representations.
+ *
+ * txt_dent --
+ *	Handle ^T indents, ^D outdents.
  *
  * If anything changes here, check the ex version to see if it needs similar
  * changes.  It's in sex/sex_get.c:txt_outdent().
- * 
  */
 static int
-txt_outdent(sp, tp)
+txt_dent(sp, tp, isindent)
 	SCR *sp;
 	TEXT *tp;
+	int isindent;
 {
 	u_long sw, ts;
-	size_t cno, off, scno, spaces, tabs;
+	size_t cno, current, off, spaces, target, tabs;
+	int ai_reset;
 
 	ts = O_VAL(sp, O_TABSTOP);
 	sw = O_VAL(sp, O_SHIFTWIDTH);
 
-	/* Get the current screen column. */
-	for (off = scno = 0; off < sp->cno; ++off)
-		if (tp->lb[off] == '\t')
-			scno += STOP_OFF(scno, ts);
-		else
-			++scno;
-
-	/* Get the previous shiftwidth column. */
-	cno = scno;
-	scno -= --scno % sw;
-
 	/*
-	 * Since we don't know what comes before the character(s) being
-	 * deleted, we have to resolve the autoindent characters .  The
-	 * example is a <tab>, which doesn't take up a full shiftwidth
-	 * number of columns because it's preceded by <space>s.  This is
-	 * easy to get if the user sets shiftwidth to a value less than
-	 * tabstop, and then uses ^T to indent, and ^D to outdent.
+	 * Since we don't know what precedes the character(s) being inserted
+	 * (or deleted), the preceding whitespace characters must be resolved.
+	 * An example is a <tab>, which doesn't need a full shiftwidth number
+	 * of columns because it's preceded by <space>s.  This is easy to get
+	 * if the user sets shiftwidth to a value less than tabstop (or worse,
+	 * something for which tabstop isn't a multiple) and then uses ^T to
+	 * indent, and ^D to outdent.
 	 *
-	 * Count up spaces/tabs needed to get to the target.
+	 * Figure out the current and target screen columns.  In the historic
+	 * vi, the autoindent column was NOT determined using display widths
+	 * of characters as was the wrapmargin column.  For that reason, we
+	 * can't use the s_column() function, but have to calculate it here.
+	 * This is slow, but it's normally only on the first few characters of
+	 * a line.
 	 */
-	for (cno = 0, tabs = 0; cno + STOP_OFF(cno, ts) <= scno; ++tabs)
-		cno += STOP_OFF(cno, ts);
-	spaces = scno - cno;
+	for (current = cno = 0; cno < sp->cno; ++cno)
+		if (tp->lb[cno] == '\t')
+			current += STOP_OFF(current, ts);
+		else
+			current += KEY_LEN(sp, tp->lb[cno]);
+
+	target = current;
+	if (isindent)
+		target += STOP_OFF(target, sw);
+	else
+		target -= --target % sw;
 
 	/*
-	 * If there are insert characters on the line, shift them up or
-	 * down depending on if we're gaining or losing characters.
+	 * The AI characters will be turned into overwrite characters if the
+	 * cursor immediately follows them.  We test both the cursor position
+	 * and the indent flag because there's no single test.  (^T can only
+	 * be detected by the cursor position, and while we know that the test
+	 * is always true for ^D, the cursor can be in more than one place, as
+	 * "0^D" and "^D" are different.)
 	 */
-	if (tp->insert && tabs + spaces != tp->ai + tp->owrite) {
-		if (tabs + spaces > tp->ai + tp->owrite) {
+	ai_reset = !isindent || sp->cno == tp->ai + tp->offset;
+
+	/*
+	 * Back up over any previous <blank> characters, changing them into
+	 * overwrite characters (including any ai characters).  For ^D, we
+	 * will move up to or past the target by definition, otherwise, the
+	 * command wouldn't have gotten this far.
+	 */
+	for (; sp->cno > tp->offset; --sp->cno, ++tp->owrite)
+		if (tp->lb[sp->cno - 1] == ' ')
+			--current;
+		else if (tp->lb[sp->cno - 1] == '\t')
+			current -= STOP_OFF(current, ts);
+		else
+			break;
+
+	/*
+	 * Count up the total spaces/tabs needed to get from the beginning of
+	 * the line (or the last non-<blank> character) to the target.
+	 */
+	for (cno = current, tabs = 0; cno + STOP_OFF(cno, ts) <= target; ++tabs)
+		cno += STOP_OFF(cno, ts);
+	spaces = target - cno;
+
+	/* If we overwrote ai characters, reset the ai count. */
+	if (ai_reset)
+		tp->ai = tabs + spaces;
+
+	/*
+	 * If there are insert characters in the line, shift them up or
+	 * down depending on if we're gaining or losing characters.
+	 *
+	 * XXX
+	 * I'm not sure this is right, we're overwriting characters with
+	 * inserted whitespace, and that might not be the best interface.
+	 * The alternative would be to only overwrite ai and previous
+	 * <blank> characters with the inserted whitespace, and push the
+	 * user's characters forward as usual, letting them be overwritten
+	 * with normally entered characters, or discarded when <escape>
+	 * or <carriage-return> is entered.
+	 */
+	if (tp->insert && tabs + spaces != tp->owrite)
+		if (tabs + spaces > tp->owrite) {
 			BINC_RET(sp,
 			    tp->lb, tp->lb_len, tp->len + tabs + spaces);
-			off = (tabs + spaces) - (tp->ai + tp->owrite);
+			off = (tabs + spaces) - tp->owrite;
 			memmove(tp->lb + sp->cno + tp->owrite + off,
 			    tp->lb + sp->cno + tp->owrite, tp->insert);
 			tp->len += off;
+			tp->owrite += off;
 		} else {
-			off = (tp->ai + tp->owrite) - (tabs + spaces);
+			off = tp->owrite - (tabs + spaces);
 			memmove(tp->lb + sp->cno + tp->owrite - off,
 			    tp->lb + sp->cno + tp->owrite, tp->insert);
 			tp->len -= off;
+			tp->owrite -= off;
 		}
-		/* Adjust the final overwrite character count. */
-		tp->owrite = 0;
-	}
-
-	/* Move the cursor to the start of the ai characters. */
-	sp->cno -= tp->ai;
-
-	/* Adjust the final ai character count. */
-	tp->ai = tabs + spaces;
 
 	/* Enter the replacement characters. */
-	for (; tabs > 0; --tabs)
+	for (; tabs > 0; --tabs) {
+		--tp->owrite;
 		tp->lb[sp->cno++] = '\t';
-	for (; spaces > 0; --spaces)
+	}
+	for (; spaces > 0; --spaces) {
+		--tp->owrite;
 		tp->lb[sp->cno++] = ' ';
+	}
 	return (0);
 }
 
