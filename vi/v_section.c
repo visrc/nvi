@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.6 1992/12/05 11:10:58 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:58 $";
+static char sccsid[] = "$Id: v_section.c,v 5.7 1993/02/11 14:41:10 bostic Exp $ (Berkeley) $Date: 1993/02/11 14:41:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,11 +25,14 @@ static char sccsid[] = "$Id: v_section.c,v 5.6 1992/12/05 11:10:58 bostic Exp $ 
  * start of the last line when there where no more sections instead of
  * the end of the last line.  This has been changed to be more like the
  * paragraphs command.
+ *
+ * In historic vi, a "function" was defined as the first character on
+ * the line being an open brace.
  */
 
 /*
  * v_sectionf -- [count]]]
- *	Move forward count sections.
+ *	Move forward count sections/functions.
  */
 int
 v_sectionf(vp, fm, tm, rp)
@@ -50,17 +53,28 @@ v_sectionf(vp, fm, tm, rp)
 
 	rp->cno = 0;
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(curf, ++lno, &len);) {
-		if (len == 0 || p[0] != '.' || len < 2)
-			continue;
-		/* Check for macro. */
-		for (lp = list; *lp; lp += 2)
-			if (lp[0] == p[1] &&
-			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
+	for (lno = fm->lno; p = file_gline(curf, ++lno, &len);)
+		switch(len) {
+		case 0:
+			break;;
+		case 1:
+			if (p[0] == '{' && !--cnt) {
 				rp->lno = lno;
 				return (0);
 			}
-	}
+			break;
+		default:
+			if (p[0] != '.')
+				break;
+			/* Check for macro. */
+			for (lp = list; *lp; lp += 2)
+				if (lp[0] == p[1] &&
+				    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
+					rp->lno = lno;
+					return (0);
+				}
+			break;
+		}
 
 	/* EOF is a movement sink. */
 	if (fm->lno != lno - 1) {
@@ -74,7 +88,7 @@ v_sectionf(vp, fm, tm, rp)
 
 /*
  * v_sectionb -- [count][[
- *	Move forward count sections.
+ *	Move backward count sections/functions.
  */
 int
 v_sectionb(vp, fm, tm, rp)
@@ -100,17 +114,28 @@ v_sectionb(vp, fm, tm, rp)
 
 	rp->cno = 0;
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(curf, --lno, &len);) {
-		if (len == 0 || p[0] != '.' || len < 2)
-			continue;
-		/* Check for macro. */
-		for (lp = list; *lp; lp += 2)
-			if (lp[0] == p[1] &&
-			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
+	for (lno = fm->lno; p = file_gline(curf, --lno, &len);)
+		switch(len) {
+		case 0:
+			break;
+		case 1:
+			if (p[0] == '{' && !--cnt) {
 				rp->lno = lno;
 				return (0);
 			}
-	}
+			break;
+		default:
+			if (p[0] != '.')
+				break;
+			/* Check for macro. */
+			for (lp = list; *lp; lp += 2)
+				if (lp[0] == p[1] &&
+				    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
+					rp->lno = lno;
+					return (0);
+				}
+			break;
+		}
 
 	/* SOF is a movement sink. */
 	rp->lno = 1;
