@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.39 1996/12/16 09:40:10 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:40:10 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.40 1997/01/13 18:27:54 bostic Exp $ (Berkeley) $Date: 1997/01/13 18:27:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -498,7 +498,8 @@ noargs:	if (F_ISSET(sp, SC_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 	blen = lbclen = lblen = 0;
 
 	/* For each line... */
-	for (matched = quit = 0, lno = cmdp->addr1.lno,
+	lno = cmdp->addr1.lno == 0 ? 1 : cmdp->addr1.lno;
+	for (matched = quit = 0,
 	    elno = cmdp->addr2.lno; !quit && lno <= elno; ++lno) {
 
 		/* Someone's unhappy, time to stop. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cmd.c,v 10.22 1996/10/31 09:29:47 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:29:47 $";
+static const char sccsid[] = "$Id: ex_cmd.c,v 10.23 1997/01/13 18:27:54 bostic Exp $ (Berkeley) $Date: 1997/01/13 18:27:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,7 +55,7 @@ EXCMDLIST const cmds[] = {
 	    "^D",
 	    "scroll lines"},
 /* C_BANG */
-	{"!",		ex_bang,	E_ADDR2_NONE | E_SECURE,
+	{"!",		ex_bang,	E_ADDR2_NONE|E_SECURE,
 	    "S",
 	    "[line [,line]] ! command",
 	    "filter lines through commands or run commands"},
@@ -65,7 +65,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] # [count] [l]",
 	    "display numbered lines"},
 /* C_SUBAGAIN */
-	{"&",		ex_subagain,	E_ADDR2,
+	{"&",		ex_subagain,	E_ADDR2|E_ADDR_ZERO,
 	    "s",
 	    "[line [,line]] & [cgr] [count] [#lp]",
 	    "repeat the last subsitution"},
@@ -308,7 +308,7 @@ EXCMDLIST const cmds[] = {
  * in ex_cmd() (the ex parser).  Read through the comments there, first.
  */
 /* C_SUBSTITUTE */
-	{"s",		ex_s,		E_ADDR2,
+	{"s",		ex_s,		E_ADDR2|E_ADDR_ZERO,
 	    "s",
 	    "[line [,line]] s [[/;]RE[/;]repl[/;] [cgr] [count] [#lp]]",
 	    "substitute on lines matching an RE"},
@@ -454,7 +454,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] z [-|.|+|^|=] [count] [flags]",
 	    "display different screens of the file"},
 /* C_SUBTILDE */
-	{"~",		ex_subtilde,	E_ADDR2,
+	{"~",		ex_subtilde,	E_ADDR2|E_ADDR_ZERO,
 	    "s",
 	    "[line [,line]] ~ [cgr] [count] [#lp]",
 	    "replace previous RE with previous replacement string,"},
