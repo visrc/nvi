@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.41 1996/12/10 20:48:39 bostic Exp $ (Berkeley) $Date: 1996/12/10 20:48:39 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.42 1996/12/12 08:17:49 bostic Exp $ (Berkeley) $Date: 1996/12/12 08:17:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ static const char sccsid[] = "$Id: cl_main.c,v 10.41 1996/12/10 20:48:39 bostic 
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../ip_vi/ip.h"
+#include "../ip/ip.h"
 #include "../include/ip_extern.h"
 #include "cl.h"
 #include "pathnames.h"
