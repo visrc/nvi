@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.35 1996/10/29 12:11:43 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:11:43 $
+ *	$Id: gs.h,v 10.36 1996/11/22 09:03:14 bostic Exp $ (Berkeley) $Date: 1996/11/22 09:03:14 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -114,7 +114,7 @@ struct _gs {
 	LIST_HEAD(_seqh, _seq) seqq;	/* Linked list of maps, abbrevs. */
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
 
-#define	MAX_FAST_KEY	254		/* Max fast check character.*/
+#define	MAX_FAST_KEY	255		/* Max fast check character.*/
 #define	KEY_LEN(sp, ch)							\
 	((unsigned char)(ch) <= MAX_FAST_KEY ?				\
 	    sp->gp->cname[(unsigned char)ch].len : v_key_len(sp, ch))
