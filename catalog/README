@@ -1,0 +1,137 @@
+#	$Id: README,v 8.1 1994/08/31 13:27:41 bostic Exp $ (Berkeley) $Date: 1994/08/31 13:27:41 $
+
+Generally, all non-system error and informational messages in nvi are
+catalog messages, i.e. they can be tailored to a specific langauge.
+Command strings, usage strings, system errors and other "known text"
+are not.  It would certainly be possible to internationalize all the
+text strings in nvi, but it's unclear that it's the right thing to do.
+
+First, there's no portable way to do message catalogs.  The System V
+scheme is a reasonable choice, but none of the 4BSD derived systems
+support it.  So, catalogs are completely implemented within nvi, and
+doesn't require any library support.
+
+Message catalogs in nvi are fairly simple.  Every catalog message
+consists of two parts -- an initial number followed by a pipe (`|')
+character, followed by the English text for the message.  For example:
+
+	msgq(sp, M_ERR, "001|This is an error message");
+
+would be a typical message.
+
+When the msgq() routine is called, if the user has specified a message
+catalog and the format string (the third argument) has a leading number,
+then it is converted to a record number, and that record is retrieved
+from the message catalog and used as a replacement format string.  If
+the record can't be retrieved for any reason, the English text is displayed
+instead.
+
+Each message format string MUST map into the English format string, i.e.
+it can't display more or different arguments than the English one.
+
+For example:
+
+	msgq(sp, M_ERR, "002|Error: %d %x", arg1, arg2);
+
+is a format string that displays two arguments.  It is possible, however,
+to reorder the arguments or to not display all of them.  The convention
+nvi uses is the System V printf(3) convention, i.e. "%[0-9]*$" is the name
+of a specific, numbered argument.  For example:
+
+	msgq(sp, M_ERR, "002|Error: %2$d %1$x", arg1, arg2);
+
+displays the arguments in reverse order.
+
+If the system supports this convention in its library printf routines
+(as specified by the test #define NL_ARGMAX), nvi uses those routines.
+Otherwise, there is some serious magic going on in common/msg.c to make
+this all work.
+
+Arguments to the msgq function are required to contain ONLY printable
+characters.  No further translation is done by the msgq routine before
+displaying the message on the screen.  For example, in the msgq call:
+
+	msgq(sp, M_ERR, "003|File: %s", file_name);
+
+"file_name" must contain only printable characters.  The routine
+msg_print() returns a printable version of a string in allocated
+memory.  For example:
+
+	char *p;
+
+	p = msg_print(sp, file_name);
+	msgq(sp, M_ERR, M("003", "File: %s"), p);
+	FREE_SPACE(sp, p, 0);
+
+makes sure that "file_name" is printable before calling the msgq
+routine.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+The message catalogs themselves are maintained in two files.  The
+first is the "base file" which contains two fields, a record number
+and the message itself.  All base files are named using the convention
+"vi_<language>.base", e.g. the English one is "vi_english.base".  For
+example:
+
+	001 "line length overflow"
+	002 "Unable to create temporary file"
+	003 "Warning: %s is not a regular file"
+	004 "%s already locked, session is read-only"
+	005 "%s: remove"
+
+are the first few lines of the current vi_english.base file.
+
+The second file is the file actually used by nvi to access messages,
+and is simply a list of the messages, one per line:
+
+	line length overflow
+	Unable to create temporary file
+	Warning: %s is not a regular file
+	%s already locked, session is read-only
+	%s: remove
+
+These files are named for their language, e.g. "english".  The second
+files are automatically created from the first files, obviously.
+
+To create a new catalog for nvi:
+
+Run the command "make english" in this directory.  This will create
+the file "english.base".   For each of the messages in the file,
+replace the message with the string that you want to use.  To find
+out what the arguments to a message are, I'm afraid you'll have to
+search the source code for the message number.  You can usually find
+them quickly by doing:
+
+	cd ..; egrep '123\|' */*.[chys]
+
+I'm sorry that there's not an easier way, but I couldn't think of
+anything that wasn't a lot of work.
+
+Once you've translated all of the strings, then run the command
+"make catalog".  This will create the second, corresponding, file
+for each file named <language>.base.
+
+Don't worry about missing line numbers, i.e. base files that look like:
+
+	001	Message number 1.
+	003	Message number 3.
+
+This simply means that a message was deleted during the course of nvi's
+development, and it will be taken care of automatically when you create
+the second form of the file.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+If you add new messages to the nvi sources, you can check your work by
+doing "make english; make check".  The "make check" target lists unused
+message numbers, duplicate message numbers, and duplicate messages.
+Unused message numbers are only useful if you are condensing messages.
+Duplicate message numbers are a serious problem and have to be fixed.
+Duplicate messages are only interesting if a message appears often enough
+that it's worth creating a routine to display it.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+To select a catalog when running nvi, set the O_MESSAGES variable to
+the full pathname of the catalog that you want to use.  If any messages
+are not found in this catalog, the backup text (English) will be used
+instead.
