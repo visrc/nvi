@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.8 1992/04/05 09:32:42 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:32:42 $";
+static char sccsid[] = "$Id: ex.c,v 5.9 1992/04/05 16:58:35 bostic Exp $ (Berkeley) $Date: 1992/04/05 16:58:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -261,10 +261,6 @@ excmd(exc)
 		return (1);
 	}
 
-	/* Some commands have a syntax so twisted we can't handle it. */
-	if (*cp->syntax == 'X')
-		goto address;
-
 	for (count = 0, p = cp->syntax; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
@@ -379,8 +375,11 @@ countchk:		if (*++p != 'N') {		/* N */
 		}
 	}
 
-	/* Shouldn't be anything left. */
-	if (*exc)
+	/*
+	 * Shouldn't be anything left, and no more required fields.
+	 * That means neither 'l' or 'r' in the syntax.
+	 */
+	if (*exc || strpbrk(p, "lr"))
 		goto usage;
 
 	/*
