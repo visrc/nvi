@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.16 1992/11/01 22:53:58 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:53:58 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.17 1992/11/07 18:46:11 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:46:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 5.16 1992/11/01 22:53:58 bostic Exp $ (B
  */
 EXCMDLIST cmds[] = {
 /* C_BANG */
-	"!",		ex_bang,	E_ADDR2_NONE|E_EXRCOK,
+	"!",		ex_bang,	E_ADDR2_NONE,
 	    "s",	"[line [,line]] ! command",
 /* C_HASH */
 	"#",		ex_number,	E_ADDR2|E_SETLAST,
@@ -73,11 +73,14 @@ EXCMDLIST cmds[] = {
 	"append",	ex_append,	E_ADDR1|E_ZERO,
 	    "!",	"[line] a[ppend][!]",
 /* C_ABBR */
-	"abbreviate", 	ex_abbr,	E_EXRCOK,
+	"abbreviate", 	ex_abbr,	0,
 	    "s",	"ab[brev] word replace",
 /* C_ARGS */
-	"args",		ex_args,	E_EXRCOK,
+	"args",		ex_args,	0,
 	    "",		"ar[gs]",
+/* C_BDISPLAY */
+	"bdisplay",	ex_bdisplay,	0,
+	    "",		"[b]display",
 /* C_CHANGE */
 	"change",	ex_change,	E_ADDR2,
 	    "!c",	"[line [,line]] c[hange][!] [count]",
@@ -90,10 +93,10 @@ EXCMDLIST cmds[] = {
 	"cc",		ex_cc,		E_PERM,
 	    "s",	"cc [argument ...]",
 /* C_CD */
-	"cd",		ex_cd,		E_EXRCOK,
+	"cd",		ex_cd,		0,
 	    "!f1o",	"cd[!] [directory]",
 /* C_CHDIR */
-	"chdir",	ex_cd,		E_EXRCOK,
+	"chdir",	ex_cd,		0,
 	    "!f1o",	"chd[ir][!] [directory]",
 /* C_COPY */
 	"copy",		ex_copy,	E_ADDR2,
@@ -107,7 +110,7 @@ EXCMDLIST cmds[] = {
 #define	E_PERM		0
 #endif
 /* C_DIGRAPH */
-	"digraph",	ex_digraph,	E_EXRCOK|E_PERM,
+	"digraph",	ex_digraph,	0|E_PERM,
 	    "",		"digraph XXX",
 /* C_EDIT */
 	"edit",		ex_edit,	0,
@@ -123,12 +126,15 @@ EXCMDLIST cmds[] = {
 /* C_EX */
 	"ex",		ex_edit,	0,
 	    "!+f1o",	"ex[!] [+cmd] [file]",
+/* C_EXUSAGE */
+	"exusage",	ex_usage,	0,
+	    "w1r",	"[exu]sage cmd",
 /* C_FILE */
 	"file",		ex_file,	0,
 	    "f10",	"f[ile] [name]",
 /* C_GLOBAL */
 	"global",	ex_global,	E_ADDR2_ALL,
-	    "s",	"[line [,line]] g[lobal] /pattern/ [commands]",
+	    "!s",	"[line [,line]] g[lobal][!] [;/]pattern[;/] [commands]",
 /* C_INSERT */
 	"insert",	ex_append,	E_ADDR1,
 	    "!",	"[line] i[nsert][!]",
@@ -156,7 +162,7 @@ EXCMDLIST cmds[] = {
 	"make",		ex_make,	E_PERM,
 	    "s",	"make [argument ...]",
 /* C_MAP */
-	"map",		ex_map,		E_EXRCOK,
+	"map",		ex_map,		0,
 	    "s",	"map[!] [key replace]",
 #ifdef NO_MKEXRC
 #define	E_PERM		E_NOPERM
@@ -195,39 +201,48 @@ EXCMDLIST cmds[] = {
 	    "s",
 	"[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [count] [#cglpr]]",
 /* C_SET */
-	"set",		ex_set,		E_EXRCOK,
+	"set",		ex_set,		0,
 	    "wN",
 	    "se[t] [option[=[value]]...] [nooption ...] [option? ...] [all]",
 /* C_SHELL */
 	"shell",	ex_shell,	0,
 	    "", 	"sh[ell]",
 /* C_SOURCE */
-	"source",	ex_source,	E_EXRCOK,
+	"source",	ex_source,	0,
 	    "f1r", 	"so[urce] file",
 /* C_T */
 	"t",		ex_move,	E_ADDR2,
 	    "l1", 	"[line [,line]] t line [flags]",
 /* C_TAG */
-	"tag",		ex_tag,		0,
+	"tag",		ex_tagpush,	0,
 	    "!w1o", 	"ta[g][!] [string]",
+/* C_TAGPOP */
+	"tagpop",	ex_tagpop,	0,
+	    "!", 	"tagp[op][!]",
+/* C_TAGTOP */
+	"tagtop",	ex_tagtop,	0,
+	    "!", 	"tagt[op][!]",
 /* C_UNDO */
 	"undo",		ex_undo,	0,
 	    "", 	"u[ndo]",
 /* C_UNABBREVIATE */
-	"unabbreviate",	ex_unabbr,	E_EXRCOK,
+	"unabbreviate",	ex_unabbr,	0,
 	    "w1r", 	"una[bbrev] word",
 /* C_UNMAP */
-	"unmap",	ex_unmap,	E_EXRCOK,
+	"unmap",	ex_unmap,	0,
 	    "!w1r", 	"unm[ap][!] key",
 /* C_VGLOBAL */
 	"vglobal",	ex_global,	E_ADDR2_ALL,
-	    "s", 	"[line [,line]] v[global] /pattern/ [commands]",
+	    "s", 	"[line [,line]] v[global] [;/]pattern[;/] [commands]",
 /* C_VERSION */
-	"version",	ex_version,	E_EXRCOK,
+	"version",	ex_version,	0,
 	    "", 	"version",
 /* C_VISUAL */
 	"visual",	ex_visual,	E_ADDR2,
 	    "2c1", 	"[line] vi[sual] [type] [count] [flags]",
+/* C_VIUSAGE */
+	"viusage",	ex_viusage,	0,
+	    "w1r",	"[viu]sage key",
 /* C_WRITE */
 	"write",	ex_write,	E_ADDR2_ALL,
 	    "s",	"[line [,line]] w[rite] [!cmd | [>>] [file]]",
