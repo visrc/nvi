@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.52 1993/01/11 15:50:38 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:50:38 $";
+static char sccsid[] = "$Id: ex.c,v 5.53 1993/01/23 16:37:12 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,7 +57,7 @@ ex()
 		if (*p)
 			ex_cstring(p, len, 0);
 		else {
-			bcopy(DEFCOM, defcom, sizeof(DEFCOM));
+			memmove(defcom, DEFCOM, sizeof(DEFCOM));
 			ex_cstring((u_char *)defcom, 3, 0);
 		}
 	}
@@ -880,7 +880,7 @@ mem1:				argscnt = 0;
 				return (1);
 			}
 			argv[off] = args[off].bp;
-			bcopy(ap, args[off].bp, len);
+			memmove(args[off].bp, ap, len);
 			args[off].flags |= A_ALLOCATED;
 			++off;
 		}
@@ -966,11 +966,11 @@ fileexpand(gp, word, wordlen)
 		for (p = tpath; ch = *word; ++word)
 			switch(ch) {
 			case '%':
-				bcopy(curf->name, p, curf->nlen);
+				memmove(p, curf->name, curf->nlen);
 				p += curf->nlen;
 				break;
 			case '#':
-				bcopy(ep->name, p, ep->nlen);
+				memmove(p, ep->name, ep->nlen);
 				p += ep->nlen;
 				break;
 			case '\\':

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.34 1993/01/17 17:15:48 bostic Exp $ (Berkeley) $Date: 1993/01/17 17:15:48 $";
+static char sccsid[] = "$Id: options.c,v 5.35 1993/01/23 16:37:19 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -534,7 +534,7 @@ f_flash(NO_ep, NO_valp)
 		return (1);
 	}
 
-	bcopy(b2, s, len);
+	memmove(s, b2, len);
 
 	if (VB != NULL)
 		free(VB);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.15 1993/01/11 15:51:29 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:29 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.16 1993/01/23 16:37:05 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,7 +98,7 @@ shift(cmdp, rl)
 			*bp++ = ' ';
 
 		/* Add the original line. */
-		bcopy(p + oldidx, bp, len - oldidx);
+		memmove(bp, p + oldidx, len - oldidx);
 
 		/* Set the replacement line. */
 		if (file_sline(curf, from, buf, (bp + (len - oldidx)) - buf)) {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.37 1993/01/17 16:58:50 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:58:50 $";
+static char sccsid[] = "$Id: vi.c,v 5.38 1993/01/23 16:38:00 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:38:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -596,7 +596,7 @@ noword:		bell();
 	len = (end - beg) + 2;				/* XXX */
 	kp->klen = (end - beg) + 1;
 	BINC(kp->keyword, kp->kbuflen, len);
-	bcopy(p + beg, kp->keyword, kp->klen);
+	memmove(kp->keyword, p + beg, kp->klen);
 	kp->keyword[kp->klen] = '\0';			/* XXX */
 	return (0);
 }

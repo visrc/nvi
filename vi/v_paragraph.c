@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.5 1992/12/05 11:10:51 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:51 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.6 1993/01/23 16:38:05 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:38:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,7 +195,7 @@ makelist()
 		msg("%s", strerror(errno));
 		return (NULL);
 	}
-	bcopy(PVAL(O_PARAGRAPHS), list, s1);
-	bcopy(PVAL(O_SECTIONS), list + s1, s2 + 1);
+	memmove(list, PVAL(O_PARAGRAPHS), s1);
+	memmove(list + s1, PVAL(O_SECTIONS), s2 + 1);
 	return (list);
 }

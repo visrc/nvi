@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.11 1992/12/05 11:10:54 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:54 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.12 1993/01/23 16:37:54 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ v_replace(vp, fm, tm, rp)
 				msg("Error: %s", strerror(errno));
 				return (1);
 			}
-			bcopy(p, np, len);
+			memmove(np, p, len);
 			p = np;
 		}
 		for (; cnt--; ++lno, cno = 0) {
@@ -94,7 +94,7 @@ err:				if (p != emptybuf)
 			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		bcopy(p, np, len);
+		memmove(np, p, len);
 		memset(np + fm->cno, vp->character, cnt);
 		if (file_sline(curf, fm->lno, np, len)) {
 			free(np);

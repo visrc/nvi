@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.15 1992/12/05 11:10:46 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:46 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.16 1993/01/23 16:37:48 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,10 +120,10 @@ underflow:			bell();
 		msg("Error: %s", strerror(errno));
 		return (1);
 	}
-	bcopy(p, np, fm->cno);
-	bcopy(nbuf, np + fm->cno, nlen);
-	bcopy(p + fm->cno + vp->klen,
-	    np + fm->cno + nlen, len - fm->cno - vp->klen);
+	memmove(np, p, fm->cno);
+	memmove(np + fm->cno, nbuf, nlen);
+	memmove(np + fm->cno + nlen,
+	    p + fm->cno + vp->klen, len - fm->cno - vp->klen);
 	p = np;
 	len = len - vp->klen + nlen;
 
