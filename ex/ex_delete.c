@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.10 1992/10/17 16:09:59 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:09:59 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.11 1992/10/26 17:45:51 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:45:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ ex_delete(cmdp)
 		return (1);
 
 	/* Delete the lines. */
-	delete(&cmdp->addr1, &cmdp->addr2);
+	delete(curf, &cmdp->addr1, &cmdp->addr2, 1);
 
 	/* Adjust the cursor. */
 	if (curf->lno > cmdp->addr2.lno)

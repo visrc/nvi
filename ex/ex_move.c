@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.14 1992/10/18 13:07:46 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:46 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.15 1992/10/26 17:46:24 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:46:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,7 @@ cm(cmdp, cmd)
 
 	/* If we're not copying, delete the old text & adjust tm. */
 	if (cmd == MOVE) {
-		delete(&fm1, &fm2);
+		delete(curf, &fm1, &fm2, 1);
 		if (tm.lno >= fm1.lno)
 			tm.lno -= fm2.lno - fm1.lno;
 	}
