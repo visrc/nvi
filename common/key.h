@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.4 1993/08/25 16:43:26 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:43:26 $
+ *	$Id: key.h,v 8.5 1993/09/01 12:13:12 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:13:12 $
  */
 
 /* Structure for a key input buffer. */
@@ -27,6 +27,9 @@ typedef struct _chname {
 	char	*name;		/* Character name. */
 	u_char	 len;		/* Length of the character name. */
 } CHNAME;
+
+/* The maximum number of columns any character can take up on a screen. */
+#define	MAX_CHARACTER_COLUMNS	4
 
 /*
  * Ex/vi commands are generally separated by whitespace characters.  We
