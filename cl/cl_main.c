@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.26 1996/03/22 19:11:11 bostic Exp $ (Berkeley) $Date: 1996/03/22 19:11:11 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.27 1996/04/28 13:19:34 bostic Exp $ (Berkeley) $Date: 1996/04/28 13:19:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ static GS	*gs_init __P((char *));
 static void	 nomem __P((char *));
 static int	 setsig __P((int, struct sigaction *, void (*)(int)));
 static void	 sig_end __P((GS *));
-static void	 term_init __P((char *));
+static void	 term_init __P((char *, char *));
 
 /*
  * main --
@@ -85,7 +85,9 @@ main(argc, argv)
 	 * We have to know what terminal it is from the start, since we may
 	 * have to use termcap/terminfo to find out how big the screen is.
 	 */
-	term_init((ttype = getenv("TERM")) == NULL ? "unknown" : ttype);
+	if ((ttype = getenv("TERM")) == NULL)
+		ttype = "unknown";
+	term_init(gp->progname, ttype);
 
 	/* Add the terminal type to the global structure. */
 	if ((OG_D_STR(gp, GO_TERM) =
@@ -221,8 +223,8 @@ tcfail:			(void)fprintf(stderr,
  *	Initialize terminal information.
  */
 static void
-term_init(ttype)
-	char *ttype;
+term_init(name, ttype)
+	char *name, *ttype;
 {
 	int err;
 
@@ -230,10 +232,12 @@ term_init(ttype)
 	setupterm(ttype, STDOUT_FILENO, &err);
 	switch (err) {
 	case -1:
-		(void)fprintf(stderr, "No terminal database found");
+		(void)fprintf(stderr,
+		    "%s: No terminal database found\n", name);
 		exit (1);
 	case 0:
-		(void)fprintf(stderr, "%s: unknown terminal type", ttype);
+		(void)fprintf(stderr,
+		    "%s: %s: unknown terminal type\n", name, ttype);
 		exit (1);
 	}
 }
