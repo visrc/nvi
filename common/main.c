@@ -1,291 +1,185 @@
-/* main.c */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
+/*-
+ * Copyright (c) 1991 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * %sccs.include.redist.c%
  */
 
+#ifndef lint
+char copyright[] =
+"%Z% Copyright (c) 1991 The Regents of the University of California.\n\
+ All rights reserved.\n";
+#endif /* not lint */
 
-/* This file contains the main() function of vi */
+#ifndef lint
+static char sccsid[] = "$Id: main.c,v 5.2 1991/12/18 10:16:54 bostic Exp $ (Berkeley) $Date: 1991/12/18 10:16:54 $";
+#endif /* not lint */
 
-/* HACK! bcc needs to disable use of precompiled headers for this file,
-   or else command line args will not be passed to elvis */
-#if __BORLANDC__
-#include "borland.h"
-#endif
-
-#include "config.h"
 #include <signal.h>
 #include <setjmp.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "config.h"
 #include "vi.h"
+#include "extern.h"
 
-extern		trapint(); /* defined below */
-extern char	*getenv();
-jmp_buf		jmpenv;
+#ifdef DEBUG
+FILE *tracefp;
+#endif
+
+static jmp_buf jmpenv;
 
 #ifndef NO_DIGRAPH
 static init_digraphs();
 #endif
 
-/*---------------------------------------------------------------------*/
+static void obsolete __P((char *[]));
+static void onhup __P((int));
+static void usage __P((void));
 
-#if VMS
-# include "vmswild.c"
-main (argc, argv)
-#else
-void main(argc, argv)
-#endif
-	int	argc;
-	char	*argv[];
+int
+main(argc, argv)
+	int argc;
+	char *argv[];
 {
-	int	i;
-	char	*cmd = (char *)0;
-	char	*err = (char *)0;
-	char	*str;
-	char	*tag = (char *)0;
+	int ch, i;
+	char *cmd, *err, *str, *tag;
 
-	/* set mode to MODE_VI or MODE_EX depending on program name */
-	switch (argv[0][strlen(argv[0]) - 1])
-	{
-	  case 'x':			/* "ex" */
-		mode = MODE_EX;
-		break;
 
-	  case 'w':			/* "view" */
-		mode = MODE_VI;
-		*o_readonly = TRUE;
-		break;
+	/* Set mode based on the program name. */
+	mode = MODE_VI;
 #ifndef NO_EXTENSIONS
-	  case 't':			/* "edit" or "input" */
-		mode = MODE_VI;
+	if (!strcmp(*argv, "edit"))
 		*o_inputmode = TRUE;
-		break;
+	else
 #endif
-	  default:			/* "vi" or "elvis" */
-		mode = MODE_VI;
+	if (!strcmp(*argv, "view"))
+		*o_readonly = TRUE;
+	else if (!strcmp(argv, "ex"))
+		mode = MODE_EX;
+
+	obsolete(argv);
+	cmd = err = str = tag = NULL;
+	while ((ch = getopt(argc, argv, "c:eimRrT:t:v")) != EOF)
+		switch(ch) {
+		case 'c':		/* Run the command. */
+			cmd = optarg;
+			break;
+		case 'e':		/* Ex mode. */
+			mode = MODE_EX;
+			break;
+#ifndef NO_EXTENSIONS
+		case 'i':		/* Input mode. */
+			*o_inputmode = TRUE;
+			break;
+#endif
+#ifndef NO_ERRLIST
+		case 'm':		/* Error list. */
+			err = optarg;
+			break;
+#endif
+		case 'R':		/* Readonly. */
+			*o_readonly = TRUE;
+			break;
+		case 'r':		/* Recover. */
+			msg("use the `elvrec` program to recover lost files");
+			endmsgs();
+			refresh();
+			endwin();
+			exit(0);
+#ifdef DEBUG
+		case 'T':		/* Trace. */
+			if ((tracefp = fopen(optarg, "w")) == NULL) {
+				msg("%s: %s", optarg, strerror(errno));
+				endmsgs();
+			}
+			break;
+#endif
+		case 't':		/* Tag. */
+			tag = optarg;
+			break;
+		case 'v':		/* Vi mode. */
+			mode = MODE_VI;
+			break;
+		case '?':
+		default:
+			usage();
+		}
+	argc -= optind;
+	argv += optind;
+
+	/*
+	 * The remaining args are file names, or, if none supplied, set the
+	 * list to empty.
+	 *
+	 * XXX
+	 * This is truly stupid.  Put a reasonable data structure here.
+	 */
+	args[0] = '\0';
+	if (*argv) {
+		for (; *argv; ++argv)
+			if (strlen(args) + 1 + strlen(*argv) < sizeof(args)) {
+				(void)strcat(args, *argv);
+				if (argv[1])
+					(void)strcat(args, " ");
+			}
+		(void)strcpy(tmpblk.c, args);
+		cmd_args(MARK_UNSET, MARK_UNSET, CMD_ARGS, TRUE, tmpblk.c);
+	} else {
+		nargs = 1;
+		argno = -1;
 	}
 
-#ifndef DEBUG
-# ifdef	SIGQUIT
-	/* normally, we ignore SIGQUIT.  SIGINT is trapped later */
-	signal(SIGQUIT, SIG_IGN);
-# endif
-#endif
+	/* Temporarily ignore interrupts. */
+	(void)signal(SIGINT, SIG_IGN);
 
-	/* temporarily ignore SIGINT */
-	signal(SIGINT, SIG_IGN);
-
-	/* start curses */
+	/* Start curses. */
 	initscr();
 	cbreak();
 	noecho();
 	scrollok(stdscr, TRUE);
 
-	/* arrange for deadly signals to be caught */
-# ifdef SIGHUP
-	signal(SIGHUP, (void(*)()) deathtrap);
-# endif
-# ifndef DEBUG
-#  ifdef SIGILL
-	signal(SIGILL, (void(*)()) deathtrap);
-#  endif
-#  ifdef SIGBUS
-	signal(SIGBUS, (void(*)()) deathtrap);
-#  endif
-#  ifdef SIGSEGV
-	signal(SIGSEGV, (void(*)()) deathtrap);
-#  endif
-#  ifdef SIGSYS
-	signal(SIGSYS, (void(*)()) deathtrap);
-#  endif
-# endif /* !DEBUG */
-# ifdef SIGPIPE
-	signal(SIGPIPE, (void(*)()) deathtrap);
-# endif
-# ifdef SIGTERM
-	signal(SIGTERM, (void(*)()) deathtrap);
-# endif
-# ifdef SIGUSR1
-	signal(SIGUSR1, (void(*)()) deathtrap);
-# endif
-# ifdef SIGUSR2
-	signal(SIGUSR2, (void(*)()) deathtrap);
-# endif
+	/* Catch HUP, TSTP */
+	(void)signal(SIGHUP, onhup);
+	(void)signal(SIGTSTP, onstop);
 
-	/* initialize the options - must be done after initscr(), so that
+	/*
+	 * Initialize the options -- must be done after initscr(), so that
 	 * we can alter LINES and COLS if necessary.
 	 */
 	initopts();
 
-	/* map the arrow keys.  The KU,KD,KL,and KR variables correspond to
+	/*
+	 * Map the arrow keys.  The KU, KD, KL,and KR variables correspond to
 	 * the :ku=: (etc.) termcap capabilities.  The variables are defined
 	 * as part of the curses package.
 	 */
-	if (has_KU) mapkey(has_KU, "k",    WHEN_VICMD|WHEN_INMV, "<Up>");
-	if (has_KD) mapkey(has_KD, "j",    WHEN_VICMD|WHEN_INMV, "<Down>");
-	if (has_KL) mapkey(has_KL, "h",    WHEN_VICMD|WHEN_INMV, "<Left>");
-	if (has_KR) mapkey(has_KR, "l",    WHEN_VICMD|WHEN_INMV, "<Right>");
-	if (has_HM) mapkey(has_HM, "^",    WHEN_VICMD|WHEN_INMV, "<Home>");
-	if (has_EN) mapkey(has_EN, "$",    WHEN_VICMD|WHEN_INMV, "<End>");
-	if (has_PU) mapkey(has_PU, "\002", WHEN_VICMD|WHEN_INMV, "<PageUp>");
-	if (has_PD) mapkey(has_PD, "\006", WHEN_VICMD|WHEN_INMV, "<PageDn>");
-	if (has_KI) mapkey(has_KI, "i",    WHEN_VICMD|WHEN_INMV, "<Insert>");
-#if MSDOS
-# if RAINBOW
-	if (!strcmp("rainbow", o_term))
-	{
-		mapkey("\033[1~",  "/",		WHEN_VICMD,		"<Find>");
-		mapkey("\033[3~",  "x",		WHEN_VICMD|WHEN_INMV,	"<Remove>");
-		mapkey("\033[4~",  "v",		WHEN_VICMD|WHEN_INMV,	"<Select>");
-		mapkey("\033[17~", ":sh\n",	WHEN_VICMD,		"<Intrpt>");
-		mapkey("\033[19~", ":q\n",	WHEN_VICMD,		"<Cancel>");
-		mapkey("\033[21~", "ZZ",	WHEN_VICMD,		"<Exit>");
-		mapkey("\033[26~", "V",		WHEN_VICMD|WHEN_INMV,	"<AddlOp>");
-		mapkey("\033[28~", "\\",	WHEN_VICMD|WHEN_INMV,	"<Help>");
-		mapkey("\033[29~", "K",		WHEN_VICMD|WHEN_INMV,	"<Do>");
-	}
-	else
-# endif /* RAINBOW */
-	{
-		mapkey("#S", "x", WHEN_VICMD|WHEN_INMV,	"<Delete>");
-		mapkey("#s", "B", WHEN_VICMD|WHEN_INMV,	"^<Left>");
-		mapkey("#t", "W", WHEN_VICMD|WHEN_INMV,	"^<Right>");
-	}
-#else /* not MSDOS */
-# if COHERENT
-	mapkey("\033[P", "x", WHEN_VICMD|WHEN_INMV, "<Del>");
-# else
+	if (has_KU)
+		mapkey(has_KU, "k",	WHEN_VICMD|WHEN_INMV, "<Up>");
+	if (has_KD)
+		mapkey(has_KD, "j",	WHEN_VICMD|WHEN_INMV, "<Down>");
+	if (has_KL)
+		mapkey(has_KL, "h",	WHEN_VICMD|WHEN_INMV, "<Left>");
+	if (has_KR)
+		mapkey(has_KR, "l",	WHEN_VICMD|WHEN_INMV, "<Right>");
+	if (has_HM)
+		mapkey(has_HM, "^",	WHEN_VICMD|WHEN_INMV, "<Home>");
+	if (has_EN)
+		mapkey(has_EN, "$",	WHEN_VICMD|WHEN_INMV, "<End>");
+	if (has_PU)
+		mapkey(has_PU, "\002",	WHEN_VICMD|WHEN_INMV, "<PageUp>");
+	if (has_PD)
+		mapkey(has_PD, "\006",	WHEN_VICMD|WHEN_INMV, "<PageDn>");
+	if (has_KI)
+		mapkey(has_KI, "i",	WHEN_VICMD|WHEN_INMV, "<Insert>");
 	if (ERASEKEY != '\177')
-	{
-		mapkey("\177", "x", WHEN_VICMD|WHEN_INMV, "<Del>");
-	}
-# endif
-#endif
+		mapkey("\177", "x",	WHEN_VICMD|WHEN_INMV, "<Del>");
 
 #ifndef NO_DIGRAPH
 	init_digraphs();
-#endif /* NO_DIGRAPH */
-
-	/* process any flags */
-	for (i = 1; i < argc && *argv[i] == '-'; i++)
-	{
-		switch (argv[i][1])
-		{
-		  case 'R':	/* readonly */
-			*o_readonly = TRUE;
-			break;
-
-#ifdef SYSV_COMPAT
-		  case 'L':
 #endif
-		  case 'r':	/* recover */
-			msg("Use the `elvrec` program to recover lost files");
-			endmsgs();
-			refresh();
-			endwin();
-			exit(0);
-			break;
 
-		  case 't':	/* tag */
-			if (argv[i][2])
-			{
-				tag = argv[i] + 2;
-			}
-			else
-			{
-				tag = argv[++i];
-			}
-			break;
-
-		  case 'v':	/* vi mode */
-			mode = MODE_VI;
-			break;
-
-		  case 'e':	/* ex mode */
-			mode = MODE_EX;
-			break;
-#ifndef NO_EXTENSIONS
-		  case 'i':	/* input mode */
-			*o_inputmode = TRUE;
-			break;
-#endif
-#ifndef NO_ERRLIST
-		  case 'm':	/* use "errlist" as the errlist */
-			if (argv[i][2])
-			{
-				err = argv[i] + 2;
-			}
-			else if (i + 1 < argc)
-			{
-				err = argv[++i];
-			}
-			else
-			{
-				err = "";
-			}
-			break;
-#endif
-#ifdef SYSV_COMPAT
-		 case 'c':	/* run the following command, later */
-			if (argv[i][2])
-			{
-				cmd = argv[i] + 2;
-			}
-			else
-			{
-				cmd = argv[++i];
-			}
-			break;
-#endif
-		  default:
-			msg("Ignoring unknown flag \"%s\"", argv[i]);
-		}
-	}
-
-	/* if we were given an initial ex command, save it... */
-	if (i < argc && *argv[i] == '+')
-	{
-		if (argv[i][1])
-		{
-			cmd = argv[i++] + 1;
-		}
-		else
-		{
-			cmd = "$"; /* "vi + file" means start at EOF */
-			i++;
-		}
-	}
-
-	/* the remaining args are file names. */
-	if (i < argc)
-	{
-		strcpy(args, argv[i]);
-		while (++i < argc && strlen(args) + 1 + strlen(argv[i]) < sizeof args)
-		{
-			strcat(args, " ");
-			strcat(args, argv[i]);
-		}
-#if MSDOS || TOS
-		/* expand wildcard characters, if necessary */
-		if (strchr(args, '*') || strchr(args, '?'))
-		{
-			strcpy(args, wildcard(args));
-		}
-#endif
-		strcpy(tmpblk.c, args);
-		cmd_args(MARK_UNSET, MARK_UNSET, CMD_ARGS, TRUE, tmpblk.c);
-	}
-	else
-	{
-		/* empty args list */
-		args[0] = '\0';
-		nargs = 1;
-		argno = -1;
-	}
-
-	/* perform the .exrc files and EXINIT environment variable */
+	/* Read the .exrc files and EXINIT environment variable. */
 #ifdef SYSEXRC
 	doexrc(SYSEXRC);
 #endif
@@ -295,46 +189,31 @@ void main(argc, argv)
 	{
 		strcpy(tmpblk.c, str);
 		str = tmpblk.c + strlen(tmpblk.c);
-#if !VMS
 		if (str[-1] != SLASH)
-		{
 			*str++ = SLASH;
-		}
-#endif
 		strcpy(str, HMEXRC);
 		doexrc(tmpblk.c);
 	}
 #endif
-#ifndef CRUNCH
 	if (*o_exrc)
-#endif
-	{
 		doexrc(EXRC);
-	}
 #ifdef EXINIT
 	str = getenv(EXINIT);
 	if (str)
-	{
 		exstring(str, strlen(str));
-	}
 #endif
 
 	/* search for a tag (or an error) now, if desired */
 	blkinit();
 	if (tag)
-	{
 		cmd_tag(MARK_FIRST, MARK_FIRST, CMD_TAG, 0, tag);
-	}
 #ifndef NO_ERRLIST
 	else if (err)
-	{
 		cmd_errlist(MARK_FIRST, MARK_FIRST, CMD_ERRLIST, 0, err);
-	}
 #endif
 
 	/* if no tag/err, or tag failed, then start with first arg */
-	if (tmpfd < 0)
-	{
+	if (tmpfd < 0) {
 		/* start with first arg */
 		cmd_next(MARK_UNSET, MARK_UNSET, CMD_NEXT, FALSE, "");
 
@@ -349,24 +228,18 @@ void main(argc, argv)
 
 	/* now we do the immediate ex command that we noticed before */
 	if (cmd)
-	{
 		doexcmd(cmd);
-	}
 
 	/* repeatedly call ex() or vi() (depending on the mode) until the
 	 * mode is set to MODE_QUIT
 	 */
-	while (mode != MODE_QUIT)
-	{
+	while (mode != MODE_QUIT) {
 		if (setjmp(jmpenv))
-		{
 			/* Maybe we just aborted a change? */
 			abortdo();
-		}
 		signal(SIGINT, (void(*)()) trapint);
 
-		switch (mode)
-		{
+		switch (mode) {
 		  case MODE_VI:
 			vi();
 			break;
@@ -397,31 +270,21 @@ void main(argc, argv)
 	endwin();
 
 	exit(0);
-	/*NOTREACHED*/
+	/* NOTREACHED */
 }
 
 
 /*ARGSUSED*/
-int trapint(signo)
-	int	signo;
+void
+trapint(signo)
+	int signo;
 {
 	resume_curses(FALSE);
 	abortdo();
-#if OSK
-	sigmask(-1);
-#endif
-#if TURBOC || __GNUC__
-	signal(signo, (void (*)())trapint);
-#else
 	signal(signo, trapint);
-#endif
 	doingglobal = FALSE;
-
 	longjmp(jmpenv, 1);
-
-	return 0;
 }
-
 
 
 #ifndef NO_DIGRAPH
@@ -489,3 +352,61 @@ static init_digraphs()
 	do_digraph(FALSE, (char *)0);
 }
 #endif /* NO_DIGRAPH */
+
+static void
+obsolete(argv)
+	char *argv[];
+{
+	static char *eofarg = "-c$";
+
+	/*
+	 * Translate old style arguments into something getopt will like.
+	 * Change "+/command" into "-ccommand".
+	 * Change "+" into "-c$".
+	 */
+	while (*++argv)
+		if (argv[0][0] == '+')
+			if (argv[0][1] == '\0')
+				argv[0] = eofarg;
+			else if (argv[0][1] == '/') {
+				argv[0][0] = '-';
+				argv[0][1] = 'c';
+			}
+			
+}
+
+static void
+usage()
+{
+	(void)fprintf(stderr,
+	    "usage: vi [-eimRrv] [-c command] [-m file] [-t tag]\n");
+	exit(1);
+}
+
+/*
+ * This function handles deadly signals.  It restores sanity to the terminal
+ * preserves the current temp file, and deletes any old temp files.
+ */
+static void
+onhup(signo)
+	int signo;
+{
+	/* Restore the terminal's sanity. */
+	endwin();
+
+	/* If we had a temp file going, then preserve it. */
+	if (tmpnum > 0 && tmpfd >= 0) {
+		(void)close(tmpfd);
+		(void)sprintf(tmpblk.c,
+		    "%s \"%s\" %s", PRESERVE, "vi died", tmpname);
+		(void)system(tmpblk.c);
+	}
+
+	/* Delete any old temp files. */
+	cutend();
+
+	/* Exit with the proper exit status. */
+	(void)signal(signo, SIG_DFL);
+	(void)kill(0, signo);
+	/* NOTREACHED */
+}

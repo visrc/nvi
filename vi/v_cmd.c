@@ -1,17 +1,17 @@
-/* vi.c */
-
-/* Author:
- *	Steve Kirkendall
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
+/*-
+ * Copyright (c) 1991 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * %sccs.include.redist.c%
  */
 
+#ifndef lint
+static char sccsid[] = "$Id: v_cmd.c,v 5.2 1991/12/18 10:17:06 bostic Exp $ (Berkeley) $Date: 1991/12/18 10:17:06 $";
+#endif /* not lint */
 
 #include "config.h"
 #include "ctype.h"
 #include "vi.h"
-
-
 
 /* This array describes what each key does */
 #define NO_FUNC		(MARK (*)())0
@@ -54,11 +54,11 @@ static int keymodes[] = {0, WHEN_REP1, WHEN_CUT, WHEN_MARK, WHEN_CHAR};
 static struct keystru
 {
 	MARK	(*func)();	/* the function to run */
-	uchar	args;		/* description of the args needed */
+	u_char	args;		/* description of the args needed */
 #ifndef NO_VISIBLE
 	short	flags;
 #else
-	uchar	flags;		/* other stuff */
+	u_char	flags;		/* other stuff */
 #endif
 }
 	vikeys[] =

@@ -1,13 +1,3 @@
-/* system.c  -- UNIX version */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
- */
-
-
 /* This file contains a new version of the system() function and related stuff.
  *
  * Entry points are:
@@ -20,9 +10,12 @@
  * and any O.S./Compiler combination which adheres to UNIX forking conventions.
  */
 
+#include <signal.h>
+#include <stdio.h>
 #include "config.h"
 #include "vi.h"
-#include <signal.h>
+#include "extern.h"
+
 extern char	**environ;
 
 #if ANY_UNIX
