@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.98 2000/07/16 15:37:25 skimo Exp $ (Berkeley) $Date: 2000/07/16 15:37:25 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.99 2000/07/21 17:35:05 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2077,7 +2077,7 @@ retry:		for (len = 0,
 	case 1:				/* One match. */
 		/* If something changed, do the exchange. */
 		nlen = v_strlen(cmd.argv[0]->bp);
-		if (len != nlen || MEMCMPW(cmd.argv[0]->bp, p, len))
+		if (len != nlen || MEMCMP(cmd.argv[0]->bp, p, len))
 			break;
 
 		/* If haven't done a directory test, do it now. */
@@ -2189,7 +2189,7 @@ txt_fc_col(sp, argc, argv)
 		prefix = (pp - np) + 1;
 		for (ac = argc - 1, av = argv + 1; ac > 0; --ac, ++av)
 			if (av[0]->len < prefix ||
-			    MEMCMPW(av[0]->bp, argv[0]->bp, 
+			    MEMCMP(av[0]->bp, argv[0]->bp, 
 				   prefix)) {
 				prefix = 0;
 				break;

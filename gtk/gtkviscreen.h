@@ -32,6 +32,7 @@ struct _GtkViScreen
   gint	cols, rows;
   gint	ch_width, ch_height, ch_ascent;
   gint  curx, cury;
+  gint  lastx, lasty;
   gint	marked_x, marked_y, marked_maxx, marked_maxy;
 };
 

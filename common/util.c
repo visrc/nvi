@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.18 2000/07/20 19:21:53 skimo Exp $ (Berkeley) $Date: 2000/07/20 19:21:53 $";
+static const char sccsid[] = "$Id: util.c,v 10.19 2000/07/21 17:35:02 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,19 +176,7 @@ v_strlen(const CHAR_T *str)
 }
 
 /*
- * PUBLIC: void * v_charset __P((CHAR_T *s, CHAR_T c, size_t n));
- */
-void *
-v_charset(CHAR_T *s, CHAR_T c, size_t n)
-{
-	CHAR_T *ss = s;
-
-	while (n--) *s++ = c;
-	return ss;
-}
-
-/*
- * PUBLIC: int v_strcmp __P((const CHAR_T *s1, const CHAR_T *s2))
+ * PUBLIC: int v_strcmp __P((const CHAR_T *s1, const CHAR_T *s2));
  */
 int 
 v_strcmp(const CHAR_T *s1, const CHAR_T *s2)

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.4 2000/07/19 20:31:58 skimo Exp $ (Berkeley) $Date: 2000/07/19 20:31:58 $";
+static const char sccsid[] = "$Id: conv.c,v 1.5 2000/07/21 17:35:02 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,3 +148,4 @@ conv_enc (SCR *sp, char *enc)
     }
     return 1;
 }
+

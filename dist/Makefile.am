@@ -96,6 +96,7 @@ libvi_la_SOURCES = \
 	$(visrcdir)/common/seq.c \
 	$(visrcdir)/common/trace.c \
 	$(visrcdir)/common/util.c \
+	$(visrcdir)/common/util2.c \
 	$(visrcdir)/vi/v_at.c \
 	$(visrcdir)/vi/v_ch.c \
 	$(visrcdir)/vi/v_cmd.c \
@@ -140,6 +141,11 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/regex/regerror.c \
 	$(visrcdir)/regex/regexec.c \
 	$(visrcdir)/regex/regfree.c \
+	$(visrcdir)/regex/cclass.h \
+	$(visrcdir)/regex/cname.h \
+	$(visrcdir)/regex/regex.h \
+	$(visrcdir)/regex/regex2.h \
+	$(visrcdir)/regex/utils.h
 	$(visrcdir)/common/dldb.c \
 	$(visrcdir)/perl_api/perl.xs \
 	$(visrcdir)/perl_api/perlsfio.c \
@@ -189,6 +195,7 @@ vi_ipc_LDFLAGS = @perlldflags@
 vi_ipc_DEPENDENCIES = @IPCOBJS@
 
 vi_gtk_SOURCES = \
+	$(visrcdir)/common/util2.c \
 	$(visrcdir)/ipc/ip_run.c \
 	$(visrcdir)/ipc/ip_send.c \
 	$(visrcdir)/ipc/ip_trans.c \

@@ -680,12 +680,12 @@ register struct parse *p;
 	static CHAR_T eow[] = { '[', ':', '>', ':', ']', ']' };
 
 	/* Dept of Truly Sickening Special-Case Kludges */
-	if (p->next + 5 < p->end && MEMCMPW(p->next, bow, 6) == 0) {
+	if (p->next + 5 < p->end && MEMCMP(p->next, bow, 6) == 0) {
 		EMIT(OBOW, 0);
 		NEXTn(6);
 		return;
 	}
-	if (p->next + 5 < p->end && MEMCMPW(p->next, eow, 6) == 0) {
+	if (p->next + 5 < p->end && MEMCMP(p->next, eow, 6) == 0) {
 		EMIT(OEOW, 0);
 		NEXTn(6);
 		return;
@@ -827,7 +827,7 @@ register cset *cs;
 		NEXT();
 	len = p->next - sp;
 	for (cp = cclasses; cp->name != NULL; cp++)
-		if (v_strlen(cp->name) == len && MEMCMPW(cp->name, sp, len))
+		if (v_strlen(cp->name) == len && MEMCMP(cp->name, sp, len))
 			break;
 	if (cp->name == NULL) {
 		/* oops, didn't find it */
@@ -901,7 +901,7 @@ int endc;			/* name ended by endc,']' */
 	}
 	len = p->next - sp;
 	for (cp = cnames; cp->name != NULL; cp++)
-		if (v_strlen(cp->name) == len && MEMCMPW(cp->name, sp, len))
+		if (v_strlen(cp->name) == len && MEMCMP(cp->name, sp, len))
 			return(cp->code);	/* known name */
 	if (len == 1)
 		return(*sp);	/* single character */

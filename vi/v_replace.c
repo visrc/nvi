@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_replace.c,v 10.22 2000/07/20 19:21:54 skimo Exp $ (Berkeley) $Date: 2000/07/20 19:21:54 $";
+static const char sccsid[] = "$Id: v_replace.c,v 10.23 2000/07/21 17:35:05 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,7 +194,7 @@ err_ret:		rval = 1;
 			rval = 0;
 		}
 	} else {
-		CHARSET(bp + vp->m_start.cno, vip->rlast, cnt);
+		STRSET(bp + vp->m_start.cno, vip->rlast, cnt);
 		rval = db_set(sp, vp->m_start.lno, bp, len);
 	}
 	FREE_SPACEW(sp, bp, blen);

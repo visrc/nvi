@@ -6,6 +6,8 @@
 #include "gtkviscreen.h"
 #include "../common/conv.h"
 
+void * v_strset __P((CHAR_T *s, CHAR_T c, size_t n));
+
 #define DEFAULT_VI_SCREEN_WIDTH_CHARS     80
 #define DEFAULT_VI_SCREEN_HEIGHT_LINES    25
 #define VI_SCREEN_BORDER_ROOM         1
@@ -83,32 +85,31 @@ gtk_vi_screen_move(GtkViScreen *vi, gint row, gint col)
     gint x, xpos;
     CHAR_T *line;
 
-    mark_lines(vi, vi->cury, vi->curx, vi->cury+1, vi->curx+1);
     line = vi->chars + row*vi->cols; 
     for (x = 0, xpos = 0; xpos <= col; ++x)
 	xpos += INTIS9494(*(line+x)) ? 2 : 1;
     xpos -= INTIS9494(*(line+--x)) ? 2 : 1;
     vi->curx = x;
     vi->cury = row;
-    mark_lines(vi, vi->cury, vi->curx, vi->cury+1, vi->curx+1);
 }
 
 static void
 cleartoel (GtkViScreen *vi, guint row, guint col)
 {
-    CHAR_T *p, *end;
+    CHAR_T *p, *e;
 
-    p = CharAt(vi,row,col);
-    end = p + vi->cols - col;
-    while (p < end) *p++ = ' ';
+    if (MEMCMP(p = CharAt(vi,row,col), e = CharAt(vi,vi->rows,0), 
+		vi->cols - col)) {
+	MEMMOVE(p, e, vi->cols - col);
+	memset(FlagAt(vi,row,col), COLOR_STANDARD, vi->cols - col);
+	mark_lines(vi, row, col, row+1, vi->cols);
+    }
 }
 
 void
 gtk_vi_screen_clrtoel (GtkViScreen *vi)
 {
     cleartoel(vi, vi->cury, vi->curx);
-    memset(FlagAt(vi,vi->cury,vi->curx), COLOR_STANDARD, vi->cols - vi->curx);
-    mark_lines(vi, vi->cury, vi->curx, vi->cury+1, vi->cols);
 }
 
 void
@@ -157,8 +158,7 @@ gtk_vi_screen_deleteln(GtkViScreen *vi)
     MEMMOVE(CharAt(vi,y,0), CharAt(vi,y+1,0), rows * vi->cols);
     cleartoel(vi,vi->rows-1,0);
     memmove(FlagAt(vi,y,0), FlagAt(vi,y+1,0), rows * vi->cols);
-    memset(FlagAt(vi,vi->rows-1,0), COLOR_STANDARD, vi->cols);
-    mark_lines(vi, y, 0, vi->rows, vi->cols);
+    mark_lines(vi, y, 0, vi->rows-1, vi->cols);
 }
 
 void
@@ -170,13 +170,16 @@ gtk_vi_screen_insertln(GtkViScreen *vi)
     MEMMOVE(CharAt(vi,y+1,0), CharAt(vi,y,0), rows * vi->cols);
     cleartoel(vi,y,0);
     memmove(FlagAt(vi,y+1,0), FlagAt(vi,y,0), rows * vi->cols);
-    memset(FlagAt(vi,y,0), COLOR_STANDARD, vi->cols);
-    mark_lines(vi, y, 0, vi->rows, vi->cols);
+    mark_lines(vi, y+1, 0, vi->rows, vi->cols);
 }
 
 void
 gtk_vi_screen_refresh(GtkViScreen *vi)
 {
+    if (vi->lastx != vi->curx || vi->lasty != vi-> cury) {
+	mark_lines(vi, vi->lasty, vi->lastx, vi->lasty+1, vi->lastx+1);
+	mark_lines(vi, vi->cury, vi->curx, vi->cury+1, vi->curx+1);
+    }
     if (vi->marked_maxy == 0)
 	return;
     draw_lines(vi, vi->marked_y, vi->marked_x, vi->marked_maxy, vi->marked_maxx);
@@ -184,6 +187,8 @@ gtk_vi_screen_refresh(GtkViScreen *vi)
     vi->marked_y = vi->rows;
     vi->marked_maxx = 0;
     vi->marked_maxy = 0;
+    vi->lastx = vi->curx;
+    vi->lasty = vi->cury;
 }
 
 void
@@ -586,9 +591,8 @@ recompute_geometry (GtkViScreen* vi)
     vi->marked_maxy = 0;
 
     g_free(vi->chars);
-    vi->chars = (CHAR_T*)g_new(gchar, vi->rows*vi->cols * sizeof(CHAR_T));
-    for (i = 0; i < vi->rows*vi->cols; ++i)
-	vi->chars[i] = ' ';
+    vi->chars = (CHAR_T*)g_new(gchar, (vi->rows+1)*vi->cols * sizeof(CHAR_T));
+    STRSET(vi->chars, ' ', (vi->rows+1)*vi->cols);
     g_free(vi->reverse);
     vi->reverse = g_new(gchar, vi->rows*vi->cols);
     memset(vi->reverse, 0, vi->rows*vi->cols);
