@@ -109,6 +109,12 @@ case "$host_os" in
 ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE);;
 esac
 
+if test "X$RLIBS" = "Xyes"; then
+	LRscript='s/^\(.*\)/-R\1 -L\1 /'
+else
+	LRscript='s/^\(.*\)/-L\1 /'
+fi
+
 dnl If the user wants a tracing version, add the TRACE compile flag.
 AC_MSG_CHECKING(if --enable-trace option specified)
 AC_ARG_ENABLE(trace,
@@ -196,11 +202,7 @@ AC_PATH_X
 AC_SUBST(XINCS)
 if test "$no_x" != yes; then
 	if test "X$x_libraries" != "X"; then
-		if test "X$RLIBS" = "Xyes"; then
-			XLIBS="-R$x_libraries -L$x_libraries $XLIBS"
-		else
-			XLIBS="-L$x_libraries $XLIBS"
-		fi
+		XLIBS="`echo $x_libraries | sed "$LRscript"` $XLIBS"
 	fi
 	XLIBS="$XLIBS -lX11"
 	if test "X$x_includes" != "X"; then
@@ -451,7 +453,7 @@ dnl 	[
 	AC_ARG_WITH(curses,
 		[  --with-curses=DIR       Path to curses installation. ])
 	if test "x$with_curses" != "x"; then
-		CURSLDFLAGS="-L$with_curses/lib $CURSLDFLAGS"
+		CURSLDFLAGS="`echo $with_curses/lib | sed "$LRscript"` $CURSLDFLAGS"
 		CURSCPPFLAGS="-I$with_curses/include $CURSCPPFLAGS"
 	fi;
 	LDFLAGS="$CURSLDFLAGS $LDFLAGS"
@@ -943,7 +945,7 @@ if test "$vi_cv_dl" = yes; then
 	LIBS="-ldl $LIBS"
 else
 	LIBS="-ldb $LIBS"
-	LDFLAGS="-L$with_db3/lib $LDFLAGS"
+	LDFLAGS="`echo $with_db3/lib | sed "$LRscript"` $LDFLAGS"
 fi
 
 
