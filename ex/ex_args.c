@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 10.5 1995/06/20 19:37:30 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:37:30 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.6 1995/07/04 12:42:06 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -258,37 +258,35 @@ ex_args(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
+	GS *gp;
 	int cnt, col, len, sep;
 	char **ap;
-
-	ENTERCANONICAL(sp, cmdp, 0);
 
 	if (sp->argv == NULL) {
 		(void)msgq(sp, M_ERR, "114|No file list to display");
 		return (0);
 	}
 
+	gp = sp->gp;
 	col = len = sep = 0;
 	for (cnt = 1, ap = sp->argv; *ap != NULL; ++ap) {
 		col += len = strlen(*ap) + sep + (ap == sp->cargv ? 2 : 0);
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)ex_printf(sp, "\n");
+			(void)ex_puts(sp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)ex_printf(sp, " ");
+			(void)ex_puts(sp, " ");
 		}
 		++cnt;
 
-		if (ap == sp->cargv)
-			(void)ex_printf(sp, "[%s]", *ap);
-		else
-			(void)ex_printf(sp, "%s", *ap);
+		(void)ex_printf(sp, "%s%s%s", ap == sp->cargv ? "[" : "",
+		    *ap, ap == sp->cargv ? "[" : "");
 		if (INTERRUPTED(sp))
 			break;
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_printf(sp, "\n");
+		(void)ex_puts(sp, "\n");
 	return (0);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.8 1995/06/23 19:23:27 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:23:27 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.9 1995/07/04 12:42:05 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,7 +212,10 @@ ex_aci(sp, cmdp, cmd)
 	 * However, depending on the screen that we're using, that may not
 	 * be possible.
 	 */
-	ENTERCANONICAL(sp, cmdp, 1);
+	if (gp->scr_canon(sp, 1)) {
+		ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
+		return (1);
+	}
 
 	/*
 	 * !!!
@@ -221,7 +224,8 @@ ex_aci(sp, cmdp, cmd)
 	 * informational message.
 	 */
 	if (F_ISSET(sp, S_VI)) {
-		(void)ex_printf(sp, "\nEntering ex input mode:\n");
+		(void)ex_puts(sp,
+		    msg_cat(sp, "280:Entering ex input mode:", NULL));
 		(void)ex_fflush(sp);
 	}
 
@@ -270,8 +274,6 @@ ex_aci_td(sp)
 	TEXT *tp;
 	recno_t lno;
 	size_t cnt;
-
-	F_SET(sp, S_EX_WROTE);
 
 	exp = EXP(sp);
 	lno = exp->im_lno;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.4 1995/06/23 19:25:24 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:25:24 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.5 1995/07/04 12:42:08 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,7 +89,6 @@ ex_bang(sp, cmdp)
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
 		if (F_ISSET(sp, S_EX)) {
-			ENTERCANONICAL(sp, cmdp, 0);
 			(void)ex_printf(sp, "!%s\n", ap->bp);
 			(void)ex_fflush(sp);
 		}
@@ -197,10 +196,6 @@ ex_bang(sp, cmdp)
 	/* Run the command. */
 	rval = ex_exec_proc(sp, cmdp, ap->bp, bp, msg);
 
-	/* Vi requires user permission to continue. */
-	if (F_ISSET(sp, S_VI))
-		F_SET(sp, S_CONTINUE);
-
 ret2:	if (F_ISSET(sp, S_EX)) {
 #ifdef __TK__
 		/*
@@ -208,7 +203,7 @@ ret2:	if (F_ISSET(sp, S_EX)) {
 		 * the autoprint output.
 		 */
 		if (rval)
-			(void)sp->gp->scr_msgflush(sp, NULL, NULL);
+			(void)ex_fflush(sp);
 #endif
 
 		/* Ex terminates with a bang, even if the command fails. */

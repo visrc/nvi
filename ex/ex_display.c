@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 10.5 1995/06/20 19:36:58 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:36:58 $";
+static char sccsid[] = "$Id: ex_display.c,v 10.6 1995/07/04 12:42:09 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,8 +52,6 @@ ex_display(sp, cmdp)
 		if (cmdp->argv[0]->len >= sizeof(ARG) ||
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
-
-		ENTERCANONICAL(sp, cmdp, 0);
 		return (bdisplay(sp));
 	case 's':
 #undef	ARG
@@ -61,8 +59,6 @@ ex_display(sp, cmdp)
 		if (cmdp->argv[0]->len >= sizeof(ARG) ||
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
-
-		ENTERCANONICAL(sp, cmdp, 0);
 		return (ex_sdisplay(sp));
 	case 't':
 #undef	ARG
@@ -70,8 +66,6 @@ ex_display(sp, cmdp)
 		if (cmdp->argv[0]->len >= sizeof(ARG) ||
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
-
-		ENTERCANONICAL(sp, cmdp, 0);
 		return (ex_tagdisplay(sp));
 	}
 	ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
@@ -129,19 +123,21 @@ db(sp, cbp, name)
 	CHAR_T *name;
 {
 	CHAR_T *p;
+	GS *gp;
 	TEXT *tp;
 	size_t len;
 
+	gp = sp->gp;
 	(void)ex_printf(sp, "********** %s%s\n",
 	    name == NULL ? KEY_NAME(sp, cbp->name) : name,
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : " (character mode)");
 	for (tp = cbp->textq.cqh_first;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
 		for (len = tp->len, p = tp->lb; len--; ++p) {
-			(void)ex_printf(sp, "%s", KEY_NAME(sp, *p));
+			(void)ex_puts(sp, KEY_NAME(sp, *p));
 			if (INTERRUPTED(sp))
 				return;
 		}
-		(void)ex_printf(sp, "\n");
+		(void)ex_puts(sp, "\n");
 	}
 }

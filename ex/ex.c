@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.5 1995/07/02 11:59:48 bostic Exp $ (Berkeley) $Date: 1995/07/02 11:59:48 $";
+static char sccsid[] = "$Id: ex.c,v 10.6 1995/07/04 12:41:55 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:41:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,6 @@ ex(sp, evp)
 {
 	EX_PRIVATE *exp;
 	GS *gp;
-	MSG *freep, *mp;
 	TEXT *tp;
 	int complete;
 
@@ -84,6 +83,8 @@ ex(sp, evp)
 		gp->cm_state = ES_GET_CMD;
 		ex_message(sp, NULL, EXM_INTERRUPT);
 		break;
+	case E_REPAINT:
+		return (0);
 	case E_RESIZE:
 		sp->rows = O_VAL(sp, O_LINES);
 		sp->cols = O_VAL(sp, O_COLUMNS);
@@ -107,19 +108,6 @@ ex(sp, evp)
 		if (!F_ISSET(gp, G_STDIN_TTY)) {
 			sp->if_lno = 0;
 			sp->if_name = strdup("input");
-		}
-
-		/*
-		 * Messages get written before we have a screen on which to
-		 * put them.  Make sure they get displayed as soon as we can.
-		 */
-		for (mp = sp->gp->msgq.lh_first; mp != NULL;) {
-			(void)ex_msgwrite(sp, mp->mtype, mp->buf, mp->len);
-			freep = mp;
-			mp = mp->q.le_next;
-			LIST_REMOVE(freep, q);
-			free(freep->buf);
-			free(freep);
 		}
 		gp->cm_state = ES_GET_CMD;
 		break;
@@ -154,11 +142,8 @@ next_state:
 	 * Initial command state.
 	 */
 	case ES_GET_CMD:
-		if (F_ISSET(sp, S_STATUS)) {
-			F_CLR(sp, S_STATUS);
-			msg_status(sp, sp->lno, 0);
-		}
-		(void)msg_rpt(sp);
+		/* Completed a command, tell screen to catch up on messages. */
+		F_SET(sp, S_COMPLETE);
 
 		/* If we're exiting the screen, clean up. */
 done:		switch (F_ISSET(sp, S_VI | S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {

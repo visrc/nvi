@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 10.4 1995/06/23 19:23:57 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:23:57 $";
+static char sccsid[] = "$Id: ex_equal.c,v 10.5 1995/07/04 12:42:10 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,6 @@ ex_equal(sp, cmdp)
 	recno_t lno;
 
 	NEEDFILE(sp, cmdp);
-	ENTERCANONICAL(sp, cmdp, 0);
 
 	/*
 	 * Print out the line number matching the specified address,
