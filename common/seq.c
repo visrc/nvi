@@ -6,19 +6,21 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.7 1992/04/18 15:40:34 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:40:34 $";
+static char sccsid[] = "$Id: seq.c,v 5.8 1992/04/27 16:04:18 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:04:18 $";
 #endif /* not lint */
 
-#include <errno.h>
+#include <curses.h>
 #include <limits.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
 #include "vi.h"
-#include "curses.h"
+#include "excmd.h"
 #include "seq.h"
+#include "extern.h"
 
 SEQ *seq[UCHAR_MAX];
 SEQLIST seqhead;
@@ -217,6 +219,10 @@ seq_dump(stype, isname)
 	register int ch, cnt, len;
 	register char *p;
 
+	if (seqhead.lnext == (SEQ *)&seqhead)
+		return (0);
+
+	EX_VISTART;
 	cnt = 0;
 	for (sp = seqhead.lnext; sp != (SEQ *)&seqhead; sp = sp->lnext) {
 		if (stype != sp->stype)
@@ -224,33 +230,32 @@ seq_dump(stype, isname)
 		++cnt;
 		for (p = sp->input, len = 0; (ch = *p); ++p, ++len)
 			if (iscntrl(ch)) {
-				qaddch('^');
-				qaddch(ch ^ '@');
+				(void)putchar('^');
+				(void)putchar(ch + 0x40);
 			} else
-				qaddch(ch);
+				(void)putchar(ch);
 		for (len = TAB - len % TAB; len; --len)
-			qaddch(' ');
+			(void)putchar(' ');
 
 		for (p = sp->output; (ch = *p); ++p)
 			if (iscntrl(ch)) {
-				qaddch('^');
-				qaddch(ch ^ '@');
+				(void)putchar('^');
+				(void)putchar(ch + 0x40);
 			} else
-				qaddch(ch);
+				(void)putchar(ch);
 
 		if (isname && sp->name) {
 			for (len = TAB - len % TAB; len; --len)
-				qaddch(' ');
+				(void)putchar(' ');
 			for (p = sp->name, len = 0; (ch = *p); ++p, ++len)
 				if (iscntrl(ch)) {
-					qaddch('^');
-					qaddch(ch ^ '@');
+					(void)putchar('^');
+					(void)putchar(ch + 0x40);
 				} else
-					qaddch(ch);
+					(void)putchar(ch);
 		}
 
-		addch('\n');
-		ex_refresh();
+		(void)putchar('\n');
 	}
 	return (cnt);
 }
