@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.100 2000/08/30 18:03:44 skimo Exp $ (Berkeley) $Date: 2000/08/30 18:03:44 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.101 2001/05/11 20:20:44 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:20:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2237,7 +2237,7 @@ txt_fc_col(sp, argc, argv)
 				break;
 		}
 		if (nf)
-			FREE_SPACEW(sp, p, 0);
+			FREE_SPACE(sp, pp, 0);
 		CHK_INTR;
 	} else {
 		/* Figure out the number of columns. */
@@ -2257,7 +2257,7 @@ txt_fc_col(sp, argc, argv)
 				pp = msg_print(sp, np, &nf);
 				cnt = ex_printf(sp, "%s", pp);
 				if (nf)
-					FREE_SPACEW(sp, p, 0);
+					FREE_SPACE(sp, pp, 0);
 				CHK_INTR;
 				if ((base += numrows) >= argc)
 					break;
