@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.14 1992/04/16 16:08:15 bostic Exp $ (Berkeley) $Date: 1992/04/16 16:08:15 $";
+static char sccsid[] = "$Id: main.c,v 5.15 1992/04/16 18:01:49 bostic Exp $ (Berkeley) $Date: 1992/04/16 18:01:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,7 +38,6 @@ static jmp_buf jmpenv;
 int reading_exrc;
 
 static void obsolete __P((char *[]));
-static void onhup __P((int));
 static void usage __P((void));
 
 int
@@ -114,11 +113,11 @@ main(argc, argv)
 	/* Temporarily ignore interrupts. */
 	(void)signal(SIGINT, SIG_IGN);
 
-	/* Start curses. */
+	/* Initialize the key sequence list. */
+	seq_init();
+
+	/* Start curses; after seq_init so we can map keys. */
 	initscr();
-	cbreak();
-	noecho();
-	scrollok(stdscr, TRUE);
 
 	/* Catch HUP, TSTP, WINCH */
 	(void)signal(SIGHUP, onhup);
@@ -130,12 +129,6 @@ main(argc, argv)
 	 * we can alter LINES and COLS if necessary.
 	 */
 	opts_init();
-
-	/* Initialize the key sequence list. */
-	seq_init();
-
-	/* Initialize special keys, must be after key sequence init. */
-	map_init();
 
 #ifndef NO_DIGRAPH
 	digraph_init();
@@ -208,7 +201,7 @@ main(argc, argv)
 		if (setjmp(jmpenv))
 			/* Maybe we just aborted a change? */
 			abortdo();
-		signal(SIGINT, (void(*)()) trapint);
+		(void)signal(SIGINT, trapint);
 
 		switch (mode) {
 		  case MODE_VI:
@@ -229,29 +222,24 @@ main(argc, argv)
 	/* free up the cut buffers */
 	cutend();
 
-	/* end curses */
-	endmsg();
-	move(LINES - 1, 0);
-	clrtoeol();
-	refresh();
-	endwin();
+	/* End the window. */
+	endcurses();
 
 	exit(0);
 	/* NOTREACHED */
 }
 
-
-/*ARGSUSED*/
-void
+/* ARGSUSED */
+static void
 trapint(signo)
 	int signo;
 {
 	resume_curses(FALSE);
 	abortdo();
-	signal(signo, trapint);
 	doingglobal = FALSE;
 	longjmp(jmpenv, 1);
 }
+
 
 static void
 obsolete(argv)
