@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.35 1994/05/25 13:13:56 bostic Exp $ (Berkeley) $Date: 1994/05/25 13:13:56 $
+.\"     $Id: vi.ref,v 8.36 1994/05/25 17:40:26 bostic Exp $ (Berkeley) $Date: 1994/05/25 17:40:26 $
 .\"
 .\"
 .so ref.so
@@ -78,10 +78,12 @@ Engineers, Inc.
 The financial support of UUNET Communications Services is gratefully
 acknowledged.
 .)q
+.sy echo -n >index
 .oh 'Nvi/Nex Reference''USD:13-%'
 .eh 'USD:13-%''Nvi/Nex Reference'
+.bp 3
 .bp
-.sh 1 Description
+.SH 1 Description
 .pp
 .CO Vi
 is a screen oriented text editor.
@@ -124,7 +126,7 @@ editor first.
 If you're in an unfamiliar environment,
 and you absolutely have to get work done immediately,
 see the section entitled
-.QB Fast Startup
+.QB "Fast Startup"
 in the manual page.
 It's probably enough to get you started.
 .pp
@@ -147,7 +149,7 @@ by anonymous ftp, and can be retrieved from
 .LI ftp.cs.berkeley.edu ,
 in the directory
 .LI ucb/4bsd .
-.sh 1 "Startup Information"
+.SH 1 "Startup Information"
 .pp
 .EV Ex vi
 interprets one of two possible environmental variables and reads up to
@@ -238,7 +240,7 @@ the first file to be edited is read in (or a temporary file is created).
 Then, any commands specified using the
 .b \-c
 option are executed, in the context of that file.
-.sh 1 Recovery
+.SH 1 Recovery
 .pp
 There is no recovery program for
 .CO nvi ,
@@ -340,7 +342,7 @@ utility (or a mailer program which supports its interface)
 the source file
 .LI nvi/recover.c
 will have to be modified to use your local mail delivery programs.
-.sh 1 "Sizing the Screen"
+.SH 1 "Sizing the Screen"
 .pp
 The size of the screen can be set in a number of ways.
 .EV Ex vi
@@ -373,7 +375,7 @@ If a window change size signal (SIGWINCH) is received,
 the new window size is retrieved using the TIOCGWINSZ
 .XR ioctl 2
 call, and all other information is ignored.
-.sh 1 "Character Display"
+.SH 1 "Character Display"
 .pp
 In both
 .CO ex
@@ -417,7 +419,7 @@ In
 .CO vi
 text input mode, the cursor is positioned on the first column of
 characters which take up more than one column on the screen.
-.sh 1 "Multiple Screens"
+.SH 1 "Multiple Screens"
 .pp
 .CO Nvi
 supports multiple screens by dividing the window up into regions.
@@ -482,7 +484,7 @@ and replacing its space in the window with the foregrounded screen.
 If the last screen in the window is exited, and there are backgrounded
 screens, the first screen on the list of backgrounded screens takes over
 the window.
-.sh 1 "Regular Expressions and Replacement Strings"
+.SH 1 "Regular Expressions and Replacement Strings"
 .pp
 Regular expressions are used in line addresses,
 as the first part of
@@ -644,7 +646,7 @@ the matched line to be split into two lines at that point.
 (The
 .LI <control-M>
 will be discarded.)
-.sh 1 "General Editor Description"
+.SH 1 "General Editor Description"
 .pp
 When
 .CO ex
@@ -736,11 +738,13 @@ The following words have special meanings in both the
 and
 .CO vi
 command descriptions:
+.KY <interrupt>
 .IP <interrupt>
 The interrupt character is used to interrupt the current operation.
 Normally
 .LI <control-C> ,
 whatever character is set for the current terminal is used.
+.KY "<literal next>"
 .IP "<literal next>"
 The literal next character is used to escape the subsequent character
 from any special meaning.
@@ -750,6 +754,7 @@ If the terminal is not set up to do XON/XOFF flow control,
 then
 .LI <control-Q>
 is used to mean literal next as well.
+.KY "current pathname"
 .IP "current pathname"
 The pathname of the file currently being edited by vi.
 When the percent character
@@ -760,6 +765,7 @@ command argument, it's replaced by the current pathname.
 (The
 .QT %
 character can be escaped by preceding it with a backslash.)
+.KY "alternate pathname"
 .IP "alternate pathname"
 The name of the last file name mentioned in an
 .CO ex
@@ -773,13 +779,14 @@ command argument, it's replaced by the alternate pathname.
 (The
 .QT #
 character can be escaped by preceding it with a backslash.)
+.KY buffer
 .IP buffer
 One of a number of named areas for saving copies of text.
 Commands that change or delete text can save the changed or deleted
 text into a specific buffer, for later use.
 Buffers are named with a single character, preceded by a double quote,
 e.g.
-.LI \"<character> .
+.LI "<character> .
 Historic implementations of
 .EV ex vi
 limited
@@ -869,6 +876,7 @@ The first and last lines are inserted into the text at the current
 cursor position, becoming part of the current line.
 If there is more than one line in the buffer, however, the current
 line itself will be split.
+.KY "unnamed buffer"
 .IP "unnamed buffer"
 The unnamed buffer is a text storage area which is used by commands
 that take a buffer as an argument, when no buffer is specified by
@@ -877,7 +885,7 @@ There is no way to explicitly reference this buffer.
 .bp
 #include <vi.cmd.roff>
 .bp
-.sh 1 "Ex Addressing"
+.SH 1 "Ex Addressing"
 .pp
 Addressing in
 .CO ex
@@ -1048,7 +1056,7 @@ of the file.
 .bp
 #include <set.opt.roff>
 .bp
-.sh 1 "Additional Features in Nex/Nvi"
+.SH 1 "Additional Features in Nex/Nvi"
 .pp
 There are a few features in
 .EV nex nvi
@@ -1156,3 +1164,8 @@ option causes
 to do left-right screen scrolling, instead of the traditional
 .CO vi
 line wrapping.
+.bp 2
+.ce 1
+\fB\s+2Table of Contents\s0\fP
+.sp
+.xp
