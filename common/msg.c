@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.44 1996/08/18 10:35:29 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:35:29 $";
+static const char sccsid[] = "$Id: msg.c,v 10.45 1996/08/18 14:29:19 bostic Exp $ (Berkeley) $Date: 1996/08/18 14:29:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -631,12 +631,12 @@ msgq_status(sp, lno, flags)
 	/*
 	 * Poison.
 	 *
-	 * This message may not be altered in any way, without the express,
-	 * written permission of Keith Bostic.  See the LICENSE file for
-	 * further information.
+	 * This message may not be altered in any way, without the written
+	 * permission of Keith Bostic.  See the LICENSE file for further
+	 * information.
 	 */
-#define	POISON	"  (UNLICENSED)"
-	if (!poisoned && len + 1 + (sizeof(POISON) - 1) < sp->cols - 2) {
+#define	POISON	"   (UNLICENSED)"
+	if (!poisoned && len + 1 + (sizeof(POISON) - 1) < sp->cols) {
 		memcpy(p, POISON, sizeof(POISON) - 1);
 		p += sizeof(POISON) - 1;
 		len += sizeof(POISON) - 1;
