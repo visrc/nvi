@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.41 1996/06/19 17:49:44 bostic Exp $ (Berkeley) $Date: 1996/06/19 17:49:44 $";
+static const char sccsid[] = "$Id: exf.c,v 10.42 1996/06/19 20:22:41 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:22:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -843,13 +843,14 @@ file_write(sp, fm, tm, name, flags)
 	F_CLR(frp, FR_NAMECHANGE);
 
 	/*
-	 * If wrote the entire file clear the modified bit.  If the file was
-	 * written back to the original file name and the file is a temporary,
-	 * set the "no exit" bit.  This permits the user to write the file and
-	 * use it in the context of the file system, but still keeps them from
-	 * losing their changes by exiting.
+	 * If wrote the entire file, and it wasn't by appending it to a file,
+	 * clear the modified bit.  If the file was written to the original
+	 * file name and the file is a temporary, set the "no exit" bit.  This
+	 * permits the user to write the file and use it in the context of the
+	 * filesystem, but still keeps them from discarding their changes by
+	 * exiting.
 	 */
-	if (LF_ISSET(FS_ALL)) {
+	if (LF_ISSET(FS_ALL) && !LF_ISSET(FS_APPEND)) {
 		F_CLR(sp->ep, F_MODIFIED);
 		if (F_ISSET(frp, FR_TMPFILE))
 			if (noname)
