@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 9.6 1995/01/30 09:19:03 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:19:03 $";
+static char sccsid[] = "$Id: vs_line.c,v 9.7 1995/01/30 10:19:42 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:19:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -383,7 +383,8 @@ svi_number(sp)
 	SMAP *smp;
 	SVI_PRIVATE *svp;
 	size_t oldy, oldx;
-	char *lp, nbuf[10];
+	int exist;
+	char nbuf[10];
 
 	/*
 	 * Try and avoid getting the last line in the file, by getting the
@@ -398,7 +399,7 @@ svi_number(sp)
 	 * The problem is that file_lline will lie, and tell us that the
 	 * info line is the last line in the file.
 	 */
-	lp = file_gline(sp, TMAP->lno + 1, NULL);
+	exist = file_eline(sp, TMAP->lno + 1);
 
 	svp = SVP(sp);
 	(void)svp->scr_cursor(sp, &oldy, &oldx);
@@ -407,8 +408,7 @@ svi_number(sp)
 			continue;
 		if (F_ISSET(svp, SVI_INFOLINE))
 			break;
-		if (smp->lno != 1 && lp == NULL &&
-		    file_gline(sp, smp->lno, NULL) == NULL)
+		if (smp->lno != 1 && !exist && file_eline(sp, smp->lno) == NULL)
 			break;
 		(void)svp->scr_move(sp, RLNO(sp, smp - HMAP), 0);
 		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
