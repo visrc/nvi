@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 10.4 1995/06/20 15:20:06 bostic Exp $ (Berkeley) $Date: 1995/06/20 15:20:06 $
+ *	$Id: common.h,v 10.5 1995/09/21 11:02:43 bostic Exp $ (Berkeley) $Date: 1995/09/21 11:02:43 $
  */
 
 /*
@@ -67,7 +67,7 @@ typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
 #include "seq.h"		/* Required by screen.h. */
 #include "util.h"		/* Required by ex.h. */
 #include "mark.h"		/* Required by gs.h. */
-#include "ex.h"			/* Required by gs.h. */
+#include "../ex/ex.h"		/* Required by gs.h. */
 #include "gs.h"			/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 #include "exf.h"
