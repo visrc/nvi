@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.30 1994/03/08 19:40:43 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:40:43 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.31 1994/03/09 10:56:57 bostic Exp $ (Berkeley) $Date: 1994/03/09 10:56:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -263,9 +263,12 @@ svi_sm_delete(sp, ep, lno)
 	 * Find the line in the map, and count the number of screen lines
 	 * which display any part of the deleted line.
 	 */
-        for (p = HMAP; p->lno != lno; ++p);
-	for (cnt_orig = 1, t = p + 1;
-	    t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
+	for (p = HMAP; p->lno != lno; ++p);
+	if (O_ISSET(sp, O_LEFTRIGHT))
+		cnt_orig = 1;
+	else
+		for (cnt_orig = 1, t = p + 1;
+		    t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
 
 	TOO_WEIRD;
 
@@ -311,8 +314,11 @@ svi_sm_insert(sp, ep, lno)
 	 * Find the line in the map, find out how many screen lines
 	 * needed to display the line.
 	 */
-        for (p = HMAP; p->lno != lno; ++p);
-	cnt_orig = svi_screens(sp, ep, lno, NULL);
+	for (p = HMAP; p->lno != lno; ++p);
+	if (O_ISSET(sp, O_LEFTRIGHT))
+		cnt_orig = 1;
+	else
+		cnt_orig = svi_screens(sp, ep, lno, NULL);
 
 	TOO_WEIRD;
 
@@ -365,9 +371,14 @@ svi_sm_reset(sp, ep, lno)
 	 * for the line is the same as the number needed for the new one.
 	 * If so, repaint, otherwise do it the hard way.
 	 */
-        for (p = HMAP; p->lno != lno; ++p);
-	for (cnt_orig = 0, t = p; t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
-	cnt_new = svi_screens(sp, ep, lno, NULL);
+	for (p = HMAP; p->lno != lno; ++p);
+	if (O_ISSET(sp, O_LEFTRIGHT))
+		cnt_orig = cnt_new = 1;
+	else {
+		for (cnt_orig = 0,
+		    t = p; t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
+		cnt_new = svi_screens(sp, ep, lno, NULL);
+	}
 
 	TOO_WEIRD;
 
