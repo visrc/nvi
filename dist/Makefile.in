@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.92 1997/04/13 15:22:21 bostic Exp $ (Berkeley) $Date: 1997/04/13 15:22:21 $
+#	$Id: Makefile.in,v 8.93 1997/08/03 17:04:12 bostic Exp $ (Berkeley) $Date: 1997/08/03 17:04:12 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -34,7 +34,7 @@ DBOBJS=	db.o mpool.o \
 	rec_search.o rec_seq.o rec_utils.o
 IPOBJS=	ip_funcs.o ip_main.o ip_read.o ip_screen.o ip_send.o ip_term.o
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
-VIOBJS= api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
+VIOBJS= api.o cut.o db.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	ex_argv.o ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_cscope.o \
 	ex_delete.o ex_display.o ex_edit.o ex_equal.o ex_file.o \
 	ex_filter.o ex_global.o ex_init.o ex_join.o ex_map.o ex_mark.o \
@@ -42,7 +42,7 @@ VIOBJS= api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	ex_put.o ex_quit.o ex_read.o ex_screen.o ex_script.o ex_set.o \
 	ex_shell.o ex_shift.o ex_source.o ex_stop.o ex_subst.o ex_tag.o \
 	ex_tcl.o ex_txt.o ex_undo.o ex_usage.o ex_util.o ex_version.o \
-	ex_visual.o ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o \
+	ex_visual.o ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o \
 	log.o main.o mark.o msg.o options.o options_f.o put.o recover.o \
 	screen.o search.o seq.o trace.o util.o v_at.o v_ch.o v_cmd.o \
 	v_delete.o v_event.o v_ex.o v_increment.o v_init.o v_itxt.o \
@@ -311,13 +311,13 @@ api.o: $(srcdir)/common/api.c
 	$(CC) $(CFLAGS) $?
 cut.o: $(srcdir)/common/cut.c
 	$(CC) $(CFLAGS) $?
+db.o: $(srcdir)/common/db.c
+	$(CC) $(CFLAGS) $?
 delete.o: $(srcdir)/common/delete.c
 	$(CC) $(CFLAGS) $?
 exf.o: $(srcdir)/common/exf.c
 	$(CC) $(CFLAGS) $?
 key.o: $(srcdir)/common/key.c
-	$(CC) $(CFLAGS) $?
-line.o: $(srcdir)/common/line.c
 	$(CC) $(CFLAGS) $?
 log.o: $(srcdir)/common/log.c
 	$(CC) $(CFLAGS) $?
