@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.29 1994/08/05 07:19:52 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:19:52 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.30 1994/08/07 14:28:07 bostic Exp $ (Berkeley) $Date: 1994/08/07 14:28:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ ex_bang(sp, ep, cmdp)
 	 * do it here.
 	 */
 	bp = NULL;
-	if (F_ISSET(cmdp, E_MODIFY)) {
+	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EXSILENT)) {
 		if (IN_EX_MODE(sp)) {
 			(void)ex_printf(EXCOOKIE, "!%s\n", ap->bp);
 			(void)ex_fflush(EXCOOKIE);
@@ -173,14 +173,14 @@ ex_bang(sp, ep, cmdp)
 				rval = 1;
 				goto ret;
 			}
-		} else if (O_ISSET(sp, O_WARN))
+		} else if (O_ISSET(sp, O_WARN) && !F_ISSET(sp, S_EXSILENT))
 			msg = "File modified since last write.\n";
 
 	/* Run the command. */
 	rval = ex_exec_proc(sp, ap->bp, bp, msg);
 
 	/* Ex terminates with a bang. */
-	if (IN_EX_MODE(sp))
+	if (IN_EX_MODE(sp) && !F_ISSET(sp, S_EXSILENT))
 		(void)write(STDOUT_FILENO, "!\n", 2);
 
 	/* Vi requires user permission to continue. */
