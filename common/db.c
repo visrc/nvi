@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.12 1993/11/01 18:53:22 bostic Exp $ (Berkeley) $Date: 1993/11/01 18:53:22 $";
+static char sccsid[] = "$Id: db.c,v 8.13 1993/11/08 11:10:27 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:10:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,7 +15,6 @@ static char sccsid[] = "$Id: db.c,v 8.12 1993/11/01 18:53:22 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
-#include "recover.h"
 
 static inline int scr_update __P((SCR *, EXF *, recno_t, enum operation, int));
 

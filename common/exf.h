@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.15 1993/11/08 11:06:14 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:06:14 $
+ *	$Id: exf.h,v 8.16 1993/11/08 11:10:25 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:10:25 $
  */
 					/* Undo direction. */
 enum udirection { UBACKWARD, UFORWARD };
@@ -46,6 +46,7 @@ typedef struct _exf {
 	 * they are unlinked on file exit.  If not NULL they are free'd on file
 	 * exit.  On file exit, if rcv_fd is not -1, it is closed.
 	 */
+#define	RCV_PERIOD	120		/* Sync every two minutes. */
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
 	int	 rcv_fd;		/* Locked mail file descriptor. */
@@ -82,6 +83,15 @@ FREF	*file_next __P((SCR *, int));
 int	 file_end __P((SCR *, EXF *, int));
 int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_write __P((SCR *, EXF *, MARK *, MARK *, char *, int));
+
+/* Recovery routines. */
+void	 rcv_hup __P((void));
+int	 rcv_init __P((SCR *, EXF *));
+int	 rcv_list __P((SCR *));
+int	 rcv_read __P((SCR *, char *));
+int	 rcv_sync __P((SCR *, EXF *));
+void	 rcv_term __P((void));
+int	 rcv_tmp __P((SCR *, EXF *, char *));
 
 /* DB interface routines */
 int	 file_aline __P((SCR *, EXF *, int, recno_t, char *, size_t));
