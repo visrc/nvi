@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.2 1993/09/10 18:34:45 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:34:45 $
+ *	$Id: options.h,v 8.3 1993/09/30 19:00:35 bostic Exp $ (Berkeley) $Date: 1993/09/30 19:00:35 $
  */
 
 typedef struct _option {
@@ -62,4 +62,8 @@ int	f_sidescroll __P((struct _scr *, struct _option *, char *, u_long));
 int	f_tabstop __P((struct _scr *, struct _option *, char *, u_long));
 int	f_tags __P((struct _scr *, struct _option *, char *, u_long));
 int	f_term __P((struct _scr *, struct _option *, char *, u_long));
+int	f_w300 __P((struct _scr *, struct _option *, char *, u_long));
+int	f_w1200 __P((struct _scr *, struct _option *, char *, u_long));
+int	f_w9600 __P((struct _scr *, struct _option *, char *, u_long));
+int	f_window __P((struct _scr *, struct _option *, char *, u_long));
 int	f_wrapmargin __P((struct _scr *, struct _option *, char *, u_long));
