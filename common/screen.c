@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.48 1993/12/10 12:20:44 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:44 $";
+static char sccsid[] = "$Id: screen.c,v 8.49 1993/12/14 18:21:27 bostic Exp $ (Berkeley) $Date: 1993/12/14 18:21:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,8 +153,11 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		F_SET(sp, F_ISSET(orig, S_SCREENS));
 	}
 
-	/* Copy screen private information. */
-	if (sp->s_copy(orig, sp))
+	if (sp->s_copy(orig, sp))		/* Initialize screen. */
+		return (1);
+	if (v_screen_copy(orig, sp))		/* Initialize vi. */
+		return (1);
+	if (ex_screen_copy(orig, sp))		/* Initialize ex. */
 		return (1);
 
 	*spp = sp;
@@ -169,8 +172,15 @@ int
 screen_end(sp)
 	SCR *sp;
 {
-	/* Cleanup screen private information. */
-	(void)sp->s_end(sp);
+	int rval;
+
+	rval = 0;
+	if (v_screen_end(sp))			/* End vi. */
+		rval = 1;
+	if (ex_screen_end(sp))			/* End ex. */
+		rval = 1;
+	if (sp->s_end(sp))			/* End screen. */
+		rval = 1;
 
 	/* Free FREF's. */
 	{ FREF *frp;
@@ -247,5 +257,5 @@ screen_end(sp)
 	/* Free the screen itself. */
 	FREE(sp, sizeof(SCR));
 
-	return (0);
+	return (rval);
 }
