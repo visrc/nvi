@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.1 1995/04/13 17:19:25 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:25 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.2 1995/05/05 18:59:11 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:59:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1158,6 +1158,8 @@ eof:				msgq(sp, M_BERR,
  * vs_sm_nlines --
  *	Return the number of screen lines from an SMAP entry to the
  *	start of some file line, less than a maximum value.
+ *
+ * PUBLIC: recno_t vs_sm_nlines __P((SCR *, SMAP *, recno_t, size_t));
  */
 recno_t
 vs_sm_nlines(sp, from_sp, to_lno, max)

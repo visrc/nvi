@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.1 1995/04/13 17:19:19 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:19 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.2 1995/05/05 18:58:37 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:58:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,8 @@ static char sccsid[] = "$Id: vs_line.c,v 10.1 1995/04/13 17:19:19 bostic Exp $ (
 /*
  * vs_line --
  *	Update one line on the screen.
+ *
+ * PUBLIC: int vs_line __P((SCR *, SMAP *, size_t *, size_t *));
  */
 int
 vs_line(sp, smp, yp, xp)
@@ -375,6 +377,8 @@ ret:	(void)gp->scr_move(sp, oldy, oldx);
 /*
  * vs_number --
  *	Repaint the numbers on all the lines.
+ *
+ * PUBLIC: int vs_number __P((SCR *));
  */
 int
 vs_number(sp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 10.1 1995/04/13 17:19:23 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:23 $";
+static char sccsid[] = "$Id: vs_relative.c,v 10.2 1995/05/05 18:59:06 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:59:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,8 @@ static size_t vs_screens __P((SCR *, char *, size_t, recno_t, size_t *));
 /*
  * vs_column --
  *	Return the logical column of the cursor in the line.
+ *
+ * PUBLIC: int vs_column __P((SCR *, size_t *));
  */
 int
 vs_column(sp, colp)
@@ -50,6 +52,8 @@ vs_column(sp, colp)
  *	Return the screen columns necessary to display the line, or
  *	if specified, the physical character column within the line,
  *	including space required for the O_NUMBER and O_LIST options.
+ *
+ * PUBLIC: size_t vs_opt_screens __P((SCR *, recno_t, size_t *));
  */
 size_t
 vs_opt_screens(sp, lno, cnop)
@@ -161,6 +165,8 @@ vs_screens(sp, lp, llen, lno, cnop)
  *	Return the physical column from the line that will display a
  *	character closest to the currently most attractive character
  *	position (which is stored as a screen column).
+ *
+ * PUBLIC: size_t vs_rcm __P((SCR *, recno_t, int));
  */
 size_t
 vs_rcm(sp, lno, islast)
@@ -186,6 +192,8 @@ vs_rcm(sp, lno, islast)
  * vs_colpos --
  *	Return the physical column from the line that will display a
  *	character closest to the specified screen column.
+ *
+ * PUBLIC: size_t vs_colpos __P((SCR *, recno_t, size_t));
  */
 size_t
 vs_colpos(sp, lno, cno)
