@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.48 1992/12/05 11:08:22 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:22 $";
+static char sccsid[] = "$Id: ex.c,v 5.49 1992/12/20 15:07:45 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:07:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -248,6 +248,14 @@ ex_cmd(exc)
 			    cmdlen, p);
 			return (1);
 		}
+
+		/* Some commands aren't okay in globals. */
+		if (curf != NULL &&
+		    FF_ISSET(curf, F_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
+msg("The %.*s command can't be used as part of a global command.",
+			    cmdlen, p);
+			return (1);
+		}
 	} else {
 		cp = lastcmd;
 		uselastcmd = 1;
@@ -263,7 +271,8 @@ ex_cmd(exc)
  	 */
 	if (ep == NULL &&
 	    cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
-		msg("The %s command requires a file to be read in.", cp->name);
+	msg("The %s command requires a file to already have been read in.",
+		    cp->name);
 		return (1);
 	}
 
@@ -558,10 +567,14 @@ addr2:	switch(cmd.addrcnt) {
 	/* Do the command. */
 	autoprint = 0;
 
-	/* If file state, set rptlines and log the start of an action. */
+	/*
+	 * If file state, set rptlines.  If file state and not doing a global
+	 * command, log the start of an action.
+	 */
 	if (curf != NULL) {
 		curf->rptlines = 0;
-		(void)log_cursor(curf);
+		if (!FF_ISSET(curf, F_IN_GLOBAL))
+			(void)log_cursor(curf);
 	}
 
 	if ((cp->fn)(&cmd))
