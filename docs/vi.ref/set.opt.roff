@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.34 1994/10/23 10:30:48 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:30:48 $
+.\"     $Id: set.opt.roff,v 8.35 1994/10/26 11:43:58 bostic Exp $ (Berkeley) $Date: 1994/10/26 11:43:58 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -208,8 +208,14 @@ are
 affected by the
 .OP autowrite
 option.
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms backup [QQ]
 .KY backup
-.IP "backup [\"\"]"
+.IP "\*(ms"
+.tr QQ
 If this option is set, it specifies a pathname used as a backup file,
 and, whenever a file is written, the file's current contents are copied
 to it.
@@ -460,26 +466,6 @@ This option only permits you to disallow messages for the edit session.
 See the
 .XR mesg 1
 utility for more information.
-.\" I cannot get a double quote to print between the square brackets
-.\" to save my life.  The ONLY way I've been able to get this to work
-.\" is with the .tr command.
-.tr Q"
-.ds ms meta [~{[*?$`'Q\e]
-.KY meta
-.IP "\*(ms"
-.tr QQ
-The set of characters that
-.CO ex
-checks for when doing file name expansion.
-If any of the specified characters are found in the file name arguments
-to the
-.CO ex
-commands,
-the arguments are expanded using the program defined by the
-.OP shell
-option.
-The default set of characters is a union of meta characters
-from the Version 7 and the Berkeley C shell.
 .KY msgcat
 .IP "msgcat [./]"
 This option selects a message catalog to be used to display error and
@@ -735,6 +721,26 @@ command.
 This program is also used to resolve any shell meta-characters in
 .CO ex
 commands.
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms shellmeta [~{[*?$`'Q\e]
+.KY shellmeta
+.IP "\*(ms"
+.tr QQ
+The set of characters that
+.CO ex
+checks for when doing file name expansion.
+If any of the specified characters are found in the file name arguments
+to the
+.CO ex
+commands,
+the arguments are expanded using the program defined by the
+.OP shell
+option.
+The default set of characters is a union of meta characters
+from the Version 7 and the Berkeley C shell.
 .KY shiftwidth
 .IP "shiftwidth, sw [8]"
 Set the autoindent and shift command indentation width.

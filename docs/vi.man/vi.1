@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.16 1994/10/23 10:31:38 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:31:38 $
+.\"     $Id: vi.1,v 8.17 1994/10/26 11:43:32 bostic Exp $ (Berkeley) $Date: 1994/10/26 11:43:32 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -842,7 +842,13 @@ only.
 Display the current line automatically.
 .It Sy "autowrite, aw [off]"
 Write modified files automatically when changing files.
-.It Sy "backup [\"\"]"
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms backup [QQ]
+.It Sy "\*(ms"
+.tr QQ
 Backup files before they are overwritten.
 .It Sy "beautify, bf [off]"
 Discard control characters.
@@ -983,6 +989,15 @@ and
 commands.
 .It Sy "shell, sh [environment variable SHELL, or /bin/sh]"
 Select the shell used by the editor.
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms shellmeta [~{[*?$`'Q\e]
+.It Sy "\*(ms"
+.tr QQ
+Set the meta characters checked to determine if file name expansion
+is necessary.
 .It Sy "shiftwidth, sw [8]"
 Set the autoindent and shift command indentation width.
 .It Sy "showmatch, sm [off]"
