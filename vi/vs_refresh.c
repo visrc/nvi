@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.18 1995/01/31 11:28:03 bostic Exp $ (Berkeley) $Date: 1995/01/31 11:28:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.19 1995/02/08 12:35:39 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:35:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -721,7 +721,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		}
 		if (MSGS_WAITING(sp))
 			svi_msgflush(sp, 1);
-		else if (!IS_ONELINE(sp) && !F_ISSET(sp, S_SCR_UMODE))
+		if (!IS_ONELINE(sp) && !F_ISSET(sp, S_SCR_UMODE))
 			svi_modeline(sp);
 	}
 
