@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.42 1993/05/08 09:54:50 bostic Exp $ (Berkeley) $Date: 1993/05/08 09:54:50 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.43 1993/05/08 20:54:56 bostic Exp $ (Berkeley) $Date: 1993/05/08 20:54:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ v_ia(sp, ep, vp, fm, tm, rp)
 
 /*
  * v_iI -- [count]I
- *	Insert text at the front of the line.
+ *	Insert text at the first non-blank character in the line.
  */
 int
 v_iI(sp, ep, vp, fm, tm, rp)
@@ -126,9 +126,9 @@ v_iI(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	u_long cnt;
-	size_t len;
+	size_t len, wlen;
 	u_int flags;
-	char *p;
+	char *p, *t;
 
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
@@ -144,8 +144,10 @@ v_iI(sp, ep, vp, fm, tm, rp)
 				return (1);
 			}
 			len = 0;
-		} else if (sp->cno != 0)
-			sp->cno = 0;
+		} else {
+			for (t = p, wlen = len; wlen-- && isspace(*t); ++t);
+			sp->cno = t - p;
+		}
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
 		if (v_ntext(sp, ep,
