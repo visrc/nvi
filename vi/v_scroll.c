@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.7 1993/10/10 13:19:00 bostic Exp $ (Berkeley) $Date: 1993/10/10 13:19:00 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.8 1993/12/16 12:11:56 bostic Exp $ (Berkeley) $Date: 1993/12/16 12:11:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -155,9 +155,6 @@ v_up(sp, ep, vp, fm, tm, rp)
  * v_cr -- [count]^M
  *	In a script window, send the line to the shell.
  *	In a regular window, move down by lines.
- *
- * !!!
- * Ignore the count, just like everybody else.
  */
 int
 v_cr(sp, ep, vp, fm, tm, rp)
