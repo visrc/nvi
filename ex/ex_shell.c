@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.12 1992/10/29 14:40:01 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:40:01 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.13 1992/11/06 18:05:07 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:05:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,6 +35,8 @@ ex_shell(cmdp)
 	struct termios t;
 	int rval;
 	char buf[MAXPATHLEN];
+
+	MODIFY_WARN(curf);
 
 	(void)tcgetattr(STDIN_FILENO, &t);
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &origtermio);

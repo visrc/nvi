@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.21 1992/11/03 13:53:41 bostic Exp $ (Berkeley) $Date: 1992/11/03 13:53:41 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.22 1992/11/06 18:04:36 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:04:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.21 1992/11/03 13:53:41 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "options.h"
 #include "extern.h"
 
 enum which {EDIT, VISUAL};
@@ -68,7 +69,7 @@ edit(cmdp, cmd)
 	case 1:
 		if ((ep = file_locate((char *)cmdp->argv[0])) == NULL) {
 			if (file_ins(curf, (char *)cmdp->argv[0], 1) ||
-			    (ep = file_next(curf)) == NULL)
+			    (ep = file_next(curf, 0)) == NULL)
 				return (1);
 			ep->flags |= F_IGNORE;
 		} else
@@ -77,9 +78,11 @@ edit(cmdp, cmd)
 	}
 
 	/* Switch files. */
-	if (file_modify(curf, cmdp->flags & E_FORCE) ||
-	    file_stop(curf, cmdp->flags & E_FORCE) || file_start(ep))
+	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
+	if (file_stop(curf, cmdp->flags & E_FORCE))
 		return (1);
+	if (file_start(ep))
+		PANIC;
 
 	/*
 	 * Historic practice is that ex always starts at the end of the file

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.8 1992/10/26 09:08:22 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:08:22 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.9 1992/11/06 18:04:44 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:04:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,12 +27,13 @@ ex_quit(cmdp)
 
 	force = cmdp->flags & E_FORCE;
 
-	if (file_modify(curf, force))
-		return (1);
-	if (!force && file_next(curf)) {
-		msg("More files to edit; use \":n\" to go to the next file");
+	MODIFY_CHECK(curf, force);
+
+	if (!force && file_next(curf, 0)) {
+msg("More files; use \":n\" to go to the next file, \":q!\" to quit.");
 		return (1);
 	}
+
 	if (file_stop(curf, force))
 		return (1);
 	mode = MODE_QUIT;
@@ -47,12 +48,14 @@ ex_wq(cmdp)
 
 	force = cmdp->flags & E_FORCE;
 
-	if (file_sync(curf, 0))
+	if (file_sync(curf, force))
 		return (1);
-	if (!force && file_next(curf)) {
+
+	if (!force && file_next(curf, 0)) {
 		msg("More files to edit; use \":n\" to go to the next file");
 		return (1);
 	}
+
 	if (file_stop(curf, force))
 		return (1);
 	mode = MODE_QUIT;
@@ -67,8 +70,8 @@ ex_xit(cmdp)
 
 	force = cmdp->flags & E_FORCE;
 
-	if (file_modify(curf, force))
-		return (1);
+	MODIFY_CHECK(curf, force);
+
 	if (file_stop(curf, force))
 		return (1);
 	mode = MODE_QUIT;
