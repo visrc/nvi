@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.17 1995/01/30 18:10:14 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:10:14 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.18 1995/02/08 20:19:42 bostic Exp $ (Berkeley) $Date: 1995/02/08 20:19:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,8 +87,6 @@ v_ntext(sp, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	enum { A_NOTSET, A_NOTWORD, A_INWORD } abb;
 				/* State of the "[^0]^D" sequences. */
 	enum { C_NOTSET, C_CARATSET, C_NOCHANGE, C_ZEROSET } carat_st;
-				/* State of the hex input character. */
-	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quoted;
 	struct termios t;	/* Terminal characteristics. */
@@ -104,6 +102,7 @@ v_ntext(sp, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	u_int iflags;		/* Input flags. */
 	int ab_cnt, ab_turnoff;	/* Abbreviation count, if turned off. */
 	int eval;		/* Routine return value. */
+	int hex;		/* Input hex character count. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
 	int sig_ix, sig_reset;	/* Signal information. */
@@ -302,8 +301,8 @@ nullreplay:
 	ikeyp = &ikey;
 	unmap_tst = LF_ISSET(TXT_MAPINPUT) && LF_ISSET(TXT_INFOLINE);
 	iflags = LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT);
-	for (showmatch = 0, sig_reset = 0,
-	    carat_st = C_NOTSET, hex = H_NOTSET, quoted = Q_NOTSET;;) {
+	for (hex = 0, showmatch = 0,
+	    sig_reset = 0, carat_st = C_NOTSET, quoted = Q_NOTSET;;) {
 		/*
 		 * Reset the line and update the screen.  (The txt_showmatch()
 		 * code refreshes the screen for us.)  Don't refresh unless
@@ -429,14 +428,15 @@ next_ch:	if (replay) {
 
 		/*
 		 * !!!
-		 * Extension.  If the user enters "<CH_HEX>[isxdigit()]*" we
-		 * will try to use the value as a character.  Anything else
-		 * inserts the <CH_HEX> character, and resets hex mode.
+		 * Extension.  If the user enters "<CH_HEX>[isxdigit()]+" try
+		 * to use the value as a character.  The set of characters is
+		 * limited by anything that isn't a hex character or getting
+		 * the maximum number of bytes.
 		 */
-		if (hex == H_INHEX && !isxdigit(ch)) {
+		if (hex > 1 && !isxdigit(ch)) {
+			hex = 0;
 			if (txt_hex(sp, tp))
 				goto err;
-			hex = H_NOTSET;
 		}
 
 		switch (ikeyp->value) {
@@ -961,7 +961,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 */
 			goto insl_ch;
 		case K_HEXCHAR:
-			hex = H_NEXTCHAR;
+			hex = 1;
 			goto insq_ch;
 		default:			/* Insert the character. */
 ins_ch:			/*
@@ -1023,6 +1023,19 @@ insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 			tp->lb[sp->cno++] = ch;
 
 			/*
+			 * !!!
+			 * Translate "<CH_HEX>[isxdigit()]*" to a character with
+			 * a hex value, delimited by a non-hex character or the
+			 * max number of hex bytes.  Offset by one, we use 0 to
+			 * mean that we've found <CH_HEX>.
+			 */
+			if (hex != 0 && hex++ == sizeof(CHAR_T) * 2 + 1) {
+				hex = 0;
+				if (txt_hex(sp, tp))
+					goto err;
+			}
+
+			/*
 			 * Check to see if we've crossed the margin.
 			 *
 			 * !!!
@@ -1063,8 +1076,6 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 				++tp->len;
 			}
 
-			if (hex == H_NEXTCHAR)
-				hex = H_INHEX;
 			if (quoted != Q_NOTSET) {
 				if (quoted == Q_BNEXT)
 					quoted = Q_BTHIS;
