@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.33 1993/05/04 15:59:20 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:59:20 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.34 1993/05/04 17:02:51 bostic Exp $ (Berkeley) $Date: 1993/05/04 17:02:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,13 @@ ex_tagfirst(sp, tagarg)
 {
 	EXF *tep;
 	MARK m;
-	char *tag, *fname, *search, *argv[2];
+	long tl;
+	int sval;
+	char *p, *tag, *fname, *search, *argv[2];
+
+	/* Taglength may limit the number of characters. */
+	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(tagarg) > tl)
+		tagarg[tl] = '\0';
 
 	/* Get the tag information. */
 	if (tag_get(sp, tagarg, &tag, &fname, &search))
@@ -60,11 +66,20 @@ ex_tagfirst(sp, tagarg)
 	    (tep = file_start(sp, tep)) == NULL)
 		return (1);
 
-	/* Search for the tag. */
+	/*
+	 * Search for the tag; cheap fallback for C functions
+	 * if the name is the same but the arguments have changed.
+	 */
 	m.lno = 1;
 	m.cno = 0;
-	if (f_search(sp, tep, &m, &m, search,
-	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM)) {
+	sval = f_search(sp, tep, &m, &m, search,
+	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+	if (sval && (p = strrchr(search, '(')) != NULL) {
+		p[1] = '\0';
+		sval = f_search(sp, tep, &m, &m, search,
+		    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+	}
+	if (sval) {
 		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 		return (1);
 	}
@@ -94,6 +109,7 @@ ex_tagpush(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	TAG *tp;
+	long tl;
 	char *fname, *search, *tag;
 	
 	switch (cmdp->argc) {
@@ -114,6 +130,10 @@ ex_tagpush(sp, ep, cmdp)
 	default:
 		abort();
 	}
+
+	/* Taglength may limit the number of characters. */
+	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(sp->tlast) > tl)
+		sp->tlast[tl] = '\0';
 
 	/* Get the tag information. */
 	if (tag_get(sp, sp->tlast, &tag, &fname, &search))
@@ -223,6 +243,8 @@ tag_change(sp, ep, tag, fname, search, force)
 	enum {TC_CHANGE, TC_CURRENT} which;
 	EXF *tep;
 	MARK m;
+	int sval;
+	char *p;
 
 	if ((tep = file_get(sp, ep, fname, 1)) == NULL)
 		return (1);
@@ -235,10 +257,20 @@ tag_change(sp, ep, tag, fname, search, force)
 		which = TC_CHANGE;
 	}
 
+	/*
+	 * Search for the tag; cheap fallback for C functions
+	 * if the name is the same but the arguments have changed.
+	 */
 	m.lno = 1;
 	m.cno = 0;
-	if (f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
-	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM)) {
+	sval = f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
+	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+	if (sval && (p = strrchr(search, '(')) != NULL) {
+		p[1] = '\0';
+		sval = f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
+		    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+	}
+	if (sval) {
 		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 		switch (which) {
 		case TC_CHANGE:
