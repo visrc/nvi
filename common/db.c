@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.46 2002/03/09 12:48:22 skimo Exp $ (Berkeley) $Date: 2002/03/09 12:48:22 $";
+static const char sccsid[] = "$Id: db.c,v 10.47 2002/04/09 19:34:35 skimo Exp $ (Berkeley) $Date: 2002/04/09 19:34:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -350,13 +350,13 @@ err2:
 
 	(void)dbcp_put->c_close(dbcp_put);
 
+	/* Update cache, marks, @ and global commands. */
+	rval = line_insdel(sp, LINE_INSERT, lno + 1);
+
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
-
-	/* Update cache, marks, @ and global commands. */
-	rval = line_insdel(sp, LINE_INSERT, lno + 1);
 
 	/* Log after change. */
 	log_line(sp, lno + 1, LOG_LINE_APPEND_F);
