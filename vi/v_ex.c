@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.30 1996/03/18 19:38:17 bostic Exp $ (Berkeley) $Date: 1996/03/18 19:38:17 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.31 1996/03/21 20:02:29 bostic Exp $ (Berkeley) $Date: 1996/03/21 20:02:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -439,6 +439,9 @@ v_ex(sp, vp)
 		/* Continue or return. */
 		if (!ifcontinue)
 			break;
+
+		/* If we're continuing, it's a new command. */
+		++sp->ccnt;
 	}
 	return (v_ex_done(sp, vp));
 }
