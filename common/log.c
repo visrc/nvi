@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.22 2001/05/13 09:05:06 skimo Exp $ (Berkeley) $Date: 2001/05/13 09:05:06 $";
+static const char sccsid[] = "$Id: log.c,v 10.23 2001/05/13 09:25:45 skimo Exp $ (Berkeley) $Date: 2001/05/13 09:25:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,6 +74,15 @@ static void	log_trace __P((SCR *, char *, db_recno_t, u_char *));
 	log_err(sp, __FILE__, __LINE__);				\
 	return (1);							\
 }
+
+/* offset of CHAR_T string in log needs to be aligned on some systems
+ * because it is passed to db_set as a string
+ */
+typedef struct {
+    char    data[sizeof(u_char) /* type */ + sizeof(db_recno_t)];
+    CHAR_T  str[1];
+} log_t;
+#define CHAR_T_OFFSET ((char *)(((log_t*)0)->str) - (char *)0)
 
 /*
  * log_init --
@@ -288,10 +297,10 @@ log_line(sp, lno, action)
 			return (1);
 	BINC_RET(sp,
 	    sp->wp->l_lp, sp->wp->l_len, 
-	    len * sizeof(CHAR_T) + sizeof(u_char) + sizeof(db_recno_t));
+	    len * sizeof(CHAR_T) + CHAR_T_OFFSET);
 	sp->wp->l_lp[0] = action;
 	memmove(sp->wp->l_lp + sizeof(u_char), &lno, sizeof(db_recno_t));
-	MEMMOVEW(sp->wp->l_lp + sizeof(u_char) + sizeof(db_recno_t), lp, len);
+	MEMMOVEW(sp->wp->l_lp + CHAR_T_OFFSET, lp, len);
 
 	lcur = ep->l_cur;
 	memset(&key, 0, sizeof(key));
@@ -299,8 +308,7 @@ log_line(sp, lno, action)
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
 	data.data = sp->wp->l_lp;
-	data.size = len * sizeof(CHAR_T) + 
-		    sizeof(u_char) + sizeof(db_recno_t);
+	data.size = len * sizeof(CHAR_T) + CHAR_T_OFFSET;
 	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
 
@@ -492,10 +500,8 @@ log_backward(sp, rp)
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_insert(sp, lno, 
-			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), 
-			    (size - sizeof(u_char) - sizeof(db_recno_t))
-			    / sizeof(CHAR_T)))
+			    (CHAR_T *)(p + CHAR_T_OFFSET),
+			    (size - CHAR_T_OFFSET) / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
 			break;
@@ -505,10 +511,8 @@ log_backward(sp, rp)
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_set(sp, lno, 
-			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), 
-			    (size - sizeof(u_char) - sizeof(db_recno_t))
-			    / sizeof(CHAR_T)))
+			    (CHAR_T *)(p + CHAR_T_OFFSET),
+			    (size - CHAR_T_OFFSET) / sizeof(CHAR_T)))
 				goto err;
 			if (sp->rptlchange != lno) {
 				sp->rptlchange = lno;
@@ -607,9 +611,8 @@ log_setline(sp)
 		case LOG_LINE_RESET_B:
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (lno == sp->lno &&
-			    db_set(sp, lno, (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), size - sizeof(u_char) -
-			    sizeof(db_recno_t)))
+			    db_set(sp, lno, (CHAR_T *)(p + CHAR_T_OFFSET),
+				(size - CHAR_T_OFFSET) / sizeof(CHAR_T)))
 				goto err;
 			if (sp->rptlchange != lno) {
 				sp->rptlchange = lno;
@@ -699,10 +702,8 @@ log_forward(sp, rp)
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			--lno;
 			if (db_append(sp, 1, lno, 
-			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), 
-			    (size - sizeof(u_char) - sizeof(db_recno_t))
-			    / sizeof(CHAR_T)))
+			    (CHAR_T *)(p + CHAR_T_OFFSET),
+			    (size - CHAR_T_OFFSET) / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
 			break;
@@ -710,10 +711,8 @@ log_forward(sp, rp)
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_insert(sp, lno, 
-			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), 
-			    (size - sizeof(u_char) - sizeof(db_recno_t))
-			    / sizeof(CHAR_T)))
+			    (CHAR_T *)(p + CHAR_T_OFFSET),
+			    (size - CHAR_T_OFFSET) / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
 			break;
@@ -730,10 +729,8 @@ log_forward(sp, rp)
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_set(sp, lno, 
-			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), 
-			    (size - sizeof(u_char) - sizeof(db_recno_t))
-			    / sizeof(CHAR_T)))
+			    (CHAR_T *)(p + CHAR_T_OFFSET),
+			    (size - CHAR_T_OFFSET) / sizeof(CHAR_T)))
 				goto err;
 			if (sp->rptlchange != lno) {
 				sp->rptlchange = lno;
