@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.80 1994/07/28 12:36:58 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:36:58 $";
+static char sccsid[] = "$Id: vi.c,v 8.81 1994/08/01 16:14:54 bostic Exp $ (Berkeley) $Date: 1994/08/01 16:14:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -454,8 +454,10 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 			goto usage;
 
 		/* Required buffer. */
-		if (LF_ISSET(V_RBUF))
+		if (LF_ISSET(V_RBUF)) {
 			KEY(vp->buffer, 0);
+			F_SET(vp, VC_BUFFER);
+		}
 	}
 
 	/*
