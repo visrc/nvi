@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.67 1994/07/18 13:29:00 bostic Exp $ (Berkeley) $Date: 1994/07/18 13:29:00 $";
+static char sccsid[] = "$Id: recover.c,v 8.68 1994/07/18 14:53:46 bostic Exp $ (Berkeley) $Date: 1994/07/18 14:53:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -238,8 +238,8 @@ err:		msgq(sp, M_ERR,
  * rcv_sync --
  *	Sync the file, optionally:
  *		flagging the backup file to be preserved
- *		snapshotting the backup file
- *		sending email to the user (if file modified or snapshotted)
+ *		snapshotting the backup file and send email to the user
+ *		sending email to the user if the file was modified
  *		ending the file session
  */
 int
@@ -248,7 +248,7 @@ rcv_sync(sp, ep, flags)
 	EXF *ep;
 	u_int flags;
 {
-	int btear, fd, fsaved, rval;
+	int btear, fd, rval;
 	char *dp, buf[1024];
 
 	/* Make sure that there's something to recover/sync. */
@@ -256,7 +256,6 @@ rcv_sync(sp, ep, flags)
 		return (0);
 
 	/* Sync the file if it's been modified. */
-	fsaved = 0;
 	if (F_ISSET(ep, F_MODIFIED)) {
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
@@ -264,17 +263,26 @@ rcv_sync(sp, ep, flags)
 			    "File backup failed: %s", ep->rcv_path);
 			return (1);
 		}
+
 		/* REQUEST: don't remove backing file on exit. */
 		if (LF_ISSET(RCV_PRESERVE))
 			F_SET(ep, F_RCV_NORM);
-		fsaved = 1;
-	}
 
-	/* REQUEST: snapshot the file. */
-	btear = 0;
-	if (LF_ISSET(RCV_SNAPSHOT))
-		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
-		    !busy_on(sp, "Copying file for recovery...");
+		/*
+		 * REQUEST: send email.
+		 *
+		 * !!!
+		 * If you need to port this to a system that doesn't have
+		 * sendmail, the -t flag causes sendmail to read the message
+		 * for the recipients instead of specifying them some other
+		 * way.
+		 */
+		if (LF_ISSET(RCV_EMAIL)) {
+			(void)snprintf(buf, sizeof(buf),
+			    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
+			(void)system(buf);
+		}
+	}
 
 	/*
 	 * !!!
@@ -288,6 +296,8 @@ rcv_sync(sp, ep, flags)
 	 */
 	rval = 0;
 	if (LF_ISSET(RCV_SNAPSHOT)) {
+		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
+		    !busy_on(sp, "Copying file for recovery...");
 		dp = O_STR(sp, O_RECDIR);
 		(void)snprintf(buf, sizeof(buf), "%s/vi.XXXXXX", dp);
 		if ((fd = rcv_mktemp(sp, buf, dp, S_IRUSR | S_IWUSR)) == -1)
@@ -299,33 +309,15 @@ e2:			(void)unlink(buf);
 e1:			if (fd != -1)
 				(void)close(fd);
 			rval = 1;
-		} else
-			fsaved = 1;
+		}
+		if (btear)
+			busy_off(sp);
 	}
-
-	/*
-	 * REQUEST: send email.
-	 *
-	 * Don't send email unless we've managed to save the file in some
-	 * form or another.
-	 *
-	 * !!!
-	 * If you need to port this to a system that doesn't have sendmail,
-	 * the -t flag causes sendmail to read the message for the recipients
-	 * instead of specifying them some other way.
-	 */
-	if (LF_ISSET(RCV_EMAIL) && fsaved) {
-		(void)snprintf(buf, sizeof(buf),
-		    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
-		(void)system(buf);
-	}
-
-	if (btear)
-		busy_off(sp);
 
 	/* REQUEST: end the file session. */
 	if (LF_ISSET(RCV_ENDSESSION) && file_end(sp, ep, 1))
 		rval = 1;
+
 	return (rval);
 }
 
@@ -334,10 +326,10 @@ e1:			if (fd != -1)
  *	Build the file to mail to the user.
  */
 static int
-rcv_mailfile(sp, ep, iscopy, cp_path)
+rcv_mailfile(sp, ep, issync, cp_path)
 	SCR *sp;
 	EXF *ep;
-	int iscopy;
+	int issync;
 	char *cp_path;
 {
 	struct passwd *pw;
@@ -345,7 +337,7 @@ rcv_mailfile(sp, ep, iscopy, cp_path)
 	time_t now;
 	uid_t uid;
 	int fd;
-	char *dp, *p, *t, buf[4 * 1024], host[MAXHOSTNAMELEN];
+	char *dp, *p, *t, buf[4096], host[MAXHOSTNAMELEN], mpath[MAXPATHLEN];
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
 		msgq(sp, M_ERR, "Information on user id %u not found", uid);
@@ -353,8 +345,8 @@ rcv_mailfile(sp, ep, iscopy, cp_path)
 	}
 
 	dp = O_STR(sp, O_RECDIR);
-	(void)snprintf(buf, sizeof(buf), "%s/recover.XXXXXX", dp);
-	if ((fd = rcv_mktemp(sp, buf, dp, S_IRUSR | S_IWUSR)) == -1)
+	(void)snprintf(mpath, sizeof(mpath), "%s/recover.XXXXXX", dp);
+	if ((fd = rcv_mktemp(sp, mpath, dp, S_IRUSR | S_IWUSR)) == -1)
 		return (1);
 
 	/*
@@ -366,10 +358,10 @@ rcv_mailfile(sp, ep, iscopy, cp_path)
 	 */
 	if (flock(fd, LOCK_EX | LOCK_NB))
 		msgq(sp, M_SYSERR, "Unable to lock recovery file");
-	if (!iscopy) {
+	if (!issync) {
 		/* Save the recover file descriptor, and mail path. */
 		ep->rcv_fd = fd;
-		if ((ep->rcv_mpath = strdup(buf)) == NULL) {
+		if ((ep->rcv_mpath = strdup(mpath)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			goto err;
 		}
@@ -427,9 +419,15 @@ werr:		msgq(sp, M_SYSERR, "recovery file");
 		goto err;
 	}
 
+	if (issync) {
+		(void)snprintf(buf, sizeof(buf),
+		    "%s -t < %s", _PATH_SENDMAIL, mpath);
+		(void)system(buf);
+	}
+
 	return (0);
 
-err:	if (!iscopy)
+err:	if (!issync)
 		ep->rcv_fd = -1;
 	if (fd != -1)
 		(void)close(fd);
