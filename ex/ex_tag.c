@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.35 1993/05/05 10:57:51 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:51 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.36 1993/05/06 01:10:54 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:10:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -300,7 +300,7 @@ tag_change(sp, ep, tag, fname, search, force)
  * tag_get --
  *	Get a tag from the tags files.
  */
-int
+static int
 tag_get(sp, tag, tagp, filep, searchp)
 	SCR *sp;
 	char *tag, **tagp, **filep, **searchp;
