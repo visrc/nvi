@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.66 1993/02/19 20:02:02 bostic Exp $ (Berkeley) $Date: 1993/02/19 20:02:02 $";
+static char sccsid[] = "$Id: ex.c,v 5.67 1993/02/20 12:58:03 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:58:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -275,8 +275,7 @@ ex_cmd(ep, exc)
 		}
 
 		/* Some commands aren't okay in globals. */
-		if (ep != NULL &&
-		    FF_ISSET(ep, F_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
+		if (FF_ISSET(ep, F_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
 			msg(ep, M_ERROR,
 "The %.*s command can't be used as part of a global command.", cmdlen, p);
 			return (1);
@@ -295,7 +294,7 @@ ex_cmd(ep, exc)
 	 * first, we can't allow any command that requires file state.
 	 * Historic vi generally took the easy way out and dropped core.
  	 */
-	if (ep == NULL &&
+	if (FF_ISSET(ep, F_DUMMY) &&
 	    flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 		msg(ep, M_ERROR,
 	"The %s command requires a file to already have been read in.",
@@ -616,18 +615,15 @@ addr2:	switch(cmd.addrcnt) {
 }
 #endif
 	/* Clear autoprint. */
-	if (ep != NULL)
-		FF_CLR(ep, F_AUTOPRINT);
+	FF_CLR(ep, F_AUTOPRINT);
 
 	/*
 	 * If file state, set rptlines.  If file state and not doing a global
 	 * command, log the start of an action.
 	 */
-	if (ep != NULL) {
-		ep->rptlines = 0;
-		if (!FF_ISSET(ep, F_IN_GLOBAL))
-			(void)log_cursor(ep);
-	}
+	ep->rptlines = 0;
+	if (!FF_ISSET(ep, F_DUMMY | F_IN_GLOBAL))
+		(void)log_cursor(ep);
 
 	/* Do the command. */
 	if ((cp->fn)(ep, &cmd))
@@ -638,10 +634,6 @@ addr2:	switch(cmd.addrcnt) {
 	 * THE UNDERLYING EXF MAY HAVE CHANGED.
 	 */
 	ep = curf;
-
-	/* If no file state, the rest of this isn't all that useful. */
-	if (ep == NULL)
-		return (0);
 
 	/*
 	 * The print commands have already handled the `print' flags.
