@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.135 1996/11/27 12:22:32 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:22:32 $
+dnl	$Id: configure.in,v 8.136 1996/12/03 13:07:09 bostic Exp $ (Berkeley) $Date: 1996/12/03 13:07:09 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -215,7 +215,33 @@ AC_ARG_ENABLE(motif,
 AC_MSG_RESULT($vi_cv_motif)
 if test "$vi_cv_motif" = "yes"; then
 	nvi_motif=nvi_motif
-	MOTIFLIBS="-lXm -lXt -lSM -lICE -lXext $XLIBS $LIBS"
+
+	dnl XXX
+	dnl BSDI's Motif libraries aren't shared.
+	dnl
+	dnl The Xinside Motif distribution requires -lSM, -lICE and -lXext.
+	dnl -lXext is generally available, the others aren't.
+	case "$host_os" in
+	bsdi*)	CC=cc
+		MOTIFLIBS="-lXm -lXt -lSM -lICE -lXext $XLIBS $LIBS";;
+	*)	MOTIFLIBS="-lXm -lXt"
+		AC_CHECK_LIB(SM, main,
+		    [vi_cv_smlib="no"], [vi_cv_smlib="yes"], -lSM)
+		if test "$vi_cv_smlib" = "yes"; then
+			MOTIFLIBS="$MOTIFLIBS -lSM"
+		fi
+		AC_CHECK_LIB(ICE, main,
+		    [vi_cv_icelib="no"], [vi_cv_icelib="yes"], -lICE)
+		if test "$vi_cv_icelib" = "yes"; then
+			MOTIFLIBS="$MOTIFLIBS -lICE"
+		fi
+		AC_CHECK_LIB(Xext, main,
+		    [vi_cv_xextlib="no"], [vi_cv_xextlib="yes"], -lXext)
+		if test "$vi_cv_xextlib" = "yes"; then
+			MOTIFLIBS="$MOTIFLIBS -lXext"
+		fi
+		MOTIFLIBS="$MOTIFLIBS $XLIBS $LIBS";;
+	esac
 fi
 
 dnl If the user wants a Perl interpreter in nvi, load it.
