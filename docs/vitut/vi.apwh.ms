@@ -1,9 +1,9 @@
-.\" Copyright (c) 1980 The Regents of the University of California.
-.\" All rights reserved.
+.\" Copyright (c) 1980, 1993
+.\"	The Regents of the University of California.  All rights reserved.
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.apwh.ms,v 6.3 1991/04/17 12:42:16 bostic Exp $ (Berkeley) $Date: 1991/04/17 12:42:16 $
+.\"	$Id: vi.apwh.ms,v 8.1 1993/06/08 12:49:26 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:49:26 $
 .\"
 .TL
 Vi Command & Function Reference

@@ -1,9 +1,9 @@
-.\" Copyright (c) 1980 The Regents of the University of California.
-.\" All rights reserved.
+.\" Copyright (c) 1980, 1993
+.\"	The Regents of the University of California.  All rights reserved.
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: edittut.ms,v 6.3 1993/06/05 17:07:28 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:07:28 $
+.\"	$Id: edittut.ms,v 8.1 1993/06/08 12:48:42 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:48:42 $
 .\"
 .EH 'USD:11-%''Edit:  A Tutorial'
 .OH 'Edit:  A Tutorial''USD:11-%'
