@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.8 1995/09/23 19:43:06 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:43:06 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.9 1995/10/03 09:17:05 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:17:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -367,7 +367,7 @@ s(sp, cmdp, s, re, flags)
 	int cflag, lflag, nflag, pflag, rflag;
 	int didsub, do_eol_match, eflags, empty_ok, eval;
 	int linechanged, matched, quit, rval;
-	char *bp, *lb;
+	char *bp, *lb, *p;
 
 	NEEDFILE(sp, cmdp);
 
@@ -625,16 +625,14 @@ nextmatch:	match[0].rm_so = 0;
 				if (from.cno >= llen)
 					from.cno = llen - 1;
 			}
-			/*
-			 * Refresh the screen first -- this means that we won't
-			 * have to set VIP_CUR_INVALID because we sneaked the
-			 * cursor off somewhere else.
-			 */
 			if (F_ISSET(sp, S_VI)) {
+				p = msg_cat(sp,
+				    "169|Confirm change? [n]", NULL);
 				sp->lno = from.lno;
 				sp->cno = from.cno;
 				if (vs_refresh(sp))
-					goto quit;
+					return (1);
+				vs_update(sp, p, NULL);
 			} else
 				if (ex_print(sp, cmdp, &from, &to, 0) ||
 				    ex_scprint(sp, &from, &to))
