@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.21 1996/06/28 15:28:24 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:24 $
+ *	$Id: screen.h,v 10.22 1996/06/30 16:12:38 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:12:38 $
  */
 
 /*
@@ -113,15 +113,16 @@ struct _scr {
 #define	SEARCH_PARSE	0x0020		/* Parse the search pattern. */
 #define	SEARCH_SET	0x0040		/* Set search direction. */
 #define	SEARCH_TAG	0x0080		/* Search for a tag pattern. */
+#define	SEARCH_WMSG	0x0100		/* Display search-wrapped messages. */
 
 					/* Ex/vi: RE information. */
 	dir_t	 searchdir;		/* Last file search direction. */
-	char	*re;			/* Search RE (uncompiled form). */
-	regex_t	 re_c;			/* Search RE (compiled form). */
-	size_t	 re_len;		/* Search RE length. */
-	char	*subre;			/* Substitute RE (uncompiled form.) */
-	regex_t	 subre_c;		/* Substitute RE (compiled form.) */
-	size_t	 subre_len;		/* Substitute RE length. */
+	regex_t	 re_c;			/* Search RE: compiled form. */
+	char	*re;			/* Search RE: uncompiled form. */
+	size_t	 re_len;		/* Search RE: uncompiled length. */
+	regex_t	 subre_c;		/* Substitute RE: compiled form. */
+	char	*subre;			/* Substitute RE: uncompiled form. */
+	size_t	 subre_len;		/* Substitute RE: uncompiled length). */
 	char	*repl;			/* Substitute replacement. */
 	size_t	 repl_len;		/* Substitute replacement length.*/
 	size_t	*newl;			/* Newline offset array. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.70 1996/06/18 18:34:05 bostic Exp $ (Berkeley) $Date: 1996/06/18 18:34:05 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.71 1996/06/30 16:12:23 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:12:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2508,7 +2508,6 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	TEXT *tp;
 	u_int8_t *is_flagsp;
 {
-	CHAR_T savech;
 	MARK start;
 	recno_t lno;
 	u_int sf;
@@ -2550,10 +2549,6 @@ txt_isrch(sp, vp, tp, is_flagsp)
 		return (0);
 	}
 		
-	/* Nul terminate the search string. */
-	savech = tp->lb[tp->cno];
-	tp->lb[tp->cno] = '\0';
-
 	/*
 	 * Remember the input line and discard the special input map,
 	 * but don't overwrite the input line on the screen.
@@ -2580,8 +2575,10 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	}
 
 	if (tp->lb[0] == '/' ?
-	    !f_search(sp, &start, &vp->m_final, tp->lb + 1, NULL, sf) :
-	    !b_search(sp, &start, &vp->m_final, tp->lb + 1, NULL, sf)) {
+	    !f_search(sp,
+	    &start, &vp->m_final, tp->lb + 1, tp->cno - 1, NULL, sf) :
+	    !b_search(sp,
+	    &start, &vp->m_final, tp->lb + 1, tp->cno - 1, NULL, sf)) {
 		sp->lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 		FL_CLR(*is_flagsp, IS_RESTART);
@@ -2599,7 +2596,6 @@ txt_isrch(sp, vp, tp, is_flagsp)
 
 	/* Reset the line number of the input line. */
 	tp->lno = TMAP[0].lno; 
-	tp->lb[tp->cno] = savech;
 
 	/*
 	 * If the colon command-line moved, i.e. the screen scrolled,
