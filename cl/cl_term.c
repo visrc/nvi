@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.17 1996/03/06 19:49:33 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:49:33 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.18 1996/03/22 18:36:25 bostic Exp $ (Berkeley) $Date: 1996/03/22 18:36:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,8 @@ static const char sccsid[] = "$Id: cl_term.c,v 10.17 1996/03/06 19:49:33 bostic 
 
 #include "../common/common.h"
 #include "cl.h"
+
+static int cl_pfmap __P((SCR *, seq_t, CHAR_T *, size_t, CHAR_T *, size_t));
 
 /*
  * XXX
@@ -142,7 +144,7 @@ cl_term_init(sp)
 	 */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next)
 		if (F_ISSET(qp, SEQ_FUNCMAP))
-			(void)cl_fmap(sp, qp->stype,
+			(void)cl_pfmap(sp, qp->stype,
 			    qp->input, qp->ilen, qp->output, qp->olen);
 	return (0);
 }
@@ -181,11 +183,25 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 	CHAR_T *from, *to;
 	size_t flen, tlen;
 {
-	size_t nlen;
-	char *p, keyname[64];
-
 	EX_INIT_IGNORE(sp);
 	VI_INIT_IGNORE(sp);
+
+	return (cl_pfmap(sp, stype, from, flen, to, tlen));
+}
+
+/*
+ * cl_pfmap --
+ *	Map a function key (private version).
+ */
+static int
+cl_pfmap(sp, stype, from, flen, to, tlen)
+	SCR *sp;
+	seq_t stype;
+	CHAR_T *from, *to;
+	size_t flen, tlen;
+{
+	size_t nlen;
+	char *p, keyname[64];
 
 	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(from + 1));
 	if ((p = tigetstr(keyname)) == NULL ||
