@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.18 1993/08/26 18:15:43 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:15:43 $";
+static char sccsid[] = "$Id: ex.c,v 8.19 1993/08/26 18:43:26 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:43:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,10 +44,6 @@ ex(sp, ep)
 
 	if (ex_init(sp, ep))
 		return (1);
-
-	/* Believe it or not, we may have just switched modes or files. */
-	if (!F_ISSET(sp, S_MODE_EX) || F_ISSET(sp, S_MAJOR_CHANGE))
-		return (ex_end(sp));
 
 	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
