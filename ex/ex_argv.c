@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.6 1995/09/21 12:06:58 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:58 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.7 1995/09/28 10:39:35 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:39:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -477,7 +477,7 @@ argv_sexp(sp, bpp, blenp, lenp)
 	char **bpp;
 	size_t *blenp, *lenp;
 {
-	FILE *efp, *ifp;
+	FILE *ifp;
 	pid_t pid;
 	size_t blen, len;
 	int ch, nf1, nf2, rval, err_output[2], std_output[2];
@@ -496,27 +496,27 @@ argv_sexp(sp, bpp, blenp, lenp)
 	 * There are two different processes running through this code, named
 	 * the utility (the shell) and the parent. The utility reads standard
 	 * input and writes standard output and standard error output.  The
-	 * parent reads the standard output and standard error output, copying
-	 * the former into a buffer and the latter into the error message log.
+	 * parent writes to the utility, and reads its standard output and
+	 * standard error output.  Historically, the standard error output was
+	 * discarded by vi, as it produces a lot of noise when file patterns
+	 * don't match.
 	 *
-	 * The parent reads std_output[0] and err_output[0], and the utility
-	 * writes std_output[1] and err_output[1].
+	 * The parent reads std_output[0], and the utility writes std_output[1].
 	 */
-	ifp = efp = NULL;
-	std_output[0] = std_output[1] = err_output[0] = err_output[1] = -1;
-	if (pipe(std_output) < 0 || pipe(err_output)) {
+	ifp = NULL;
+	std_output[0] = std_output[1] = -1;
+	if (pipe(std_output) < 0) {
 		msgq(sp, M_SYSERR, "pipe");
-		goto err;
+		return (1);
 	}
-	if ((ifp = fdopen(std_output[0], "r")) == NULL ||
-	    (efp = fdopen(err_output[0], "r")) == NULL) {
+	if ((ifp = fdopen(std_output[0], "r")) == NULL) {
 		msgq(sp, M_SYSERR, "fdopen");
 		goto err;
 	}
 
 	/*
-	 * Do the minimal amount of work possible, the shell is going
-	 * to run briefly and then exit.  We hope.
+	 * Do the minimal amount of work possible, the shell is going to run
+	 * briefly and then exit.  We sincerely hope.
 	 */
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
@@ -525,27 +525,22 @@ err:		if (ifp != NULL)
 			(void)fclose(ifp);
 		else if (std_output[0] != -1)
 			close(std_output[0]);
-		if (efp != NULL)
-			(void)fclose(efp);
-		else if (err_output[0] != -1)
-			close(std_output[0]);
 		if (std_output[1] != -1)
-			close(std_output[0]);
-		if (err_output[1] != -1)
 			close(std_output[0]);
 		return (1);
 	case 0:				/* Utility. */
-		/* Redirect stdout/stderr to the write end of the pipe. */
+		/* Redirect stdout to the write end of the pipe. */
 		(void)dup2(std_output[1], STDOUT_FILENO);
-		(void)dup2(err_output[1], STDERR_FILENO);
 
 		/* Close the utility's file descriptors. */
 		(void)close(std_output[0]);
 		(void)close(std_output[1]);
-		(void)close(err_output[0]);
-		(void)close(err_output[1]);
+		(void)close(STDERR_FILENO);
 
-		/* Assume that all shells have -c. */
+		/*
+		 * XXX
+		 * Assume that all shells have -c.
+		 */
 		execl(sh_path, sh, "-c", bp, NULL);
 		p = msg_print(sp, sh_path, &nf1);
 		msgq(sp, M_SYSERR, "118|Error: execl: %s", p);
@@ -555,11 +550,8 @@ err:		if (ifp != NULL)
 	default:			/* Parent. */
 		/* Close the pipe ends the parent won't use. */
 		(void)close(std_output[1]);
-		(void)close(err_output[1]);
 		break;
 	}
-
-	rval = 0;
 
 	/*
 	 * Copy process standard output into a buffer.
@@ -588,46 +580,15 @@ err:		if (ifp != NULL)
 
 	if (ferror(ifp))
 		goto ioerr;
-
-	/*
-	 * Copy process standard error into a buffer.  We don't set
-	 * rval if we get error output -- as long as the shell exits
-	 * okay, might as well go ahead.
-	 */
-	if ((ch = getc(efp)) != EOF) {
-		(void)ungetc(ch, efp);
-		GET_SPACE_RET(sp, bp, blen, 1024);
-
-		p = msg_print(sp, sh, &nf1);
-		while (fgets(bp, blen, efp) != NULL) {
-			if ((t = strchr(bp, '\n')) != NULL)
-				*t = '\0';
-			t = msg_print(sp, bp, &nf2);
-			msgq(sp, M_ERR, "%s: %s", p, t);
-			if (nf2)
-				FREE_SPACE(sp, t, 0);
-		}
-		if (nf1)
-			FREE_SPACE(sp, p, 0);
-		FREE_SPACE(sp, bp, blen);
-	}
-
-	if (ferror(efp)) {
+	if (fclose(ifp)) {
 ioerr:		p = msg_print(sp, sh, &nf1);
 		msgq(sp, M_ERR, "119|I/O error: %s", p);
 		if (nf1)
 			FREE_SPACE(sp, p, 0);
 binc_err:	rval = 1;
-	}
+	} else
+		rval = 0;
 
 	/* Wait for the process. */
-	if (proc_wait(sp, (long)pid, sh, 0))
-		rval = 1;
-
-	if (ifp != NULL)
-		(void)fclose(ifp);
-	if (efp != NULL)
-		(void)fclose(efp);
-
-	return (rval);
+	return (proc_wait(sp, (long)pid, sh, 1, 0));
 }
