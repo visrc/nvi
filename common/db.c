@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.18 1993/11/22 17:26:52 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:26:52 $";
+static char sccsid[] = "$Id: db.c,v 8.19 1993/12/27 16:50:37 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:50:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,8 +126,14 @@ file_dline(sp, ep, lno)
 #if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", lno);
 #endif
-	/* Delete any marks in the line. */
-	mark_delete(sp, ep, lno);
+	/*
+	 * XXX
+	 *
+	 * Marks and global commands have to know when lines are
+	 * inserted or deleted.
+	 */
+	mark_insdel(sp, ep, LINE_DELETE, lno);
+	global_insdel(sp, ep, LINE_DELETE, lno);
 
 	/* Log change. */
 	log_line(sp, ep, lno, LOG_LINE_DELETE);
@@ -219,8 +225,14 @@ file_aline(sp, ep, update, lno, p, len)
 	/* Log change. */
 	log_line(sp, ep, lno + 1, LOG_LINE_APPEND);
 
-	/* Push any marks above the line. */
-	mark_insert(sp, ep, lno + 1);
+	/*
+	 * XXX
+	 *
+	 * Marks and global commands have to know when lines are
+	 * inserted or deleted.
+	 */
+	mark_insdel(sp, ep, LINE_INSERT, lno + 1);
+	global_insdel(sp, ep, LINE_INSERT, lno + 1);
 
 	/*
 	 * Update screen.
@@ -289,8 +301,14 @@ file_iline(sp, ep, lno, p, len)
 	/* Log change. */
 	log_line(sp, ep, lno, LOG_LINE_INSERT);
 
-	/* Push any marks above the line. */
-	mark_insert(sp, ep, lno);
+	/*
+	 * XXX
+	 *
+	 * Marks and global commands have to know when lines are
+	 * inserted or deleted.
+	 */
+	mark_insdel(sp, ep, LINE_INSERT, lno);
+	global_insdel(sp, ep, LINE_INSERT, lno);
 
 	/* Update screen. */
 	return (scr_update(sp, ep, lno, LINE_INSERT, 1));

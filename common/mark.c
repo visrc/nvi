@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.11 1993/12/09 19:42:11 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:11 $";
+static char sccsid[] = "$Id: mark.c,v 8.12 1993/12/27 16:50:48 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:50:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,39 +195,37 @@ mark_find(sp, ep, key)
 }
 
 /*
- * mark_delete --
- *	Update the marks based on a deletion.
+ * mark_insdel --
+ *	Update the marks based on an insertion or deletion.
  */
 void
-mark_delete(sp, ep, lno)
+mark_insdel(sp, ep, op, lno)
 	SCR *sp;
 	EXF *ep;
+	enum operation op;
 	recno_t lno;
 {
 	MARK *mp;
 
-	for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
-		if (mp->lno >= lno)
-			if (mp->lno == lno) {
-				F_SET(mp, MARK_DELETED);
-				(void)log_mark(sp, ep, mp);
-			} else
-				--mp->lno;
-}
-
-/*
- * mark_insert --
- *	Update the marks based on an insertion.
- */
-void
-mark_insert(sp, ep, lno)
-	SCR *sp;
-	EXF *ep;
-	recno_t lno;
-{
-	MARK *mp;
-
-	for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
-		if (mp->lno >= lno)
-			++mp->lno;
+	switch (op) {
+	case LINE_APPEND:
+		return;
+	case LINE_DELETE:
+		for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
+			if (mp->lno >= lno)
+				if (mp->lno == lno) {
+					F_SET(mp, MARK_DELETED);
+					(void)log_mark(sp, ep, mp);
+				} else
+					--mp->lno;
+		return;
+	case LINE_INSERT:
+		for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
+			if (mp->lno >= lno)
+				++mp->lno;
+		return;
+	case LINE_RESET:
+		return;
+	}
+	/* NOTREACHED */
 }
