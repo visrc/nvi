@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.73 1993/05/17 16:56:04 bostic Exp $ (Berkeley) $Date: 1993/05/17 16:56:04 $";
+static char sccsid[] = "$Id: vi.c,v 5.74 1993/05/27 21:01:02 bostic Exp $ (Berkeley) $Date: 1993/05/27 21:01:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -507,7 +507,7 @@ getkeyword(sp, ep, kp, flags)
 	beg = sp->cno;
 
 	/* May not be a keyword at all. */
-	if (!len ||
+	if (p == NULL || len == 0 ||
 	    LF_ISSET(V_KEYW) && !inword(p[beg]) ||
 	    LF_ISSET(V_KEYNUM) && !innum(p[beg])) {
 noword:		msgq(sp, M_BERR, "Cursor not in a %s",
