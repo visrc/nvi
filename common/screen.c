@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.11 1993/09/11 18:08:38 bostic Exp $ (Berkeley) $Date: 1993/09/11 18:08:38 $";
+static char sccsid[] = "$Id: screen.c,v 8.12 1993/09/13 13:55:23 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:55:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,9 +70,17 @@ scr_init(orig, sp)
 	sp->lastcmd = &cmds[C_PRINT];
 
 /* SHARED BETWEEN SCREENS. */
-	if (orig != NULL)
+	if (orig != NULL) {
+		sp->key = orig->key;
+		sp->tty = orig->tty;
+
 		sp->cuts = orig->cuts;
-	else {
+	} else {
+		if ((sp->key = malloc(sizeof(IBUF))) == NULL)
+			goto mem;
+		if ((sp->tty = malloc(sizeof(IBUF))) == NULL)
+			goto mem;
+
 		if ((sp->cuts = malloc((UCHAR_MAX + 2) * sizeof(CB))) == NULL)
 			goto mem;
 		memset(sp->cuts, 0, (UCHAR_MAX + 2) * sizeof(CB));
@@ -198,12 +206,6 @@ scr_end(sp)
 
 	/* Free the argument list. */
 	(void)free_argv(sp);
-
-	/* Free input buffers. */
-	if (sp->key.buf != NULL)
-		FREE(sp->key.buf, sp->key.len);
-	if (sp->tty.buf != NULL)
-		FREE(sp->tty.buf, sp->tty.len);
 
 	/* Free line input buffer. */
 	if (sp->ibp != NULL)

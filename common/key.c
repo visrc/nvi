@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.7 1993/09/11 11:42:44 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:42:44 $";
+static char sccsid[] = "$Id: key.c,v 8.8 1993/09/13 13:55:33 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:55:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -182,10 +182,10 @@ term_key(sp, flags)
 	}
 
 	/* If we have expanded keys, return the next one. */
-kloop:	if (sp->key.cnt) {
-		ch = sp->key.buf[sp->key.next++];
-		if (--sp->key.cnt == 0)
-			sp->key.next = 0;
+kloop:	if (sp->key->cnt) {
+		ch = sp->key->buf[sp->key->next++];
+		if (--sp->key->cnt == 0)
+			sp->key->next = 0;
 		goto beauty;
 	}
 
@@ -194,7 +194,7 @@ kloop:	if (sp->key.cnt) {
 	 * is requested, s_key_read will either return 1 or will read
 	 * some number of characters.
 	 */
-	if (sp->tty.cnt == 0) {
+	if (sp->tty->cnt == 0) {
 		if (sp->s_key_read(sp, &nr, 0))
 			return (1);
 		/*
@@ -215,26 +215,26 @@ kloop:	if (sp->key.cnt) {
 	 * to read more keys to complete the map.
 	 */
 	if (LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
-mloop:		qp = seq_find(sp, &sp->tty.buf[sp->tty.next], sp->tty.cnt,
+mloop:		qp = seq_find(sp, &sp->tty->buf[sp->tty->next], sp->tty->cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 		if (!ispartial) {
 			if (qp == NULL)
 				goto nomap;
-			sp->tty.cnt -= qp->ilen;
-			if (sp->tty.cnt == 0)
-				sp->tty.next = 0;
+			sp->tty->cnt -= qp->ilen;
+			if (sp->tty->cnt == 0)
+				sp->tty->next = 0;
 			else
-				sp->tty.next += qp->ilen;
+				sp->tty->next += qp->ilen;
 
 			if (O_ISSET(sp, O_REMAP)) {
 				if (term_push(sp,
-				    &sp->tty, qp->output, qp->olen))
+				    sp->tty, qp->output, qp->olen))
 					goto err;
 				goto mloop;
 			} else
 				if (term_push(sp,
-				    &sp->key, qp->output, qp->olen)) {
+				    sp->key, qp->output, qp->olen)) {
 err:					msgq(sp, M_ERR,
 					    "Error: keys flushed: %s.",
 					    strerror(errno));
@@ -248,9 +248,9 @@ err:					msgq(sp, M_ERR,
 			goto mloop;
 	}
 
-nomap:	ch = sp->tty.buf[sp->tty.next++];
-	if (--sp->tty.cnt == 0)
-		sp->tty.next = 0;
+nomap:	ch = sp->tty->buf[sp->tty->next++];
+	if (--sp->tty->cnt == 0)
+		sp->tty->next = 0;
 
 	/*
 	 * O_BEAUTIFY eliminates all control characters except

@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.14 1993/09/12 16:57:13 bostic Exp $ (Berkeley) $Date: 1993/09/12 16:57:13 $";
+static char sccsid[] = "$Id: main.c,v 8.15 1993/09/13 13:54:56 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:54:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -317,15 +317,15 @@ main(argc, argv)
 	if (excmdarg != NULL)
 		switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
 		case S_MODE_EX:
-			if (term_push(sp, &sp->tty, excmdarg, strlen(excmdarg)))
+			if (term_push(sp, sp->tty, excmdarg, strlen(excmdarg)))
 				goto err1;
 			break;
 		case S_MODE_VI:
-			if (term_push(sp, &sp->tty, "\n", 1))
+			if (term_push(sp, sp->tty, "\n", 1))
 				goto err1;
-			if (term_push(sp, &sp->tty, excmdarg, strlen(excmdarg)))
+			if (term_push(sp, sp->tty, excmdarg, strlen(excmdarg)))
 				goto err1;
-			if (term_push(sp, &sp->tty, ":", 1))
+			if (term_push(sp, sp->tty, ":", 1))
 				goto err1;
 			break;
 		default:
