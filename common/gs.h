@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.5 1993/09/30 12:01:53 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:53 $
+ *	$Id: gs.h,v 8.6 1993/10/27 15:41:45 bostic Exp $ (Berkeley) $Date: 1993/10/27 15:41:45 $
  */
 
 struct _scr;
@@ -36,7 +36,9 @@ typedef struct _gs {
 #define	G_SNAPSHOT	0x04		/* Always snapshot files. */
 #define	G_TMP_INUSE	0x08		/* Temporary buffer in use. */
 #define	G_RECOVER_SET	0x10		/* Recover system initialized. */
-#define	G_SIGWINCH	0x20		/* Window size change received. */
+#define	G_SIGHUP	0x20		/* SIGHUP arrived. */
+#define	G_SIGTERM	0x40		/* SIGTERM arrived. */
+#define	G_SIGWINCH	0x80		/* SIGWINCH arrived. */
 	u_int	 flags;
 } GS;
 
