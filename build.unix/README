@@ -1,4 +1,4 @@
-#	$Id: README,v 8.27 2000/04/30 16:31:10 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:31:10 $
+#	$Id: README,v 8.28 2001/04/30 09:31:12 skimo Exp $ (Berkeley) $Date: 2001/04/30 09:31:12 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -47,38 +47,17 @@ There are many options that you can enter to the configuration program.
 To see a complete list of the options, enter "configure --help".  Only
 a few of them are nvi specific.  These options are as follows:
 
-  --disable-curses        DON'T use the nvi-provided curses routines.
-  --disable-db            DON'T use the nvi-provided DB routines.
   --disable-re            DON'T use the nvi-provided RE routines.
   --enable-debug          Build a debugging version.
   --enable-perlinterp     Include a Perl interpreter in vi.
   --enable-tclinterp      Include a Tk/Tcl interpreter in vi.
-  --enable-tknvi          Build a Tk/Tcl front-end for vi.
-
-disable-curses:
-	By default, nvi loads its own implementation of the curses
-	routines (which are a stripped-down version of the 4.4BSD curses
-	library).  If you have your own curses library implementation and
-	you want to use it instead, enter:
-
-	--disable-curses
-
-	as an argument to configure, and the curses routines will be taken
-	from whatever libraries you load.  Note: System V based curses
-	implementations are usually broken.  See the last section of this
-	README for further information about nvi and the curses library.
-
-disable-db:
-	By default, nvi loads its own versions of the Berkeley DB routines
-	(which are a stripped-down version of DB 1.85).  If you have your
-	own version of the Berkeley DB routines and you want to use them
-	instead, enter:
-
-	--disable-db
-
-	as an argument to configure, and the DB routines will be taken
-	from whatever libraries you load.  Make sure that the DB routines
-	you use are at least version 1.85 or later.
+  --enable-gtk		  Build a gtk front-end.
+  --enable-motif	  Build a motif front-end.
+  --enable-threads	  Turn on thread support.
+  --enable-widechar	  Build a wide character aware vi (experimental).
+  --with-curses=DIR       Path to curses installation.
+  --with-db3=db3prefix    Path to db3 installation.
+  --enable-dynamic-loading Load DB 3 dynamically.
 
 disable-re:
 	By default, nvi loads its own versions of the POSIX 1003.2 Regular
@@ -122,15 +101,45 @@ enable-tclinterp:
 	libraries aren't in the standard library and include locations,
 	see the next section of this README file for more information.
 
-enable-tknvi:
-	If you have the Tk/Tcl libraries and you want to build the Tcl/Tk
+enable-gtk:
+	If you have the Gtk libraries and you want to build the Gtk
 	nvi front-end, enter:
 
-	--enable-tknvi
+	--enable-gtk
 
-	as an argument to configure.  If your Tk/Tcl include files and
+	as an argument to configure.  If your Gtk include files and
 	libraries aren't in the standard library and include locations,
 	see the next section of this README file for more information.
+	See also the enable-threads option.
+
+enable-motif:
+	If you have the Motif libraries and you want to build the Motif
+	nvi front-end, enter:
+
+	--enable-motif
+
+	as an argument to configure.  If your Motif include files and
+	libraries aren't in the standard library and include locations,
+	see the next section of this README file for more information.
+
+enable-threads:
+	If you want to be able to use multiple windows in the Gtk
+	front-end, you should specify this option.
+
+with-curses:
+	Specifies the path where curses is installed.
+
+with-db3:
+	Specifies the path where DB3 is installed.
+	See README.DB3 for more information about DB3.
+
+enable-dynamic-loading:
+	Dynamically load DB3 library.
+	See README.DB3 for more information about DB3.
+
+enable-widechar:
+	Enables support for wide characters.
+	Note that this is still rather experimental.
 
 =-=-=-=-=-=-=
 ADDING OR CHANGING COMPILERS, OR COMPILE OR LOAD LINE FLAGS
@@ -327,17 +336,8 @@ original System V curses was broken, resulting in all vendors whose
 implementations are derived from System V having broken implementations
 in turn.
 
-For this reason, BY DEFAULT, nvi uses the stripped-down curses library
-that's included in its distribution.  Of course, it would be preferable
-to use the vendor's curses library, or one of the newer implementations
-of curses, e.g., ncurses.
-
-To use the vendor's curses library, specify the:
-
-	--disable-curses
-
-argument to the configure command.  If you use the vendor's or other
-curses library, and you see any of the following symptoms:
+If you use the vendor's or other curses library, and you see any of the
+following symptoms:
 
 	+ Core dumps in curses routines.
 	+ Missing routines when compiling.
@@ -346,20 +346,10 @@ curses library, and you see any of the following symptoms:
 	+ Failure to reset your terminal to the correct modes on exit.
 
 you have a broken curses implementation, and you should reconfigure nvi
-to use another curses library or the curses library provided with nvi.
+to use another curses library.
 
-There are two alternative sources for curses libraries:
-
-#1: Compile the 4BSD curses library from any of the recent BSD
-    releases: FreeBSD, NetBSD or 4.4BSD-Lite release 2.  These
-    libraries should be able to support nvi.
-
-#2: Retrieve and build the ncurses library.  This library is not
-    recommended unreservedly, at least for now, for two reasons.
-    First, it can't be built on any system where the compiler
-    doesn't support function prototypes.  Second, it currently has
-    a few bugs in its support for nvi.  It mostly works, but it's
-    still not quite right.
+An alternative for your vendor's curses is ncurses, available from
+ftp://ftp.gnu.org/pub/gnu/ncurses/
 
 One final note.  If you see the following symptoms:
 
