@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.62 1996/05/01 09:38:59 bostic Exp $ (Berkeley) $Date: 1996/05/01 09:38:59 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.63 1996/05/02 09:20:05 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:20:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -236,7 +236,7 @@ vs_msg(sp, mtype, line, len)
 {
 	GS *gp;
 	VI_PRIVATE *vip;
-	size_t cols, oldx, oldy, padding;
+	size_t oldx, oldy, padding;
 	const char *e, *s, *t;
 
 	gp = sp->gp;
@@ -339,12 +339,21 @@ vs_msg(sp, mtype, line, len)
 		--len;
 
 	/*
-	 * Need up to two padding characters normally; a semi-colon and
-	 * a separating space.  If only a single line on the screen, add
-	 * some more for the trailing continuation message.
+	 * If a message won't fit on a single line, try to split on a <blank>.
+	 * If a subsequent message fits on the same line, write a separator
+	 * and output it.  Otherwise, put out a newline.
+	 *
+	 * Need up to two padding characters normally; a semi-colon and a
+	 * separating space.  If only a single line on the screen, add some
+	 * more for the trailing continuation message.
 	 *
 	 * XXX
-	 * Assume that a semi-colon takes up a single column on the screen.
+	 * Assume that periods and semi-colons take up a single column on the
+	 * screen.
+	 *
+	 * XXX
+	 * There are almost certainly pathological cases that will break this
+	 * code.
 	 */
 	if (IS_ONELINE(sp))
 		(void)msg_cmsg(sp, CMSG_CONT_S, &padding);
@@ -352,15 +361,6 @@ vs_msg(sp, mtype, line, len)
 		padding = 0;
 	padding += 2;
 
-	/*
-	 * If a message won't fit on a single line, try to split on a <blank>.
-	 * If a subsequent message fits on the same line, write a separator
-	 * and output it.  Otherwise, put out a newline.
-	 *
-	 * XXX
-	 * There are almost certainly pathological cases that will break this
-	 * code.
-	 */
 	if (vip->lcontinue != 0)
 		if (len + vip->lcontinue + padding >= sp->cols)
 			vs_output(sp, mtype, ".\n", 2);
@@ -368,14 +368,15 @@ vs_msg(sp, mtype, line, len)
 			vs_output(sp, mtype, ";", 1);
 			vs_output(sp, M_NONE, " ", 1);
 		}
-	for (cols = sp->cols - padding, s = line; len > 0; s = t) {
+	for (s = line; len > 0; s = t) {
 		for (; isblank(*s) && --len != 0; ++s);
 		if (len == 0)
 			break;
-		if (len > cols) {
-			for (e = s + cols; e > s && !isblank(*e); --e);
+		if (len + vip->lcontinue > sp->cols) {
+			for (e = s + (sp->cols - vip->lcontinue);
+			    e > s && !isblank(*e); --e);
 			if (e == s)
-				 e = t = s + cols;
+				 e = t = s + (sp->cols - vip->lcontinue);
 			else
 				for (t = e; isblank(e[-1]); --e);
 		} else {
