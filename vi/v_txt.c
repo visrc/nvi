@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.52 1993/11/19 12:43:05 bostic Exp $ (Berkeley) $Date: 1993/11/19 12:43:05 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.53 1993/11/22 10:02:17 bostic Exp $ (Berkeley) $Date: 1993/11/22 10:02:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -227,7 +227,9 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 
 	/*
 	 * Set up the dot command.  Dot commands are done by saving the
-	 * actual characters and replaying the input.
+	 * actual characters and replaying the input.  We have to push
+	 * the characters onto the key stack and then handle them normally,
+	 * otherwise things like wrapmargin will fail.
 	 *
 	 * XXX
 	 * It would be nice if we could swallow backspaces and such, but
@@ -236,7 +238,11 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * without replay.
 	 */
 	rcol = 0;
-	replay = LF_ISSET(TXT_REPLAY);
+	if (replay = LF_ISSET(TXT_REPLAY)) {
+		if (term_push(sp, sp->gp->key, VIP(sp)->rep, VIP(sp)->rep_cnt))
+			return (1);
+		LF_CLR(TXT_RECORD);
+	}
 
 	/* Initialize abbreviations check. */
 	abb = F_ISSET(sp, S_ABBREV) &&
@@ -268,17 +274,11 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		 * isn't necessary to have tp->len bytes, since it doesn't
 		 * consider the overwrite characters, but not worth fixing.
 		 */
-next_ch:	if (replay)
-			ch = VIP(sp)->rep[rcol++];
-		else {
-			if (term_key(sp, &ch,
-			    flags & TXT_GETKEY_MASK) != INP_OK)
-				ERR;
-			if (LF_ISSET(TXT_RECORD)) {
-				TBINC(sp,
-				    VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
-				VIP(sp)->rep[rcol++] = ch;
-			}
+next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
+			ERR;
+		if (LF_ISSET(TXT_RECORD)) {
+			TBINC(sp, VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
+			VIP(sp)->rep[rcol++] = ch;
 		}
 		TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 
@@ -827,6 +827,8 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 	/* Clear input flag. */
 ret:	F_CLR(sp, S_INPUT);
 
+	if (LF_ISSET(TXT_RECORD))
+		VIP(sp)->rep_cnt = rcol;
 	return (eval);
 }
 
@@ -1485,12 +1487,12 @@ txt_margin(sp, tp, didbreak, pushc)
 	}
 
 	ch = pushc;
-	if (term_push(sp, sp->gp->tty, &ch, 1))
+	if (term_push(sp, sp->gp->key, &ch, 1))
 		return (1);
-	if (len && term_push(sp, sp->gp->tty, wp, len))
+	if (len && term_push(sp, sp->gp->key, wp, len))
 		return (1);
 	ch = '\n';
-	if (term_push(sp, sp->gp->tty, &ch, 1))
+	if (term_push(sp, sp->gp->key, &ch, 1))
 		return (1);
 
 	sp->cno -= tlen;
