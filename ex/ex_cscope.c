@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.7 1996/04/12 11:29:19 bostic Exp $ (Berkeley) $Date: 1996/04/12 11:29:19 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 8.8 1996/04/15 09:56:04 bostic Exp $ (Berkeley) $Date: 1996/04/15 09:56:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -188,7 +188,7 @@ start_cscopes(sp, cmdp)
  * cscope_add --
  *	The cscope add command.
  */
-int
+static int
 cscope_add(sp, cmdp, dname)
 	SCR *sp;
 	EXCMD *cmdp;
@@ -391,7 +391,7 @@ err:		if (to_cs[0] != -1)
  * cscope_find --
  *	The cscope find command.
  */
-int
+static int
 cscope_find(sp, cmdp, pattern)
 	SCR *sp;
 	EXCMD *cmdp;
