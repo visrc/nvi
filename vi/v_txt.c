@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.11 1995/09/25 10:08:16 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:08:16 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.12 1995/09/28 10:41:59 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:41:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,7 @@ static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int32_t *));
 static void	 txt_err __P((SCR *, TEXTH *));
+static int	 txt_filec __P((SCR *, TEXT *));
 static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
@@ -718,6 +719,11 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 
 		goto ret;
 	case K_ESCAPE:				/* Escape. */
+		if (LF_ISSET(TXT_FILEC) && O_ISSET(sp, O_FILEC)) {
+			if (txt_filec(sp, tp))
+				goto err;
+			goto ret;
+		}
 		if (!LF_ISSET(TXT_ESCAPE))
 			goto ins_ch;
 
@@ -1624,107 +1630,6 @@ txt_backup(sp, tiqh, tp, flagsp)
 }
 
 /*
- * txt_err --
- *	Handle an error during input processing.
- */
-static void
-txt_err(sp, tiqh)
-	SCR *sp;
-	TEXTH *tiqh;
-{
-	recno_t lno;
-
-	/*
-	 * The problem with input processing is that the cursor is at an
-	 * indeterminate position since some input may have been lost due
-	 * to a malloc error.  So, try to go back to the place from which
-	 * the cursor started, knowing that it may no longer be available.
-	 *
-	 * We depend on at least one line number being set in the text
-	 * chain.
-	 */
-	for (lno = tiqh->cqh_first->lno;
-	    !file_eline(sp, lno) && lno > 0; --lno);
-
-	sp->lno = lno == 0 ? 1 : lno;
-	sp->cno = 0;
-
-	/* Redraw the screen, just in case. */
-	F_SET(sp, S_SCR_REDRAW);
-}
-
-/*
- * txt_hex --
- *	Let the user insert any character value they want.
- *
- * !!!
- * This is an extension.  The pattern "^X[0-9a-fA-F]*" is a way
- * for the user to specify a character value which their keyboard
- * may not be able to enter.
- */
-static int
-txt_hex(sp, tp)
-	SCR *sp;
-	TEXT *tp;
-{
-	CHAR_T savec;
-	size_t len, off;
-	u_long value;
-	char *p, *wp;
-
-	/*
-	 * Null-terminate the string.  Since nul isn't a legal hex value,
-	 * this should be okay, and lets us use a local routine, which
-	 * presumably understands the character set, to convert the value.
-	 */
-	savec = tp->lb[sp->cno];
-	tp->lb[sp->cno] = 0;
-
-	/* Find the previous CH_HEX character. */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off, ++len) {
-		if (*p == CH_HEX) {
-			wp = p + 1;
-			break;
-		}
-		/* Not on this line?  Shouldn't happen. */
-		if (off == tp->ai || off == tp->offset)
-			goto nothex;
-	}
-
-	/* If length of 0, then it wasn't a hex value. */
-	if (len == 0)
-		goto nothex;
-
-	/* Get the value. */
-	errno = 0;
-	value = strtol(wp, NULL, 16);
-	if (errno || value > MAX_CHAR_T) {
-nothex:		tp->lb[sp->cno] = savec;
-		return (0);
-	}
-
-	/* Restore the original character. */
-	tp->lb[sp->cno] = savec;
-
-	/* Adjust the bookkeeping. */
-	sp->cno -= len;
-	tp->len -= len;
-	tp->lb[sp->cno - 1] = value;
-
-	/* Copy down any overwrite characters. */
-	if (tp->owrite)
-		memmove(tp->lb + sp->cno,
-		    tp->lb + sp->cno + len, tp->owrite);
-
-	/* Copy down any insert characters. */
-	if (tp->insert)
-		memmove(tp->lb + sp->cno + tp->owrite,
-		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
-
-	return (0);
-}
-
-/*
  * Text indentation is truly strange.  ^T and ^D do movements to the next or
  * previous shiftwidth value, i.e. for a 1-based numbering, with shiftwidth=3,
  * ^T moves a cursor on the 7th, 8th or 9th column to the 10th column, and ^D
@@ -1874,6 +1779,202 @@ txt_dent(sp, tp, isindent)
 		--tp->owrite;
 		tp->lb[sp->cno++] = ' ';
 	}
+	return (0);
+}
+
+/*
+ * txt_filec --
+ *	File/user name completion.
+ */
+static int
+txt_filec(sp, tp)
+	SCR *sp;
+	TEXT *tp;
+{
+	ARGS **argv, *ap[2], a;
+	CHAR_T s_ch;
+	EXCMD cmd;
+	size_t indx, len, nlen, off;
+	int argc;
+	char *p, *t;
+
+	/* Find the beginning of this "word". */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+		if (isblank(*p)) {
+			++p;
+			break;
+		}
+		++len;
+		if (off == tp->ai || off == tp->offset)
+			break;
+	}
+	if (len == 0) {
+		(void)sp->gp->scr_bell(sp);
+		return (0);
+	}
+
+	/*
+	 * Get space for a wildcard character.
+	 *
+	 * XXX
+	 * This won't work for "foo\", since the \ will escape the expansion
+	 * character.  I'm not sure if that's a bug or not...
+	 */
+	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+	s_ch = p[len];
+	p[len] = '*';
+
+	/* Build an ex command, and call the ex expansion routines. */
+	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+	if (argv_init(sp, &cmd))
+		return (1);
+	(void)argv_exp2(sp, &cmd, p, len + 1);
+	argc = cmd.argc;
+	argv = cmd.argv;
+
+	p[len] = s_ch;
+	switch (argc) {
+	case 0:				/* No matches. */
+		(void)sp->gp->scr_bell(sp);
+		return (0);
+	case 1:				/* One match. */
+		nlen = strlen(cmd.argv[0]->bp);
+		break;
+	default:			/* Multiple matches. */
+		(void)sp->gp->scr_bell(sp);
+
+		/* Find the length of the shortest match. */
+		nlen = strlen(cmd.argv[0]->bp);
+		while (--argc > 0) {
+			for (indx = 0; indx < nlen &&
+			    cmd.argv[argc]->bp[indx] == cmd.argv[0]->bp[indx];
+			    ++indx);
+			nlen = indx;
+		}
+		break;
+	}
+
+	/* Overwrite the expanded text first. */
+	for (p = tp->lb + off + 1, t = cmd.argv[0]->bp; len--; --nlen)
+		*p++ = *t++;
+
+	/* Overwrite any overwrite characters next. */
+	for (; nlen && tp->owrite; --nlen, --tp->owrite, ++sp->cno)
+		*p++ = *t++;
+
+	/* Shift remaining text up, and move the cursor to the end. */
+	if (nlen) {
+		/* Make sure the buffer's big enough. */
+		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
+
+		sp->cno += nlen;
+		tp->len += nlen;
+
+		(void)memmove(p + nlen, p, nlen);
+		while (nlen--)
+			*p++ = *t++;
+	}
+	return (0);
+}
+
+/*
+ * txt_err --
+ *	Handle an error during input processing.
+ */
+static void
+txt_err(sp, tiqh)
+	SCR *sp;
+	TEXTH *tiqh;
+{
+	recno_t lno;
+
+	/*
+	 * The problem with input processing is that the cursor is at an
+	 * indeterminate position since some input may have been lost due
+	 * to a malloc error.  So, try to go back to the place from which
+	 * the cursor started, knowing that it may no longer be available.
+	 *
+	 * We depend on at least one line number being set in the text
+	 * chain.
+	 */
+	for (lno = tiqh->cqh_first->lno;
+	    !file_eline(sp, lno) && lno > 0; --lno);
+
+	sp->lno = lno == 0 ? 1 : lno;
+	sp->cno = 0;
+
+	/* Redraw the screen, just in case. */
+	F_SET(sp, S_SCR_REDRAW);
+}
+
+/*
+ * txt_hex --
+ *	Let the user insert any character value they want.
+ *
+ * !!!
+ * This is an extension.  The pattern "^X[0-9a-fA-F]*" is a way
+ * for the user to specify a character value which their keyboard
+ * may not be able to enter.
+ */
+static int
+txt_hex(sp, tp)
+	SCR *sp;
+	TEXT *tp;
+{
+	CHAR_T savec;
+	size_t len, off;
+	u_long value;
+	char *p, *wp;
+
+	/*
+	 * Null-terminate the string.  Since nul isn't a legal hex value,
+	 * this should be okay, and lets us use a local routine, which
+	 * presumably understands the character set, to convert the value.
+	 */
+	savec = tp->lb[sp->cno];
+	tp->lb[sp->cno] = 0;
+
+	/* Find the previous CH_HEX character. */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off, ++len) {
+		if (*p == CH_HEX) {
+			wp = p + 1;
+			break;
+		}
+		/* Not on this line?  Shouldn't happen. */
+		if (off == tp->ai || off == tp->offset)
+			goto nothex;
+	}
+
+	/* If length of 0, then it wasn't a hex value. */
+	if (len == 0)
+		goto nothex;
+
+	/* Get the value. */
+	errno = 0;
+	value = strtol(wp, NULL, 16);
+	if (errno || value > MAX_CHAR_T) {
+nothex:		tp->lb[sp->cno] = savec;
+		return (0);
+	}
+
+	/* Restore the original character. */
+	tp->lb[sp->cno] = savec;
+
+	/* Adjust the bookkeeping. */
+	sp->cno -= len;
+	tp->len -= len;
+	tp->lb[sp->cno - 1] = value;
+
+	/* Copy down any overwrite characters. */
+	if (tp->owrite)
+		memmove(tp->lb + sp->cno,
+		    tp->lb + sp->cno + len, tp->owrite);
+
+	/* Copy down any insert characters. */
+	if (tp->insert)
+		memmove(tp->lb + sp->cno + tp->owrite,
+		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
+
 	return (0);
 }
 
