@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.19 1993/04/12 14:50:12 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:50:12 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.20 1993/05/02 18:00:44 bostic Exp $ (Berkeley) $Date: 1993/05/02 18:00:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,31 +68,40 @@ v_delete(sp, ep, vp, fm, tm, rp)
 	    delete(sp, ep, fm, tm, lmode))
 		return (1);
 
-	/*
-	 * If deleting lines, leave the cursor at the lowest line deleted,
-	 * otherwise, leave it where it started.  Always correct for EOF.
-	 */
-	nlines = file_lline(sp, ep);
+	/* Check for deleting the file. */
+	if ((nlines = file_lline(sp, ep)) == 0) {
+		rp->lno = 1;
+		rp->cno = 0;
+		return (0);
+	}
+
+	/* If deleting lines, leave the cursor at the lowest line deleted. */
 	if (lmode) {
 		rp->lno = MIN(fm->lno, tm->lno);
 		if (rp->lno > nlines)
-			rp->lno = nlines ? nlines : 1;
+			rp->lno = nlines;
 		rp->cno = fm->cno;
 		return (0);
 	}
 
-	*rp = *fm;
-	if (rp->lno >= nlines)
-		if (nlines == 0) {
-			rp->lno = 1;
-			rp->cno = 0;
-		} else {
-			rp->lno = nlines;
-			if (file_gline(sp, ep, nlines, &len) == NULL) {
-				GETLINE_ERR(sp, rp->lno);
-				return (1);
-			}
-			rp->cno = len ? len - 1 : 0;
-		}
+	/*
+	 * Not line mode.  The historic vi would delete the line the cursor
+	 * was on if the motion was past the end-of-file and the cursor didn't
+	 * originate on the last line of the file.  We never delete the line
+	 * the cursor is on -- we'd have to pass a flag down to the delete()
+	 * routine and it would have to special case the action. If anyone
+	 * notices this and complains, don't pause, don't hesitate.  Kill them.
+	 *
+	 * Leave the cursor it where it started, but correct for EOL.
+	 */
+	rp->lno = fm->lno;
+	if (file_gline(sp, ep, rp->lno, &len) == NULL) {
+		GETLINE_ERR(sp, rp->lno);
+		return (1);
+	}
+	if (fm->cno >= len)
+		rp->cno = fm->cno ? fm->cno - 1 : 0;
+	else
+		rp->cno = fm->cno;
 	return (0);
 }
