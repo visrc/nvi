@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 10.4 1995/09/21 12:08:15 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:15 $";
+static char sccsid[] = "$Id: v_at.c,v 10.5 1995/10/03 20:23:06 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:23:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,6 +58,7 @@ v_at(sp, vp)
 		}
 		name = sp->at_lbuf;
 	}
+	F_SET(sp, S_AT_SET);
 
 	CBNAME(sp, cbp, name);
 	if (cbp == NULL) {
