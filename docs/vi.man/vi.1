@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.3 1994/03/19 15:45:09 bostic Exp $ (Berkeley) $Date: 1994/03/19 15:45:09 $
+.\"     $Id: vi.1,v 8.4 1994/04/11 19:27:57 bostic Exp $ (Berkeley) $Date: 1994/04/11 19:27:57 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -147,8 +147,23 @@ Reserved for X11 interfaces.
 .Em "No X11 support is currently implemented."
 .El
 .Pp
+Command input for
+.Nm ex/vi
+is read from the standard input.
+In the
+.Nm \&vi
+interface, it is an error if standard input is not a terminal.
+In the
+.Nm \&ex
+interface, if standard input is not a terminal,
+.Nm \&ex
+will read commands from it regardless, however, the session will a
+batch mode session, exactly as if the
+.Fl s
+option had been specified.
+.Pp
 .Nm Ex/vi
-exit 0 on success, and greater than 0 if an error occurs.
+exits 0 on success, and greater than 0 if an error occurs.
 .Sh ENVIRONMENTAL VARIABLES
 .Bl -tag -width XXXX -compact
 .It Ev COLUMNS
