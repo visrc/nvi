@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.20 1996/03/30 13:45:10 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:10 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.21 1996/04/09 09:43:01 bostic Exp $ (Berkeley) $Date: 1996/04/09 09:43:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,7 +22,7 @@ static const char sccsid[] = "$Id: ex_tag.c,v 10.20 1996/03/30 13:45:10 bostic E
  * AIX 3.2.5, AIX 4.1 <sys/param.h> doesn't include <sys/types.h>.
  * Idiots.
  */
-#include <sys/types.h>	
+#include <sys/types.h>
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -47,36 +47,56 @@ static const char sccsid[] = "$Id: ex_tag.c,v 10.20 1996/03/30 13:45:10 bostic E
 
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
-static int	 ex_N_tagpush __P((SCR *, EXCMD *, FREF *, char *, char *));
+static int	 ctag_get __P((SCR *, char *,
+		    char **, size_t *, char **, size_t *, char **, size_t *));
+static int	 ctag_search __P((SCR *, char *, char *));
 static char	*linear_search __P((char *, char *, char *));
 static int	 search __P((SCR *, TAGF *, char *, char **));
-static int	 tag_get __P((SCR *, char *, char **, char **, char **));
-static int	 tag_search __P((SCR *, char *, char *));
+static int	 tag_copy __P((SCR *, TAG *, TAG **));
+static int	 tag_pop __P((SCR *, TAGQ *, int));
+static int	 tagf_copy __P((SCR *, TAGF *, TAGF **));
+static int	 tagf_free __P((SCR *, TAGF *));
+static int	 tagq_copy __P((SCR *, TAGQ *, TAGQ **));
+static int	 tagq_free __P((SCR *, TAGQ *));
 
 enum tagmsg {TAG_BADLNO, TAG_EMPTY, TAG_SEARCH};
 static void	 tag_msg __P((SCR *, enum tagmsg, char *));
 
+/* XXX */
+int
+cscope_search(sp, tp)
+	SCR *sp;
+	TAG *tp;
+{
+	return (0);
+}
+
 /*
- * ex_tagfirst --
- *	The tag code can be entered from main, i.e. "vi -t tag".
+ * ex_ct_first --
+ *	The tag code can be entered from main, e.g., "vi -t tag".
  *
- * PUBLIC: int ex_tagfirst __P((SCR *, char *));
+ * PUBLIC: int ex_ct_first __P((SCR *, char *));
  */
 int
-ex_tagfirst(sp, tagarg)
+ex_ct_first(sp, tagarg)
 	SCR *sp;
 	char *tagarg;
 {
+	EX_PRIVATE *exp;
 	FREF *frp;
 	long tl;
+	size_t notused;
 	char *tag, *name, *search;
+
+	exp = EXP(sp);
 
 	/* Taglength may limit the number of characters. */
 	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(tagarg) > tl)
 		tagarg[tl] = '\0';
 
 	/* Get the tag information. */
-	if (tag_get(sp, tagarg, &tag, &name, &search))
+	if (ctag_get(sp,
+	    tagarg, &tag, &notused, &name, &notused, &search, &notused))
 		return (0);
 
 	/* Create the file entry. */
@@ -86,11 +106,11 @@ ex_tagfirst(sp, tagarg)
 		return (1);
 
 	/* Search the file for the tag. */
-	(void)tag_search(sp, search, tag);
+	(void)ctag_search(sp, search, tag);
 	free(tag);
 
 	/* Might as well make this the default tag. */
-	if ((EXP(sp)->tlast = strdup(tagarg)) == NULL) {
+	if ((exp->tag_last = strdup(tagarg)) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
@@ -98,59 +118,40 @@ ex_tagfirst(sp, tagarg)
 	return (0);
 }
 
-/* Free a tag or tagf structure from a queue. */
-#define	FREETAG(tp) {							\
-	TAILQ_REMOVE(&exp->tagq, (tp), q);				\
-	if ((tp)->search != NULL)					\
-		free((tp)->search);					\
-	free(tp);							\
-}
-#define	FREETAGF(tfp) {							\
-	TAILQ_REMOVE(&exp->tagfq, (tfp), q);				\
-	free((tfp)->name);						\
-	free(tfp);							\
-}
-
 /*
- * ex_tagpush -- :tag [file]
- *	Move to a new tag.
+ * ex_ct_push -- ^]
+ *		 :tag[!] [string]
  *
- * The tags stacks in nvi are a bit tricky.  Each tag contains a file name,
- * search string, and line/column numbers.  The search string is only used
- * for the first access and for user display.  The first record on the stack
- * is the place where we first did a tag, so it has no search string.  The
- * second record is the first tag, and so on.  Note, this means that the
- * "current" tag is always on the stack.  Each tag has a line/column which is
- * the location from which the user tagged the following TAG entry, and which
- * is used as the return location.
+ * Enter a new TAGQ context based on a ctag string.
  *
- * PUBLIC: int ex_tagpush __P((SCR *, EXCMD *));
+ * PUBLIC: int ex_ct_push __P((SCR *, EXCMD *));
  */
 int
-ex_tagpush(sp, cmdp)
+ex_ct_push(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	enum {TC_CHANGE, TC_CURRENT} which;
 	EX_PRIVATE *exp;
 	FREF *frp;
-	TAG *tp;
-	int sval;
+	TAG *rtp, *tp;
+	TAGQ *rtqp, *tqp;
+	size_t nlen, slen, tlen;
 	long tl;
+	int force, rval;
 	char *name, *search, *tag;
 
 	exp = EXP(sp);
 	switch (cmdp->argc) {
 	case 1:
-		if (exp->tlast != NULL)
-			free(exp->tlast);
-		if ((exp->tlast = strdup(cmdp->argv[0]->bp)) == NULL) {
+		if (exp->tag_last != NULL)
+			free(exp->tag_last);
+		if ((exp->tag_last = strdup(cmdp->argv[0]->bp)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 		break;
 	case 0:
-		if (exp->tlast == NULL) {
+		if (exp->tag_last == NULL) {
 			msgq(sp, M_ERR, "158|No previous tag entered");
 			return (1);
 		}
@@ -160,96 +161,184 @@ ex_tagpush(sp, cmdp)
 	}
 
 	/* Taglength may limit the number of characters. */
-	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(exp->tlast) > tl)
-		exp->tlast[tl] = '\0';
+	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(exp->tag_last) > tl)
+		exp->tag_last[tl] = '\0';
 
 	/* Get the tag information. */
-	if (tag_get(sp, exp->tlast, &tag, &name, &search))
+	if (ctag_get(sp, exp->tag_last,
+	    &tag, &tlen, &name, &nlen, &search, &slen))
 		return (1);
-
-	/* Get the (possibly new) FREF structure. */
-	if ((frp = file_add(sp, name)) == NULL)
-		goto err;
-
-	/* New screen now follows a different path. */
-	if (F_ISSET(cmdp, E_NEWSCREEN))
-		return (ex_N_tagpush(sp, cmdp, frp, search, tag));
-
-	if (sp->frp == frp)
-		which = TC_CURRENT;
-	else {
-		if (file_m1(sp,
-		    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
-			goto err;
-		which = TC_CHANGE;
-	}
 
 	/*
-	 * Get a tag structure -- if this is the first tag, push it on the
-	 * stack as a placeholder and get another tag structure.  Set the
-	 * line/column of the most recent element on the stack to be the
-	 * current values, including the file pointer.  Then push the new
-	 * TAG onto the stack with the new file and search string for user
-	 * display.
+	 * If we're in a temporary file, we don't have a context to which
+	 * we can return, so don't bother setting up a tags stack.  This
+	 * doesn't apply if we're creating a new screen, however.
 	 */
-	CALLOC(sp, tp, TAG *, 1, sizeof(TAG));
-	if (tp != NULL && exp->tagq.tqh_first == NULL) {
-		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
-		CALLOC(sp, tp, TAG *, 1, sizeof(TAG));
-	}
-	if (exp->tagq.tqh_first != NULL) {
-		exp->tagq.tqh_first->frp = sp->frp;
-		exp->tagq.tqh_first->lno = sp->lno;
-		exp->tagq.tqh_first->cno = sp->cno;
-	}
-	if (tp != NULL) {
-		if ((tp->search = strdup(search)) == NULL)
-			msgq(sp, M_SYSERR, NULL);
-		else
-			tp->slen = strlen(search);
-		tp->frp = frp;
-		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
+	force = FL_ISSET(cmdp->iflags, E_C_FORCE);
+	if (F_ISSET(sp->frp, FR_TMPFILE) && !F_ISSET(cmdp, E_NEWSCREEN)) {
+		rval = ex_tag_switch(sp, name, NULL, search, tag, force);
+		free(tag);
+		return (rval);
 	}
 
-	/* Switch files. */
-	if (which == TC_CHANGE && file_init(sp, frp, NULL, FS_SETALT)) {
-		if (tp != NULL)
-			FREETAG(tp);
-		/* Handle special, first-tag case. */
-		if (exp->tagq.tqh_first->q.tqe_next == NULL)
-			TAILQ_REMOVE(&exp->tagq, exp->tagq.tqh_first, q);
-err:		free(tag);
-		return (1);
+	/* Allocate all necessary memory before swapping screens. */
+	rtp = tp = NULL;
+	rtqp = tqp = NULL;
+	if (exp->tq.cqh_first == (void *)&exp->tq) {
+		CALLOC_GOTO(sp, rtqp, TAGQ *, 1, sizeof(TAGQ));
+		CALLOC_GOTO(sp, rtp, TAG *, 1, sizeof(TAG));
 	}
+	CALLOC_GOTO(sp, tqp, TAGQ *, 1, sizeof(TAGQ));
+	CALLOC_GOTO(sp, tp,
+	    TAG *, 1, sizeof(TAG) + nlen + 1 + slen + 1 + tlen + 1);
 
-	sval = tag_search(sp, search, tag);
+	/*
+	 * Stick the current context in a convenient place, we're about
+	 * to lose it.
+	 */
+	tp->frp = sp->frp;
+	tp->lno = sp->lno;
+	tp->cno = sp->cno;
+
+	/* Try to switch to the tag. */
+	if (F_ISSET(cmdp, E_NEWSCREEN)) {
+		if (ex_tag_Nswitch(sp, name, &frp, search, tag, force))
+			goto err;
+
+		/* Everything else gets done in the new screen. */
+		sp = sp->nextdisp;
+		exp = EXP(sp);
+	} else
+		if (ex_tag_switch(sp, name, &frp, search, tag, force))
+			goto err;
+
+	/*
+	 * If this is the first tag, put a `current location' queue entry
+	 * in place, so we can pop all the way back to the current mark.
+	 */
+	if (exp->tq.cqh_first == (void *)&exp->tq) {
+		/* Initialize and link the tag queue structure. */
+		CIRCLEQ_INSERT_HEAD(&exp->tq, rtqp, q);
+		CIRCLEQ_INIT(&rtqp->tagq);
+		rtqp->current = rtp;
+
+		/* Initialize and link the tag structure. */
+		CIRCLEQ_INSERT_HEAD(&rtqp->tagq, rtp, q);
+	} else
+		rtp = exp->tq.cqh_first->current;
+
+	/* Save the current context, including the file pointer. */
+	rtp->frp = tp->frp;
+	rtp->lno = tp->lno;
+	rtp->cno = tp->cno;
+
+	/* Initialize and link the tag queue structure. */
+	CIRCLEQ_INSERT_HEAD(&exp->tq, tqp, q);
+	CIRCLEQ_INIT(&tqp->tagq);
+	tqp->current = tp;
+
+	/* Initialize and link the tag structure. */
+	tp->frp = frp;
+	tp->fname = tp->buf;
+	memcpy(tp->fname, name, (tp->fnlen = nlen) + 1);
+	tp->search = tp->fname + nlen + 1;
+	memcpy(tp->search, search, (tp->slen = slen) + 1);
+	tp->tag = tp->search + slen + 1;
+	memcpy(tp->tag, tag, (tp->tlen = tlen) + 1);
+	CIRCLEQ_INSERT_HEAD(&tqp->tagq, tp, q);
+
 	free(tag);
+	return (0);
 
-	switch (which) {
-	case TC_CURRENT:
-		if (sval)
-			return (1);
-		break;
-	case TC_CHANGE:
-		break;
-	}
+err:
+alloc_err:
+	if (tag != NULL)
+		free(tag);
+	if (rtqp != NULL)
+		free(rtqp);
+	if (rtp != NULL)
+		free(rtp);
+	if (tqp != NULL)
+		free(tqp);
+	if (tp != NULL)
+		free(tp);
+	return (1);
+}
 
+/*
+ * ex_tag_switch --
+ *	Switch context to a TAG.
+ *
+ * PUBLIC: int ex_tag_switch __P((SCR *, char *, FREF **, char *, char *, int));
+ */
+int
+ex_tag_switch(sp, fname, frpp, search, tag, force)
+	SCR *sp;
+	char *fname, *search, *tag;
+	FREF **frpp;
+	int force;
+{
+	FREF *frp;
+
+	/*
+	 * Get the (possibly new) FREF structure, and return it to the
+	 * caller.
+	 */
+	if ((frp = file_add(sp, fname)) == NULL)
+		return (1);
+	if (frpp != NULL)
+		*frpp = frp;
+
+	/* If not changing files, do the search and return. */
+	if (frp == sp->frp)
+		return (ctag_search(sp, search, tag));
+
+	/* Check for permission to leave. */
+	if (file_m1(sp, force, FS_ALL | FS_POSSIBLE))
+		return (1);
+
+	/* Initialize the new file. */
+	if (file_init(sp, frp, NULL, FS_SETALT))
+		return (1);
+
+	/*
+	 * Search for the tag.  Unlike searching within the current file,
+	 * failure to find the tag isn't an error, which matches historical
+	 * practice, i.e., we always enter the new file.
+	 */
+	(void)ctag_search(sp, search, tag);
+
+	/* Switch. */
 	F_SET(sp, S_FSWITCH | S_SCR_CENTER);
+
 	return (0);
 }
 
 /*
- * ex_N_tagpush --
- *	ex_tagpush for new screens.
+ * ex_tag_Nswitch --
+ *	Switch context to a TAG in a new screen.
+ *
+ * PUBLIC: int ex_tag_Nswitch
+ * PUBLIC:    __P((SCR *, char *, FREF **, char *, char *, int));
  */
-static int
-ex_N_tagpush(sp, cmdp, frp, search, tag)
+int
+ex_tag_Nswitch(sp, fname, frpp, search, tag, force)
 	SCR *sp;
-	EXCMD *cmdp;
-	FREF *frp;
-	char *search, *tag;
+	char *fname, *search, *tag;
+	FREF **frpp;
+	int force;
 {
+	FREF *frp;
 	SCR *new;
+
+	/*
+	 * Get the (possibly new) FREF structure, and return it to the
+	 * caller.
+	 */
+	if ((frp = file_add(sp, fname)) == NULL)
+		return (1);
+	if (frpp != NULL)
+		*frpp = frp;
 
 	/* Get a new screen. */
 	if (screen_init(sp->gp, sp, &new))
@@ -268,18 +357,20 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 
 		new->frp = frp;
 		new->frp->flags = sp->frp->flags;
-	} else if (file_init(new, frp, NULL,
-	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
+	} else if (file_init(new, frp, NULL, force)) {
 		(void)vs_discard(new, NULL);
 		(void)screen_end(new);
 		return (1);
 	}
 
-	/* Search for the tag. */
-	(void)tag_search(new, search, tag);
-	free(tag);
+	/*
+	 * Search for the tag.  Unlike searching within the current file,
+	 * failure to find the tag isn't an error, which matches historical
+	 * practice, i.e., we always enter the new file.
+	 */
+	(void)ctag_search(new, search, tag);
 
-	/* Set up the switch. */
+	/* Switch. */
 	sp->nextdisp = new;
 	F_SET(sp, S_SSWITCH);
 
@@ -287,147 +378,165 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 }
 
 /*
- * ex_tagpop -- :tagp[op][!] [number | file]
- *	Pop the tag stack.
+ * ex_tag_pop -- ^T
+ *		 :tagp[op][!] [number | file]
  *
- * PUBLIC: int ex_tagpop __P((SCR *, EXCMD *));
+ *	Pop to a previous TAGQ context.
+ *
+ * PUBLIC: int ex_tag_pop __P((SCR *, EXCMD *));
  */
 int
-ex_tagpop(sp, cmdp)
+ex_tag_pop(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
 	EX_PRIVATE *exp;
-	TAG *ntp, *tp;
+	TAGQ *tqp, *dtqp;
 	size_t arglen;
 	long off;
 	char *arg, *p, *t;
 
 	/* Check for an empty stack. */
 	exp = EXP(sp);
-	if (exp->tagq.tqh_first == NULL) {
+	if (exp->tq.cqh_first == (void *)&exp->tq) {
 		tag_msg(sp, TAG_EMPTY, NULL);
 		return (1);
 	}
 
+	/* Find the last TAG structure that we're going to DISCARD! */
 	switch (cmdp->argc) {
 	case 0:				/* Pop one tag. */
-		ntp = exp->tagq.tqh_first;
+		dtqp = exp->tq.cqh_first;
 		break;
 	case 1:				/* Name or number. */
 		arg = cmdp->argv[0]->bp;
 		off = strtol(arg, &p, 10);
-		if (*p == '\0') {
-			if (off < 1)
-				return (0);
-			for (tp = exp->tagq.tqh_first;
-			    tp != NULL && --off > 1; tp = tp->q.tqe_next);
-			if (tp == NULL) {
-				msgq(sp, M_ERR,
-"159|Less than %s entries on the tags stack; use :display t[ags]",
-				    arg);
-				return (1);
-			}
-			ntp = tp;
-		} else {
-			arglen = strlen(arg);
-			for (tp = exp->tagq.tqh_first;
-			    tp != NULL; ntp = tp, tp = tp->q.tqe_next) {
-				/* Use the user's original file name. */
-				p = tp->frp->name;
-				if ((t = strrchr(p, '/')) == NULL)
-					t = p;
-				else
-					++t;
-				if (!strncmp(arg, t, arglen))
-					break;
-			}
-			if (tp == NULL) {
-				msgq_str(sp, M_ERR, arg,
-"160|No file named %s on the tags stack; use :display t[ags]");
-				return (1);
-			}
+		if (*p != '\0')
+			goto filearg;
+
+		/* Number: pop that many queue entries. */
+		if (off < 1)
+			return (0);
+		for (tqp = exp->tq.cqh_first;
+		    tqp != (void *)&exp->tq && --off > 1;
+		    tqp = tqp->q.cqe_next);
+		if (tqp == (void *)&exp->tq) {
+			msgq(sp, M_ERR,
+	"159|Less than %s entries on the tags stack; use :display t[ags]",
+			    arg);
+			return (1);
 		}
+		dtqp = tqp;
+		break;
+
+		/* File argument: pop to that queue entry. */
+filearg:	arglen = strlen(arg);
+		for (tqp = exp->tq.cqh_first;
+		    tqp != (void *)&exp->tq;
+		    dtqp = tqp, tqp = tqp->q.cqe_next) {
+			/* Don't pop to the current file. */
+			if (tqp == exp->tq.cqh_first)
+				continue;
+			p = tqp->current->frp->name;
+			if ((t = strrchr(p, '/')) == NULL)
+				t = p;
+			else
+				++t;
+			if (!strncmp(arg, t, arglen))
+				break;
+		}
+		if (tqp == (void *)&exp->tq) {
+			msgq_str(sp, M_ERR, arg,
+	"160|No file %s on the tags stack to return to; use :display t[ags]");
+			return (1);
+		}
+		if (tqp == exp->tq.cqh_first)
+			return (0);
 		break;
 	default:
 		abort();
 	}
 
-	/* Update the cursor from the saved TAG information. */
-	tp = ntp->q.tqe_next;
-	if (tp->frp == sp->frp) {
-		sp->lno = tp->lno;
-		sp->cno = tp->cno;
-	} else {
-		if (file_m1(sp,
-		    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
-			return (1);
-		tp->frp->lno = tp->lno;
-		tp->frp->cno = tp->cno;
-		F_SET(sp->frp, FR_CURSORSET);
-		if (file_init(sp, tp->frp, NULL, FS_SETALT))
-			return (1);
-	}
-
-	/* Pop entries off the queue up to ntp. */
-	for (;;) {
-		tp = exp->tagq.tqh_first;
-		FREETAG(tp);
-		if (tp == ntp)
-			break;
-	}
-
-	/* If returning to the first tag, the stack is now empty. */
-	if (exp->tagq.tqh_first->q.tqe_next == NULL)
-		TAILQ_REMOVE(&exp->tagq, exp->tagq.tqh_first, q);
-
-	F_SET(sp, S_FSWITCH);
-	return (0);
+	return (tag_pop(sp, dtqp, FL_ISSET(cmdp->iflags, E_C_FORCE)));
 }
 
 /*
- * ex_tagtop -- :tagt[op][!]
+ * ex_tag_top -- :tagt[op][!]
  *	Clear the tag stack.
  *
- * PUBLIC: int ex_tagtop __P((SCR *, EXCMD *));
+ * PUBLIC: int ex_tag_top __P((SCR *, EXCMD *));
  */
 int
-ex_tagtop(sp, cmdp)
+ex_tag_top(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
 	EX_PRIVATE *exp;
-	TAG *tp;
 
-	/* Find oldest saved information. */
 	exp = EXP(sp);
-	for (tp = exp->tagq.tqh_first;
-	    tp != NULL && tp->q.tqe_next != NULL; tp = tp->q.tqe_next);
-	if (tp == NULL) {
+
+	/* Check for an empty stack. */
+	if (exp->tq.cqh_first == (void *)&exp->tq) {
 		tag_msg(sp, TAG_EMPTY, NULL);
 		return (1);
 	}
 
-	/* If not switching files, it's easy; else do the work. */
+	/* Return to the oldest information. */
+	return (tag_pop(sp,
+	    exp->tq.cqh_last->q.cqe_prev, FL_ISSET(cmdp->iflags, E_C_FORCE)));
+}
+
+/*
+ * tag_pop --
+ *	Pop up to and including the specified TAGQ context.
+ */
+static int
+tag_pop(sp, dtqp, force)
+	SCR *sp;
+	TAGQ *dtqp;
+	int force;
+{
+	EX_PRIVATE *exp;
+	TAG *tp;
+	TAGQ *tqp;
+
+	exp = EXP(sp);
+
+	/*
+	 * Update the cursor from the saved TAG information of the TAG
+	 * structure we're moving to.
+	 */
+	tp = dtqp->q.cqe_next->current;
 	if (tp->frp == sp->frp) {
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		if (file_m1(sp,
-		    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
+		if (file_m1(sp, force, FS_ALL | FS_POSSIBLE))
 			return (1);
+
 		tp->frp->lno = tp->lno;
 		tp->frp->cno = tp->cno;
 		F_SET(sp->frp, FR_CURSORSET);
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
+
+		F_SET(sp, S_FSWITCH);
 	}
 
-	/* Empty out the queue. */
-	while ((tp = exp->tagq.tqh_first) != NULL)
-		FREETAG(tp);
+	/* Pop entries off the queue up to and including dtqp. */
+	do {
+		tqp = exp->tq.cqh_first;
+		if (tagq_free(sp, tqp))
+			return (0);
+	} while (tqp != dtqp);
 
-	F_SET(sp, S_FSWITCH);
+	/*
+	 * If only a single tag left, we've returned to the first tag point,
+	 * and the stack is now empty.
+	 */
+	if (exp->tq.cqh_first->q.cqe_next == (void *)&exp->tq)
+		tagq_free(sp, exp->tq.cqh_first);
+
 	return (0);
 }
 
@@ -442,59 +551,332 @@ ex_tagdisplay(sp)
 	SCR *sp;
 {
 	EX_PRIVATE *exp;
-	GS *gp;
 	TAG *tp;
-	size_t len, maxlen;
-	int cnt;
-	char *name;
+	TAGQ *tqp;
+	int cnt, nf;
+	size_t len;
+	char *p, *t;
 
 	exp = EXP(sp);
-	if ((tp = exp->tagq.tqh_first) == NULL) {
-		msgq(sp, M_INFO, "161|No tags to display");
+	if ((tqp = exp->tq.cqh_first) == (void *)&exp->tq) {
+		tag_msg(sp, TAG_EMPTY, NULL);
 		return (0);
 	}
 
 	/*
-	 * Figure out the formatting.  MNOC is the maximum
-	 * number of file name columns before we split the line.
+	 * We give the file name 20 columns and the search string the rest.
+	 * If there's not enough room, we don't do anything special, it's
+	 * not worth the effort, it just makes the display more confusing.
 	 */
-#define	MNOC	15
-	for (maxlen = 0,
-	    tp = exp->tagq.tqh_first; tp != NULL; tp = tp->q.tqe_next) {
-		len = strlen(name = tp->frp->name);	/* The original name. */
-		if (maxlen < len && len < MNOC)
-			maxlen = len;
+#define	L_NAME		20
+#define	L_SEARCH	20
+#define	L_SPACE		 5
+	if (sp->cols <= L_NAME) {
+		msgq(sp, M_ERR, "309|Display too small.");
+		return (0);
 	}
+	for (cnt = 1, tqp = exp->tq.cqh_first;
+	    tqp != (void *)&exp->tq; ++cnt, tqp = tqp->q.cqe_next) {
+		if (INTERRUPTED(sp))
+			break;
 
-	gp = sp->gp;
-	for (cnt = 1, tp = exp->tagq.tqh_first;
-	    tp != NULL && !INTERRUPTED(sp); ++cnt, tp = tp->q.tqe_next) {
-		len = strlen(name = tp->frp->name);	/* The original name. */
-		if (len > maxlen || len + tp->slen > sp->cols)
-			if (tp == NULL || tp->search == NULL)
-				(void)ex_printf(sp, "%2d %s\n", cnt, name);
-			else
-				(void)ex_printf(sp,
-				     "%2d %s\n** %*.*s %s\n", cnt, name,
-				     (int)maxlen, (int)maxlen, "", tp->search);
-		else
-			if (tp == NULL || tp->search == NULL)
-				(void)ex_printf(sp, "%2d %*.*s\n",
-				    cnt, (int)maxlen, (int)len, name);
-			else
-				(void)ex_printf(sp, "%2d %*.*s %s\n",
-				    cnt, (int)maxlen, (int)len, name,
-				    tp->search);
+		tp = tqp->current;
+		len = strlen(p = msg_print(sp, tp->frp->name, &nf));
+		if (len > L_NAME) {
+			t = p + (len - L_NAME);
+			t[0] = '.';
+			t[1] = '.';
+			t[2] = '.';
+			t[3] = ' ';
+		} else
+			t = p;
+		(void)ex_printf(sp, "%2d %*.*s", cnt, L_NAME, L_NAME, t);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+		if (tp->search != NULL &&
+		    (sp->cols - L_NAME) >= L_SEARCH + L_SPACE) {
+			len = strlen(p = msg_print(sp, tp->search, &nf));
+			if (len > sp->cols - (L_NAME + L_SPACE))
+				len = sp->cols - (L_NAME + L_SPACE);
+			(void)ex_printf(sp, "     %.*s", (int)len, tp->search);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
+		(void)ex_printf(sp, "\n");
 	}
 	return (0);
 }
 
 /*
- * tag_search --
+ * ex_tagcopy --
+ *	Copy a screen's tag structures.
+ *
+ * PUBLIC: int ex_tagcopy __P((SCR *, SCR *));
+ */
+int
+ex_tagcopy(orig, sp)
+	SCR *orig, *sp;
+{
+	EX_PRIVATE *oexp, *nexp;
+	TAGQ *aqp, *tqp;
+	TAG *ap, *tp;
+	TAGF *atfp, *tfp;
+
+	oexp = EXP(orig);
+	nexp = EXP(sp);
+
+	/* Copy tag queue and tags stack. */
+	for (aqp = oexp->tq.cqh_first;
+	    aqp != (void *)&oexp->tq; aqp = aqp->q.cqe_next) {
+		if (tagq_copy(sp, aqp, &tqp))
+			return (1);
+		for (ap = aqp->tagq.cqh_first;
+		    ap != (void *)&aqp->tagq; ap = ap->q.cqe_next) {
+			if (tag_copy(sp, ap, &tp))
+				return (1);
+			/* Set the current pointer. */
+			if (aqp->current == ap)
+				tqp->current = tp;
+			CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
+		}
+		CIRCLEQ_INSERT_TAIL(&nexp->tq, tqp, q);
+	}
+
+	/* Copy list of tag files. */
+	for (atfp = oexp->tagfq.tqh_first;
+	    atfp != NULL; atfp = atfp->q.tqe_next) {
+		if (tagf_copy(sp, atfp, &tfp))
+			return (1);
+		TAILQ_INSERT_TAIL(&nexp->tagfq, tfp, q);
+	}
+
+	/* Copy the last tag. */
+	if (oexp->tag_last != NULL &&
+	    (nexp->tag_last = strdup(oexp->tag_last)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
+	return (0);
+}
+
+/*
+ * tagf_copy --
+ *	Copy a TAGF structure and return it in new memory.
+ */
+static int
+tagf_copy(sp, otfp, tfpp)
+	SCR *sp;
+	TAGF *otfp, **tfpp;
+{
+	TAGF *tfp;
+
+	MALLOC_RET(sp, tfp, TAGF *, sizeof(TAGF));
+	*tfp = *otfp;
+
+	/* XXX: Allocate as part of the TAGF structure!!! */
+	if ((tfp->name = strdup(otfp->name)) == NULL)
+		return (1);
+
+	*tfpp = tfp;
+	return (0);
+}
+
+/*
+ * tagq_copy --
+ *	Copy a TAGQ structure and return it in new memory.
+ */
+static int
+tagq_copy(sp, otqp, tqpp)
+	SCR *sp;
+	TAGQ *otqp, **tqpp;
+{
+	TAGQ *tqp;
+
+	MALLOC_RET(sp, tqp, TAGQ *, sizeof(TAGQ));
+	*tqp = *otqp;
+
+	CIRCLEQ_INIT(&tqp->tagq);
+	tqp->current = NULL;
+
+	*tqpp = tqp;
+	return (0);
+}
+
+/*
+ * tag_copy --
+ *	Copy a TAG structure and return it in new memory.
+ */
+static int
+tag_copy(sp, otp, tpp)
+	SCR *sp;
+	TAG *otp, **tpp;
+{
+	TAG *tp;
+	size_t len;
+
+	len = sizeof(TAG);
+	if (otp->fname != NULL)
+		len += otp->fnlen + 1;
+	if (otp->search != NULL)
+		len += otp->slen + 1;
+	if (otp->tag != NULL)
+		len += otp->tlen + 1;
+	MALLOC_RET(sp, tp, TAG *, len);
+	memcpy(tp, otp, len);
+
+	if (otp->fname != NULL)
+		tp->fname = tp->buf;
+	if (otp->search != NULL)
+		tp->search = tp->fname + otp->fnlen + 1;
+	if (otp->tag != NULL)
+		tp->tag = tp->search + otp->slen + 1;
+
+	*tpp = tp;
+	return (0);
+}
+
+/*
+ * tag_msg
+ *	A few common messages.
+ */
+static void
+tag_msg(sp, msg, tag)
+	SCR *sp;
+	enum tagmsg msg;
+	char *tag;
+{
+	switch (msg) {
+	case TAG_BADLNO:
+		msgq_str(sp, M_ERR, tag, "164|%s: the tag line doesn't exist");
+		break;
+	case TAG_EMPTY:
+		msgq(sp, M_INFO, "165|The tags stack is empty");
+		break;
+	case TAG_SEARCH:
+		msgq_str(sp, M_ERR, tag, "166|%s: search pattern not found");
+		break;
+	default:
+		abort();
+	}
+}
+
+/*
+ * tagq_free --
+ *	Free a TAGQ structure (and associated TAG structures).
+ *
+ * PUBLIC: int tagq_free __P((SCR *, TAGQ *));
+ */
+static int
+tagq_free(sp, tqp)
+	SCR *sp;
+	TAGQ *tqp;
+{
+	EX_PRIVATE *exp;
+	TAG *tp;
+
+	exp = EXP(sp);
+	while ((tp = tqp->tagq.cqh_first) != (void *)&tqp->tagq) {
+		CIRCLEQ_REMOVE(&tqp->tagq, tp, q);
+		free(tp);
+	}
+	CIRCLEQ_REMOVE(&exp->tq, tqp, q);
+	free(tqp);
+	return (0);
+}
+
+/*
+ * tagf_free --
+ *	Free a TAGF structure.
+ */
+static int
+tagf_free(sp, tfp)
+	SCR *sp;
+	TAGF *tfp;
+{
+	EX_PRIVATE *exp;
+
+	exp = EXP(sp);
+	TAILQ_REMOVE(&exp->tagfq, tfp, q);
+	free(tfp->name);
+	free(tfp);
+	return (0);
+}
+
+/*
+ * ex_ctf_alloc --
+ *	Create a new list of ctag files.
+ *
+ * PUBLIC: int ex_ctf_alloc __P((SCR *, char *));
+ */
+int
+ex_ctf_alloc(sp, str)
+	SCR *sp;
+	char *str;
+{
+	EX_PRIVATE *exp;
+	TAGF *tfp;
+	size_t len;
+	char *p, *t;
+
+	/* Free current queue. */
+	exp = EXP(sp);
+	while ((tfp = exp->tagfq.tqh_first) != NULL)
+		tagf_free(sp, tfp);
+
+	/* Create new queue. */
+	for (p = t = str;; ++p) {
+		if (*p == '\0' || isblank(*p)) {
+			if ((len = p - t) > 1) {
+				MALLOC_RET(sp, tfp, TAGF *, sizeof(TAGF));
+				MALLOC(sp, tfp->name, char *, len + 1);
+				if (tfp->name == NULL) {
+					free(tfp);
+					return (1);
+				}
+				memmove(tfp->name, t, len);
+				tfp->name[len] = '\0';
+				tfp->flags = 0;
+				TAILQ_INSERT_TAIL(&exp->tagfq, tfp, q);
+			}
+			t = p + 1;
+		}
+		if (*p == '\0')
+			 break;
+	}
+	return (0);
+}
+						/* Free previous queue. */
+/*
+ * ex_tagfree --
+ *	Free the ex tag information.
+ *
+ * PUBLIC: int ex_tagfree __P((SCR *));
+ */
+int
+ex_tagfree(sp)
+	SCR *sp;
+{
+	EX_PRIVATE *exp;
+	TAGF *tfp;
+	TAGQ *tqp;
+
+	/* Free up tag information. */
+	exp = EXP(sp);
+	while ((tqp = exp->tq.cqh_first) != (void *)&exp->tq)
+		tagq_free(sp, tqp);
+	while ((tfp = exp->tagfq.tqh_first) != NULL)
+		tagf_free(sp, tfp);
+	if (exp->tag_last != NULL)
+		free(exp->tag_last);
+	return (0);
+}
+
+/*
+ * ctag_search --
  *	Search a file for a tag.
  */
 static int
-tag_search(sp, search, tag)
+ctag_search(sp, search, tag)
 	SCR *sp;
 	char *search, *tag;
 {
@@ -554,136 +936,19 @@ notfound:			tag_msg(sp, TAG_SEARCH, tag);
 }
 
 /*
- * ex_tagalloc --
- *	Create a new list of tag files.
- *
- * PUBLIC: int ex_tagalloc __P((SCR *, char *));
- */
-int
-ex_tagalloc(sp, str)
-	SCR *sp;
-	char *str;
-{
-	EX_PRIVATE *exp;
-	TAGF *tp;
-	size_t len;
-	char *p, *t;
-
-	/* Free current queue. */
-	exp = EXP(sp);
-	while ((tp = exp->tagfq.tqh_first) != NULL)
-		FREETAGF(tp);
-
-	/* Create new queue. */
-	for (p = t = str;; ++p) {
-		if (*p == '\0' || isblank(*p)) {
-			if ((len = p - t) > 1) {
-				MALLOC_RET(sp, tp, TAGF *, sizeof(TAGF));
-				MALLOC(sp, tp->name, char *, len + 1);
-				if (tp->name == NULL) {
-					free(tp);
-					return (1);
-				}
-				memmove(tp->name, t, len);
-				tp->name[len] = '\0';
-				tp->flags = 0;
-				TAILQ_INSERT_TAIL(&exp->tagfq, tp, q);
-			}
-			t = p + 1;
-		}
-		if (*p == '\0')
-			 break;
-	}
-	return (0);
-}
-						/* Free previous queue. */
-/*
- * ex_tagfree --
- *	Free the tags file list.
- *
- * PUBLIC: int ex_tagfree __P((SCR *));
- */
-int
-ex_tagfree(sp)
-	SCR *sp;
-{
-	EX_PRIVATE *exp;
-	TAG *tp;
-	TAGF *tfp;
-
-	/* Free up tag information. */
-	exp = EXP(sp);
-	while ((tp = exp->tagq.tqh_first) != NULL)
-		FREETAG(tp);
-	while ((tfp = exp->tagfq.tqh_first) != NULL)
-		FREETAGF(tfp);
-	if (exp->tlast != NULL)
-		free(exp->tlast);
-	return (0);
-}
-
-/*
- * ex_tagcopy --
- *	Copy a screen's tag structures.
- *
- * PUBLIC: int ex_tagcopy __P((SCR *, SCR *));
- */
-int
-ex_tagcopy(orig, sp)
-	SCR *orig, *sp;
-{
-	EX_PRIVATE *oexp, *nexp;
-	TAG *ap, *tp;
-	TAGF *atfp, *tfp;
-
-	/* Copy tag stack. */
-	oexp = EXP(orig);
-	nexp = EXP(sp);
-	for (ap = oexp->tagq.tqh_first; ap != NULL; ap = ap->q.tqe_next) {
-		MALLOC(sp, tp, TAG *, sizeof(TAG));
-		if (tp == NULL)
-			goto nomem;
-		*tp = *ap;
-		if (ap->search != NULL &&
-		    (tp->search = strdup(ap->search)) == NULL)
-			goto nomem;
-		TAILQ_INSERT_TAIL(&nexp->tagq, tp, q);
-	}
-
-	/* Copy list of tag files. */
-	for (atfp = oexp->tagfq.tqh_first;
-	    atfp != NULL; atfp = atfp->q.tqe_next) {
-		MALLOC(sp, tfp, TAGF *, sizeof(TAGF));
-		if (tfp == NULL)
-			goto nomem;
-		*tfp = *atfp;
-		if ((tfp->name = strdup(atfp->name)) == NULL)
-			goto nomem;
-		TAILQ_INSERT_TAIL(&nexp->tagfq, tfp, q);
-	}
-
-	/* Copy the last tag. */
-	if (oexp->tlast != NULL &&
-	    (nexp->tlast = strdup(oexp->tlast)) == NULL) {
-nomem:		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
-	return (0);
-}
-
-/*
- * tag_get --
+ * ctag_get --
  *	Get a tag from the tags files.
  */
 static int
-tag_get(sp, tag, tagp, filep, searchp)
+ctag_get(sp, tag, tagp, taglenp, filep, filelenp, searchp, searchlenp)
 	SCR *sp;
 	char *tag, **tagp, **filep, **searchp;
+	size_t *taglenp, *filelenp, *searchlenp;
 {
 	struct stat sb;
 	EX_PRIVATE *exp;
 	TAGF *tfp;
-	size_t plen, slen, tlen;
+	size_t len;
 	int echk, nf1, nf2;
 	char *p, *t, pbuf[MAXPATHLEN];
 
@@ -726,10 +991,12 @@ tag_get(sp, tag, tagp, filep, searchp)
 	for (*tagp = p; *p && !isblank(*p); ++p);
 	if (*p == '\0')
 		goto malformed;
+	*taglenp = p - *tagp;
 	for (*p++ = '\0'; isblank(*p); ++p);
 	for (*filep = p; *p && !isblank(*p); ++p);
 	if (*p == '\0')
 		goto malformed;
+	*filelenp = p - *filep;
 	for (*p++ = '\0'; isblank(*p); ++p);
 	*searchp = p;
 	if (*p == '\0') {
@@ -743,6 +1010,7 @@ malformed:	free(*tagp);
 			FREE_SPACE(sp, t, 0);
 		return (1);
 	}
+	*searchlenp = strlen(p);
 
 	/*
 	 * !!!
@@ -755,23 +1023,23 @@ malformed:	free(*tagp);
 	if ((*filep)[0] != '/'
 	    && stat(*filep, &sb) && (p = strrchr(tfp->name, '/')) != NULL) {
 		*p = '\0';
-		plen = snprintf(pbuf, sizeof(pbuf), "%s/%s", tfp->name, *filep);
+		len = snprintf(pbuf, sizeof(pbuf), "%s/%s", tfp->name, *filep);
 		*p = '/';
 		if (stat(pbuf, &sb) == 0) {
-			slen = strlen(*searchp);
-			tlen = strlen(*tagp);
-			MALLOC(sp, p, char *, plen + slen + tlen + 5);
+			MALLOC(sp, p,
+			    char *, len + *searchlenp + *taglenp + 5);
 			if (p != NULL) {
-				memmove(p, *tagp, tlen);
+				memmove(p, *tagp, *taglenp);
 				free(*tagp);
 				*tagp = p;
-				*(p += tlen) = '\0';
-				memmove(++p, pbuf, plen);
+				*(p += *taglenp) = '\0';
+				memmove(++p, pbuf, len);
 				*filep = p;
-				*(p += plen) = '\0';
-				memmove(++p, *searchp, slen);
+				*filelenp = len;
+				*(p += len) = '\0';
+				memmove(++p, *searchp, *searchlenp);
 				*searchp = p;
-				*(p += slen) = '\0';
+				*(p += *searchlenp) = '\0';
 			}
 		}
 	}
@@ -964,29 +1232,4 @@ compare(s1, s2, back)
 			return (*s1 < *s2 ? LESS : GREATER);
 	return (*s1 ? GREATER : s2 < back &&
 	    (*s2 != '\t' && *s2 != ' ') ? LESS : EQUAL);
-}
-
-/*
- * tag_msg
- *	A few common messages.
- */
-static void
-tag_msg(sp, msg, tag)
-	SCR *sp;
-	enum tagmsg msg;
-	char *tag;
-{
-	switch (msg) {
-	case TAG_BADLNO:
-		msgq_str(sp, M_ERR, tag, "164|%s: the tag line doesn't exist");
-		break;
-	case TAG_EMPTY:
-		msgq(sp, M_INFO, "165|The tags stack is empty");
-		break;
-	case TAG_SEARCH:
-		msgq_str(sp, M_ERR, tag, "166|%s: search pattern not found");
-		break;
-	default:
-		abort();
-	}
 }
