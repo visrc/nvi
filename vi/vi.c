@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.39 1993/02/11 16:40:10 bostic Exp $ (Berkeley) $Date: 1993/02/11 16:40:10 $";
+static char sccsid[] = "$Id: vi.c,v 5.40 1993/02/11 19:54:56 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:54:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -505,7 +505,7 @@ getmotion(vp, fm, tm)
 	return (0);
 }
 
-#define	innum(c)	(isdigit(c) || index("abcdefABCDEF", c))
+#define	innum(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
 
 static int
 getkeyword(kp, flags)

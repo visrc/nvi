@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.8 1992/12/05 11:10:50 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:50 $";
+static char sccsid[] = "$Id: v_match.c,v 5.9 1993/02/11 19:54:55 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:54:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,7 +122,7 @@ findmatchc(fm, p, len, rp)
 
 	leftfound = rightfound = 0;
 	for (off = 0, t = &p[off]; off++ < fm->cno;)
-		if (index("{}[]()", *t++)) {
+		if (strchr("{}[]()", *t++)) {
 			left = off - 1;
 			leftfound = 1;
 			break;
@@ -130,7 +130,7 @@ findmatchc(fm, p, len, rp)
 
 	--len;
 	for (off = fm->cno + 1, t = &p[off]; off++ < len;)
-		if (index("{}[]()", *t++)) {
+		if (strchr("{}[]()", *t++)) {
 			right = off - 1;
 			rightfound = 1;
 			break;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.54 1993/01/30 18:21:04 bostic Exp $ (Berkeley) $Date: 1993/01/30 18:21:04 $";
+static char sccsid[] = "$Id: ex.c,v 5.55 1993/02/11 19:54:11 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:54:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -232,7 +232,7 @@ ex_cmd(exc)
 	 * are all single character commands.
 	 */
 	if (*exc) {
-		if (index("!#&<=>@", *exc)) {
+		if (strchr("!#&<=>@", *exc)) {
 			p = exc;
 			exc++;
 			cmdlen = 1;
