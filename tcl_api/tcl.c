@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: tcl.c,v 8.8 1996/03/06 19:53:50 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:53:50 $";
+static const char sccsid[] = "$Id: tcl.c,v 8.9 1996/04/28 14:15:31 bostic Exp $ (Berkeley) $Date: 1996/04/28 14:15:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,7 +195,6 @@ tcl_gline(clientData, interp, argc, argv)
 	memmove(line, p, len);
 	line[len] = NULL;
 	Tcl_SetResult(interp, line, TCL_DYNAMIC);
-	free(line);
 	return (TCL_OK);
 }
 
@@ -715,7 +714,6 @@ tcl_opts_get(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 
 	Tcl_SetResult(interp, value, TCL_DYNAMIC);
-	free(value);
 	return (TCL_OK);
 }
 
