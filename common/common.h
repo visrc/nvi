@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.10 1996/03/06 19:50:08 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:08 $
+ *	$Id: common.h,v 10.11 1996/04/10 11:28:50 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:28:50 $
  */
 
 /*
@@ -28,6 +28,7 @@
  * are far too interrelated for a clean solution.
  */
 typedef struct _cb		CB;
+typedef struct _csc		CSC;
 typedef struct _event		EVENT;
 typedef struct _excmd		EXCMD;
 typedef struct _exf		EXF;
@@ -43,6 +44,7 @@ typedef struct _script		SCRIPT;
 typedef struct _seq		SEQ;
 typedef struct _tag		TAG;
 typedef struct _tagf		TAGF;
+typedef struct _tagq		TAGQ;
 typedef struct _text		TEXT;
 
 /* Autoindent state. */

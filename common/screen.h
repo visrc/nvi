@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.14 1996/04/03 14:32:16 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:32:16 $
+ *	$Id: screen.h,v 10.15 1996/04/10 11:28:51 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:28:51 $
  */
 
 /*
@@ -97,20 +97,22 @@ struct _scr {
 	CHAR_T	 at_lbuf;		/* Ex/vi: Last executed at buffer. */
 
 					/* Ex/vi: re_compile flags. */
-#define	RE_C_SEARCH	0x0001		/* Compile search replacement. */
-#define	RE_C_SUBST	0x0002		/* Compile substitute replacement. */
-#define	RE_C_TAG	0x0004		/* Compile tag. */
+#define	RE_C_CSCOPE	0x0001		/* Compile cscope pattern. */
+#define	RE_C_SEARCH	0x0002		/* Compile search replacement. */
+#define	RE_C_SUBST	0x0004		/* Compile substitute replacement. */
+#define	RE_C_TAG	0x0008		/* Compile ctag pattern. */
 
 #define	RE_WSTART	"[[:<:]]"	/* Ex/vi: not-in-word search pattern. */
 #define	RE_WSTOP	"[[:>:]]"
 					/* Ex/vi: flags to search routines. */
-#define	SEARCH_EOL	0x0001		/* Offset past EOL is okay. */
-#define	SEARCH_FILE	0x0002		/* Search the entire file. */
-#define	SEARCH_INCR	0x0004		/* Search incrementally. */
-#define	SEARCH_MSG	0x0008		/* Display search warning messages. */
-#define	SEARCH_PARSE	0x0010		/* Parse the search pattern. */
-#define	SEARCH_SET	0x0020		/* Set search direction. */
-#define	SEARCH_TAG	0x0040		/* Search pattern is a tag pattern. */
+#define	SEARCH_CSCOPE	0x0001		/* Search for a cscope pattern. */
+#define	SEARCH_EOL	0x0002		/* Offset past EOL is okay. */
+#define	SEARCH_FILE	0x0004		/* Search the entire file. */
+#define	SEARCH_INCR	0x0008		/* Search incrementally. */
+#define	SEARCH_MSG	0x0010		/* Display search warning messages. */
+#define	SEARCH_PARSE	0x0020		/* Parse the search pattern. */
+#define	SEARCH_SET	0x0040		/* Set search direction. */
+#define	SEARCH_TAG	0x0080		/* Search for a tag pattern. */
 
 					/* Ex/vi: RE information. */
 	dir_t	 searchdir;		/* Last file search direction. */

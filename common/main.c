@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.33 1996/03/29 10:08:27 bostic Exp $ (Berkeley) $Date: 1996/03/29 10:08:27 $";
+static const char sccsid[] = "$Id: main.c,v 10.34 1996/04/10 11:28:51 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:28:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,7 +36,6 @@ static const char sccsid[] = "$Id: main.c,v 10.33 1996/03/29 10:08:27 bostic Exp
 #include <unistd.h>
 
 #include "common.h"
-#include "../ex/tag.h"
 #include "../vi/vi.h"
 #include "pathnames.h"
 
@@ -306,7 +305,7 @@ editor(gp, argc, argv)
 	sp->defscroll = (O_VAL(sp, O_WINDOW) + 1) / 2;
 
 	/* Open a tag file if specified. */
-	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
+	if (tag_f != NULL && ex_tag_first(sp, tag_f))
 		goto err;
 
 	/*
