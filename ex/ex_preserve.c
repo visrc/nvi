@@ -6,9 +6,8 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.2 1993/08/05 18:07:44 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:07:44 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 8.3 1993/11/08 11:08:30 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:08:30 $";
 #endif /* not lint */
-
 
 #include <sys/types.h>
 
@@ -36,13 +35,21 @@ ex_preserve(sp, ep, cmdp)
 		return (1);
 	}
 
+	/* If recovery not initialized, do so. */
+	if (F_ISSET(ep, F_FIRSTMODIFY) && rcv_init(sp, ep))
+		return (1);
+
 	/* Force the file to be read in, in case it hasn't yet. */
 	if (file_lline(sp, ep, &lno))
 		return (1);
 
+	/* Sync to disk. */
 	if (rcv_sync(sp, ep))
 		return (1);
+
+	/* Preserve the recovery files. */
 	F_SET(ep, F_RCV_NORM);
+
 	msgq(sp, M_INFO, "File preserved.");
 	return (0);
 }
