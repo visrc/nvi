@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.89 1994/03/13 11:36:46 bostic Exp $ (Berkeley) $Date: 1994/03/13 11:36:46 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.90 1994/03/13 12:26:47 bostic Exp $ (Berkeley) $Date: 1994/03/13 12:26:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -608,7 +608,7 @@ k_escape:		if (tp->insert && tp->owrite)
 			if (LF_ISSET(TXT_AUTOINDENT) && sp->cno <= tp->ai)
 				carat_st = C_ZEROSET;
 			goto ins_ch;
-		case K_VEOF:			/* Delete autoindent char. */
+		case K_CNTRLD:			/* Delete autoindent char. */
 			/*
 			 * If in the first column or no characters to erase,
 			 * ignore the ^D (this matches historic practice).  If
