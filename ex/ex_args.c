@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_args.c,v 10.15 1996/07/13 14:19:26 bostic Exp $ (Berkeley) $Date: 1996/07/13 14:19:26 $";
+static const char sccsid[] = "$Id: ex_args.c,v 10.16 1996/07/13 14:31:08 bostic Exp $ (Berkeley) $Date: 1996/07/13 14:31:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,9 +152,12 @@ ex_N_next(sp, cmdp)
 	/* The arguments are a replacement file list. */
 	new->cargv = new->argv = ex_buildargv(sp, cmdp, NULL);
 
-	/* Switch and display a file count with the welcome message. */
+	/* Display a file count with the welcome message. */
+	F_SET(new, SC_STATUS_CNT);
+
+	/* Set up the switch. */
 	sp->nextdisp = new;
-	F_SET(sp, SC_SSWITCH | SC_STATUS_CNT);
+	F_SET(sp, SC_SSWITCH);
 
 	return (0);
 }
