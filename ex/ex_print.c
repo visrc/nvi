@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.3 1992/04/05 09:23:44 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:44 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.4 1992/04/15 09:13:50 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ print(cmdp, cmd)
 		}
 
 		/* get the next line & display it */
-		for (scan = fetchline(l); *scan; scan++)
+		for (scan = fetchline(l, NULL); *scan; scan++)
 		{
 			/* expand tabs to the proper width */
 			if (*scan == '\t' && cmd != LIST)
@@ -124,6 +124,6 @@ print(cmdp, cmd)
 			qaddch('$');
 		}
 		addch('\n');
-		exrefresh();
+		ex_refresh();
 	}
 }
