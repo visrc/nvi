@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.164 1994/09/18 14:20:44 bostic Exp $ (Berkeley) $Date: 1994/09/18 14:20:44 $";
+static char sccsid[] = "$Id: ex.c,v 8.165 1994/09/18 17:23:31 bostic Exp $ (Berkeley) $Date: 1994/09/18 17:23:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -767,7 +767,8 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	cmdlen = ((save_cmd - cmd) - 1) - cnt;
 
 	/*
-	 * !!!
+	 * QUOTING NOTE:
+	 *
 	 * The "set tags" command historically used a backslash, not the
 	 * user's literal next character, to escape whitespace.  Handle
 	 * it here instead of complicating the argv_exp3() code.  Note,
