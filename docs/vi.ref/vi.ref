@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.51 1994/08/12 09:04:34 bostic Exp $ (Berkeley) $Date: 1994/08/12 09:04:34 $
+.\"     $Id: vi.ref,v 8.52 1994/08/13 18:28:05 bostic Exp $ (Berkeley) $Date: 1994/08/13 18:28:05 $
 .\"
 .\"
 .so ref.so
@@ -853,15 +853,15 @@ to the alphanumeric characters;
 .EV nex nvi
 permits the use of any character.
 .sp
-The buffers named by uppercase characters are the same as buffers
-named by the lowercase characters, e.g. the buffer named by the
+Buffers named by uppercase characters are the same as buffers
+named by lowercase characters, e.g. the buffer named by the
 English character
 .QT A
 is the same as the buffer named by the character
 .QT a ,
 with the exception that, if the buffer contents are being changed (as
 with a text deletion or
-.CO ex
+.CO vi
 .CO change
 command), the text is
 .i appended
