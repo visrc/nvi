@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.5 1994/04/27 20:30:08 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:30:08 $
+.\"	$Id: ex.cmd.roff,v 8.6 1994/04/29 07:34:45 bostic Exp $ (Berkeley) $Date: 1994/04/29 07:34:45 $
 .\"
 .Sh EX COMMANDS
 The following words have special meanings for
@@ -31,11 +31,11 @@ A line, or a pair of line addresses, separated by a comma or semicolon.
 The default for range shall be the current line
 .Em only ,
 i.e.
-.Dq Li .,. .
+.Dq Li \&.,. .
 A percent sign
 .Pq Dq Li "\&%"
 stands for the range
-.Dq Li 1,$ .
+.Dq Li \&1,$ .
 The starting address must be less than, or equal to, the ending address.
 .sp
 .It Sy "count"
@@ -44,21 +44,21 @@ the command; the default is 1.
 .sp
 .It Sy "flags"
 One or more of the characters
-.Dq # ,
-.Dq p ,
+.Dq \&# ,
+.Dq \&p ,
 and
-.Dq l .
+.Dq \&l .
 When a command that accepts these flags completes, the addressed line(s)
 are written out as if by the corresponding
-.Sy # ,
-.Sy l
+.Sy \&# ,
+.Sy \&l
 or
-.Sy p
+.Sy \&p
 commands.
 In addition, any number of
-.Dq Li +
+.Dq Li \&+
 or
-.Dq Li -
+.Dq Li \&-
 characters can be specified before, after, or during the flags, in which
 case the line written is not necessarily the one affected by the command,
 but rather the line addressed by the offset address specified.
@@ -84,6 +84,7 @@ creates and edits a new file.
 A word consists of a sequence of letters, digits, and underscores,
 delimited at both ends by characters other than letters, digits, or
 underscores, or by the beginning or end of a line or the file.
+.El
 .Pp
 If both a count and a range are specified for a command that uses either,
 the number of lines affected is that specified by the count value and
@@ -112,11 +113,10 @@ begins with an alphabetic character should be separated from the command
 name by at least one whitespace character.
 .Pp
 Any character, including <carriage-return>,
-.Dq Li %
+.Dq Li \&%
 and
-.Dq Li #
+.Dq Li \&#
 retain their literal value when preceded by a backslash.
-.El
 .Pp
 Each
 .Nm \&ex
@@ -132,7 +132,7 @@ For example, the args command (shown as
 .Dq Li ar[gs]
 in the synopsis)
 can be entered as
-.Dq Li ar ,
+.Dq Li \&ar ,
 .Dq Li arg
 or
 .Dq Li args .
@@ -153,7 +153,7 @@ key.
 .sp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
-The current line indicator changes to the last line written.
+Set to the last line written.
 .It "Options:"
 None.
 .El
@@ -164,48 +164,48 @@ None.
 Run a command through the shell.
 #ifdef REFERENCE
 The remainder of the line after the
-.Dq Li !
+.Dq Li \&!
 character is passed to the program named by the
 .Ev SHELL
 environment variable for execution.
 You will be warned if the file has been modified since the last complete
 write. 
 A single
-.Dq Li !
+.Dq Li \&!
 character is displayed when the command completes.
 .Pp
 Within the text of
 .Li command ,
-.Dq Li %
+.Dq Li \&%
 and
-.Dq Li #
+.Dq Li \&#
 are expanded as pathnames (the current and alternate pathnames,
 respectively), and
-.Dq Li !
+.Dq Li \&!
 is replaced with the text of the previous
-.Dq Li !
+.Dq Li \&!
 command.
 (Thus,
-.Dq Li !!
+.Dq Li \&!!
 repeats the previous
-.Dq Li !
+.Dq Li \&!
 command.)
 If any such replacement is done, the line as passed to the shell
 is displayed.
 .Pp
 The special meanings of
-.Dq Li % ,
-.Dq Li #
+.Dq Li \&% ,
+.Dq Li \&#
 and
-.Dq Li !
+.Dq Li \&!
 can be overridden by escaping them with a backslash
 .Pq Dq Li "\&\e"
 character.
 .Pp
 In the second form of the
-.Sy !
+.Sy \&!
 command, the remainder of the line after the
-.Dq Li !
+.Dq Li \&!
 is passed to the program named in the SHELL environment variable,
 as described above.
 The specified lines are passed to the program as standard input, and
@@ -224,7 +224,7 @@ options.
 .El
 #endif
 .sp
-.It Sy "\""
+.It Sy \&"
 Command lines beginning with the double-quote character
 .Pq Dq Li \&"
 are ignored.
@@ -253,7 +253,7 @@ None.
 Repeat a substitution.
 #ifdef REFERENCE
 Repeat the previous substitute command, as if
-.Dq Li &
+.Dq Li \&&
 were replaced by the previous
 .Dq Li s/pattern/replace/
 command.
@@ -263,15 +263,17 @@ string in the
 .Sy substitute
 command.)
 The
-.Sy ~
+.Sy \&~
 version of the command is the same as
-.Sy &
+.Sy \&&
 and
-.Sy s ,
+.Sy \&s ,
 but the pattern used is the last RE used in any command,
 not necessarily the one used in the last
 .Sy substitute
 command.
+.Pp
+.ne 6v
 For example, in the sequence
 .Bd -literal -offset indent -compact
 s/red/blue/
@@ -279,7 +281,7 @@ s/red/blue/
 ~
 .Ed
 the
-.Dq Li ~
+.Dq Li \&~
 is equivalent to
 .Dq Li s/green/blue/ .
 .sp
@@ -299,7 +301,7 @@ Each line in the named buffer is executed as an
 .Nm \&ex
 command.
 If no buffer is specified, or if the specified buffer is
-.Dq Li @
+.Dq Li \&@
 or
 .Dq Li * ,
 the last buffer executed is used.
@@ -315,7 +317,7 @@ Only leading whitespace characters are deleted, no other characters
 are affected.
 .Pp
 If the command character
-.Dq Li <
+.Dq Sy \&<
 is repeated more than once, the command is repeated once for each
 additional command character.
 .sp
@@ -354,7 +356,7 @@ option, by inserting tab and space characters.
 Empty lines are not changed.
 .Pp
 If the command character
-.Dq Li >
+.Dq Sy \&>
 is repeated more than once, the command is repeated once for each
 additional command character.
 .sp
@@ -394,7 +396,7 @@ or to the first line of the file if a
 .Li line
 of 0 was specified.
 Following the command name with
-.Dq Li !
+.Dq Li \&!
 causes the
 .Sy autoindent
 editor option to be toggled for the duration of the command.
@@ -419,9 +421,9 @@ options.
 Display the argument list.
 #ifdef REFERENCE
 The current argument is displayed inside of
-.Dq Li [
+.Dq Li \&[
 and
-.Dq Li ]
+.Dq Li \&]
 characters.
 The argument list is the list of operands specified on startup,
 which can be replaced using the
@@ -453,7 +455,7 @@ None.
 Replace the lines with input text.
 #ifdef REFERENCE
 Following the command name with
-.Dq Li !
+.Dq Li \&!
 causes the
 .Sy autoindent
 editor option to be toggled for the duration of the command.
@@ -500,7 +502,7 @@ The
 command will fail if the file has been modified since the last complete
 write of the file.
 You can override this check by appending a
-.Dq Li !
+.Dq Li \&!
 to the command.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -578,7 +580,7 @@ Edit a different file.
 If the current buffer has been modified since the last complete write,
 the command will fail.
 You can override this by appending a
-.Dq Li !
+.Dq Li \&!
 to the command name.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -667,7 +669,7 @@ Apply commands to lines matching (or not matching) a pattern.
 The lines within the given range that match
 .Pq Li g[lobal] ,
 or do not match
-.Pq Li v
+.Pq Li \&v
 the given pattern are selected.
 Then, the specified
 .Nm \&ex
@@ -679,7 +681,7 @@ or not matching, lines.
 .Pp
 Multiple commands can be specified, one per line, by escaping each
 <newline> character with a backslash, or by separating commands with a
-.Dq Li |
+.Dq Li \&|
 character.
 If no commands are specified, the command defaults to the
 .Sy print
@@ -696,7 +698,7 @@ The
 command may be specified as one of the commands.
 In this mode, input shall be taken from the terminal.
 Entering a
-.Sy Q
+.Sy \&Q
 in
 .Nm \&vi
 causes the next line matching the pattern to be selected and
@@ -705,7 +707,7 @@ to be reentered, until the list is exhausted.
 .Pp
 The
 .Sy global ,
-.Sy v
+.Sy \&v
 and
 .Sy undo
 commands cannot be used as part of these commands.
@@ -718,7 +720,7 @@ and
 are turned off for the duration of the
 .Sy global
 and
-.Sy v
+.Sy \&v
 commands.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -745,7 +747,7 @@ None.
 The input text is inserted before the specified line.
 #ifdef REFERENCE
 Following the command name with the character
-.Dq Li !
+.Dq Li \&!
 causes the
 .Sy autoindent
 editor option setting to be toggled for the duration of this command.
@@ -775,13 +777,14 @@ When the last character on the first line of a pair of lines to be
 joined is a period, two space's are added following the period.
 When the last character of the first line is a whitespace character,
 or when the first character on the second line of the pair is a
-.Dq Li ) , no whitespace characters are added.
+.Dq Li \&) ,
+no whitespace characters are added.
 Otherwise, one space is added following the last character of the
 first line.
 Any trailing blanks at the start of a line are discarded.
 .Pp
 Appending a
-.Dq Li !
+.Dq Li \&!
 character to the command name causes a simpler join with no
 white-space processing.
 .sp
@@ -797,7 +800,7 @@ None.
 Display the lines unambiguously.
 #ifdef REFERENCE
 Tabs are displayed as
-.Dq Li ^I .
+.Dq Li \&^I .
 Nonprintable characters are displayed as hexadecimal values.
 The end of the line is marked with a
 .Dq Li $ .
@@ -826,7 +829,7 @@ the action shall be as if the corresponding
 .Dq Li rhs
 had been entered.
 If the character
-.Dq Li !
+.Dq Li \&!
 is appended to the command name, the mapping is effective during text
 input mode instead of command mode.
 This allows
@@ -843,7 +846,7 @@ and
 .Dq Li rhs
 are not specified, the current set of command mode maps are displayed.
 If a
-.Dq Li !
+.Dq Li \&!
 character is appended to to the command, the text input mode maps are
 displayed.
 .sp
@@ -900,7 +903,7 @@ already exists, the
 .Sy mkexrc
 command will fail.
 This check can be overridden by appending a
-.Dq Li !
+.Dq Li \&!
 character to the command.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -919,7 +922,7 @@ The
 command will fail if the file has been modified since the last complete
 write.
 This check can be overridden by appending the
-.Dq Li !
+.Dq Li \&!
 character to the command name.
 The argument list can optionally be replaced by specifying a new one
 as arguments to this command.
@@ -990,7 +993,7 @@ The
 command will fail if the file has been modified since the last complete
 write.
 This check can be overridden by appending the
-.Dq Li !
+.Dq Li \&!
 character to the command name.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -1040,7 +1043,7 @@ If the file has been modified since the last complete write, the
 .Sy quit
 command will fail.
 This check may be overridden by appending a
-.Dq Li !
+.Dq Li \&!
 character to the command.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -1080,7 +1083,7 @@ environment variable.
 The standard and standard error outputs of that command are read into
 the file after the specified line.
 The special meaning of the
-.Dq Li !
+.Dq Li \&!
 character can be overridden by escaping it with a backslash
 .Pq Dq Li "\&\e"
 character.
@@ -1146,7 +1149,7 @@ If the current file has been modified since the last complete write, the
 .Sy rewind
 command will fail.
 This check may be overridden by appending the
-.Dq Li !
+.Dq Li \&!
 character to the command.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -1175,13 +1178,13 @@ when the argument
 is specified, display the values of all of editor options.
 .Pp
 Specifying an option name followed by the character
-.Dq Li ?
+.Dq Li \&?
 causes the current value of that option to be displayed.
 The
-.Dq Li ?
+.Dq Li \&?
 can be separated from the option name by whitespace characters.
 The
-.Dq Li ?
+.Dq Li \&?
 is necessary only for Boolean valued options.
 Boolean options can be given values by the form
 .Dq Li "set option"
@@ -1286,21 +1289,21 @@ command is used.
 If
 .Li options
 includes the letter
-.Dq Li g
+.Dq Li \&g
 (global), all nonoverlapping instances of
 .Li pattern
 in the line are replaced.
 If
 .Li options
 includes the letter
-.Dq Li c
+.Dq Li \&c
 (confirm), you will be prompted for confirmation before each replacement
 is done.
 An affirmative response (in English, a
-.Dq Li y
+.Dq Li \&y
 character) causes the replacement to be made.
 A quit response (in English, a
-.Dq Li q
+.Dq Li \&q
 character) causes the
 .Sy substitute
 command to be terminated.
@@ -1327,7 +1330,7 @@ None.
 Suspend the edit session.
 #ifdef REFERENCE
 Appending a
-.Dq Li !
+.Dq Li \&!
 character to the command turns off the
 .Sy autowrite
 option for this command.
@@ -1352,7 +1355,7 @@ the
 .Sy tag
 command will fail.
 This check can be overridden by appending the
-.Dq Li !
+.Dq Li \&!
 character to the command name.
 .Pp
 The
@@ -1406,7 +1409,7 @@ If the file has been modified since the last complete write, the
 .Sy tagpop
 command will fail.
 This check may be overridden by appending a
-.Dq Li !
+.Dq Li \&!
 character to the command name.
 #ifdef REFERENCE
 .sp
@@ -1429,7 +1432,7 @@ If the file has been modified since the last complete write, the
 .Sy tagpop
 command will fail.
 This check may be overridden by appending a
-.Dq Li !
+.Dq Li \&!
 character to the command name.
 #ifdef REFERENCE
 .sp
@@ -1468,7 +1471,7 @@ Changes made by
 .Sy visual
 and map sequences are considered a single command.
 If repeated, the
-.Sy u
+.Sy \&u
 command alternates between these two states, and is its own inverse.
 .sp
 .Bl -tag -width "XOptions:" -compact
@@ -1485,7 +1488,7 @@ Unmap a mapped string.
 Delete the command mode map definition for
 .Li lhs .
 If a
-.Dq Li !
+.Dq Li \&!
 character is appended to the command name, delete the text input mode
 map definition instead.
 .sp
@@ -1511,13 +1514,13 @@ Enter
 The
 .Li type
 is optional, and can be
-.Dq Li - ,
-.Dq Li +
+.Dq Li \&- ,
+.Dq Li \&+
 or
-.Dq Li ^ ,
+.Dq Li \&^ ,
 as in the
 .Nm \&ex
-.Sy z
+.Sy \&z
 command, to specify the the position of the specified line in the screen
 window.
 (The default is to place the line at the top of the screen window.)
@@ -1585,26 +1588,26 @@ is specified, and it exists, or if the current pathname was set using the
 .Sy file
 command, and the file already exists, these commands will fail.
 Appending a
-.Dq Li !
+.Dq Li \&!
 character to the command name will override this check and the write
 will be attempted, regardless.
 .Pp
 Specifying the optional
-.Dq Li >>
+.Dq Li \&>>
 string will cause the write to be appended to the file, in which case
 not tests are made for the file already existing.
 .Pp
 If the file is preceded by a
-.Dq Li !
+.Dq Li \&!
 character, the program named in the SHELL environment variable shall be
 invoked with file as its second argument, and the specified lines shall
 be passed as standard input to that command.
 The
-.Dq Li !
+.Dq Li \&!
 in this usage must be separated from command name by at least one
 whitespace character.
 The special meaning of the
-.Dq Li !
+.Dq Li \&!
 may be overridden by escaping it with a backslash
 .Pq Dq Li "\&\e"
 character.
@@ -1614,7 +1617,7 @@ The
 version of the write command will exit the editor after writing the file,
 if there are no further files to edit.
 Appending a
-.Dq Li !
+.Dq Li \&!
 character to the command name will override this check and the editor
 will exit, unless the write fails.
 .Pp
@@ -1696,23 +1699,23 @@ The following
 .Li type
 characters may be used:
 .Bl -tag -width "XXXX" -compact
-.It Dq Li -
+.It Dq Li \&-
 Place line at the bottom of the screen.
-.It Dq Li +
+.It Dq Li \&+
 Place line at the top of the screen.
-.It Dq Li .
+.It Dq Li \&.
 Place line in the middle of the screen.
-.It Dq Li ^
+.It Dq Li \&^
 Write out count lines starting
 .Li "count * 2"
 lines before
 .Li line ;
 the net effect of this shall be that a
-.Dq Li z^
+.Dq Li \&z^
 command following a
-.Sy z
+.Sy \&z
 command writes the previous page.
-.It Dq Li =
+.It Dq Li \&=
 Center
 .Li line
 on the screen with a line of hyphens displayed immediately before and
@@ -1725,7 +1728,7 @@ reduced to account for those lines.
 .It "Current line:"
 The current line changes to the last line displayed,
 with the exception of the
-.Dq Li =
+.Dq Li \&=
 .Li type ,
 where the current line changes to the line specified by the command.
 .It "Options:"

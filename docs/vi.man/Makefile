@@ -1,6 +1,7 @@
-#	$Id: Makefile,v 8.2 1994/04/20 18:33:15 bostic Exp $ (Berkeley) $Date: 1994/04/20 18:33:15 $
+#	$Id: Makefile,v 8.3 1994/04/29 07:34:21 bostic Exp $ (Berkeley) $Date: 1994/04/29 07:34:21 $
 
-SRCS=	vi.man ../vi.ref/set.opt.roff
+REF=	../vi.ref
+SRCS=	vi.man ${REF}/vi.cmd.roff ${REF}/ex.cmd.roff ${REF}/set.opt.roff
 DOCS=	vi.0.txt vi.0.ps
 
 all: ${DOCS}
