@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 5.2 1993/05/03 11:16:19 bostic Exp $ (Berkeley) $Date: 1993/05/03 11:16:19 $";
+static char sccsid[] = "$Id: vs_relative.c,v 5.3 1993/05/27 22:56:44 bostic Exp $ (Berkeley) $Date: 1993/05/27 22:56:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,10 +109,62 @@ svi_lrelative(sp, ep, lno, off)
 			len = p - lp;
 
 			/*
-			 * It's the next character, not this one, so check
-			 * to see if we've gone too far.
+			 * May be the next character, not this one,
+			 * so check to see if we've gone too far.
 			 */
 			if (scno == sp->rcm)
+				return (len < llen - 1 ? len : llen - 1);
+			/* It's this character. */
+			return (len - 1);
+		}
+	}
+	/* No such character; return start of last character. */
+	return (llen - 1);
+}
+
+/*
+ * svi_chposition --
+ *	Return the physical column from the line that will display a
+ *	character closest to the specified column.
+ */
+size_t
+svi_chposition(sp, ep, lno, cno)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;
+	size_t cno;
+{
+	CHNAME *cname;
+	size_t len, llen, scno;
+	int ch;
+	char *lp, *p;
+
+	/* Need the line to go any further. */
+	if ((lp = file_gline(sp, ep, lno, &llen)) == NULL)
+		return (0);
+
+	/* Empty lines are easy. */
+	if (llen == 0)
+		return (0);
+
+	/* Step through the line until reach the right character. */
+	cname = sp->cname;
+	for (scno = 0, len = llen, p = lp; len--;) {
+		ch = *(u_char *)p++;
+		if (ch == '\t' && !O_ISSET(sp, O_LIST))
+			scno += TAB_OFF(sp, scno);
+		else
+			scno += cname[ch].len;
+
+		if (scno >= cno) {
+			/* Get the offset of this character. */
+			len = p - lp;
+
+			/*
+			 * May be the next character, not this one,
+			 * so check to see if we've gone too far.
+			 */
+			if (scno == cno)
 				return (len < llen - 1 ? len : llen - 1);
 			/* It's this character. */
 			return (len - 1);
