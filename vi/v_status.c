@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.21 1993/04/06 11:43:55 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:55 $";
+static char sccsid[] = "$Id: v_status.c,v 5.22 1993/04/12 14:55:28 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:55:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,9 +40,9 @@ status(sp, ep, lno)
 	recno_t last;
 	char *ro, *pid;
 #ifdef DEBUG
-	char pbuf[30];
+	char pbuf[50];
 
-	(void)snprintf(pbuf, sizeof(pbuf), " (%u)", getpid());
+	(void)snprintf(pbuf, sizeof(pbuf), " (pid %u)", getpid());
 	pid = pbuf;
 #else
 	pid = "";
@@ -50,12 +50,12 @@ status(sp, ep, lno)
 	ro = F_ISSET(sp, F_RDONLY) ||
 	    O_ISSET(sp, O_READONLY) ? ", readonly" : "";
 	if ((last = file_lline(sp, ep)) >= 1)
-		msgq(sp, M_DISPLAY,
+		msgq(sp, M_INFO,
 		    "%s: %s%s: line %lu of %lu [%ld%%]%s", ep->name,
 		    F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified",
 		    ro, lno, last, (lno * 100) / last, pid);
 	else
-		msgq(sp, M_DISPLAY,
+		msgq(sp, M_INFO,
 		    "%s: %s%s: empty file%s", ep->name,
 		    F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified",
 		    ro, pid);
