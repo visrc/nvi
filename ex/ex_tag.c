@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.4 1993/08/05 18:09:02 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:09:02 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.5 1993/08/06 13:13:04 bostic Exp $ (Berkeley) $Date: 1993/08/06 13:13:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -490,21 +490,21 @@ linear_search(string, front, back)
 }
 
 /*
- * Return LESS, GREATER, or EQUAL depending on how the string1 compares with
- * string2 (s1 ??? s2).
+ * Return LESS, GREATER, or EQUAL depending on how the string1 compares
+ * with string2 (s1 ??? s2).
  * 
  * 	o Matches up to len(s1) are EQUAL. 
  *	o Matches up to len(s2) are GREATER.
  * 
- * The string "s1" is null terminated.  The string s2 is '\n' terminated (or
- * "back" terminated).
+ * The string "s1" is null terminated.  The string s2 is '\t' (or "back")
+ * terminated.
  */
 static int
 compare(s1, s2, back)
 	register char *s1, *s2, *back;
 {
-	for (; *s1 && s2 < back && *s2 != '\n'; ++s1, ++s2)
+	for (; *s1 && s2 < back && *s2 != '\t'; ++s1, ++s2)
 		if (*s1 != *s2)
 			return (*s1 < *s2 ? LESS : GREATER);
-	return (*s1 ? GREATER : EQUAL);
+	return (*s1 ? GREATER : s2 < back && *s2 != '\t' ? LESS : EQUAL);
 }
