@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 5.2 1992/05/18 07:48:31 bostic Exp $ (Berkeley) $Date: 1992/05/18 07:48:31 $";
+static char sccsid[] = "$Id: v_left.c,v 5.3 1992/05/21 12:59:33 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:59:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ v_left(vp, cp, rp)
 
 	rp->lno = cp->lno;
 	if (cp->cno > cnt)
-		rp->cno -= cnt;
+		rp->cno = cp->cno - cnt;
 	else
 		rp->cno = 0;
 	return (0);
