@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.22 1996/06/17 10:39:57 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:39:57 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.23 1996/06/19 18:06:47 bostic Exp $ (Berkeley) $Date: 1996/06/19 18:06:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,6 +127,8 @@ ex_ncheck(sp, force)
 	SCR *sp;
 	int force;
 {
+	char **ap;
+
 	/*
 	 * !!!
 	 * Historic practice: quit! or two quit's done in succession
@@ -135,8 +137,11 @@ ex_ncheck(sp, force)
 	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
 	    sp->cargv != NULL && sp->cargv[1] != NULL) {
 		sp->q_ccnt = sp->ccnt;
+
+		for (ap = sp->cargv + 1; *ap != NULL; ++ap);
 		msgq(sp, M_ERR,
-"167|More files to edit; use n[ext] to go to the next file, q[uit]! to quit");
+		    "167|%d more files to edit", (ap - sp->cargv) - 1);
+
 		return (1);
 	}
 	return (0);
