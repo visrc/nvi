@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 9.6 1995/01/23 17:30:50 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:50 $";
+static char sccsid[] = "$Id: vs_relative.c,v 9.7 1995/01/24 09:32:25 bostic Exp $ (Berkeley) $Date: 1995/01/24 09:32:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ static char sccsid[] = "$Id: vs_relative.c,v 9.6 1995/01/23 17:30:50 bostic Exp 
 #include "vi.h"
 #include "svi_screen.h"
 
-size_t	svi_screens __P((SCR *, char *, size_t, recno_t, size_t *));
+static size_t svi_screens __P((SCR *, char *, size_t, recno_t, size_t *));
 
 /*
  * svi_column --
