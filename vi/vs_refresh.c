@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.1 1994/11/09 18:35:32 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:32 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.2 1994/11/09 22:58:22 bostic Exp $ (Berkeley) $Date: 1994/11/09 22:58:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -613,14 +613,11 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
 	 */
-	if (F_ISSET(sp, S_SCR_REFRESH)) {
-		if (ISSMALLSCREEN(sp))
-			for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
-				MOVE(sp, cnt, 0);
-				clrtoeol();
-			}
-		F_CLR(sp, S_SCR_REFRESH);
-	}
+	if (F_ISSET(sp, S_SCR_REFRESH) && ISSMALLSCREEN(sp))
+		for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
+			MOVE(sp, cnt, 0);
+			clrtoeol();
+		}
 
 	didpaint = 1;
 
@@ -769,6 +766,8 @@ svi_modeline(sp)
 				scno = svi_screens(sp,
 				    NULL, 0, sp->lno, &sp->cno);
 		}
+		if (O_ISSET(sp, O_NUMBER))
+			scno -= O_NUMBER_LENGTH;
 		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno, scno);
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
