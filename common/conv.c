@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.23 2001/06/24 19:48:06 skimo Exp $ (Berkeley) $Date: 2001/06/24 19:48:06 $";
+static const char sccsid[] = "$Id: conv.c,v 1.24 2001/06/30 17:48:23 skimo Exp $ (Berkeley) $Date: 2001/06/30 17:48:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,9 +26,6 @@ static const char sccsid[] = "$Id: conv.c,v 1.23 2001/06/24 19:48:06 skimo Exp $
 #include <unistd.h>
 
 #include "common.h"
-#ifdef HAVE_NCURSESW
-#include <ncurses.h>
-#endif
 
 #include <langinfo.h>
 #include <iconv.h>
