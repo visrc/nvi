@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.12 1993/02/11 18:21:51 bostic Exp $ (Berkeley) $Date: 1993/02/11 18:21:51 $";
+static char sccsid[] = "$Id: search.c,v 5.13 1993/02/12 12:40:28 bostic Exp $ (Berkeley) $Date: 1993/02/12 12:40:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ noprev:		msg("No previous search pattern.");
 	 * Use saved pattern if no pattern supplied.  Only the pattern
 	 * is retained, historic vi did not reuse any delta supplied.
 	 */
-	if (ptrn == NULL) {
+	if (ptrn[1] == '\0') {
 		*rep = &sre;
 		return (0);
 	}
