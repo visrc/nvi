@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.6 1993/09/01 12:17:12 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:17:12 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.7 1993/11/04 12:37:26 bostic Exp $ (Berkeley) $Date: 1993/11/04 12:37:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,8 +99,11 @@ shift(sp, ep, cmdp, rl)
 			newcol = oldcol + sw;
 		else {
 			newcol = oldcol < sw ? 0 : oldcol - sw;
-			if (newcol == oldcol)
+			if (newcol == oldcol) {
+				if (sp->lno == from)
+					curset = 1;
 				continue;
+			}
 		}
 
 		/* Get a buffer that will hold the new line. */
@@ -128,6 +131,7 @@ err:			FREE_SPACE(sp, bp, blen);
 		}
 
 		/*
+		 * !!!
 		 * The shift command in historic vi had the usual bizarre
 		 * collection of cursor semantics.  If called from vi, the
 		 * cursor was repositioned to the first non-blank character
