@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.19 1993/11/12 08:27:01 bostic Exp $ (Berkeley) $Date: 1993/11/12 08:27:01 $";
+static char sccsid[] = "$Id: key.c,v 8.20 1993/11/12 08:39:49 bostic Exp $ (Berkeley) $Date: 1993/11/12 08:39:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -294,10 +294,9 @@ loop:	if (keyp->cnt) {
 newmap:		ch = ttyp->buf[ttyp->next];
 		if (ch < MAX_BIT_SEQ && !bit_test(gp->seqb, ch))
 			goto nomap;
-remap:		if ((qp = seq_find(sp, &ttyp->buf[ttyp->next], ttyp->cnt,
+remap:		qp = seq_find(sp, &ttyp->buf[ttyp->next], ttyp->cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
-		    &ispartial)) == NULL)
-			goto nomap;
+		    &ispartial);
 
 		/* If get a partial match, keep trying. */
 		if (ispartial) {
@@ -307,6 +306,9 @@ remap:		if ((qp = seq_find(sp, &ttyp->buf[ttyp->next], ttyp->cnt,
 				goto remap;
 			goto nomap;
 		}
+
+		if (qp == NULL)
+			goto nomap;
 
 #define	MAX_MACRO_EXP	40
 		if (++ml_cnt > MAX_MACRO_EXP)
