@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.61 1996/06/12 11:53:45 bostic Exp $ (Berkeley) $Date: 1996/06/12 11:53:45 $
+#	$Id: Makefile.in,v 8.62 1996/06/17 09:42:31 bostic Exp $ (Berkeley) $Date: 1996/06/17 09:42:31 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -53,7 +53,7 @@ tknvi: $(TKALL)
 	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
 clean:
-	-rm -f *.core *.o
+	-rm -f *.core *.o memcpy.c
 	-rm -f nex nvi tknvi core
 	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
 	-rm -f $(TKOBJS) $(VIOBJS)
