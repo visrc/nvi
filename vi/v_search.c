@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.3 1993/07/06 22:40:41 bostic Exp $ (Berkeley) $Date: 1993/07/06 22:40:41 $";
+static char sccsid[] = "$Id: v_search.c,v 8.4 1993/08/23 12:31:49 bostic Exp $ (Berkeley) $Date: 1993/08/23 12:31:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,15 +31,18 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	int flags;
+
+	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM;
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+		flags |= SEARCH_EOL;
 	switch (sp->searchdir) {
 	case BACKWARD:
-		if (b_search(sp, ep, fm, rp, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
+		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
 		break;
 	case FORWARD:
-		if (f_search(sp, ep, fm, rp, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
+		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
 		break;
 	case NOTSET:
@@ -62,15 +65,18 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	int flags;
+
+	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM;
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+		flags |= SEARCH_EOL;
 	switch (sp->searchdir) {
 	case BACKWARD:
-		if (f_search(sp, ep, fm, rp, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
+		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
 		break;
 	case FORWARD:
-		if (b_search(sp, ep, fm, rp, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
+		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
 		break;
 	case NOTSET:
@@ -118,12 +124,16 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	int flags;
 	char *ptrn;
 
 	if (getptrn(sp, ep, '?', &ptrn))
 		return (1);
-	if (b_search(sp, ep, fm, rp, ptrn, NULL,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
+
+	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+		flags |= SEARCH_EOL;
+	if (b_search(sp, ep, fm, rp, ptrn, NULL, flags))
 		return (1);
 	return (0);
 }
@@ -139,12 +149,16 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	int flags;
 	char *ptrn;
 
 	if (getptrn(sp, ep, '/', &ptrn))
 		return (1);
-	if (f_search(sp, ep, fm, rp, ptrn, NULL,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
+
+	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+		flags |= SEARCH_EOL;
+	if (f_search(sp, ep, fm, rp, ptrn, NULL, flags))
 		return (1);
 	return (0);
 }
