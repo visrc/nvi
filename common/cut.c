@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.28 1994/05/26 09:03:43 bostic Exp $ (Berkeley) $Date: 1994/05/26 09:03:43 $";
+static char sccsid[] = "$Id: cut.c,v 8.29 1994/07/20 16:27:49 bostic Exp $ (Berkeley) $Date: 1994/07/20 16:27:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,13 +77,13 @@ cut(sp, ep, namep, fm, tm, flags)
 	int append, namedbuffer;
 
 	/*
-	 * If the user specified a buffer, put it there.  (This may
-	 * require a copy into the numeric buffers.  We do the copy
-	 * so that we don't have to reference count and so we don't
-	 * have to deal with thing like appends to buffers that are
-	 * used multiple times.)
+	 * If the user specified a buffer, put it there.  (This may require
+	 * a copy into the numeric buffers.  We do the copy so that we don't
+	 * have to reference count and so we don't have to deal with things
+	 * like appends to buffers that are used multiple times.)
 	 *
-	 * Otherwise, if it's a delete put it in the numeric buffer.
+	 * Otherwise, if it's supposed to be put in a numeric buffer (usually
+	 * a delete) put it there.
 	 *
 	 * Otherwise, put it in the unnamed buffer.
 	 */
@@ -91,7 +91,7 @@ cut(sp, ep, namep, fm, tm, flags)
 	append = namedbuffer = 0;
 	if (namep != NULL) {
 		name = *namep;
-		if (LF_ISSET(CUT_DELETE) &&
+		if (LF_ISSET(CUT_NBUFFER) &&
 		    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
 			cb_rotate(sp);
 			copy = NEEDCOPY;
@@ -100,7 +100,7 @@ cut(sp, ep, namep, fm, tm, flags)
 			name = tolower(name);
 namecb:		CBNAME(sp, cbp, name);
 		namedbuffer = 1;
-	} else if (LF_ISSET(CUT_DELETE) &&
+	} else if (LF_ISSET(CUT_NBUFFER) &&
 	    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
 		name = '1';
 		cb_rotate(sp);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.36 1994/05/17 10:44:29 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:29 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.37 1994/07/20 16:28:10 bostic Exp $ (Berkeley) $Date: 1994/07/20 16:28:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -477,7 +477,13 @@ v_CS(sp, ep, vp, iflags)
 		if (vp->m_stop.cno != 0)
 			--vp->m_stop.cno;
 
-		/* Cut the lines. */
+		/*
+		 * Cut the lines.
+		 *
+		 * !!!
+		 * Historic practice, C and S did not cut into the numeric
+		 * buffers, only the unnamed one.
+		 */
 		if (cut(sp, ep,
 		    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 		    &vp->m_start, &vp->m_stop, CUT_LINEMODE))
@@ -519,6 +525,11 @@ v_CS(sp, ep, vp, iflags)
 				LF_SET(TXT_APPENDEOL);
 			} else
 				vp->m_stop.cno = len - 1;
+			/*
+			 * !!!
+			 * Historic practice, C and S did not cut into the
+			 * numeric buffers, only the unnamed one.
+			 */
 			if (cut(sp, ep,
 			    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 			    &vp->m_start, &vp->m_stop, CUT_LINEMODE))
@@ -594,9 +605,14 @@ v_change(sp, ep, vp)
 			vp->m_stop.cno = len = 0;
 			LF_SET(TXT_APPENDEOL);
 		} else {
+			/*
+			 * !!!
+			 * Historic practice, c cut into the numeric buffers,
+			 * as well as the unnamed one.
+			 */
 			if (cut(sp, ep,
 			    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-			    &vp->m_start, &vp->m_stop, lmode))
+			    &vp->m_start, &vp->m_stop, lmode | CUT_NBUFFER))
 				return (1);
 			if (len == 0)
 				LF_SET(TXT_APPENDEOL);
@@ -614,11 +630,15 @@ v_change(sp, ep, vp)
 	 * replacement.  If we're not in line mode, we just delete the
 	 * text and start inserting.
 	 *
+	 * !!!
+	 * Historic practice, c cut into the numeric buffers, as well as the
+	 * unnamed one.
+	 *
 	 * Copy the text.
 	 */
 	if (cut(sp, ep,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-	    &vp->m_start, &vp->m_stop, lmode))
+	    &vp->m_start, &vp->m_stop, lmode | CUT_NBUFFER))
 		return (1);
 
 	/* If replacing entire lines and there's leading text. */
