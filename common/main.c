@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.1 1994/11/09 18:37:50 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:50 $";
+static char sccsid[] = "$Id: main.c,v 9.2 1994/11/09 22:38:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 22:38:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -91,7 +91,7 @@ main(argc, argv)
 		LF_INIT(S_EX);
 	else {
 		/* View is readonly. */
-		if (!strcmp(myname, "view"))
+		if (!strcmp(myname, "nview") || !strcmp(myname, "view"))
 			readonly = 1;
 		LF_INIT(S_VI_CURSES);
 	}
