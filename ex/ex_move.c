@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.9 1994/03/08 19:39:30 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:30 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.10 1994/03/14 20:18:13 bostic Exp $ (Berkeley) $Date: 1994/03/14 20:18:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,7 @@ ex_move(sp, ep, cmdp)
 {
 	LMARK *lmp;
 	MARK fm1, fm2;
-	recno_t cnt, fl, tl, mfl, mtl;
+	recno_t cnt, diff, fl, tl, mfl, mtl;
 	size_t len;
 	int mark_reset;
 	char *p;
@@ -117,8 +117,9 @@ ex_move(sp, ep, cmdp)
 	 */
 	fl = fm1.lno;
 	tl = cmdp->lineno;
-	mark_reset = 0;
+
 	/* Log the old positions of the marks. */
+	mark_reset = 0;
 	for (lmp = ep->marks.lh_first; lmp != NULL; lmp = lmp->q.le_next)
 		if (lmp->name != ABSMARK1 &&
 		    lmp->lno >= fl && lmp->lno <= tl) {
@@ -128,11 +129,11 @@ ex_move(sp, ep, cmdp)
 		}
 
 	/* Move the lines. */
-	cnt = (fm2.lno - fm1.lno) + 1;
+	diff = (fm2.lno - fm1.lno) + 1;
 	if (tl > fl) {				/* Destination > source. */
-		mfl = tl - cnt;
+		mfl = tl - diff;
 		mtl = tl;
-		while (cnt--) {
+		for (cnt = diff; cnt--;) {
 			if ((p = file_gline(sp, ep, fl, &len)) == NULL)
 				return (1);
 			if (file_aline(sp, ep, 1, tl, p, len))
@@ -146,10 +147,11 @@ ex_move(sp, ep, cmdp)
 			if (file_dline(sp, ep, fl))
 				return (1);
 		}
+		sp->lno = tl;			/* Last line moved. */
 	} else {				/* Destination < source. */
 		mfl = tl;
-		mtl = tl + cnt;
-		while (cnt--) {
+		mtl = tl + diff;
+		for (cnt = diff; cnt--;) {
 			if ((p = file_gline(sp, ep, fl, &len)) == NULL)
 				return (1);
 			if (file_aline(sp, ep, 1, tl++, p, len))
@@ -164,7 +166,9 @@ ex_move(sp, ep, cmdp)
 			if (file_dline(sp, ep, fl))
 				return (1);
 		}
+		sp->lno = tl - 1;		/* Last line moved. */
 	}
+	sp->cno = 0;
 
 	/* Log the new positions of the marks. */
 	if (mark_reset)
@@ -174,11 +178,7 @@ ex_move(sp, ep, cmdp)
 			    lmp->lno >= mfl && lmp->lno <= mtl)
 				(void)log_mark(sp, ep, lmp);
 
-	/* Move puts the cursor on the last line moved. */
-	cnt = (fm2.lno - fm1.lno) + 1;
-	sp->lno = fm1.lno + cnt;
-	sp->cno = 0;
 
-	sp->rptlines[L_MOVED] += cnt;
+	sp->rptlines[L_MOVED] += diff;
 	return (0);
 }
