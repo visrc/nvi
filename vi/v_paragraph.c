@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.17 1994/07/28 20:59:15 bostic Exp $ (Berkeley) $Date: 1994/07/28 20:59:15 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.18 1994/07/28 22:24:51 bostic Exp $ (Berkeley) $Date: 1994/07/28 22:24:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -231,15 +231,9 @@ v_paragraphb(sp, ep, vp)
 	 * is in line mode.  Cuts from the beginning of the line also did not
 	 * cut the current line, but started at the previous EOL.
 	 *
-	 * !!!
-	 * If the starting cursor is past the first column, the current line
-	 * is checked for a paragraph.
-	 *
 	 * Correct for a left motion component while we're thinking about it.
 	 */
 	lno = vp->m_start.lno;
-	if (vp->m_start.cno > 0)
-		++lno;
 
 	if (ISMOTION(vp))
 		if (vp->m_start.cno == 0) {
@@ -270,6 +264,14 @@ v_paragraphb(sp, ep, vp)
 	else {
 		--cnt;
 		pstate = P_INTEXT;
+
+		/*
+		 * !!!
+		 * If the starting cursor is past the first column,
+		 * the current line is checked for a paragraph.
+		 */
+		if (vp->m_start.cno > 0)
+			++lno;
 	}
 
 	for (;;) {
@@ -278,6 +280,7 @@ v_paragraphb(sp, ep, vp)
 		switch (pstate) {
 		case P_INTEXT:
 			INTEXT_CHECK;
+			break;
 		case P_INBLANK:
 			if (len != 0 && !v_isempty(p, len)) {
 				if (!--cnt)
