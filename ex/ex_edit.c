@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.4 1993/08/19 15:02:32 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:02:32 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.5 1993/08/21 10:39:53 bostic Exp $ (Berkeley) $Date: 1993/08/21 10:39:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ ex_edit(sp, ep, cmdp)
 	EXF *tep;
 	FREF *frp;
 
-	switch(cmdp->argc) {
+	switch (cmdp->argc) {
 	case 0:
 		frp = sp->frp;
 		break;
@@ -45,6 +45,19 @@ ex_edit(sp, ep, cmdp)
 	}
 
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
+
+	/*
+	 * Users don't like "already locked" messages when they do ":e" to
+	 * re-edit the current file name.  We handle this here, before the
+	 * file_init() call.  If the file_init doesn't succeed we're truly
+	 * screwed.  In any case, nobody better try use sp->ep before the
+	 * actual switch.
+	 */
+	if (frp == sp->frp) {
+		if (file_end(sp, sp->ep, F_ISSET(cmdp, E_FORCE)))
+			return (1);
+		sp->ep = NULL;
+	}
 
 	/* Switch files. */
 	if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
@@ -88,6 +101,13 @@ ex_visual(sp, ep, cmdp)
 	}
 
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
+
+	/* See comment in above, in ex_edit(). */
+	if (frp == sp->frp) {
+		if (file_end(sp, sp->ep, F_ISSET(cmdp, E_FORCE)))
+			return (1);
+		sp->ep = NULL;
+	}
 
 	/* Switch files. */
 	if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
