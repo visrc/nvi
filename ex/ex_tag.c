@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.48 2001/06/25 15:19:20 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:20 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.49 2001/08/28 13:29:16 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -282,6 +282,7 @@ ex_tag_Nswitch(SCR *sp, TAG *tp, int force)
 		/* Copy file state. */
 		new->ep = sp->ep;
 		++new->ep->refcnt;
+		CIRCLEQ_INSERT_HEAD(&new->ep->scrq, new, eq);
 
 		new->frp = tp->frp;
 		new->frp->flags = sp->frp->flags;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_edit.c,v 10.13 2001/06/25 15:19:15 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:15 $";
+static const char sccsid[] = "$Id: ex_edit.c,v 10.14 2001/08/28 13:29:15 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,6 +128,7 @@ ex_N_edit(SCR *sp, EXCMD *cmdp, FREF *frp, int attach)
 		/* Copy file state, keep the screen and cursor the same. */
 		new->ep = sp->ep;
 		++new->ep->refcnt;
+		CIRCLEQ_INSERT_HEAD(&new->ep->scrq, new, eq);
 
 		new->frp = frp;
 		new->frp->flags = sp->frp->flags;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.64 2001/06/25 15:19:09 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:09 $";
+static const char sccsid[] = "$Id: exf.c,v 10.65 2001/08/28 13:29:15 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -181,6 +181,7 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 	 *	Set initial EXF flag bits.
 	 */
 	CALLOC_RET(sp, ep, EXF *, 1, sizeof(EXF));
+	CIRCLEQ_INIT(&ep->scrq);
 	ep->c_lno = ep->c_nlines = OOBLNO;
 	ep->rcv_fd = ep->fcntl_fd = -1;
 	F_SET(ep, F_FIRSTMODIFY);
@@ -440,6 +441,7 @@ no_lock:
 
 	/* Switch... */
 	++ep->refcnt;
+	CIRCLEQ_INSERT_HEAD(&ep->scrq, sp, eq);
 	sp->ep = ep;
 	sp->frp = frp;
 
@@ -677,6 +679,7 @@ file_end(SCR *sp, EXF *ep, int force)
 	 */
 	if (ep == NULL)
 		ep = sp->ep;
+	CIRCLEQ_REMOVE(&ep->scrq, sp, eq);
 	if (--ep->refcnt != 0)
 		return (0);
 
@@ -726,6 +729,7 @@ file_end(SCR *sp, EXF *ep, int force)
 		if ((sp->db_error = ep->db->close(ep->db, DB_NOSYNC)) != 0 && 
 		    !force) {
 			msgq_str(sp, M_DBERR, frp->name, "241|%s: close");
+			CIRCLEQ_INSERT_HEAD(&ep->scrq, sp, eq);
 			++ep->refcnt;
 			return (1);
 		}

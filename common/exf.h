@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.14 2000/07/22 14:52:36 skimo Exp $ (Berkeley) $Date: 2000/07/22 14:52:36 $
+ *	$Id: exf.h,v 10.15 2001/08/28 13:29:15 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:15 $
  */
 					/* Undo direction. */
 /*
@@ -17,6 +17,7 @@ struct _exf {
 	CIRCLEQ_ENTRY(_exf) q;		/* Linked list of file structures. */
 	int	 refcnt;		/* Reference count. */
 
+	CIRCLEQ_HEAD(_escrh, _scr)   scrq;   /* Attached screens */
 					/* Underlying database state. */
 	DB	*db;			/* File db structure. */
 	CHAR_T	*c_lp;			/* Cached line. */

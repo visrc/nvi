@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.44 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $
+ *	$Id: screen.h,v 10.45 2001/08/28 13:29:15 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:15 $
  */
 
 /*
@@ -86,6 +86,7 @@ struct _win {
 struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
 	CIRCLEQ_ENTRY(_scr) q;		/* Screens. */
+	CIRCLEQ_ENTRY(_scr) eq;         /* Screens. */
 
 	int	 id;			/* Screen id #. */
 	int	 refcnt;		/* Reference count. */

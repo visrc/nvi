@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.54 2001/06/25 15:19:31 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:31 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.55 2001/08/28 13:29:16 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -515,6 +515,7 @@ v_ecl(SCR *sp)
 	/* Attach to the screen. */
 	new->ep = gp->ccl_sp->ep;
 	++new->ep->refcnt;
+	CIRCLEQ_INSERT_HEAD(&new->ep->scrq, new, eq);
 
 	new->frp = gp->ccl_sp->frp;
 	new->frp->flags = sp->frp->flags;
