@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_version.c,v 9.10 1995/01/24 10:22:47 bostic Exp $ (Berkeley) $Date: 1995/01/24 10:22:47 $";
+static char sccsid[] = "$Id: ex_version.c,v 9.11 1995/02/08 15:37:10 bostic Exp $ (Berkeley) $Date: 1995/02/08 15:37:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,10 +37,10 @@ ex_version(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
-	static const time_t then = 790960963;
+	static const time_t then = 792275831;
 
 	(void)ex_printf(EXCOOKIE,
-"Version 1.46, %sThe CSRG, University of California, Berkeley.\n",
+"Version 1.47, %sThe CSRG, University of California, Berkeley.\n",
 	    ctime(&then));
 	F_SET(sp, S_SCR_EXWROTE);
 	return (0);
