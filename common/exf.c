@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.9 1992/05/27 10:31:41 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:31:41 $";
+static char sccsid[] = "$Id: exf.c,v 5.10 1992/06/07 13:58:37 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:58:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,45 +45,40 @@ file_init()
 	exfhdr.next = exfhdr.prev = (EXF *)&exfhdr;
 }
 
-/*
- * file_default --
- *	Add the default "no-name" structure to the file list.
- */
-int
-file_default()
-{
-	EXF *ep;
-
-	file_ins((EXF *)&exfhdr, "no.name");
-	ep = file_first();
-	ep->flags |= F_NONAME;
-	return (0);
+#define	EPSET(ep) {							\
+	ep->lno = ep->top = 1;						\
+	ep->cno = ep->lcno = 0;						\
+	ep->scrollup = ep->scrolldown = 0;				\
+	ep->nlen = strlen(ep->name);					\
+	ep->flags = 0;							\
 }
 
 /*
  * file_ins --
- *	Insert a new file into the list after the specified file.
+ *	Insert a new file into the list before or after the specified file.
  */
 int
-file_ins(before, name)
-	EXF *before;
-	char *name;
-{
+file_ins(ep, name, append)
 	EXF *ep;
+	char *name;
+	int append;
+{
+	EXF *nep;
 
-	if ((ep = malloc(sizeof(EXF))) == NULL)
+	if ((nep = malloc(sizeof(EXF))) == NULL)
 		goto err;
 
-	if ((ep->name = strdup(name)) == NULL) {
-		free(ep);
+	if ((nep->name = strdup(name)) == NULL) {
+		free(nep);
 err:		msg("Error: %s", strerror(errno));
 		return (1);
 	}
-	ep->lno = 1;
-	ep->cno = 0;
-	ep->nlen = strlen(ep->name);
-	ep->flags = 0;
-	insexf(ep, before);
+	EPSET(nep);
+	if (append) {
+		insexf(nep, ep);
+	} else {
+		instailexf(nep, ep);
+	}
 	return (0);
 }
 
@@ -116,10 +111,7 @@ file_set(argc, argv)
 err:			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		ep->lno = 1;
-		ep->cno = 0;
-		ep->nlen = strlen(ep->name);
-		ep->flags = 0;
+		EPSET(ep);
 		instailexf(ep, &exfhdr);
 	}
 	return (0);
@@ -368,23 +360,44 @@ int
 file_start(ep)
 	EXF *ep;
 {
-	int flags;
+	struct stat sb;
+	int fd, flags;
+	char tname[sizeof(_PATH_TMPNAME) + 1];
+
+	if (ep == NULL) {
+		(void)strcpy(_PATH_TMPNAME, tname);
+		if ((fd = mkstemp(tname)) == -1) {
+			msg("Temporary file: %s", strerror(errno));
+			return (1);
+		}
+		file_ins((EXF *)&exfhdr, tname, 1);
+		ep = file_first();
+		ep->flags |= F_CREATED | F_NONAME;
+	} else if (stat(ep->name, &sb))
+		ep->flags | F_CREATED;
 
 	/* Open a db structure. */
-	if ((ep->db = dbopen(ep->flags & F_NONAME ? NULL : ep->name,
-	    O_CREAT | O_EXLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
+	ep->db = dbopen(ep->name, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
+	    DEFFILEMODE, DB_RECNO, NULL);
+	if (ep->db == NULL && errno == EAGAIN) {
+		ep->flags |= F_RDONLY;
+		ep->db = dbopen(ep->name, O_CREAT | O_NONBLOCK | O_RDONLY,
+		    DEFFILEMODE, DB_RECNO, NULL);
+		if (ep->db != NULL)
+			msg("%s already locked, session is read-only.",
+			    ep->name);
+	}
+	if (ep->db == NULL) {
 		msg("%s: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
-	/* Change the global state. */
+	/* Set the global state. */
 	curf = ep;
-	cursor.lno = ep->lno;
-	cursor.cno = ep->cno;
 
 	/*
 	 * XXX
-	 * Major kludge, for now, so that nlines is right.
+	 * Kludge for nlines.
 	 */
 	nlines = file_lline(curf);
 
@@ -393,16 +406,32 @@ file_start(ep)
 
 /*
  * file_stop --
- *	Close the underlying db.
+ *	Stop editing a file.
  */
 int
 file_stop(ep, force)
 	EXF *ep;
 	int force;
 {
+	struct stat sb;
+
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
 		msg("%s: close: %s", ep->name, strerror(errno));
+		return (1);
+	}
+	/*
+	 * Delete any created, empty file that was never written.
+	 *
+	 * XXX
+	 * This is not quite right; a user writing an empty file explicitly
+	 * with the ":w file" command could lose their write when we delete
+	 * the file.  Probably not a big deal.
+	 */
+	if ((ep->flags & F_NONAME || ep->flags & F_CREATED &&
+	    !(ep->flags & F_WRITTEN) &&
+	    !stat(ep->name, &sb) && sb.st_size == 0) && unlink(ep->name)) {
+		msg("Created file %s not removed.", ep->name);
 		return (1);
 	}
 	return (0);
@@ -433,38 +462,35 @@ file_sync(ep, force)
 
 	/* Can't write if no name ever specified. */
 	if (ep->flags & F_NONAME) {
-		msg("No name for this file; not written.");
+		msg("Temporary file; not written.");
 		return (1);
 	}
 
 	/*
-	 * If the name was changed, can't use the db write routines, and
-	 * normal rules apply, i.e. don't overwrite unless forced.
+	 * If the name was changed, normal rules apply, i.e. don't overwrite 
+	 * unless forced.
 	 */
-	if (ep->flags & F_NAMECHANGED) {
-		if (!force && !stat(ep->name, &sb)) {
-			msg("%s exists, not written; use ! to override.",
-			    ep->name);
-			return (1);
-		}
-
-		if ((fd = open(ep->name,
-		    O_CREAT | O_EXLOCK | O_WRONLY, DEFFILEMODE)) < 0)
-			goto err;
-
-		if ((fp = fdopen(fd, "w")) == NULL) {
-			(void)close(fd);
-err:			msg("%s: %s", ep->name, strerror(errno));
-			return (1);
-		}
-
-		if (ex_writefp(ep->name, fp, 1, 0, 1))
-			return (1);
-	} else if ((ep->db->sync)(ep->db)) {
-		msg("%s: sync: %s", ep->name, strerror(errno));
+	if (ep->flags & F_NAMECHANGED && !force && !stat(ep->name, &sb)) {
+		msg("%s exists, not written; use ! to override.", ep->name);
 		return (1);
 	}
 
+	/* Make sure the db routines have completely read the file. */
+	(void)file_lline(ep);
+
+	if ((fd = open(ep->name, O_WRONLY, 0)) < 0)
+		goto err;
+
+	if ((fp = fdopen(fd, "w")) == NULL) {
+		(void)close(fd);
+err:		msg("%s: %s", ep->name, strerror(errno));
+		return (1);
+	}
+
+	if (ex_writefp(ep->name, fp, 1, 0, 1))
+		return (1);
+
+	ep->flags |= F_WRITTEN;
 	ep->flags &= ~F_MODIFIED;
 	return (0);
 }
