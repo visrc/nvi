@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.78 1996/08/10 14:34:31 bostic Exp $ (Berkeley) $Date: 1996/08/10 14:34:31 $
+.\"     $Id: vi.ref,v 8.79 1996/08/11 16:05:36 bostic Exp $ (Berkeley) $Date: 1996/08/11 16:05:36 $
 .\"
 .\"
 .so ref.so
@@ -915,7 +915,8 @@ If the
 .QQ CSCOPE_DIRS
 environmental variable is set when
 .CO nvi
-is run, it is expected to be a <blank>-separated list of
+is run,
+it is expected to be a <colon> or <blank>-separated list of
 .CO cscope
 databases or directories containing
 .CO cscope
