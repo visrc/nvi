@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.94 1993/05/13 08:26:01 bostic Exp $ (Berkeley) $Date: 1993/05/13 08:26:01 $";
+static char sccsid[] = "$Id: ex.c,v 5.95 1993/05/15 10:10:37 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,6 +69,7 @@ ex(sp, ep)
 			(void)fputc('\n', sp->stdfp);
 			(void)ex_cstring(sp, ep, tp->lb, tp->len);
 		}
+		msg_rpt(sp, sp->stdfp);
 
 		if (!F_ISSET(sp, S_MODE_EX) || F_ISSET(sp, S_MAJOR_CHANGE))
 			break;
@@ -626,10 +627,9 @@ addr2:	switch(cmd.addrcnt) {
 	F_CLR(sp, S_AUTOPRINT);
 
 	/*
-	 * If file state, set rptlines.  If file state and not doing a global
-	 * command, log the start of an action.
+	 * If file state and not doing a global command, log the start of
+	 * an action.
 	 */
-	sp->rptlines = 0;
 	if (ep != NULL && !F_ISSET(sp, S_IN_GLOBAL))
 		(void)log_cursor(sp, ep);
 
