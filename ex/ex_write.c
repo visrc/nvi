@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.28 1994/04/26 19:07:44 bostic Exp $ (Berkeley) $Date: 1994/04/26 19:07:44 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.29 1994/04/29 13:38:30 bostic Exp $ (Berkeley) $Date: 1994/04/29 13:38:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,9 @@ ex_wq(sp, ep, cmdp)
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
-	if (!force && ep->refcnt <= 1 && file_unedited(sp) != NULL) {
+	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
+	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {
+		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
@@ -113,7 +115,9 @@ ex_xit(sp, ep, cmdp)
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
-	if (!force && ep->refcnt <= 1 && file_unedited(sp) != NULL) {
+	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
+	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {
+		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
