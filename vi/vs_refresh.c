@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.7 1992/11/02 22:40:12 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:40:12 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.8 1992/11/03 17:47:48 bostic Exp $ (Berkeley) $Date: 1992/11/03 17:47:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,6 +39,7 @@ scr_init(ep)
 		return (1);
 	}
 	raw();
+	nonl();
 	noecho();
 	scrollok(stdscr, 1);
 	return (0);
