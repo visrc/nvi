@@ -1,4 +1,4 @@
-#	$Id: README,v 8.126 1996/03/28 18:15:18 bostic Exp $ (Berkeley) $Date: 1996/03/28 18:15:18 $
+#	$Id: README,v 8.127 1996/03/28 18:17:18 bostic Exp $ (Berkeley) $Date: 1996/03/28 18:17:18 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -45,7 +45,7 @@ o This software is several years old and is the product of many folks' work.
 
 	Sven Verdoolaege added the Perl5 interpreter.
 
-o Lots of people provided enhancements, bug reports and testing, far too
+o Many, many people provided enhancements, bug reports and testing, far too
   many to individually thank.
 
 o From the original vi acknowledgements, by William Joy and Mark Horton:
