@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.13 1993/09/30 12:02:03 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:03 $";
+static char sccsid[] = "$Id: screen.c,v 8.14 1993/10/03 14:14:48 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:14:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ scr_init(orig, sp)
 		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 	}
 
-	HDR_INIT(sp->frefhdr, next, prev);
+	queue_init(&sp->frefq);
 
 	sp->lno = sp->olno = OOBLNO;
 	sp->cno = sp->ocno = 0;
@@ -157,7 +157,7 @@ mem:			msgq(orig, M_ERR,
 		sp->inc_lastch = '+';
 		sp->inc_lastval = 1;
 
-		HDR_INIT(sp->taghdr, next, prev);
+		queue_init(&sp->tagq);
 
 		sp->searchdir = NOTSET;
 		sp->csearchdir = CNOTSET;
@@ -202,11 +202,11 @@ scr_end(sp)
 		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
 
 	/* Free remembered file names. */
-	{ FREF *fp;
-		while ((fp = sp->frefhdr.next) != (FREF *)&sp->frefhdr) {
-			HDR_DELETE(fp, next, prev, FREF);
-			FREE(fp->fname, strlen(fp->fname));
-			FREE(fp, sizeof(FREF));
+	{ FREF *frp;
+		while ((frp = sp->frefq.qe_next) != NULL) {
+			queue_remove(&sp->frefq, frp, FREF *, q);
+			FREE(frp->fname, strlen(frp->fname));
+			FREE(frp, sizeof(FREF));
 		}
 	}
 
@@ -228,8 +228,8 @@ scr_end(sp)
 	}
 
 	{ TAG *tp;
-		while ((tp = sp->taghdr.next) != (TAG *)&sp->taghdr) {
-			HDR_DELETE(tp, next, prev, TAG);
+		while ((tp = sp->tagq.qe_next) != NULL) {
+			queue_remove(&sp->tagq, tp, TAG *, q);
 			FREE(tp, sizeof(TAG));
 		}
 	}
@@ -384,13 +384,13 @@ tag_copy(a, b)
 	int cnt;
 
 	/* Initialize linked list. */
-	HDR_INIT(b->taghdr, next, prev);
+	queue_init(&b->tagq);
 
-	for (ap = a->taghdr.next; ap != (TAG *)&a->taghdr; ap = ap->next) {
+	for (ap = a->tagq.qe_next; ap != NULL; ap = ap->q.qe_next) {
 		if ((tp = malloc(sizeof(TAG))) == NULL)
 			goto nomem;
 		*tp = *ap;
-		HDR_INSERT(tp, &b->taghdr, next, prev, TAG);
+		queue_enter_tail(&b->tagq, tp, TAG *, q);
 	}
 
 	/* Copy the list of tag files. */

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.31 1993/10/03 10:42:45 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:42:45 $
+ *	$Id: screen.h,v 8.32 1993/10/03 14:15:03 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:15:03 $
  */
 
 /*
@@ -39,7 +39,7 @@ enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
  * The mtime field should be a struct timespec, but time_t is more portable.
  */
 typedef struct _fref {
-	struct _fref	*next, *prev;	/* Linked list of file references. */
+	struct queue_entry q;		/* Linked list of file references. */
 	char	*tname;			/* Temporary file name. */
 	char	*fname;			/* File name. */
 	size_t	 nlen;			/* File name length. */
@@ -80,7 +80,7 @@ typedef struct _scr {
 	struct _exf	*ep;		/* Screen's current file. */
 
 					/* File name oriented state. */
-	HDR	 frefhdr;		/* Linked list of FREF structures. */
+	struct queue_entry frefq;	/* Linked list of FREF structures. */
 	FREF	*frp;			/* Current FREF. */
 	FREF	*p_frp;			/* Previous FREF. */
 
@@ -171,7 +171,7 @@ typedef struct _scr {
 
 	char	*paragraph;		/* Vi: paragraph search list. */
 
-	HDR	 taghdr;		/* Ex/vi: tag stack. */
+	struct queue_entry tagq;	/* Ex/vi: tag stack. */
 	struct _tagf   **tfhead;	/* Ex/vi: list of tag files. */
 	char	*tlast;			/* Ex/vi: saved last tag. */
 
