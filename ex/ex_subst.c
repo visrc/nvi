@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.45 1993/05/16 18:17:13 bostic Exp $ (Berkeley) $Date: 1993/05/16 18:17:13 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.46 1993/05/16 19:31:51 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:31:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -178,10 +178,10 @@ substitute(sp, ep, cmdp, s, re, cmd)
 {
 	MARK from, to;
 	recno_t elno, lno, lastline;
-	size_t cnt, last, lbclen, lblen, len, offset;
-	int eflags, eval;
+	size_t blen, cnt, last, lbclen, lblen, len, offset;
+	int eflags, eval, quit;
 	int cflag, gflag, lflag, nflag, pflag, rflag;
-	char *lb;
+	char *bp, *lb;
 
 	/*
 	 * Historic vi permitted the '#', 'l' and 'p' options in vi mode,
@@ -249,18 +249,26 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
+	/* Get some space. */
+	GET_SPACE(sp, bp, blen, 512);
+
+
 	/* For each line... */
 	lb = NULL;
 	lbclen = lblen = 0;
 	lastline = OOBLNO;
-	for (lno = cmdp->addr1.lno,
-	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
+	for (quit = 0, lno = cmdp->addr1.lno,
+	    elno = cmdp->addr2.lno; !quit && lno <= elno; ++lno) {
 
 		/* Get the line. */
 		if ((s = file_gline(sp, ep, lno, &len)) == NULL) {
 			GETLINE_ERR(sp, lno);
 			return (1);
 		}
+
+		ADD_SPACE(sp, bp, blen, len)
+		memmove(bp, s, len);
+		s = bp;
 
 		lbclen = 0;
 		eflags = REG_STARTEND;
@@ -278,7 +286,7 @@ skipmatch:	eval = regexec(re,
 		}
 		if (eval != 0) {
 			re_error(sp, eval, re);
-			return (1);
+			goto ret1;
 		}
 
 		/* Confirm change. */
@@ -304,8 +312,10 @@ skipmatch:	eval = regexec(re,
 				BUILD(sp, s, sp->match[0].rm_eo);
 				goto skip;
 			case QUIT:
-				elno = lno;
-				goto nomatch;
+				quit = 1;
+				if (lbclen != 0)
+					goto nomatch;
+				continue;
 			}
 		}
 
@@ -314,7 +324,7 @@ skipmatch:	eval = regexec(re,
 
 		/* Copy matching bytes. */
 		if (regsub(sp, s, &lb, &lbclen, &lblen))
-			return (1);
+			goto ret1;
 
 skip:		s += sp->match[0].rm_eo;
 		len -= sp->match[0].rm_eo;
@@ -339,7 +349,7 @@ skip:		s += sp->match[0].rm_eo;
 				    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
 					if (file_iline(sp, ep, lno,
 					    lb + last, sp->newl[cnt] - last))
-						return (1);
+						goto ret1;
 					last = sp->newl[cnt] + 1;
 					++sp->rptlines[L_ADDED];
 				}
@@ -351,12 +361,12 @@ skip:		s += sp->match[0].rm_eo;
 			/* Store the line. */
 			if (lbclen)
 				if (file_sline(sp, ep, lno, lb + last, lbclen))
-					return (1);
+					goto ret1;
 
 			/* Get a new copy of the line. */
 			if ((s = file_gline(sp, ep, lno, &len)) == NULL) {
 				GETLINE_ERR(sp, lno);
-				return (1);
+				goto ret1;
 			}
 
 			/* Restart the buffer. */
@@ -397,7 +407,7 @@ nomatch:	if (len)
 			    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
 				if (file_iline(sp, ep,
 				    lno, lb + last, sp->newl[cnt] - last))
-					return (1);
+					goto ret1;
 				last = sp->newl[cnt] + 1;
 				++sp->rptlines[L_ADDED];
 			}
@@ -411,7 +421,7 @@ nomatch:	if (len)
 		 */
 		if (lbclen || sp->newl_cnt)
 			if (file_sline(sp, ep, lno, lb + last, lbclen))
-				return (1);
+				goto ret1;
 
 		sp->newl_cnt = 0;
 
@@ -439,7 +449,11 @@ nomatch:	if (len)
 	else if (!lflag && !nflag && !pflag)
 		F_SET(sp, S_AUTOPRINT);
 
+	FREE_SPACE(sp, bp, blen);
 	return (0);
+
+ret1:	FREE_SPACE(sp, bp, blen);
+	return (1);
 }
 
 /*
