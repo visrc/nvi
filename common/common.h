@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.26 1993/11/20 10:05:27 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:27 $
+ *	$Id: common.h,v 8.27 1993/11/27 15:01:23 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:01:23 $
  */
 
 /* System includes. */
@@ -78,7 +78,6 @@ typedef	u_int		ARG_CHAR_T;
 
 #include "exf.h"		
 #include "log.h"
-#include "seq.h"
 
 #if FWOPEN_NOT_AVAILABLE	/* See PORT/clib/fwopen.c. */
 #define	EXCOOKIE	sp
