@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.4 1994/11/18 13:14:21 bostic Exp $ (Berkeley) $Date: 1994/11/18 13:14:21 $
+ *	$Id: vi.h,v 9.5 1994/11/20 12:50:08 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:50:08 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -132,12 +132,11 @@ struct _vikeys {			/* Underlying function. */
 #define	V_CHAR		0x00020000	/* Character (required, trailing). */
 #define	V_CNT		0x00040000	/* Count (optional, leading). */
 #define	V_DOT		0x00080000	/* On success, sets dot command. */
-#define	V_KEYNUM	0x00100000	/* Cursor referenced number. */
-#define	V_KEYW		0x00200000	/* Cursor referenced word. */
-#define	V_MOTION	0x00400000	/* Motion (required, trailing). */
-#define	V_MOVE		0x00800000	/* Command defines movement. */
-#define	V_OBUF		0x01000000	/* Buffer (optional, leading). */
-#define	V_RBUF		0x02000000	/* Buffer (required, trailing). */
+#define	V_KEYW		0x00100000	/* Cursor referenced word. */
+#define	V_MOTION	0x00200000	/* Motion (required, trailing). */
+#define	V_MOVE		0x00400000	/* Command defines movement. */
+#define	V_OBUF		0x00800000	/* Buffer (optional, leading). */
+#define	V_RBUF		0x01000000	/* Buffer (required, trailing). */
 	u_int32_t flags;
 	char	*usage;			/* Usage line. */
 	char	*help;			/* Help line. */
@@ -186,9 +185,6 @@ typedef struct _vi_private {
 	CH	*rep;			/* Input replay buffer. */
 	size_t	 rep_len;		/* Input replay buffer length. */
 	size_t	 rep_cnt;		/* Input replay buffer characters. */
-
-	CHAR_T	 inc_lastch;		/* Last increment character. */
-	long	 inc_lastval;		/* Last increment value. */
 
 	char	*ps;			/* Paragraph plus section list. */
 
