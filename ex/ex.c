@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.5 1993/08/06 12:17:42 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:17:42 $";
+static char sccsid[] = "$Id: ex.c,v 8.6 1993/08/15 13:11:14 bostic Exp $ (Berkeley) $Date: 1993/08/15 13:11:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -250,8 +250,9 @@ ex_cmd(sp, ep, exc)
 	 * is.  There are a few commands that aren't alphabetic, but they
 	 * are all single character commands.
 	 */
+#define	SINGLE_CHAR_COMMANDS	"!#&<=>@"
 	if (*exc) {
-		if (strchr("!#&<=>@", *exc)) {
+		if (strchr(SINGLE_CHAR_COMMANDS, *exc)) {
 			p = exc;
 			exc++;
 			cmdlen = 1;
@@ -283,13 +284,13 @@ ex_cmd(sp, ep, exc)
 		}
 
 		/*
-		 * Another "special" feature.
-		 * NOTE: cmd.string is NOT nul terminated in this case.
+		 * Multiple < and > characters; another "special" feature.
+		 * NOTE: cmd.string may not be nul terminated in this case.
 		 */
-		if ((cp == &cmds[C_SHIFTL] && *exc == '<') ||
-		    (cp == &cmds[C_SHIFTR] && *exc == '>')) {
-			ch = *exc;
-			for (cmd.string = exc; *++exc == ch;);
+		if ((cp == &cmds[C_SHIFTL] && *p == '<') ||
+		    (cp == &cmds[C_SHIFTR] && *p == '>')) {
+			ch = *p;
+			for (cmd.string = exc = p; *++exc == ch;);
 		}
 	} else {
 		cp = sp->lastcmd;
