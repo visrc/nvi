@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.31 1996/01/11 18:01:21 bostic Exp $ (Berkeley) $Date: 1996/01/11 18:01:21 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.32 1996/02/06 12:00:24 bostic Exp $ (Berkeley) $Date: 1996/02/06 12:00:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -505,6 +505,14 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 			LF_SET(TXT_REPLAY);
 			goto replay;
 		}
+	}
+
+	/* File name completion. */
+	if (LF_ISSET(TXT_FILEC) &&
+	    O_STR(sp, O_FILEC) != NULL && O_STR(sp, O_FILEC)[0] == evp->e_c) {
+		if (txt_fc(sp, tp, &filec_redraw))
+			goto err;
+		goto ret;
 	}
 
 	/* Abbreviation check.  See comment in txt_abbrev(). */
@@ -1104,13 +1112,6 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 	case K_HEXCHAR:
 		hexcnt = 1;
 		goto insq_ch;
-	case K_TAB:
-		if (LF_ISSET(TXT_FILEC) && O_ISSET(sp, O_FILEC)) {
-			if (txt_fc(sp, tp, &filec_redraw))
-				goto err;
-			goto ret;
-		}
-		goto ins_ch;
 	default:			/* Insert the character. */
 ins_ch:		/*
 		 * Historically, vi eliminated nul's out of hand.  If the
