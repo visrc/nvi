@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.8 1994/11/13 17:26:22 bostic Exp $ (Berkeley) $Date: 1994/11/13 17:26:22 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.9 1994/11/14 09:54:05 bostic Exp $ (Berkeley) $Date: 1994/11/14 09:54:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,7 +130,7 @@ svi_refresh(sp)
  *	absolutely necessary.  If you change this code, you'd better know
  *	what you're doing.  It's subtle and quick to anger.
  */
-int
+static int
 svi_paint(sp, flags)
 	SCR *sp;
 	u_int flags;
