@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.14 1994/09/16 12:41:38 bostic Exp $ (Berkeley) $Date: 1994/09/16 12:41:38 $
+.\"     $Id: vi.1,v 8.15 1994/09/29 17:10:58 bostic Exp $ (Berkeley) $Date: 1994/09/29 17:10:58 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -983,10 +983,6 @@ commands.
 Select the shell used by the editor.
 .It Sy "shiftwidth, sw [8]"
 Set the autoindent and shift command indentation width.
-.It Sy "showdirty [off]"
-.Nm \&Vi
-only.
-Display an asterisk on the colon command line if the file has been modified.
 .It Sy "showmatch, sm [off]"
 .Nm \&Vi
 only.
@@ -1002,7 +998,7 @@ characters.
 .It Sy "showmode [off]"
 .Nm \&Vi
 only.
-Display the current editor mode (command or input).
+Display the current editor mode and a ``modified'' flag.
 .It Sy "sidescroll [16]"
 .Nm \&Vi
 only.
