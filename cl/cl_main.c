@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.44 1996/12/18 15:57:38 bostic Exp $ (Berkeley) $Date: 1996/12/18 15:57:38 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.45 1996/12/18 17:06:41 bostic Exp $ (Berkeley) $Date: 1996/12/18 17:06:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,7 @@ GS *__global_list;				/* GLOBAL: List of screens. */
 sigset_t __sigblockset;				/* GLOBAL: Blocked signals. */
 
 static void	   cl_func_std __P((GS *));
+static void	   cl_end __P((CL_PRIVATE *));
 static CL_PRIVATE *cl_init __P((GS *));
 static GS	  *gs_init __P((char *));
 static void	   perr __P((char *, char *));
@@ -170,7 +171,7 @@ main(argc, argv)
 
 	/* Free the global and CL private areas. */
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
-	free(clp);
+	cl_end(clp);
 	free(gp);
 #endif
 
@@ -249,6 +250,19 @@ tcfail:			perr(gp->progname, "tcgetattr");
 	cl_func_std(gp);
 
 	return (clp);
+}
+
+/*
+ * cl_end --
+ *	Discard the CL structure.
+ */
+static void
+cl_end(clp)
+	CL_PRIVATE *clp;
+{
+	if (clp->oname != NULL)
+		free(clp->oname);
+	free(clp);
 }
 
 /*
