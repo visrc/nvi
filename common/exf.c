@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.43 1996/07/09 20:21:46 bostic Exp $ (Berkeley) $Date: 1996/07/09 20:21:46 $";
+static const char sccsid[] = "$Id: exf.c,v 10.44 1996/07/12 18:23:35 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -400,7 +400,7 @@ file_init(sp, frp, rcv_name, flags)
 	file_cinit(sp);
 
 	/* Change the name of the icon/window. */
-	(void)sp->gp->scr_rename(sp);
+	(void)sp->gp->scr_rename(sp, sp->frp->name, 1);
 
 	/* Redraw the screen from scratch, schedule a welcome message. */
 	F_SET(sp, SC_SCR_REFORMAT | SC_STATUS);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.24 1996/06/26 20:07:02 bostic Exp $ (Berkeley) $Date: 1996/06/26 20:07:02 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.25 1996/07/12 18:23:36 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -363,32 +363,5 @@ f_window(sp, op, str, valp)
 	if (*valp >= O_VAL(sp, O_LINES) - 1 &&
 	    (*valp = O_VAL(sp, O_LINES) - 1) == 0)
 		*valp = 1;
-	return (0);
-}
-
-/*
- * PUBLIC: int f_windowname __P((SCR *, OPTION *, char *, u_long *));
- */
-int
-f_windowname(sp, op, str, valp)
-	SCR *sp;
-	OPTION *op;
-	char *str;
-	u_long *valp;
-{
-	/*
-	 * XXX
-	 * The cl_rename routine depends on the O_WINDOWNAME value being
-	 * already set, because it's a destructive action, and it wants
-	 * to make sure we have permission.  This doesn't apply to other
-	 * screen types where the naming won't be destructive, so we don't
-	 * want to move the check up out of the screen code.
-	 */
-	if (*valp)
-		O_CLR(sp, O_WINDOWNAME);
-	else
-		O_SET(sp, O_WINDOWNAME);
-
-	(void)sp->gp->scr_rename(sp);
 	return (0);
 }

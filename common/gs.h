@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.32 1996/06/18 11:42:24 bostic Exp $ (Berkeley) $Date: 1996/06/18 11:42:24 $
+ *	$Id: gs.h,v 10.33 1996/07/12 18:23:35 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:35 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -182,7 +182,7 @@ struct _gs {
 					/* Refresh the screen. */
 	int	(*scr_refresh) __P((SCR *, int));
 					/* Rename the file. */
-	int	(*scr_rename) __P((SCR *));
+	int	(*scr_rename) __P((SCR *, char *, int));
 					/* Set the screen type. */
 	int	(*scr_screen) __P((SCR *, u_int32_t));
 					/* Suspend the editor. */
