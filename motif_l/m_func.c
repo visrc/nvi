@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.24 2000/07/05 11:33:18 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:18 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.25 2001/06/18 20:16:42 skimo Exp $ (Berkeley) $Date: 2001/06/18 20:16:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -390,4 +390,5 @@ IPSIOPS ipsi_ops_motif = {
 	vi_scrollbar,
 	vi_select,
 	vi_split,
+	vi_addstr,
 };
