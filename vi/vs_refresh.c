@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.20 1996/03/14 21:26:12 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:26:12 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.21 1996/03/19 13:45:53 bostic Exp $ (Berkeley) $Date: 1996/03/19 13:45:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -642,16 +642,14 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		return (1);
 
 	/*
-	 * 9: Repaint the mode line.
-	 */
-	if (!F_ISSET(sp, S_INPUT_INFO) &&
-	    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
-		vs_modeline(sp);
-
-	/*
-	 * 10: Update and position the cursor and flush changes.
+	 * 9: Update the mode line, position the cursor, and flush changes.
 	 */
 	if (leftright_warp || LF_ISSET(PAINT_FLUSH)) {
+
+		if (!F_ISSET(sp, S_INPUT_INFO) &&
+		    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
+			vs_modeline(sp);
+
 		OCNO = CNO;
 		OLNO = LNO;
 		(void)gp->scr_move(sp, y, SCNO);
@@ -668,7 +666,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 			(void)vs_column(sp, &sp->rcm);
 	}
 
-	/* 11: Clear the flags that are handled by this routine. */
+	/* 10: Clear the flags that are handled by this routine. */
 	F_CLR(sp, S_SCR_CENTER | S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_TOP);
 	F_CLR(vip, VIP_CUR_INVALID |
 	    VIP_N_EX_PAINT | VIP_N_REFRESH | VIP_N_RENUMBER | VIP_S_MODELINE);
