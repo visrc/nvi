@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.18 1994/04/26 11:32:30 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:32:30 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.19 1994/05/16 18:26:48 bostic Exp $ (Berkeley) $Date: 1994/05/16 18:26:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -340,12 +340,20 @@ v_pagedown(sp, ep, vp)
 	 * any screen but the "next" one anyway.  We do it the historical
 	 * was as there's no good reason to change it.
 	 *
+	 * If the screen has been split, use the smaller of the current
+	 * window size and the window option value.
+	 *
 	 * Given a one-line screen with the cursor on line 1, it would be
 	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
 	 * least one line.
 	 */
-	offset =
-	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * O_VAL(sp, O_WINDOW) - 2;
+#define	IS_SPLIT_SCREEN(sp)						\
+	((sp)->q.cqe_prev != (void *)&(sp)->gp->dq ||			\
+	    (sp)->q.cqe_next != (void *)&(sp)->gp->dq)
+
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) *
+	    (IS_SPLIT_SCREEN(sp) ?
+	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW)) - 2;
 	if (offset == 0)
 		offset = 1;
 	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_F))
@@ -391,12 +399,16 @@ v_pageup(sp, ep, vp)
 	 * but the first screen.  We do it the historical way as there's
 	 * no good reason to change it.
 	 *
+	 * If the screen has been split, use the smaller of the current
+	 * window size and the window option value.
+	 *
 	 * Given a one-line screen with the cursor on line 1, it would be
 	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
 	 * least one line.
 	 */
-	offset =
-	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * O_VAL(sp, O_WINDOW) - 2;
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) *
+	    (IS_SPLIT_SCREEN(sp) ?
+	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW)) - 2;
 	if (offset == 0)
 		offset = 1;
 	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_B))
