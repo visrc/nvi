@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.13 1995/07/11 14:54:07 bostic Exp $ (Berkeley) $Date: 1995/07/11 14:54:07 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.14 1995/09/21 10:54:38 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:54:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,11 +31,6 @@ static char sccsid[] = "$Id: cl_funcs.c,v 10.13 1995/07/11 14:54:07 bostic Exp $
 
 #include "common.h"
 #include "cl.h"
-#include "vi.h"
-
-static int cl_lline_copy __P((SCR *, size_t *, CHAR_T **, size_t *));
-
-static int user_request;
 
 /*
  * cl_addstr --
@@ -54,48 +49,24 @@ cl_addstr(sp, str, len)
 	int iv, rval;
 
 	EX_ABORT(sp);
-	VI_INIT_IGNORE(sp);
+	VI_INIT_ABORT(sp);
 
 	/*
-	 * The curses screen overlaps ex and error message output with the
-	 * normal user screen.  For that reason, we have to be able to tell
-	 * if a request to change the screen is from the editor or from the
-	 * screen code.  The former is ignored if the screen code is using
-	 * those lines for its own purposes.
-	 *
-	 * This routine can be discarded if the screen has a separate area
-	 * for presenting ex and error message output.
-	 */
-	clp = CLP(sp);
-	getyx(stdscr, oldy, oldx);
-	if (clp->totalcount != 0 && !F_ISSET(clp, CL_PRIVWRITE) &&
-	    oldy > RLNO(sp, INFOLINE(sp)) - clp->totalcount)
-		return (0);
-
-	/*
-	 * If it's the last line of the screen:
-	 *	If there's a busy message already there, discard the busy
-	 *	message.
-	 *
-	 *	If a split screen, use inverse video.
-	 *
-	 * Screens that have other ways than inverse video to separate split
-	 * screens should discard the test for split screens and not set the
-	 * output mode to inverse video.
+	 * If it's the last line of the screen and it's a split screen,
+	 * use inverse video.
 	 */
 	iv = 0;
 	getyx(stdscr, oldy, oldx);
 	if (oldy == RLNO(sp, INFOLINE(sp))) {
-		if (clp->busy_state == BUSY_ON)
-			clp->busy_state = BUSY_SILENT;
+		clp = CLP(sp);
 		if (IS_SPLIT(sp)) {
 			iv = 1;
+			(void)standout();
 			F_SET(clp, CL_LLINE_IV);
-		}
+		} else
+			F_CLR(clp, CL_LLINE_IV);
 	}
 
-	if (iv)
-		(void)standout();
 	if (rval = (addnstr(str, len) == ERR))
 		msgq(sp, M_ERR, "Error: addstr: %.*s", (int)len, str);
 	if (iv)
@@ -117,16 +88,13 @@ cl_attr(sp, attribute, on)
 {
 	CL_PRIVATE *clp;
 
-	/*
-	 * Screens not supporting standalone ex mode should discard tests for
-	 * S_EX, and use an EX_ABORT macro, replacing EX_INIT_IGNORE.
-	 */
-	EX_INIT_IGNORE(sp);
-	VI_INIT_IGNORE(sp);
+	EX_INIT_ABORT(sp);
+	VI_INIT_ABORT(sp);
 
 	switch (attribute) {
 	case SA_INVERSE:
-		if (F_ISSET(sp, S_EX)) {
+		switch (F_ISSET(sp, S_EX | S_VI)) {
+		case S_EX:
 			clp = CLP(sp);
 			if (clp->smso == NULL)
 				return (1);
@@ -134,13 +102,52 @@ cl_attr(sp, attribute, on)
 				(void)tputs(clp->smso, 1, cl_putchar);
 			else
 				(void)tputs(clp->rmso, 1, cl_putchar);
-		} else
+			return (0);
+		case S_VI:
 			return (on ? standout() == ERR : standend() == ERR);
+		}
 		break;
 	default:
 		abort();
 	}
 	return (0);
+}
+
+/*
+ * cl_baud --
+ *	Return the baud rate.
+ *
+ * PUBLIC: int cl_baud __P((SCR *));
+ */
+int
+cl_baud(sp)
+	SCR *sp;
+{
+	CL_PRIVATE *clp;
+
+	/*
+	 * XXX
+	 * There's no portable way to get a "baud rate" -- cfgetospeed(3)
+	 * returns the value associated with some #define, which we may
+	 * never have heard of, or which may be a purely local speed.  Vi
+	 * only cares if it's SLOW (w300), slow (w1200) or fast (w9600).
+	 * Try and detect the slow ones, and default to fast.
+	 */
+	clp = CLP(sp);
+	switch (cfgetospeed(&clp->orig)) {
+	case B50:
+	case B75:
+	case B110:
+	case B134:
+	case B150:
+	case B200:
+	case B300:
+	case B600:
+		return (600);
+	case B1200:
+		return (1200);
+	}
+	return (9600);
 }
 
 /*
@@ -153,7 +160,8 @@ int
 cl_bell(sp)
 	SCR *sp;
 {
-	VI_INIT_IGNORE(sp);
+	EX_INIT_ABORT(sp);
+	VI_INIT_ABORT(sp);
 
 	/*
 	 * Screens not supporting standalone ex mode should discard tests for
@@ -175,172 +183,6 @@ cl_bell(sp)
 	return (0);
 }
 
-/*
- * cl_busy --
- *	Display, update or clear a busy message.
- *
- * PUBLIC: int cl_busy __P((SCR *, const char *, int));
- */
-int
-cl_busy(sp, msg, on)
-	SCR *sp;
-	const char *msg;
-	int on;
-{
-	static const char flagc[] = "|/-|-\\";
-	CL_PRIVATE *clp;
-	struct timeval tv;
-	size_t info, len, notused, oldy;
-	const char *p;
-
-	VI_INIT_IGNORE(sp);
-
-	/*
-	 * Check for ex modes.
-	 *
-	 * This test is correct for all screen types.  Vi can enter this code
-	 * with the S_EX_CANON flag set, and the additional flag tests should
-	 * not cause harm.
-	 */
-	if (F_ISSET(sp, S_EX | S_EX_CANON))
-		return (0);
-
-	/*
-	 * See the comment in cl_addstr(); if the line is already in use,
-	 * ignore the request.  Note, we're assuming that all calls to this
-	 * function are from the editor, not from another part of the screen.
-	 */
-	clp = CLP(sp);
-	info = RLNO(sp, INFOLINE(sp));
-	if (!F_ISSET(clp, CL_PRIVWRITE) && clp->totalcount != 0) {
-		getyx(stdscr, oldy, notused);
-		if (oldy > info - clp->totalcount)
-			return (0);
-	}
-
-	/*
-	 * Most of this routine is to deal with the fact that the curses screen
-	 * shares real estate between the editor text and the busy messages.  If
-	 * the screen has a better way to display busy messages, most of this
-	 * goes away.  Logically, all that's needed is something that puts up a
-	 * message, periodically updates it, and then goes away.
-	 */
-	if (on)
-		switch (clp->busy_state) {
-		case BUSY_OFF:
-			/*
-			 * Save the current cursor position and move to the
-			 * info line.
-			 */
-			getyx(stdscr, clp->busy_y, clp->busy_x);
-			(void)move(info, 0);
-			getyx(stdscr, notused, clp->busy_fx);
-
-			/* If there's no message, just rest the cursor. */
-			if (msg == NULL) {
-				clp->busy_state = BUSY_SILENT;
-				refresh();
-				break;
-			}
-
-			/* Save a copy of whatever is currently there. */
-			if (cl_lline_copy(sp,
-			    &clp->lline_len, &clp->lline, &clp->lline_blen))
-				return (1);
-
-			/* Display the busy message. */
-			p = msg_cat(sp, msg, &len);
-			(void)addnstr(p, len);
-			getyx(stdscr, notused, clp->busy_fx);
-			(void)clrtoeol();
-			(void)move(info, clp->busy_fx);
-
-			/* Initialize state for updates. */
-			clp->busy_ch = 0;
-			(void)gettimeofday(&clp->busy_tv, NULL);
-
-			/* Update the state. */
-			clp->busy_state = BUSY_ON;
-			refresh();
-			break;
-		case BUSY_ON:
-			/* Update no more than every 1/4 of a second. */
-			(void)gettimeofday(&tv, NULL);
-			if (((tv.tv_sec - clp->busy_tv.tv_sec) * 1000000 +
-			    (tv.tv_usec - clp->busy_tv.tv_usec)) < 4000)
-				return (0);
-
-			/* Display the update. */
-			if (clp->busy_ch == sizeof(flagc))
-				clp->busy_ch = 0;
-			(void)mvaddnstr(info,
-			    clp->busy_fx, flagc + clp->busy_ch++, 1);
-			(void)move(info, clp->busy_fx);
-
-			refresh();
-			break;
-		case BUSY_SILENT:
-			break;
-		}
-	else
-		switch (clp->busy_state) {
-		case BUSY_OFF:
-			break;
-		case BUSY_ON:
-			/* Restore the contents of the line. */
-			move(info, 0);
-			if (clp->lline_len == 0)
-				clrtoeol();
-			else {
-				if (F_ISSET(clp, CL_LLINE_IV))
-					(void)standout();
-				(void)addnstr(clp->lline, clp->lline_len);
-				if (F_ISSET(clp, CL_LLINE_IV))
-					(void)standend();
-				clp->lline_len = 0;
-			}
-			/* FALLTHROUGH */
-		case BUSY_SILENT:
-			clp->busy_state = BUSY_OFF;
-			(void)move(clp->busy_y, clp->busy_x);
-			(void)refresh();
-		}
-	return (0);
-}
-
-/*
- * cl_canon --
- *	Enter/leave tty canonical mode.
- *
- * PUBLIC: int cl_canon __P((SCR *, int));
- */
-int
-cl_canon(sp, enter)
-	SCR *sp;
-	int enter;
-{
-	/*
-	 * This function isn't needed by any screen not supporting ex commands
-	 * that require full terminal canonical mode (e.g. :shell).  Returning
-	 * 1 for failure will cause the editor to reject the command.
-	 */
-	EX_NOOP(sp);
-	VI_INIT_IGNORE(sp);
-
-	if (enter) {
-		/*
-		 * All screens should move to the bottom of the screen, even
-		 * in the presence of split screens.  This makes terminal
-		 * scrolling happen naturally and without overwriting editor
-		 * text.  Don't clear the info line, its contents may be valid,
-		 * e.g. :file|append.
-		 */
-		(void)move(O_VAL(sp, O_LINES) - 1, 0);
-		(void)refresh();
-		return (cl_ex_tinit(sp));
-	} else
-		return (cl_ex_tend(sp));
-}
 
 /*
  * cl_clrtoeol --
@@ -352,23 +194,9 @@ int
 cl_clrtoeol(sp)
 	SCR *sp;
 {
-	CL_PRIVATE *clp;
-	int oldy, oldx;
+	EX_ABORT(sp);
+	VI_INIT_ABORT(sp);
 
-	EX_NOOP(sp);
-	VI_INIT_IGNORE(sp);
-
-	/*
-	 * See the comment in cl_addstr(); if the line is already in use,
-	 * ignore the request.  Note, we're assuming that all calls to this
-	 * function are from the editor, not from another part of the screen.
-	 */
-	clp = CLP(sp);
-	if (!F_ISSET(clp, CL_PRIVWRITE) && clp->totalcount != 0) {
-		getyx(stdscr, oldy, oldx);
-		if (oldy > RLNO(sp, INFOLINE(sp)) - clp->totalcount)
-			return (0);
-	}
 	return (clrtoeol() == ERR);
 }
 
@@ -384,7 +212,7 @@ cl_cursor(sp, yp, xp)
 	size_t *yp, *xp;
 {
 	EX_ABORT(sp);
-	VI_INIT_IGNORE(sp);
+	VI_INIT_ABORT(sp);
 
 	/*
 	 * The curses screen support splits a single underlying curses screen
@@ -399,32 +227,6 @@ cl_cursor(sp, yp, xp)
 }
 
 /*
- * cl_move --
- *	Move the cursor.
- *
- * PUBLIC: int cl_move __P((SCR *, size_t, size_t));
- */
-int
-cl_move(sp, lno, cno)
-	SCR *sp;
-	size_t lno, cno;
-{
-	EX_ABORT(sp);
-	VI_INIT_IGNORE(sp);
-
-	/*
-	 * See the comment in cl_cursor.  Screens implementing split screens
-	 * using physically distinct screens won't need to adjust the cl_move
-	 * parameters.
-	 */
-	if (move(RLNO(sp, lno), cno) != ERR)
-		return (0);
-
-	msgq(sp, M_ERR, "Error: move: l(%u) c(%u) o(%u)", lno, cno, sp->woff);
-	return (1);
-}
-
-/*
  * cl_deleteln --
  *	Delete the current line, scrolling all lines below it.
  *
@@ -434,60 +236,14 @@ int
 cl_deleteln(sp)
 	SCR *sp;
 {
-	CHAR_T *p;
+	CHAR_T ch;
 	CL_PRIVATE *clp;
-	size_t len, llen, oldy, oldx;
+	size_t col, lno, spcnt, oldy, oldx;
 
 	EX_ABORT(sp);
-	VI_INIT_IGNORE(sp);
+	VI_INIT_ABORT(sp);
 
-	/*
-	 * See the comment in cl_addstr(); if the line is already in use,
-	 * ignore the request.  Note, we're assuming that all calls to this
-	 * function are from the editor, not from another part of the screen.
-	 * The additional difficulty here is that if we discard this request,
-	 * we either have to preserve the change for later application, or
-	 * force a full rewrite of the screen lines by the editor when the
-	 * messages are cleared.  The latter is easier.
-	 */
 	clp = CLP(sp);
-	if (!F_ISSET(clp, CL_PRIVWRITE) && clp->totalcount != 0) {
-		F_SET(clp, CL_REPAINT);
-		return (0);
-	}
-
-	/*
-	 * This clause is required because the curses screen shares space
-	 * between busy messages and other output.  If the screen does not
-	 * do this, this code won't be necesssary.
-	 *
-	 * If the bottom line was in use for a busy message:
-	 *
-	 *	Get a copy of the busy message.
-	 *	Replace it with whatever was there previously.
-	 *	Scroll the screen.
-	 *	Restore the busy message.
-	 */ 
-	if (clp->busy_state == BUSY_ON) {
-		getyx(stdscr, oldy, oldx);
-		p = NULL;
-		len = llen = 0;
-		if (cl_lline_copy(sp, &len, &p, &llen))
-			return (1);
-		if (clp->lline_len == 0)
-			(void)clrtoeol();
-		else {
-			(void)mvaddnstr(RLNO(sp, INFOLINE(sp)),
-			    0, clp->lline, clp->lline_len);
-			clp->lline_len = 0;
-		}
-		if (deleteln() == ERR)
-			return (1);
-		if (len != 0)
-			(void)mvaddnstr(RLNO(sp, INFOLINE(sp)), 0, p, len);
-		(void)move(oldy, oldx);
-		return (0);
-	}
 
 	/*
 	 * This clause is required because the curses screen uses reverse
@@ -501,27 +257,30 @@ cl_deleteln(sp)
 	 * historic implementations of System V curses don't.   If it's not
 	 * a #define, we'll fall back to doing it by hand, which is slow but
 	 * acceptable.
+	 *
+	 * By hand means walking through the line, retrieving and rewriting
+	 * each character.  Curses has no EOL marker, so track strings of
+	 * spaces, and copy the trailing spaces only if there's a non-space
+	 * character following.
 	 */
 	if (F_ISSET(clp, CL_LLINE_IV)) {
-#ifdef mvchgat
 		getyx(stdscr, oldy, oldx);
+#ifdef mvchgat
 		mvchgat(RLNO(sp, INFOLINE(sp)), 0, -1, A_NORMAL, 0, NULL);
-		(void)move(oldy, oldx);
 #else
-		if (cl_lline_copy(sp,
-		    &clp->lline_len, &clp->lline, &clp->lline_blen))
-			return (1);
-
-		if (clp->lline_len == 0)
-			(void)clrtoeol();
-		else {
-			getyx(stdscr, oldy, oldx);
-			(void)mvaddnstr(RLNO(sp, INFOLINE(sp)),
-			    0, clp->lline, clp->lline_len);
-			(void)move(oldy, oldx);
-			clp->lline_len = 0;
+		for (lno = RLNO(sp, INFOLINE(sp)), col = spcnt = 0;;) {
+			(void)move(lno, col);
+			ch = winch(stdscr);
+			if (isblank(ch))
+				++spcnt;
+			else {
+				for (; spcnt > 0; --spcnt)
+					(void)addch(' ');
+				(void)addch(ch);
+			}
+			if (++col >= sp->cols)
+				break;
 		}
-#endif
 
 #ifndef THIS_FIXES_A_BUG_IN_NCURSES
 		/*
@@ -531,50 +290,68 @@ cl_deleteln(sp)
 		refresh();
 #endif
 		F_CLR(clp, CL_LLINE_IV);
+#endif
+		(void)move(oldy, oldx);
 	}
 
 	/*
 	 * The bottom line is expected to be blank after this operation,
-	 * and the screen must support this semantic.
+	 * and other screens must support that semantic.
 	 */
 	return (deleteln() == ERR);
 }
 
 /*
- * cl_insertln --
- *	Push down the current line, discarding the bottom line.
+ * cl_discard --
+ *	Discard a screen.
  *
- * PUBLIC: int cl_insertln __P((SCR *));
+ * PUBLIC: int cl_discard __P((SCR *, SCR **, dir_t *));
  */
 int
-cl_insertln(sp)
-	SCR *sp;
+cl_discard(sp, addp, dp)
+	SCR *sp, **addp;
+	dir_t *dp;
 {
-	CL_PRIVATE *clp;
+	SCR *nsp;
 
 	EX_ABORT(sp);
-	VI_INIT_IGNORE(sp);
+	VI_INIT_ABORT(sp);
 
 	/*
-	 * See the comment in cl_addstr(); if the line is already in use,
-	 * ignore the request.  Note, we're assuming that all calls to this
-	 * function are from the editor, not from another part of the screen.
-	 * The additional difficulty here is that if we discard this request,
-	 * we either have to preserve the change for later application, or
-	 * force a full rewrite of the screen lines by the editor when the
-	 * messages are cleared.  The latter is easier.
+	 * The cl_discard, cl_resize and cl_split routines are called when
+	 * screens are exited, resized or split, respectively.  They will
+	 * all have to change (and, in addition, the vi editor code may have
+	 * to change) if there's a screen implementation that doesn't split
+	 * screens the way that the curses screen does, i.e. one where split
+	 * screens aren't created by splitting an existing screen in half.
+	 *
+	 * XXX
+	 * This code is badly broken up between the editor and the screen
+	 * code.  Once we have some idea what other screens will want, it
+	 * should be reworked to provide a lot more information hiding.
+	 *
+	 * Discard screen sp.  If another screen got its real-estate, return
+	 * return that screen and set if it was a screen immediately above or
+	 * below it the discarded screen.  Otherwise, return NULL.
+	 *
+	 * In the curses screen, add into a previous screen and then into a
+	 * subsequent screen, as they're the closest to the current screen.
+	 * If that doesn't work, there was no screen to join.
 	 */
-	clp = CLP(sp);
-	if (!F_ISSET(clp, CL_PRIVWRITE) && clp->totalcount != 0) {
-		F_SET(clp, CL_REPAINT);
-		return (0);
+	if ((nsp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
+		nsp->rows += sp->rows;
+		*addp = nsp;
+		*dp = FORWARD;
+	} else if ((nsp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
+		nsp->woff = sp->woff;
+		nsp->rows += sp->rows;
+		*addp = nsp;
+		*dp = BACKWARD;
+	} else {
+		*addp = NULL;
+		*dp = NOTSET;
 	}
-
-	/*
-	 * The current line is expected to be blank after this operation,
-	 * and the screen must support this semantic.
-	 */
-	return (insertln() == ERR);
+	return (0);
 }
 
 /* 
@@ -593,10 +370,11 @@ cl_ex_adjust(sp, action)
 
 	/*
 	 * This routine is purely for standalone ex programs.  All special
-	 * purpose, alll special case.  Screens not supporting a standalone
+	 * purpose, all special case.  Screens not supporting a standalone
 	 * ex mode should replace it with an EX_ABORT macro.
 	 */
 	VI_ABORT(sp);
+	EX_INIT_ABORT(sp);
 
 	clp = CLP(sp);
 	switch (action) {
@@ -642,69 +420,83 @@ cl_ex_adjust(sp, action)
 }
 
 /*
- * cl_getkey --
- *	Get a single terminal key (NOT event, terminal key).
+ * cl_insertln --
+ *	Push down the current line, discarding the bottom line.
  *
- * PUBLIC: int cl_getkey __P((SCR *, CHAR_T *));
+ * PUBLIC: int cl_insertln __P((SCR *));
  */
 int
-cl_getkey(sp, chp)
+cl_insertln(sp)
 	SCR *sp;
-	CHAR_T *chp;
 {
-	CL_PRIVATE *clp;
-	int nr;
+	EX_ABORT(sp);
+	VI_INIT_ABORT(sp);
 
-	/* 
-	 * This routine is used by the ex s command with the c flag.  The
-	 * area to be changed is displayed, then the user is prompted to
-	 * confirm the change, and then this routine is called.  It's going
-	 * to be difficult to make that event driven, but it will be done,
-	 * at which point this routine will go away.  Logically, this code
-	 * should be replaced by whatever code is needed to return the next
-	 * user keystroke.
+	/*
+	 * The current line is expected to be blank after this operation,
+	 * and the screen must support that semantic.
 	 */
-	clp = CLP(sp);
-	switch (cl_read(sp, clp->ibuf, sizeof(clp->ibuf), &nr, NULL)) {
-	case INP_OK:
-		*chp = clp->ibuf[0];
-		if (--nr) {
-			memmove(clp->ibuf, clp->ibuf + 1, nr);
-			clp->icnt = nr;
-		}
-		return (0);
-	case INP_INTR:
-	case INP_EOF:
-	case INP_ERR:
-		break;
-	default:
-		abort();
-	}
-	return (1);
+	return (insertln() == ERR);
 }
 
-/* 
- * cl_interrupt --
- *	Check for interrupts.
+/*
+ * cl_keyval --
+ *	Return the value for a special key.
  *
- * PUBLIC: int cl_interrupt __P((SCR *));
+ * PUBLIC: int cl_keyval __P((SCR *, scr_keyval_t, CHAR_T *));
  */
 int
-cl_interrupt(sp)
+cl_keyval(sp, val, chp)
 	SCR *sp;
+	scr_keyval_t val;
+	CHAR_T *chp;
 {
 	CL_PRIVATE *clp;
 
 	/*
-	 * XXX
-	 * This is nasty.  If ex/vi asks about interrupts we can assume that
-	 * the appropriate messages have been displayed and there's no need
-	 * to post an interrupt event later.  Else, the screen code must post
-	 * an interrupt event.
+	 * VEOF, VERASE and VKILL are required by POSIX 1003.1-1990,
+	 * VWERASE is a 4BSD extension.
 	 */
 	clp = CLP(sp);
-	if (F_ISSET(clp, CL_SIGINT)) {
-		F_CLR(clp, CL_SIGINT);
+	switch (val) {
+	case KEY_VEOF:
+		return ((*chp = clp->orig.c_cc[VEOF]) == _POSIX_VDISABLE);
+	case KEY_VERASE:
+		return ((*chp = clp->orig.c_cc[VERASE]) == _POSIX_VDISABLE);
+	case KEY_VKILL:
+		return ((*chp = clp->orig.c_cc[VKILL]) == _POSIX_VDISABLE);
+#ifdef VWERASE
+	case KEY_VWERASE:
+		return ((*chp = clp->orig.c_cc[VWERASE]) == _POSIX_VDISABLE);
+#endif
+	default:
+		return (1);
+	}
+	/* NOTREACHED */
+}
+
+/*
+ * cl_move --
+ *	Move the cursor.
+ *
+ * PUBLIC: int cl_move __P((SCR *, size_t, size_t));
+ */
+int
+cl_move(sp, lno, cno)
+	SCR *sp;
+	size_t lno, cno;
+{
+	EX_ABORT(sp);
+	VI_INIT_ABORT(sp);
+
+	/*
+	 * See the comment in cl_cursor.  Screens implementing split screens
+	 * using physically distinct screens won't need to adjust the cl_move
+	 * parameters.
+	 */
+	if (move(RLNO(sp, lno), cno) == ERR) {
+		msgq(sp, M_ERR,
+		    "Error: move: l(%u) c(%u) o(%u)", lno, cno, sp->woff);
 		return (1);
 	}
 	return (0);
@@ -721,8 +513,8 @@ cl_refresh(sp, repaint)
 	SCR *sp;
 	int repaint;
 {
-	EX_NOOP(sp);
-	VI_INIT_IGNORE(sp);
+	EX_ABORT(sp);
+	VI_INIT_ABORT(sp);
 
 	/*
 	 * If repaint is set, the editor is telling us that we don't know
@@ -738,54 +530,16 @@ cl_refresh(sp, repaint)
 }
 
 /*
- * cl_discard --
- *	Discard a screen.
+ * cl_rename --
+ *	Rename the file.
  *
- * PUBLIC: int cl_discard __P((SCR *, SCR **, dir_t *));
+ * PUBLIC: int cl_rename __P((SCR *));
  */
 int
-cl_discard(sp, addp, dp)
-	SCR *sp, **addp;
-	dir_t *dp;
+cl_rename(sp)
+	SCR *sp;
 {
-	SCR *nsp;
-
-	EX_ABORT(sp);
-
-	/*
-	 * The cl_discard, cl_resize and cl_split routines are called when
-	 * screens are exited, resized or split, respectively.  They will
-	 * all have to change (and, in addition, the vi editor code may have
-	 * to change) if there's a screen implementation that doesn't split
-	 * screens the way that the curses screen does, i.e. one where split
-	 * screens aren't created by splitting an existing screen in half.
-	 *
-	 * XXX
-	 * This code is badly broken up between the editor and the screen
-	 * code.  Once we have some idea what other screens will want, it
-	 * should be reworked to provide a lot more information hiding.
-	 *
-	 * Discard screen sp.  If another screen got its real-estate, return
-	 * return that screen and set if it was a screen immediately above or
-	 * below it the discarded screen.  Otherwise, return NULL.
-	 *
-	 * In the curses screen, add into a previous screen and then into a
-	 * subsequent screen, as they're the closest to the current screen.
-	 * If that doesn't work, there was no screen to join.
-	 */
-	if ((nsp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
-		nsp->rows += sp->rows;
-		*addp = nsp;
-		*dp = FORWARD;
-	} else if ((nsp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
-		nsp->woff = sp->woff;
-		nsp->rows += sp->rows;
-		*addp = nsp;
-		*dp = BACKWARD;
-	} else {
-		*addp = NULL;
-		*dp = NOTSET;
-	}
+	/* Curses doesn't care if you rename the file. */
 	return (0);
 }
 
@@ -801,6 +555,7 @@ cl_resize(a, a_sz, a_off, b, b_sz, b_off)
 	long a_sz, a_off, b_sz, b_off;
 {
 	EX_ABORT(a);
+	VI_INIT_ABORT(a);
 
 	/*
 	 * See the comment in cl_discard().
@@ -830,6 +585,7 @@ cl_split(old, new, to_up)
 	size_t half;
 
 	EX_ABORT(old);
+	VI_INIT_ABORT(old);
 
 	/*
 	 * See the comment in cl_discard.
@@ -854,7 +610,6 @@ cl_split(old, new, to_up)
  * cl_suspend --
  *	Suspend a screen.
  *
- *
  * PUBLIC: int cl_suspend __P((SCR *));
  */
 int
@@ -862,8 +617,13 @@ cl_suspend(sp)
 	SCR *sp;
 {
 	struct termios t;
+	CL_PRIVATE *clp;
 	GS *gp;
+	size_t oldy, oldx;
 	int rval;
+
+	EX_INIT_ABORT(sp);
+	VI_INIT_ABORT(sp);
 
 	rval = 0;
 	switch (F_ISSET(sp, S_EX | S_VI)) {
@@ -882,9 +642,9 @@ cl_suspend(sp)
 				msgq(sp, M_SYSERR, "suspend: tcgetattr");
 				return (1);
 			}
-			if (F_ISSET(gp, G_TERMIOS_SET) &&
-			    tcsetattr(STDIN_FILENO,
-			    TCSASOFT | TCSADRAIN, &gp->original_termios)) {
+			clp = CLP(sp);
+			if (tcsetattr(STDIN_FILENO,
+			    TCSASOFT | TCSADRAIN, &clp->orig)) {
 				msgq(sp, M_SYSERR,
 				    "suspend: tcsetattr original");
 				return (1);
@@ -910,9 +670,12 @@ cl_suspend(sp)
 		 * supporting vi process suspension, i.e. any screen that isn't
 		 * backed by a UNIX shell.  Returning 1 for failure will cause
 		 * the editor to reject the command.
-		 *
-		 * Temporarily end the screen.
 		 */
+		getyx(stdscr, oldy, oldx);
+		(void)move(O_VAL(sp, O_LINES) - 1, 0);
+		(void)refresh();
+
+		/* Temporarily end the screen. */
 		(void)endwin();
 
 		/* Stop the process group. */
@@ -922,8 +685,8 @@ cl_suspend(sp)
 		/* Time passes ... */
 
 		/* Refresh the screen. */
-		clearok(curscr, 1);
-		refresh();
+		(void)move(oldy, oldx);
+		(void)cl_refresh(sp, 1);
 
 		/* If the screen changed size, set the SIGWINCH bit. */
 		if (!cl_ssize(sp, 1, NULL, NULL))
@@ -936,51 +699,20 @@ cl_suspend(sp)
 }
 
 /*
- * cl_lline_copy --
- *	Get a copy of the current last line.
+ * cl_usage --
+ *	Print out the curses usage messages.
+ * 
+ * PUBLIC: void cl_usage __P((void));
  */
-static int
-cl_lline_copy(sp, lenp, bufpp, blenp)
-	SCR *sp;
-	size_t *lenp, *blenp;
-	CHAR_T **bufpp;
+void
+cl_usage()
 {
-	CHAR_T *p, ch;
-	size_t col, lno,oldx, oldy, spcnt;
+#define	USAGE "\
+usage: ex [-eFRrsv] [-c command] [-t tag] [-w size] [file ...]\n\
+usage: vi [-eFlRrv] [-c command] [-t tag] [-w size] [file ...]\n"
 
-	/*
-	 * XXX
-	 * We could save a copy each time the last line is written, but it
-	 * would be a lot more work and I don't expect to do this very often.
-	 *
-	 * Allocate enough memory to hold the line.
-	 */
-	BINC_RET(sp, *bufpp, *blenp, O_VAL(sp, O_COLUMNS));
-
-	/*
-	 * Walk through the line, retrieving each character.  Since curses
-	 * has no EOL marker, keep track of strings of spaces, and copy the
-	 * trailing spaces only if there's another non-space character.
-	 */
-	getyx(stdscr, oldy, oldx);
-	lno = RLNO(sp, INFOLINE(sp));
-	for (p = *bufpp, col = spcnt = 0;;) {
-		(void)move(lno, col);
-		ch = winch(stdscr);
-		if (isblank(ch))
-			++spcnt;
-		else {
-			for (; spcnt > 0; --spcnt)
-				*p++ = ' ';
-			*p++ = ch;
-		}
-		if (++col >= sp->cols)
-			break;
-	}
-	(void)move(oldy, oldx);
-
-	*lenp = p - *bufpp;
-	return (0);
+	(void)fprintf(stderr, "%s", USAGE);
+#undef	USAGE
 }
 
 #ifdef DEBUG

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.4 1995/07/04 12:46:49 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:49 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.5 1995/09/21 10:54:35 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:54:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: cl_term.c,v 10.4 1995/07/04 12:46:49 bostic Exp $ (
 #include <sys/time.h>
 
 #include <bitstring.h>
+#include <curses.h>
 #include <errno.h>
 #include <limits.h>
 #include <signal.h>
@@ -28,7 +29,6 @@ static char sccsid[] = "$Id: cl_term.c,v 10.4 1995/07/04 12:46:49 bostic Exp $ (
 #include <unistd.h>
 
 #include "compat.h"
-#include <curses.h>
 #include <db.h>
 #include <regex.h>
 
@@ -52,15 +52,15 @@ static TKLIST const c_tklist[] = {	/* Command mappings. */
 	{"kdch1",	"x",	"delete character"},
 	{"kcud1",	"j",	"cursor down"},
 	{"kel",		"D",	"delete to eol"},
-	{"kind",     "\004",	"scroll down"},
+	{"kind",     "\004",	"scroll down"},			/* ^D */
 	{"kll",		"$",	"go to eol"},
 	{"khome",	"^",	"go to sol"},
 	{"kich1",	"i",	"insert at cursor"},
 	{"kdl1",       "dd",	"delete line"},
 	{"kcub1",	"h",	"cursor left"},
-	{"knp",	     "\006",	"page down"},
-	{"kpp",	     "\002",	"page up"},
-	{"kri",	     "\025",	"scroll up"},
+	{"knp",	     "\006",	"page down"},			/* ^F */
+	{"kpp",	     "\002",	"page up"},			/* ^B */
+	{"kri",	     "\025",	"scroll up"},			/* ^U */
 	{"ked",	       "dG",	"delete to end of screen"},
 	{"kcuf1",	"l",	"cursor right"},
 	{"kcuu1",	"k",	"cursor up"},
@@ -70,10 +70,10 @@ static TKLIST const m1_tklist[] = {	/* Input mappings (lookup). */
 	{NULL},
 };
 static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
-	{"kcud1",  "\033ja",	"cursor down"},
-	{"kcub1",  "\033ha",	"cursor left"},
-	{"kcuu1",  "\033ka",	"cursor up"},
-	{"kcuf1",  "\033la",	"cursor right"},
+	{"kcud1",  "\033ja",	"cursor down"},			/* ^[ja */
+	{"kcub1",  "\033ha",	"cursor left"},			/* ^[ha */
+	{"kcuu1",  "\033ka",	"cursor up"},			/* ^[ka */
+	{"kcuf1",  "\033la",	"cursor right"},		/* ^[la */
 	{NULL},
 };
 
@@ -156,16 +156,16 @@ cl_term_init(sp)
  * cl_term_end --
  *	End the special keys defined by the termcap/terminfo entry.
  *
- * PUBLIC: int cl_term_end __P((SCR *));
+ * PUBLIC: int cl_term_end __P((GS *));
  */
 int
-cl_term_end(sp)
-	SCR *sp;
+cl_term_end(gp)
+	GS *gp;
 {
 	SEQ *qp, *nqp;
 
 	/* Delete screen specific mappings. */
-	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = nqp) {
+	for (qp = gp->seqq.lh_first; qp != NULL; qp = nqp) {
 		nqp = qp->q.le_next;
 		if (F_ISSET(qp, SEQ_SCREEN))
 			(void)seq_mdel(qp);
@@ -240,10 +240,7 @@ cl_optchange(sp, opt)
 		    sizeof(buf), "COLUMNS=%lu", O_VAL(sp, O_COLUMNS));
 		if (cl_putenv(buf))
 			return (1);
-
-		VI_INIT_IGNORE(sp);
-		F_SET(clp, CL_SIGWINCH);
-		break;
+		goto restart;
 	case O_LINES:
 		/*
 		 * XXX
@@ -255,10 +252,7 @@ cl_optchange(sp, opt)
 		    sizeof(buf), "LINES=%lu", O_VAL(sp, O_LINES));
 		if (cl_putenv(buf))
 			return (1);
-
-		VI_INIT_IGNORE(sp);
-		F_SET(clp, CL_SIGWINCH);
-		break;
+		goto restart;
 	case O_TERM:
 		/*
 		 * XXX
@@ -271,29 +265,23 @@ cl_optchange(sp, opt)
 			return (1);
 		
 		/* If we're not really running, just ignore it. */
-		EX_INIT_IGNORE(sp);
+restart:	EX_INIT_IGNORE(sp);
 		VI_INIT_IGNORE(sp);
 
-		/* Restart curses.  If this fails, we're done. */
-		if (F_ISSET(sp, S_EX)) {
-			cl_ex_end(sp);
-			if (cl_ex_init(sp)) {
-				v_end(sp->gp);
-				exit (1);
-			}
-		} else {
-			cl_vi_end(sp);
-			if (cl_vi_init(sp)) {
-				v_end(sp->gp);
-				exit (1);
-			}
+		/* Exit and reenter the vi screen. */
+		if (F_ISSET(sp, S_VI)) {
+			if (cl_quit(sp->gp))
+				return (1);
+			if (cl_screen(sp, S_VI))
+				return (1);
 		}
+
+		/* The screen may have changed size. */
 		F_SET(clp, CL_SIGWINCH);
 		break;
 	}
 	return (0);
 }
-
 
 /*
  * cl_ssize --
