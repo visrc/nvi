@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.10 1994/02/25 18:56:41 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:56:41 $";
+static char sccsid[] = "$Id: log.c,v 8.11 1994/03/06 10:04:28 bostic Exp $ (Berkeley) $Date: 1994/03/06 10:04:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -316,6 +316,10 @@ log_mark(sp, ep, lmp)
 	if (ep->log->put(ep->log, &key, &data, 0) == -1)
 		LOG_ERR;
 
+#if defined(DEBUG) && 0
+	TRACE(sp, "%lu: mark %c: %lu/%u\n",
+	    ep->l_cur, lmp->name, lmp->lno, lmp->cno);
+#endif
 	/* Reset high water mark. */
 	ep->l_high = ++ep->l_cur;
 	return (0);
