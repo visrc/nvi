@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.10 1992/10/10 14:00:27 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:00:27 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.11 1992/10/13 17:22:28 bostic Exp $ (Berkeley) $Date: 1992/10/13 17:22:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,6 @@ v_ex(vp, fm, tm, rp)
 		/* The user may continue in ex mode by entering a ':'. */
 		if ((key = getkey(0)) != ':')
 			break;
-		(void)printf("\n");
 	}
 	v_leaveex();
 
