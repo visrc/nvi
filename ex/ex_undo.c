@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 8.1 1993/06/09 22:26:06 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:06 $";
+static char sccsid[] = "$Id: ex_undo.c,v 8.2 1993/12/28 17:10:50 bostic Exp $ (Berkeley) $Date: 1993/12/28 17:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,7 @@ static char sccsid[] = "$Id: ex_undo.c,v 8.1 1993/06/09 22:26:06 bostic Exp $ (B
 
 /*
  * ex_undol -- U
- *	Undo changes to this line, or roll forward.
+ *	Undo changes to this line.
  */
 int
 ex_undol(sp, ep, cmdp)
@@ -24,19 +24,10 @@ ex_undol(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	MARK m;
+	if (log_setline(sp, ep))
+		return (1);
 
-	if (O_ISSET(sp, O_NUNDO)) {
-		if (log_forward(sp, ep, &m))
-			return (1);
-	} else {
-		if (log_setline(sp, ep, &m))
-			return (1);
-	}
-
-	sp->lno = m.lno;
-	sp->cno = m.cno;
-
+	sp->cno = 0;
 	F_SET(sp, S_AUTOPRINT);
 
 	return (0);
@@ -54,35 +45,30 @@ ex_undo(sp, ep, cmdp)
 {
 	MARK m;
 
-	if (O_ISSET(sp, O_NUNDO)) {
+	/*
+	 * !!!
+	 * Multiple undo isn't available in ex, as there's no '.' command.
+	 * Whether 'u' is undo or redo is toggled each time, unless there
+	 * was a change since the last undo, in which case it's an undo.
+	 */
+	if (!F_ISSET(ep, F_UNDO)) {
+		F_SET(ep, F_UNDO);
+		ep->lundo = FORWARD;
+	}
+	switch (ep->lundo) {
+	case BACKWARD:
+		if (log_forward(sp, ep, &m))
+			return (1);
+		ep->lundo = FORWARD;
+		break;
+	case FORWARD:
 		if (log_backward(sp, ep, &m))
 			return (1);
-	} else {
-		if (!F_ISSET(ep, F_UNDO)) {
-			ep->lundo = UFORWARD;
-			F_SET(ep, F_UNDO);
-		}
-
-		switch (ep->lundo) {
-		case UBACKWARD:
-			if (log_forward(sp, ep, &m)) {
-				F_CLR(ep, F_UNDO);
-				return (1);
-			}
-			ep->lundo = UFORWARD;
-			break;
-		case UFORWARD:
-			if (log_backward(sp, ep, &m)) {
-				F_CLR(ep, F_UNDO);
-				return (1);
-			}
-			ep->lundo = UBACKWARD;
-			break;
-		}
+		ep->lundo = BACKWARD;
+		break;
 	}
 	sp->lno = m.lno;
 	sp->cno = m.cno;
-
 	F_SET(sp, S_AUTOPRINT);
 
 	return (0);
