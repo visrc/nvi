@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.30 1995/12/01 10:45:34 bostic Exp $ (Berkeley) $Date: 1995/12/01 10:45:34 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.31 1996/01/11 18:01:21 bostic Exp $ (Berkeley) $Date: 1996/01/11 18:01:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -208,7 +208,12 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	size_t len;		/* Input line length. */
 	ARG_CHAR_T prompt;	/* Prompt to display. */
 	recno_t ai_line;	/* Line number to use for autoindent count. */
-	u_long rcount;		/* Replay count. */
+	/*
+	 * XXX
+	 * The leading "volatile" is a workaround for a Sun compiler bug,
+	 * Sun #1233182.
+	 */
+	volatile u_long rcount;	/* Replay count. */
 	u_int32_t flags;	/* TXT_* flags. */
 {
 	EVENT ev, *evp;		/* Current event. */
