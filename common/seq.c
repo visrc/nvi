@@ -6,8 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.27 1993/04/12 14:32:11 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:32:11 $";
+static char sccsid[] = "$Id: seq.c,v 5.28 1993/04/19 15:25:48 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:25:48 $";
 #endif /* not lint */
+
+#include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -28,83 +30,60 @@ seq_set(sp, name, input, output, stype, userdef)
 	enum seqtype stype;
 	int userdef;
 {
-	register SEQ *ip, *qp;
+	HDR *hp;
+	SEQ *ip, *qp;
 	int ilen;
 
 #if DEBUG && 0
 	TRACE(ep, "seq_set: name {%s} input {%s} output {%s}\n",
 	    name ? name : "", input, output);
 #endif
-	/*
-	 * Find any previous occurrence, and replace the output field.
-	 * At the same time, decide where to insert a new structure if
-	 * it's needed.
-	 */
-	ip = NULL;
+	/* Find any previous occurrence, and replace the output field. */
 	ilen = strlen(input);
-	for (qp = sp->seq[*input]; qp; qp = qp->snext) {
-		if (stype != qp->stype)
-			continue;
-		if (!strcmp(qp->input, input)) {
+
+	ip = NULL;
+	hp = &sp->seq[*input];
+	if (hp->snext == NULL) {
+		HDR_INIT(sp->seq[*input], snext, sprev);
+	} else for (qp = hp->snext;
+	    qp != (SEQ *)hp && qp->ilen <= ilen; ip = qp, qp = qp->snext)
+		if (qp->ilen == ilen && stype == qp->stype &&
+		    !strcmp(qp->input, input)) {
 			free(qp->output);
 			if ((qp->output = strdup(output)) == NULL)
 				goto mem1;
 			return (0);
 		}
-		if (qp->ilen < ilen)
-			ip = qp;
-	}
 
-	/* Allocate space. */
+	/* Allocate and initialize space. */
 	if ((qp = malloc(sizeof(SEQ))) == NULL) 
 		goto mem1;
-
 	if (name == NULL)
 		qp->name = NULL;
-	else 
-		if ((qp->name = strdup(name)) == NULL)
-			goto mem2;
+	else if ((qp->name = strdup(name)) == NULL)
+		goto mem2;
 	if ((qp->input = strdup(input)) == NULL)
 		goto mem3;
-	if ((qp->output = strdup(output)) == NULL)
-		goto mem4;
+	if ((qp->output = strdup(output)) == NULL) {
+		free(qp->input);
+mem3:		if (qp->name)
+			free(qp->name);
+mem2:		free(qp);
+mem1:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
+	}
 
 	qp->stype = stype;
 	qp->ilen = ilen;
 	qp->flags = userdef ? S_USERDEF : 0;
 
-	/*
-	 * Link into the character array.  If ip is NULL, qp becomes
-	 * the first entry in the list whether or not there are any
-	 * other entries.
-	 */
-	if (ip == NULL) {
-		if (sp->seq[*input]) {
-			qp->snext = sp->seq[*input];
-			qp->snext->sprev = qp;
-		} else {
-			sp->seq[*input] = qp;
-			qp->snext = NULL;
-		}
-		qp->sprev = NULL;
-	} else {
-		if (ip->snext)
-			ip->snext->sprev = qp;
-		qp->snext = ip->snext;
-		ip->snext = qp;
-		qp->sprev = ip;
-	}
-
-	/* Link into the sequence list. */
+	/* Link into the chains. */
 	HDR_INSERT(qp, &sp->seqhdr, next, prev, SEQ);
+	if (ip == NULL) {
+		HDR_APPEND(qp, hp, snext, sprev, SEQ);
+	} else
+		HDR_INSERT(qp, ip, snext, sprev, SEQ);
 	return (0);
-
-mem4:	free(qp->input);
-mem3:	if (qp->name)
-		free(qp->name);
-mem2:	free(qp);
-mem1:	msgq(sp, M_ERR, "Error: %s", strerror(errno));
-	return (1);
 }
 
 /*
@@ -122,28 +101,15 @@ seq_delete(sp, input, stype)
 	if ((qp = seq_find(sp, input, strlen(input), stype, NULL)) == NULL)
 		return (1);
 
-	/* Unlink out of the character array. */
-	if (qp->sprev) {
-		if (qp->snext) {
-			qp->snext->sprev = qp->sprev;
-			qp->sprev->snext = qp->snext;
-		} else
-			qp->sprev->snext = NULL;
-	} else if (qp->snext) {
-		sp->seq[*input] = qp->snext;
-		qp->snext->sprev = NULL;
-	} else
-		sp->seq[*input] = NULL;
-
-	/* Unlink out of the sequence list. */
 	HDR_DELETE(qp, next, prev, SEQ);
+	HDR_DELETE(qp, snext, sprev, SEQ);
 
 	/* Free up the space. */
 	if (qp->name)
-		free(qp->name);
-	free(qp->input);
-	free(qp->output);
-	free(qp);
+		FREE(qp->name, strlen(qp->name));
+	FREE(qp->input, strlen(qp->input));
+	FREE(qp->output, strlen(qp->output));
+	FREE(qp, sizeof(SEQ));
 	return (0);
 }
 
@@ -160,11 +126,15 @@ seq_find(sp, input, ilen, stype, ispartialp)
 	enum seqtype stype;
 	int *ispartialp;
 {
-	register SEQ *qp;
+	HDR *hp;
+	SEQ *qp;
 
+	hp = &sp->seq[*input];
+	if (hp->snext == NULL)
+		return (NULL);
 	if (ispartialp) {
 		*ispartialp = 0;
-		for (qp = sp->seq[*input]; qp; qp = qp->snext) {
+		for (qp = hp->snext; qp != (SEQ *)hp; qp = qp->snext) {
 			if (stype != qp->stype)
 				continue;
 			/*
@@ -181,12 +151,10 @@ seq_find(sp, input, ilen, stype, ispartialp)
 			}
 		}
 	} else
-		for (qp = sp->seq[*input]; qp; qp = qp->snext) {
-			if (stype != qp->stype)
-				continue;
-			if (!strncmp(qp->input, input, ilen))
+		for (qp = hp->snext; qp != (SEQ *)hp; qp = qp->snext)
+			if (stype == qp->stype && qp->ilen == ilen &&
+			    !strncmp(qp->input, input, ilen))
 				return (qp);
-		}
 	return (NULL);
 }
 
