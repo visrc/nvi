@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.6 1996/12/11 15:46:04 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:46:04 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.7 1996/12/11 20:57:03 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:57:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ static const char sccsid[] = "$Id: ip_run.c,v 8.6 1996/12/11 15:46:04 bostic Exp
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../ip_vi/ip.h"
+#include "../ip/ip.h"
 #include "ipc_extern.h"
 #include "pathnames.h"
 
@@ -36,7 +36,8 @@ static void fatal __P((void));
 static void attach __P((void));
 #endif
 
-char *vi_progname = "vi";			/* Default program name. */
+int	 vi_ofd = -1;				/* Global: output fd. */
+char	*vi_progname = "vi";			/* Global: program name. */
 
 /*
  * vi_run --
@@ -138,8 +139,8 @@ vi_run(argc, argv, ip, op, pidp)
 		 * (debugging) nvi, run it, otherwise run the user's path,
 		 * if specified, else run the compiled in path.
 		 */
-		if (!pflag && stat("nvi", &sb) == 0)
-			execv("nvi", argv);
+		if (!pflag && stat("vi", &sb) == 0)
+			execv("vi", argv);
 		execv(execp, argv);
 		(void)fprintf(stderr,
 		    "%s: %s %s\n", vi_progname, execp, strerror(errno));

@@ -10,12 +10,14 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_cde.c,v 8.7 1996/12/11 13:34:47 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:34:47 $";
+static const char sccsid[] = "$Id: m_cde.c,v 8.8 1996/12/11 20:56:42 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:56:42 $";
 #endif /* not lint */
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+
+#include "extern.h"
 
 #if SelfTest
 #define	_TRACE( x )	printf x
@@ -38,16 +40,16 @@ static struct {
 };
 
 /*
- * __vi_is_cde --
+ * is_cde --
  *
  * When running under CDE (or VUE on HPUX) applications should not define
  * fallback colors (or fonts).  The only way to tell is to check the atoms
  * attached to the server.  This routine does that.
  *
- * PUBLIC: int __vi_is_cde __P((Display *));
+ * PUBLIC: int is_cde __P((Display *));
  */
 int
-__vi_is_cde(d)
+is_cde(d)
 	Display *d;
 {
     int			i, r, format;

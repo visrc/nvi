@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.25 1996/12/11 15:04:38 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:04:38 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.26 1996/12/11 20:56:43 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:56:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,25 +20,19 @@ static const char sccsid[] = "$Id: m_main.c,v 8.25 1996/12/11 15:04:38 bostic Ex
 #include <X11/StringDefs.h>
 #include <Xm/MainW.h>
 
-#include <bitstring.h>
-#include <ctype.h>
-#include <fcntl.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
-#include "../common/common.h"
-#include "../ip_vi/ip.h"
-#include "ipc_motif.h"
-#include "ipc_mutil.h"
-#include "ipc_mextern.h"
-#include "pathnames.h"
+#include "../motif_l/vi_mextern.h"
+#include "extern.h"
+
+#if XtSpecificationRelease == 4
+#define	ArgcType	Cardinal *
+#else
+#define	ArgcType	int *
+#endif
 
 #include "nvi.xbm"		/* Icon bitmap. */
-
-int vi_ofd;			/* GLOBAL: known to vi_pipe_input_func(). */
 
 static	pid_t		pid;
 static	Pixel		icon_fg,
@@ -90,11 +84,6 @@ String	fallback_rsrcs[] = {
     "?Preferences*options.background:	gray90",
 };
 
-static XutResource resource[] = {
-    { "iconForeground",	XutRKpixel,	&icon_fg	},
-    { "iconBackground",	XutRKpixel,	&icon_bg	},
-};
-
 #if defined(__STDC__)
 static	String	*get_fallback_rsrcs( String name )
 #else
@@ -108,7 +97,7 @@ static	String	*get_fallback_rsrcs( name )
 
     /* connect to server and see if the CDE atoms are present */
     d = XOpenDisplay(0);
-    running_cde = __vi_is_cde( d );
+    running_cde = is_cde( d );
     XCloseDisplay(d);
 
     for ( i=0; i<XtNumber(fallback_rsrcs); i++ ) {
@@ -219,7 +208,7 @@ main(argc, argv)
 
 	/* Tell X that we are interested in input on the pipe. */
 	XtAppAddInput(ctx, i_fd,
-	    (XtPointer)XtInputReadMask, vi_pipe_input_func, NULL);
+	    (XtPointer)XtInputReadMask, vi_input_func, NULL);
 
 	/* Main loop. */
 	XtAppMainLoop(ctx);
