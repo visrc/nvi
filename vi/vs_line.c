@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.3 1993/04/06 11:44:44 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:44 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.4 1993/04/12 14:43:25 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:43:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,8 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		else if (p == NULL) {
 			GETLINE_ERR(sp, smp->lno);
 			return (1);
-		}
+		} else if (O_ISSET(sp, O_LIST))
+			addch('$');
 		clrtoeol();
 		return (0);
 	}
@@ -102,8 +103,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	for (; len; --len) {
 		/* Get the next character and figure out its length. */
 		if ((ch = *p++) == '\t' && !O_ISSET(sp, O_LIST))
-			chlen = O_VAL(sp, O_TABSTOP) -
-			    count_cols % O_VAL(sp, O_TABSTOP);
+			chlen = TAB_OFF(sp, count_cols);
 		else
 			chlen = cname[ch].len;
 		count_cols += chlen;
@@ -167,11 +167,8 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		}
 	}
 
-	/*
-	 * If O_LIST set, at the end of the line and didn't paint the whole
-	 * line, add a trailing $.
-	 */
-	if (O_ISSET(sp, O_LIST) && len == 0 && count_cols < cols_per_screen) {
+	/* If O_LIST set and at the end of the line, add a trailing $. */
+	if (O_ISSET(sp, O_LIST) && len == 0) {
 		++count_cols;
 		addch('$');
 	}
