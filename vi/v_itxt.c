@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.10 1992/10/17 16:59:32 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:59:32 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.11 1992/10/18 13:10:05 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:10:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -49,13 +49,15 @@ v_iA(vp, fm, tm, rp)
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		/*
 		 * Move the cursor to one column past the end of the line and
-		 * repaint the screen.  If there's no line, that's okay, it's
-		 * an empty file.
+		 * repaint the screen.
 		 */
-		GETLINE(p, fm->lno, len);
-		if (p == NULL)
+		if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+			if (file_lline(curf) != 0) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
 			len = 0;
-		else {
+		} else if (len) {
 			curf->cno = len;
 			scr_cchange(curf);
 		}
@@ -88,8 +90,13 @@ v_ia(vp, fm, tm, rp)
 		 * Move the cursor one column to the right and
 		 * repaint the screen.
 		 */
-		EGETLINE(p, fm->lno, len);
-		if (len) {
+		if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+			if (file_lline(curf) != 0) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
+			len = 0;
+		} else if (len) {
 			++curf->cno;
 			scr_cchange(curf);
 		}
@@ -118,11 +125,16 @@ v_iI(vp, fm, tm, rp)
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		/*
-		 * Move the cursor to the start of the line and
-		 * repaint the screen.
+		 * Move the cursor to the start of the line and repaint
+		 * the screen.
 		 */
-		EGETLINE(p, fm->lno, len);
-		if (curf->cno != 0) {
+		if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+			if (file_lline(curf) != 0) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
+			len = 0;
+		} else if (curf->cno != 0) {
 			curf->cno = 0;
 			scr_cchange(curf);
 		}
@@ -150,7 +162,13 @@ v_ii(vp, fm, tm, rp)
 	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
-		EGETLINE(p, fm->lno, len);
+		if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+			if (file_lline(curf) != 0) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
+			len = 0;
+		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
 
@@ -175,13 +193,18 @@ v_iO(vp, fm, tm, rp)
 	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
-		if (file_iline(curf, fm->lno, (u_char *)"", 0))
-			return (1);
-		EGETLINE(p, curf->lno, len);
-		curf->cno = 0;
-
-		/* XXX Scroll the screen +1. */
-		scr_cchange(curf);
+		if (fm->lno == 1 && file_lline(curf) == 0)
+			len = 0;
+		else {
+			if (file_iline(curf, fm->lno, (u_char *)"", 0))
+				return (1);
+			if ((p = file_gline(curf, curf->lno, &len)) == NULL) {
+				GETLINE_ERR(curf->lno);
+				return (1);
+			}
+			curf->cno = 0;
+			scr_cchange(curf);
+		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
 
@@ -206,13 +229,18 @@ v_io(vp, fm, tm, rp)
 	u_char *p;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
-		if (file_aline(curf, fm->lno, (u_char *)"", 0))
-			return (1);
-		EGETLINE(p, ++curf->lno, len);
-		curf->cno = 0;
-
-		/* XXX Scroll the screen +1. */
-		scr_cchange(curf);
+		if (curf->lno == 1 && file_lline(curf) == 0)
+			len = 0;
+		else {
+			if (file_aline(curf, curf->lno, (u_char *)"", 0))
+				return (1);
+			if ((p = file_gline(curf, ++curf->lno, &len)) == NULL) {
+				GETLINE_ERR(curf->lno);
+				return (1);
+			}
+			curf->cno = 0;
+			scr_cchange(curf);
+		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
 
@@ -246,7 +274,7 @@ v_Change(vp, fm, tm, rp)
 	tm->lno = fm->lno + (vp->flags & VC_C1SET ? vp->count - 1 : 0);
 	if (fm->lno != tm->lno) {
 		if (file_gline(curf, tm->lno, NULL) == NULL) {
-			v_eof(fm);
+			GETLINE_ERR(tm->lno);
 			return (1);
 		}
 		/* Insert a line while we still can... */
@@ -256,16 +284,24 @@ v_Change(vp, fm, tm, rp)
 		++tm->lno;
 		if (delete(fm, tm, 1))
 			return (1);
-		EGETLINE(p, --fm->lno, len);
+		if ((p = file_gline(curf, --fm->lno, &len)) == NULL) {
+			GETLINE_ERR(fm->lno);
+			return (1);
+		}
 		curf->lno = fm->lno;
 		curf->cno = 0;
-		scr_ref();
 		scr_cchange(curf);
 		return (newtext(vp, NULL, p, len, rp, 0));
 	}
 
-	EGETLINE(p, tm->lno, len);
-	tm->cno = len;
+	if ((p = file_gline(curf, tm->lno, &len)) == NULL) {
+		if (file_lline(curf) != 0) {
+			GETLINE_ERR(tm->lno);
+			return (1);
+		}
+		tm->cno = 0;
+	} else
+		tm->cno = len;
 	return (newtext(vp, tm, p, len, rp, N_EMARK | N_OVERWRITE));
 }
 
@@ -297,7 +333,10 @@ v_change(vp, fm, tm, rp)
 		++tm->lno;
 		if (delete(fm, tm, lmode))
 			return (1);
-		EGETLINE(p, --fm->lno, len);
+		if ((p = file_gline(curf, --fm->lno, &len)) == NULL) {
+			GETLINE_ERR(fm->lno);
+			return (1);
+		}
 		curf->lno = fm->lno;
 		curf->cno = 0;
 		scr_ref();
@@ -306,7 +345,13 @@ v_change(vp, fm, tm, rp)
 	}
 
 	/* Otherwise, do replacement. */
-	EGETLINE(p, fm->lno, len);
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) != 0) {
+			GETLINE_ERR(fm->lno);
+			return (1);
+		}
+		len = 0;
+	}
 	return (newtext(vp, tm, p, len, rp, N_EMARK | N_OVERWRITE));
 }
 
@@ -327,14 +372,20 @@ v_Replace(vp, fm, tm, rp)
 	*rp = *fm;
 	notfirst = 0;
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--; notfirst = 1) {
-		EGETLINE(p, rp->lno, len);
+		if ((p = file_gline(curf, rp->lno, &len)) == NULL) {
+			if (file_lline(curf) != 0) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
+			len = 0;
+		}
 		/*
-		 * Special case.  The historic vi handled [count]R oddly, in
-		 * that the R would replace some number of characters, and then
-		 * the count would append count-1 copies of replacing chars to
-		 * the replaced space.  This seems wrong so this version counts
-		 * R commands.  Move back to where the user quit replacing after
-		 * each R command.
+		 * Special case.  The historic vi handled [count]R badly, in
+		 * that R would replace some number of characters, and then
+		 * the count would append count-1 copies of the replacing chars
+		 * to the replaced space.  This seems wrong, so this version
+		 * counts R commands.  Move back to where the user stopped
+		 * replacing after each R command.
 		 */
 		if (notfirst && len) {
 			++rp->cno;
@@ -364,7 +415,13 @@ v_subst(vp, fm, tm, rp)
 	size_t len;
 	u_char *p;
 
-	EGETLINE(p, fm->lno, len);
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) != 0) {
+			GETLINE_ERR(fm->lno);
+			return (1);
+		}
+		len = 0;
+	}
 
 	tm->lno = fm->lno;
 	tm->cno = fm->cno + (vp->flags & VC_C1SET ? vp->count : 1);
