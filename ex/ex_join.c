@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.3 1993/08/25 16:44:45 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:44:45 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.4 1993/08/29 11:21:49 bostic Exp $ (Berkeley) $Date: 1993/08/29 11:21:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,11 +38,25 @@ ex_join(sp, ep, cmdp)
 
 	/* Check for no lines to join. */
 	if ((p = file_gline(sp, ep, from + 1, &len)) == NULL) {
-		msgq(sp, M_ERR, "No remaining lines to join.");
+		msgq(sp, M_ERR, "No following lines to join.");
 		return (1);
 	}
 
 	GET_SPACE(sp, bp, blen, 256);
+
+	/*
+	 * The count for the join command was off-by-one,
+	 * historically, to other counts for other commands.
+	 */
+	if (F_ISSET(cmdp, E_COUNT))
+		++cmdp->addr2.lno;
+
+	/*
+	 * If only a single address specified, or, the same address
+	 * specified twice, the from/two addresses will be the same.
+	 */
+	if (cmdp->addr1.lno == cmdp->addr2.lno)
+		++cmdp->addr2.lno;
 
 	clen = tlen = 0;
         for (first = 1, from = cmdp->addr1.lno,
@@ -51,8 +65,10 @@ ex_join(sp, ep, cmdp)
 		 * Get next line.  Historic versions of vi allowed "10J" while
 		 * less than 10 lines from the end-of-file, so we do too.
 		 */
-		if ((p = file_gline(sp, ep, from, &len)) == NULL)
+		if ((p = file_gline(sp, ep, from, &len)) == NULL) {
+			cmdp->addr2.lno = from - 1;
 			break;
+		}
 
 		/* Empty lines just go away. */
 		if (len == 0)
@@ -133,7 +149,7 @@ err:		FREE_SPACE(sp, bp, blen);
 	}
 	FREE_SPACE(sp, bp, blen);
 
-	sp->rptlines[L_JOINED] += cmdp->addr2.lno - cmdp->addr1.lno;
+	sp->rptlines[L_JOINED] += (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
 
 	F_SET(sp, S_AUTOPRINT);
 	return (0);
