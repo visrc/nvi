@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.37 1993/12/03 07:54:00 bostic Exp $ (Berkeley) $Date: 1993/12/03 07:54:00 $
+ *	$Id: ex.h,v 8.38 1993/12/03 15:21:50 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:21:50 $
  */
 
 /* Ex command structure. */
@@ -136,6 +136,7 @@ int	filtercmd __P((SCR *, EXF *,
 	    MARK *, MARK *, MARK *, char *, enum filtertype));
 
 /* Argument expansion routines. */
+int	argv_init __P((SCR *, EXF *, EXCMDARG *));
 int	argv_exp0 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
 int	argv_exp1 __P((SCR *, EXF *, EXCMDARG *, char *, size_t, int));
 int	argv_exp2 __P((SCR *, EXF *, EXCMDARG *, char *, size_t, int));
