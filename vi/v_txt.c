@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.43 1993/11/06 11:50:06 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:50:06 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.44 1993/11/06 11:54:23 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:54:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1369,12 +1369,17 @@ txt_showmatch(sp, ep)
 	int cnt, endc, startc;
 
 	/*
-	 * We don't display the match if it's not on the screen.  Find
-	 * out what the first character on the screen is.  Have to do
-	 * a refresh first, just in case the v_ntext() code hasn't done
-	 * one in awhile.
+	 * Do a refresh first, in case the v_ntext() code hasn't done
+	 * one in awhile, so the user can see what we're complaining
+	 * about.
 	 */
-	if (sp->s_refresh(sp, ep) || sp->s_position(sp, ep, &m, 0, P_TOP))
+	if (sp->s_refresh(sp, ep))
+		return;
+	/*
+	 * We don't display the match if it's not on the screen.  Find
+	 * out what the first character on the screen is.
+	 */
+	if (sp->s_position(sp, ep, &m, 0, P_TOP))
 		return;
 
 	/* Initialize the getc() interface. */
