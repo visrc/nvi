@@ -58,8 +58,7 @@ static struct
 	{"k",		CMD_MARK,	cmd_mark,	FROM+WORD1	},
 	{"list",	CMD_LIST,	cmd_print,	RANGE+NL	},
 	{"move",	CMD_MOVE,	cmd_move,	RANGE+EXTRA	},
-	{"next",	CMD_NEXT,	cmd_next,	BANG+NAMEDFS	},
-	{"Next",	CMD_PREVIOUS,	cmd_next,	BANG		},
+	{"next",	CMD_NEXT,	next_file,	BANG+NAMEDFS	},
 	{"print",	CMD_PRINT,	cmd_print,	RANGE+NL	},
 	{"quit",	CMD_QUIT,	cmd_xit,	BANG		},
 	{"read",	CMD_READ,	cmd_read,	FROM+ZERO+NAMEDF},
@@ -83,7 +82,7 @@ static struct
 #ifndef NO_ABBR
 	{"abbreviate",	CMD_ABBR,	cmd_abbr,	EXRCOK+EXTRA	},
 #endif
-	{"args",	CMD_ARGS,	cmd_args,	EXRCOK+NAMEDFS	},
+	{"args",	CMD_ARGS,	args_file,	EXRCOK		},
 #ifndef NO_ERRLIST
 	{"cc",		CMD_CC,		cmd_make,	BANG+FILES	},
 #endif
@@ -127,8 +126,8 @@ static struct
 #ifndef SYSV_COMPAT
 	{"mark",	CMD_MARK,	cmd_mark,	FROM+WORD1	},
 #endif
-	{"previous",	CMD_PREVIOUS,	cmd_next,	BANG		},
-	{"rewind",	CMD_REWIND,	cmd_next,	BANG		},
+	{"prerious",	CMD_PREVIOUS,	prev_file,	BANG		},
+	{"rewind",	CMD_REWIND,	rew_file,	BANG		},
 	{"unmap",	CMD_UNMAP,	cmd_map,	EXRCOK+BANG+EXTRA},
 #ifndef NO_ABBR
 	{"unabbreviate",CMD_UNABBR,	cmd_abbr,	EXRCOK+WORD1	},
@@ -628,7 +627,8 @@ void doexcmd(cmdbuf)
 	}
 
 	/* act on the command */
-	(*cmdnames[cmdidx].fn)(frommark, tomark, cmd, forceit, scan);
+	(*cmdnames[cmdidx].fn)(frommark, tomark, cmd, forceit,
+	    scan && *scan ? scan : NULL);
 }
 
 
