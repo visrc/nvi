@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.12 1996/12/03 10:33:21 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:33:21 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.13 1996/12/03 11:18:04 bostic Exp $ (Berkeley) $Date: 1996/12/03 11:18:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -355,22 +355,13 @@ Boolean		process_pipe_input( pread )
 XtPointer	pread;
 #endif
 {
-    int	nr, skip;
-
     /* might have read more since the last call */
-    nr = (pread) ? *((int *)pread) : 0;
-    len += nr;
-    skip = 0;
+    len += (pread) ? *((int *)pread) : 0;
 
     /* Parse to data end or partial message. */
-    while ( len > skip )
-	if ( ! ip_trans(bp + skip, len - skip, &skip) )
-	    break;
+    (void)ip_trans(bp, &len);
 
-    /* Copy any partial messages down in the buffer. */
-    len -= skip;
     if (len > 0) {
-	    memmove(bp, bp + skip, len);
 #ifdef TR
 	    trace("pipe_input_func: abort with %d in the buffer\n", len);
 #endif
