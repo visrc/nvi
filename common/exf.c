@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.47 1993/11/19 15:12:15 bostic Exp $ (Berkeley) $Date: 1993/11/19 15:12:15 $";
+static char sccsid[] = "$Id: exf.c,v 8.48 1993/11/19 15:13:28 bostic Exp $ (Berkeley) $Date: 1993/11/19 15:13:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -296,9 +296,6 @@ file_init(sp, frp, rcv_fname, force)
 	    access(frp->fname, W_OK)))
 		F_SET(frp, FR_RDONLY);
 
-	/* The file's been edited. */
-	F_SET(frp, FR_EDITED);
-
 	/* Start logging. */
 	log_init(sp, ep);
 
@@ -333,10 +330,11 @@ file_init(sp, frp, rcv_fname, force)
 		} else
 			msgq(sp, M_VINFO, "%s cannot be locked", oname);
 
-	/* Switch... */
+	/* Switch, and the file's been edited. */
 	sp->ep = ep;
 	if ((sp->p_frp = sp->frp) != NULL)
 		set_alt_fname(sp, sp->p_frp->fname);
+	F_SET(frp, FR_EDITED);
 	sp->frp = frp;
 	return (0);
 
