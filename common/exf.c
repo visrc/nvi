@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.50 1993/11/21 16:08:51 bostic Exp $ (Berkeley) $Date: 1993/11/21 16:08:51 $";
+static char sccsid[] = "$Id: exf.c,v 8.51 1993/11/21 16:27:28 bostic Exp $ (Berkeley) $Date: 1993/11/21 16:27:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ file_add(sp, frp_append, name, ignore)
 	 * name.
 	 */
 #define	TEMPORARY_FILE_STRING	"/tmp"
-	if (name != NULL && strcmp(name, "TEMPORARY_FILE_STRING")) {
+	if (name != NULL && strcmp(name, TEMPORARY_FILE_STRING)) {
 		if ((frp->name = strdup(name)) == NULL) {
 			FREE(frp, sizeof(FREF));
 mem:			msgq(sp, M_SYSERR, NULL);
