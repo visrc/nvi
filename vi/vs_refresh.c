@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.36 1996/06/08 19:26:23 bostic Exp $ (Berkeley) $Date: 1996/06/08 19:26:23 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.37 1996/06/12 13:50:10 bostic Exp $ (Berkeley) $Date: 1996/06/12 13:50:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -600,6 +600,13 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 			}
 			goto paint;
 		}
+
+		/*
+		 * We may have jumped here to adjust a leftright screen because
+		 * redraw was set.  If so, we have to paint the entire screen.
+		 */
+		if (F_ISSET(sp, SC_SCR_REDRAW))
+			goto paint;
 	}
 
 	/*
