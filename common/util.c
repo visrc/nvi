@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.45 1993/05/12 12:58:09 bostic Exp $ (Berkeley) $Date: 1993/05/12 12:58:09 $";
+static char sccsid[] = "$Id: util.c,v 5.46 1993/05/15 10:09:16 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:09:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,18 +89,18 @@ msgq(sp, mt, fmt, va_alist)
 	if (len > sizeof(msgbuf))
 		len = sizeof(msgbuf);
 
-	msga(NULL, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
+	msg_app(NULL, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
 
 	F_CLR(sp, S_MSGREENTER);
 }
 
 /*
- * msga --
+ * msg_app --
  *	Append a message into the queue.  This can fail, but there's
  *	absolutely nothing we can do if it does.
  */
 void
-msga(gp, sp, inv_video, p, len)
+msg_app(gp, sp, inv_video, p, len)
 	GS *gp;
 	SCR *sp;
 	int inv_video;
@@ -153,6 +153,57 @@ loop:		for (;
 	memmove(mp->mbuf, p, len);
 	mp->len = len;
 	mp->flags = inv_video ? M_INV_VIDEO : 0;
+}
+
+/*
+ * msgrpt --
+ *	Report on the lines that changed.
+ */
+int
+msg_rpt(sp, fp)
+	SCR *sp;
+	FILE *fp;
+{
+	static const char *const action[] = {
+		"added", "changed", "copied", "deleted", "joined", "moved",	
+		"put", "read", "left shifted", "right shifted", "yanked",
+		NULL,
+	};
+	recno_t total;
+	int first, cnt;
+	size_t blen, len;
+	const char *const *ap;
+	char *bp, *p, number[40];
+
+	GET_SPACE(sp, bp, blen, 512);
+	p = bp;
+
+	total = 0;
+	for (ap = action, cnt = 0, first = 1; *ap != NULL; ++ap, ++cnt)
+		if (sp->rptlines[cnt] != 0) {
+			total += sp->rptlines[cnt];
+			len = snprintf(number, sizeof(number),
+			    "%s%lu lines %s", first ? "" : "; ",
+			    sp->rptlines[cnt], *ap);
+			memmove(p, number, len);
+			p += len;
+			first = 0;
+		}
+
+	/* If nothing to report, return. */
+	if (total != 0 && total >= O_VAL(sp, O_REPORT)) {
+		*p = '\0';
+
+		if (fp != NULL)
+			(void)fprintf(fp, "%s\n", bp);
+		else
+			msgq(sp, M_INFO, "%s", bp);
+	}
+
+	FREE_SPACE(sp, bp, blen);
+
+	/* Clear after each report. */
+	memset(sp->rptlines, 0, sizeof(sp->rptlines));
 }
 
 /*
