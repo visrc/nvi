@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.2 1993/08/19 16:25:47 bostic Exp $ (Berkeley) $Date: 1993/08/19 16:25:47 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.3 1993/08/22 10:47:30 bostic Exp $ (Berkeley) $Date: 1993/08/22 10:47:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,16 +128,14 @@ v_down(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	recno_t lno;
-	size_t len;
 
 	lno = fm->lno + (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
 
-	if (file_gline(sp, ep, lno, &len) == NULL) {
+	if (file_gline(sp, ep, lno, NULL) == NULL) {
 		v_eof(sp, ep, fm);
 		return (1);
 	}
 	rp->lno = lno;
-	rp->cno = len ? fm->cno > len - 1 ? len - 1 : fm->cno : 0;
 	return (0);
 }
 
