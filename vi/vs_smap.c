@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.13 1993/10/03 19:48:59 bostic Exp $ (Berkeley) $Date: 1993/10/03 19:48:59 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.14 1993/10/04 08:47:53 bostic Exp $ (Berkeley) $Date: 1993/10/04 08:47:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,14 +27,18 @@ static int	svi_insertln __P((SCR *, int));
  *	Make a change to the screen.
  */
 int
-svi_change(sp, ep, lno, op)
+svi_change(sp, ep, lno, screenchanged, op)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
+	int *screenchanged;
 	enum operation op;
 {
 	SMAP *p;
 	size_t oldy, oldx;
+
+	if (screenchanged != NULL)
+		*screenchanged = 0;
 
 	/* Appending is the same as inserting, if the line is incremented. */
 	if (op == LINE_APPEND) {
@@ -45,9 +49,6 @@ svi_change(sp, ep, lno, op)
 	/* Ignore the change if the line is after the map. */
 	if (lno > TMAP->lno)
 		return (0);
-
-	/* Flush cached information from svi_screens(). */
-	SVP(sp)->ss_lno = OOBLNO;
 
 	/*
 	 * If the line is before the map, and it's a decrement, decrement
@@ -76,6 +77,12 @@ svi_change(sp, ep, lno, op)
 		}
 		return (0);
 	}
+
+	if (screenchanged != NULL)
+		*screenchanged = 1;
+
+	/* Flush cached information from svi_screens(). */
+	SVP(sp)->ss_lno = OOBLNO;
 
 	/* Invalidate the cursor, if it's on this line. */
 	if (sp->lno == lno)

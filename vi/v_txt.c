@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.20 1993/10/03 16:42:57 bostic Exp $ (Berkeley) $Date: 1993/10/03 16:42:57 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.21 1993/10/04 08:47:45 bostic Exp $ (Berkeley) $Date: 1993/10/04 08:47:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,7 +241,7 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		 * code refreshes the screen for us.  Three chosen by random
 		 * selection.
 		 */
-		if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
+		if (sp->s_change(sp, ep, tp->lno, NULL, LINE_RESET))
 			ERR;
 
 #define	CHARS_TO_WAIT	4
@@ -384,7 +384,7 @@ next_ch:	if (replay)
 			}
 
 			/* Update the old line. */
-			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
+			if (sp->s_change(sp, ep, tp->lno, NULL, LINE_RESET))
 				ERR;
 
 			/* Swap old and new TEXT's. */
@@ -394,7 +394,7 @@ next_ch:	if (replay)
 			sp->lno = tp->lno;
 
 			/* Update the new line. */
-			if (sp->s_change(sp, ep, tp->lno, LINE_INSERT) ||
+			if (sp->s_change(sp, ep, tp->lno, NULL, LINE_INSERT) ||
 			    sp->s_refresh(sp, ep))
 				ERR;
 
@@ -440,7 +440,8 @@ k_escape:		if (tp->insert && tp->overwrite)
 			if (rp != NULL) {
 				rp->lno = tp->lno;
 				rp->cno = sp->cno ? sp->cno - 1 : 0;
-				if (sp->s_change(sp, ep, rp->lno, LINE_RESET))
+				if (sp->s_change(sp, ep,
+				    rp->lno, NULL, LINE_RESET))
 					ERR;
 			}
 			goto ret;
@@ -851,7 +852,7 @@ txt_backup(sp, ep, hp, tp, flags)
 	}
 
 	/* Update the old line on the screen. */
-	if (sp->s_change(sp, ep, tp->lno, LINE_DELETE))
+	if (sp->s_change(sp, ep, tp->lno, NULL, LINE_DELETE))
 		return (NULL);
 
 	/* Get a handle on the previous TEXT structure. */
