@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.62 1993/11/28 12:28:35 bostic Exp $ (Berkeley) $Date: 1993/11/28 12:28:35 $";
+static char sccsid[] = "$Id: ex.c,v 8.63 1993/11/29 14:15:13 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,7 +207,7 @@ ex_cstring(sp, ep, cmd, len)
 				ch = *t;
 				if (isblank(ch) || ch == '|')
 					continue;
-				if (sp->special[ch] == K_NL) {
+				if (term_key_val(sp, ch) == K_NL) {
 					++sp->if_lno;
 					continue;
 				}
@@ -222,7 +222,7 @@ ex_cstring(sp, ep, cmd, len)
 			 */
 			if (ch == '"') {
 				for (; len > 0; ++t, --len) {
-					if (sp->special[*t] == K_NL)
+					if (term_key_val(sp, *t) == K_NL)
 						break;
 				}
 				p = cmd;
@@ -239,7 +239,7 @@ ex_cstring(sp, ep, cmd, len)
 			 */
 			for (; len > 0; ++p, ++t, --len) {
 				ch = *p = *t;
-				if (isalpha(ch) || sp->special[ch] == K_NL)
+				if (isalpha(ch) || term_key_val(sp, ch) == K_NL)
 					break;
 			}
 			if (len > 0 &&
@@ -272,30 +272,31 @@ ex_cstring(sp, ep, cmd, len)
 		 * what bug-for-bug compatibility means, Grasshopper.  Also,
 		 * escape command separators.
 		 */
-		if (sp->special[ch] == K_VLNEXT && len > 0 &&
-		   (t[0] == '|' || sp->special[t[0]] == K_NL)) {
+		if (term_key_val(sp, ch) == K_VLNEXT && len > 0 &&
+		   (t[0] == '|' || term_key_val(sp, t[0]) == K_NL)) {
 			--len;
 			*p++ = *t++;
-			if (sp->special[t[0]] == K_NL)
+			if (term_key_val(sp, t[0]) == K_NL)
 				++sp->if_lno;
 			continue;
 		}
 
 		/* Increment line counter. */
-		if (sp->special[ch] == K_NL)
+		if (term_key_val(sp, ch) == K_NL)
 			++sp->if_lno;
 
 		/*
 		 * If the end of the string, or a command separator, run
 		 * the command.
 		 */
-		if (len == 0 || ch == '|' || sp->special[ch] == K_NL) {
+		if (len == 0 || ch == '|' || term_key_val(sp, ch) == K_NL) {
 			/*
 			 * If we got here because we ran out of line, not
 			 * because we ran into a separator, put the last
 			 * character into the command buffer.
 			 */
-			if (len == 0 && ch != '|' && sp->special[ch] != K_NL)
+			if (len == 0 && ch != '|' &&
+			    term_key_val(sp, ch) != K_NL)
 				*p++ = ch;
 			
 			/*
@@ -788,7 +789,8 @@ end2:			break;
 			 * Word.
 			 */
 			for (p = t = exc; (ch = *p) != '\0'; *t++ = ch, ++p)
-				if (sp->special[ch] == K_VLNEXT && p[1] != '\0')
+				if (term_key_val(sp, ch) == K_VLNEXT &&
+				    p[1] != '\0')
 					ch = *++p;
 				else if (isblank(ch))
 					break;
@@ -802,7 +804,8 @@ end2:			break;
 			/* String. */
 			exp->ex_argv[1] = p;
 			for (t = p; (ch = *p++) != '\0'; *t++ = ch)
-				if (sp->special[ch] == K_VLNEXT && p[0] != '\0')
+				if (term_key_val(sp, ch) == K_VLNEXT &&
+				    p[0] != '\0')
 					ch = *p++;
 			*t = '\0';
 			exp->ex_argv[2] = NULL;
@@ -1127,7 +1130,7 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	for (cp = p; len;) {
 		ch = *++p = *++t;
 		--len;
-		if (sp->special[ch] == K_VLNEXT && len > 0) {
+		if (term_key_val(sp, ch) == K_VLNEXT && len > 0) {
 			*p = *++t;
 			if (--len == 0)
 				break;

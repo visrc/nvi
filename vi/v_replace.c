@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.10 1993/11/19 12:43:42 bostic Exp $ (Berkeley) $Date: 1993/11/19 12:43:42 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.11 1993/11/29 14:15:29 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ v_replace(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	CHAR_T ch;
+	CH ikey;
 	TEXT *tp;
 	recno_t lno;
 	size_t blen, len;
@@ -81,21 +81,22 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 	}
 
 	/* Get the character, literal escapes, escape terminates. */
-	if (F_ISSET(vp, VC_ISDOT))
-		ch = VIP(sp)->rlast;
-	else {
-		if (term_key(sp, &ch, 0) != INP_OK)
+	if (F_ISSET(vp, VC_ISDOT)) {
+		ikey.ch = VIP(sp)->rlast;
+		ikey.value = term_key_val(sp, ikey.ch);
+	} else {
+		if (term_key(sp, &ikey, 0) != INP_OK)
 			return (1);
-		switch (sp->special[ch]) {
+		switch (ikey.value) {
 		case K_ESCAPE:
 			*rp = *fm;
 			return (0);
 		case K_VLNEXT:
-			if (term_key(sp, &ch, 0) != INP_OK)
+			if (term_key(sp, &ikey, 0) != INP_OK)
 				return (1);
 			break;
 		}
-		VIP(sp)->rlast = ch;
+		VIP(sp)->rlast = ikey.ch;
 	}
 
 	/* Copy the line. */
@@ -103,7 +104,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 	memmove(bp, p, len);
 	p = bp;
 
-	if (sp->special[ch] == K_CR || sp->special[ch] == K_NL) {
+	if (ikey.value == K_CR || ikey.value == K_NL) {
 		/* Set return line. */
 		rp->lno = fm->lno + cnt;
 
@@ -138,7 +139,7 @@ err_ret:			rval = 1;
 				break;
 			}
 	} else {
-		memset(bp + fm->cno, ch, cnt);
+		memset(bp + fm->cno, ikey.ch, cnt);
 		rval = file_sline(sp, ep, fm->lno, bp, len);
 
 		rp->lno = fm->lno;

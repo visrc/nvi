@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.16 1993/11/28 19:30:03 bostic Exp $ (Berkeley) $Date: 1993/11/28 19:30:03 $";
+static char sccsid[] = "$Id: seq.c,v 8.17 1993/11/29 14:14:52 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,7 +198,7 @@ seq_dump(sp, stype, isname)
 	char *p;
 
 	cnt = 0;
-	cname = sp->cname;
+	cname = sp->gp->cname;
 	tablen = O_VAL(sp, O_TABSTOP);
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (stype != qp->stype)
@@ -249,14 +249,15 @@ seq_save(sp, fp, prefix, stype)
 		if (prefix)
 			(void)fprintf(fp, "%s", prefix);
 		for (p = qp->input; (ch = *p) != '\0'; ++p) {
-			if (ch == esc || ch == '|' || isblank(ch) ||
-			    sp->special[ch] == K_NL)
+			if (ch == esc || ch == '|' ||
+			    isblank(ch) || term_key_val(sp, ch) == K_NL)
 				(void)putc(esc, fp);
 			(void)putc(ch, fp);
 		}
 		(void)putc(' ', fp);
 		for (p = qp->output; (ch = *p) != '\0'; ++p) {
-			if (ch == esc || ch == '|' || sp->special[ch] == K_NL)
+			if (ch == esc || ch == '|' ||
+			    term_key_val(sp, ch) == K_NL)
 				(void)putc(esc, fp);
 			(void)putc(ch, fp);
 		}

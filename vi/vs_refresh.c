@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.38 1993/11/28 18:31:48 bostic Exp $ (Berkeley) $Date: 1993/11/28 18:31:48 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.39 1993/11/29 14:15:44 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -422,7 +422,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * the old and new positions and decide how big they are on the
 	 * screen, and therefore, how many screen positions to move.
 	 */
-	cname = sp->cname;
+	cname = sp->gp->cname;
 	if (CNO < OCNO) {
 		/*
 		 * 4a: Cursor moved left.
@@ -643,7 +643,6 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	return (0);
 }
 
-enum input term_user_key __P((SCR *, CHAR_T *));
 /*
  * svi_msgflush --
  *	Flush any accumulated messages.
@@ -652,6 +651,7 @@ static int
 svi_msgflush(sp)
 	SCR *sp;
 {
+	CH ikey;
 	CHAR_T ch;
 	CHNAME const *cname;
 	MSG *mp;
@@ -661,7 +661,7 @@ svi_msgflush(sp)
 #define	MCONTMSG	" [More ...]"
 
 	/* Display the messages. */
-	cname = sp->cname;
+	cname = sp->gp->cname;
 	for (mp = sp->msgq.lh_first, p = NULL;
 	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->q.le_next) {
 		p = mp->mbuf;
@@ -707,10 +707,10 @@ lcont:		/* Move to the message line and clear it. */
 			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
 			for (;;) {
-				if (term_user_key(sp, &ch) != INP_OK)
+				if (term_user_key(sp, &ikey) != INP_OK)
 					break;
-				if (sp->special[ch] == K_CR ||
-				    sp->special[ch] == K_NL || isblank(ch))
+				if (ikey.value == K_CR ||
+				    ikey.value == K_NL || isblank(ch))
 					break;
 				svi_bell(sp);
 			}

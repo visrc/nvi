@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.46 1993/11/19 10:54:05 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:54:05 $";
+static char sccsid[] = "$Id: main.c,v 8.47 1993/11/29 14:14:46 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,12 +39,11 @@ static char sccsid[] = "$Id: main.c,v 8.46 1993/11/19 10:54:05 bostic Exp $ (Ber
 #include "tag.h"
 
 static GS	*gs_init __P((void));
+static void	 gs_end __P((GS *));
 static void	 h_hup __P((int));
 static void	 h_term __P((int));
 static void	 h_winch __P((int));
-static void	 msgflush __P((GS *));
 static void	 obsolete __P((char *[]));
-static void	 reset __P((GS *));
 static void	 usage __P((void));
 
 GS *__global_list;			/* GLOBAL: List of screens. */
@@ -378,16 +377,7 @@ err1:		gp->msgq.lh_first = sp->msgq.lh_first;
 err2:		eval = 1;
 	}
 
-	/* Reset anything that needs resetting. */
-	reset(gp);
-
-	/* Flush any left-over error messages. */
-	msgflush(gp);
-
-	/*
-	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
-	 * OFF SIGNALS/TIMERS, SO IT MAY STILL BE REFERENCED.
-	 */
+	gs_end(gp);
 
 	/* Make absolutely sure that the modes are restored correctly. */
 	if (F_ISSET(gp, G_ISFROMTTY) &&
@@ -450,41 +440,40 @@ gs_init()
 	return (gp);
 }
 
+
 /*
- * reset --
- *	Reset any changed global state.
+ * gs_end --
+ *	End the GS structure.
  */
 static void
-reset(gp)
+gs_end(gp)
 	GS *gp;
 {
+	MSG *mp;
 	char *tty;
 
+	/* Reset anything that needs resetting. */
 	if (gp->flags & G_SETMODE)			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)
 			warn("ttyname");
 		else if (chmod(tty, gp->origmode) < 0)
 			warn("%s", tty);
-}
 
-/*
- * msgflush --
- *	Flush any remaining messages.
- */
-static void
-msgflush(gp)
-	GS *gp;
-{
-	MSG *mp;
-
-	/* Ring the bell. */
+	/* Ring the bell if scheduled. */
 	if (F_ISSET(gp, G_BELLSCHED))
 		(void)fprintf(stderr, "\07");		/* \a */
 
-	/* Display the messages. */
+	/* Flush any remaining messages. */
 	for (mp = gp->msgq.lh_first;
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
 		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
+
+	FREE(gp->special_key, MAX_FAST_KEY);
+
+	/*
+	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
+	 * OFF SIGNALS/TIMERS, SO IT MAY STILL BE REFERENCED.
+	 */
 }
 
 /*

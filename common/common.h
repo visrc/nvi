@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.27 1993/11/27 15:01:23 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:01:23 $
+ *	$Id: common.h,v 8.28 1993/11/29 14:14:56 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:56 $
  */
 
 /* System includes. */
@@ -28,6 +28,7 @@
  * are far too interrelated for a clean solution.
  */
 typedef struct _cb		CB;
+typedef struct _ch		CH;
 typedef struct _chname		CHNAME;
 typedef struct _excmdarg	EXCMDARG;
 typedef struct _exf		EXF;
@@ -59,6 +60,9 @@ typedef struct _text		TEXT;
 typedef	u_char		CHAR_T;	
 typedef	u_int		ARG_CHAR_T;
 #define	MAX_CHAR_T	0xff
+
+/* The maximum number of columns any character can take up on a screen. */
+#define	MAX_CHARACTER_COLUMNS	4
 
 /*
  * Local includes.

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.13 1993/11/22 19:43:52 bostic Exp $ (Berkeley) $Date: 1993/11/22 19:43:52 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.14 1993/11/29 14:15:43 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ svi_line(sp, ep, smp, yp, xp)
 	MOVE(sp, smp - HMAP, 0);
 
 	/* Get the character map. */
-	cname = sp->cname;
+	cname = sp->gp->cname;
 
 	/* Get a copy of the line. */
 	p = file_gline(sp, ep, smp->lno, &len);

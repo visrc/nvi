@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.59 1993/11/28 11:58:43 bostic Exp $ (Berkeley) $Date: 1993/11/28 11:58:43 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.60 1993/11/29 14:15:26 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,12 +87,14 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
+	CH ich;			/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	GS *gp;			/* Global pointer. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	size_t col;		/* Current column. */
 	u_long margin;		/* Wrapmargin value. */
+	u_int iflags;		/* Input flags. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
@@ -256,6 +258,7 @@ nullreplay:
 	} else
 		testnr = 1;
 
+	iflags = LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT);
 	for (gp = sp->gp, showmatch = 0,
 	    carat_st = C_NOTSET, hex = H_NOTSET, quoted = Q_NOTSET;;) {
 		/*
@@ -276,8 +279,10 @@ nullreplay:
 		}
 
 		/* Get the next character. */
-next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
+next_ch:	if (term_key(sp, &ich, iflags) != INP_OK)
 			goto err;
+		ch = ich.ch;
+
 		/*
 		 * !!!
 		 * Historic feature.  If the first character of the input is
@@ -322,7 +327,7 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			goto ins_ch;
 		}
 
-		switch (sp->special[ch]) {
+		switch (ich.value) {
 		case K_CR:
 		case K_NL:				/* New line. */
 #define	LINE_RESOLVE {							\

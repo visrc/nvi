@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.5 1993/10/03 13:01:44 bostic Exp $ (Berkeley) $Date: 1993/10/03 13:01:44 $";
+static char sccsid[] = "$Id: v_z.c,v 8.6 1993/11/29 14:15:30 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,7 @@ v_z(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	recno_t last, lno;
+	u_int value;
 
 	/*
 	 * The first count is the line to use.  If the value doesn't
@@ -58,8 +59,8 @@ v_z(sp, ep, vp, fm, tm, rp)
 			return (1);
 		break;
 	default:		/* Put the line at the top for <cr>. */
-		if (sp->special[vp->character] != K_CR &&
-		    sp->special[vp->character] != K_NL) {
+		value = term_key_val(sp, vp->character);
+		if (value != K_CR && value != K_NL) {
 			msgq(sp, M_ERR, "usage: %s.", vp->kp->usage);
 			return (1);
 		}

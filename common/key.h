@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.18 1993/11/28 16:58:04 bostic Exp $ (Berkeley) $Date: 1993/11/28 16:58:04 $
+ *	$Id: key.h,v 8.19 1993/11/29 14:14:55 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:55 $
  */
 
 /* Structure for a key input buffer. */
@@ -14,58 +14,11 @@ struct _ibuf {
 	int	 len;		/* Buffer length. */
 	int	 next;		/* Offset of next character. */
 };
-				/* Flush keys from expansion buffer. */
-#define	TERM_FLUSH(ibp)		(ibp)->cnt = (ibp)->next = 0
-				/* Return if more keys in expansion buffer. */
-#define	TERM_MORE(ibp)		((ibp)->cnt)
 
-/*
- * Structure to name a character.  Used both as an interface to the screen
- * and to name objects referenced by characters in error messages.
- */
-struct _chname {
-	char	*name;		/* Character name. */
-	u_char	 len;		/* Length of the character name. */
-};
+/* Structure to return a character and associated information. */
+struct _ch {
+	CHAR_T	 ch;		/* Character. */
 
-/* The maximum number of columns any character can take up on a screen. */
-#define	MAX_CHARACTER_COLUMNS	4
-
-/*
- * Routines that return a key as a side-effect return:
- *
- *	INP_OK		Returning a character; must be 0.
- *	INP_EOF		EOF.
- *	INP_ERR		Error.
- *
- * Routines that return a confirmation return:
- *
- *	CONF_NO		User answered no.
- *	CONF_QUIT	User answered quit, eof or an error.
- *	CONF_YES	User answered yes.
- *
- * The vi structure depends on the key routines being able to return INP_EOF
- * multiple times without failing -- eventually enough things will end due to
- * INP_EOF that vi will reach the command level for the screen, at which point
- * the exit flags will be set and vi will exit.
- */
-enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
-enum input	{ INP_OK=0, INP_EOF, INP_ERR };
-
-/*
- * Ex/vi commands are generally separated by whitespace characters.  We
- * can't use the standard isspace(3) macro because it returns true for
- * characters like ^K in the ASCII character set.  The 4.4BSD isblank(3)
- * macro does exactly what we want, but it's not portable yet.
- *
- * XXX
- * Note side effect, ch is evaluated multiple times.
- */
-#ifndef isblank
-#define	isblank(ch)	((ch) == ' ' || (ch) == '\t')
-#endif
-
-/* Special character lookup values. */
 #define	K_CARAT		 1
 #define	K_CNTRLR	 2
 #define	K_CNTRLT	 3
@@ -84,6 +37,63 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 #define	K_VLNEXT	16
 #define	K_VWERASE	17
 #define	K_ZERO		18
+	u_char	 value;		/* Special character lookup values. */
+
+#define	CH_ABBREVIATED	0x01	/* From an abbreviation. */
+#define	CH_MAPPED	0x02	/* From a map. */
+#define	CH_QUOTED	0x04	/* Already quoted. */
+	u_char	 flags;
+};
+
+/*
+ * Structure to name a character.  Used both as an interface to the
+ * screen and to name objects named by characters in error messages.
+ */
+struct _chname {
+	char	*name;		/* Character name. */
+	u_char	 len;		/* Length of the character name. */
+};
+
+				/* Flush keys from expansion buffer. */
+#define	TERM_FLUSH(ibp)		(ibp)->cnt = (ibp)->next = 0
+				/* Return if more keys in expansion buffer. */
+#define	TERM_MORE(ibp)		((ibp)->cnt)
+
+/*
+ * Routines that return a key as a side-effect return:
+ *
+ *	INP_OK		Returning a character; must be 0.
+ *	INP_EOF		EOF.
+ *	INP_ERR		Error.
+ *
+ * The vi structure depends on the key routines being able to return INP_EOF
+ * multiple times without failing -- eventually enough things will end due to
+ * INP_EOF that vi will reach the command level for the screen, at which point
+ * the exit flags will be set and vi will exit.
+ */
+enum input	{ INP_OK=0, INP_EOF, INP_ERR };
+
+/*
+ * Routines that return a confirmation return:
+ *
+ *	CONF_NO		User answered no.
+ *	CONF_QUIT	User answered quit, eof or an error.
+ *	CONF_YES	User answered yes.
+ */
+enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
+
+/*
+ * Ex/vi commands are generally separated by whitespace characters.  We
+ * can't use the standard isspace(3) macro because it returns true for
+ * characters like ^K in the ASCII character set.  The 4.4BSD isblank(3)
+ * macro does exactly what we want, but it's not portable yet.
+ *
+ * XXX
+ * Note side effect, ch is evaluated multiple times.
+ */
+#ifndef isblank
+#define	isblank(ch)	((ch) == ' ' || (ch) == '\t')
+#endif
 
 /* Various special characters, messages. */
 #define	CURSOR_CH	' '			/* Cursor character. */
@@ -125,14 +135,10 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 #define	TXT_VALID_EX							\
 	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
 
-#define	TXT_GETKEY_MASK							\
-	(TXT_MAPCOMMAND | TXT_MAPINPUT)
-
 /* Support keyboard routines. */
-int	term_init __P((SCR *));
-enum input
-	term_key __P((SCR *, CHAR_T *, u_int));
-enum input
-	term_user_key __P((SCR *, CHAR_T *));
-int	term_push __P((SCR *, IBUF *, char *, size_t));
-int	term_waiting __P((SCR *));
+int		__term_key_val __P((SCR *, ARG_CHAR_T));
+enum input	term_key __P((SCR *, CH *, u_int));
+enum input	term_user_key __P((SCR *, CH *));
+int		term_init __P((SCR *));
+int		term_push __P((SCR *, IBUF *, char *, size_t));
+int		term_waiting __P((SCR *));

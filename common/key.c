@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.26 1993/11/28 17:41:39 bostic Exp $ (Berkeley) $Date: 1993/11/28 17:41:39 $";
+static char sccsid[] = "$Id: key.c,v 8.27 1993/11/29 14:14:53 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,23 +22,18 @@ static char sccsid[] = "$Id: key.c,v 8.26 1993/11/28 17:41:39 bostic Exp $ (Berk
 #include "vi.h"
 #include "seq.h"
 
+static int keycmp __P((const void *, const void *));
+
 /*
- * There are two sets of input buffers used by ex/vi.  The first is the input
- * from the user, either via the tty or an initial command supplied with the
- * ex or edit commands or similar mechanism.  The second is the the keys from
- * the first after mapping has been done.  Also, executable buffer expansions
- * are pushed into this second buffer.  The reason that there are two is that
- * we only want to flush the latter buffer if a command fails, i.e. if the user
- * enters "@a1G", we don't want to flush the "1G" keys because "@a" failed.
- */ 
-
-typedef struct _klist {
-	char *ts;				/* Key's termcap string. */
-	char *output;				/* Corresponding vi command. */
-	char *name;				/* Name. */
-} KLIST;
-
-static KLIST const klist[] = {
+ * XXX
+ * THIS REQUIRES THAT ALL SCREENS SHARE A TERMINAL TYPE.
+ */
+typedef struct _tklist {
+	char *ts;			/* Key's termcap string. */
+	char *output;			/* Corresponding vi command. */
+	char *name;			/* Name. */
+} TKLIST;
+static TKLIST const tklist[] = {
 	{"kA",    "O", "insert line"},
 	{"kD",    "x", "delete character"},
 	{"kd",    "j", "cursor down"},
@@ -59,50 +54,92 @@ static KLIST const klist[] = {
 };
 
 /*
+ * XXX
+ * THIS REQUIRES THAT ALL SCREENS SHARE A SPECIAL KEY SET.
+ */
+typedef struct _keylist {
+	u_char	value;			/* Special value. */
+	CHAR_T	ch;			/* Key. */
+} KEYLIST;
+static KEYLIST keylist[] = {
+	{K_CARAT,	   '^'},
+	{K_CNTRLR,	'\022'},
+	{K_CNTRLT,	'\024'},
+	{K_CNTRLZ,	'\032'},
+	{K_COLON,	   ':'},
+	{K_CR,		  '\r'},
+	{K_ESCAPE,	'\033'},
+	{K_FORMFEED,	  '\f'},
+	{K_NL,		  '\n'},
+	{K_RIGHTBRACE,	   '}'},
+	{K_RIGHTPAREN,	   ')'},
+	{K_TAB,		  '\t'},
+	{K_VEOF,	'\004'},
+	{K_VERASE,	  '\b'},
+	{K_VKILL,	'\025'},
+	{K_VLNEXT,	'\026'},
+	{K_VWERASE,	'\027'},
+	{K_ZERO,	   '0'},
+};
+
+/*
  * term_init --
- *	Initialize the special array and special keys.  The special array
- *	has a value for each special character that we can use in a switch
- *	statement.
+ *	Initialize the special key lookup table, and the special keys
+ *	defined by the terminal's termcap entry.
  */
 int
 term_init(sp)
 	SCR *sp;
 {
-	KLIST const *kp;
+	extern CHNAME const asciiname[];	/* XXX */
+	GS *gp;
+	KEYLIST *kp;
+	TKLIST const *tkp;
 	cc_t ch;
+	int cnt;
 	char *sbp, *t, buf[2 * 1024], sbuf[128];
 
-	/* Keys that are treated specially. */
-	sp->special['^'] = K_CARAT;
-	sp->special['\022'] = K_CNTRLR;
-	sp->special['\024'] = K_CNTRLT;
-	sp->special['\032'] = K_CNTRLZ;
-	sp->special[':'] = K_COLON;
-	sp->special['\r'] = K_CR;
-	sp->special['\033'] = K_ESCAPE;
-	sp->special['\f'] = K_FORMFEED;
-	sp->special['\n'] = K_NL;
-	sp->special[')'] = K_RIGHTPAREN;
-	sp->special['}'] = K_RIGHTBRACE;
-	sp->special['\t'] = K_TAB;
-	if ((ch = sp->gp->original_termios.c_cc[VEOF]) == _POSIX_VDISABLE)
-		ch = '\004';
-	sp->special[ch] = K_VEOF;
-	if ((ch = sp->gp->original_termios.c_cc[VERASE]) == _POSIX_VDISABLE)
-		ch = '\b';
-	sp->special[ch] = K_VERASE;
-	if ((ch = sp->gp->original_termios.c_cc[VKILL]) == _POSIX_VDISABLE)
-		ch = '\025';
-	sp->special[ch] = K_VKILL;
-	if ((ch = sp->gp->original_termios.c_cc[VLNEXT]) == _POSIX_VDISABLE)
-		ch = '\026';
-	sp->special[ch] = K_VLNEXT;
-	if ((ch = sp->gp->original_termios.c_cc[VWERASE]) == _POSIX_VDISABLE)
-		ch = '\027';
-	sp->special[ch] = K_VWERASE;
-	sp->special['0'] = K_ZERO;
+	/*
+	 * XXX
+	 * 8-bit, ASCII only, for now.  Recompilation should get you
+	 * any 8-bit character set, as long as nul isn't a character.
+	 */
+	gp = sp->gp;
+	gp->cname = asciiname;			/* XXX */
 
-	/* Special terminal keys, from the termcap entry. */
+	/* Set keys found in the termios structure. */
+#define	TERMSET(name, val) {						\
+	if ((ch = gp->original_termios.c_cc[name]) != _POSIX_VDISABLE)	\
+		for (kp = keylist;; ++kp)				\
+			if (kp->value == (val)) {			\
+				kp->ch = ch;				\
+				break;					\
+			}						\
+}
+	TERMSET(VEOF, K_VEOF);
+	TERMSET(VERASE, K_VERASE);
+	TERMSET(VKILL, K_VKILL);
+	TERMSET(VLNEXT, K_VLNEXT);
+	TERMSET(VWERASE, K_VWERASE);
+
+	/* Sort the special key list. */
+	qsort(keylist, sizeof(keylist), sizeof(keylist[0]), keycmp);
+
+	/* Initialize the fast lookup table. */
+	if ((gp->special_key =
+	    calloc(MAX_FAST_KEY + 1, sizeof(u_char))) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
+	for (gp->max_special = 0,
+	    kp = keylist, cnt = sizeof(keylist); cnt--; ++kp) {
+		if (gp->max_special < kp->value)
+			gp->max_special = kp->value;
+		if (kp->ch <= MAX_FAST_KEY)
+			gp->special_key[kp->ch] = kp->value;
+	}
+	
+	/* Set key sequences found in the termcap entry. */
 	switch (tgetent(buf, O_STR(sp, O_TERM))) {
 	case -1:
 		msgq(sp, M_ERR, "%s tgetent: %s.",
@@ -114,15 +151,25 @@ term_init(sp)
 		return (1);
 	}
 
-	for (kp = klist; kp->name != NULL; ++kp) {
+	for (tkp = tklist; tkp->name != NULL; ++tkp) {
 		sbp = sbuf;
-		if ((t = tgetstr(kp->ts, &sbp)) == NULL)
+		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
 			continue;
-		if (seq_set(sp, kp->name, t, kp->output, SEQ_COMMAND, 0))
+		if (seq_set(sp, tkp->name, t, tkp->output, SEQ_COMMAND, 0))
 			return (1);
 	}
 	return (0);
 }
+
+/*
+ * There are two sets of input buffers used by ex/vi.  The first is the input
+ * from the user, either via the tty or an initial command supplied with the
+ * ex or edit commands or similar mechanism.  The second is the the keys from
+ * the first after mapping has been done.  Also, executable buffer expansions
+ * are pushed into this second buffer.  The reason that there are two is that
+ * we only want to flush the latter buffer if a command fails, i.e. if the user
+ * enters "@a1G", we don't want to flush the "1G" keys because "@a" failed.
+ */ 
 
 /*
  * term_push --
@@ -246,7 +293,7 @@ term_push(sp, ibp, s, len)
 enum input
 term_key(sp, chp, flags)
 	SCR *sp;
-	CHAR_T *chp;
+	CH *chp;
 	u_int flags;
 {
 	enum input rval;
@@ -263,7 +310,9 @@ term_key(sp, chp, flags)
 loop:	if (keyp->cnt) {
 		ch = keyp->buf[keyp->next];
 		if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(ch)) {
-			*chp = NOT_DIGIT_CH;
+			chp->ch = NOT_DIGIT_CH;
+			chp->value = 0;
+			chp->flags = 0;
 			return (INP_OK);
 		}
 		QREM_HEAD(keyp, 1);
@@ -321,7 +370,9 @@ remap:		qp = seq_find(sp, NULL, &ttyp->buf[ttyp->next], ttyp->cnt,
 			goto rec_err;
 
 		if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(qp->output[0])) {
-			*chp = NOT_DIGIT_CH;
+			chp->ch = NOT_DIGIT_CH;
+			chp->value = 0;
+			chp->flags = 0;
 			return (INP_OK);
 		}
 
@@ -340,7 +391,9 @@ err:			msgq(sp, M_SYSERR, "Error: key deleted");
 
 nomap:	ch = ttyp->buf[ttyp->next];
 	if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(ch)) {
-		*chp = NOT_DIGIT_CH;
+		chp->ch = NOT_DIGIT_CH;
+		chp->value = 0;
+		chp->flags = 0;
 		return (INP_OK);
 	}
 	QREM_HEAD(ttyp, 1);
@@ -355,23 +408,22 @@ rec_err:	gp->key_cnt = 0;
 		return (INP_ERR);
 	}
 		
+	/* Fill in the return information. */
+	chp->ch = ch;
+	chp->flags = 0;
+	chp->value = term_key_val(sp, ch);
+
 	/*
 	 * O_BEAUTIFY eliminates all control characters except
 	 * escape, form-feed, newline and tab.
 	 */
-	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
-		if (isprint(ch) ||
-		    sp->special[ch] == K_ESCAPE ||
-		    sp->special[ch] == K_FORMFEED ||
-		    sp->special[ch] == K_NL ||
-		    sp->special[ch] == K_TAB) {
-			*chp = ch;
-			return (INP_OK);
-		}
-		goto loop;
-	}
-	*chp = ch;
-	return (INP_OK);
+	if (isprint(ch) ||
+	    !LF_ISSET(TXT_BEAUTIFY) || !O_ISSET(sp, O_BEAUTIFY) ||
+	    chp->value == K_ESCAPE || chp->value == K_FORMFEED ||
+	    chp->value == K_NL || chp->value == K_TAB)
+		return (INP_OK);
+
+	goto loop;
 }
 
 /*
@@ -381,10 +433,11 @@ rec_err:	gp->key_cnt = 0;
 enum input
 term_user_key(sp, chp)
 	SCR *sp;
-	CHAR_T *chp;
+	CH *chp;
 {
 	enum input rval;
 	struct timeval t;
+	CHAR_T ch;
 	IBUF *ttyp;
 	int nr;
 
@@ -401,9 +454,36 @@ term_user_key(sp, chp)
 	if (rval = sp->s_key_read(sp, &nr, NULL))
 		return (rval);
 			
-	/* Return the entered key. */
+	/* Fill in the return information. */
 	ttyp = sp->gp->tty;
-	*chp = ttyp->buf[ttyp->next + (ttyp->cnt - 1)];
+	chp->ch = ttyp->buf[ttyp->next + (ttyp->cnt - 1)];
+	chp->flags = 0;
+	chp->value = term_key_val(sp, chp->ch);
+
 	QREM_TAIL(ttyp, 1);
 	return (INP_OK);
+}
+
+/*
+ * __term_key_val --
+ *	Fill in the value for a key.  This routine is the backup
+ *	for the term_key_val() macro.
+ */
+int
+__term_key_val(sp, ch)
+	SCR *sp;
+	ARG_CHAR_T ch;
+{
+	KEYLIST k, *kp;
+
+	k.ch = ch;
+	kp = bsearch(&k, keylist, sizeof(keylist), sizeof(keylist[0]), keycmp);
+	return (kp == NULL ? 0 : kp->value);
+}
+
+static int
+keycmp(ap, bp)
+	const void *ap, *bp;
+{
+	return (((KEYLIST *)ap)->ch - ((KEYLIST *)bp)->ch);
 }

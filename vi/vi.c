@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.36 1993/11/22 17:28:45 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:28:45 $";
+static char sccsid[] = "$Id: vi.c,v 8.37 1993/11/29 14:15:31 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,7 @@ static int getcmd __P((SCR *, EXF *,
 static inline int
 	   getcount __P((SCR *, ARG_CHAR_T, u_long *));
 static inline int
-	   getkey __P((SCR *, CHAR_T *, u_int));
+	   getkey __P((SCR *, CH *, u_int));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
 static int getmotion __P((SCR *, EXF *,
 		VICMDARG *, VICMDARG *, MARK *, MARK *));
@@ -246,8 +246,9 @@ err:				TERM_FLUSH(sp->gp->key);
 }
 
 #define	KEY(key, map) {							\
-	if (getkey(sp, &key, map))					\
+	if (getkey(sp, &ikey, map))					\
 		return (1);						\
+	key = ikey.ch;							\
 }
 
 /*
@@ -273,6 +274,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 {
 	VIKEYS const *kp;
 	u_int flags;
+	CH ikey;
 	CHAR_T key;
 
 	/* Refresh the command structure. */
@@ -280,12 +282,13 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	    (char *)&vp->vp_endzero - (char *)&vp->vp_startzero);
 
 	/* An escape bells the user if in command mode. */
-	if (getkey(sp, &key, TXT_MAPCOMMAND)) {
-		if (sp->special[key] == K_ESCAPE && ismotion == NULL)
+	if (getkey(sp, &ikey, TXT_MAPCOMMAND)) {
+		if (ikey.value == K_ESCAPE && ismotion == NULL)
 			msgq(sp, M_BERR, "Already in command mode");
 		return (1);
 	}
 
+	key = ikey.ch;
 	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
 		return (1);
@@ -674,27 +677,27 @@ getcount(sp, fkey, countp)
 	u_long *countp;
 {
 	u_long count, tc;
-	CHAR_T key;
+	CH ikey;
 
-	key = fkey;
+	ikey.ch = fkey;
 	count = tc = 0;
 	do {
 		/* Assume that overflow results in a smaller number. */
-		tc = count * 10 + key - '0';
+		tc = count * 10 + ikey.ch - '0';
 		if (count > tc) {
 			/* Toss to the next non-digit. */
 			do {
-				if (getkey(sp, &key,
+				if (getkey(sp, &ikey,
 				    TXT_MAPCOMMAND | TXT_MAPNODIGIT))
 					return (1);
-			} while (isdigit(key));
+			} while (isdigit(ikey.ch));
 			msgq(sp, M_ERR, "Number larger than %lu", ULONG_MAX);
 			return (1);
 		}
 		count = tc;
-		if (getkey(sp, &key, TXT_MAPCOMMAND | TXT_MAPNODIGIT))
+		if (getkey(sp, &ikey, TXT_MAPCOMMAND | TXT_MAPNODIGIT))
 			return (1);
-	} while (isdigit(key));
+	} while (isdigit(ikey.ch));
 	*countp = count;
 	return (0);
 }
@@ -704,14 +707,12 @@ getcount(sp, fkey, countp)
  *	Return the next key.
  */
 static inline int
-getkey(sp, keyp, map)
+getkey(sp, ikeyp, map)
 	SCR *sp;
-	CHAR_T *keyp;
+	CH *ikeyp;
 	u_int map;
 {
-	*keyp = '\0';
-
-	switch (term_key(sp, keyp, map)) {
+	switch (term_key(sp, ikeyp, map)) {
 	case INP_OK:
 		break;
 	case INP_EOF:
@@ -720,5 +721,5 @@ getkey(sp, keyp, map)
 	case INP_ERR:
 		return (1);
 	}
-	return (sp->special[*keyp] == K_ESCAPE);
+	return (ikeyp->value == K_ESCAPE);
 }

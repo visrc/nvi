@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.41 1993/11/22 18:32:45 bostic Exp $ (Berkeley) $Date: 1993/11/22 18:32:45 $";
+static char sccsid[] = "$Id: screen.c,v 8.42 1993/11/29 14:14:49 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,6 @@ screen_init(orig, spp, flags)
 	u_int flags;
 {
 	SCR *sp;
-	extern CHNAME const asciiname[];	/* XXX */
 	size_t len;
 
 	if ((sp = malloc(sizeof(SCR))) == NULL) {
@@ -56,8 +55,6 @@ screen_init(orig, spp, flags)
 	if (orig == NULL) {
 		sp->searchdir = NOTSET;
 		sp->csearchdir = CNOTSET;
-
-		sp->cname = asciiname;			/* XXX */
 
 		sp->saved_vi_mode = LF_ISSET(S_VI_CURSES | S_VI_XAW);
 
@@ -118,9 +115,6 @@ screen_init(orig, spp, flags)
 			sp->newl_cnt = orig->newl_cnt;
 			memmove(sp->newl, orig->newl, len);
 		}
-
-		sp->cname = orig->cname;
-		memmove(sp->special, orig->special, sizeof(sp->special));
 
 		if (opts_copy(orig, sp)) {
 mem:			msgq(orig, M_SYSERR, "new screen attributes");

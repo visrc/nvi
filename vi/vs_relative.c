@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.5 1993/11/22 17:31:27 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:31:27 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.6 1993/11/29 14:15:46 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,7 +102,7 @@ svi_lrelative(sp, ep, lno, off)
 	scno = O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0;
 
 	/* Discard logical lines. */
-	cname = sp->cname;
+	cname = sp->gp->cname;
 	listset = O_ISSET(sp, O_LIST);
 	for (p = lp, llen = len; --off;) {
 		for (; len && scno < sp->cols; --len)
@@ -159,7 +159,7 @@ svi_chposition(sp, ep, lno, cno)
 		return (0);
 
 	/* Step through the line until reach the right character. */
-	cname = sp->cname;
+	cname = sp->gp->cname;
 	listset = O_ISSET(sp, O_LIST);
 	for (scno = 0, len = llen, p = lp; len--;) {
 		SCNO_INCREMENT;

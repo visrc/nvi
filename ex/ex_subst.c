@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.18 1993/11/13 18:02:28 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:28 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.19 1993/11/29 14:15:19 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -766,7 +766,9 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 	 * all escape characters.  This (hopefully) follows historic practice.
 	 */
 #define	ADDCH(ch) {							\
-	if (sp->special[ch] == K_CR || sp->special[ch] == K_NL) {	\
+	u_int __value;							\
+	__value = term_key_val(sp, ch);					\
+	if (__value == K_CR || __value == K_NL) {			\
 		NEEDNEWLINE(sp);					\
 		sp->newl[sp->newl_cnt++] = lbclen;			\
 	} else if (conv != C_NOTSET) {					\

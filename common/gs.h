@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.22 1993/11/23 17:09:50 bostic Exp $ (Berkeley) $Date: 1993/11/23 17:09:50 $
+ *	$Id: gs.h,v 8.23 1993/11/29 14:14:45 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:45 $
  */
 
 struct _gs {
@@ -36,6 +36,14 @@ struct _gs {
 	LIST_HEAD(_seqh, _seq) seqq;	/* Linked list of maps, abbrevs. */
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
 	int	key_cnt;		/* Map expansion count. */
+
+#define	term_key_val(sp, ch)						\
+	((ch) <= MAX_FAST_KEY ? sp->gp->special_key[ch] :		\
+	    (ch) > sp->gp->max_special ? 0 : __term_key_val(sp, ch))
+#define	MAX_FAST_KEY	255		/* Max + 1 fast check character.*/
+	CHAR_T	 max_special;		/* Max special character. */
+	u_char	*special_key;		/* Fast lookup table. */
+	CHNAME	const *cname;		/* Display names of ASCII characters. */
 
 #define	G_BELLSCHED	0x00001		/* Bell scheduled. */
 #define	G_CURSES_INIT	0x00002		/* Curses: initialized. */

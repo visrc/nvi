@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.17 1993/11/20 10:05:35 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:35 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.18 1993/11/29 14:15:16 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -172,7 +172,7 @@ argv_exp3(sp, ep, cmdp, p)
 		 * that's preceded by the user's quoting character.
 		 */
 		for (ap = p; p[0] != '\0'; ++p) {
-			if (sp->special[p[0]] == K_VLNEXT && p[1])
+			if (term_key_val(sp, p[0]) == K_VLNEXT && p[1])
 				p += 2;
 			if (isblank(p[0]))
 				break;
@@ -200,7 +200,7 @@ argv_exp3(sp, ep, cmdp, p)
 		 * Copy the argument into place, losing quote chars.
 		 */
 		for (t = exp->args[off].bp; len; *t++ = *ap++, --len)
-			if (sp->special[*ap] == K_VLNEXT) {
+			if (term_key_val(sp, *ap) == K_VLNEXT) {
 				++ap;
 				--len;
 			}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.4 1993/11/27 15:52:30 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:52:30 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.5 1993/11/29 14:15:17 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ ex_map(sp, ep, cmdp)
 
 		/* Some single keys may not be remapped in command mode. */
 		if (stype == SEQ_COMMAND && input[1] == '\0')
-			switch (sp->special[input[0]]) {
+			switch (term_key_val(sp, input[0])) {
 			case K_COLON:
 			case K_CR:
 			case K_ESCAPE:
