@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.47 1993/02/21 19:43:48 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:43:48 $";
+static char sccsid[] = "$Id: options.c,v 5.48 1993/02/24 12:57:16 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:57:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -237,42 +237,14 @@ int
 opts_init(ep)
 	EXF *ep;
 {
-	struct winsize win;
-	size_t row, col;
 	char *s, *argv[2], b1[1024];
+
+	(void)set_window_size(ep, 0);
 
 	argv[0] = b1;
 	argv[1] = NULL;
-
-	row = 80;
-	col = 24;
-
-	/*
-	 * Get the screen rows and columns.  The idea is to duplicate what
-	 * curses will do to figure out the rows and columns.  If the values
-	 * are wrong, it's not a big deal -- as soon as the user sets them
-	 * explicitly the environment will be set and curses will use the new
-	 * values.
-	 *
-	 * Try TIOCGWINSZ.
-	 */
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1 &&
-	    win.ws_row != 0 && win.ws_col != 0) {
-		row = win.ws_row;
-		col = win.ws_col;
-	}
-
-	/* POSIX 1003.2 requires the environment to override. */
-	if ((s = getenv("ROWS")) != NULL)
-		row = strtol(s, NULL, 10);
-	if ((s = getenv("COLUMNS")) != NULL)
-		col = strtol(s, NULL, 10);
-
-	(void)snprintf(b1, sizeof(b1), "ls=%u", row);	/* O_LINES */
-	(void)opts_set(ep, argv);
-	(void)snprintf(b1, sizeof(b1), "co=%u", col);	/* O_COLUMNS */
-	(void)opts_set(ep, argv);			/* O_SCROLL */
-	(void)snprintf(b1, sizeof(b1), "sc=%u", row / 2 - 1);
+							/* O_SCROLL */
+	(void)snprintf(b1, sizeof(b1), "sc=%ld", LVAL(O_LINES));
 	(void)opts_set(ep, argv);
 
 	if (s = getenv("SHELL")) {			/* O_SHELL */
@@ -282,7 +254,6 @@ opts_init(ep)
 
 	(void)f_flash(NULL, NULL);			/* O_FLASH */
 	return (0);
-
 }
 
 /*
@@ -454,7 +425,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			op->value = strdup(equals);
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
 draw:			if (ep != NULL && ISFSETP(op, OPT_REDRAW))
-				FF_SET(ep, F_REDRAW);
+				SF_SET(ep, S_REDRAW);
 			break;
 		default:
 			abort();
@@ -475,10 +446,9 @@ f_columns(ep, valp)
 
 	val = *(u_long *)valp;
 
-#define	MINCOLUMNS	10
-	if (val < MINCOLUMNS) {
-		msg(ep, M_ERROR,
-		    "Screen columns too small, less than %d.", MINCOLUMNS);
+	if (val < MINIMUM_SCREEN_COLS) {
+		msg(ep, M_ERROR, "Screen columns too small, less than %d.",
+		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
 	if (val < LVAL(O_SHIFTWIDTH)) {
@@ -511,7 +481,7 @@ f_columns(ep, valp)
 
 	/* Set resize bit; note, the EXF structure may not yet be in place. */
 	if (ep != NULL)
-		FF_SET(ep, F_RESIZE);
+		SF_SET(ep, S_RESIZE);
 	return (0);
 }
 
@@ -634,10 +604,9 @@ f_lines(ep, valp)
 
 	val = *(u_long *)valp;
 
-#define	MINLINES	4
-	if (val < MINLINES) {
-		msg(ep, M_ERROR,
-		    "Screen lines too small, less than %d.", MINLINES);
+	if (val < MINIMUM_SCREEN_ROWS) {
+		msg(ep, M_ERROR, "Screen lines too small, less than %d.",
+		    MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
 	(void)snprintf(buf, sizeof(buf), "ROWS=%lu", val);
@@ -645,7 +614,7 @@ f_lines(ep, valp)
 
 	/* Set resize bit; note, the EXF structure may not yet be in place. */
 	if (ep != NULL)
-		FF_SET(ep, F_RESIZE);
+		SF_SET(ep, S_RESIZE);
 	return (0);
 }
 
@@ -654,10 +623,8 @@ f_list(ep, valp)
 	EXF *ep; 
 	void *valp;
 {
-	if (mode != MODE_VI)
-		return (0);
-
-	return (scr_sm_fill(ep, ep->top, P_TOP));
+	SF_SET(ep, S_REFORMAT);
+	return (0);
 }
 
 static int
@@ -795,7 +762,7 @@ opts_dump(ep, all)
 	 */
 	colwidth = -1;
 	tablen = LVAL(O_TABSTOP);
-	termwidth = (ep->cols - 1) / 2 & ~(tablen - 1);
+	termwidth = (SCRP(ep)->cols - 1) / 2 & ~(tablen - 1);
 	for (b_num = s_num = 0, op = opts; op->name; ++op) {
 		if (!all && !ISFSETP(op, OPT_SET))
 			continue;
@@ -824,7 +791,7 @@ opts_dump(ep, all)
 	}
 
 	colwidth = (colwidth + tablen) & ~(tablen - 1);
-	termwidth = ep->cols - 1;
+	termwidth = SCRP(ep)->cols - 1;
 	numcols = termwidth / colwidth;
 	if (s_num > numcols) {
 		numrows = s_num / numcols;
