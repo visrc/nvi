@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.8 1992/05/21 16:46:15 bostic Exp $ (Berkeley) $Date: 1992/05/21 16:46:15 $";
+static char sccsid[] = "$Id: exf.c,v 5.9 1992/05/27 10:31:41 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:31:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: exf.c,v 5.8 1992/05/21 16:46:15 bostic Exp $ (Berke
 #include "vi.h"
 #include "exf.h"
 #include "mark.h"
+#include "cut.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -189,7 +190,22 @@ file_gline(ep, lno, lenp)
 	size_t *lenp;				/* Length store. */
 {
 	DBT data, key;
+	TEXT *tp;
+	recno_t cnt;
 
+	/*
+	 * If we're in input mode, look-aside into the input buffer and
+	 * see if the line we want is there.
+	 */
+	if (ib.stop.lno >= lno && ib.start.lno <= lno) {
+		for (cnt = ib.start.lno, tp = ib.head; cnt < lno; ++cnt)
+			tp = tp->next;
+		if (lenp)
+			*lenp = tp->len;
+		return (tp->lp);
+	}
+
+	/* Otherwise, get the line from the underlying file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
 
@@ -226,6 +242,7 @@ file_dline(ep, lno)
 		msg("%s: line %lu: not found", ep->name, lno);
 		return (1);
 	}
+	ep->flags |= F_MODIFIED;
 	return (0);
 }
 
@@ -248,12 +265,13 @@ file_aline(ep, lno, p, len)
 	data.size = len;
 
 #if DEBUG && 1
-	TRACE("append to line %lu {%.*s}\n", lno, MIN(len, 20), p);
+	TRACE("append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
+	ep->flags |= F_MODIFIED;
 	return (0);
 }
 
@@ -271,7 +289,7 @@ file_iline(ep, lno, p, len)
 	DBT data, key;
 
 #if DEBUG && 1
-	TRACE("insert before line %lu {%.*s}\n", lno, MIN(len, 20), p);
+	TRACE("insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	key.data = &lno;
 	key.size = sizeof(lno);
@@ -282,6 +300,7 @@ file_iline(ep, lno, p, len)
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
+	ep->flags |= F_MODIFIED;
 	return (0);
 }
 
@@ -299,7 +318,7 @@ file_sline(ep, lno, p, len)
 	DBT data, key;
 
 #if DEBUG && 1
-	TRACE("replace line %lu {%.*s}\n", lno, MIN(len, 20), p);
+	TRACE("replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	key.data = &lno;
 	key.size = sizeof(lno);
@@ -310,6 +329,7 @@ file_sline(ep, lno, p, len)
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
+	ep->flags |= F_MODIFIED;
 	return (0);
 }
 
