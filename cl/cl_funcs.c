@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.42 1996/06/17 11:12:09 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:12:09 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.43 1996/06/17 11:33:01 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:33:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -503,7 +503,7 @@ cl_rename(sp)
 	 * user's permission.
 	 */
 	if (O_ISSET(sp, O_WINDOWNAME) &&
-	    !strcmp(OG_STR(sp->gp, GO_TERM), "xterm")) {
+	    !strncmp(OG_STR(sp->gp, GO_TERM), "xterm", sizeof("xterm") - 1)) {
 		(void)printf("\033]0;%s\007", sp->frp->name);
 		(void)fflush(stdout);
 	}
