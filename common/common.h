@@ -4,13 +4,19 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.3 1993/08/05 18:00:55 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:00:55 $
+ *	$Id: common.h,v 8.4 1993/08/21 11:58:30 bostic Exp $ (Berkeley) $Date: 1993/08/21 11:58:30 $
  */
 
-					/* Ordered before local includes. */
-#include <limits.h>			/* Required by screen.h. */
-#include <regex.h>			/* Required by screen.h. */
-#include <stdio.h>			/* Required by screen.h. */
+/* System includes. */
+#include <limits.h>		/* Required by screen.h. */
+#include <stdio.h>		/* Required by screen.h. */
+#include <termios.h>		/* Required by gs.h. */
+
+/*
+ * Required by screen.h.  This is the first include that can pull
+ * in "compat.h".  Should be after every other system include.
+ */
+#include <regex.h>
 
 /*
  * Forward structure declarations.  Not pretty, but the include files
@@ -33,17 +39,23 @@ struct _tag;
 struct _tagf;
 struct _text;
 
-#include "hdr.h"			/* Include before any local includes. */
-#include "gs.h"				/* Includes <termios.h>. */
-					/* Includes compat.h. */
-#include <db.h>				/* Required by exf.h. */
+/*
+ * Local includes.
+ *
+ * Required by everybody; include before any local includes.
+ */
+#include "hdr.h"
 
-#include "mark.h"			/* Include before cut.h, exf.h. */
+#include "gs.h"				
+
+#include <db.h>			/* Required by exf.h; includes compat.h. */
+
+#include "mark.h"		/* Required by cut.h, exf.h. */
 #include "cut.h"
 
-#include "search.h"			/* Include before screen.h. */
-#include "options.h"			/* Include before screen.h. */
-#include "screen.h"			/* Include before exf.h. */
+#include "search.h"		/* Required by screen.h. */
+#include "options.h"		/* Required by screen.h. */
+#include "screen.h"		/* Required by exf.h. */
 
 #include "char.h"
 #include "exf.h"
