@@ -2,7 +2,7 @@
 .\" All rights reserved.  The Berkeley software License Agreement
 .\" specifies the terms and conditions for redistribution.
 .\"
-.\"	$Id: vi.apwh.ms,v 4.1 1986/05/30 11:07:52 mckusick Exp $ (Berkeley) $Date: 1986/05/30 11:07:52 $
+.\"	$Id: vi.apwh.ms,v 5.1 1986/05/30 11:08:13 mckusick Exp $ (Berkeley) $Date: 1986/05/30 11:08:13 $
 .\"
 .TL
 Vi Command & Function Reference

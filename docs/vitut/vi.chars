@@ -2,7 +2,7 @@
 .\" All rights reserved.  The Berkeley software License Agreement
 .\" specifies the terms and conditions for redistribution.
 .\"
-.\"	$Id: vi.chars,v 4.1 1986/05/30 11:08:47 mckusick Exp $ (Berkeley) $Date: 1986/05/30 11:08:47 $
+.\"	$Id: vi.chars,v 5.1 1986/05/30 11:09:00 mckusick Exp $ (Berkeley) $Date: 1986/05/30 11:09:00 $
 .\"
 .bd S 3
 ..pn 21
