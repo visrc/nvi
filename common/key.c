@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.1 1995/04/13 17:18:38 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:38 $";
+static char sccsid[] = "$Id: key.c,v 10.2 1995/05/05 18:46:01 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:46:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,6 @@ static char sccsid[] = "$Id: key.c,v 10.1 1995/04/13 17:18:38 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 
 static int	v_event_append __P((SCR *, CHAR_T *, size_t, u_int));
 static int	v_event_grow __P((SCR *, int));
@@ -103,6 +102,8 @@ static int nkeylist =
 /*
  * v_key_init --
  *	Initialize the special key lookup table.
+ *
+ * PUBLIC: int v_key_init __P((SCR *));
  */
 int
 v_key_init(sp)
@@ -198,6 +199,8 @@ v_key_termios(gp, name, val)
 /*
  * v_key_ilookup --
  *	Build the fast-lookup key display array.
+ *
+ * PUBLIC: void v_key_ilookup __P((SCR *));
  */
 void
 v_key_ilookup(sp)
@@ -217,6 +220,8 @@ v_key_ilookup(sp)
  * __v_key_len --
  *	Return the length of the string that will display the key.
  *	This routine is the backup for the KEY_LEN() macro.
+ *
+ * PUBLIC: size_t __v_key_len __P((SCR *, ARG_CHAR_T));
  */
 size_t
 __v_key_len(sp, ch)
@@ -231,6 +236,8 @@ __v_key_len(sp, ch)
  * __v_key_name --
  *	Return the string that will display the key.  This routine
  *	is the backup for the KEY_NAME() macro.
+ *
+ * PUBLIC: CHAR_T *__v_key_name __P((SCR *, ARG_CHAR_T));
  */
 CHAR_T *
 __v_key_name(sp, ach)
@@ -312,6 +319,8 @@ done:	sp->cname[sp->clen = len] = '\0';
  * __v_key_val --
  *	Fill in the value for a key.  This routine is the backup
  *	for the KEY_VAL() macro.
+ *
+ * PUBLIC: int __v_key_val __P((SCR *, ARG_CHAR_T));
  */
 int
 __v_key_val(sp, ch)
@@ -335,6 +344,8 @@ __v_key_val(sp, ch)
  * an associated flag value, which indicates if it has already been quoted,
  * if it is the result of a mapping or an abbreviation, as well as a count
  * of the number of times it has been mapped.
+ *
+ * PUBLIC: int v_event_push __P((SCR *, CHAR_T *, size_t, u_int));
  */
 int
 v_event_push(sp, s, nchars, flags)
@@ -431,6 +442,8 @@ v_event_append(sp, s, nchars, flags)
 /* 
  * v_event_pull --
  *	Return the next character event, if it exists.
+ *
+ * PUBLIC: int v_event_pull __P((SCR *, EVENT **));
  */
 int
 v_event_pull(sp, evpp)
@@ -520,6 +533,8 @@ v_event_pull(sp, evpp)
  * knew when the macro started, and, in fact, this might be worth doing at some
  * point.  Given that this might make the log grow unacceptably (consider that
  * cursor keys are done with maps), for now we leave any changes made in place.
+ *
+ * PUBLIC: int v_event_handler __P((SCR *, EVENT *, u_int32_t *));
  */
 int
 v_event_handler(sp, evp, tp)
@@ -719,6 +734,8 @@ err:	v_sync(sp, RCV_EMAIL | RCV_ENDSESSION | RCV_PRESERVE);
 /*
  * v_event_flush --
  *	Flush any flagged keys, returning if any keys were flushed.
+ *
+ * PUBLIC: int v_event_flush __P((SCR *, u_int));
  */
 int
 v_event_flush(sp, flags)
