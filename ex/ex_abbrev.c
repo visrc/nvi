@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.10 1994/05/21 09:37:58 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:37:58 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.11 1994/07/15 16:14:53 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:14:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,6 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 8.10 1994/05/21 09:37:58 bostic Exp $
 #include <regex.h>
 
 #include "vi.h"
-#include "seq.h"
 #include "excmd.h"
 #include "vcmd.h"
 
@@ -63,7 +62,7 @@ ex_abbr(sp, ep, cmdp)
 		}
 
 	if (seq_set(sp, NULL, 0, cmdp->argv[0]->bp, cmdp->argv[0]->len,
-	    cmdp->argv[1]->bp, cmdp->argv[1]->len, SEQ_ABBREV, S_USERDEF))
+	    cmdp->argv[1]->bp, cmdp->argv[1]->len, SEQ_ABBREV, SEQ_USERDEF))
 		return (1);
 
 	F_SET(sp->gp, G_ABBREV);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.14 1994/07/06 12:16:25 bostic Exp $ (Berkeley) $Date: 1994/07/06 12:16:25 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.15 1994/07/15 16:15:01 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:15:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,6 @@ static char sccsid[] = "$Id: ex_map.c,v 8.14 1994/07/06 12:16:25 bostic Exp $ (B
 #include <regex.h>
 
 #include "vi.h"
-#include "seq.h"
 #include "excmd.h"
 
 /*
@@ -52,9 +51,7 @@ ex_map(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	enum seqtype stype;
-	CHAR_T *input;
-	size_t nlen;
-	char *name, *t, keyname[64];
+	CHAR_T *input, *p;
 
 	stype = F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND;
 
@@ -72,52 +69,37 @@ ex_map(sp, ep, cmdp)
 	}
 
 	/*
-	 * If the mapped string is #[0-9] (and wasn't quoted)
-	 * then map to a function key.
+	 * If the mapped string is #[0-9]* (and wasn't quoted) then store
+	 * the function key mapping, and call the screen specific routine.
+	 * Note, if the screen specific routine is able to create the
+	 * mapping, the SEQ_FUNCMAP type stays around, maybe the next screen
+	 * type can get it right.
 	 */
-	nlen = 0;
-	if (input[0] == '#' && isdigit(input[1]) && !input[2]) {
-		(void)snprintf(keyname,
-		    sizeof(keyname), "k%d", atoi(input + 1));
-#ifdef SYSV_CURSES
-		if ((t = tigetstr(keyname)) == NULL || t == (char *)-1)
-			t = NULL;
-#else
-		{
-			char *sbp, sbuf[1024];
-			if (term_tgetent(sp, sbuf, O_STR(sp, O_TERM)))
-				return (1);
-			sbp = sbuf;
-			t = tgetstr(keyname, &sbp);
-		}
-#endif
-		if (t != NULL) {
-			nlen = snprintf(keyname, sizeof(keyname),
-			    "function key %d", atoi(input + 1));
-			return (seq_set(sp, keyname, nlen, t, strlen(t),
-			    cmdp->argv[1]->bp, cmdp->argv[1]->len,
-			    stype, S_USERDEF));
-		}
-		msgq(sp, M_ERR, "This terminal has no %s key", input);
-		return (1);
-	} else {
-		name = NULL;
+	if (input[0] == '#') {
+		for (p = input + 1; isdigit(*p); ++p);
+		if (p != '\0')
+			goto nofunc;
 
-		/* Some single keys may not be remapped in command mode. */
-		if (stype == SEQ_COMMAND && input[1] == '\0')
-			switch (KEY_VAL(sp, input[0])) {
-			case K_COLON:
-			case K_CR:
-			case K_ESCAPE:
-			case K_NL:
-				msgq(sp, M_ERR,
-				    "The %s character may not be remapped",
-				    KEY_NAME(sp, input[0]));
-				return (1);
-			}
+		if (seq_set(sp, NULL, 0, input, cmdp->argv[0]->len,
+		    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, SEQ_FUNCMAP))
+			return (1);
+		return (sp->s_fmap(sp, stype, input, cmdp->argv[0]->len,
+		    cmdp->argv[1]->bp, cmdp->argv[1]->len));
 	}
-	return (seq_set(sp, name, nlen, input, cmdp->argv[0]->len,
-	    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, S_USERDEF));
+
+	/* Some single keys may not be remapped in command mode. */
+nofunc:	if (stype == SEQ_COMMAND && input[1] == '\0')
+		switch (KEY_VAL(sp, input[0])) {
+		case K_COLON:
+		case K_CR:
+		case K_ESCAPE:
+		case K_NL:
+			msgq(sp, M_ERR, "The %s character may not be remapped",
+			    KEY_NAME(sp, input[0]));
+			return (1);
+		}
+	return (seq_set(sp, NULL, 0, input, cmdp->argv[0]->len,
+	    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, SEQ_USERDEF));
 }
 
 /*

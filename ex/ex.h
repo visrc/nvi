@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.63 1994/05/21 09:38:30 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:30 $
+ *	$Id: ex.h,v 8.64 1994/07/15 16:15:14 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:15:14 $
  */
 
 /* Ex command structure. */
@@ -204,6 +204,9 @@ int	proc_wait __P((SCR *, long, const char *, int));
 int	sscr_end __P((SCR *));
 int	sscr_exec __P((SCR *, EXF *, recno_t));
 int	sscr_input __P((SCR *));
+
+int	abbr_save __P((SCR *, FILE *));
+int	map_save __P((SCR *, FILE *));
 
 #define	EXPROTO(name)	int name __P((SCR *, EXF *, EXCMDARG *))
 EXPROTO(ex_abbr);
