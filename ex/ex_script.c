@@ -4,13 +4,16 @@
  * Copyright (c) 1992, 1993, 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
+ * This code is derived from software contributed to Berkeley by
+ * Brian Hirt.
+ *
  * See the LICENSE file for redistribution information.
  */
 
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.19 1996/03/28 08:57:10 bostic Exp $ (Berkeley) $Date: 1996/03/28 08:57:10 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.20 1996/03/28 20:28:00 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:28:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +22,17 @@ static const char sccsid[] = "$Id: ex_script.c,v 10.19 1996/03/28 08:57:10 bosti
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#include <sys/stat.h>
+#ifdef HAVE_SYS5_PTY
+#include <sys/stropts.h>
+#endif
 #include <sys/time.h>
 #include <sys/wait.h>
 
 #include <bitstring.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <grp.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +48,13 @@ static int	sscr_getprompt __P((SCR *));
 static int	sscr_init __P((SCR *));
 static int	sscr_insert __P((SCR *));
 static int	sscr_matchprompt __P((SCR *, char *, size_t, size_t *));
+#ifdef TIOCGWINSZ
+static int	sscr_pty __P((int *, int *, char *, struct termios *,
+		    struct winsize *));
+#else
+static int	sscr_pty __P((int *, int *, char *, struct termios *,
+		    void *));
+#endif
 static int	sscr_setprompt __P((SCR *, char *, size_t));
 
 /*
@@ -113,15 +129,15 @@ sscr_init(sp)
 		goto err;
 	}
 
-	if (ex_openpty(&sc->sh_master,
+	if (sscr_pty(&sc->sh_master,
 	    &sc->sh_slave, sc->sh_name, &sc->sh_term, &sc->sh_win) == -1) {
-		msgq(sp, M_SYSERR, "openpty");
+		msgq(sp, M_SYSERR, "pty");
 		goto err;
 	}
 #else
-	if (ex_openpty(&sc->sh_master,
+	if (sscr_pty(&sc->sh_master,
 	    &sc->sh_slave, sc->sh_name, &sc->sh_term, NULL) == -1) {
-		msgq(sp, M_SYSERR, "openpty");
+		msgq(sp, M_SYSERR, "pty");
 		goto err;
 	}
 #endif
@@ -613,3 +629,175 @@ sscr_check(sp)
 		}
 	F_CLR(gp, G_SCRIPT);
 }
+
+#ifdef HAVE_SYS5_PTY
+static int ptys_open __P((int, char *));
+static int ptym_open __P((char *));
+
+static int
+sscr_pty(amaster, aslave, name, termp, winp)
+	int *amaster, *aslave;
+	char *name;
+	struct termios *termp;
+	void *winp;
+{
+	int master, slave, ttygid;
+
+	/* open master terminal */
+	if ((master = ptym_open(name)) < 0)  {
+		errno = ENOENT;	/* out of ptys */
+		return (-1);
+	}
+
+	/* open slave terminal */
+	if ((slave = ptys_open(master, name)) >= 0) {
+		*amaster = master;
+		*aslave = slave;
+	} else {
+		errno = ENOENT;	/* out of ptys */
+		return (-1);
+	}
+
+	if (termp)
+		(void) tcsetattr(slave, TCSAFLUSH, termp);
+#ifdef TIOCSWINSZ
+	if (winp != NULL)
+		(void) ioctl(slave, TIOCSWINSZ, (struct winsize *)winp);
+#endif
+	return (0);
+}
+
+/*
+ * ptym_open --
+ *	This function opens a master pty and returns the file descriptor
+ *	to it.  pts_name is also returned which is the name of the slave.
+ */
+static int
+ptym_open(pts_name)
+	char *pts_name;
+{
+	int fdm;
+	char *ptr, *ptsname();
+
+	strcpy(pts_name,"/dev/ptmx");
+	if ( (fdm = open(pts_name,O_RDWR)) < 0 )
+		return (-1);
+
+	if (grantpt(fdm) < 0) {
+		close(fdm);
+		return (-2);
+	}
+
+	if (unlockpt(fdm) < 0) {
+		close(fdm);
+		return (-3);
+	}
+
+	if (unlockpt(fdm) < 0) {
+		close(fdm);
+		return (-3);
+	}
+
+	/* get slave's name */
+	if ( (ptr = ptsname(fdm)) == NULL) {
+		close(fdm);
+		return (-3);
+	}
+	strcpy(pts_name,ptr);
+	return (fdm);
+}
+
+/*
+ * ptys_open --
+ *	This function opens the slave pty.
+ */
+static int
+ptys_open(fdm, pts_name)
+	int fdm;
+	char *pts_name;
+{
+	int fds;
+
+	if ((fds = open(pts_name, O_RDWR)) < 0) {
+		close(fdm);
+		return (-5);
+	}
+
+	if (ioctl(fds, I_PUSH, "ptem") < 0) {
+		close(fds);
+		close(fdm);
+		return (-6);
+	}
+
+	if (ioctl(fds, I_PUSH, "ldterm") < 0) {
+		close(fds);
+		close(fdm);
+		return (-7);
+	}
+
+	if (ioctl(fds, I_PUSH, "ttcompat") < 0) {
+		close(fds);
+		close(fdm);
+		return (-8);
+	}
+
+	return (fds);
+}
+
+#else /* !HAVE_SYS5_PTY */
+
+static int
+sscr_pty(amaster, aslave, name, termp, winp)
+	int *amaster, *aslave;
+	char *name;
+	struct termios *termp;
+	struct winsize *winp;
+{
+	static char line[] = "/dev/ptyXX";
+	register char *cp1, *cp2;
+	register int master, slave, ttygid;
+	struct group *gr;
+
+	if ((gr = getgrnam("tty")) != NULL)
+		ttygid = gr->gr_gid;
+	else
+		ttygid = -1;
+
+	for (cp1 = "pqrs"; *cp1; cp1++) {
+		line[8] = *cp1;
+		for (cp2 = "0123456789abcdef"; *cp2; cp2++) {
+			line[5] = 'p';
+			line[9] = *cp2;
+			if ((master = open(line, O_RDWR, 0)) == -1) {
+				if (errno == ENOENT)
+					return (-1);	/* out of ptys */
+			} else {
+				line[5] = 't';
+				(void) chown(line, getuid(), ttygid);
+				(void) chmod(line, S_IRUSR|S_IWUSR|S_IWGRP);
+#ifdef HAVE_REVOKE
+				(void) revoke(line);
+#endif
+				if ((slave = open(line, O_RDWR, 0)) != -1) {
+					*amaster = master;
+					*aslave = slave;
+					if (name)
+						strcpy(name, line);
+					if (termp)
+						(void) tcsetattr(slave, 
+							TCSAFLUSH, termp);
+#ifdef TIOCSWINSZ
+					if (winp)
+						(void) ioctl(slave, TIOCSWINSZ, 
+							(char *)winp);
+#endif
+					return (0);
+				}
+				(void) close(master);
+			}
+		}
+	}
+	errno = ENOENT;	/* out of ptys */
+	return (-1);
+}
+#endif /* HAVE_SYS5_PTY */
