@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.18 1992/11/01 22:41:59 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:41:59 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.19 1992/11/07 12:49:01 bostic Exp $ (Berkeley) $Date: 1992/11/07 12:49:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,21 +23,22 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.18 1992/11/01 22:41:59 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
-#include "screen.h"
 #include "search.h"
+#include "term.h"
 #include "pathnames.h"
 #include "extern.h"
 
 enum which {AGAIN, MUSTSETR, FIRST};
 
-static int	regsub __P((u_char *, u_char *));
+static int	regsub __P((u_char *));
 static int	substitute __P((EXCMDARG *, u_char *, regex_t *, enum which));
 
 static regex_t sre;			/* Saved re. */
 static int sre_set;			/* If saved re set. */
-static regmatch_t *match;		/* Match table. */
-static size_t matchnsub;		/* Match table size. */
+static regmatch_t *match;		/* Match array. */
+static size_t matchsize;		/* Match array size. */
 static u_char *repl;			/* Replacement string. */
+static size_t lrepl;			/* Replacement string length. */
 
 int
 ex_substitute(cmdp)
@@ -45,14 +46,14 @@ ex_substitute(cmdp)
 {
 	regex_t *re, lre;
 	int eval, reflags;
-	u_char *ep, *l;
+	u_char *ep, *sub;
 	char delim[2];
 
 	/*
 	 * Historic vi only permitted '/' to begin the substitution command.
 	 * We permit ';' as well, since users often want to operate on UNIX
-	 * pathnames.  We don't allow anything else because the 'r' flag
-	 * character won't work.
+	 * pathnames.  We don't allow just anything because the flag chars
+	 * wouldn't work.
 	 */
 	if (*cmdp->string == '/' || *cmdp->string == ';') {
 		/* Set RE flags. */
@@ -68,7 +69,7 @@ ex_substitute(cmdp)
 
 		/* Get the substitute string. */
 		ep = cmdp->string + 1;
-		l = USTRSEP(&ep, delim);
+		sub = USTRSEP(&ep, delim);
 
 		/* Get the replacement string, save it off. */
 		if (*ep == NULL) {
@@ -77,11 +78,12 @@ ex_substitute(cmdp)
 		}
 		if (repl != NULL)
 			free(repl);
-		repl = USTRSEP(&ep, delim);
+		repl = USTRSEP(&ep, delim);	/* XXX Not 8-bit clean. */
 		repl = USTRDUP(repl);
+		lrepl = USTRLEN(repl);
 
 		/* If the substitute string is empty, use the last one. */
-		if (*l == NULL) {
+		if (*sub == NULL) {
 			if (!sre_set) {
 				msg("No previous regular expression.");
 				return (1);
@@ -91,7 +93,7 @@ ex_substitute(cmdp)
 
 		/* Compile the RE. */
 		re = &lre;
-		if (eval = regcomp(re, (char *)l, reflags)) {
+		if (eval = regcomp(re, (char *)sub, reflags)) {
 			re_error(eval, re);
 			return (1);
 		}
@@ -100,14 +102,13 @@ ex_substitute(cmdp)
 		sre_set = 1;
 		sre = lre;
 
-		/* Build nsub structure as necessary. */
-		if (matchnsub < re->re_nsub + 1) {
-			matchnsub = re->re_nsub + 1;
+		/* Build nsub array as necessary. */
+		if (matchsize < re->re_nsub + 1) {
+			matchsize = re->re_nsub + 1;
 			if ((match = realloc(match,
-			    matchnsub * sizeof(regmatch_t))) == NULL) {
+			    matchsize * sizeof(regmatch_t))) == NULL) {
 				msg("Error: %s", strerror(errno));
-				match = NULL;
-				matchnsub = 0;
+				matchsize = 0;
 				return (1);
 			}
 		}
@@ -124,28 +125,27 @@ ex_subagain(cmdp)
 		msg("No previous regular expression.");
 		return (1);
 	}
-	substitute(cmdp, cmdp->string, &sre, AGAIN);
-	return (0);
+	return (substitute(cmdp, cmdp->string, &sre, AGAIN));
 }
 
-static u_char *lb;				/* Build buffer. */
-static size_t lbclen, lblen;			/* Current and total length. */
+static u_char *lb;			/* Build buffer. */
+static size_t lbclen, lblen;		/* Current and total length. */
 
-#define	NEEDSP(len, pnt) {						\
-	if (lbclen + (len) > lblen) {					\
-		lblen += MIN(lbclen + (len), 256);			\
-		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msg("Error: %s", strerror(errno));		\
-			lbclen = 0;					\
-			return (1);					\
-		}							\
-		pnt = lb + lbclen;					\
-	}								\
-}
+/* 
+ * The nasty part of the substitution is what happens when the replacement
+ * string contains newlines.  It's a bit tricky -- consider the information
+ * that has to be retained for "s/f\(o\)o/^M\1^M\1/".  The solution here is
+ * to build a set of newline offets which we use to break the line up later,
+ * when the replacement is done.  Don't change it unless you're pretty damned
+ * confident.
+ */
+static size_t *newl;			/* Newline array. */
+static size_t newlsize;			/* Newline array size. */
+static size_t newlcnt;			/* Newlines in replacement. */
 
 #define	BUILD(l, len) {							\
 	if (lbclen + (len) > lblen) {					\
-		lblen += MIN(lbclen + (len), 256);			\
+		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
 			msg("Error: %s", strerror(errno));		\
 			lbclen = 0;					\
@@ -154,6 +154,30 @@ static size_t lbclen, lblen;			/* Current and total length. */
 	}								\
 	memmove(lb + lbclen, l, len);					\
 	lbclen += len;							\
+}
+
+#define	NEEDNEWLINE {							\
+	if (newlsize == newlcnt) {					\
+		newlsize += 25;						\
+		if ((newl = realloc(newl,				\
+		    newlsize * sizeof(size_t))) == NULL) {		\
+			msg("Error: %s", strerror(errno));		\
+			newlsize = 0;					\
+			return (1);					\
+		}							\
+	}								\
+}
+
+#define	NEEDSP(len, pnt) {						\
+	if (lbclen + (len) > lblen) {					\
+		lblen += MAX(lbclen + (len), 256);			\
+		if ((lb = realloc(lb, lblen)) == NULL) {		\
+			msg("Error: %s", strerror(errno));		\
+			lbclen = 0;					\
+			return (1);					\
+		}							\
+		pnt = lb + lbclen;					\
+	}								\
 }
 
 static int
@@ -165,8 +189,9 @@ substitute(cmdp, s, re, cmd)
 {
 	MARK from, to;
 	recno_t elno, lno, lastline;
-	size_t len, offset;
-	int eflags, eval, cflag, gflag, lflag, nflag, pflag, rflag;
+	size_t cnt, last, len, offset;
+	int eflags, eval;
+	int cflag, gflag, lflag, nflag, pflag, rflag;
 
 	/*
 	 * Historic vi permitted the '#', 'l' and 'p' options in vi mode,
@@ -233,8 +258,8 @@ usage:		msg("Usage: %s", cmdp->cmd->usage);
 	lastline = OOBLNO;
 	curf->rptlines = 0;
 	curf->rptlabel = "changed";
-	for (lno = cmdp->addr1.lno, elno = cmdp->addr2.lno;
-	    lno <= elno; ++lno) {
+	for (lno = cmdp->addr1.lno,
+	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
 
 		/* Get the line. */
 		if ((s = file_gline(curf, lno, &len)) == NULL) {
@@ -267,11 +292,16 @@ skipmatch:	eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
 			to.lno = lno;
 			to.cno = match[0].rm_eo;
 
-			/* If not confirmed, update information and continue. */
-			if (!curf->s_confirm(curf, &from, &to)) {
+			switch(curf->s_confirm(curf, &from, &to)) {
+			case YES:
+				break;
+			case NO:
 				/* Copy prefix, matching bytes. */
 				BUILD(s, match[0].rm_eo);
 				goto skip;
+			case QUIT:
+				elno = lno;
+				goto nomatch;
 			}
 		}
 
@@ -279,7 +309,7 @@ skipmatch:	eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
 		BUILD(s, match[0].rm_so);
 
 		/* Copy matching bytes. */
-		if (regsub(s, repl))
+		if (regsub(s))
 			return (1);
 
 skip:		s += match[0].rm_eo;
@@ -298,9 +328,25 @@ skip:		s += match[0].rm_eo;
 			if (len)
 				BUILD(s, len)
 
+			/* Store any inserted lines. */
+			last = 0;
+			if (newlcnt) {
+				for (cnt = 0;
+				    cnt < newlcnt; ++cnt, ++lno, ++elno) {
+					if (file_iline(curf,
+					    lno, lb + last, newl[cnt] - last))
+						return (1);
+					last = newl[cnt] + 1;
+				}
+				lbclen -= last;
+				offset -= last;
+				newlcnt = 0;
+			}
+
 			/* Store the line. */
-			if (file_sline(curf, lno, lb, lbclen))
-				return (1);
+			if (lbclen)
+				if (file_sline(curf, lno, lb + last, lbclen))
+					return (1);
 
 			/* Get a new copy of the line. */
 			if ((s = file_gline(curf, lno, &len)) == NULL) {
@@ -339,9 +385,23 @@ nomatch:	if (len)
 			lastline = lno;
 		}
 
+		/* Store any inserted lines. */
+		last = 0;
+		if (newlcnt) {
+			for (cnt = 0; cnt < newlcnt; ++cnt, ++lno, ++elno) {
+				if (file_iline(curf,
+				    lno, lb + last, newl[cnt] - last))
+					return (1);
+				last = newl[cnt] + 1;
+			}
+			lbclen -= last;
+			newlcnt = 0;
+		}
+
 		/* Store the line. */
-		if (file_sline(curf, lno, lb, lbclen))
-			return (1);
+		if (lbclen)
+			if (file_sline(curf, lno, lb + last, lbclen))
+				return (1);
 
 		/* Display as necessary. */
 		if (!lflag && !nflag && !pflag)
@@ -366,33 +426,48 @@ nomatch:	if (len)
 	return (0);
 }
 
-static int
-regsub(string, src)
-	u_char *string, *src;
+/*
+ * regsub --
+ * 	Do the substitution for a regular expression.
+ */
+static inline int
+regsub(ip)
+	u_char *ip;			/* Input line. */
 {
-	size_t len;
-	int ch, no;
-	u_char *dst;
+	size_t mlen;			/* Match length. */
+	size_t rpl;			/* Remaining replacement length. */
+	u_char *rp;			/* Replacement pointer. */
+	int ch;
+	int no;				/* Match replacement offset. */
+	u_char *lbp;			/* Build buffer pointer. */
 
-	for (dst = lb + lbclen; ch = *src++;)
-		if (ch == '&') {
+	rp = repl;			/* Set up replacment info. */
+	rpl = lrepl;
+	for (lbp = lb + lbclen; rpl--;) {
+		ch = *rp++;
+		if (ch == '&') {	/* Entire pattern. */
 			no = 0;
 			goto sub;
-		} else if (ch == '\\' && isdigit(*src)) {
-			no = *src++ - '0';
+					/* Partial pattern. */
+		} else if (ch == '\\' && isdigit(*rp)) {
+			no = *rp++ - '0';
 sub:			if (match[no].rm_so != -1 && match[no].rm_eo != -1) {
-				len = match[no].rm_eo - match[no].rm_so;
-				NEEDSP(len, dst);
-				memmove(dst, string + match[no].rm_so, len);
-				dst += len;
-				lbclen += len;
+				mlen = match[no].rm_eo - match[no].rm_so;
+				NEEDSP(mlen, lbp);
+				memmove(lbp, ip + match[no].rm_so, mlen);
+				lbp += mlen;
+				lbclen += mlen;
 			}
-		} else {			/* Ordinary character. */
- 			if (ch == '\\' && (*src == '\\' || *src == '&'))
- 				ch = *src++;
-			NEEDSP(1, dst);
- 			*dst++ = ch;
+		} else {		/* Newline, ordinary characters. */
+			if (special[ch] == K_CR || special[ch] == K_NL) {
+				NEEDNEWLINE;
+				newl[newlcnt++] = lbclen;
+			} else if (ch == '\\' && (*rp == '\\' || *rp == '&'))
+ 				ch = *rp++;
+			NEEDSP(1, lbp);
+ 			*lbp++ = ch;
 			++lbclen;
 		}
+	}
 	return (0);
 }
