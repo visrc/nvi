@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.4 1994/11/12 13:28:22 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:28:22 $";
+static char sccsid[] = "$Id: exf.c,v 9.5 1994/11/12 13:34:59 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:34:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -603,8 +603,12 @@ file_write(sp, fm, tm, name, flags)
 	int btear, fd, nf, noname, oflags, rval;
 	char *p;
 
+	/*
+	 * Writing '%', or naming the current file explicitly, has the
+	 * same semantics as writing without a name.
+	 */
 	frp = sp->frp;
-	if (name == NULL) {
+	if (name == NULL || !strcmp(name, frp->name)) {
 		noname = 1;
 		name = frp->name;
 	} else
