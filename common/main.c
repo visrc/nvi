@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.59 1993/04/06 11:36:20 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:20 $";
+static char sccsid[] = "$Id: main.c,v 5.60 1993/04/12 14:28:37 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:28:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -87,7 +87,7 @@ main(argc, argv)
 		err(1, NULL);
 	sp->gp = gp;		/* All screens point to the GS structure. */
 	HDR_INIT(sp->seqhdr, next, prev, SEQ);
-	HDR_APPEND(sp, (SCR *)&gp->scrhdr, next, prev, SCR);
+	HDR_APPEND(sp, &gp->scrhdr, next, prev, SCR);
 
 	set_window_size(sp, 0);	/* Set the window size. */
 
@@ -172,7 +172,7 @@ main(argc, argv)
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
 		if ((p = strdup(p)) == NULL)
-			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		else {
 			(void)ex_cstring(sp, NULL, p, strlen(p), 1);
 			free(p);
@@ -354,7 +354,7 @@ msgflush(gp)
 	/* Display the messages. */
 	for (mp = gp->msgp;
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->next) 
-		(void)fprintf(stderr, "%.*s\n", mp->len, mp->mbuf);
+		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
 }
 
 static void

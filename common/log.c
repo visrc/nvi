@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.12 1993/04/05 07:12:34 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:34 $";
+static char sccsid[] = "$Id: log.c,v 5.13 1993/04/12 14:27:59 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:27:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,11 +21,11 @@ static char sccsid[] = "$Id: log.c,v 5.12 1993/04/05 07:12:34 bostic Exp $ (Berk
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
 #define	LOG_ERR {							\
-	msgq(sp, M_ERROR, "Error: %s/%d: put log error: %s.",		\
+	msgq(sp, M_ERR, "Error: %s/%d: put log error: %s.",		\
 	    tail(__FILE__), __LINE__, strerror(errno));			\
 	(void)ep->log->close(ep->log);					\
 	if (!log_init(sp, ep))						\
-		msgq(sp, M_DISPLAY, "Log restarted.");			\
+		msgq(sp, M_INFO, "Log restarted.");			\
 	return (1);							\
 }
 
@@ -46,7 +46,7 @@ log_init(sp, ep)
 	ep->log = dbopen(NULL, O_CREAT | O_EXLOCK | O_NONBLOCK | O_RDWR,
 	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
 	if (ep->log == NULL) {
-		msgq(sp, M_ERROR, "log db: %s", strerror(errno));
+		msgq(sp, M_ERR, "log db: %s", strerror(errno));
 		F_SET(ep, F_NOLOG);
 		return (1);
 	}
@@ -62,7 +62,7 @@ log_init(sp, ep)
 	key.data = &ep->l_ltype;
 	key.size = sizeof(u_char);
 	if (ep->log->put(ep->log, &key, &key, R_CURSORLOG) == -1) {
-		msgq(sp, M_ERROR, "Error: %s/%d: put log error: %s.",
+		msgq(sp, M_ERR, "Error: %s/%d: put log error: %s.",
 		    tail(__FILE__), __LINE__, strerror(errno));
 		(void)(ep->log->close)(ep->log);
 		F_SET(ep, F_NOLOG);
@@ -237,7 +237,7 @@ log_backward(sp, ep, rp, undolno)
 	int didop;
 
 	if (F_ISSET(ep, F_NOLOG)) {
-		msgq(sp, M_DISPLAY,
+		msgq(sp, M_ERR,
 		    "Logging not being performed, undo not possible.");
 		return (1);
 	}
@@ -300,7 +300,7 @@ log_backward(sp, ep, rp, undolno)
 			break;
 		case LOG_START:
 			if (didop == 0)
-				msgq(sp, M_DISPLAY, "Nothing to undo.");
+				msgq(sp, M_ERR, "Nothing to undo.");
 err:			F_CLR(ep, F_NOLOG);
 			return (1);
 		default:
@@ -326,7 +326,7 @@ log_forward(sp, ep, rp)
 	int didop, rval;
 
 	if (F_ISSET(ep, F_NOLOG)) {
-		msgq(sp, M_DISPLAY,
+		msgq(sp, M_ERR,
 		    "Logging not being performed, roll-forward not possible.");
 		return (1);
 	}
@@ -336,7 +336,7 @@ log_forward(sp, ep, rp)
 	for (didop = 0;;) {
 		rval = ep->log->seq(ep->log, &key, &data, R_NEXT);
 		if (rval == 1) {
-			msgq(sp, M_DISPLAY,
+			msgq(sp, M_ERR,
 			    "No further changes to roll forward.");
 			F_CLR(ep, F_NOLOG);
 			return (1);
