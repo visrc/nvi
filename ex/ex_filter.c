@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.11 1992/04/28 13:47:20 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:47:20 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.12 1992/05/04 09:25:05 bostic Exp $ (Berkeley) $Date: 1992/05/04 09:25:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -127,22 +127,16 @@ err:		if (input[0] != -1)
 
 	/*
 	 * Write the selected lines to the write end of the input pipe.
-	 * Close when done.
+	 * Ifp is closed by ex_writefp.
 	 */
-	if (ftype != NOINPUT) {
-		rval = ex_writefp("filter", ifp, from, to, 0);
-		(void)fclose(ifp);
-	} else
-		rval = 0;
+	rval = ftype != NOINPUT ? ex_writefp("filter", ifp, from, to, 0) : 0;
 
 	/*
  	 * Read the output from the read end of the outupt pipe.
-	 * Close when done.
+	 * Ofp is closed by ex_readfp.
 	 */
-	if (rval == 0 && ftype != NOOUTPUT) {
+	if (rval == 0 && ftype != NOOUTPUT)
 		rval = ex_readfp("filter", ofp, from, &ilines);
-		(void)fclose(ofp);
-	}
 
 	if (rval == 0) {
 		/* Delete old text, if any. */
