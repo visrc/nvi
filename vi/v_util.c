@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 8.9 1994/05/21 09:50:53 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:53 $";
+static char sccsid[] = "$Id: v_util.c,v 8.10 1994/07/18 12:35:37 bostic Exp $ (Berkeley) $Date: 1994/07/18 12:35:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ v_eof(sp, ep, mp)
 	EXF *ep;
 	MARK *mp;
 {
-	u_long lno;
+	recno_t lno;
 
 	if (mp == NULL)
 		msgq(sp, M_BERR, "Already at end-of-file");
