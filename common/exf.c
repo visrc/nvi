@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.18 1992/10/17 16:07:28 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:07:28 $";
+static char sccsid[] = "$Id: exf.c,v 5.19 1992/10/18 13:02:37 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -235,13 +235,6 @@ file_start(ep)
 	 * it, either.
 	 */
 	mark_reset();
-
-	/*
-	 * XXX
-	 * Kludge for nlines.
-	 */
-	nlines = file_lline(curf);
-
 	return (0);
 }
 
