@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.20 1995/11/06 09:57:15 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:57:15 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.21 1995/11/06 20:30:03 bostic Exp $ (Berkeley) $Date: 1995/11/06 20:30:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -368,7 +368,7 @@ v_ex(sp, vp)
 {
 	GS *gp;
 	TEXT *tp;
-	int colon, can_continue;
+	int colon;
 
 	/*
 	 * !!!
@@ -416,18 +416,12 @@ v_ex(sp, vp)
 		/* Call the ex parser. */
 		(void)ex_cmd(sp);
 
-		/*
-		 * Always return if the user left the screen.  We don't check
-		 * for interrupted output here -- vs_ex_resolve() handles it.
-		 */
-		can_continue =
-		    !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH);
-
 		/* Resolve messages. */
-		if (vs_ex_resolve(sp, can_continue ? &colon : NULL))
+		if (vs_ex_resolve(sp, &colon))
 			return (1);
 
-		if (!colon || !can_continue)
+		/* Continue or return. */
+		if (!colon)
 			break;
 	}
 	return (v_ex_done(sp, vp));
