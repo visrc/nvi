@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.5 1996/07/02 19:37:39 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:39 $
+# $Id: distrib,v 8.6 1996/08/18 15:27:41 bostic Exp $ (Berkeley) $Date: 1996/08/18 15:27:41 $
 
 # Clean
 make -f Makefile.in clean
@@ -9,7 +9,7 @@ rm -f configure config.h.in
 autoheader
 chmod 444 config.h.in
 autoconf
-chmod 555 configure
+chmod 555 configure config.guess config.sub install-sh
 
 # Build include files.
 f=../include/cl_extern.h
