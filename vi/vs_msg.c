@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.53 1996/03/29 10:21:36 bostic Exp $ (Berkeley) $Date: 1996/03/29 10:21:36 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.54 1996/03/29 20:46:56 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:46:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,6 +137,20 @@ vs_busy(sp, msg, btype)
 		break;
 	}
 	(void)gp->scr_refresh(sp, 0);
+}
+
+/* 
+ * vs_home --
+ *	Home the cursor to the bottom row, left-most column.
+ *
+ * PUBLIC: void vs_home __P((SCR *));
+ */
+void
+vs_home(sp)
+	SCR *sp;
+{
+	(void)sp->gp->scr_move(sp, LASTLINE(sp), 0);
+	(void)sp->gp->scr_refresh(sp, 0);
 }
 
 /*
