@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.75 1993/12/16 14:44:37 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:44:37 $
+ *	$Id: screen.h,v 8.76 1993/12/17 14:23:25 bostic Exp $ (Berkeley) $Date: 1993/12/17 14:23:25 $
  */
 
 /*
@@ -277,6 +277,18 @@ int	screen_end __P((SCR *));
 int	screen_init __P((SCR *, SCR **, u_int));
 
 /* Public interfaces to the underlying screens. */
+int	ex_screen_copy __P((SCR *, SCR *));
+int	ex_screen_end __P((SCR *));
+int	ex_screen_init __P((SCR *));
+int	sex_screen_copy __P((SCR *, SCR *));
+int	sex_screen_end __P((SCR *));
 int	sex_screen_init __P((SCR *));
+int	svi_screen_copy __P((SCR *, SCR *));
+int	svi_screen_end __P((SCR *));
 int	svi_screen_init __P((SCR *));
+int	v_screen_copy __P((SCR *, SCR *));
+int	v_screen_end __P((SCR *));
+int	v_screen_init __P((SCR *));
+int	xaw_screen_copy __P((SCR *, SCR *));
+int	xaw_screen_end __P((SCR *));
 int	xaw_screen_init __P((SCR *));
