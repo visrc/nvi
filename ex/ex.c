@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.17 1992/04/17 09:39:38 bostic Exp $ (Berkeley) $Date: 1992/04/17 09:39:38 $";
+static char sccsid[] = "$Id: ex.c,v 5.18 1992/04/18 09:56:36 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:56:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,13 +35,8 @@ static int fileexpand __P((glob_t *, char *, int));
 void
 ex()
 {
-	static long oldline;
 	register int cmdlen;
-	CMDARG cmd;
-	char cmdbuf[512];
-
-	significant = FALSE;
-	oldline = markline(cursor);
+	char cmdbuf[1024];
 
 	while (mode == MODE_EX) {
 		cmdlen =
@@ -49,27 +44,16 @@ ex()
 		if (cmdlen < 0)
 			return;
 
-		/* If empty line, assume ".+1". */
 		if (cmdlen == 0) {
-			(void)strcpy(cmdbuf, ".+1");
 			qaddch('\r');
 			clrtoeol();
-		} else
-			addch('\n');
-		refresh();
-
-		/* Parse & execute the command. */
-		(void)ex_cmd(cmdbuf);
-
-		/* Handle autoprint. */
-		if (significant || markline(cursor) != oldline) {
-			significant = FALSE;
-			oldline = markline(cursor);
-			if (ISSET(O_AUTOPRINT) && mode == MODE_EX) {
-				SETCMDARG(cmd,
-				    NULL, 2, cursor, cursor, 0, NULL);
-				ex_print(&cmd);
-			}
+			refresh();
+			(void)ex_cmd(".+1");
+		} else {
+			qaddch('\n');
+			qaddch('\r');
+			refresh();
+			(void)ex_cmd(cmdbuf);
 		}
 	}
 }
@@ -171,6 +155,7 @@ ex_cstring(cmd, len)
 	return (0);
 }
 
+static CMDARG parg = { NULL, 2 };
 static CMDLIST *lastcmd = &cmds[C_PRINT];
 
 /*
@@ -186,8 +171,8 @@ ex_cmd(exc)
 	register char *p;
 	CMDARG	cmd;
 	CMDLIST *cp;
-	u_long count, num;
-	u_short flags;
+	u_long lcount, num;
+	int flags;
 	char *ep;
 
 	/*
@@ -224,33 +209,27 @@ ex_cmd(exc)
 	for (; isspace(*exc); ++exc);
 
 	/*
-	 * If no command, ex does the last specified of p, l, or #, and
-	 * vi moves to the line.
+	 * If no command, ex does the last specified of p, l, or #, and vi
+	 * moves to the line.  Otherwise, find out how long the command name
+	 * is.  There are a few commands that aren't alphabetic, but they
+	 * are all single character commands.
 	 */
-	if (!*exc) {
+	if (*exc) {
+		if (index("!#&<=>@", *exc)) {
+			p = exc;
+			exc++;
+			cmdlen = 1;
+		} else {
+			for (p = exc; isalpha(*exc); ++exc);
+			cmdlen = exc - p;
+		}
+		for (cp = cmds; cp->name && strncmp(p, cp->name, cmdlen); ++cp);
+		if (cp->name == NULL) {
+			msg("The %.*s command is unknown.", cmdlen, p);
+			return (1);
+		}
+	} else
 		cp = lastcmd;
-		goto addr1;
-	}
-
-	/*
-	 * Figure out how long the command name is.  There are a few
-	 * commands that aren't alphabetic, but they are all single
-	 * character commands.
-	 */
-	if (index("!&<=>@", *exc)) {
-		p = exc;
-		exc++;
-		cmdlen = 1;
-	} else {
-		for (p = exc; isalpha(*exc); ++exc);
-		cmdlen = exc - p;
-	}
-	for (cp = cmds; cp->name && strncmp(p, cp->name, cmdlen); ++cp);
-	if (cp->name == NULL) {
-		msg("The %.*s command is unknown.", cmdlen, p);
-		return (1);
-	}
-	cmd.cmd = cp;
 
 	/* Some commands aren't permitted in .exrc files. */
 	if (reading_exrc && !(cp->flags & E_EXRCOK)) {
@@ -269,8 +248,7 @@ ex_cmd(exc)
 	 * Set the default addresses.  It's an error to specify an address
 	 * for a command that doesn't take addresses.  If two addresses are
 	 * specified for a command that only takes one, lose the first one.
-	 * A nasty special case here, the '!' command takes 0, 1, or 2
-	 * addresses.
+	 * A nasty special case here, some commands take 0 or 2 addresses.
 	 */
 addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
 	case E_ADDR1:				/* One address: */
@@ -324,7 +302,7 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
 		cmd.string = *p ? exc : NULL;
 		goto addr2;
 	}
-	for (count = 0; *p; ++p) {
+	for (lcount = 0; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
 			break;
@@ -344,7 +322,16 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
 				*exc++ = '\0';
 			break;
 		case '1':				/* #, l, p */
-			for (;; ++exc)
+			for (; *exc == '+' || *exc == '-'; ++exc)
+				switch (*exc) {
+				case '+':
+					++cmd.flagoff;
+					break;
+				case '-':
+					--cmd.flagoff;
+					break;
+				}
+			for (; *exc == '#' || *exc == 'l' || *exc == 'p'; ++exc)
 				switch (*exc) {
 				case '#':
 					cmd.flags |= E_F_HASH;
@@ -355,10 +342,17 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
 				case 'p':
 					cmd.flags |= E_F_PRINT;
 					break;
-				default:
-					goto end1;
 				}
-end1:			break;
+			for (; *exc == '+' || *exc == '-'; ++exc)
+				switch (*exc) {
+				case '+':
+					++cmd.flagoff;
+					break;
+				case '-':
+					--cmd.flagoff;
+					break;
+				}
+			break;
 		case '2':				/* -, ., +, ^ */
 			for (;; ++exc)
 				switch (*exc) {
@@ -380,7 +374,7 @@ end1:			break;
 end2:			break;
 		case '>':				/*  >> */
 			if (exc[0] == '>' && exc[1] == '>') {
-				cmd.flags |= E_F_APPEND;
+				cmd.flags |= E_APPEND;
 				exc += 2;
 			}
 			break;
@@ -390,20 +384,21 @@ end2:			break;
 			break;
 		case 'c':				/* count */
 			if (isdigit(*exc)) {
-				count = strtol(exc, &ep, 10);
-				if (count == 0) {
+				lcount = strtol(exc, &ep, 10);
+				if (lcount == 0) {
 					msg("Count may not be zero.");
 					return (1);
 				}
 				exc = ep;
+				/*
+				 * Fix up the addresses.  Count's only occur
+				 * with commands taking two addresses.  Replace
+				 * the first with the second and recompute the
+				 * second.
+				 */
+				cmd.addr1 = cmd.addr2;
+				cmd.addr2 = cmd.addr1 + lcount;
 			}
-			/*
-			 * Fix up the addresses.  Count's only occur with
-			 * commands taking two addresses.  Replace the first
-			 * with the second and recompute the second.
-			 */
-			cmd.addr1 = cmd.addr2;
-			cmd.addr2 = cmd.addr1 + count;
 			break;
 		case 'l':				/* line */
 			/*
@@ -461,13 +456,13 @@ addr2:	switch(cmd.addrcnt) {
 			return (1);
 		}
 		if (num > nlines) {
-			msg("Only $lu lines in the file.", nlines);
+			msg("Only %lu lines in the file.", nlines);
 			return (1);
 		}
 		/* FALLTHROUGH */
 	case 1:
 		num = markline(cmd.addr1);
-		if (num == 0 && !(flags & E_ZERO)) {
+		if (num == 0 && !(cp->flags & E_ZERO)) {
 			msg("The %s command doesn't permit an address of 0.",
 			    cp->name);
 			return (1);
@@ -477,7 +472,7 @@ addr2:	switch(cmd.addrcnt) {
 			return (1);
 		}
 		if (num > nlines) {
-			msg("Only $lu lines in the file.", nlines);
+			msg("Only %lu lines in the file.", nlines);
 			return (1);
 		}
 		break;
@@ -490,19 +485,26 @@ addr2:	switch(cmd.addrcnt) {
 	}
 
 	/* Write a newline if called from visual mode. */
-	if (flags & E_NL && mode != MODE_EX && !exwrote) {
+	if (cp->flags & E_NL && mode != MODE_EX && !exwrote) {
 		addch('\n');
 		ex_refresh();
 	}
+
+	/* Reset "last" command. */
+	if (cp->flags & E_SETLAST)
+		lastcmd = cp;
+
+	cmd.cmd = cp;
 #if defined(DEBUG) && 1
 {
 	int __cnt;
 
 	TRACE("ex_cmd: %s", cmd.cmd->name);
 	if (cmd.addrcnt > 0) {
-		TRACE("address 1: %d", cmd.addr1);
+		TRACE("\taddr1 %d", markline(cmd.addr1));
 		if (cmd.addrcnt > 1)
-			TRACE("address 2: %d", cmd.addr2);
+			TRACE(" addr2: %d", markline(cmd.addr2));
+		TRACE("\n");
 	}
 	if (cmd.lineno)
 		TRACE("\tlineno %d", cmd.lineno);
@@ -513,14 +515,48 @@ addr2:	switch(cmd.addrcnt) {
 	if (cmd.plus)
 		TRACE("\tplus %s", cmd.plus);
 	if (cmd.buffer)
-		TRACE("\tbuffer %c", cmd.buffer);
-	for (__cnt = 0; __cnt < cmd.argc; ++__cnt)
-		TRACE("\targ %d: {%s}", __cnt, cmd.argv[__cnt]);
-	TRACE("\n");
+		TRACE("\tbuffer %c\n", cmd.buffer);
+	if (cmd.argc) {
+		for (__cnt = 0; __cnt < cmd.argc; ++__cnt)
+			TRACE("\targ %d: {%s}", __cnt, cmd.argv[__cnt]);
+		TRACE("\n");
+	}
 }
 #endif
 	/* Do the command. */
-	return ((*cp->fn)(&cmd));
+	if (!(cp->fn)(&cmd)) {
+		/*
+		 * If the command was successful, and either there was an
+		 * explicit flag to display the line we ended up on, or
+		 * we're in ex, autoprint is set, and a real change was
+		 * made, display the line.
+		 */
+		flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
+		if (flags) {
+			if (cmd.flagoff)
+				cursor = MARK_AT_LINE(markline(cursor) +
+				    cmd.flagoff);
+		} else if (mode == MODE_EX && autoprint &&
+		    ISSET(O_AUTOPRINT))
+			flags = E_F_PRINT;
+		parg.addr1 = parg.addr2 = cursor;
+		if (flags) {
+			switch (flags) {
+			case E_F_HASH:
+				parg.cmd = &cmds[C_HASH];
+				ex_number(&parg);
+				break;
+			case E_F_LIST:
+				parg.cmd = &cmds[C_LIST];
+				ex_list(&parg);
+				break;
+			case E_F_PRINT:
+				parg.cmd = &cmds[C_PRINT];
+				ex_print(&parg);
+				break;
+			}
+		}
+	}
 }
 
 /*
