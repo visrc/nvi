@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.44 1995/10/17 12:09:50 bostic Exp $ (Berkeley) $Date: 1995/10/17 12:09:50 $
+.\"     $Id: set.opt.roff,v 8.45 1995/10/18 11:00:39 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:00:39 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -331,6 +331,13 @@ command unsets the
 and
 .QQ g
 suffixes as well.
+.KY escapetime
+.IP "escapetime [1]"
+The 10th's of a second
+.EV ex vi
+waits for a subsequent key to complete an
+.LI <escape>
+key mapping.
 .KY errorbells
 .IP "errorbells, eb [off]"
 .CO Ex
