@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.32 1996/06/30 18:41:01 bostic Exp $ (Berkeley) $Date: 1996/06/30 18:41:01 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.33 1996/07/01 21:50:30 bostic Exp $ (Berkeley) $Date: 1996/07/01 21:50:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1208,8 +1208,10 @@ re_tag_conv(sp, ptrnp, plenp, replacedp)
 	}
 
 	/* If the first or second character is a '^', it's magic. */
-	if (p[0] == '^')
+	if (p[0] == '^') {
 		*t++ = *p++;
+		--len;
+	}
 
 	/*
 	 * Escape every other magic character we can find, meanwhile stripping
