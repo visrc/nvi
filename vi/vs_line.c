@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.16 1993/12/23 17:42:05 bostic Exp $ (Berkeley) $Date: 1993/12/23 17:42:05 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.17 1994/01/22 13:38:46 bostic Exp $ (Berkeley) $Date: 1994/01/22 13:38:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -356,7 +356,7 @@ svi_number(sp, ep)
 	SMAP *smp;
 	recno_t lno;
 	size_t oldy, oldx;
-	char *p, nbuf[10];
+	char *lp, *p, nbuf[10];
 
 	/*
 	 * Try and avoid getting the last line in the file, by getting the
@@ -371,8 +371,7 @@ svi_number(sp, ep)
 	 * The problem is that file_lline will lie, and tell us that the
 	 * info line is the last line in the file.
 	 */
-	if ((p = file_gline(sp, ep, TMAP->lno - 1, NULL)) != NULL)
-		lno = TMAP->lno + 1;
+	lp = file_gline(sp, ep, TMAP->lno + 1, NULL);
 
 	getyx(stdscr, oldy, oldx);
 	for (smp = HMAP; smp <= TMAP; ++smp) {
@@ -380,16 +379,9 @@ svi_number(sp, ep)
 			continue;
 		if (ISINFOLINE(sp, smp))
 			break;
-		if (smp->lno != 1)
-			if (p != NULL) {
-				if (smp->lno > lno)
-					break;
-			} else {
-				if ((p =
-				    file_gline(sp, ep, smp->lno, NULL)) == NULL)
-					break;
-				p = NULL;
-			}
+		if (smp->lno != 1 && lp == NULL &&
+		    (p = file_gline(sp, ep, smp->lno, NULL)) == NULL)
+			break;
 		MOVE(sp, smp - HMAP, 0);
 		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
 		ADDSTR(nbuf);
