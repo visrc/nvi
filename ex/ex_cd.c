@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.9 1994/03/19 15:42:28 bostic Exp $ (Berkeley) $Date: 1994/03/19 15:42:28 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.10 1994/03/19 16:56:39 bostic Exp $ (Berkeley) $Date: 1994/03/19 16:56:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -108,6 +108,7 @@ ex_cdalloc(sp, str)
 	EX_PRIVATE *exp;
 	CDPATH *cdp;
 	size_t len;
+	int founddot;
 	char *p, *t;
 
 	/* Free current queue. */
@@ -119,12 +120,29 @@ ex_cdalloc(sp, str)
 	 * Create new queue.  The CDPATH environmental variable (and the
 	 * user's manual entry) are delimited by colon characters.
 	 */
-	for (p = t = str;; ++p) {
+	for (p = t = str, founddot = 0;; ++p) {
 		if (*p == '\0' || *p == ':') {
-			/* Empty strings specify ".". */
-			if ((len = p - t) < 1) {
+			/*
+			 * Empty strings specify ".".  The only way to get an
+			 * empty string is a leading colon, colons in a row,
+			 * or a trailing colon.  Or, to put it the other way,
+			 * if the the length is zero, then it's either ":XXX",
+			 * "XXX::XXXX" , "XXX:", or "", and the only failure
+			 * mode is the last one.  Note, the string ":" gives
+			 * us two entries of '.', so we only include one of
+			 * them.
+			 */
+			if ((len = p - t) == 0) {
+				if (p == str && *p == '\0')
+					break;
+				if (founddot) {
+					if (*p == '\0')
+						break;
+					continue;
+				}
 				len = 1;
 				t = ".";
+				founddot = 1;
 			}
 			MALLOC_RET(sp, cdp, CDPATH *, sizeof(CDPATH));
 			MALLOC(sp, cdp->path, char *, len + 1);
