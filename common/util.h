@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 9.8 1995/01/30 12:05:00 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:05:00 $
+ *	$Id: util.h,v 9.9 1995/01/31 18:39:38 bostic Exp $ (Berkeley) $Date: 1995/01/31 18:39:38 $
  */
 
 /*
@@ -47,8 +47,8 @@ enum nresult { NUM_ERR, NUM_OK, NUM_OVER, NUM_UNDER };
 	 NUM_OK)
 #define	NADD_USLONG(sp, v1, v2)						\
 	(NPFITS(ULONG_MAX, (v1), (v2)) ? NUM_OK : NUM_OVER)
-enum nresult nget_slong __P((SCR *, long *, char *, char **, int));
-enum nresult nget_uslong __P((SCR *, u_long *, char *, char **, int));
+enum nresult nget_slong __P((SCR *, long *, const char *, char **, int));
+enum nresult nget_uslong __P((SCR *, u_long *, const char *, char **, int));
 
 /* Digraphs (not currently real). */
 int	digraph __P((SCR *, int, int));

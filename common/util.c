@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 9.6 1995/01/23 16:58:47 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:47 $";
+static char sccsid[] = "$Id: util.c,v 9.7 1995/01/31 18:39:37 bostic Exp $ (Berkeley) $Date: 1995/01/31 18:39:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,7 +207,8 @@ enum nresult
 nget_uslong(sp, valp, p, endp, base)
 	SCR *sp;
 	u_long *valp;
-	char *p, **endp;
+	const char *p;
+	char **endp;
 	int base;
 {
 	errno = 0;
@@ -227,7 +228,8 @@ enum nresult
 nget_slong(sp, valp, p, endp, base)
 	SCR *sp;
 	long *valp;
-	char *p, **endp;
+	const char *p;
+	char **endp;
 	int base;
 {
 	errno = 0;
