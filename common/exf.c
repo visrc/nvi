@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.42 1993/11/18 08:17:00 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:00 $";
+static char sccsid[] = "$Id: exf.c,v 8.43 1993/11/18 08:22:11 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:22:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,6 +170,7 @@ file_init(sp, frp, rcv_fname, force)
 	memset(ep, 0, sizeof(EXF));
 	ep->c_lno = ep->c_nlines = OOBLNO;
 	ep->rcv_fd = -1;
+	LIST_INIT(&ep->marks);
 	F_SET(ep, F_FIRSTMODIFY);
 
 	/*
