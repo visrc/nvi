@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.29 1995/11/11 11:54:21 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:54:21 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.30 1995/11/11 11:59:59 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:59:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -485,32 +485,19 @@ cl_suspend(sp, allowedp)
 	if (F_ISSET(sp, S_EX)) { 
 		/* Save the terminal settings, and restore the original ones. */
 		if (F_ISSET(gp, G_STDIN_TTY)) {
-			if (tcgetattr(STDIN_FILENO, &t)) {
-				msgq(sp, M_SYSERR, "suspend: tcgetattr");
-				return (1);
-			}
-			if (tcsetattr(STDIN_FILENO,
-			    TCSASOFT | TCSADRAIN, &clp->orig)) {
-				msgq(sp, M_SYSERR,
-				    "suspend: tcsetattr original");
-				return (1);
-			}
+			(void)tcgetattr(STDIN_FILENO, &t);
+			(void)tcsetattr(STDIN_FILENO,
+			    TCSASOFT | TCSADRAIN, &clp->orig);
 		}
 
 		/* Stop the process group. */
-		if (kill(0, SIGTSTP)) {
-			msgq(sp, M_SYSERR, "suspend: kill");
-			return (1);
-		}
+		(void)kill(0, SIGTSTP);
 
 		/* Time passes ... */
 
 		/* Restore terminal settings. */
-		if (F_ISSET(gp, G_STDIN_TTY) &&
-		    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
-			msgq(sp, M_SYSERR, "suspend: tcsetattr current");
-			return (1);
-		}
+		if (F_ISSET(gp, G_STDIN_TTY))
+			(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
 		return (0);
 	}
 
@@ -534,29 +521,22 @@ cl_suspend(sp, allowedp)
 	 */
 #ifdef BSD_CURSES_INTERFACE
 	/* Save the terminal settings. */
-	if (F_ISSET(gp, G_STDIN_TTY) && tcgetattr(STDIN_FILENO, &t)) {
-		msgq(sp, M_SYSERR, "suspend: tcgetattr");
-		return (1);
-	}
+	(void)tcgetattr(STDIN_FILENO, &t);
 
 	/* Restore the cursor keys to normal mode. */
 	(void)keypad(stdscr, FALSE);
 
 	/* Restore the original terminal settings. */
-	if (F_ISSET(gp, G_STDIN_TTY) &&
-	    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->orig)) {
-		msgq(sp, M_SYSERR, "suspend: tcsetattr original");
-		return (1);
-	}
+	(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->orig);
 #else
 	(void)endwin();
+#ifdef FORCE_TERM_RESET
+	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
+#endif
 #endif
 
 	/* Stop the process group. */
-	if (kill(0, SIGTSTP)) {
-		msgq(sp, M_SYSERR, "suspend: kill");
-		return (1);
-	}
+	(void)kill(0, SIGTSTP);
 
 	/* Time passes ... */
 
@@ -565,11 +545,8 @@ cl_suspend(sp, allowedp)
 	(void)keypad(stdscr, TRUE);
 
 	/* Restore terminal settings. */
-	if (F_ISSET(gp, G_STDIN_TTY) &&
-	    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
-		msgq(sp, M_SYSERR, "suspend: tcsetattr current");
-		return (1);
-	}
+	if (F_ISSET(gp, G_STDIN_TTY))
+		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
 #endif
 	/* Refresh and repaint the screen. */
 	(void)move(oldy, oldx);
