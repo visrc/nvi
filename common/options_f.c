@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.1 1994/11/09 18:38:01 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:01 $";
+static char sccsid[] = "$Id: options_f.c,v 9.2 1994/11/10 16:50:54 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:50:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ DECL(f_lines)
 	O_VAL(sp, O_SCROLL) = (val - 1) / 2;
 
 	/* If no window value set, set a new default window. */
-	if (!F_ISSET(&sp->opts[O_WINDOW], OPT_SET))
+	if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW))
 		O_VAL(sp, O_WINDOW) = val - 1;
 
 	F_SET(sp, S_SCR_RESIZE);
@@ -427,15 +427,8 @@ opt_dup(sp, opt, str)
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
-
-	/* Free the old contents. */
-	if (F_ISSET(&sp->opts[opt], OPT_ALLOCATED))
+	if (O_STR(sp, opt) != NULL)
 		free(O_STR(sp, opt));
-
-	/* Note that it's set and allocated. */
-	F_SET(&sp->opts[opt], OPT_ALLOCATED | OPT_SET);
-
-	/* Assign new contents. */
 	O_STR(sp, opt) = p;
 	return (0);
 }
