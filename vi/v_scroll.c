@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.3 1992/05/17 17:28:19 bostic Exp $ (Berkeley) $Date: 1992/05/17 17:28:19 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.4 1992/05/27 10:35:56 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:35:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,12 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.3 1992/05/17 17:28:19 bostic Exp $ (
 #include "extern.h"
 
 #define	DOWN(lno) {							\
-	if (file_gline(curf, lno, NULL) == NULL) {			\
-		v_eof(cp);						\
+	if (file_gline(curf, lno, &len) == NULL) {			\
+		v_eof(fm);						\
 		return (1);						\
 	}								\
 	rp->lno = lno;							\
+	rp->cno = len ? fm->cno > len - 1 ? len - 1 : fm->cno : 0;	\
 }
 
 /*
@@ -32,9 +33,9 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.3 1992/05/17 17:28:19 bostic Exp $ (
  *	of the file by default.
  */
 int
-v_lgoto(vp, cp, rp)
+v_lgoto(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	if (vp->flags & VC_C1SET) {
 		if (file_gline(curf, vp->count, NULL) == NULL) {
@@ -55,10 +56,11 @@ v_lgoto(vp, cp, rp)
  *	the top of the screen, 1 by default.
  */
 int
-v_home(vp, cp, rp)
+v_home(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
+	size_t len;
 	u_long lno;
 
 	lno = topline + (vp->flags & VC_C1SET ? vp->count : 0);
@@ -73,9 +75,9 @@ v_home(vp, cp, rp)
  *	of the screen.
  */
 int
-v_middle(vp, cp, rp)
+v_middle(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	u_long lno;
 
@@ -95,9 +97,9 @@ v_middle(vp, cp, rp)
  *	the bottom of the screen, 1 by default.
  */
 int
-v_bottom(vp, cp, rp)
+v_bottom(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	recno_t lno;
 	u_long cnt;
@@ -111,7 +113,7 @@ v_bottom(vp, cp, rp)
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 0;
 	if (cnt >= lno) {
-		v_sof(cp);
+		v_sof(fm);
 		return (1);
 	}
 	rp->lno = lno - cnt;
@@ -123,13 +125,14 @@ v_bottom(vp, cp, rp)
  *	Move down by lines, moving cursor to first non-blank character.
  */
 int
-v_nbdown(vp, cp, rp)
+v_nbdown(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
+	size_t len;
 	u_long lno;
 
-	lno = cp->lno + (vp->flags & VC_C1SET ? vp->count : 1);
+	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
 
 	DOWN(lno);
 	return (v_nonblank(rp));
@@ -140,16 +143,16 @@ v_nbdown(vp, cp, rp)
  *	Move down by lines.
  */
 int
-v_down(vp, cp, rp)
+v_down(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
+	size_t len;
 	u_long lno;
 
-	lno = cp->lno + (vp->flags & VC_C1SET ? vp->count : 1);
+	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
 
 	DOWN(lno);
-	rp->cno = cp->cno;
 	return (0);
 }
 
@@ -158,9 +161,9 @@ v_down(vp, cp, rp)
  *	Page down half screens.
  */
 int
-v_hpagedown(vp, cp, rp)
+v_hpagedown(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	u_long lno;
 
@@ -174,12 +177,12 @@ v_hpagedown(vp, cp, rp)
 		vp->count = LVAL(O_SCROLL);
 
 	/* Half screens always succeed unless at the bottom of the file. */
-	lno = cp->lno + vp->count;
+	lno = fm->lno + vp->count;
 
 	if (file_gline(curf, lno, NULL) == NULL) {
 		lno = file_lline(curf);
-		if (lno == cp->lno) {
-			v_eof(cp);
+		if (lno == fm->lno) {
+			v_eof(fm);
 			return (1);
 		}
 	}
@@ -192,14 +195,15 @@ v_hpagedown(vp, cp, rp)
  *	Page down by screens.
  */
 int
-v_pagedown(vp, cp, rp)
+v_pagedown(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
+	size_t len;
 	u_long lno;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	lno = cp->lno + (vp->flags & VC_C1SET ? vp->count : 1) * (LINES - 2);
+	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1) * (LINES - 2);
 
 	DOWN(lno);
 	return (v_nonblank(rp));
@@ -210,9 +214,9 @@ v_pagedown(vp, cp, rp)
  *	Page up by lines.
  */
 int
-v_linedown(vp, cp, rp)
+v_linedown(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	u_long off;
 
@@ -220,7 +224,7 @@ v_linedown(vp, cp, rp)
 
 	/* If the line exists, move to it. */
 	if (file_gline(curf, BOTLINE + off, NULL) == NULL) {
-		v_eof(cp);
+		v_eof(fm);
 		return (1);
 	}
 
@@ -238,7 +242,7 @@ v_linedown(vp, cp, rp)
 	 * reaches the top of the screen.
 	 */
 	rp->lno =
-	    vp->count >= cp->lno - topline ? 1 : cp->lno - vp->count;
-	rp->cno = cp->cno;
+	    vp->count >= fm->lno - topline ? 1 : fm->lno - vp->count;
+	rp->cno = fm->cno;
 	return (0);
 }
