@@ -1,12 +1,50 @@
-#	$Id: LICENSE,v 8.7 1996/03/04 18:54:30 bostic Exp $ (Berkeley) $Date: 1996/03/04 18:54:30 $
+#	$Id: LICENSE,v 8.8 1996/05/31 20:22:19 bostic Exp $ (Berkeley) $Date: 1996/05/31 20:22:19 $
+#
+#  Copyright (c) 1991, 1992, 1993, 1994
+#	The Regents of the University of California.  All rights reserved.
+#
+#  Copyright (c) 1991, 1992, 1993, 1994, 1995, 1996
+#	Keith Bostic.  All rights reserved.
 
 This work is copyrighted by The Regents of the University of California,
-and by Keith Bostic.  It may be freely redistributed under the following
-conditions, until one year after the release of any subsequent version of
-this software, at which point it may no longer be redistributed without
-written permission from Keith Bostic.
+Keith Bostic, and others.  This file contains the nvi license.  In short,
+the information that it is intended to convey is as follows:
+
+Your use of nvi is subject to the terms of a license from Keith Bostic.
+That license provides that:
+
+1. You can use and modify nvi in any way that you want.
+
+2. You can redistribute nvi with or without modifications, in any way you
+   want, as long as you don't charge for it.
+
+3. If you want to charge for nvi or any collection of software that includes
+   nvi, you may need a distribution license from Keith Bostic.  There are
+   specific exceptions, however.  For example, you can include nvi on a CDROM
+   of freely redistributable software for which you charge, without having to
+   obtain the distribution license.  But if you do expect to charge others,
+   you need to review the nvi "use" license below to determine whether any of
+   the exceptions apply to you.
+
+   If your intended use requires a distribution license, please contact: 
+
+   Keith Bostic		+1-508-287-4781
+   394 E. Riding Dr.	bostic@bostic.com
+   Carlisle, MA 01741
+   USA
+
+4. Nvi is provided to you without any warranty of any kind, and no matter
+   what happens, you can't blame us.
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+This work is derived from work copyrighted by The Regents of the University
+of California, Berkeley, and therefore the University of California copyright
+and redistribution conditions apply:
 
 /*-
+ * Copyright (c) 1991, 1992, 1993, 1994
+ *      The Regents of the University of California.  All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -35,3 +73,141 @@ written permission from Keith Bostic.
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+NVI "USE" LICENSE
+
+This License applies to the computer program known as "nvi".  The "Program",
+below, refers to such program, and a "work based on the Program" means either
+the Program or any derivative work of the Program, as defined in the United
+States Copyright Act of 1976, such as a translation or a modification.  The
+Program is a copyrighted work owned by Keith Bostic (the "Licensor") and others.
+
+BY MODIFYING OR DISTRIBUTING THE PROGRAM (OR ANY WORK BASED ON THE PROGRAM),
+YOU INDICATE YOUR ACCEPTANCE OF THE TERMS AND CONDITIONS OF THIS LICENSE,
+INCLUDING TERMS AND CONDITIONS FOR COPYING, DISTRIBUTING OR MODIFYING THE
+PROGRAM OR WORKS BASED ON IT.  NOTHING OTHER THAN THIS LICENSE GRANTS YOU
+PERMISSION TO MODIFY OR DISTRIBUTE THE PROGRAM OR ITS DERIVATIVE WORKS.  IF
+YOU DO NOT ACCEPT THESE TERMS AND CONDITIONS, DO NOT MODIFY OR DISTRIBUTE
+THE PROGRAM.
+
+1. Licenses.
+
+Licensor hereby grants you the following rights, provided that you comply
+with all of the restrictions set forth in this License and provided,
+further, that you distribute an unmodified copy of this License with the
+Program:
+
+(a) You may copy and distribute literal (i.e., verbatim) copies of the
+    Program's source code as you receive it throughout the world, in
+    any medium.
+
+(b) You may modify the Program, create works based on the Program and
+    distribute copies of such throughout the world, in any medium.
+
+2. Restrictions.
+
+This license and your use of the Program is subject to the following
+restrictions:
+
+(a) Distribution of the Program or any work based on the Program by an
+    organization to any third party requires a distribution license if
+    any payment is made in connection with such distribution, whether
+    directly (as in payment for a copy of the Program) or indirectly (as
+    in payment for some service related to the Program, or payment for
+    some product or service that includes a copy of the Program "without
+    charge"; these are only examples, and not an exhaustive enumeration
+    of activities requiring a distribution license).  However, the
+    following methods of distribution involving payment shall not in and
+    of themselves require a distribution license:
+
+     (i) Posting the Program or work based on the Program on a public
+	 access information storage and retrieval service for which a
+	 fee is received for retrieving information (such as an on-line
+	 service), provided that the fee is not content-dependent (i.e.,
+	 the fee would be the same for retrieving the same volume of
+	 information consisting of random data).
+
+    (ii) Distributing the Program or work based on the Program on a
+	 CD-ROM, provided that the files containing the Program or work
+	 based on the Program are reproduced entirely and verbatim on such
+	 CD-ROM, and provided further that all information on such CD-ROM
+	 be redistributable for non-commercial purposes without charge.
+
+(b) Activities other than copying, distribution and modification of the
+    Program are not subject to this License and they are outside its
+    scope.  Functional use (running) of the Program is not restricted,
+    and any output produced through the use of the Program is subject to
+    this license only if its contents constitute a work based on the
+    Program (independent of having been made by running the Program).
+
+(c) You must meet all of the following conditions with respect to the
+    distribution of any work based on the Program:
+
+      (i) You must cause any work that you distribute or publish, that in
+	  whole or in part contains or is derived from the Program or any
+	  part thereof, to be licensed as a whole and at no charge to all
+	  third parties.
+
+     (ii) You must make the complete corresponding machine-readable source
+	  code available on request for any such work based on the Program.
+
+    (iii) You may not impose any further restrictions on the recipient's
+	  exercise of the rights granted herein.
+
+3. Reservation of Rights.
+
+No rights are granted to the Program except as expressly set forth herein.
+You may not copy, modify, sublicense, or distribute the Program except as
+expressly provided under this License.  Any attempt otherwise to copy,
+modify, sublicense or distribute the Program is void, and will automatically
+terminate your rights under this License.  However, parties who have received
+copies, or rights, from you under this License will not have their licenses
+terminated so long as such parties remain in full compliance.
+
+4. Other Restrictions.
+
+If the distribution and/or use of the Program is restricted in certain
+countries for any reason, Licensor may add an explicit geographical
+distribution limitation excluding those countries, so that distribution
+is permitted only in or among countries not thus excluded.  In such case,
+this License incorporates the limitation as if written in the body of this
+License.
+
+5.	Limitations.
+
+THE PROGRAM IS PROVIDED TO YOU "AS IS," WITHOUT WARRANTY.  THERE IS NO
+WARRANTY FOR THE PROGRAM, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS.  THE ENTIRE
+RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD
+THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY
+SERVICING, REPAIR OR CORRECTION.
+
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL
+LICENSOR, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR REDISTRIBUTE THE
+PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
+DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
+PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
+EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
+
+6.	General.  
+
+This Agreement is governed by the laws of the State of California, U.S.A.,
+excluding choice of law rules.
+
+For government users, the Program is provided with RESTRICTED RIGHTS.  Use,
+duplication or disclosure by the Government is subject to restrictions as
+set forth in subparagraph (c)(1)(ii) of The Rights in Technical Data and
+Computer Software clause at DFARS 252.227-7013 or subparagraphs (c)(1) and
+(2) of the Commercial Computer Software-Restricted Rights 48 CFR 52.227-19,
+as appropriate.
+
+If you distribute the Program to others, you must comply with the laws
+and regulations of the United States and other jurisdictions regarding
+export control.  You must not export or reexport the Program without
+obtaining all required licenses and authorizations of the export control
+agencies of the applicable governments.
