@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: ref.so,v 8.4 1994/05/26 00:01:13 bostic Exp $ (Berkeley) $Date: 1994/05/26 00:01:13 $
+.\"     $Id: ref.so,v 8.5 1994/06/27 12:48:26 bostic Exp $ (Berkeley) $Date: 1994/06/27 12:48:26 $
 .\"
 .\"
 .\" indented paragraph, with spaces between the items, bold font
@@ -98,4 +98,8 @@
 .\" manual section
 .de XR
 \&\fI\\$1\fP(\\$2)\\$3
+..
+.\" -mandoc compatibility
+.de Pp
+.pp
 ..
