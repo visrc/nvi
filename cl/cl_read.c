@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_read.c,v 10.9 1996/02/20 20:51:59 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:51:59 $";
+static char sccsid[] = "$Id: cl_read.c,v 10.10 1996/02/25 18:24:50 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:24:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,8 +33,9 @@ static char sccsid[] = "$Id: cl_read.c,v 10.9 1996/02/20 20:51:59 bostic Exp $ (
 #include "../ex/script.h"
 #include "cl.h"
 
-static input_t cl_read __P((SCR *,
+static input_t	cl_read __P((SCR *,
     u_int32_t, CHAR_T *, size_t, int *, struct timeval *));
+static int	cl_resize __P((SCR *, size_t, size_t));
 
 /*
  * cl_event --
@@ -51,6 +52,7 @@ cl_event(sp, evp, flags, ms)
 {
 	struct timeval t, *tp;
 	CL_PRIVATE *clp;
+	size_t lines, columns;
 	int changed, nr;
 
 	/*
@@ -77,10 +79,11 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 		}
 		if (F_ISSET(clp, CL_SIGWINCH)) {
 			F_CLR(clp, CL_SIGWINCH);
-			if (cl_ssize(sp, 1, &evp->e_lno, &evp->e_cno, &changed))
+			if (cl_ssize(sp, 1, &lines, &columns, &changed))
 				return (1);
 			if (changed) {
-				evp->e_event = E_RESIZE;
+				(void)cl_resize(sp, lines, columns);
+				evp->e_event = E_INTERRUPT;
 				return (0);
 			}
 			/* No real change, ignore the signal. */
@@ -297,4 +300,34 @@ err:		if (errno == EINTR)
 	if (term_reset)
 		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &term1);
 	return (rval);
+}
+
+/* 
+ * cl_resize --
+ *	Reset the options for a resize event.
+ */
+static int
+cl_resize(sp, lines, columns)
+	SCR *sp;
+	size_t lines, columns;
+{
+	ARGS *argv[2], a, b;
+	int rval;
+	char b1[1024];
+
+	a.bp = b1;
+	b.bp = NULL;
+	a.len = b.len = 0;
+	argv[0] = &a;
+	argv[1] = &b;
+
+	(void)snprintf(b1, sizeof(b1), "lines=%lu", (u_long)lines);
+	a.len = strlen(b1);
+	if (opts_set(sp, argv, NULL))
+		return (1);
+	(void)snprintf(b1, sizeof(b1), "columns=%lu", (u_long)columns);
+	a.len = strlen(b1);
+	if (opts_set(sp, argv, NULL))
+		return (1);
+	return (0);
 }
