@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.7 1995/01/30 09:29:37 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:29:37 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.8 1995/01/30 11:47:16 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:47:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -538,7 +538,7 @@ int
 svi_rabs(sp, count, adj)
 	SCR *sp;
 	long count;
-	enum adjust adj;
+	adj_t adj;
 {
 	SCR *g, *s;
 
