@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.10 1995/10/04 20:54:41 bostic Exp $ (Berkeley) $Date: 1995/10/04 20:54:41 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.11 1995/10/16 12:29:18 bostic Exp $ (Berkeley) $Date: 1995/10/16 12:29:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -275,9 +275,9 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
  * ex_g_insdel --
  *	Update the ranges based on an insertion or deletion.
  *
- * PUBLIC: void ex_g_insdel __P((SCR *, lnop_t, recno_t));
+ * PUBLIC: int ex_g_insdel __P((SCR *, lnop_t, recno_t));
  */
-void
+int
 ex_g_insdel(sp, op, lno)
 	SCR *sp;
 	lnop_t op;
@@ -286,8 +286,12 @@ ex_g_insdel(sp, op, lno)
 	EXCMD *ecp;
 	RANGE *nrp, *rp;
 
-	if (op == LINE_APPEND || op == LINE_RESET)
-		return;
+	/* All insert/append operations are done as inserts. */
+	if (op == LINE_APPEND)
+		abort();
+
+	if (op == LINE_RESET)
+		return (0);
 
 	for (ecp = sp->gp->ecq.lh_first; ecp != NULL; ecp = ecp->q.le_next) {
 		if (!FL_ISSET(ecp->agv_flags, AGV_AT | AGV_GLOBAL | AGV_V))
@@ -326,13 +330,7 @@ ex_g_insdel(sp, op, lno)
 					free(rp);
 				}
 			} else {
-				/*
-				 * XXX
-				 * If this allocation fails, we're screwed.
-				 */
-				CALLOC(sp, nrp, RANGE *, 1, sizeof(RANGE));
-				if (nrp == NULL)
-					return;
+				CALLOC_RET(sp, nrp, RANGE *, 1, sizeof(RANGE));
 				nrp->start = lno + 1;
 				nrp->stop = rp->stop + 1;
 				rp->stop = lno - 1;
@@ -347,6 +345,7 @@ ex_g_insdel(sp, op, lno)
 		 */
 		ecp->range_lno = lno;
 	}
+	return (0);
 }
 
 /*
