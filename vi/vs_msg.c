@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.66 1996/05/21 15:04:36 bostic Exp $ (Berkeley) $Date: 1996/05/21 15:04:36 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.67 1996/06/08 14:41:10 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:41:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,8 +38,9 @@ typedef enum {
 } sw_t;
 
 static void	vs_divider __P((SCR *));
-static void	vs_output __P((SCR *, mtype_t, const char *, int));
 static void	vs_msgsave __P((SCR *, mtype_t, char *, size_t));
+static void	vs_output __P((SCR *, mtype_t, const char *, int));
+static int	vs_scr_resolve __P((SCR *, int));
 static void	vs_scroll __P((SCR *, int *, sw_t));
 static void	vs_wait __P((SCR *, int *, sw_t));
 
@@ -638,16 +639,38 @@ vs_ex_resolve(sp, continuep)
 
 /*
  * vs_resolve --
- *	Deal with message output.
+ *	Cycle through each screen, dealing with message output.
  *
  * This routine is called from the main vi loop to periodically ensure that
  * the user has seen any messages that have been displayed.
  *
- * PUBLIC: int vs_resolve __P((SCR *));
+ * PUBLIC: int vs_resolve __P((SCR *, int));
  */
 int
-vs_resolve(sp)
+vs_resolve(sp, forcewait)
 	SCR *sp;
+	int forcewait;
+{
+	SCR *tsp;
+
+	for (tsp = sp->gp->dq.cqh_first;
+	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
+		if (vs_scr_resolve(tsp, forcewait))
+			return (1);
+	return (0);
+}
+
+/*
+ * vs_scr_resolve --
+ *	Deal with message output.
+ *
+ * This routine is called from the main vi loop to periodically ensure that
+ * the user has seen any messages that have been displayed.
+ */
+static int
+vs_scr_resolve(sp, forcewait)
+	SCR *sp;
+	int forcewait;
 {
 	EVENT ev;
 	GS *gp;
@@ -700,10 +723,16 @@ vs_resolve(sp)
 		redraw = 0;
 		break;
 	case 1:
-		redraw = 0;
+		/*
+		 * If we're switching screens, we have to wait for messages,
+		 * regardless.  If we don't wait, skip updating the modeline.
+		 */
+		if (forcewait)
+			vs_scroll(sp, NULL, SCROLL_W);
+		else
+			F_SET(vip, VIP_S_MODELINE);
 
-		/* Skip the modeline if it's in use. */
-		F_SET(vip, VIP_S_MODELINE);
+		redraw = 0;
 		break;
 	default:
 		/*
@@ -716,6 +745,7 @@ vs_resolve(sp)
 		ev.e_flno = vip->totalcount >=
 		    sp->rows ? 1 : sp->rows - vip->totalcount;
 		ev.e_tlno = sp->rows;
+
 		redraw = 1;
 		break;
 	}
