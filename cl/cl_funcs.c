@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.4 1995/06/15 14:51:03 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:51:03 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.5 1995/06/15 19:41:22 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:41:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -339,22 +339,6 @@ cl_canon(sp, enter)
 }
 
 /*
- * cl_clear --
- *	Clear the screen.
- *
- * PUBLIC: int cl_clear __P((SCR *));
- */
-int
-cl_clear(sp)
-	SCR *sp;
-{
-	EX_NOOP(sp);
-	VI_INIT_IGNORE(sp);
-
-	return (clear() == ERR);
-}
-
-/*
  * cl_clrtoeol --
  *	Clear from the current cursor to the end of the line.
  *
@@ -667,32 +651,29 @@ cl_move(sp, lno, cno)
  * cl_refresh --
  *	Refresh the screen.
  *
- * PUBLIC: int cl_refresh __P((SCR *));
+ * PUBLIC: int cl_refresh __P((SCR *, int));
  */
 int
-cl_refresh(sp)
+cl_refresh(sp, trashed)
 	SCR *sp;
+	int trashed;
 {
 	EX_NOOP(sp);
 	VI_INIT_IGNORE(sp);
 
+	/*
+	 * If trashed is set, we don't know what's on the screen, so we have
+	 * to repaint from scratch.  Doing wrefresh(curscr) works, but the
+	 * screen flashes when we then apply the refresh() to bring it up to
+	 * date.  So, mark stdscr completely changed, and then call refresh().
+	 *
+	 * XXX
+	 * The trashed flag need not be supported by any screen model not
+	 * supporting full ex canonical mode.
+	 */
+	if (trashed)
+		touchwin(stdscr);
 	return (refresh() == ERR);
-}
-
-/*
- * cl_repaint --
- *	Repaint the screen as of its last appearance.
- *
- * PUBLIC: int cl_repaint __P((SCR *));
- */
-int
-cl_repaint(sp)
-	SCR *sp;
-{
-	EX_NOOP(sp);
-	VI_INIT_IGNORE(sp);
-
-	return (wrefresh(curscr) == ERR);
 }
 
 /*
