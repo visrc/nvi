@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.9 1995/09/29 16:56:13 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:56:13 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.10 1995/09/30 10:39:21 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:39:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ex_read(sp, cmdp)
 	GS *gp;
 	MARK rm;
 	recno_t nlines;
-	size_t arglen, blen, len;
+	size_t arglen, blen;
 	int argc, nf, rval;
 	char *p;
 
@@ -111,15 +111,21 @@ ex_read(sp, cmdp)
 		}
 
 		/* Redisplay the user's argument if it's changed. */
-		if (F_ISSET(cmdp, E_MODIFY) && F_ISSET(sp, S_VI)) {
-			len = cmdp->argv[argc]->len;
-			GET_SPACE_RET(sp, p, blen, len + 2);
-			p[0] = '!';
-			memmove(p + 1,
-			    cmdp->argv[argc]->bp, cmdp->argv[argc]->len + 1);
-			(void)gp->scr_busy(sp, p, 1);
-			FREE_SPACE(sp, p, blen);
-		}
+		if (F_ISSET(cmdp, E_MODIFY))
+			if (F_ISSET(sp, S_VI)) {
+				GET_SPACE_RET(sp,
+				    p, blen, cmdp->argv[argc]->len + 2);
+				p[0] = '!';
+				memmove(p + 1, cmdp->argv[argc]->bp,
+				    cmdp->argv[argc]->len + 1);
+				(void)vs_update(sp,
+				    p, cmdp->argv[argc]->len + 2);
+				FREE_SPACE(sp, p, blen);
+			} else {
+				(void)ex_printf(sp,
+				    "!%s\n", cmdp->argv[argc]->bp);
+				(void)ex_fflush(sp);
+			}
 
 		if (filtercmd(sp, cmdp, &cmdp->addr1,
 		    NULL, &rm, cmdp->argv[argc]->bp, FILTER_READ))
@@ -218,9 +224,9 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		msgq(sp, M_ERR, "146|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	(void)gp->scr_busy(sp, "147|Reading...", 1);
+	(void)gp->scr_busy(sp, "147|Reading...", BUSY_ON);
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
-	(void)gp->scr_busy(sp, NULL, 0);
+	(void)gp->scr_busy(sp, NULL, BUSY_OFF);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read
@@ -254,10 +260,9 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 	recno_t lcnt, lno;
 	size_t len;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
-	int nf, rval;
+	int nf, sv_errno;
 	char *p;
 
-	rval = 0;
 	exp = EXP(sp);
 
 	/*
@@ -267,33 +272,18 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 	ccnt = 0;
 	lcnt = 0;
 	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno, ++lcnt) {
-		if (INTERRUPTED(sp))
-			break;
-		if (file_aline(sp, 1, lno, exp->ibp, len)) {
-			rval = 1;
-			break;
+		if ((lcnt % INTERRUPT_CHECK) == 0) {
+			if (INTERRUPTED(sp))
+				break;
+			(void)sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
 		}
+		if (file_aline(sp, 1, lno, exp->ibp, len))
+			goto err;
 		ccnt += len;
 	}
 
-	if (ferror(fp)) {
-		p = msg_print(sp, name, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-		rval = 1;
-	}
-
-	if (fclose(fp)) {
-		p = msg_print(sp, name, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-		return (1);
-	}
-
-	if (rval)
-		return (1);
+	if (ferror(fp) || fclose(fp))
+		goto err;
 
 	/* Return the number of lines read in. */
 	if (nlinesp != NULL)
@@ -307,4 +297,13 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 			FREE_SPACE(sp, p, 0);
 	}
 	return (0);
+
+err:	sv_errno = errno;
+	p = msg_print(sp, name, &nf);
+	errno = sv_errno;
+	msgq(sp, M_SYSERR, "%s", p);
+	if (nf)
+		FREE_SPACE(sp, p, 0);
+	(void)fclose(fp);
+	return (1);
 }
