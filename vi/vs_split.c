@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.40 1994/05/21 09:46:57 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:46:57 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.41 1994/06/27 12:15:57 bostic Exp $ (Berkeley) $Date: 1994/06/27 12:15:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,10 @@ static char sccsid[] = "$Id: vs_split.c,v 8.40 1994/05/21 09:46:57 bostic Exp $ 
  *	Split the screen.
  */
 int
-svi_split(sp, argv)
+svi_split(sp, argv, argc)
 	SCR *sp;
 	ARGS *argv[];
+	int argc;
 {
 	MSG *mp, *next;
 	SCR *tsp, saved_sp;
@@ -45,6 +46,7 @@ svi_split(sp, argv)
 	SMAP *smp;
 	size_t cnt, half;
 	int issmallscreen, splitup;
+	char **ap;
 
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
@@ -186,20 +188,25 @@ svi_split(sp, argv)
 	 * current file.
 	 */
 	if (argv == NULL) {
-		if (file_add(tsp, NULL, FILENAME(sp->frp), 0) == NULL)
+		if ((tsp->frp = file_add(tsp, sp->frp->name)) == NULL)
 			goto err;
-	} else
-		for (; (*argv)->len != 0; ++argv)
-			if (file_add(tsp, NULL, (*argv)->bp, 0) == NULL)
+	} else {
+		/* Create a new argument list. */
+		CALLOC(sp,
+		    tsp->argv, char **, argc + 1, sizeof(char *));
+		if (tsp->argv == NULL)
+			goto err;
+		for (ap = tsp->argv, argv; argv[0]->len != 0; ++ap, ++argv)
+			if ((*ap =
+			    v_strdup(sp, argv[0]->bp, argv[0]->len)) == NULL)
 				goto err;
+		*ap = NULL;
 
-	/* Set up the argument and current FREF pointers. */
-	if ((tsp->frp = file_first(tsp)) == NULL) {
-		msgq(sp, M_ERR, "No files in the file list");
-		goto err;
+		/* Switch to the first one. */
+		tsp->cargv = tsp->argv;
+		if ((tsp->frp = file_add(sp, *tsp->cargv)) == NULL)
+			goto err;
 	}
-
-	tsp->a_frp = tsp->frp;
 
 	/*
 	 * Copy the file state flags, start the file.  Fill the child's
@@ -270,6 +277,11 @@ err:	*sp = saved_sp;
 	}
 
 	/* Free the new screen. */
+	if (tsp->argv != NULL) {
+		for (ap = tsp->argv; *ap != NULL; ++ap)
+			free(*ap);
+		free(tsp->argv);
+	}
 	free(_HMAP(tsp));
 	free(SVP(tsp));
 	FREE(tsp, sizeof(SCR));
@@ -399,7 +411,7 @@ svi_swap(csp, nsp, name)
 	/* Find the screen, or, if name is NULL, the first screen. */
 	for (sp = csp->gp->hq.cqh_first;
 	    sp != (void *)&csp->gp->hq; sp = sp->q.cqe_next)
-		if (name == NULL || !strcmp(FILENAME(sp->frp), name))
+		if (name == NULL || !strcmp(sp->frp->name, name))
 			break;
 	if (sp == (void *)&csp->gp->hq) {
 		*nsp = NULL;
