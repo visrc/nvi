@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.24 1993/11/04 12:18:43 bostic Exp $ (Berkeley) $Date: 1993/11/04 12:18:43 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.25 1993/11/05 10:56:15 bostic Exp $ (Berkeley) $Date: 1993/11/05 10:56:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -670,7 +670,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 
 	/* Check to see if movement is possible. */
 	if (HMAP->lno == 1 && HMAP->off == 1 &&
-	    !cursor_move || ignore_cursor || p == HMAP) {
+	    (!cursor_move || ignore_cursor || p == HMAP)) {
 		v_sof(sp, NULL);
 		return (1);
 	}
