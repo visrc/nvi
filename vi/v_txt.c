@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.129 1994/09/12 10:41:48 bostic Exp $ (Berkeley) $Date: 1994/09/12 10:41:48 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.130 1994/09/16 13:43:31 bostic Exp $ (Berkeley) $Date: 1994/09/16 13:43:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,7 +92,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quoted;
 	enum input tval;
 	struct termios t;	/* Terminal characteristics. */
-	CH ikey;		/* Input character structure. */
+	CH ikey, *ikeyp;	/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
 	TEXT wmt;		/* Wrapmargin text structure. */
@@ -220,18 +220,12 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 
 	/*
 	 * Historic practice is that the wrapmargin value was a distance
-	 * from the RIGHT-HAND column, not the left.  It's more useful to
-	 * us as a distance from the left-hand column.
-	 *
-	 * !!!/XXX
-	 * Replay commands were not affected by the wrapmargin option in the
-	 * historic 4BSD vi.  What I found surprising was that people depend
-	 * on it, as in this gem of a macro which centers lines:
-	 *
-	 *	map #c $mq81a ^V^[81^V|D`qld0:s/  / /g^V^M$p
-	 *
-	 * Other historic versions of vi, notably Sun's, applied wrapmargin
-	 * to replay lines as well.
+	 * from the RIGHT-HAND margin, not the left.  It's more useful to
+	 * us as a distance from the left-hand margin, i.e. the same as
+	 * the wraplen value.  The wrapmargin option is historic practice.
+	 * Nvi added the wraplen option so that it would be possible to
+	 * edit files with consistent margins without worrying about the
+	 * number of columns in the window.
 	 *
 	 * XXX
 	 * Setting margin causes a significant performance hit.  Normally
@@ -239,15 +233,27 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * have to if margin is set, otherwise the screen routines don't
 	 * know where the cursor is.
 	 *
+	 * !!!/XXX
+	 * Abbreviated keys were affected by the wrapmargin option in the
+	 * historic 4BSD vi, but mapped keys were NOT.  What's surprising
+	 * is that people depend on it, as in this gem of a macro which
+	 * centers lines:
+	 *
+	 *	map #c $mq81a ^V^[81^V|D`qld0:s/  / /g^V^M$p
+	 *
 	 * !!!
 	 * One more special case.  If an inserted <blank> character causes
 	 * wrapmargin to split the line, the next user entered character is
 	 * discarded if it's a <space> character.
 	 */
-	if (LF_ISSET(TXT_REPLAY) || !LF_ISSET(TXT_WRAPMARGIN))
+	if (LF_ISSET(TXT_WRAPMARGIN))
+		if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
+			margin = sp->cols - margin;
+		else
+			margin = O_VAL(sp, O_WRAPLEN);
+	else
 		margin = 0;
-	else if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
-		margin = sp->cols - margin;
+		
 	wmset = wmskip = 0;
 
 	/* Initialize abbreviations checks. */
@@ -277,23 +283,26 @@ nullreplay:
 		 * Historically, it wasn't an error to replay non-existent
 		 * input.  This test is necessary, we get here by the user
 		 * doing an input command followed by a nul.
-		 *
-		 * !!!
-		 * Historically, vi did not remap or reabbreviate replayed
-		 * input.  It did, however, beep at you if you changed an
-		 * abbreviation and then replayed the input.  We're not that
-		 * compatible.
 		 */
 		if (VIP(sp)->rep == NULL)
 			return (0);
-		if (term_push(sp, VIP(sp)->rep, VIP(sp)->rep_cnt, CH_NOMAP))
-			return (1);
-		testnr = 0;
+		/*
+		 * !!!
+		 * Historically, vi did not remap or reabbreviate replayed
+		 * input.  (It did, however, beep at you if you changed an
+		 * abbreviation and then replayed the input.  We're not that
+		 * compatible.)  We don't need to do anything to avoid the
+		 * remapping, as we're not getting the characters from the
+		 * terminal routines.  Turn the abbreviation check off.
+		 */
 		abb = A_NOTSET;
+
 		LF_CLR(TXT_RECORD);
+		testnr = 0;
 	} else
 		testnr = 1;
 
+	ikeyp = &ikey;
 	unmap_tst = LF_ISSET(TXT_MAPINPUT) && LF_ISSET(TXT_INFOLINE);
 	iflags = LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT);
 	for (showmatch = 0, sig_reset = 0,
@@ -315,9 +324,19 @@ nullreplay:
 		}
 
 		/* Get the next character. */
-next_ch:	tval = term_key(sp, &ikey, quoted == Q_VTHIS ?
-		    iflags & ~(TXT_MAPCOMMAND | TXT_MAPINPUT) : iflags);
-		ch = ikey.ch;
+next_ch:	if (replay) {
+			tval = INP_OK;
+			ikeyp = VIP(sp)->rep + rcol++;
+
+			/*
+			 * !!!
+			 * Historically, vi did not remap replayed input.
+			 */
+			F_SET(ikeyp, CH_NOMAP);
+		} else
+			tval = term_key(sp, ikeyp, quoted == Q_VTHIS ?
+			    iflags & ~(TXT_MAPCOMMAND | TXT_MAPINPUT) : iflags);
+		ch = ikeyp->ch;
 
 		/* Restore the terminal state if it was modified. */
 		if (sig_reset && !tcgetattr(STDIN_FILENO, &t)) {
@@ -342,7 +361,7 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_VTHIS ?
 
 		/* Abbreviation check.  See comment in txt_abbrev(). */
 #define	MAX_ABBREVIATION_EXPANSION	256
-		if (ikey.flags & CH_ABBREVIATED) {
+		if (F_ISSET(ikeyp, CH_ABBREVIATED)) {
 			if (++ab_cnt > MAX_ABBREVIATION_EXPANSION) {
 				term_flush(sp,
 			"Abbreviation exceeded maximum number of characters",
@@ -379,8 +398,9 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_VTHIS ?
 		 * characters, but not worth fixing.
 		 */
 		if (LF_ISSET(TXT_RECORD)) {
-			BINC_GOTO(sp, VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
-			VIP(sp)->rep[rcol++] = ch;
+			BINC_GOTO(sp, VIP(sp)->rep,
+			    VIP(sp)->rep_len, (rcol + 1) * sizeof(CH));
+			VIP(sp)->rep[rcol++] = *ikeyp;
 		}
 		BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 
@@ -394,18 +414,18 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_VTHIS ?
 		 * followed by "ixa^V<space>" doesn't perform an abbreviation.
 		 * Special case, ^V^J is the same as ^J, historically.
 		 */
-		if (ikey.flags & CH_QUOTED)
+		if (F_ISSET(ikeyp, CH_QUOTED))
 			goto insq_ch;
 		if (quoted != Q_NOTSET) {
-			if (quoted == Q_VTHIS && ikey.value != K_NL ||
-			    quoted == Q_BTHIS &&
-			    (ikey.value == K_VERASE || ikey.value == K_VKILL)) {
+			if (quoted == Q_VTHIS && ikeyp->value != K_NL ||
+			    quoted == Q_BTHIS && (ikeyp->value == K_VERASE ||
+			    ikeyp->value == K_VKILL)) {
 				--sp->cno;
 				++tp->owrite;
 				quoted = Q_NOTSET;
 				goto insl_ch;
 			}
-			if (quoted == Q_VTHIS && ikey.value == K_NL)
+			if (quoted == Q_VTHIS && ikeyp->value == K_NL)
 				--sp->cno;
 			quoted = Q_NOTSET;
 		}
@@ -422,7 +442,7 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_VTHIS ?
 			hex = H_NOTSET;
 		}
 
-		switch (ikey.value) {
+		switch (ikeyp->value) {
 		case K_CR:				/* Carriage return. */
 		case K_NL:				/* New line. */
 			/* Return in script windows and the command line. */
@@ -959,7 +979,8 @@ ins_ch:			/*
 			 * and wasn't handled specially, except <tab> or <ff>.
 			 */
 			if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(ch) &&
-			    ikey.value != K_FORMFEED && ikey.value != K_TAB) {
+			    ikeyp->value != K_FORMFEED &&
+			    ikeyp->value != K_TAB) {
 				msgq(sp, M_BERR,
 				    "183|Illegal character; quote to enter");
 				break;
@@ -1003,7 +1024,7 @@ insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 			tp->lb[sp->cno++] = ch;
 
 			/* Check to see if we've crossed the margin. */
-			if (margin) {
+			if (margin && !F_ISSET(ikeyp, CH_MAPPED)) {
 				if (sp->s_column(sp, ep, &col))
 					goto err;
 				if (col >= margin) {
