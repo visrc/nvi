@@ -1,4 +1,4 @@
-#	$Id: README,v 8.5 1996/02/28 18:45:28 bostic Exp $ (Berkeley) $Date: 1996/02/28 18:45:28 $
+#	$Id: README,v 8.6 1996/02/28 19:18:33 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:18:33 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -28,6 +28,7 @@ follows:
 
 The most common of these are:
 
+  --enable-debug    	  Build a debugging version.
   --enable-tclinterp	  Compile a Tcl/Tk interpreter into vi.
   --with-curses=ask|system|vi
                           ask:     Prompt for the curses library to use.
