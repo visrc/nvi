@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.4 1993/09/08 14:51:56 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:51:56 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.5 1993/09/09 16:51:52 bostic Exp $ (Berkeley) $Date: 1993/09/09 16:51:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,17 +46,6 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *name;
 
 	/*
-	 * There are three different processes running through this code.
-	 * They are the utility, the parent-writer and the parent-reader.
-	 * The parent-writer is the process that writes from the file to
-	 * the utility, the parent reader is the process that reads from
-	 * the utility.
-	 *
-	 * Input and output are named from the utility's point of view.
-	 */
-	input[0] = input[1] = output[0] = output[1] = -1;
-
-	/*
 	 * Set default return cursor position; guard against a line number
 	 * of zero.
 	 */
@@ -65,36 +54,53 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 		rp->lno = 1;
 
 	/*
+	 * There are three different processes running through this code.
+	 * They are the utility, the parent-writer and the parent-reader.
+	 * The parent-writer is the process that writes from the file to
+	 * the utility, the parent reader is the process that reads from
+	 * the utility.
+	 *
+	 * Input and output are named from the utility's point of view.
+	 * The utility reads from input[0] and the parent(s) write to
+	 * input[1].  The parent(s) read from output[0] and the utility
+	 * writes to output[1].
+	 *
 	 * In the FILTER_READ case, the utility isn't expected to want
 	 * input.  Redirect its input from /dev/null.  Otherwise open
 	 * up utility input pipe.
 	 */
+	ifp = ofp = NULL;
+	input[0] = input[1] = output[0] = output[1] = -1;
 	if (ftype == FILTER_READ) {
 		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
 			msgq(sp, M_ERR,
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
-			goto err1;
+			return (1);
 		}
 	} else
 		if (pipe(input) < 0 || (ifp = fdopen(input[1], "w")) == NULL)
-			goto err2;
+			goto err;
 
 	/* Open up utility output pipe. */
 	if (pipe(output) < 0 || (ofp = fdopen(output[0], "r")) == NULL)
-		goto err2;
+		goto err;
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
 	case -1:			/* Error. */
-err2:		msgq(sp, M_ERR, "filter: %s", strerror(errno));
-err1:		if (input[0] != -1)
+err:		if (input[0] != -1)
 			(void)close(input[0]);
-		if (input[1] != -1)
+		if (ifp != NULL)
+			(void)fclose(ifp);
+		else if (input[1] != -1)
 			(void)close(input[1]);
-		if (output[0] != -1)
+		if (ofp != NULL)
+			(void)fclose(ofp);
+		else if (output[0] != -1)
 			(void)close(output[0]);
 		if (output[1] != -1)
-			(void)close(input[1]);
+			(void)close(output[1]);
+		msgq(sp, M_ERR, "filter: %s", strerror(errno));
 		return (1);
 	case 0:				/* Utility. */
 		/*
@@ -106,12 +112,10 @@ err1:		if (input[0] != -1)
 		(void)dup2(output[1], STDOUT_FILENO);
 		(void)dup2(output[1], STDERR_FILENO);
 
-		/* Close the child's pipe file descriptors. */
+		/* Close the utility's file descriptors. */
 		(void)close(input[0]);
-		if (ftype != FILTER_READ)
-			(void)close(input[1]);
-		if (ftype != FILTER_WRITE)
-			(void)close(output[0]);
+		(void)close(input[1]);
+		(void)close(output[0]);
 		(void)close(output[1]);
 
 		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
