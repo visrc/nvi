@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.12 1995/02/16 12:02:26 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:02:26 $";
+static char sccsid[] = "$Id: screen.c,v 9.13 1995/02/17 11:36:47 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,6 +111,11 @@ mem:				msgq(orig, M_SYSERR, NULL);
 			sp->newl_len = orig->newl_len;
 			sp->newl_cnt = orig->newl_cnt;
 			memmove(sp->newl, orig->newl, len);
+		}
+
+		if (F_ISSET(orig, S_AT_SET)) {
+			F_SET(sp, S_AT_SET);
+			sp->at_lbuf = orig->at_lbuf;
 		}
 
 		sp->saved_vi_mode = orig->saved_vi_mode;
