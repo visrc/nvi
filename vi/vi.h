@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.11 1995/09/30 10:40:03 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:40:03 $
+ *	$Id: vi.h,v 10.12 1995/10/03 12:25:21 bostic Exp $ (Berkeley) $Date: 1995/10/03 12:25:21 $
  */
 
 /* Definition of a vi "word". */
@@ -249,6 +249,8 @@ typedef struct _vi_private {
 	int	busy_ref;	/* Busy reference count. */
 	int	busy_ch;	/* Busy character. */
 	size_t	busy_fx;	/* Busy character x coordinate. */
+	size_t	busy_oldy;	/* Saved y coordinate. */
+	size_t	busy_oldx;	/* Saved x coordinate. */
 	struct timeval busy_tv;	/* Busy timer. */
 
 	char   *ps;		/* Paragraph plus section list. */
