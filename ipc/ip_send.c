@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_send.c,v 8.8 1997/08/02 16:49:33 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:49:33 $";
+static const char sccsid[] = "$Id: ip_send.c,v 8.9 2000/06/28 20:20:38 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,10 +27,11 @@ static const char sccsid[] = "$Id: ip_send.c,v 8.8 1997/08/02 16:49:33 bostic Ex
  * vi_send --
  *	Construct and send an IP buffer.
  *
- * PUBLIC: int vi_send __P((char *, IP_BUF *));
+ * PUBLIC: int vi_send __P((int, char *, IP_BUF *));
  */
 int
-vi_send(fmt, ipbp)
+vi_send(ofd, fmt, ipbp)
+	int ofd;
 	char *fmt;
 	IP_BUF *ipbp;
 {
@@ -46,9 +47,13 @@ vi_send(fmt, ipbp)
 	 *
 	 * XXX
 	 * How is that possible!?!?
+	 *
+	 * We'll soon find out.
 	 */
-	if (vi_ofd == 0)
-		return (0);
+	if (ofd == 0) {
+		fprintf(stderr, "No channel\n");
+		abort();
+	}
 
 	if (blen == 0 && (bp = malloc(blen = 512)) == NULL)
 		return (1);
@@ -104,7 +109,7 @@ value:				nlen += IPO_INT_LEN;
 				break;
 			}
 	for (n = p - bp, p = bp; n > 0; n -= nw, p += nw)
-		if ((nw = write(vi_ofd, p, n)) < 0)
+		if ((nw = write(ofd, p, n)) < 0)
 			return (1);
 	return (0);
 }

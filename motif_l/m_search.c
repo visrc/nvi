@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.11 1996/12/18 10:26:50 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:50 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.12 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -33,6 +33,8 @@ static const char sccsid[] = "$Id: m_search.c,v 8.11 1996/12/18 10:26:50 bostic 
 #include "../common/common.h"
 #include "../ipc/ip.h"
 #include "m_motif.h"
+
+extern int vi_ofd;
 
 
 /* types */
@@ -194,7 +196,7 @@ search(w, flags)
 			ipb.val1 |= opt->flags;
 
 	ipb.code = VI_C_SEARCH;
-	vi_send("a1", &ipb);
+	vi_send(vi_ofd, "a1", &ipb);
 }
 
 #if defined(__STDC__)

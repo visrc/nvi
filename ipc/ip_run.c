@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.14 2000/06/24 18:54:50 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:50 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.15 2000/06/28 20:20:38 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,21 +35,19 @@ static void fatal __P((void));
 static void attach __P((void));
 #endif
 
-int	 vi_ifd = -1;				/* Global: input fd. */
-int	 vi_ofd = -1;				/* Global: output fd. */
 char	*vi_progname = "vi";			/* Global: program name. */
 
 /*
  * vi_run --
  *	Run the vi program.
  *
- * PUBLIC: int vi_run __P((int, char *[], int *, int *, pid_t *));
+ * PUBLIC: int vi_run __P((IPVI *, int, char *[]));
  */
 int
-vi_run(argc, argv, ip, op, pidp)
-	int argc, *ip, *op;
+vi_run(ipvi, argc, argv)
+	IPVI *ipvi;
+	int argc;
 	char *argv[];
-	pid_t *pidp;
 {
 	struct stat sb;
 	int pflag, rpipe[2], wpipe[2];
@@ -117,8 +115,8 @@ vi_run(argc, argv, ip, op, pidp)
 	 */
 	if (pipe(rpipe) == -1 || pipe(wpipe) == -1)
 		fatal();
-	*ip = rpipe[0];
-	*op = wpipe[1];
+	ipvi->ifd = rpipe[0];
+	ipvi->ofd = wpipe[1];
 
 	/*
 	 * Reformat our arguments, adding a -I to the list.  The first file
@@ -128,7 +126,7 @@ vi_run(argc, argv, ip, op, pidp)
 	arg_format(execp, &argc, &argv, wpipe[0], rpipe[1]);
 
 	/* Run vi. */
-	switch (*pidp = fork()) {
+	switch (ipvi->pid = fork()) {
 	case -1:				/* Error. */
 		fatal();
 		/* NOTREACHED */

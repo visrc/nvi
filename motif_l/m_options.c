@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.18 1997/08/02 16:50:10 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:50:10 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.19 2000/06/28 20:20:39 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,8 @@ static const char sccsid[] = "$Id: m_options.c,v 8.18 1997/08/02 16:50:10 bostic
 #include "../common/common.h"
 #include "../ipc/ip.h"
 #include "m_motif.h"
+
+extern int vi_ofd;
 
 static void set_opt __P((Widget, XtPointer, XtPointer));
 
@@ -298,6 +300,7 @@ set_opt(w, closure, call_data)
 	Boolean set;
 	IP_BUF ipb;
 	String str;
+	extern IPVI ipvi_motif;
 
 	opt = closure;
 
@@ -311,7 +314,7 @@ set_opt(w, closure, call_data)
 		ipb.val1 = set;
 		ipb.len2 = 0;
 
-		vi_wsend("ab1", &ipb);
+		vi_wsend(&ipvi_motif, "ab1", &ipb);
 		if (ipb.val1) {
 			opt->value = (void *)!set;
 			/*
@@ -335,13 +338,13 @@ set_opt(w, closure, call_data)
 		str = XmTextFieldGetString(w);
 		ipb.val1 = atoi(str);
 		ipb.len2 = 0;
-		vi_send("ab1", &ipb);
+		vi_send(vi_ofd, "ab1", &ipb);
 		break;
 	case optFile:
 	case optString:
 		ipb.str2 = XmTextFieldGetString(w);
 		ipb.len2 = strlen(ipb.str2);
-		vi_send("ab1", &ipb);
+		vi_send(vi_ofd, "ab1", &ipb);
 		break;
 	case optTerminator:
 		abort();

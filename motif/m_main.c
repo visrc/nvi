@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.35 1997/08/02 16:49:52 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:49:52 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.36 2000/06/28 20:20:39 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,10 @@ static const char sccsid[] = "$Id: m_main.c,v 8.35 1997/08/02 16:49:52 bostic Ex
 #include "../motif_l/m_motif.h"
 #include "../motif_l/vi_mextern.h"
 #include "extern.h"
+
+int     vi_ifd = -1;
+int     vi_ofd = -1;
+IPVIWIN   *ipvi_motif;
 
 #if XtSpecificationRelease == 4
 #define	ArgcType	Cardinal *
@@ -253,6 +257,7 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
+	IPVI* ipvi;
 	/*
 	 * Initialize the X widgetry.  We must do this before picking off
 	 * arguments as well-behaved X programs have common argument lists
@@ -263,8 +268,13 @@ main(argc, argv)
 	/* We need to know if the child process goes away. */
 	(void)signal(SIGCHLD, onchld);
 
+	vi_create(&ipvi, 0);
+	(void)ipvi->run(ipvi, argc, argv);
+	ipvi->new_window(ipvi,&ipvi_motif);
 	/* Run vi: the parent returns, the child is the vi process. */
-	(void)vi_run(argc, argv, &vi_ifd, &vi_ofd, &pid);
+	vi_ifd = ipvi_motif->ifd;
+	vi_ofd = ipvi_motif->ofd;
+	pid = ipvi->pid;
 
 	/* Tell X that we are interested in input on the pipe. */
 	XtAppAddInput(ctx, vi_ifd,

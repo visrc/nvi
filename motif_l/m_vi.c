@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.36 1997/08/03 15:02:51 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:02:51 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.37 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,8 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.36 1997/08/03 15:02:51 bostic Exp 
 #include "m_motif.h"
 #include "vi_mextern.h"
 #include "pathnames.h"
+
+extern int vi_ofd;
 
 static	void	f_copy();
 static	void	f_paste();
@@ -247,7 +249,7 @@ vi_input_func(client_data, source, id)
 	XtInputId *id;
 {
 	/* Parse and dispatch on commands in the queue. */
-	(void)vi_input(*source);
+	(void)vi_input(ipvi_motif, *source);
 
 #ifdef notdef
 	/* Check the pipe for unused events when not busy. */
@@ -276,7 +278,7 @@ xvi_screen	*this_screen;
 #endif
 
     /* send up the pipe */
-    vi_send("12", &ipb);
+    vi_send(vi_ofd, "12", &ipb);
 }
 
 
@@ -642,7 +644,7 @@ command(widget, event, str, cardinal)
 		if (table[i].name[6] == (*str)[6] &&
 		    strcmp(table[i].name, *str) == 0) {
 			ipb.code = table[i].code;
-			vi_send(table[i].count ? "1" : NULL, &ipb);
+			vi_send(vi_ofd, table[i].count ? "1" : NULL, &ipb);
 			return;
 		}
 
@@ -671,7 +673,7 @@ Cardinal        *cardinal;
     if ( ipb.len1 != 0 ) {
 	ipb.code = VI_STRING;
 	ipb.str1 = *str;
-	vi_send("a", &ipb);
+	vi_send(vi_ofd, "a", &ipb);
     }
 
 #ifdef TRACE
@@ -705,7 +707,7 @@ Cardinal        *cardinal;
 #ifdef TRACE
 	vtrace("key_press {%.*s}\n", ipb.len1, bp );
 #endif
-	vi_send("a", &ipb);
+	vi_send(vi_ofd, "a", &ipb);
     }
 
 }
@@ -753,7 +755,7 @@ static	void				scrollbar_moved( widget, ptr, cbs )
     /* Send the new cursor position. */
     ipb.code = VI_C_SETTOP;
     ipb.val1 = cbs->value;
-    (void)vi_send("1", &ipb);
+    (void)vi_send(vi_ofd, "1", &ipb);
 }
 
 
@@ -1195,7 +1197,7 @@ Cardinal        *cardinal;
     ipb.code = VI_MOUSE_MOVE;
     ipb.val1 = ypos;
     ipb.val2 = xpos;
-    (void)vi_send("12", &ipb);
+    (void)vi_send(vi_ofd, "12", &ipb);
 
     /* click-click, and we go for words, lines, etc */
     if ( ev->time - last_click < multi_click_length )

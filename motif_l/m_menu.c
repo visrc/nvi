@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.23 1996/12/18 10:26:33 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:33 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.24 2000/06/28 20:20:39 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:39 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -30,6 +30,8 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.23 1996/12/18 10:26:33 bostic Ex
 #include "../common/common.h"
 #include "../ipc/ip.h"
 #include "m_motif.h"
+
+extern int vi_ofd;
 
 /* save this for creation of children */
 static	Widget	main_widget = NULL;
@@ -97,7 +99,7 @@ String	str;
     ipb.code = VI_STRING;
     ipb.str1 = buffer;
     ipb.len1 = strlen(buffer);
-    vi_send("a", &ipb);
+    vi_send(vi_ofd, "a", &ipb);
 }
 
 
@@ -232,7 +234,7 @@ file_command(w, code, prompt)
 		ipb.code = code;
 		ipb.str1 = file;
 		ipb.len1 = strlen(file);
-		vi_send("a", &ipb);
+		vi_send(vi_ofd, "a", &ipb);
 	}
 }
 
@@ -266,7 +268,7 @@ ma_save(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_WRITE;
-	(void)vi_send(NULL, &ipb);
+	(void)vi_send(vi_ofd, NULL, &ipb);
 }
 
 static void
@@ -285,7 +287,7 @@ ma_wq(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_WQ;
-	(void)vi_send(NULL, &ipb);
+	(void)vi_send(vi_ofd, NULL, &ipb);
 }
 
 static void
@@ -296,7 +298,7 @@ ma_quit(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_QUIT;
-	(void)vi_send(NULL, &ipb);
+	(void)vi_send(vi_ofd, NULL, &ipb);
 }
 
 static void
@@ -307,7 +309,7 @@ ma_undo(w, call_data, client_data)
 	IP_BUF ipb;
 
 	ipb.code = VI_UNDO;
-	(void)vi_send(NULL, &ipb);
+	(void)vi_send(vi_ofd, NULL, &ipb);
 }
 
 #if defined(__STDC__)

@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.22 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $
+ *	$Id: ip.h,v 8.23 2000/06/28 20:20:38 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:38 $
  */
 
 extern int vi_ifd;		/* Input file descriptor. */
@@ -53,6 +53,33 @@ typedef struct _ip_buf {
 	u_int32_t val2;		/* Value #2. */
 	u_int32_t val3;		/* Value #3. */
 } IP_BUF;
+
+struct _ip_vi;	
+typedef struct _ip_vi IPVI;
+
+struct _ip_vi_win;
+typedef struct _ip_vi_win IPVIWIN;
+
+struct _ip_vi {
+    int		ifd;		/* Input file descriptor. */
+    int		ofd;		/* Output file descriptor. */
+    pid_t	pid;
+
+    void	*private_data;
+
+    u_int32_t	flags;
+
+    int		(*run) __P((IPVI*, int, char*[]));
+    int 	(*new_window) __P((IPVI *, IPVIWIN **));
+    int		(*close) __P((IPVI*));
+};
+
+struct _ip_vi_win {
+    int		ifd;		/* Input file descriptor. */
+    int		ofd;		/* Output file descriptor. */
+
+    void	*private_data;
+};
 
 /*
  * Screen/editor IP_CODE's.

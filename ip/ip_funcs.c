@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.15 2000/05/07 19:49:42 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:42 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.16 2000/06/28 20:20:37 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ip_addstr(sp, str, len)
 	ipb.code = SI_ADDSTR;
 	ipb.len1 = len;
 	ipb.str1 = str;
-	rval = vi_send("a", &ipb);
+	rval = vi_send(ipp->o_fd, "a", &ipb);
 	/* XXXX */
 	ipp->col += len;
 
@@ -78,12 +78,13 @@ ip_attr(sp, attribute, on)
 	int on;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	ipb.code = SI_ATTRIBUTE;
 	ipb.val1 = attribute;
 	ipb.val2 = on;
 
-	return (vi_send("12", &ipb));
+	return (vi_send(ipp->o_fd, "12", &ipb));
 }
 
 /*
@@ -112,10 +113,11 @@ ip_bell(sp)
 	SCR *sp;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	ipb.code = SI_BELL;
 
-	return (vi_send(NULL, &ipb));
+	return (vi_send(ipp->o_fd, NULL, &ipb));
 }
 
 /*
@@ -131,17 +133,18 @@ ip_busy(sp, str, bval)
 	busy_t bval;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	switch (bval) {
 	case BUSY_ON:
 		ipb.code = SI_BUSY_ON;
 		ipb.str1 = str;
 		ipb.len1 = strlen(str);
-		(void)vi_send("a", &ipb);
+		(void)vi_send(ipp->o_fd, "a", &ipb);
 		break;
 	case BUSY_OFF:
 		ipb.code = SI_BUSY_OFF;
-		(void)vi_send(NULL, &ipb);
+		(void)vi_send(ipp->o_fd, NULL, &ipb);
 		break;
 	case BUSY_UPDATE:
 		break;
@@ -185,7 +188,7 @@ ip_clrtoeol(sp)
 
 	ipb.code = SI_CLRTOEOL;
 
-	return (vi_send(NULL, &ipb));
+	return (vi_send(ipp->o_fd, NULL, &ipb));
 }
 
 /*
@@ -218,6 +221,7 @@ ip_deleteln(sp)
 	SCR *sp;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	/*
 	 * This clause is required because the curses screen uses reverse
@@ -230,7 +234,7 @@ ip_deleteln(sp)
 	if (!F_ISSET(sp, SC_SCR_EXWROTE) && IS_SPLIT(sp)) {
 		ipb.code = SI_REWRITE;
 		ipb.val1 = RLNO(sp, LASTLINE(sp));
-		if (vi_send("1", &ipb))
+		if (vi_send(ipp->o_fd, "1", &ipb))
 			return (1);
 	}
 
@@ -239,7 +243,7 @@ ip_deleteln(sp)
 	 * and other screens must support that semantic.
 	 */
 	ipb.code = SI_DELETELN;
-	return (vi_send(NULL, &ipb));
+	return (vi_send(ipp->o_fd, NULL, &ipb));
 }
 
 /*
@@ -281,10 +285,11 @@ ip_insertln(sp)
 	SCR *sp;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	ipb.code = SI_INSERTLN;
 
-	return (vi_send(NULL, &ipb));
+	return (vi_send(ipp->o_fd, NULL, &ipb));
 }
 
 /*
@@ -347,7 +352,7 @@ ip_move(sp, lno, cno)
 	ipb.code = SI_MOVE;
 	ipb.val1 = RLNO(sp, lno);
 	ipb.val2 = RCNO(sp, cno);
-	return (vi_send("12", &ipb));
+	return (vi_send(ipp->o_fd, "12", &ipb));
 }
 
 /*
@@ -387,7 +392,7 @@ ip_refresh(sp, repaint)
 	if (ipb.val1 != ipp->sb_top ||
 	    ipb.val2 != ipp->sb_num || ipb.val3 != ipp->sb_total) {
 		ipb.code = SI_SCROLLBAR;
-		(void)vi_send("123", &ipb);
+		(void)vi_send(ipp->o_fd, "123", &ipb);
 		ipp->sb_top = ipb.val1;
 		ipp->sb_num = ipb.val2;
 		ipp->sb_total = ipb.val3;
@@ -395,7 +400,7 @@ ip_refresh(sp, repaint)
 
 	/* Refresh/repaint the screen. */
 	ipb.code = repaint ? SI_REDRAW : SI_REFRESH;
-	return (vi_send(NULL, &ipb));
+	return (vi_send(ipp->o_fd, NULL, &ipb));
 }
 
 /*
@@ -411,11 +416,12 @@ ip_rename(sp, name, on)
 	int on;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	ipb.code = SI_RENAME;
 	ipb.str1 = name;
 	ipb.len1 = strlen(name);
-	return (vi_send("a", &ipb));
+	return (vi_send(ipp->o_fd, "a", &ipb));
 }
 
 /*
@@ -431,12 +437,13 @@ ip_reply(sp, status, msg)
 	char *msg;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	ipb.code = SI_REPLY;
 	ipb.val1 = status;
 	ipb.str1 = msg == NULL ? "" : msg;
 	ipb.len1 = strlen(ipb.str1);
-	return (vi_send("1a", &ipb));
+	return (vi_send(ipp->o_fd, "1a", &ipb));
 }
 
 /*

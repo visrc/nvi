@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: vi_mextern.h,v 8.4 1997/08/02 16:50:11 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:50:11 $";
+ *	"$Id: vi_mextern.h,v 8.5 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
  */
 
 /*
@@ -18,10 +18,13 @@
  */
 extern char *vi_progname;			/* Program name. */
 extern int   vi_ofd;				/* Output file descriptor. */
+extern IPVIWIN *ipvi_motif;
+
 
 /*
  * RAZ -- anyway we can get the library to do this setup?
  */
+#if 0
 #ifdef __STDC__
 Widget	vi_create_editor(String, Widget, void (*)(void));
 Widget	vi_create_menubar(Widget);  
@@ -36,4 +39,5 @@ void	vi_input_func();
 void	vi_run();
 int	vi_send();
 int	vi_translate();
+#endif
 #endif

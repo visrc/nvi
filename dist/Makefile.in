@@ -62,9 +62,9 @@ MALL=	m_main.o m_cde.o trace.o libmvi.a
 vi_motif: $(MALL)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(MALL) @MOTIFLIBS@
 
-MLIB=	ip_run.o ip_send.o ip_trans.o m_copypaste.o m_func.o m_menu.o \
-	m_options.o m_prompt.o m_ruler.o m_search.o m_tags.o m_util.o \
-	m_vi.o xtabbed.o
+MLIB=	ip_run.o ip_send.o ip_trans.o ipc_method.o m_copypaste.o m_func.o \
+	m_menu.o m_options.o m_prompt.o m_ruler.o m_search.o m_tags.o \
+	m_util.o m_vi.o xtabbed.o
 libmvi.a: $(MLIB)
 	$(rm) -f $@
 	$(ar) $@ $(MLIB)
@@ -258,6 +258,8 @@ ip_run.o: $(srcdir)/ipc/ip_run.c
 ip_send.o: $(srcdir)/ipc/ip_send.c
 	$(CC) $(CFLAGS) $?
 ip_trans.o: $(srcdir)/ipc/ip_trans.c
+	$(CC) $(CFLAGS) $?
+ipc_method.o: $(srcdir)/ipc/ipc_method.c
 	$(CC) $(CFLAGS) $?
 
 # Motif IP standalone sources.

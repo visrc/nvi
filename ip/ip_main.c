@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.12 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.13 2000/06/28 20:20:37 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,6 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.12 2000/06/25 17:34:40 skimo Ex
 #include "../ipc/ip.h"
 #include "extern.h"
 
-int vi_ofd;				/* GLOBAL: known to vi_send(). */
 GS *__global_list;				/* GLOBAL: List of screens. */
 
 static void	   ip_func_std __P((GS *));
@@ -167,7 +166,7 @@ run_editor(void * vp)
 
 	/* Send the quit message. */
 	ipb.code = SI_QUIT;
-	(void)vi_send(NULL, &ipb);
+	(void)vi_send(ipp->o_fd, NULL, &ipb);
 
 	/* Give the screen a couple of seconds to deal with it. */
 	sleep(2);
@@ -193,7 +192,7 @@ ip_init(WIN *wp, int i_fd, int o_fd, int argc, char *argv[])
 	wp->ip_private = ipp;
 
 	ipp->i_fd = i_fd;
- 	vi_ofd = ipp->o_fd = o_fd;
+	ipp->o_fd = o_fd;
  
  	ipp->argc = argc;
  	ipp->argv = argv;

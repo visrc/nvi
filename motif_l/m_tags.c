@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_tags.c,v 8.6 1996/12/18 10:26:54 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:54 $";
+static const char sccsid[] = "$Id: m_tags.c,v 8.7 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
 #endif /* not lint */
 
 /*
@@ -65,6 +65,8 @@ static const char sccsid[] = "$Id: m_tags.c,v 8.6 1996/12/18 10:26:54 bostic Exp
 #include "../ipc/ip.h"
 #include "m_motif.h"
 #endif
+
+extern int vi_ofd;
 
 
 /* globals */
@@ -267,7 +269,7 @@ static	void	split_to_tag( w )
     ipb.code = VI_TAGSPLIT;
     ipb.str1 = str;
     ipb.len1 = strlen(str) + 1;
-    vi_send("a", &ipb);
+    vi_send(vi_ofd, "a", &ipb);
 #endif
 
     XtFree( str );
@@ -299,7 +301,7 @@ static	void	go_to_tag( w )
     ipb.code = VI_TAGAS;
     ipb.str1 = str;
     ipb.len1 = strlen(str) + 1;
-    vi_send("a", &ipb);
+    vi_send(vi_ofd, "a", &ipb);
 #endif
 
     XtFree( str );

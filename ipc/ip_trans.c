@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.15 1997/08/02 16:49:33 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:49:33 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.16 2000/06/28 20:20:39 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,10 +37,11 @@ static size_t ibuf_len;				/* Length of current input. */
  * vi_input --
  *	Read from the vi message queue.
  *
- * PUBLIC: int vi_input __P((int));
+ * PUBLIC: int vi_input __P((IPVIWIN *, int));
  */
 int
-vi_input(fd)
+vi_input(ipviwin, fd)
+	IPVIWIN *ipviwin;
 	int fd;
 {
 	ssize_t nr;
@@ -57,7 +58,7 @@ vi_input(fd)
 	ibuf_len += nr;
 
 	/* Parse to data end or partial message. */
-	(void)vi_translate(ibuf, &ibuf_len, NULL);
+	(void)vi_translate(ipviwin, ibuf, &ibuf_len, NULL);
 
 	return (ibuf_len > 0);
 }
@@ -66,30 +67,31 @@ vi_input(fd)
  * vi_wsend --
  *	Construct and send an IP buffer, and wait for an answer.
  *
- * PUBLIC: int vi_wsend __P((char *, IP_BUF *));
+ * PUBLIC: int vi_wsend __P((IPVIWIN*, char *, IP_BUF *));
  */
 int
-vi_wsend(fmt, ipbp)
+vi_wsend(ipviwin, fmt, ipbp)
+	IPVIWIN *ipviwin;
 	char *fmt;
 	IP_BUF *ipbp;
 {
 	fd_set rdfd;
 	ssize_t nr;
 
-	if (vi_send(fmt, ipbp))
+	if (vi_send(ipviwin->ofd, fmt, ipbp))
 		return (1);
 
 	FD_ZERO(&rdfd);
 	ipbp->code = CODE_OOB;
 
 	for (;;) {
-		FD_SET(vi_ifd, &rdfd);
-		if (select(vi_ifd + 1, &rdfd, NULL, NULL, NULL) != 0)
+		FD_SET(ipviwin->ifd, &rdfd);
+		if (select(ipviwin->ifd + 1, &rdfd, NULL, NULL, NULL) != 0)
 			return (-1);
 
 		/* Read waiting vi messages and translate to X calls. */
 		switch (nr =
-		    read(vi_ifd, ibuf + ibuf_len, sizeof(ibuf) - ibuf_len)) {
+		    read(ipviwin->ifd, ibuf + ibuf_len, sizeof(ibuf) - ibuf_len)) {
 		case 0:
 			return (0);
 		case -1:
@@ -100,7 +102,7 @@ vi_wsend(fmt, ipbp)
 		ibuf_len += nr;
 
 		/* Parse to data end or partial message. */
-		(void)vi_translate(ibuf, &ibuf_len, ipbp);
+		(void)vi_translate(ipviwin, ibuf, &ibuf_len, ipbp);
 
 		if (ipbp->code != CODE_OOB)
 			break;
@@ -112,10 +114,11 @@ vi_wsend(fmt, ipbp)
  * vi_translate --
  *	Translate vi messages into function calls.
  *
- * PUBLIC: int vi_translate __P((char *, size_t *, IP_BUF *));
+ * PUBLIC: int vi_translate __P((IPVIWIN *, char *, size_t *, IP_BUF *));
  */
 int
-vi_translate(bp, lenp, ipbp)
+vi_translate(ipviwin, bp, lenp, ipbp)
+	IPVIWIN *ipviwin;
 	char *bp;
 	size_t *lenp;
 	IP_BUF *ipbp;
@@ -124,7 +127,8 @@ vi_translate(bp, lenp, ipbp)
 	IP_BUF ipb;
 	size_t len, needlen;
 	u_int32_t *vp;
-	char *fmt, *p, *s_bp, **vsp;
+	char *fmt, *p, *s_bp;
+	const char **vsp;
 
 	for (s_bp = bp, len = *lenp; len > 0;) {
 		switch (ipb.code = bp[0]) {

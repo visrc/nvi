@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_term.c,v 8.5 1996/12/18 10:28:04 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:04 $";
+static const char sccsid[] = "$Id: ip_term.c,v 8.6 2000/06/28 20:20:37 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,6 +98,7 @@ ip_optchange(sp, offset, str, valp)
 {
 	IP_BUF ipb;
 	OPTLIST const *opt;
+	IP_PRIVATE *ipp = IPP(sp);
 
 	switch (offset) {
 	case O_COLUMNS:
@@ -133,6 +134,6 @@ ip_optchange(sp, offset, str, valp)
 	ipb.str1 = opt->name;
 	ipb.len1 = strlen(opt->name);
 
-	(void)vi_send("ab1", &ipb);
+	(void)vi_send(ipp->o_fd, "ab1", &ipb);
 	return (0);
 }
