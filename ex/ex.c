@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.37 1992/10/22 18:45:44 bostic Exp $ (Berkeley) $Date: 1992/10/22 18:45:44 $";
+static char sccsid[] = "$Id: ex.c,v 5.38 1992/10/29 14:42:07 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,6 +36,8 @@ u_char *defcmdarg[2];
 static int	 fileexpand __P((glob_t *, u_char *, int));
 static u_char	*linespec __P((u_char *, EXCMDARG *));
 
+#define	DEFCOM	".+1"
+
 /*
  * ex --
  *	Read an ex command and execute it.
@@ -45,6 +47,7 @@ ex()
 {
 	size_t len;
 	u_char *p;
+	char defcom[sizeof(DEFCOM)];
 
 	while (mode == MODE_EX) {
 		if (gb(ISSET(O_PROMPT) ? ':' : 0,
@@ -52,8 +55,10 @@ ex()
 			continue;
 		if (*p)
 			ex_cstring(p, len, 0);
-		else
-			ex_cstring((u_char *)".+1", 3, 0);
+		else {
+			bcopy(DEFCOM, defcom, sizeof(DEFCOM));
+			ex_cstring((u_char *)defcom, 3, 0);
+		}
 	}
 }
 
