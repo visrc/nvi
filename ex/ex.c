@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.167 1994/09/27 12:20:17 bostic Exp $ (Berkeley) $Date: 1994/09/27 12:20:17 $";
+static char sccsid[] = "$Id: ex.c,v 8.168 1994/09/27 12:38:33 bostic Exp $ (Berkeley) $Date: 1994/09/27 12:38:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -433,8 +433,8 @@ loop:	if (nl) {
 		if (p[0] == 'd') {
 			for (s = p,
 			    t = cmds[C_DELETE].name; *s == *t; ++s, ++t);
-			if (s[0] == 'l' || s[0] == 'p' ||
-			    s[0] == '+' || s[0] == '-' || s[0] == '#') {
+			if (s[0] == 'l' || s[0] == 'p' || s[0] == '+' ||
+			    s[0] == '-' || s[0] == '^' || s[0] == '#') {
 				len = (cmd - p) - (s - p);
 				cmd -= len;
 				cmdlen += len;
@@ -948,6 +948,7 @@ two:		switch (exc.addrcnt) {
 					++flagoff;
 					break;
 				case '-':
+				case '^':
 					--flagoff;
 					break;
 				case '#':
@@ -1002,8 +1003,8 @@ end2:			break;
 			 * the 'l' and 'p' flags were legal buffer names in the
 			 * historic ex, and were used as buffers, not flags.
 			 */
-			if ((cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '#') &&
-			    strchr(p, '1') != NULL)
+			if ((cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '^' ||
+			    cmd[0] == '#') && strchr(p, '1') != NULL)
 				break;
 			/*
 			 * !!!
@@ -1806,11 +1807,12 @@ search:		F_SET(exp, EX_ABSMARK);
 	}
 
 	/*
-	 * Evaluate any offset.  Offsets are +/- any number, or any number
-	 * of +/- signs, or any combination thereof.  If no address found
+	 * Evaluate any offset.  Offsets are +/[-^] any number, or any number
+	 * of +/[-^] signs, or any combination thereof.  If no address found
 	 * yet, offset is relative to ".".
 	 */
-	for (total = 0; cmdlen > 0 && (cmd[0] == '-' || cmd[0] == '+');) {
+	for (total = 0;
+	    cmdlen > 0 && (cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '^');) {
 		if (!*addr_found) {
 			cur->lno = sp->lno;
 			cur->cno = sp->cno;
@@ -1822,7 +1824,7 @@ search:		F_SET(exp, EX_ABSMARK);
 			cmdlen -= (endp - cmd);
 			cmd = endp;
 		} else {
-			total += cmd[0] == '-' ? -1 : 1;
+			total += cmd[0] == '+' ? 1 : -1;
 			--cmdlen;
 			++cmd;
 		}
