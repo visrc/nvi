@@ -6,13 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.21 1992/04/19 08:53:36 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:36 $";
+static char sccsid[] = "$Id: ex.c,v 5.22 1992/04/22 08:07:54 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:07:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <termios.h>
+#include <fcntl.h>
 #include <glob.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -175,12 +177,6 @@ ex_cmd(exc)
 #ifdef DEBUG
 	TRACE("ex: {%s}\n", exc);
 #endif
-	/*
-	 * Ex commands can't be undone via the shift-U command.
-	 * XXX Why not?
-	 */
-	U_line = 0L;
-
 	/*
 	 * Permit a single extra colon at the start of the line, for
 	 * historical reasons.
