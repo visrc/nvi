@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.7 1993/07/21 10:59:24 bostic Exp $ (Berkeley) $Date: 1993/07/21 10:59:24 $";
+static char sccsid[] = "$Id: exf.c,v 8.8 1993/08/05 18:00:31 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:00:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,205 +24,178 @@ static char sccsid[] = "$Id: exf.c,v 8.7 1993/07/21 10:59:24 bostic Exp $ (Berke
 #include "pathnames.h"
 #include "recover.h"
 
-static int file_def __P((SCR *, EXF *));
-
 /*
- * file_get --
- *	Return the appropriate structure if we've seen this file before,
- *	otherwise insert a new file into the list of files before or after
- *	the specified file.
+ * file_add --
+ *	Insert a file name into the FREF list, if it doesn't already
+ *	appear in it.
+ *
+ * XXX
+ * The "if they don't already appear" changes vi's semantics slightly.
+ * If you do a "vi foo bar", and then execute "next bar baz", the edit
+ * of bar will reflect the line/column of the previous edit session.
+ * This seems reasonable to me, and is a logical extension of the change
+ * where vi now remembers the last location in any file that it has ever
+ * edited, not just the previously edited file.
  */
-EXF *
-file_get(sp, ep, name, append)
+FREF *
+file_add(sp, frp_append, fname, ignore)
 	SCR *sp;
-	EXF *ep;
-	char *name;
-	int append;
+	FREF *frp_append;
+	char *fname;
+	int ignore;
 {
-	EXF *tep;
+	FREF *frp;
+
+	/* Ignore if it already exists. */
+	if (fname != NULL) {
+		for (frp = sp->frefhdr.next;
+		    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+			if (!strcmp(frp->fname, fname))
+				return (frp);
+	}
+
+	/* Allocate and initialize the FREF structure. */
+	if ((frp = malloc(sizeof(FREF))) == NULL)
+		goto mem;
+	memset(frp, 0, sizeof(FREF));
 
 	/*
-	 * Check for the file.  Ignore files without names, but check
-	 * F_IGNORE files, in case of re-editing.  If the file is in
-	 * play, just return.
+	 * If no file name specified, set the appropriate flag.
+	 *
+	 * XXX
+	 * This had better be *closely* followed by a file_init
+	 * so something gets filled in!
 	 */
-	if (name != NULL)
-		for (tep = sp->gp->exfhdr.next;
-		    tep != (EXF *)&sp->gp->exfhdr; tep = tep->next)
-			if (!strcmp(tep->name, name)) {
-				if (tep->refcnt != 0)
-					return (tep);
-				break;
-			}
-
-	if (name == NULL || tep == (EXF *)&sp->gp->exfhdr) {
-		/*
-		 * If not found, build an entry for it.
-		 * Allocate and initialize the file structure.
-		 */
-		if ((tep = malloc(sizeof(EXF))) == NULL)
-			goto e1;
-		if (file_def(sp, tep)) {
-			FREE(tep, sizeof(EXF));
-			goto e1;
-		}
-
-		/* Insert into the chain of files. */
-		if (append) {
-			HDR_APPEND(tep, ep, next, prev, EXF);
-		} else {
-			HDR_INSERT(tep, ep, next, prev, EXF);
-		}
-
-		/* Ignore all files, by default. */
-		F_SET(tep, F_IGNORE);
+	if (fname == NULL)
+		F_SET(frp, FR_NONAME);
+	else if ((frp->fname = strdup(fname)) == NULL) {
+		FREE(frp, sizeof(FREF));
+mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (NULL);
 	}
+	frp->nlen = strlen(fname);
 
-	if (name == NULL)
-		tep->name = NULL;
-	else {
-		if ((tep->name = strdup(name)) == NULL)
-			goto e2;
-		tep->nlen = strlen(tep->name);
-	}
-	return (tep);
+	/* Only the initial argument list is "remembered". */
+	if (ignore)
+		F_SET(frp, FR_IGNORE);
 
-e2:	HDR_DELETE(tep, next, prev, EXF);
-	free(tep);
-e1:	msgq(sp, M_ERR, "Error: %s", strerror(errno));
-	return (NULL);
-}
+	/* Append into the chain of file names. */
+	if (frp_append != NULL) {
+		HDR_APPEND(frp, frp_append, next, prev, FREF);
+	} else
+		HDR_INSERT(frp, &sp->frefhdr, next, prev, FREF);
 
-/*
- * file_set --
- *	Append an argc/argv set of files to the file list.
- */
-int
-file_set(sp, argc, argv)
-	SCR *sp;
-	int argc;
-	char *argv[];
-{
-	EXF *ep;
-
-	for (; *argv; ++argv) {
-		if ((ep =
-		    file_get(sp, (EXF *)&sp->gp->exfhdr, *argv, 0)) == NULL)
-			return (1);
-		F_CLR(ep, F_IGNORE);
-	}
-	return (0);
+	return (frp);
 }
 
 /*
  * file_first --
- *	Return the first file.
+ *	Return the first file name for editing, if any.
  */
-EXF *
+FREF *
 file_first(sp, all)
 	SCR *sp;
 	int all;
 {
-	EXF *tep;
+	FREF *frp;
 
-	for (tep = sp->gp->exfhdr.next;
-	    tep != (EXF *)&sp->gp->exfhdr; tep = tep->next)
-		if (all || !F_ISSET(tep, F_IGNORE))
-			return (tep);
+	/* Return the first file name. */
+	for (frp = sp->frefhdr.next;
+	    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+		if (all || !F_ISSET(frp, FR_IGNORE))
+			return (frp);
 	return (NULL);
 }
 
 /*
  * file_next --
- *	Return the next file, if any.
+ *	Return the next file name, if any.
  */
-EXF *
-file_next(sp, ep, all)
+FREF *
+file_next(sp, all)
 	SCR *sp;
-	EXF *ep;
 	int all;
 {
-	while ((ep = ep->next) != (EXF *)&sp->gp->exfhdr)
-		if (all || !F_ISSET(ep, F_IGNORE))
-			return (ep);
+	FREF *frp;
+
+	/* Return the next file name. */
+	for (frp = sp->frefhdr.next;
+	    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+		if (all || !F_ISSET(frp, FR_EDITED | FR_IGNORE))
+			return (frp);
 	return (NULL);
 }
 
 /*
- * file_prev --
- *	Return the previous file, if any.
+ * file_init --
+ *	Start editing a file.  We may be provided with an EXF structure,
+ *	we are always provided with an FREF structure.
  */
 EXF *
-file_prev(sp, ep, all)
+file_init(sp, ep, frp, rcv_fname)
 	SCR *sp;
 	EXF *ep;
-	int all;
-{
-	while ((ep = ep->prev) != (EXF *)&sp->gp->exfhdr)
-		if (all || !F_ISSET(ep, F_IGNORE))
-			return (ep);
-	return (NULL);
-}
-
-/*
- * file_start --
- *	Start editing a file.
- */
-EXF *
-file_start(sp, ep, rcv_fname)
-	SCR *sp;
-	EXF *ep;
+	FREF *frp;
 	char *rcv_fname;
 {
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int fd, sverrno;
+	int e_ep, e_tname, e_rcv_path, fd, sverrno;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
-	/* If not a specific file, create one. */
-	if (ep == NULL &&
-	    (ep = file_get(sp, (EXF *)&sp->gp->exfhdr, NULL, 1)) == NULL)
-		return (NULL);
-
-	/*
-	 * If already in play, up the count and return.  Reset the address
-	 * flags for the file -- the second and subsequent edit sessions
-	 * start from the default location.
-	 */
-	if (ep->refcnt > 0) {
+	/* If already in play, up the count and return. */
+	if (ep != NULL) {
 		++ep->refcnt;
-		F_SET(ep, F_EADDR_LOAD | F_EADDR_NONE);
 		return (ep);
+	}
+
+	/* Allocated up to three pieces of memory; free on error. */
+	e_ep = e_tname = e_rcv_path = 0;
+
+	/* If not an already existing EXF, create one. */
+	if (ep == NULL) {
+		if ((ep = malloc(sizeof(EXF))) == NULL) {
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			return (NULL);
+		}
+		e_ep = 1;
+		memset(ep, 0, sizeof(EXF));
+
+		/* Set initial EXF flag bits. */
+		F_SET(ep, F_FIRSTMODIFY);
+
+		/* Insert into the chain of EXF structures. */
+		HDR_INSERT(ep, &sp->gp->exfhdr, next, prev, EXF);
 	}
 
 	/*
 	 * If no name or backing file, create a backing temporary file, saving
-	 * the temp file name so can later unlink it.  Point the name at the
+	 * the temp file name so can later unlink it.  Repoint the name to the
 	 * temporary name (we display it to the user until they rename it).
 	 */
-	if (ep->name == NULL || stat(ep->name, &sb)) {
+	if (frp->fname == NULL || stat(frp->fname, &sb)) {
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
-			msgq(sp, M_ERR,
-			    "Temporary file: %s", strerror(errno));
-			return (NULL);
+			msgq(sp, M_ERR, "Temporary file: %s", strerror(errno));
+			goto err;
 		}
 		(void)close(fd);
-		if ((ep->tname = strdup(tname)) == NULL) {
-			(void)unlink(tname);
-			return (NULL);
+		if ((frp->tname = strdup(tname)) == NULL) {
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			goto err;
 		}
+		e_tname = 1;
 
-		if (ep->name == NULL) {
-			F_SET(ep, F_NONAME);
-			ep->name = ep->tname;
-			ep->nlen = strlen(ep->name);
+		if (frp->fname == NULL) {
+			F_SET(frp, FR_NONAME);
+			frp->fname = frp->tname;
+			frp->nlen = strlen(frp->fname);
 		}
-		oname = ep->tname;
+		oname = frp->tname;
 		psize = 4 * 1024;
 	} else {
-		oname = ep->name;
+		oname = frp->fname;
 
 		/* Try to keep it at 10 pages or less per file. */
 		if (sb.st_size < 40 * 1024)
@@ -239,7 +212,7 @@ file_start(sp, ep, rcv_fname)
 	oinfo.psize = psize;
 	oinfo.flags = F_ISSET(sp->gp, G_SNAPSHOT) ? R_SNAPSHOT : 0;
 	if (rcv_fname == NULL) {
-		if (rcv_tmp(sp, ep)) {
+		if (rcv_tmp(sp, ep, frp->fname)) {
 			oinfo.bfname = NULL;
 			msgq(sp, M_ERR,
 		    "Modifications not recoverable if the system crashes.");
@@ -249,10 +222,9 @@ file_start(sp, ep, rcv_fname)
 		}
 	} else if ((ep->rcv_path = strdup(rcv_fname)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		if (ep->tname != NULL)
-			(void)unlink(tname);
-		return (NULL);
+		goto err;
 	} else {
+		e_rcv_path = 1;
 		oinfo.bfname = ep->rcv_path;
 		F_SET(ep, F_MODIFIED);
 	}
@@ -274,16 +246,26 @@ file_start(sp, ep, rcv_fname)
 		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
 		if (ep->db == NULL) {
 			msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
-			if (ep->tname != NULL)
-				(void)unlink(tname);
-			return (NULL);
+			goto err;
 		}
 		if (sverrno == EAGAIN) {
 			msgq(sp, M_INFO,
 			    "%s already locked, session is read-only", oname);
-			F_SET(ep, F_RDONLY);
+			F_SET(sp->frp, FR_RDONLY);
 		} else
 			msgq(sp, M_VINFO, "%s cannot be locked", oname);
+	}
+
+	/*
+	 * Init file marks.
+	 *
+	 * XXX
+	 * This shouldn't go here, but I'm not sure
+	 * where else to put it.
+	 */
+	if (mark_init(sp, ep)) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		goto err;
 	}
 
 	/*
@@ -293,7 +275,7 @@ file_start(sp, ep, rcv_fname)
 	 * name (see ex/ex_file.c) however, clears this flag.
 	 */
 	if (O_ISSET(sp, O_READONLY))
-		F_SET(ep, F_RDONLY);
+		F_SET(sp->frp, FR_RDONLY);
 
 	/* Flush the line caches. */
 	ep->c_lno = ep->c_nlines = OOBLNO;
@@ -303,24 +285,34 @@ file_start(sp, ep, rcv_fname)
 
 	++ep->refcnt;
 	return (ep);
+
+err:	if (e_rcv_path)
+		FREE(ep->rcv_path, strlen(ep->rcv_path));
+	if (e_tname)
+		(void)unlink(frp->tname);
+	if (e_ep)
+		FREE(ep, sizeof(EXF));
+	return (NULL);
 }
 
 /*
- * file_stop --
+ * file_end --
  *	Stop editing a file.
  */
 int
-file_stop(sp, ep, force)
+file_end(sp, ep, force)
 	SCR *sp;
 	EXF *ep;
 	int force;
 {
+	/* If multiply referenced, decrement count and return. */
 	if (--ep->refcnt != 0)
 		return (0);
 
 	/* Close the db structure. */
-	if ((ep->db->close)(ep->db) && !force) {
-		msgq(sp, M_ERR, "%s: close: %s", ep->name, strerror(errno));
+	if (ep->db->close(ep->db) && !force) {
+		msgq(sp, M_ERR,
+		    "%s: close: %s", sp->frp->fname, strerror(errno));
 		return (1);
 	}
 
@@ -329,6 +321,7 @@ file_stop(sp, ep, force)
 		(void)unlink(ep->rcv_path);
 		(void)unlink(ep->rcv_mpath);
 	}
+	/* Free recovery memory. */
 	if (ep->rcv_path != NULL)
 		FREE(ep->rcv_path, strlen(ep->rcv_path));
 	if (ep->rcv_mpath != NULL)
@@ -342,17 +335,20 @@ file_stop(sp, ep, force)
 	(void)log_end(sp, ep);
 
 	/* Unlink any temporary file. */
-	if (ep->tname != NULL) {
-		if (unlink(ep->tname))
+	if (sp->frp->tname != NULL) {
+		if (unlink(sp->frp->tname))
 			msgq(sp, M_ERR,
-			    "%s: remove: %s", ep->tname, strerror(errno));
-		free(ep->tname);
-		ep->tname = NULL;
+			    "%s: remove: %s", sp->frp->tname, strerror(errno));
+		FREE(sp->frp->tname, strlen(sp->frp->tname));
+		sp->frp->tname = NULL;
 	}
 
-	/* Clean up the flags. */
-	F_CLR(ep, F_CLOSECLR);
-	F_SET(ep, F_CLOSESET);
+	/* Delete the EXF structure from the chain. */
+	HDR_DELETE(ep, next, prev, EXF);
+
+	/* Free the EXF structure. */
+	FREE(ep, sizeof(EXF));
+
 	return (0);
 }
 
@@ -381,13 +377,13 @@ file_write(sp, ep, fm, tm, fname, flags)
 	 * unlinking the temporary file.  Not what the user had in mind
 	 * at all.  This test cannot be forced.
 	 */
-	if (fname == NULL && F_ISSET(ep, F_NONAME)) {
+	if (fname == NULL && F_ISSET(sp->frp, FR_NONAME)) {
 		msgq(sp, M_ERR, "No filename to which to write.");
 		return (1);
 	}
 
 	/* Can't write read-only files, unless forced. */
-	if (fname == NULL && !LF_ISSET(FS_FORCE) && F_ISSET(ep, F_RDONLY)) {
+	if (fname == NULL && !LF_ISSET(FS_FORCE) && F_ISSET(sp->frp, FR_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
 			    "Read-only file, not written; use ! to override.");
@@ -404,9 +400,9 @@ file_write(sp, ep, fm, tm, fname, flags)
 	 */
 	if (!LF_ISSET(FS_FORCE | FS_APPEND) && !O_ISSET(sp, O_WRITEANY) &&
 	    (fname != NULL && !stat(fname, &sb) ||
-	    F_ISSET(ep, F_NAMECHANGED) && !stat(ep->name, &sb))) {
+	    F_ISSET(sp->frp, FR_NAMECHANGED) && !stat(sp->frp->fname, &sb))) {
 		if (fname == NULL)
-			fname = ep->name;
+			fname = sp->frp->fname;
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
 			    "%s exists, not written; use ! to override.",
@@ -417,7 +413,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	}
 
 	if (fname == NULL)
-		fname = ep->name;
+		fname = sp->frp->fname;
 
 	/* Don't do partial writes, unless forced. */
 	if (!LF_ISSET(FS_ALL | FS_FORCE) && !stat(fname, &sb)) {
@@ -433,7 +429,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	 * it doesn't matter that the file name was changed -- if
 	 * it was, we created the file.
 	 */
-	F_CLR(ep, F_NAMECHANGED);
+	F_CLR(sp->frp, FR_NAMECHANGED);
 
 	/* Open the file, either appending or truncating. */
 	oflags = O_CREAT | O_WRONLY;
@@ -476,21 +472,4 @@ file_write(sp, ep, fm, tm, fname, flags)
 		F_CLR(ep, F_MODIFIED);
 
 	return (0);
-}
-
-/*
- * file_def --
- *	Fill in a default EXF structure.
- */
-static int
-file_def(sp, ep)
-	SCR *sp;
-	EXF *ep;
-{
-	memset(ep, 0, sizeof(EXF));
-
-	ep->c_lno = OOBLNO;
-	F_SET(ep, F_EADDR_LOAD | F_EADDR_NONE | F_FIRSTMODIFY);
-
-	return (mark_init(sp, ep));
 }
