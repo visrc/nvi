@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.8 1994/11/18 13:14:11 bostic Exp $ (Berkeley) $Date: 1994/11/18 13:14:11 $";
+static char sccsid[] = "$Id: vi.c,v 9.9 1994/11/18 14:19:30 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:19:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -640,7 +640,7 @@ v_motion(sp, dm, vp, mappedp)
 	VICMDARG motion;
 	size_t len;
 	u_long cnt;
-	int notused, rval;
+	int tilde_reset, notused, rval;
 
 	/*
 	 * If '.' command, use the dot motion, else get the motion command.
@@ -719,17 +719,14 @@ v_motion(sp, dm, vp, mappedp)
 
 		/*
 		 * XXX
-		 *
-		 * THIS IS HORRIBLY WRONG!!!
-		 *
 		 * Use yank instead of creating a new motion command, it's a
-		 * lot easier for now.  This MUST be fixed when yank is fixed
-		 * to quit doing all the bizarre checks against the line having
-		 * changed.  The checks are NOT historic practice, it only
-		 * looks that way!
+		 * lot easier for now.
 		 */
-		if (vp->kp == &tmotion)
+		if (vp->kp == &tmotion) {
+			tilde_reset = 1;
 			vp->kp = &vikeys['y'];
+		} else
+			tilde_reset = 0;
 
 		/*
 		 * Copy the key flags into the local structure, except for
@@ -752,6 +749,13 @@ v_motion(sp, dm, vp, mappedp)
 		/* Run the function. */
 		if ((motion.kp->func)(sp, &motion))
 			goto err;
+
+		/*
+		 * XXX
+		 * See above.
+		 */
+		if (tilde_reset)
+			vp->kp = &tmotion;
 
 		/*
 		 * Copy cut buffer, line mode and cursor position information
