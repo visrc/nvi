@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.29 1992/10/24 14:20:22 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:20:22 $";
+static char sccsid[] = "$Id: main.c,v 5.30 1992/11/01 22:41:13 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:41:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -193,10 +193,10 @@ main(argc, argv)
 		(void)signal(SIGINT, trapint);
 		switch (mode) {
 		case MODE_VI:
-			vi();
+			(void)vi();
 			break;
 		case MODE_EX:
-			ex();
+			(void)ex();
 			break;
 		}
 	}
