@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.19 1996/05/03 09:03:49 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:03:49 $";
+static const char sccsid[] = "$Id: search.c,v 10.20 1996/05/07 21:12:22 bostic Exp $ (Berkeley) $Date: 1996/05/07 21:12:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -232,8 +232,23 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 			break;
 		}
 
-		/* Warn if wrapped. */
-		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
+		/*
+		 * XXX
+		 * Warn if the search wrapped.  This message is only displayed
+		 * if there are no keys in the queue.  The problem is that the
+		 * command is going to succeed, and the message isn't an error,
+		 * it's informational in nature.  If a macro causes it to be
+		 * output repeatedly, e.g., the pattern only occurs once in the
+		 * file and wrapscan is set, you can lose, particularly if the
+		 * macro does something like:
+		 *	:map K /pattern/^MjK
+		 * Each new search will display the message and the /pattern/
+		 * will immediately overwrite it, with strange results.  The
+		 * System V vi displays the "wrapped" message multiple times,
+		 * but it's overwritten each time, so it's not as noticeable.
+		 * Since we don't discard messages, it's a real problem.
+		 */
+		if (wrapped && LF_ISSET(SEARCH_MSG) && !KEYS_WAITING(sp))
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
@@ -359,8 +374,11 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 		if (coff != 0 && match[0].rm_so >= coff)
 			continue;
 
-		/* Warn if wrapped. */
-		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
+		/*
+		 * XXX
+		 * See the comment in f_search() for more information.
+		 */
+		if (wrapped && LF_ISSET(SEARCH_MSG) && !KEYS_WAITING(sp))
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
