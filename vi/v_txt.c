@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.7 1993/09/11 11:45:10 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:45:10 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.8 1993/09/12 10:13:56 bostic Exp $ (Berkeley) $Date: 1993/09/12 10:13:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -873,7 +873,7 @@ txt_err(sp, ep, hp)
  * (Not the size of tabs, because tabs are logically composed of spaces.)
  * They're left in the text code  because they're complicated, not to mention
  * the gruesome awareness that if spaces aren't a single column on the screen
- * for any language we're into some serious, for lack of a better word,
+ * for any language, we're into some serious, ah, for lack of a better word,
  * "issues".
  */
 
@@ -892,8 +892,8 @@ txt_indent(sp, tp)
 	u_long sw, ts;
 	size_t cno, off, scno, spaces, tabs;
 
-	sw = O_VAL(sp, O_SHIFTWIDTH);
 	ts = O_VAL(sp, O_TABSTOP);
+	sw = O_VAL(sp, O_SHIFTWIDTH);
 
 	/* Get the current screen column. */
 	for (off = scno = 0; off < sp->cno; ++off)
@@ -907,6 +907,18 @@ txt_indent(sp, tp)
 	    cno + STOP_OFF(cno, ts) <= scno; ++tabs)
 		cno += STOP_OFF(cno, ts);
 	spaces = scno - cno;
+
+	/*
+	 * Put space/tab characters in place of any overwrite
+	 * characters.
+	 */
+	for (; tp->overwrite && tabs; --tp->overwrite, --tabs, ++tp->ai)
+		tp->lb[sp->cno++] = '\t';
+	for (; tp->overwrite && spaces; --tp->overwrite, --spaces, ++tp->ai)
+		tp->lb[sp->cno++] = '\t';
+
+	if (!tabs && !spaces)
+		return (0);
 
 	/* Make sure there's enough room. */
 	BINC(sp, tp->lb, tp->lb_len, tp->len + spaces + tabs);
@@ -937,8 +949,8 @@ txt_outdent(sp, tp)
 	u_long sw, ts;
 	size_t cno, off, scno, spaces;
 
-	sw = O_VAL(sp, O_SHIFTWIDTH);
 	ts = O_VAL(sp, O_TABSTOP);
+	sw = O_VAL(sp, O_SHIFTWIDTH);
 
 	/* Get the current screen column. */
 	for (off = scno = 0; off < sp->cno; ++off)
