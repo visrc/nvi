@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.24 1994/02/26 17:20:17 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:17 $
+ *	$Id: vi.h,v 8.25 1994/03/04 10:05:37 bostic Exp $ (Berkeley) $Date: 1994/03/04 10:05:37 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -52,6 +52,9 @@ typedef struct _vicmdarg {
 	 *
 	 * Note: the VM_* flags are also set in the vikeys array, therefore
 	 * they must have values not used by the VIKEYS structure flags.
+	 *
+	 * Note: the VM_RCM_* flags are single usage, i.e. if you set one,
+	 * you have to clear the others.
 	 */
 #define	VM_LMODE	0x0000010	/* Motion is line oriented. */
 #define	VM_RCM		0x0000020	/* Use relative cursor movment (RCM). */
@@ -60,7 +63,7 @@ typedef struct _vicmdarg {
 #define	VM_RCM_SETLAST	0x0000100	/* RCM: set to last character. */
 #define	VM_RCM_SETLFNB	0x0000200	/* RCM: set to FNB if cursor moved. */
 #define	VM_RCM_SETNNB	0x0000400	/* RCM: set to next non-blank. */
-#define	VM_MOTIONMASK	0x00007f0	/* Mask for motion flags. */
+#define	VM_RCM_MASK	0x00007e0	/* Mask for RCM flags. */
 
 	/* Flags for the underlying command. */
 #define	VC_BUFFER	0x0000800	/* Buffer set. */
@@ -138,7 +141,7 @@ struct _vikeys {			/* Underlying function. */
 	char	*usage;			/* Usage line. */
 	char	*help;			/* Help line. */
 };
-#define	MAXVIKEY	126	/* List of vi commands. */
+#define	MAXVIKEY	126		/* List of vi commands. */
 extern VIKEYS const vikeys[MAXVIKEY + 1];
 
 /* Definition of a vi "word". */
@@ -146,16 +149,16 @@ extern VIKEYS const vikeys[MAXVIKEY + 1];
 
 /* Character stream structure, prototypes. */
 typedef struct _vcs {
-	recno_t	 cs_lno;	/* Line. */
-	size_t	 cs_cno;	/* Column. */
-	char	*cs_bp;		/* Buffer. */
-	size_t	 cs_len;	/* Length. */
-	int	 cs_ch;		/* Character. */
-#define	CS_EMP	1		/* Empty line. */
-#define	CS_EOF	2		/* End-of-file. */
-#define	CS_EOL	3		/* End-of-line. */
-#define	CS_SOF	4		/* Start-of-file. */
-	int	 cs_flags;	/* Return flags. */
+	recno_t	 cs_lno;		/* Line. */
+	size_t	 cs_cno;		/* Column. */
+	char	*cs_bp;			/* Buffer. */
+	size_t	 cs_len;		/* Length. */
+	int	 cs_ch;			/* Character. */
+#define	CS_EMP	1			/* Empty line. */
+#define	CS_EOF	2			/* End-of-file. */
+#define	CS_EOL	3			/* End-of-line. */
+#define	CS_SOF	4			/* Start-of-file. */
+	int	 cs_flags;		/* Return flags. */
 } VCS;
 
 int	cs_bblank __P((SCR *, EXF *, VCS *));
@@ -165,7 +168,7 @@ int	cs_init __P((SCR *, EXF *, VCS *));
 int	cs_next __P((SCR *, EXF *, VCS *));
 int	cs_prev __P((SCR *, EXF *, VCS *));
 
-/* Character search information. */
+					/* Character search information. */
 enum cdirection	{ CNOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH };
 
 /* Vi private, per-screen memory. */
