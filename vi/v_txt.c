@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.34 1993/10/27 11:40:50 bostic Exp $ (Berkeley) $Date: 1993/10/27 11:40:50 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.35 1993/10/27 13:02:02 bostic Exp $ (Berkeley) $Date: 1993/10/27 13:02:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp;		/* Input text structures. */
-	TEXT *aitp;		/* Autoindent text structure. */
+	TEXT ait;		/* Autoindent text structure. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	u_long margin;		/* Wrapmargin value. */
 	int eval;		/* Routine return value. */
@@ -187,7 +187,6 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		} else
 			tp->offset = sp->cno;
 	}
-	aitp = tp;
 
 	/* If getting a command buffer from the user, there may be a prompt. */
 	if (LF_ISSET(TXT_PROMPT)) {
@@ -378,14 +377,15 @@ next_ch:	if (replay)
 
 			/*
 			 * Reset the autoindent line value.  0^D keeps the ai
-			 * line from changing, ^^D changes the level, even if
+			 * line from changing, ^D changes the level, even if
 			 * there are no characters in the old line.
 			 */
 			if (LF_ISSET(TXT_AUTOINDENT)) {
-				if (carat_st != C_NOCHANGE)
-					aitp = tp;
-				if (txt_auto(sp, ep, OOBLNO, aitp, ntp))
+				if (txt_auto(sp, ep, OOBLNO,
+				    carat_st == C_NOCHANGE ? &ait : tp, ntp))
 					ERR;
+				if (carat_st == C_NOCHANGE)
+					FREE_SPACE(sp, ait.lb, ait.lb_len);
 				carat_st = C_NOTSET;
 			}
 
@@ -515,18 +515,24 @@ k_escape:		if (tp->insert && tp->overwrite)
 			case C_CARATSET:	/* ^^D */
 				if (sp->cno > tp->ai + tp->offset + 1)
 					goto ins_ch;
-				carat_st = C_NOTSET;
-				tp->lb[sp->cno - 1] = ' ';
-				tp->overwrite += sp->cno - tp->offset;
-				tp->ai = sp->cno = tp->offset;
-				break;
+
+				/* Save the ai string for later. */
+				ait.lb = NULL;
+				ait.lb_len = 0;
+				TBINC(sp, ait.lb, ait.lb_len, tp->ai);
+				memmove(ait.lb, tp->lb, tp->ai);
+				ait.ai = ait.len = tp->ai;
+
+				carat_st = C_NOCHANGE;
+				goto leftmargin;
 			case C_ZEROSET:		/* 0^D */
 				if (sp->cno > tp->ai + tp->offset + 1)
 					goto ins_ch;
-				carat_st = C_NOCHANGE;
-				tp->lb[sp->cno - 1] = ' ';
+				carat_st = C_NOTSET;
+leftmargin:			tp->lb[sp->cno - 1] = ' ';
 				tp->overwrite += sp->cno - tp->offset;
-				tp->ai = sp->cno = tp->offset;
+				tp->ai = 0;
+				sp->cno = tp->offset;
 				break;
 			case C_NOTSET:		/* ^D */
 				if (sp->cno > tp->ai + tp->offset)
