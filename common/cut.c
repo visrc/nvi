@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.33 1993/04/12 14:21:22 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:21:22 $";
+static char sccsid[] = "$Id: cut.c,v 5.34 1993/04/13 16:14:03 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:14:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 
 	/* Initialize buffer. */
 	if (cb->txthdr.next == NULL) {
-		HDR_INIT(cb->txthdr, next, prev, TEXT);
+		HDR_INIT(cb->txthdr, next, prev);
 	} else if (!append) {
 		text_free(&cb->txthdr);
 		cb->len = 0;
