@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.16 1996/12/18 08:55:05 bostic Exp $ (Berkeley) $Date: 1996/12/18 08:55:05 $
+# $Id: distrib,v 8.17 1996/12/18 10:32:05 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:32:05 $
 
 # Clean
 #make -f Makefile.in clean
@@ -13,43 +13,44 @@ echo "Running autoconf"
 autoconf 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 555 configure config.guess config.sub install-sh
 
-msg="/* Automatically built by build/distrib. */"
+msg="/* Do not edit: automatically built by build/distrib. */"
 # Build include files.
-f=../include/cl_extern.h
+f=../cl/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../cl/*.c) > $f
 chmod 444 $f
 
-f=../include/com_extern.h
+f=../common/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../clib/*.c ../common/*.c) > $f
 chmod 444 $f
 
-f=../include/ex_def.h
+f=../ex/ex_def.h
 echo "Building $f"
 rm -f $f
-awk -f ../ex/ex.awk ../ex/ex_cmd.c > $f
+(echo "$msg" && \
+    awk -f ../ex/ex.awk ../ex/ex_cmd.c) > $f
 chmod 444 $f
 
-f=../include/ex_extern.h
+f=../ex/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ex/*.c) > $f
 chmod 444 $f
 
-f=../include/ip_extern.h
+f=../ip/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ip/*.c) > $f
 chmod 444 $f
 
-f=../include/ipc_extern.h
+f=../ipc/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
@@ -63,34 +64,35 @@ rm -f $f
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../motif/*.c) > $f
 chmod 444 $f
 
-f=../include/m_extern.h
+f=../motif_l/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../motif_l/*.c) > $f
 chmod 444 $f
 
-f=../include/options_def.h
+f=../common/options_def.h
 echo "Building $f"
 rm -f $f
-awk -f ../common/options.awk ../common/options.c > $f
+(echo "$msg" && \
+    awk -f ../common/options.awk ../common/options.c) > $f
 chmod 444 $f
 
-f=../include/perl_extern.h
+f=../perl_api/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../perl_api/*.xs ../perl_api/*.c) > $f
 chmod 444 $f
 
-f=../include/tcl_extern.h
+f=../tcl_api/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
     sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../tcl_api/*.c) > $f
 chmod 444 $f
 
-f=../include/vi_extern.h
+f=../vi/extern.h
 echo "Building $f"
 rm -f $f
 (echo "$msg" && \
