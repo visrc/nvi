@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.25 1993/12/17 16:22:38 bostic Exp $ (Berkeley) $Date: 1993/12/17 16:22:38 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.26 1993/12/20 09:45:26 bostic Exp $ (Berkeley) $Date: 1993/12/20 09:45:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,7 +167,8 @@ ex_substitute(sp, ep, cmdp)
 	 * QUOTING NOTE:
 	 *
 	 * Only toss an escape character if it escapes a delimiter or
-	 * if O_MAGIC is set and it escapes a tilde.
+	 * an escape character, or if O_MAGIC is set and it escapes a
+	 * tilde.
 	 */
 	if (*p == '\0') {
 		if (sp->repl != NULL)
@@ -192,7 +193,7 @@ ex_substitute(sp, ep, cmdp)
 				break;
 			}
 			if (p[0] == '\\') {
-				if (p[1] == delim)
+				if (p[1] == '\\' || p[1] == delim)
 					++p;
 				else if (p[1] == '~') {
 					++p;
