@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.40 1993/12/09 19:43:22 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:22 $";
+static char sccsid[] = "$Id: vi.c,v 8.41 1993/12/10 16:24:06 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:24:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,8 +56,10 @@ vi(sp, ep)
 		return (1);
 
 	/* Paint the screen. */
-	if (sp->s_refresh(sp, ep))
-		return (v_end(sp));
+	if (sp->s_refresh(sp, ep)) {
+		(void)v_end(sp);
+		return (1);
+	}
 
 	/* Command initialization. */
 	memset(&cmd, 0, sizeof(VICMDARG));
