@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.8 1993/08/05 18:00:31 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:00:31 $";
+static char sccsid[] = "$Id: exf.c,v 8.9 1993/08/15 12:39:03 bostic Exp $ (Berkeley) $Date: 1993/08/15 12:39:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,8 +72,8 @@ file_add(sp, frp_append, fname, ignore)
 		FREE(frp, sizeof(FREF));
 mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (NULL);
-	}
-	frp->nlen = strlen(fname);
+	} else
+		frp->nlen = strlen(fname);
 
 	/* Only the initial argument list is "remembered". */
 	if (ignore)
