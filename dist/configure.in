@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.139 1996/12/10 20:58:33 bostic Exp $ (Berkeley) $Date: 1996/12/10 20:58:33 $
+dnl	$Id: configure.in,v 8.140 1996/12/11 13:01:21 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:01:21 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -102,6 +102,16 @@ dnl Ultrix has a broken POSIX.1 VDISABLE value.
 case "$host_os" in
 ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE);;
 esac
+
+dnl If the user wants a tracing version, add the TRACE compile flag.
+AC_MSG_CHECKING(if --enable-trace option specified)
+AC_ARG_ENABLE(trace,
+	[  --enable-trace          Build a tracing version.],
+	[vi_cv_trace="yes"], [vi_cv_trace="no"])
+if test "$vi_cv_trace" = yes; then
+	CPPFLAGS="-DTRACE $CPPFLAGS"
+fi
+AC_MSG_RESULT($vi_cv_trace)
 
 dnl The user may have additional CPP information.
 CPPFLAGS="$ADDCPPFLAGS $CPPFLAGS"
