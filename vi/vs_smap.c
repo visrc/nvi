@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.15 1993/05/03 10:37:07 bostic Exp $ (Berkeley) $Date: 1993/05/03 10:37:07 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.16 1993/05/04 18:09:53 bostic Exp $ (Berkeley) $Date: 1993/05/04 18:09:53 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -166,11 +166,16 @@ svi_sm_delete(sp, ep, lno)
 		if (svi_deleteln(sp))
 			return (1);
 	/*
-	 * If the screen only contains one line, this gets
-	 * fairly exciting.  Skip the fun.
+	 * If the screen only contains one line, or, if the line was the
+	 * entire screen, this gets fairly exciting.  Skip the fun.
 	 */
-	if (cnt1 == sp->t_rows)
+	if (cnt1 == sp->t_rows) {
+		if (cnt1 == 1)
+			return (0);
+		if (file_gline(sp, ep, ++lno, NULL))
+			lno = file_lline(sp, ep);
 		return (svi_sm_fill(sp, ep, lno, P_TOP));
+	}
 		
 	/* Shift the screen map up. */
 	memmove(p, p + cnt1, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
@@ -403,9 +408,16 @@ svi_sm_1up(sp, ep)
 	MOVE(sp, 0, 0);
 	if (svi_deleteln(sp))
 		return (1);
-	memmove(HMAP, HMAP + 1, sp->rows * sizeof(SMAP));
-	if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
-		return (1);
+
+	/* One-line screens can fail. */
+	if (HMAP == TMAP) {
+		if (svi_sm_next(sp, ep, TMAP, TMAP))
+			return (1);
+	} else {
+		memmove(HMAP, HMAP + 1, sp->rows * sizeof(SMAP));
+		if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
+			return (1);
+	}
 	if (svi_line(sp, ep, TMAP, NULL, 0, NULL, NULL))
 		return (1);
 	return (0);
