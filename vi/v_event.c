@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.5 1996/12/05 21:04:24 bostic Exp $ (Berkeley) $Date: 1996/12/05 21:04:24 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.6 1996/12/05 22:03:45 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:03:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,6 +243,52 @@ v_event(sp, vp)
 		break;
 	case IPO_QUIT:
 		vp->kp = &vievents[3];
+		break;
+	case IPO_C_BOL:
+		vp->kp = &vikeys['0'];
+		break;
+	case IPO_C_BOTTOM:
+		vp->kp = &vikeys['G'];
+		break;
+	case IPO_C_DEL:
+		vp->kp = &vikeys['x'];
+		break;
+	case IPO_C_DOWN:
+		F_SET(vp, VC_C1SET);
+		vp->count = vp->ev.e_lno;
+		vp->kp = &vikeys['\012'];
+		break;
+	case IPO_C_EOL:
+		vp->kp = &vikeys['$'];
+		break;
+	case IPO_C_INSERT:
+		vp->kp = &vikeys['i'];
+		break;
+	case IPO_C_LEFT:
+		vp->kp = &vikeys['\010'];
+		break;
+	case IPO_C_PGDOWN:
+		F_SET(vp, VC_C1SET);
+		vp->count = vp->ev.e_lno;
+		vp->kp = &vikeys['\006'];
+		break;
+	case IPO_C_PGUP:
+		F_SET(vp, VC_C1SET);
+		vp->count = vp->ev.e_lno;
+		vp->kp = &vikeys['\002'];
+		break;
+	case IPO_C_RIGHT:
+		vp->kp = &vikeys['\040'];
+		break;
+	case IPO_C_TOP:
+		F_SET(vp, VC_C1SET);
+		vp->count = 1;
+		vp->kp = &vikeys['G'];
+		break;
+	case IPO_C_UP:
+		F_SET(vp, VC_C1SET);
+		vp->count = vp->ev.e_lno;
+		vp->kp = &vikeys['\020'];
 		break;
 	case IPO_TAG:
 		vp->kp = &vievents[4];

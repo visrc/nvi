@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.8 1996/12/05 12:29:44 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:44 $
+ *	$Id: ip.h,v 8.9 1996/12/05 22:03:56 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:03:56 $
  */
 
 typedef struct _ip_private {
@@ -63,27 +63,36 @@ typedef struct _ip_buf {
  *
  * IP events sent from the screen to vi.
  */
-#define	IPO_APPEND	 1	/* Enter append mode. */
-#define	IPO_EDIT	 2	/* Edit a file: IPO_STR. */
-#define	IPO_EDITSPLIT	 3	/* Split to a file: IPO_STR. */
-#define	IPO_EINSERT	 4	/* End text insertm mode. */
-#define	IPO_EOF		 5	/* End of input (NOT ^D). */
-#define	IPO_ERR		 6	/* Input error. */
-#define	IPO_INSERT	 7	/* Enter insert mode. */
-#define	IPO_INTERRUPT	 8	/* Interrupt. */
-#define	IPO_MOUSE_MOVE	 9	/* Mouse click move: IPO_INT, IPO_INT. */
-#define	IPO_QUIT	10	/* Quit. */
-#define	IPO_RESIZE	11	/* Screen resize: IPO_INT, IPO_INT. */
-#define	IPO_SIGHUP	12	/* SIGHUP. */
-#define	IPO_SIGTERM	13	/* SIGTERM. */
-#define	IPO_STRING	14	/* Input string: IPO_STR. */
-#define	IPO_TAG		15	/* Tag. */
-#define	IPO_TAGAS	16	/* Tag to a string: IPO_STR. */
-#define	IPO_TAGSPLIT	17	/* Split to a tag. */
-#define	IPO_UNDO	18	/* Undo. */
-#define	IPO_WQ		19	/* Write and quit. */
-#define	IPO_WRITE	20	/* Write. */
-#define	IPO_WRITEAS	21	/* Write as another file: IPO_STR. */
+#define	IPO_C_BOL	 1	/* Cursor to start of line. */
+#define	IPO_C_BOTTOM	 2	/* Cursor to bottom. */
+#define	IPO_C_DEL	 3	/* Cursor delete. */
+#define	IPO_C_DOWN	 4	/* Cursor down N lines: IPO_INT. */
+#define	IPO_C_EOL	 5	/* Cursor to end of line. */
+#define	IPO_C_INSERT	 6	/* Cursor: enter insert mode. */
+#define	IPO_C_LEFT	 7	/* Cursor left. */
+#define	IPO_C_PGDOWN	 8	/* Cursor down N pages: IPO_INT. */
+#define	IPO_C_PGUP	 9	/* Cursor up N lines: IPO_INT. */
+#define	IPO_C_RIGHT	10	/* Cursor right. */
+#define	IPO_C_TOP	11	/* Cursor to top. */
+#define	IPO_C_UP	12	/* Cursor up N lines: IPO_INT. */
+#define	IPO_EDIT	13	/* Edit a file: IPO_STR. */
+#define	IPO_EDITSPLIT	14	/* Split to a file: IPO_STR. */
+#define	IPO_EOF		15	/* End of input (NOT ^D). */
+#define	IPO_ERR		16	/* Input error. */
+#define	IPO_INTERRUPT	17	/* Interrupt. */
+#define	IPO_MOUSE_MOVE	18	/* Mouse click move: IPO_INT, IPO_INT. */
+#define	IPO_QUIT	19	/* Quit. */
+#define	IPO_RESIZE	20	/* Screen resize: IPO_INT, IPO_INT. */
+#define	IPO_SIGHUP	21	/* SIGHUP. */
+#define	IPO_SIGTERM	22	/* SIGTERM. */
+#define	IPO_STRING	23	/* Input string: IPO_STR. */
+#define	IPO_TAG		24	/* Tag. */
+#define	IPO_TAGAS	25	/* Tag to a string: IPO_STR. */
+#define	IPO_TAGSPLIT	26	/* Split to a tag. */
+#define	IPO_UNDO	27	/* Undo. */
+#define	IPO_WQ		28	/* Write and quit. */
+#define	IPO_WRITE	29	/* Write. */
+#define	IPO_WRITEAS	30	/* Write as another file: IPO_STR. */
 
 /*
  * IP events sent from vi to the screen.

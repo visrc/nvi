@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.19 1996/12/05 12:56:11 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:56:11 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.20 1996/12/05 22:03:38 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:03:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,18 +86,6 @@ int		multi_click_length;
 
 char	bp[ BufferSize ];		/* input buffer from pipe */
 size_t	len, blen = sizeof(bp);
-
-
-/* these commands are legal to send to vi core without any parameters.
- * they will typically be bound to keys on the keyboard through the
- * translation table
- */
-static	struct	{
-	String	name;
-	int	command;
-} command_table[] = {
-    { "INTERRUPT",	IPO_INTERRUPT	},
-};
 
 
 #if defined(__STDC__)
@@ -212,27 +200,27 @@ char	areaTrans[] =
      <Btn1Motion>:	select_extend()		\n\
      <Btn3Motion>:	select_extend()		\n\
      <Btn2Down>:	select_paste()		\n\
-     Ctrl<Key>C:	command(INTERRUPT)	\n\
-     <Key>End:		insert_string(G)	\n\
+     Ctrl<Key>C:	command(IPO_INTERRUPT)	\n\
+     <Key>End:		command(IPO_C_BOTTOM)	\n\
      <Key>Find:		find()			\n\
-     <Key>Home:		insert_string(H)	\n\
-     <Key>Next:		insert_string(\006)	\n\
-     <Key>Prior:	insert_string(\002)	\n\
-     <Key>osfBackSpace:	insert_string(\010)	\n\
-     <Key>osfBeginLine:	insert_string(0)	\n\
+     <Key>Home:		command(IPO_C_TOP)	\n\
+     <Key>Next:		command(IPO_C_PGDOWN)	\n\
+     <Key>Prior:	command(IPO_C_PGUP)	\n\
+     <Key>osfBackSpace:	command(IPO_C_LEFT)	\n\
+     <Key>osfBeginLine:	command(IPO_C_BOL)	\n\
      <Key>osfCopy:	beep()			\n\
      <Key>osfCut:	beep()			\n\
-     <Key>osfDelete:	insert_string(x)	\n\
-     <Key>osfDown:	insert_string(\033[B)	\n\
-     <Key>osfEndLine:	insert_string($)	\n\
-     <Key>osfInsert:	insert_string(i)	\n\
-     <Key>osfLeft:	insert_string(\033[D)	\n\
-     <Key>osfPageDown:	insert_string(\006)	\n\
-     <Key>osfPageUp:	insert_string(\002)	\n\
+     <Key>osfDelete:	command(IPO_C_DEL)	\n\
+     <Key>osfDown:	command(IPO_C_DOWN)	\n\
+     <Key>osfEndLine:	command(IPO_C_EOL)	\n\
+     <Key>osfInsert:	command(IPO_C_INSERT)	\n\
+     <Key>osfLeft:	command(IPO_C_LEFT)	\n\
+     <Key>osfPageDown:	command(IPO_C_PGDOWN)	\n\
+     <Key>osfPageUp:	command(IPO_C_PGUP)	\n\
      <Key>osfPaste:	insert_string(p)	\n\
-     <Key>osfRight:	insert_string(\033[C)	\n\
-     <Key>osfUndo:	insert_string(u)	\n\
-     <Key>osfUp:	insert_string(\033[A)	\n\
+     <Key>osfRight:	command(IPO_C_RIGHT)	\n\
+     <Key>osfUndo:	command(IPO_UNDO)	\n\
+     <Key>osfUp:	command(IPO_C_UP)	\n\
      <Key>:		key_press()";
 
 String	fallback_rsrcs[] = {
@@ -698,36 +686,56 @@ Widget	w;
 }
 
 
-/* special input to translate into vi protocol commands */
-#if defined(__STDC__)
-void		command( Widget widget, 
-			 XKeyEvent *event, 
-			 String *str, 
-			 Cardinal *cardinal
-			 )
-#else
-void		command( widget, event, str, cardinal )
-Widget          widget; 
-XKeyEvent       *event; 
-String          *str;    
-Cardinal        *cardinal;
-#endif
+/*
+ * command --
+ *	Translate simple keyboard input into vi protocol commands.
+ */
+void
+command(widget, event, str, cardinal)
+	Widget widget; 
+	XKeyEvent *event; 
+	String *str;    
+	Cardinal *cardinal;
 {
-    IP_BUF	ipb;
-    int 	i;
+	static struct {
+		String	name;
+		int	code;
+		int	count;
+	} table[] = {
+		{ "IPO_C_BOL",		IPO_C_BOL,	0 },
+		{ "IPO_C_BOTTOM",	IPO_C_BOTTOM,	0 },
+		{ "IPO_C_DEL",		IPO_C_DEL,	0 },
+		{ "IPO_C_DOWN",		IPO_C_DOWN,	1 },
+		{ "IPO_C_EOL",		IPO_C_EOL,	0 },
+		{ "IPO_C_INSERT",	IPO_C_INSERT,	0 },
+		{ "IPO_C_LEFT",		IPO_C_LEFT,	0 },
+		{ "IPO_C_PGDOWN",	IPO_C_PGDOWN,	1 },
+		{ "IPO_C_PGUP",		IPO_C_PGUP,	1 },
+		{ "IPO_C_RIGHT",	IPO_C_RIGHT,	0 },
+		{ "IPO_C_TOP",		IPO_C_TOP,	0 },
+		{ "IPO_C_UP",		IPO_C_UP,	1 },
+		{ "IPO_INTERRUPT",	IPO_INTERRUPT,	0 },
+	};
+	IP_BUF ipb;
+	int i;
 
-    for (i=0; i<XtNumber(command_table); i++) {
-	if ( strcmp( command_table[i].name, *str ) == 0 ) {
-	    ipb.code = command_table[i].command;
-	    ip_send("", &ipb);
-	    return;
-	}
-    }
+	/*
+	 * XXX
+	 * Do fast lookup based on character #6 -- sleazy, but I don't
+	 * want to do 10 strcmp's per keystroke.
+	 */
+	ipb.val1 = 1;
+	for (i = 0; i < XtNumber(table); i++)
+		if (table[i].name[6] == (*str)[6] &&
+		    strcmp(table[i].name, *str) == 0) {
+			ipb.code = table[i].code;
+			ip_send(table[i].count ? "1" : NULL, &ipb);
+			return;
+		}
 
-    /* oops */
-    beep( widget );
+	/* oops. */
+	beep(widget);
 }
-
 
 /* mouse or keyboard input. */
 #if defined(__STDC__)
