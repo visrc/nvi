@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.103 1994/03/13 15:43:01 bostic Exp $ (Berkeley) $Date: 1994/03/13 15:43:01 $";
+static char sccsid[] = "$Id: ex.c,v 8.104 1994/03/14 11:04:49 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:04:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,11 +167,16 @@ err:		rval = 1;
 	} else {
 		bp[sb.st_size] = '\0';		/* XXX */
 
-		/* Run the command.  Messages include file/line information. */
+		/*
+		 * Run the command.  Messages include file/line information,
+		 * but we don't care if we can't get space.
+		 */
 		sp->if_lno = 1;
 		sp->if_name = strdup(filename);
+		F_SET(sp, S_VLITONLY);
 		rval = ex_icmd(sp, ep, bp, len);
-		FREE(sp->if_name, strlen(sp->if_name) + 1);
+		F_CLR(sp, S_VLITONLY);
+		free(sp->if_name);
 		sp->if_name = NULL;
 	}
 
@@ -209,7 +214,7 @@ ex_icmd(sp, ep, cmd, len)
 }
 
 /* Special command structure for :s as a repeat substitution command. */
-static EXCMDLIST const cmd_subagain = 
+static EXCMDLIST const cmd_subagain =
 	{"s",		ex_subagain,	E_ADDR2|E_NORC,
 	    "s",
 	    "[line [,line]] s [cgr] [count] [#lp]",
@@ -226,7 +231,6 @@ ex_cmd(sp, ep, cmd, cmdlen)
 	char *cmd;
 	size_t cmdlen;
 {
-	CHAR_T vlit;
 	EX_PRIVATE *exp;
 	EXCMDARG exc;
 	EXCMDLIST const *cp;
@@ -417,8 +421,10 @@ loop:	if (nl) {
 	 * called when reading the .exrc file and similar things.  There's
 	 * this little chicken and egg problem -- if we read the file first,
 	 * we won't know how to display it.  If we read/set the exrc stuff
-	 * first, we can't allow any command that requires file state.
-	 * Historic vi generally took the easy way out and dropped core.
+	 * first, we can't allow any command that requires file state.  We
+	 * don't have a "reading an rc" bit, because we want the commands
+	 * to work when the user source's the rc file later.  Historic vi
+	 * generally took the easy way out and dropped core.
  	 */
 	if (LF_ISSET(E_NORC) && ep == NULL) {
 		msgq(sp, M_ERR,
@@ -476,7 +482,6 @@ loop:	if (nl) {
 	 */
 	arg1_len = 0;
 	save_cmd = cmd;
-	(void)term_key_ch(sp, K_VLNEXT, &vlit);
 	if (cp == &cmds[C_EDIT] ||
 	    cp == &cmds[C_EX] || cp == &cmds[C_VISUAL_VI]) {
 		/*
@@ -503,7 +508,8 @@ loop:	if (nl) {
 			++cmd;
 			--cmdlen;
 			for (arg1 = p = cmd; cmdlen > 0; --cmdlen, ++cmd) {
-				if ((ch = *cmd) == vlit && cmdlen > 1) {
+				ch = *cmd;
+				if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
 					--cmdlen;
 					ch = *++cmd;
 				} else if (isblank(ch))
@@ -575,22 +581,23 @@ loop:	if (nl) {
 	 *
 	 * Historically, vi permitted ^V's to escape <newline>'s in the .exrc
 	 * file.  It was almost certainly a bug, but that's what bug-for-bug
-	 * compatibility means, Grasshopper.  Also, ^V's escape the command 
+	 * compatibility means, Grasshopper.  Also, ^V's escape the command
 	 * delimiters.  Literal next quote characters in front of the newlines,
 	 * '|' characters or literal next characters are stripped as as they're
 	 * no longer useful.
 	 */
 	for (p = cmd, cnt = 0; cmdlen > 0; --cmdlen, ++cmd) {
-		if ((ch = cmd[0]) == vlit && cmdlen > 1) {
-			ch = cmd[1];
-			if (ch == '\n' || ch == '|') {
-				if (ch == '\n')
+		ch = cmd[0];
+		if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
+			tmp = cmd[1];
+			if (tmp == '\n' || tmp == '|') {
+				if (tmp == '\n')
 					++sp->if_lno;
 				--cmdlen;
 				++cmd;
 				++cnt;
-			} else
-				ch = vlit;
+				ch = tmp;
+			}
 		} else if (ch == '\n' || ch == '|') {
 			if (ch == '\n')
 				nl = 1;
@@ -621,7 +628,7 @@ loop:	if (nl) {
 	if (cp == &cmds[C_SET])
 		for (p = cmd, len = cmdlen; len > 0; --len, ++p)
 			if (*p == '\\')
-				*p = vlit;
+				*p = LITERAL_CH;
 
 	/*
 	 * Set the default addresses.  It's an error to specify an address for
@@ -697,7 +704,7 @@ two:		switch (exc.addrcnt) {
 				if (lno == 0) {
 					exc.addr1.lno = exc.addr2.lno = 0;
 					LF_SET(E_ZERO);
-				} else 
+				} else
 					exc.addr1.lno = exc.addr2.lno = sp->lno;
 			} else
 				exc.addr1.lno = exc.addr2.lno = sp->lno;
@@ -881,7 +888,7 @@ end2:			break;
 				goto err;
 			/* Line specifications are always required. */
 			if (!tmp) {
-				msgq(sp, M_ERR, 
+				msgq(sp, M_ERR,
 				     "%s: bad line specification", cmd);
 				goto err;
 			}
@@ -907,7 +914,8 @@ end2:			break;
 			 * First there was the word.
 			 */
 			for (p = t = cmd; cmdlen > 0; --cmdlen, ++cmd) {
-				if ((ch = *cmd) == vlit && cmdlen > 1) {
+				ch = *cmd;
+				if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
 					--cmdlen;
 					*p++ = *++cmd;
 				} else if (isblank(ch)) {
@@ -919,7 +927,7 @@ end2:			break;
 			}
 			if (argv_exp0(sp, ep, &exc, t, p - t))
 				goto err;
-				
+
 			/* Delete intervening whitespace. */
 			for (; cmdlen > 0; --cmdlen, ++cmd) {
 				ch = *cmd;
@@ -930,12 +938,14 @@ end2:			break;
 				goto usage;
 
 			/* Followed by the string. */
-			for (p = t = cmd; cmdlen > 0; --cmdlen, ++cmd, ++p)
-				if ((ch = *cmd) == vlit && cmdlen > 1) {
+			for (p = t = cmd; cmdlen > 0; --cmdlen, ++cmd, ++p) {
+				ch = *cmd;
+				if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
 					--cmdlen;
 					*p = *++cmd;
 				} else
 					*p = ch;
+			}
 			if (argv_exp0(sp, ep, &exc, t, p - t))
 				goto err;
 			goto addr2;
@@ -1220,8 +1230,9 @@ addr2:	switch (exc.addrcnt) {
 	 * to know if part of the command was discarded.
 	 */
 err:	if (save_cmdlen == 0)
-		for (; cmdlen; --cmdlen)
-			if ((ch = *cmd++) == vlit && cmdlen > 1) {
+		for (; cmdlen; --cmdlen) {
+			ch = *cmd++;
+			if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
 				--cmdlen;
 				++cmd;
 			} else if (ch == '\n' || ch == '|') {
@@ -1229,6 +1240,7 @@ err:	if (save_cmdlen == 0)
 					save_cmdlen = 1;
 				break;
 			}
+		}
 	if (save_cmdlen != 0)
 		msgq(sp, M_ERR,
 		    "Ex command failed: remaining command input discarded.");
