@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.14 1992/05/15 10:56:33 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:56:33 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.15 1992/06/07 16:46:30 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:46:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,7 +41,7 @@ filter(fm, tm, cmd, ftype)
 	pid_t pid;
 	sig_t intsave, quitsave;
 	sigset_t omask;
-	long dlines, ilines;
+	recno_t dlines, ilines, lno;
 	int input[2], output[2], rval;
 	char *name;
 
@@ -130,22 +130,31 @@ err:		if (input[0] != -1)
 	 * Write the selected lines to the write end of the input pipe.
 	 * Ifp is closed by ex_writefp.
 	 */
-	rval = ftype != NOINPUT ? ex_writefp("filter", ifp, fm, tm, 0) : 0;
-
-	/*
- 	 * Read the output from the read end of the outupt pipe.
-	 * Ofp is closed by ex_readfp.
-	 */
-	if (rval == 0 && ftype != NOOUTPUT)
-		rval = ex_readfp("filter", ofp, fm, &ilines);
+	dlines = 0;
+	rval = 0;
+	if (ftype != NOINPUT)
+		if (ex_writefp("filter", ifp, fm, tm, 0))
+			rval = 1;
+		else {
+			/* Delete old text, if any. */
+			for (lno = tm->lno; lno >= fm->lno; --lno)
+				if (file_dline(curf, lno))
+					rval = 1;
+			dlines = tm->lno - fm->lno;
+		}
 
 	if (rval == 0) {
-		/* Delete old text, if any. */
-		if (ftype != NOINPUT) {
-			delete(fm, tm);		/* XXX check error. */
-			dlines = tm->lno - fm->lno;
-		} else
-			dlines = 0;
+		/*
+		 * Read the output from the read end of the output pipe.
+		 * Decrement the line number, ex_readfp appends to the
+		 * MARK.  Ofp is closed by ex_readfp.  Set the cursor to
+		 * the first line read in.
+		 */
+		if (ftype != NOOUTPUT) {
+			curf->lno = fm->lno;
+			--fm->lno;
+			rval = ex_readfp("filter", ofp, fm, &ilines);
+		}
 
 		/* Reporting. */
 		if (ilines == dlines) {
