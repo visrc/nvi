@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 8.11 1994/08/03 11:07:54 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:07:54 $";
+static char sccsid[] = "$Id: ex_quit.c,v 8.12 1994/08/04 14:13:00 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,13 +41,8 @@ ex_quit(sp, ep, cmdp)
 	force = F_ISSET(cmdp, E_FORCE);
 
 	/* Check for modifications. */
-	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
-		msgq(sp, M_ERR,
-		    F_ISSET(sp->frp, FR_TMPFILE) ? 
-		    "Modified temporary file; use ! to override" :
-		    "Modified since last write; write or use ! to override");
+	if (file_m2(sp, ep, force))
 		return (1);
-	}
 
 	/*
 	 * !!!

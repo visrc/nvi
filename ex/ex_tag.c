@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.42 1994/06/27 11:22:20 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:20 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.43 1994/08/04 14:13:02 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -187,12 +187,14 @@ ex_tagpush(sp, ep, cmdp)
 
 	/* Get the (possibly new) FREF structure. */
 	if ((frp = file_add(sp, name)) == NULL)
-		goto modify_err;
+		goto err;
 
 	if (sp->frp == frp)
 		which = TC_CURRENT;
 	else {
-		MODIFY_GOTO(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
+		if (file_m1(sp, sp->ep,
+		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+			goto err;
 		which = TC_CHANGE;
 	}
 
@@ -230,7 +232,7 @@ ex_tagpush(sp, ep, cmdp)
 		/* Handle special, first-tag case. */
 		if (exp->tagq.tqh_first->q.tqe_next == NULL)
 			TAILQ_REMOVE(&exp->tagq, exp->tagq.tqh_first, q);
-modify_err:	free(tag);
+err:		free(tag);
 		return (1);
 	}
 
@@ -353,7 +355,9 @@ ex_tagpop(sp, ep, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
+		if (file_m1(sp, ep,
+		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+			return (1);
 		if (file_init(sp, tp->frp, NULL, 0))
 			return (1);
 
@@ -405,7 +409,9 @@ ex_tagtop(sp, ep, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		MODIFY_RET(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
+		if (file_m1(sp, sp->ep,
+		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+			return (1);
 		if (file_init(sp, tp->frp, NULL, 0))
 			return (1);
 

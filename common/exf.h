@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.34 1994/07/19 12:26:44 bostic Exp $ (Berkeley) $Date: 1994/07/19 12:26:44 $
+ *	$Id: exf.h,v 8.35 1994/08/04 14:12:31 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:12:31 $
  */
 					/* Undo direction. */
 /*
@@ -65,6 +65,9 @@ struct _exf {
 FREF	*file_add __P((SCR *, CHAR_T *));
 int	 file_end __P((SCR *, EXF *, int));
 int	 file_init __P((SCR *, FREF *, char *, int));
+int	 file_m1 __P((SCR *, EXF *, int, int));
+int	 file_m2 __P((SCR *, EXF *, int));
+int	 file_m3 __P((SCR *, EXF *, int));
 
 enum lockt { LOCK_FAILED, LOCK_SUCCESS, LOCK_UNAVAIL };
 enum lockt
@@ -74,7 +77,6 @@ enum lockt
 #define	FS_APPEND	0x02	/* Append to the file. */
 #define	FS_FORCE	0x04	/* Force is set. */
 #define	FS_POSSIBLE	0x08	/* Force could be set. */
-#define	FS_WILLEXIT	0x10	/* Command will exit on success. */
 int	 file_write __P((SCR *, EXF *, MARK *, MARK *, char *, int));
 
 /* Recovery routines. */

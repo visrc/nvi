@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.33 1994/06/27 11:22:22 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:22 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.34 1994/08/04 14:13:05 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,6 +46,8 @@ ex_wn(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	if (file_m3(sp, ep, 0))
+		return (1);
 	if (exwr(sp, ep, cmdp, WN))
 		return (1);
 
@@ -67,6 +69,8 @@ ex_wq(sp, ep, cmdp)
 {
 	int force;
 
+	if (file_m3(sp, ep, 0))
+		return (1);
 	if (exwr(sp, ep, cmdp, WQ))
 		return (1);
 
@@ -111,6 +115,8 @@ ex_xit(sp, ep, cmdp)
 {
 	int force;
 
+	if (file_m3(sp, ep, 0))
+		return (1);
 	if (F_ISSET((ep), F_MODIFIED) && exwr(sp, ep, cmdp, XIT))
 		return (1);
 
@@ -147,8 +153,6 @@ exwr(sp, ep, cmdp, cmd)
 	LF_INIT(FS_POSSIBLE);
 	if (F_ISSET(cmdp, E_FORCE))
 		LF_SET(FS_FORCE);
-	if (cmd != WRITE)
-		LF_SET(FS_WILLEXIT);
 
 	/* Skip any leading whitespace. */
 	if (cmdp->argc != 0)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.92 1994/08/03 23:10:55 bostic Exp $ (Berkeley) $Date: 1994/08/03 23:10:55 $";
+static char sccsid[] = "$Id: exf.c,v 8.93 1994/08/04 14:12:28 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:12:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -126,8 +126,11 @@ file_init(sp, frp, rcv_name, force)
 		return (rcv_read(sp, frp));
 	}
 
-	/* Required FRP initialization. */
-	F_CLR(frp, FR_FNONBLANK | FR_RDONLY | FR_UNLOCKED);
+	/*
+	 * Required FRP initialization; the only flag we keep is the
+	 * cursor information.
+	 */
+	F_CLR(frp, ~FR_CURSORSET);
 
 	/*
 	 * Required EXF initialization:
@@ -488,20 +491,6 @@ file_write(sp, ep, fm, tm, name, flags)
 	} else
 		noname = 0;
 
-	/*
-	 * Don't permit writing to temporary files if the command is going to
-	 * exit.  The problem is that if it's a temp file, and the user does
-	 * ":wq", we write and quit, unlinking the temporary file.  Not what
-	 * the user had in mind at all.  This test cannot be forced.  We do
-	 * permit writing to temporary files, so that users can use maps that
-	 * use file system names with temporary files.
-	 */
-	if (noname && F_ISSET(frp, FR_TMPFILE) && LF_ISSET(FS_WILLEXIT)) {
-		msgq(sp, M_ERR,
-		    "File is a temporary; write/exit not permitted");
-		return (1);
-	}
-
 	/* Can't write files marked read-only, unless forced. */
 	if (!LF_ISSET(FS_FORCE) && noname && F_ISSET(frp, FR_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
@@ -631,18 +620,106 @@ file_write(sp, ep, fm, tm, name, flags)
 	F_CLR(frp, FR_NAMECHANGE);
 
 	/*
-	 * If wrote the entire file and it's not a temporary file, clear the
-	 * modified bit.  This permits the user to write the file and use it
-	 * in the context of the file system, but still keeps them from losing
-	 * their changes by exiting.
+	 * If wrote the entire file clear the modified bit.  If the file was
+	 * written back to the original file name and the file is a temporary,
+	 * set the "no exit" bit.  This permits the user to write the file and
+	 * use it in the context of the file system, but still keeps them from
+	 * losing their changes by exiting.
 	 */
-	if (LF_ISSET(FS_ALL) && (!noname || !F_ISSET(frp, FR_TMPFILE)))
+	if (LF_ISSET(FS_ALL)) {
 		F_CLR(ep, F_MODIFIED);
+		if (F_ISSET(frp, FR_TMPFILE))
+			if (noname)
+				F_SET(frp, FR_TMPEXIT);
+			else
+				F_CLR(frp, FR_TMPEXIT);
+	}
 
 	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters",
 	    INTERRUPTED(sp) ? "Interrupted write: " : "",
 	    name, msg, nlno, nlno == 1 ? "" : "s", nch);
 
+	return (0);
+}
+
+/*
+ * file_m1 --
+ * 	First modification check routine.  The :next, :prev, :rewind, :tag,
+ *	:tagpush, :tagpop, ^^ modifications check.
+ */
+int
+file_m1(sp, ep, force, flags)
+	SCR *sp;
+	EXF *ep;
+	int force, flags;
+{
+	/*
+	 * If the file has been modified, we'll want to write it back or
+	 * fail.  If autowrite is set, we'll write it back automatically,
+	 * unless force is also set.  Otherwise, we fail unless forced or
+	 * there's another open screen on this file.
+	 */
+	if (F_ISSET(ep, F_MODIFIED))
+		if (O_ISSET(sp, O_AUTOWRITE)) {
+			if (!force &&
+			    file_write(sp, ep, NULL, NULL, NULL, flags))
+				return (1);
+		} else if (ep->refcnt <= 1 && !force) {
+			msgq(sp, M_ERR,
+	"Modified since last write; write or use %s to override",
+			    LF_ISSET(FS_POSSIBLE) ? "!" : ":edit!");
+			return (1);
+		}
+
+	return (file_m3(sp, ep, force));
+}
+
+/*
+ * file_m2 --
+ * 	Second modification check routine.  The :edit, :quit, :recover
+ *	modifications check.
+ */
+int
+file_m2(sp, ep, force)
+	SCR *sp;
+	EXF *ep;
+	int force;
+{
+	/*
+	 * If the file has been modified, we'll want to fail, unless forced
+	 * or there's another open screen on this file.
+	 */
+	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
+		msgq(sp, M_ERR,
+		    "Modified since last write; write or use ! to override");
+		return (1);
+	}
+
+	return (file_m3(sp, ep, force));
+}
+
+/*
+ * file_m3 --
+ * 	Third modification check routine.
+ */
+int
+file_m3(sp, ep, force)
+	SCR *sp;
+	EXF *ep;
+	int force;
+{
+	/*
+	 * Don't exit while in a temporary files if the file was ever modified.
+	 * The problem is that if the user does a ":wq", we write and quit,
+	 * unlinking the temporary file.  Not what the user had in mind at all.
+	 * We permit writing to temporary files, so that user maps using file
+	 * system names work with temporary files.
+	 */
+	if (F_ISSET(sp->frp, FR_TMPEXIT) && ep->refcnt <= 1 && !force) {
+		msgq(sp, M_ERR,
+		    "File is a temporary; exit will discard modifications");
+		return (1);
+	}
 	return (0);
 }
 

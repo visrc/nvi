@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.17 1994/06/27 11:22:12 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:12 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.18 1994/08/04 14:12:59 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:12:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,12 +85,8 @@ ex_edit(sp, ep, cmdp)
 	 * !!!
 	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
 	 */
-	if (F_ISSET(ep, F_MODIFIED) &&
-	    ep->refcnt <= 1 && !F_ISSET(cmdp, E_FORCE)) {
-		msgq(sp, M_ERR,
-		    "Modified since last write; write or use ! to override");
+	if (file_m2(sp, ep, F_ISSET(cmdp, E_FORCE)))
 		return (1);
-	}
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))

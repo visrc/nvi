@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.9 1994/08/01 16:15:33 bostic Exp $ (Berkeley) $Date: 1994/08/01 16:15:33 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.10 1994/08/04 14:13:38 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,15 +252,8 @@ v_switch(sp, ep, vp)
 	}
 
 	/* If autowrite is set, write out the file. */
-	if (F_ISSET(ep, F_MODIFIED))
-		if (O_ISSET(sp, O_AUTOWRITE)) {
-			if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
-				return (1);
-		} else {
-			msgq(sp, M_ERR,
-		"Modified since last write; write or use :edit! to override");
-			return (1);
-		}
+	if (file_m1(sp, ep, 0, FS_ALL))
+		return (1);
 
 	excmd(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));

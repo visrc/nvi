@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.26 1994/08/02 10:29:07 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:29:07 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.27 1994/08/04 14:12:58 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:12:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,8 @@ ex_next(sp, ep, cmdp)
 	int noargs;
 	char **ap;
 
-	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
+	if (file_m1(sp, ep, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		return (1);
 
 	/*
 	 * If the first argument is a plus sign, '+', it's an initial
@@ -134,7 +135,8 @@ ex_prev(sp, ep, cmdp)
 {
 	FREF *frp;
 
-	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
+	if (file_m1(sp, ep, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		return (1);
 
 	if (sp->cargv == sp->argv) {
 		msgq(sp, M_ERR, "No previous files to edit");
@@ -172,7 +174,8 @@ ex_rew(sp, ep, cmdp)
 		return (1);
 	}
 
-	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
+	if (file_m1(sp, ep, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		return (1);
 
 	/*
 	 * !!!

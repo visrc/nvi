@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.11 1994/07/18 14:54:04 bostic Exp $ (Berkeley) $Date: 1994/07/18 14:54:04 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 8.12 1994/08/04 14:13:01 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,12 +84,8 @@ ex_recover(sp, ep, cmdp)
 	 * Check for modifications.  Autowrite did not historically
 	 * affect :recover.
 	 */
-	if (F_ISSET(ep, F_MODIFIED) &&
-	    ep->refcnt <= 1 && !F_ISSET(cmdp, E_FORCE)) {
-		msgq(sp, M_ERR,
-		    "Modified since last write; write or use ! to override");
+	if (file_m2(sp, ep, F_ISSET(cmdp, E_FORCE)))
 		return (1);
-	}
 
 	/* Get a file structure for the file. */
 	if ((frp = file_add(sp, ap->bp)) == NULL)
