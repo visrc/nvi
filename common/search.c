@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.34 1993/05/10 16:36:22 bostic Exp $ (Berkeley) $Date: 1993/05/10 16:36:22 $";
+static char sccsid[] = "$Id: search.c,v 5.35 1993/05/10 19:10:58 bostic Exp $ (Berkeley) $Date: 1993/05/10 19:10:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,9 +112,11 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		/* Replace any word search pattern. */
 		if (check_word(sp, &ptrn, &replaced, wordoffsetp))
 			return (1);
-	} else if (LF_ISSET(SEARCH_TAG))
+	} else if (LF_ISSET(SEARCH_TAG)) {
 		if (ctag_conv(sp, &ptrn, &replaced))
 			return (1);
+		re_flags &= ~REG_EXTENDED;
+	}
 
 	/* Compile the RE. */
 	if (eval = regcomp(*rep, (char *)ptrn, re_flags))
@@ -466,7 +468,7 @@ ctag_conv(sp, ptrnp, replacedp)
 	GS *gp;
 	size_t blen, len;
 	int lastdollar;
-	char *bp, *magic, *p, *t;
+	char *bp, *p, *t;
 
 	*replacedp = 0;
 
@@ -510,12 +512,11 @@ ctag_conv(sp, ptrnp, replacedp)
 	 * backslashes ctags inserts to escape the search delimiter
 	 * characters.
 	 */
-	magic = O_ISSET(sp, O_EXTENDED) ? "^.[$|*+?{\\()" : "^.[$|*+?{\\";
 	while (p[0]) {
 		/* Ctags escapes the search delimiter characters. */
 		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?'))
 			++p;
-		else if (strchr(magic, p[0]))
+		else if (strchr("^.[$*", p[0]))
 			*t++ = '\\';
 		*t++ = *p++;
 	}
