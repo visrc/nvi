@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.19 1995/10/18 18:10:19 bostic Exp $ (Berkeley) $Date: 1995/10/18 18:10:19 $";
+static char sccsid[] = "$Id: msg.c,v 10.20 1995/10/18 19:54:51 bostic Exp $ (Berkeley) $Date: 1995/10/18 19:54:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -443,10 +443,11 @@ msgq_rpt(sp)
 	rptval = O_VAL(sp, O_REPORT);
 	for (cnt = 0, total = 0; cnt < ARSIZE(action); ++cnt)
 		total += sp->rptlines[cnt];
+	if (total == 0)
+		return;
 	if (total <= rptval && sp->rptlines[L_YANKED] < rptval) {
-		if (total != 0)
-			for (cnt = 0; cnt < ARSIZE(action); ++cnt)
-				sp->rptlines[cnt] = 0;
+		for (cnt = 0; cnt < ARSIZE(action); ++cnt)
+			sp->rptlines[cnt] = 0;
 		return;
 	}
 
