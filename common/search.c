@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.42 1993/05/16 19:52:37 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:52:37 $";
+static char sccsid[] = "$Id: search.c,v 5.43 1993/05/17 00:19:03 bostic Exp $ (Berkeley) $Date: 1993/05/17 00:19:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,11 +207,19 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		}
 	}
 
-	if (sp->s_position(sp, ep, &lastlno, 0, P_BOTTOM))
-		return (1);
+	/*
+	 * f_search is called from the ex_tagfirst() routine, which runs
+	 * before the screen really exists.  Make sure we don't step on
+	 * anything.
+	 */
+	if (sp->s_position != NULL) {
+		if (sp->s_position(sp, ep, &lastlno, 0, P_BOTTOM))
+			return (1);
+		(void)sp->s_busy_cursor(sp, NULL);
+	} else
+		lastlno = OOBLNO;
 
 	wrapped = 0;
-	(void)sp->s_busy_cursor(sp, NULL);
 	for (;; ++lno, coff = 0) {
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
@@ -330,9 +338,9 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 
 	if (sp->s_position(sp, ep, &firstlno, 0, P_TOP))
 		return (1);
+	(void)sp->s_busy_cursor(sp, NULL);
 
 	wrapped = 0;
-	(void)sp->s_busy_cursor(sp, NULL);
 	for (coff = fm->cno;; --lno, coff = 0) {
 		if (lno == 0) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
