@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.29 1996/04/15 20:31:22 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:22 $
+ *	$Id: gs.h,v 10.30 1996/06/09 10:37:54 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:37:54 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -65,8 +65,8 @@ struct _gs {
 	void	*tcl_interp;		/* Tcl_Interp *: Tcl interpreter. */
 
 	void	*cl_private;		/* Curses support private area. */
+	void	*ip_private;		/* IP support private area. */
 	void	*tk_private;		/* Tk/Tcl support private area. */
-	void	*xaw_private;		/* XAW support private area. */
 
 					/* File references. */
 	CIRCLEQ_HEAD(_frefh, _fref) frefq;
@@ -156,7 +156,7 @@ struct _gs {
 					/* Beep/bell/flash the terminal. */
 	int	(*scr_bell) __P((SCR *));
 					/* Display a busy message. */
-	void	(*scr_busy) __P((SCR *, char const *, busy_t));
+	void	(*scr_busy) __P((SCR *, const char *, busy_t));
 					/* Clear to the end of the line. */
 	int	(*scr_clrtoeol) __P((SCR *));
 					/* Return the cursor location. */
