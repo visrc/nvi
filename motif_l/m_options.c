@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.15 1996/12/20 10:26:59 bostic Exp $ (Berkeley) $Date: 1996/12/20 10:26:59 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.16 1996/12/20 10:29:10 bostic Exp $ (Berkeley) $Date: 1996/12/20 10:29:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,14 +144,11 @@ static optData display[] = {
 };
 
 /* ********* NOTE ***********
- * Sheet 0 will always be shown first.
- * It does not matter to the Xt code which sheet that is, so it
- * ought to be the one users interact with most.
- * Best guess is that's general editor options, but it might be
- * search/re
+ * Sheet 0 will always be shown first.  It does not matter to the Xt code
+ * which sheet that is, so it ought to be the one users interact with most.
+ * Best guess is that's general editor options, but it might be Search/re.
  * ********* NOTE ***********
  */
-
 static	optSheet sheets[] = {
 	{	"Editor",
 		"These options control the general configuration\n\
@@ -162,21 +159,21 @@ and the editor as a whole",
 		general_str,
 	},
 	{	"Display",
-		"These options control the way things are displayed on the screen, and the line of text is really long",
+		"These options control the way things are displayed on the screen",
 		NULL,
 		display,
 		display_int,
 		display_str,
 	},
 	{	"Files",
-		"These options globally modify how the editor treates files",
+		"These options globally modify how the editor handles files",
 		NULL,
 		files,
 		NULL,
 		files_str,
 	},
 	{	"Input",
-		"These options modify how input characters works",
+		"These options modify how text input behaves",
 		NULL,
 		input,
 		input_int,
