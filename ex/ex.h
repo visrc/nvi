@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.21 1992/11/01 22:58:34 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:58:34 $
+ *	$Id: ex.h,v 5.22 1992/11/07 18:46:48 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:46:48 $
  */
 
 #include "exf.h"
@@ -21,23 +21,20 @@ typedef struct {
 #define	E_ADDR2		0x00002		/* Two address. */
 #define	E_ADDR2_ALL	0x00004		/* Zero/two addresses; zero == all. */
 #define	E_ADDR2_NONE	0x00008		/* Zero/two addresses; zero == none. */
-#define	E_APPEND	0x00010		/* >> */
-#define	E_EXRCOK	0x00020		/* OK in a .exrc file. */
-#define	E_FORCE		0x00040		/*  ! */
+#define	E_FORCE		0x00010		/*  ! */
 
-#define	E_F_CARAT	0x00080		/*  ^ flag. */
-#define	E_F_DASH	0x00100		/*  - flag. */
-#define	E_F_DOT		0x00200		/*  . flag. */
-#define	E_F_HASH	0x00400		/*  # flag. */
-#define	E_F_LIST	0x00800		/*  l flag. */
-#define	E_F_PLUS	0x01000		/*  + flag. */
-#define	E_F_PRINT	0x02000		/*  p flag. */
-#define	E_F_MASK	0x03f80		/* Flag mask. */
+#define	E_F_CARAT	0x00020		/*  ^ flag. */
+#define	E_F_DASH	0x00040		/*  - flag. */
+#define	E_F_DOT		0x00080		/*  . flag. */
+#define	E_F_HASH	0x00100		/*  # flag. */
+#define	E_F_LIST	0x00200		/*  l flag. */
+#define	E_F_PLUS	0x00400		/*  + flag. */
+#define	E_F_PRINT	0x00800		/*  p flag. */
+#define	E_F_MASK	0x00fe0		/* Flag mask. */
 
-#define	E_NL		0x04000		/* Newline first if not MODE_EX mode.*/
-#define	E_NOPERM	0x08000		/* Permission denied for now. */
-#define	E_SETLAST	0x10000		/* Reset last command. */
-#define	E_ZERO		0x20000		/* 0 is a legal (first) address.*/
+#define	E_NOPERM	0x01000		/* Permission denied for now. */
+#define	E_SETLAST	0x02000		/* Reset last command. */
+#define	E_ZERO		0x04000		/* 0 is a legal (first) address.*/
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */
@@ -51,7 +48,7 @@ typedef struct excmdarg {
 	MARK addr1;		/* 1st address. */
 	MARK addr2;		/* 2nd address. */
 	recno_t lineno;		/* Line number. */
-	u_int flags;		/* E_F_* flags from EXCMDLIST. */
+	u_int flags;		/* Selected flags from EXCMDLIST. */
 	int argc;		/* Count of file/word arguments. */
 	u_char **argv;		/* List of file/word arguments. */
 	u_char *command;	/* Command line, if parse locally. */
@@ -78,27 +75,9 @@ extern u_char *defcmdarg[2];	/* Default array. */
 	defcmdarg[0] = (u_char *)_arg;					\
 }
 
-/*
- * Macro to do standard force/write/save stuff.
- *
- * If autowrite set, write the file; otherwise warn the user if the file has
- * been modified but not written.
- */
-#define	DEFMODSYNC {							\
-	if (ISSET(O_AUTOWRITE)) {					\
-		if (file_sync(curf, 0))					\
-			return (1);					\
-	} else if (ISSET(O_WARN) && curf->flags & F_MODIFIED) {		\
-		msg("%s has been modified but not written.",		\
-		    curf->name);					\
-		return (1);						\
-	}								\
-}
-
 /* Control character. */
 #define	ctrl(ch)	((ch) & 0x1f)
 
-u_char	*linespec __P((u_char *, EXCMDARG *));
 int	 buildargv __P((u_char *, int, EXCMDARG *));
 
 int	ex_abbr __P((EXCMDARG *));
@@ -106,13 +85,14 @@ int	ex_append __P((EXCMDARG *));
 int	ex_args __P((EXCMDARG *));
 int	ex_at __P((EXCMDARG *));
 int	ex_bang __P((EXCMDARG *));
+int	ex_bdisplay __P((EXCMDARG *));
 int	ex_cc __P((EXCMDARG *));
 int	ex_cd __P((EXCMDARG *));
 int	ex_cfile __P((char *, int));
 int	ex_change __P((EXCMDARG *));
 int	ex_cmd __P((u_char *));
 int	ex_color __P((EXCMDARG *));
-int	ex_confirm __P((EXF *, MARK *, MARK *));
+enum confirmation ex_confirm __P((EXF *, MARK *, MARK *));
 int	ex_copy __P((EXCMDARG *));
 int	ex_cstring __P((u_char *, int, int));
 int	ex_debug __P((EXCMDARG *));
@@ -148,14 +128,18 @@ int	ex_shiftr __P((EXCMDARG *));
 int	ex_source __P((EXCMDARG *));
 int	ex_subagain __P((EXCMDARG *));
 int	ex_substitute __P((EXCMDARG *));
-int	ex_tag __P((EXCMDARG *));
+int	ex_tagpop __P((EXCMDARG *));
+int	ex_tagpush __P((EXCMDARG *));
+int	ex_tagtop __P((EXCMDARG *));
 int	ex_unabbr __P((EXCMDARG *));
 int	ex_undo __P((EXCMDARG *));
 int	ex_unmap __P((EXCMDARG *));
+int	ex_usage __P((EXCMDARG *));
 int	ex_validate __P((EXCMDARG *));
 int	ex_version __P((EXCMDARG *));
 int	ex_vglobal __P((EXCMDARG *));
 int	ex_visual __P((EXCMDARG *));
+int	ex_viusage __P((EXCMDARG *));
 int	ex_wq __P((EXCMDARG *));
 int	ex_write __P((EXCMDARG *));
 int	ex_writefp __P((char *, FILE *, MARK *, MARK *, int));
