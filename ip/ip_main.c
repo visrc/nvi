@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.2 1996/09/20 20:31:47 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:31:47 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.3 1996/10/13 15:40:24 bostic Exp $ (Berkeley) $Date: 1996/10/13 15:40:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,7 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.2 1996/09/20 20:31:47 bostic Ex
 
 static void	   ip_func_std __P((GS *));
 static IP_PRIVATE *ip_init __P((GS *, char *));
-static void	   nomem __P((char *));
+static void	   perr __P((char *, char *));
 
 /*
  * main --
@@ -44,6 +44,11 @@ ip_main(argc, argv, gp, ip_arg)
 	/* Create and partially initialize the IP structure. */
 	if ((ipp = ip_init(gp, ip_arg)) == NULL)
 		return (1);
+
+	/* Add the terminal type to the global structure. */
+	if ((OG_D_STR(gp, GO_TERM) =
+	    OG_STR(gp, GO_TERM) = strdup("ip_curses")) == NULL)
+		perr(gp->progname, NULL);
 
 	/*
 	 * Figure out how big the screen is -- read events until we get
@@ -88,7 +93,7 @@ ip_init(gp, ip_arg)
 	/* Allocate the IP private structure. */
 	CALLOC_NOMSG(NULL, ipp, IP_PRIVATE *, 1, sizeof(IP_PRIVATE));
 	if (ipp == NULL)
-		nomem(gp->progname);
+		perr(gp->progname,  NULL);
 	gp->ip_private = ipp;
 
 	/*
@@ -145,13 +150,16 @@ ip_func_std(gp)
 }
 
 /*
- * nomem --
- *	No memory error.
+ * perr --
+ *	Print system error.
  */
 static void
-nomem(name)
-	char *name;
+perr(name, msg)
+	char *name, *msg;
 {
-	(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
+	(void)fprintf(stderr, "%s:", name);
+	if (msg != NULL)
+		(void)fprintf(stderr, "%s:", msg);
+	(void)fprintf(stderr, "%s\n", strerror(errno));
 	exit(1);
 }
