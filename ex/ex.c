@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.21 1995/10/17 08:58:37 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:58:37 $";
+static char sccsid[] = "$Id: ex.c,v 10.22 1995/10/17 13:13:11 bostic Exp $ (Berkeley) $Date: 1995/10/17 13:13:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1363,6 +1363,19 @@ addr_verify:
 		    ecp->cmd->name);
 	}
 #endif
+	/*
+	 * Ex displayed the number of lines modified immediately after each
+	 * command, so the command "1,10d|1,10d" would display:
+	 *
+	 *	10 lines deleted
+	 *	10 lines deleted
+	 *	<autoprint line>
+	 *
+	 * Executing ex commands from vi only reported the final modified
+	 * lines message -- that's wrong enough that we don't match it.
+	 */
+	if (F_ISSET(sp, S_EX))
+		msgq_rpt(sp);
 
 	/*
 	 * Integrate any offset parsed by the underlying command, and make
