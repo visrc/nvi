@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_cmd.c,v 10.8 1996/03/06 19:54:12 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:12 $";
+static const char sccsid[] = "$Id: v_cmd.c,v 10.9 1996/03/28 15:18:39 bostic Exp $ (Berkeley) $Date: 1996/03/28 15:18:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,7 +168,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "&",
 	    " & repeat substitution"},
 /* 047   ' */
-	{v_fmark,	V_ABS_L|V_CHAR|V_MOVE|VM_LMODE,
+	{v_fmark,	V_ABS_L|V_CHAR|V_MOVE|VM_LMODE|VM_RCM_SET,
 	    "'['a-z]",
 	    " ' move to mark (to first non-blank)"},
 /* 050   ( */
