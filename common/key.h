@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.37 1994/03/22 18:19:09 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:19:09 $
+ *	$Id: key.h,v 8.38 1994/04/09 18:22:50 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:50 $
  */
 
 /*
@@ -73,15 +73,6 @@ struct _ibuf {
 #define	KEYS_WAITING(sp)	((sp)->gp->tty->cnt)
 #define	MAPPED_KEYS_WAITING(sp)						\
 	(KEYS_WAITING(sp) && sp->gp->tty->cmap[sp->gp->tty->next])
-
-/*
- * Structure to name a character.  Used both as an interface to the
- * screen and to name objects named by characters in error messages.
- */
-struct _chname {
-	char	*name;		/* Character name. */
-	u_int8_t len;		/* Length of the character name. */
-};
 
 /*
  * Routines that return a key as a side-effect return:
@@ -164,12 +155,15 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	TXT_WRAPMARGIN	0x1000000	/* Option: wrapmargin. */
 
 /* Support keyboard routines. */
-int		__term_key_val __P((SCR *, ARG_CHAR_T));
-void		term_ab_flush __P((SCR *, char *));
-int		term_init __P((SCR *));
-enum input	term_key __P((SCR *, CH *, u_int));
-int		term_key_queue __P((SCR *));
-void		term_map_flush __P((SCR *, char *));
-int		term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
-enum input	term_user_key __P((SCR *, CH *));
-int		term_waiting __P((SCR *));
+size_t		 __key_len __P((SCR *, ARG_CHAR_T));
+CHAR_T		*__key_name __P((SCR *, ARG_CHAR_T));
+int		 __key_val __P((SCR *, ARG_CHAR_T));
+void		 key_init __P((SCR *));
+enum input	 term_key __P((SCR *, CH *, u_int));
+enum input	 term_user_key __P((SCR *, CH *));
+void		 term_ab_flush __P((SCR *, char *));
+int		 term_init __P((SCR *));
+int		 term_key_queue __P((SCR *));
+void		 term_map_flush __P((SCR *, char *));
+int		 term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
+int		 term_waiting __P((SCR *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.50 1994/03/25 11:39:21 bostic Exp $ (Berkeley) $Date: 1994/03/25 11:39:21 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.51 1994/04/09 18:22:12 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,7 +130,6 @@ svi_paint(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	CHNAME const *cname;
 	SMAP *smp, tmp;
 	SVI_PRIVATE *svp;
 	recno_t lastline, lcnt;
@@ -442,7 +441,6 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * the old and new positions and decide how big they are on the
 	 * screen, and therefore, how many screen positions to move.
 	 */
-	cname = sp->gp->cname;
 	if (CNO < OCNO) {
 		/*
 		 * 4a: Cursor moved left.
@@ -470,7 +468,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, go do it the the slow way.
 		 */
-		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
+		for (cwtotal = 0; cnt--; cwtotal += KEY_LEN(sp, ch))
 			if ((ch = *(u_char *)p--) == '\t')
 				goto slow;
 
@@ -484,8 +482,8 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		 * If we're moving left, and there's a wide character in the
 		 * current position, go to the end of the character.
 		 */
-		if (cname[ch].len > 1)
-			cwtotal -= cname[ch].len - 1;
+		if (KEY_LEN(sp, ch) > 1)
+			cwtotal -= KEY_LEN(sp, ch) - 1;
 
 		/*
 		 * If the new column moved us off of the current logical line,
@@ -523,7 +521,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		for (cwtotal = SCNO; cnt--;) {
 			if ((ch = *(u_char *)p++) == '\t')
 				goto slow;
-			if ((cwtotal += cname[ch].len) >= SCREEN_COLS(sp))
+			if ((cwtotal += KEY_LEN(sp, ch)) >= SCREEN_COLS(sp))
 				break;
 		}
 
@@ -689,7 +687,6 @@ svi_msgflush(sp)
 {
 	CH ikey;
 	CHAR_T ch;
-	CHNAME const *cname;
 	MSG *mp;
 	size_t chlen, len;
 	char *p;
@@ -697,7 +694,6 @@ svi_msgflush(sp)
 #define	MCONTMSG	" [More ...]"
 
 	/* Display the messages. */
-	cname = sp->gp->cname;
 	for (mp = sp->msgq.lh_first, p = NULL;
 	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->q.le_next) {
 		p = mp->mbuf;
@@ -726,12 +722,12 @@ lcont:		/* Move to the message line and clear it. */
 			if (!mp->len)
 				break;
 			ch = *(u_char *)p;
-			chlen = cname[ch].len;
+			chlen = KEY_LEN(sp, ch);
 			if (chlen >= len)
 				break;
 			len -= chlen;
 			--mp->len;
-			ADDNSTR(cname[ch].name, chlen);
+			ADDNSTR(KEY_NAME(sp, ch), chlen);
 		}
 
 		/*

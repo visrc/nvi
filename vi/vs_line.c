@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.23 1994/03/25 11:39:20 bostic Exp $ (Berkeley) $Date: 1994/03/25 11:39:20 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.24 1994/04/09 18:22:11 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,6 @@ svi_line(sp, ep, smp, yp, xp)
 	SMAP *smp;
 	size_t *xp, *yp;
 {
-	CHNAME const *cname;
 	SMAP *tsmp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line;
@@ -82,9 +81,6 @@ svi_line(sp, ep, smp, yp, xp)
 	 */
 	getyx(stdscr, oldy, oldx);
 	MOVE(sp, smp - HMAP, 0);
-
-	/* Get the character map. */
-	cname = sp->gp->cname;
 
 	/* Get a copy of the line. */
 	p = file_gline(sp, ep, smp->lno, &len);
@@ -226,7 +222,7 @@ empty:					ADDCH(ch);
 		} else for (scno = 0; offset_in_line < len; ++offset_in_line) {
 			scno += chlen =
 			    (ch = *(u_char *)p++) == '\t' && !listset ?
-			    TAB_OFF(sp, scno) : cname[ch].len;
+			    TAB_OFF(sp, scno) : KEY_LEN(sp, ch);
 			if (scno < cols_per_screen)
 				continue;
 			/*
@@ -280,7 +276,7 @@ empty:					ADDCH(ch);
 			scno += chlen = TAB_OFF(sp, scno) - offset_in_char;
 			is_tab = 1;
 		} else {
-			scno += chlen = cname[ch].len - offset_in_char;
+			scno += chlen = KEY_LEN(sp, ch) - offset_in_char;
 			is_tab = 0;
 		}
 
@@ -344,12 +340,12 @@ empty:					ADDCH(ch);
 				while (chlen--)
 					ADDCH(TABCH);
 		} else
-			ADDNSTR(cname[ch].name + offset_in_char, chlen);
+			ADDNSTR(KEY_NAME(sp, ch) + offset_in_char, chlen);
 	}
 
 	if (scno < cols_per_screen) {
 		/* If didn't paint the whole line, update the cache. */
-		smp->c_ecsize = smp->c_eclen = cname[ch].len;
+		smp->c_ecsize = smp->c_eclen = KEY_LEN(sp, ch);
 		smp->c_eboff = len - 1;
 
 		/*

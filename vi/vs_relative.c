@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.13 1994/04/06 11:37:26 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:37:26 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.14 1994/04/09 18:22:15 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ svi_opt_screens(sp, ep, lno, cnop)
 
 	/* Trailing '$' if O_LIST option set. */
 	if (O_ISSET(sp, O_LIST) && cnop == NULL)
-		cols += sp->gp->cname['$'].len;
+		cols += KEY_LEN(sp, '$');
 
 	screens = (cols / sp->cols + (cols % sp->cols ? 1 : 0));
 	if (screens == 0)
@@ -110,7 +110,6 @@ svi_screens(sp, ep, lp, llen, lno, cnop)
 	recno_t lno;
 	size_t *cnop;
 {
-	CHNAME const *cname;
 	size_t chlen, cno, len, scno, tab_off;
 	int ch, listset;
 	char *p;
@@ -123,12 +122,11 @@ svi_screens(sp, ep, lp, llen, lno, cnop)
 	if (lp == NULL || llen == 0)
 		return (0);
 
-	cname = sp->gp->cname;
 	listset = O_ISSET(sp, O_LIST);
 
 #define	SET_CHLEN {							\
 	chlen = (ch = *(u_char *)p++) == '\t' &&			\
-	    !listset ? TAB_OFF(sp, tab_off) : cname[ch].len;		\
+	    !listset ? TAB_OFF(sp, tab_off) : KEY_LEN(sp, ch);		\
 }
 #define	TAB_RESET {							\
 	/*								\
@@ -175,7 +173,7 @@ svi_rcm(sp, ep, lno)
 	EXF *ep;
 	recno_t lno;
 {
-	size_t cno, len;
+	size_t len;
 
 	/* Last character is easy, and common. */
 	if (sp->rcm_last)
@@ -240,7 +238,6 @@ svi_cm_private(sp, ep, lno, off, cno)
 	recno_t lno;
 	size_t off, cno;
 {
-	CHNAME const *cname;
 	size_t chlen, len, llen, scno, tab_off;
 	int ch, listset;
 	char *lp, *p;
@@ -252,14 +249,13 @@ svi_cm_private(sp, ep, lno, off, cno)
 	if (lp == NULL || llen == 0)
 		return (0);
 
-	cname = sp->gp->cname;
 	listset = O_ISSET(sp, O_LIST);
 
 	/* Discard screen (logical) lines. */
 	for (scno = 0, p = lp, len = llen; --off;) {
 		while (len-- && scno < sp->cols)
 			scno += (ch = *(u_char *)p++) == '\t' &&
-			    !listset ? TAB_OFF(sp, scno) : cname[ch].len;
+			    !listset ? TAB_OFF(sp, scno) : KEY_LEN(sp, ch);
 
 		/*
 		 * If reached the end of the physical line, return
