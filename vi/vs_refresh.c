@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.52 1994/04/13 13:45:02 bostic Exp $ (Berkeley) $Date: 1994/04/13 13:45:02 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.53 1994/04/25 16:24:15 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:24:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ svi_refresh(sp, ep)
 		 * Fill the map, incidentally losing any svi_line()
 		 * cached information.
 		 */
-		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
+		if (svi_sm_fill(sp, ep, sp->lno, P_FILL))
 			return (1);
 		F_CLR(sp, S_RESIZE | S_REFORMAT);
 		F_SET(sp, S_REDRAW);
