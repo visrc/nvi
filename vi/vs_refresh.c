@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.35 1996/05/07 21:30:13 bostic Exp $ (Berkeley) $Date: 1996/05/07 21:30:13 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.36 1996/06/08 19:26:23 bostic Exp $ (Berkeley) $Date: 1996/06/08 19:26:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,7 +144,7 @@ vs_paint(sp, flags)
 	VI_PRIVATE *vip;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, notused, off, y;
-	int ch, didpaint, isempty, leftright_warp;
+	int ch, didpaint, isempty, leftright_warp, shifted;
 	char *p;
 
 #define	 LNO	sp->lno			/* Current file line. */
@@ -566,31 +566,40 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 		/* Get the screen column for this character. */
 		cnt = vs_columns(sp, NULL, LNO, &CNO, NULL);
 
-		/* Adjust the window toward the beginning of the line. */
-		off = smp->coff;
-		while (off >= cnt)
-			if (off >= O_VAL(sp, O_SIDESCROLL))
-				off -= O_VAL(sp, O_SIDESCROLL);
-			else {
-				off = 0;
-				break;
-			}
+		shifted = 0;
 
-		/* Adjust the window toward the end of the line. */
+		/* Adjust the window towards the beginning of the line. */
+		off = smp->coff;
+		if (off >= cnt) {
+			while (off >= cnt)
+				if (off >= O_VAL(sp, O_SIDESCROLL))
+					off -= O_VAL(sp, O_SIDESCROLL);
+				else {
+					off = 0;
+					break;
+				}
+			shifted = 1;
+		}
+
+		/* Adjust the window towards the end of the line. */
 		if (off == 0 && off + SCREEN_COLS(sp) < cnt ||
-		    off != 0 && off + sp->cols < cnt)
-		while (off + sp->cols < cnt)
-			off += O_VAL(sp, O_SIDESCROLL);
+		    off != 0 && off + sp->cols < cnt) {
+			while (off + sp->cols < cnt)
+				off += O_VAL(sp, O_SIDESCROLL);
+			shifted = 1;
+		}
 
 		/* Fill in screen map with the new offset. */
-		if (F_ISSET(sp, SC_TINPUT_INFO))
-			smp->coff = off;
-		else {
-			for (smp = HMAP; smp <= TMAP; ++smp)
+		if (shifted) {
+			if (F_ISSET(sp, SC_TINPUT_INFO))
 				smp->coff = off;
-			leftright_warp = 1;
+			else {
+				for (smp = HMAP; smp <= TMAP; ++smp)
+					smp->coff = off;
+				leftright_warp = 1;
+			}
+			goto paint;
 		}
-		goto paint;
 	}
 
 	/*
