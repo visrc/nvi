@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.12 1994/07/15 15:32:12 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:32:12 $
+.\"     $Id: vi.1,v 8.13 1994/08/31 19:17:50 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:17:50 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -20,7 +20,7 @@
 .\".Op Fl X Ar \&aw
 .Op Ar "file ..."
 .Nm \&vi
-.Op Fl eFRrv
+.Op Fl eFlRrv
 .Op Fl c Ar cmd
 .Op Fl t Ar tag
 .Op Fl w Ar size
@@ -98,6 +98,8 @@ Start editing in ex mode, as if the command name were
 Don't copy the entire file when first starting to edit.
 (The default is to make a copy in case someone else modifies
 the file during your edit session.)
+.It Fl l
+Start editing with the lisp and showmatch options set.
 .It Fl R
 Start editing in read-only mode, as if the command name was
 .Nm view ,
