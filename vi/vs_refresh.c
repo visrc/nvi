@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.55 1994/05/19 11:55:26 bostic Exp $ (Berkeley) $Date: 1994/05/19 11:55:26 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.56 1994/05/21 12:09:35 bostic Exp $ (Berkeley) $Date: 1994/05/21 12:09:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,6 @@ static char sccsid[] = "$Id: vs_refresh.c,v 8.55 1994/05/19 11:55:26 bostic Exp 
 #include "sex/sex_screen.h"
 
 static int	svi_modeline __P((SCR *, EXF *));
-static int	svi_msgflush __P((SCR *));
 
 int
 svi_refresh(sp, ep)
@@ -689,91 +688,6 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	return (0);
 }
 
-/*
- * svi_msgflush --
- *	Flush any accumulated messages.
- */
-static int
-svi_msgflush(sp)
-	SCR *sp;
-{
-	CH ikey;
-	CHAR_T ch;
-	MSG *mp;
-	size_t chlen, len;
-	char *p;
-
-#define	MCONTMSG	" [More ...]"
-
-	/* Display the messages. */
-	for (mp = sp->msgq.lh_first, p = NULL;
-	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->q.le_next) {
-		p = mp->mbuf;
-
-lcont:		/* Move to the message line and clear it. */
-		MOVE(sp, INFOLINE(sp), 0);
-		clrtoeol();
-
-		/*
-		 * Turn on standout mode if requested, or, if we've split
-		 * the screen and need a divider.
-		 */
-		if (F_ISSET(mp, M_INV_VIDEO) ||
-		    sp->q.cqe_next != (void *)&sp->gp->dq)
-			standout();
-
-		/*
-		 * Print up to the "more" message.  Avoid the last character
-		 * in the last line, some hardware doesn't like it.
-		 */
-		if (svi_screens(sp, sp->ep, p, mp->len, 0, NULL) < sp->cols - 1)
-			len = sp->cols - 1;
-		else
-			len = (sp->cols - sizeof(MCONTMSG)) - 1;
-		for (;; ++p) {
-			if (!mp->len)
-				break;
-			ch = *(u_char *)p;
-			chlen = KEY_LEN(sp, ch);
-			if (chlen >= len)
-				break;
-			len -= chlen;
-			--mp->len;
-			ADDNSTR(KEY_NAME(sp, ch), chlen);
-		}
-
-		/*
-		 * If more, print continue message.  If user key fails,
-		 * keep showing the messages anyway.
-		 */
-		if (mp->len || (mp->q.le_next != NULL &&
-		    !F_ISSET(mp->q.le_next, M_EMPTY))) {
-			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
-			refresh();
-			for (;;) {
-				if (term_user_key(sp, &ikey) != INP_OK)
-					break;
-				if (ikey.value == K_CR ||
-				    ikey.value == K_NL || ikey.ch == ' ')
-					break;
-				svi_bell(sp);
-			}
-		}
-
-		/* Turn off standout mode. */
-		if (F_ISSET(mp, M_INV_VIDEO) ||
-		    sp->q.cqe_next != (void *)&sp->gp->dq)
-			standend();
-
-		if (mp->len)
-			goto lcont;
-
-		refresh();
-		F_SET(mp, M_EMPTY);
-	}
-	return (0);
-}
-
 #define	RULERSIZE	15
 #define	MODESIZE	(RULERSIZE + 15)
 
@@ -838,6 +752,8 @@ svi_divider(sp)
 #define	DIVIDESTR	"+=+=+=+=+=+=+=+"
 	len = sizeof(DIVIDESTR) - 1 > sp->cols ?
 	    sp->cols : sizeof(DIVIDESTR) - 1;
+	standout();
 	ADDNSTR(DIVIDESTR, len);
+	standend();
 	return (0);
 }
