@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.4 1993/08/16 10:57:10 bostic Exp $ (Berkeley) $Date: 1993/08/16 10:57:10 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.5 1993/08/16 12:12:46 bostic Exp $ (Berkeley) $Date: 1993/08/16 12:12:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -271,12 +271,12 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "save file and exit: ZZ"},
 /* 133   [ */
 	{v_sectionb,	V_ABS|V_LMODE|V_MOVE|V_RCM_SET,
-	    "move back section: ]]"},
+	    "move back section: [["},
 /* 134   \ */
 	{NULL},
 /* 135   ] */
 	{v_sectionf,	V_ABS|V_LMODE|V_MOVE|V_RCM_SET,
-	    "move forward section: [["},
+	    "move forward section: ]]"},
 /* 136   ^ */
 	{v_first,	V_MOVE|V_RCM_SETFNB,
 	    "move to first non-blank: ^"},
