@@ -1,0 +1,51 @@
+/* TODO List:
+ *	scrollbars	Need protocol messages that tell us what to display
+ *			in the scrollbars.  Suggestion:
+ *				scrollbar( bottom, lines, home )
+ *				bottom is $
+ *				lines is lines shown in the window
+ *					(takes wrap into account)
+ *				home is the line number ot the top visible line
+ *
+ *			On the way back send scroll( top )
+ *
+ *			User should be able to enable/disable bar display
+ *
+ *			<yuch!> horizontal scrollbar
+ *
+ *	expose_func
+ *	insert/delete	When we have a partially obscured window, we only
+ *			refresh a single line after scrolling.  I believe this
+ *			is due to the exposure events all showing up after
+ *			the scrolling is completed (pipe_input_func does all
+ *			of the scrolling and then we get back to XtMainLoop)
+ *
+ *	split		Ought to be able to put a title on each pane
+ *			Need protocol messages to shift focus
+ *
+ *	bell		user settable visible bell
+ *
+ *	busy		don't understand the protocol
+ *
+ *	mouse		need to send IPO_MOVE_CARET( row, column )
+ *			(note that screen code does not know about tabs or
+ *			line wraps)
+ *			Connect to window manager cut buffer
+ *			need to send IPO_EXTEND_SELECT( r1, c1, r2, c1 )
+ *			otherwise core and screen duplicate selection logic
+ *			Need to determine correct screen for event.  Not
+ *			needed until split is implemented.
+ *
+ *	arrow keys	need to define a protocol.  I can easily send
+ *			the vt100 sequences (and currently do).
+ *			In general, we need to define what special keys
+ *			do (for example PageUp) and what happens when we
+ *			are in Insert mode.
+ *
+ *			Suggestion: IPO_COMMAND( string ).  vi core can
+ *			take it as a command even when in insert mode.
+ *
+ *	icon		Is currently B&W.  To get a color icon, would
+ *			require a lot of work or that bostic pick up
+ *			the xpm library.
+ */
