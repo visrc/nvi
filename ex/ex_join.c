@@ -6,11 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.9 1992/05/15 11:08:33 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:33 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.10 1992/09/01 15:35:13 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:35:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,67 +17,106 @@ static char sccsid[] = "$Id: ex_join.c,v 5.9 1992/05/15 11:08:33 bostic Exp $ (B
 #include "excmd.h"
 #include "extern.h"
 
+/*
+ * ex_join -- :[line [,line]] j[oin][!] [count] [flags]
+ *	Join lines.
+ */
 int
 ex_join(cmdp)
 	EXCMDARG *cmdp;
 {
-	MARK fm, tm;
-	size_t blen, llen, tlen;
-	u_long cnt, lno;
-	int ret;
-	char *bp, *p;
+	recno_t from, to;
+	size_t blen, clen, len, tlen;
+	int echar, first;
+	char *bp, *buf, *p;
 
-	fm = cmdp->addr1;
-	tm = cmdp->addr2;
+	from = cmdp->addr1.lno;
+	to = cmdp->addr2.lno;
 
-	/* If only one line is specified, join with the next one. */
-	if (fm.lno == nlines) {
-		msg("No remaining lines to join into this line.");
+	/* Check for no lines to join. */
+	if ((p = file_gline(curf, from + 1, &len)) == NULL) {
+		msg("No remaining lines to join.");
 		return (1);
 	}
 
-	bp = NULL;
 	blen = tlen = 0;
+        bp = buf = NULL;
+        for (first = 1, from = cmdp->addr1.lno, to = cmdp->addr2.lno;
+	    from <= to; ++from) {
+		/*
+		 * Get next line.  Historic versions of vi allowed "10J" while
+		 * less than 10 lines from the end-of-file, so we do too.
+		 */
+		if ((p = file_gline(curf, from, &len)) == NULL)
+			break;
 
-	lno = fm.lno;
-	cnt = tm.lno - fm.lno;
-	do {
-		/* Get next line. */
-		if ((p = file_gline(curf, lno, &llen)) == NULL)
-			return (1);
+		/* Empty lines just go away. */
+		if (len == 0)
+			continue;
 
-		/* Resize buffer as necessary. */
-		if (llen + tlen + 3 > blen) {
-			blen = llen + tlen + 256;
-			if ((bp = realloc(bp, blen)) == NULL) {
-				msg("Error: %s", strerror(errno));
+		/*
+		 * Get more space if necessary.  Note, tlen isn't the length
+		 * of the new line, it's roughly the amount of space needed.
+		 * Bp - buf is the length of the new line.
+		 */
+		tlen += len + 2;
+		if (blen < tlen) {
+			clen = bp == NULL ? 0 : bp - buf;
+			if (binc(&buf, &blen, tlen)) {
+				if (buf != NULL)
+					free(buf);
 				return (1);
 			}
+			bp = buf + clen;
 		}
 
-		/* If line ends with ., ?, or !, two spaces, otherwise one. */
-		if (index(".?!", p[llen - 1]) == NULL)
-			bp[tlen++] = ' ';
-		bp[tlen++] = ' ';
+		/*
+		 * Historic practice:
+		 *
+		 * If force specified, join without modification.
+		 * If the current line ends with whitespace, strip leading
+		 *    whitespace from the joined line.
+		 * If the next line starts with a ), do nothing.
+		 * If the current line ends with ., ? or !, insert two spaces.
+		 * Else, insert one space.
+		 *
+		 * Echar is the last character in the last line joined.
+		 */
+		if (!first && !(cmdp->flags & E_FORCE)) {
+			if (isspace(echar))
+				while (len-- && isspace(*p))
+					++p;
+			else if (p[0] != ')') {
+				if (index(".?!", echar))
+					*bp++ = ' ';
+				*bp++ = ' ';
+			}
+		} else
+			first = 0;
 
-		/* Skip leading space. */
-		for (; *p && isspace(*p); ++p, --llen);
+		if (len != 0) {
+			bcopy(p, bp, len);
+			bp += len;
+			echar = p[len - 1];
+		} else
+			echar = ' ';
+	}
 
-		/* Catenate. */
-		bcopy(p, bp + tlen, llen);
-		tlen += llen;
-
-	} while (cnt-- > 1);
-
-	ret = change(&fm, &tm, bp, tlen);
-
-	free(bp);
-
-	if (ret)
+	/* Delete the joined lines. */
+        for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; to >= from; --to)
+		if (file_dline(curf, to))
+			goto err;
+		
+	/* Insert the new line into place. */
+	if (file_aline(curf, cmdp->addr1.lno - 1, buf, bp - buf)) {
+err:		if (buf != NULL)
+			free(buf);
 		return (1);
+	}
+	if (buf != NULL)
+		free(buf);
 
-	if ((rptlines = tm.lno - fm.lno) == 0)
-		rptlines = 1;
+	rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
 	rptlabel = "joined";
 
 	autoprint = 1;
