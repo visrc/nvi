@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.1 1993/06/09 22:27:34 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:34 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.2 1993/06/28 13:21:56 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:21:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 	 */
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cnt *= 2;
-	if (len == 0)
+	if (len == 0 || v_isempty(p, len))
 		pstate = P_INBLANK;
 	else {
 		--cnt;
@@ -70,14 +70,14 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 					    (lp[1] == ' ' || lp[1] == p[2]) &&
 					    !--cnt)
 						goto found;
-			if (len == 0) {
+			if (len == 0 || v_isempty(p, len)) {
 				if (!--cnt)
 					goto found;
 				pstate = P_INBLANK;
 			}
 			break;
 		case P_INBLANK:
-			if (len == 0)
+			if (len == 0 || v_isempty(p, len))
 				break;
 			if (--cnt) {
 				pstate = P_INTEXT;
@@ -164,7 +164,7 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 	 */
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cnt *= 2;
-	if (len == 0)
+	if (len == 0 || v_isempty(p, len))
 		pstate = P_INBLANK;
 	else {
 		--cnt;
@@ -182,14 +182,14 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 					    (lp[1] == ' ' || lp[1] == p[2]) &&
 					    !--cnt)
 						goto found;
-			if (len == 0) {
+			if (len == 0 || v_isempty(p, len)) {
 				if (!--cnt)
 					goto found;
 				pstate = P_INBLANK;
 			}
 			break;
 		case P_INBLANK:
-			if (len != 0) {
+			if (len != 0 && !v_isempty(p, len)) {
 				if (!--cnt) {
 found:					rp->lno = lno;
 					rp->cno = 0;
