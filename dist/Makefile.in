@@ -206,7 +206,7 @@ clean:
 	-rm -f $(CLOBJS) $(COBJS) $(DBOBJS)
 	-rm -f $(IPOBJS) $(MLIB) $(REOBJS)
 	-rm -f $(VIOBJS)
-	-rm -f *.o memcpy.c perl.c *.core core vi ex vi_motif libmvi.a
+	-rm -f *.o memcpy.c perl.c perlxsi.c *.core core vi ex vi_motif libmvi.a
 
 cleandocs:
 	cd $(srcdir)/docs/vi.ref && $(MAKE) clean
@@ -293,7 +293,11 @@ perl.c: $(srcdir)/perl_api/perl.xs $(srcdir)/perl_api/typemap
 	    $(PERLLIB)/ExtUtils/typemap $(srcdir)/perl_api/perl.xs >> $@
 	($(PERL) -ne 'print "sub $$1 {\$$curscr->$$1(\@_)}\n" \
 	    if /newXS\("VI::([^":]*)"/;' $@ ; echo "1;") > VI.pm
+perlxsi.c:
+	perl -MExtUtils::Embed -e xsinit -- -std VI
 perl.o: perl.c
+	$(CC) $(CFLAGS) $?
+perlxsi.o: perlxsi.c
 	$(CC) $(CFLAGS) $?
 perlsfio.o: $(srcdir)/perl_api/perlsfio.c
 	$(CC) $(CFLAGS) $?

@@ -7,10 +7,8 @@
  * See the LICENSE file for redistribution information.
  */
 
-#include "config.h"
-
 #ifndef lint
-static const char sccsid[] = "$Id: perlsfio.c,v 8.2 1996/12/18 10:25:12 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:25:12 $";
+static const char sccsid[] = "$Id: perlsfio.c,v 8.3 2000/04/30 17:00:15 skimo Exp $ (Berkeley) $Date: 2000/04/30 17:00:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,12 +25,22 @@ static const char sccsid[] = "$Id: perlsfio.c,v 8.2 1996/12/18 10:25:12 bostic E
 #include <termios.h>
 #include <unistd.h>
 
-#include "../common/common.h"
-
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
 
+/* perl redefines them
+ * avoid warnings
+ */
+#undef USE_DYNAMIC_LOADING
+#undef DEBUG
+#undef PACKAGE
+#undef ARGS
+#define ARGS ARGS
+
+#include "config.h"
+
+#include "../common/common.h"
 #include "extern.h"
 
 /*

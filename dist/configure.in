@@ -291,7 +291,7 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	if test "X$perlldflags" != "X"; then
 		LDFLAGS="$perlldflags $LDFLAGS"
 	fi
-	LIBOBJS="perl.o perlsfio.o $LIBOBJS"
+	LIBOBJS="perl.o perlxsi.o perlsfio.o $LIBOBJS"
 	AC_DEFINE(HAVE_PERL_INTERP)
 fi
 

@@ -5,6 +5,8 @@ VI	T_VIOBJNOMUNGE
 VI::OPT	T_VIOBJREF
 VI::MAP	T_VIOBJREF
 VI::MARK	T_VIOBJREF
+VI::LINE	T_VIOBJREF
+VI::TAGQ	T_VITAGQ
 AVREF	T_AVREFREF
 
 INPUT
@@ -36,6 +38,14 @@ T_VIOBJREF
 	}
 	else
 	    croak(\"$var is not of type ${ntype}\")
+T_VITAGQ
+	if (sv_isa($arg, \"VI::TAGQ\")) {
+	    $var = ($type) SvIV((SV*)SvRV($arg));
+	    if ($var->tqp == 0)
+		croak(\"Tag queue invalidated\");
+	} else
+	    croak(\"$var is not of type ${ntype}\")
+
 
 OUTPUT
 T_VIOBJNOMUNGE
