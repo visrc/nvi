@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.52 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
+static const char sccsid[] = "$Id: exf.c,v 10.53 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -34,6 +34,7 @@ static const char sccsid[] = "$Id: exf.c,v 10.52 2000/04/21 19:00:33 skimo Exp $
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "common.h"
 
@@ -130,7 +131,6 @@ file_init(sp, frp, rcv_name, flags)
 	int flags;
 {
 	EXF *ep;
-	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
 	int fd, exists, open_err, readonly;
@@ -235,29 +235,36 @@ file_init(sp, frp, rcv_name, flags)
 	}
 
 	/* Set up recovery. */
-	memset(&oinfo, 0, sizeof(RECNOINFO));
-	oinfo.bval = '\n';			/* Always set. */
-	oinfo.psize = psize;
-	oinfo.flags = F_ISSET(sp->gp, G_SNAPSHOT) ? R_SNAPSHOT : 0;
 	if (rcv_name == NULL) {
-		if (!rcv_tmp(sp, ep, frp->name))
-			oinfo.bfname = ep->rcv_path;
+		/* ep->rcv_path NULL if rcv_tmp fails */
+		rcv_tmp(sp, ep, frp->name);
 	} else {
 		if ((ep->rcv_path = strdup(rcv_name)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			goto err;
 		}
-		oinfo.bfname = ep->rcv_path;
 		F_SET(ep, F_MODIFIED);
 	}
 
 	/* Open a db structure. */
-	if ((ep->db = dbopen(rcv_name == NULL ? oname : NULL,
-	    O_NONBLOCK | O_RDONLY,
-	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH,
-	    DB_RECNO, &oinfo)) == NULL) {
+	if ((sp->db_error = db_create(&ep->db, sp->gp->env, 0)) != 0) {
+		/* XXXX */
+		fprintf(stderr, "db_create %d\n", sp->db_error);
+		goto err;
+	}
+
+	ep->db->set_re_delim(ep->db, '\n');		/* Always set. */
+	ep->db->set_pagesize(ep->db, psize);
+	ep->db->set_flags(ep->db, DB_RENUMBER |
+			(F_ISSET(sp->gp, G_SNAPSHOT) ? DB_SNAPSHOT : 0));
+	if (rcv_name == NULL)
+		ep->db->set_re_source(ep->db, oname);
+
+	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL,
+	    DB_RECNO, ((rcv_name == 0) ? DB_TRUNCATE : 0),
+	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != 0) {
 		msgq_str(sp,
-		    M_SYSERR, rcv_name == NULL ? oname : rcv_name, "%s");
+		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
 		/*
 		 * !!!
 		 * Historically, vi permitted users to edit files that couldn't
@@ -266,6 +273,7 @@ file_init(sp, frp, rcv_name, flags)
 		 * past files that you can't read.
 		 */ 
 		open_err = 1;
+		ep->db = NULL; /* Don't close it */
 		goto oerr;
 	}
 
@@ -276,6 +284,7 @@ file_init(sp, frp, rcv_name, flags)
 	if (mark_init(sp, ep) || log_init(sp, ep))
 		goto err;
 
+postinit:
 	/*
 	 * Set the alternate file name to be the file we're discarding.
 	 *
@@ -332,10 +341,18 @@ file_init(sp, frp, rcv_name, flags)
 	 * when locking is a little more reliable, this should change to be
 	 * an error.
 	 */
-	if (rcv_name == NULL)
-		switch (file_lock(sp, oname,
-		    &ep->fcntl_fd, ep->db->fd(ep->db), 0)) {
+	if (rcv_name == NULL && ep->refcnt == 0) {
+		if ((ep->fd = open(oname, O_RDONLY)) == -1)
+		    goto no_lock;
+
+		/* DB 3 appears to not return the fd of re_source
+		if (ep->db->fd(ep->db, &fd) != 0)
+		    goto no_lock;
+		*/
+
+		switch (file_lock(sp, oname, &ep->fcntl_fd, ep->fd, 0)) {
 		case LOCK_FAILED:
+no_lock:
 			F_SET(frp, FR_UNLOCKED);
 			break;
 		case LOCK_UNAVAIL:
@@ -346,6 +363,7 @@ file_init(sp, frp, rcv_name, flags)
 		case LOCK_SUCCESS:
 			break;
 		}
+	}
 
 	/*
          * Historically, the readonly edit option was set per edit buffer in
@@ -391,9 +409,9 @@ file_init(sp, frp, rcv_name, flags)
 	 * probably isn't a problem for vi when it's running standalone.
 	 */
 	if (readonly || F_ISSET(sp, SC_READONLY) ||
-	    !F_ISSET(frp, FR_NEWFILE) &&
+	    (!F_ISSET(frp, FR_NEWFILE) &&
 	    (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
-	    access(frp->name, W_OK)))
+	    access(frp->name, W_OK))))
 		O_SET(sp, O_READONLY);
 	else
 		O_CLR(sp, O_READONLY);
@@ -428,10 +446,10 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 		ep->rcv_path = NULL;
 	}
 	if (ep->db != NULL)
-		(void)ep->db->close(ep->db);
+		(void)ep->db->close(ep->db, DB_NOSYNC);
 	free(ep);
 
-	return (open_err ?
+	return (open_err && !LF_ISSET(FS_OPENERR) ?
 	    file_init(sp, frp, rcv_name, flags | FS_OPENERR) : 1);
 }
 
@@ -461,8 +479,8 @@ file_spath(sp, frp, sbp, existsp)
 		*existsp = 0;
 		return (0);
 	}
-	if (name[0] == '/' || name[0] == '.' &&
-	    (name[1] == '/' || name[1] == '.' && name[2] == '/')) {
+	if (name[0] == '/' || (name[0] == '.' &&
+	    (name[1] == '/' || (name[1] == '.' && name[2] == '/')))) {
 		*existsp = !stat(name, sbp);
 		return (0);
 	}
@@ -678,8 +696,10 @@ file_end(sp, ep, force)
 	 *
 	 * Close the db structure.
 	 */
-	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
-		msgq_str(sp, M_SYSERR, frp->name, "241|%s: close");
+	if (ep->db->close != NULL && 
+	    (sp->db_error = ep->db->close(ep->db, DB_NOSYNC)) != 0 && 
+	    !force) {
+		msgq_str(sp, M_DBERR, frp->name, "241|%s: close");
 		++ep->refcnt;
 		return (1);
 	}
@@ -707,6 +727,8 @@ file_end(sp, ep, force)
 		if (ep->rcv_mpath != NULL && unlink(ep->rcv_mpath))
 			msgq_str(sp, M_SYSERR, ep->rcv_mpath, "243|%s: remove");
 	}
+	if (ep->fd != -1)
+		(void)close(ep->fd);
 	if (ep->fcntl_fd != -1)
 		(void)close(ep->fcntl_fd);
 	if (ep->rcv_fd != -1)
@@ -807,8 +829,8 @@ file_write(sp, fm, tm, name, flags)
 		mtype = NEWFILE;
 	else {
 		if (noname && !LF_ISSET(FS_FORCE | FS_APPEND) &&
-		    (F_ISSET(ep, F_DEVSET) &&
-		    (sb.st_dev != ep->mdev || sb.st_ino != ep->minode) ||
+		    ((F_ISSET(ep, F_DEVSET) &&
+		    (sb.st_dev != ep->mdev || sb.st_ino != ep->minode)) ||
 		    sb.st_mtime != ep->mtime)) {
 			msgq_str(sp, M_ERR, name, LF_ISSET(FS_POSSIBLE) ?
 "250|%s: file modified more recently than this copy; use ! to override" :
@@ -889,7 +911,7 @@ file_write(sp, fm, tm, name, flags)
 	 * we re-init the time.  That way the user can clean up the disk
 	 * and rewrite without having to force it.
 	 */
-	if (noname)
+	if (noname) {
 		if (stat(name, &sb))
 			time(&ep->mtime);
 		else {
@@ -899,6 +921,7 @@ file_write(sp, fm, tm, name, flags)
 
 			ep->mtime = sb.st_mtime;
 		}
+	}
 
 	/*
 	 * If the write failed, complain loudly.  ex_writefp() has already
@@ -927,11 +950,12 @@ file_write(sp, fm, tm, name, flags)
 	 */
 	if (LF_ISSET(FS_ALL) && !LF_ISSET(FS_APPEND)) {
 		F_CLR(ep, F_MODIFIED);
-		if (F_ISSET(frp, FR_TMPFILE))
+		if (F_ISSET(frp, FR_TMPFILE)) {
 			if (noname)
 				F_SET(frp, FR_TMPEXIT);
 			else
 				F_CLR(frp, FR_TMPEXIT);
+	}
 	}
 
 	p = msg_print(sp, name, &nf);
@@ -1172,7 +1196,7 @@ file_comment(sp)
 {
 	db_recno_t lno;
 	size_t len;
-	char *p;
+	CHAR_T *p;
 
 	for (lno = 1; !db_get(sp, lno, 0, &p, &len) && len == 0; ++lno);
 	if (p == NULL)
@@ -1229,7 +1253,7 @@ file_m1(sp, force, flags)
 	 * unless force is also set.  Otherwise, we fail unless forced or
 	 * there's another open screen on this file.
 	 */
-	if (F_ISSET(ep, F_MODIFIED))
+	if (F_ISSET(ep, F_MODIFIED)) {
 		if (O_ISSET(sp, O_AUTOWRITE)) {
 			if (!force && file_aw(sp, flags))
 				return (1);
@@ -1239,6 +1263,7 @@ file_m1(sp, force, flags)
 "263|File modified since last complete write; write or use :edit! to override");
 			return (1);
 		}
+	}
 
 	return (file_m3(sp, force));
 }

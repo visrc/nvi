@@ -112,6 +112,12 @@
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
 
+/* Define when dynamically loading DB 3 */
+#undef USE_DYNAMIC_LOADING
+
+/* Define when fprintf prototype not in an obvious place */
+#undef NEED_FPRINTF_PROTO
+
 /* Define if you have the bsearch function.  */
 #undef HAVE_BSEARCH
 
@@ -172,8 +178,8 @@
 /* Define if you have the unsetenv function.  */
 #undef HAVE_UNSETENV
 
-/* Define if you have the valloc function.  */
-#undef HAVE_VALLOC
-
 /* Define if you have the vsnprintf function.  */
 #undef HAVE_VSNPRINTF
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H

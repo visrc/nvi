@@ -26,12 +26,6 @@ COBJS=	addbytes.o addch.o box.o clear.o clrtobot.o clrtoeol.o \
 	insch.o insertln.o longname.o move.o mvwin.o newwin.o overlay.o \
 	overwrite.o putchar.o refresh.o scroll.o setterm.o standout.o \
 	toucholap.o touchwin.o tscroll.o tstp.o tty.o unctrl.o waddnstr.o
-DBOBJS=	db.o mpool.o \
-	bt_close.o bt_conv.o bt_debug.o bt_delete.o bt_get.o bt_open.o \
-	bt_overflow.o bt_page.o bt_put.o bt_search.o bt_seq.o \
-	bt_split.o bt_utils.o \
-	rec_close.o rec_delete.o rec_get.o rec_open.o rec_put.o \
-	rec_search.o rec_seq.o rec_utils.o
 IPOBJS=	ip_funcs.o ip_main.o ip_read.o ip_screen.o ip_send.o ip_term.o
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
 VIOBJS= api.o cut.o db.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
@@ -312,6 +306,8 @@ api.o: $(srcdir)/common/api.c
 cut.o: $(srcdir)/common/cut.c
 	$(CC) $(CFLAGS) $?
 db.o: $(srcdir)/common/db.c
+	$(CC) $(CFLAGS) $?
+dldb.o: $(srcdir)/common/dldb.c
 	$(CC) $(CFLAGS) $?
 delete.o: $(srcdir)/common/delete.c
 	$(CC) $(CFLAGS) $?
@@ -607,54 +603,6 @@ unctrl.o: $(srcdir)/curses/unctrl.c
 	$(CC) -D_CURSES_PRIVATE $(CFLAGS) $?
 waddnstr.o: $(srcdir)/curses/waddnstr.c
 	$(CC) -D_CURSES_PRIVATE $(CFLAGS) $?
-
-# DB 1.85 sources.
-db.o: $(srcdir)/db/db/db.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) $?
-mpool.o: $(srcdir)/db/mpool/mpool.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/mpool $?
-bt_close.o: $(srcdir)/db/btree/bt_close.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_conv.o: $(srcdir)/db/btree/bt_conv.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_debug.o: $(srcdir)/db/btree/bt_debug.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_delete.o: $(srcdir)/db/btree/bt_delete.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_get.o: $(srcdir)/db/btree/bt_get.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_open.o: $(srcdir)/db/btree/bt_open.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_overflow.o: $(srcdir)/db/btree/bt_overflow.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_page.o: $(srcdir)/db/btree/bt_page.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_put.o: $(srcdir)/db/btree/bt_put.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_search.o: $(srcdir)/db/btree/bt_search.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_seq.o: $(srcdir)/db/btree/bt_seq.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_split.o: $(srcdir)/db/btree/bt_split.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-bt_utils.o: $(srcdir)/db/btree/bt_utils.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/btree $?
-rec_close.o: $(srcdir)/db/recno/rec_close.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
-rec_delete.o: $(srcdir)/db/recno/rec_delete.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
-rec_get.o: $(srcdir)/db/recno/rec_get.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
-rec_open.o: $(srcdir)/db/recno/rec_open.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
-rec_put.o: $(srcdir)/db/recno/rec_put.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
-rec_search.o: $(srcdir)/db/recno/rec_search.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
-rec_seq.o: $(srcdir)/db/recno/rec_seq.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
-rec_utils.o: $(srcdir)/db/recno/rec_utils.c
-	$(CC) -D__DBINTERFACE_PRIVATE $(CFLAGS) -I$(srcdir)/db/recno $?
 
 # Regular Expressions sources.
 regcomp.o: $(srcdir)/regex/regcomp.c

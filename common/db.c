@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.24 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
+static const char sccsid[] = "$Id: db.c,v 10.25 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,18 +27,19 @@ static const char sccsid[] = "$Id: db.c,v 10.24 2000/04/21 19:00:33 skimo Exp $ 
 #include "../vi/vi.h"
 
 static int scr_update __P((SCR *, db_recno_t, lnop_t, int));
+static int append __P((SCR*, db_recno_t, char*, size_t));
 
 /*
  * db_eget --
  *	Front-end to db_get, special case handling for empty files.
  *
- * PUBLIC: int db_eget __P((SCR *, db_recno_t, char **, size_t *, int *));
+ * PUBLIC: int db_eget __P((SCR *, db_recno_t, CHAR_T **, size_t *, int *));
  */
 int
 db_eget(sp, lno, pp, lenp, isemptyp)
 	SCR *sp;
 	db_recno_t lno;				/* Line number. */
-	char **pp;				/* Pointer store. */
+	CHAR_T **pp;				/* Pointer store. */
 	size_t *lenp;				/* Length store. */
 	int *isemptyp;
 {
@@ -60,7 +61,7 @@ db_eget(sp, lno, pp, lenp, isemptyp)
 		return (1);
 
 	/* If the file isn't empty, fail loudly. */
-	if (lno != 0 && lno != 1 || l1 != 0) {
+	if ((lno != 0 && lno != 1) || l1 != 0) {
 		db_err(sp, lno);
 		return (1);
 	}
@@ -76,14 +77,14 @@ db_eget(sp, lno, pp, lenp, isemptyp)
  *	Look in the text buffers for a line, followed by the cache, followed
  *	by the database.
  *
- * PUBLIC: int db_get __P((SCR *, db_recno_t, u_int32_t, char **, size_t *));
+ * PUBLIC: int db_get __P((SCR *, db_recno_t, u_int32_t, CHAR_T **, size_t *));
  */
 int
 db_get(sp, lno, flags, pp, lenp)
 	SCR *sp;
 	db_recno_t lno;				/* Line number. */
 	u_int32_t flags;
-	char **pp;				/* Pointer store. */
+	CHAR_T **pp;				/* Pointer store. */
 	size_t *lenp;				/* Length store. */
 {
 	DBT data, key;
@@ -151,12 +152,14 @@ db_get(sp, lno, flags, pp, lenp)
 
 nocache:
 	/* Get the line from the underlying database. */
+	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
-	switch (ep->db->get(ep->db, &key, &data, 0)) {
-        case -1:
+	memset(&data, 0, sizeof(data));
+	switch (ep->db->get(ep->db, NULL, &key, &data, 0)) {
+        default:
 		goto err2;
-	case 1:
+	case DB_NOTFOUND:
 err1:		if (LF_ISSET(DBG_FATAL))
 err2:			db_err(sp, lno);
 err3:		if (lenp != NULL)
@@ -164,6 +167,8 @@ err3:		if (lenp != NULL)
 		if (pp != NULL)
 			*pp = NULL;
 		return (1);
+	case 0:
+		;
 	}
 
 	/* Reset the cache. */
@@ -214,15 +219,14 @@ db_delete(sp, lno)
 	log_line(sp, lno, LOG_LINE_DELETE);
 
 	/* Update file. */
+	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
-	SIGBLOCK;
-	if (ep->db->del(ep->db, &key, 0) == 1) {
-		msgq(sp, M_SYSERR,
-		    "003|unable to delete line %lu", (u_long)lno);
+	if ((sp->db_error = ep->db->del(ep->db, NULL, &key, 0)) != 0) {
+		msgq(sp, M_DBERR, "003|unable to delete line %lu", 
+		    (u_long)lno);
 		return (1);
 	}
-	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno <= ep->c_lno)
@@ -239,6 +243,73 @@ db_delete(sp, lno)
 	return (scr_update(sp, lno, LINE_DELETE, 1));
 }
 
+/* maybe this could be simpler
+ *
+ * DB3 behaves differently from DB1
+ *
+ * if lno != 0 just go to lno and put the new line after it
+ * if lno == 0 then if there are any record, put in front of the first
+ *		    otherwise just append to the end thus creating the first
+ *				line
+ */
+static int
+append(sp, lno, p, len)
+	SCR *sp;
+	db_recno_t lno;
+	char *p;
+	size_t len;
+{
+	DBT data, key;
+	DBC *dbcp_put;
+	EXF *ep;
+
+	ep = sp->ep;
+
+	memset(&key, 0, sizeof(key));
+	key.data = &lno;
+	key.size = sizeof(lno);
+	memset(&data, 0, sizeof(data));
+
+	if ((sp->db_error = ep->db->cursor(ep->db, NULL, &dbcp_put, 0)) != 0)
+	    return 1;
+
+	if (lno != 0) {
+	    if ((sp->db_error = dbcp_put->c_get(dbcp_put, &key, &data, DB_SET)) != 0) 
+		goto err2;
+
+	    data.data = p;
+	    data.size = len;
+	    if ((sp->db_error = dbcp_put->c_put(dbcp_put, &key, &data, DB_AFTER)) != 0) {
+err2:
+		(void)dbcp_put->c_close(dbcp_put);
+		return (1);
+	    }
+	} else {
+	    if ((sp->db_error = dbcp_put->c_get(dbcp_put, &key, &data, DB_FIRST)) != 0) {
+		if (sp->db_error != DB_NOTFOUND)
+		    goto err2;
+
+		data.data = p;
+		data.size = len;
+		if ((sp->db_error = ep->db->put(ep->db, NULL, &key, &data, DB_APPEND)) != 0) {
+		    goto err2;
+		}
+	    } else {
+		key.data = &lno;
+		key.size = sizeof(lno);
+		data.data = p;
+		data.size = len;
+		if ((sp->db_error = dbcp_put->c_put(dbcp_put, &key, &data, DB_BEFORE)) != 0) {
+		    goto err2;
+		}
+	    }
+	}
+
+	(void)dbcp_put->c_close(dbcp_put);
+
+	return 0;
+}
+
 /*
  * db_append --
  *	Append a line into the file.
@@ -253,7 +324,6 @@ db_append(sp, update, lno, p, len)
 	char *p;
 	size_t len;
 {
-	DBT data, key;
 	EXF *ep;
 	int rval;
 
@@ -267,17 +337,11 @@ db_append(sp, update, lno, p, len)
 	}
 		
 	/* Update file. */
-	key.data = &lno;
-	key.size = sizeof(lno);
-	data.data = p;
-	data.size = len;
-	SIGBLOCK;
-	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
-		msgq(sp, M_SYSERR,
-		    "004|unable to append to line %lu", (u_long)lno);
+	if (append(sp, lno, p, len) != 0) {
+		msgq(sp, M_DBERR, "004|unable to append to line %lu", 
+			(u_long)lno);
 		return (1);
 	}
-	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno < ep->c_lno)
@@ -327,6 +391,7 @@ db_insert(sp, lno, p, len)
 	size_t len;
 {
 	DBT data, key;
+	DBC *dbcp_put;
 	EXF *ep;
 	int rval;
 
@@ -341,17 +406,11 @@ db_insert(sp, lno, p, len)
 	}
 		
 	/* Update file. */
-	key.data = &lno;
-	key.size = sizeof(lno);
-	data.data = p;
-	data.size = len;
-	SIGBLOCK;
-	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
-		msgq(sp, M_SYSERR,
-		    "005|unable to insert at line %lu", (u_long)lno);
+	if (append(sp, lno - 1, p, len) != 0) {
+		msgq(sp, M_DBERR, "005|unable to insert at line %lu", 
+			(u_long)lno);
 		return (1);
 	}
-	SIGUNBLOCK;
 
 	/* Flush the cache, update line count, before screen update. */
 	if (lno >= ep->c_lno)
@@ -409,17 +468,16 @@ db_set(sp, lno, p, len)
 	log_line(sp, lno, LOG_LINE_RESET_B);
 
 	/* Update file. */
+	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
+	memset(&data, 0, sizeof(data));
 	data.data = p;
 	data.size = len;
-	SIGBLOCK;
-	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
-		msgq(sp, M_SYSERR,
-		    "006|unable to store line %lu", (u_long)lno);
+	if ((sp->db_error = ep->db->put(ep->db, NULL, &key, &data, 0)) != 0) {
+		msgq(sp, M_DBERR, "006|unable to store line %lu", (u_long)lno);
 		return (1);
 	}
-	SIGUNBLOCK;
 
 	/* Flush the cache, before logging or screen update. */
 	if (lno == ep->c_lno)
@@ -484,6 +542,7 @@ db_last(sp, lnop)
 	db_recno_t *lnop;
 {
 	DBT data, key;
+	DBC *dbcp;
 	EXF *ep;
 	db_recno_t lno;
 
@@ -505,20 +564,27 @@ db_last(sp, lnop)
 		return (0);
 	}
 
+	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
+	memset(&data, 0, sizeof(data));
 
-	switch (ep->db->seq(ep->db, &key, &data, R_LAST)) {
-        case -1:
-		msgq(sp, M_SYSERR, "007|unable to get last line");
-		*lnop = 0;
-		return (1);
-        case 1:
+	if ((sp->db_error = ep->db->cursor(ep->db, NULL, &dbcp, 0)) != 0)
+	    goto err1;
+	switch (sp->db_error = dbcp->c_get(dbcp, &key, &data, DB_LAST)) {
+        case DB_NOTFOUND:
 		*lnop = 0;
 		return (0);
 	default:
-		break;
+		(void)dbcp->c_close(dbcp);
+err1:
+		msgq(sp, M_DBERR, "007|unable to get last line");
+		*lnop = 0;
+		return (1);
+        case 0:
+		;
 	}
+	(void)dbcp->c_close(dbcp);
 
 	/* Fill the cache. */
 	memcpy(&lno, key.data, sizeof(lno));

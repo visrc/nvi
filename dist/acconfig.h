@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.18 1996/07/02 19:37:38 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:38 $ */
+/* $Id: acconfig.h,v 8.19 2000/04/21 21:26:20 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:20 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -80,3 +80,10 @@
 
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
+
+/* Define when dynamically loading DB 3 */
+#undef USE_DYNAMIC_LOADING
+
+/* Define when fprintf prototype not in an obvious place */
+#undef NEED_FPRINTF_PROTO
+

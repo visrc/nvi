@@ -6,9 +6,15 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.14 1996/12/18 10:28:21 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:21 $
+ *	$Id: common.h,v 10.15 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $
  */
 
+/*
+ * Avoid include sys/types.h after definition of pgno_t
+ */
+#include <sys/types.h>
+#include <sys/queue.h>
+#include <bitstring.h>
 /*
  * Porting information built at configuration time.  Included before
  * any of nvi's include files.
@@ -20,7 +26,7 @@
  * on most machines to which we're porting vi, and we want to include
  * them in a very specific order, regardless.
  */
-#include <db.h>
+#include "db.h"
 #include <regex.h>
 
 /*

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.11 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
+static const char sccsid[] = "$Id: log.c,v 10.12 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,9 +99,9 @@ log_init(sp, ep)
 	ep->l_cursor.cno = 0;
 	ep->l_high = ep->l_cur = 1;
 
-	ep->log = dbopen(NULL, O_CREAT | O_NONBLOCK | O_RDWR,
-	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
-	if (ep->log == NULL) {
+	if (db_create(&ep->log, sp->gp->env, 0) != 0 ||
+	    ep->log->open(ep->log, NULL, NULL, DB_RECNO, DB_CREATE,
+	    S_IRUSR | S_IWUSR) != 0) {
 		msgq(sp, M_SYSERR, "009|Log file");
 		F_SET(ep, F_NOLOG);
 		return (1);
@@ -126,7 +126,7 @@ log_end(sp, ep)
 	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
 	 */
 	if (ep->log != NULL) {
-		(void)(ep->log->close)(ep->log);
+		(void)(ep->log->close)(ep->log,DB_NOSYNC);
 		ep->log = NULL;
 	}
 	if (ep->l_lp != NULL) {
@@ -187,11 +187,13 @@ log_cursor1(sp, type)
 	ep->l_lp[0] = type;
 	memmove(ep->l_lp + sizeof(u_char), &ep->l_cursor, sizeof(MARK));
 
+	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;
 	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
 	data.data = ep->l_lp;
 	data.size = sizeof(u_char) + sizeof(MARK);
-	if (ep->log->put(ep->log, &key, &data, 0) == -1)
+	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
 
 #if defined(DEBUG) && 0
@@ -220,7 +222,7 @@ log_line(sp, lno, action)
 	DBT data, key;
 	EXF *ep;
 	size_t len;
-	char *lp;
+	CHAR_T *lp;
 
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG))
@@ -265,11 +267,13 @@ log_line(sp, lno, action)
 	memmove(ep->l_lp + sizeof(u_char), &lno, sizeof(db_recno_t));
 	memmove(ep->l_lp + sizeof(u_char) + sizeof(db_recno_t), lp, len);
 
+	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;
 	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
 	data.data = ep->l_lp;
 	data.size = len + sizeof(u_char) + sizeof(db_recno_t);
-	if (ep->log->put(ep->log, &key, &data, 0) == -1)
+	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
 
 #if defined(DEBUG) && 0
@@ -335,11 +339,13 @@ log_mark(sp, lmp)
 	ep->l_lp[0] = LOG_MARK;
 	memmove(ep->l_lp + sizeof(u_char), lmp, sizeof(LMARK));
 
+	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;
 	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
 	data.data = ep->l_lp;
 	data.size = sizeof(u_char) + sizeof(LMARK);
-	if (ep->log->put(ep->log, &key, &data, 0) == -1)
+	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
 
 #if defined(DEBUG) && 0
@@ -384,11 +390,13 @@ log_backward(sp, rp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
+	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;		/* Initialize db request. */
 	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
 	for (didop = 0;;) {
 		--ep->l_cur;
-		if (ep->log->get(ep->log, &key, &data, 0))
+		if (ep->log->get(ep->log, NULL, &key, &data, 0))
 			LOG_ERR;
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_backward", ep->l_cur, data.data);
@@ -486,12 +494,14 @@ log_setline(sp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
+	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;		/* Initialize db request. */
 	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
 
 	for (;;) {
 		--ep->l_cur;
-		if (ep->log->get(ep->log, &key, &data, 0))
+		if (ep->log->get(ep->log, NULL, &key, &data, 0))
 			LOG_ERR;
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_setline", ep->l_cur, data.data);
@@ -577,11 +587,13 @@ log_forward(sp, rp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
+	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;		/* Initialize db request. */
 	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
 	for (didop = 0;;) {
 		++ep->l_cur;
-		if (ep->log->get(ep->log, &key, &data, 0))
+		if (ep->log->get(ep->log, NULL, &key, &data, 0))
 			LOG_ERR;
 #if defined(DEBUG) && 0
 		log_trace(sp, "log_forward", ep->l_cur, data.data);
@@ -597,7 +609,20 @@ log_forward(sp, rp)
 			break;
 		case LOG_CURSOR_INIT:
 			break;
+		/* XXXX LOG_LINE_APPEND and LOG_LINE_INSERT split
+		   for now, because db_insert won't work for adding
+		   last line
+		 */
 		case LOG_LINE_APPEND:
+			didop = 1;
+			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
+			--lno;
+			if (db_append(sp, 1, lno, p + sizeof(u_char) +
+			    sizeof(db_recno_t), data.size - sizeof(u_char) -
+			    sizeof(db_recno_t)))
+				goto err;
+			++sp->rptlines[L_ADDED];
+			break;
 		case LOG_LINE_INSERT:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
@@ -659,7 +684,7 @@ log_err(sp, file, line)
 
 	msgq(sp, M_SYSERR, "015|%s/%d: log put error", tail(file), line);
 	ep = sp->ep;
-	(void)ep->log->close(ep->log);
+	(void)ep->log->close(ep->log, DB_NOSYNC);
 	if (!log_init(sp, ep))
 		msgq(sp, M_ERR, "267|Log restarted");
 }

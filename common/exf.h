@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.8 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $
+ *	$Id: exf.h,v 10.9 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $
  */
 					/* Undo direction. */
 /*
@@ -42,6 +42,7 @@ struct _exf {
 	time_t	 mtime;			/* Last modification time. */
 
 	int	 fcntl_fd;		/* Fcntl locking fd; see exf.c. */
+	int	 fd;			/* File descriptor */
 
 	/*
 	 * Recovery in general, and these fields specifically, are described

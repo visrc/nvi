@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.38 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $
+ *	$Id: gs.h,v 10.39 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -76,6 +76,8 @@ struct _gs {
 #define	GO_SECURE	2		/* Global options: secure. */
 #define	GO_TERM		3		/* Global options: terminal type. */
 	OPTION	 opts[GO_TERM + 1];
+
+	DB_ENV	*env;			/* The DB environment. */
 
 	DB	*msg;			/* Message catalog DB. */
 	MSGH	 msgq;			/* User message list. */

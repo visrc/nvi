@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.50 1996/12/17 14:51:28 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:51:28 $";
+static const char sccsid[] = "$Id: main.c,v 10.51 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -219,6 +219,14 @@ editor(gp, argc, argv)
 	}
 	if (LF_ISSET(SC_EX) && F_ISSET(gp, G_SCRIPTED))
 		silent = 1;
+
+	if (db_env_create(&gp->env, 0)) {
+		v_estr(gp->progname, 0, "Unable to create DB environment.");
+		goto err;
+	}
+	gp->env->set_errfile(gp->env, stderr);
+	gp->env->open(gp->env, NULL, NULL, 0, 0);
+	gp->env = NULL;
 
 	/*
 	 * Build and initialize the first/current screen.  This is a bit

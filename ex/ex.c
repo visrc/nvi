@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.61 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $";
+static const char sccsid[] = "$Id: ex.c,v 10.62 2000/04/21 21:26:21 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1417,7 +1417,7 @@ addr_verify:
 				goto err;
 			}
 		} else {
-			if (!NPFITS(MAX_REC_NUMBER, sp->lno, ecp->flagoff)) {
+			if (!NPFITS(DB_MAX_RECORDS, sp->lno, ecp->flagoff)) {
 				ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 				goto err;
 			}
@@ -1860,7 +1860,7 @@ ex_line(sp, ecp, mp, isaddrp, errp)
 			*errp = 1;
 			return (0);
 		}
-		if (!NPFITS(MAX_REC_NUMBER, 0, val)) {
+		if (!NPFITS(DB_MAX_RECORDS, 0, val)) {
 			ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 			*errp = 1;
 			return (0);
@@ -2047,7 +2047,7 @@ search:		mp->lno = sp->lno;
 				return (0);
 			}
 		} else
-			if (!NPFITS(MAX_REC_NUMBER, mp->lno, total)) {
+			if (!NPFITS(DB_MAX_RECORDS, mp->lno, total)) {
 				ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 				*errp = 1;
 				return (0);
@@ -2308,7 +2308,7 @@ ex_badaddr(sp, cp, ba, nret)
 	 * underlying file, that's the real problem.
 	 */
 	if (sp->ep == NULL) {
-		ex_emsg(sp, cp->name, EXM_NOFILEYET);
+		ex_emsg(sp, cp ? cp->name : NULL, EXM_NOFILEYET);
 		return;
 	}
 

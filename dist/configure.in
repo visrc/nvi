@@ -265,13 +265,8 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	if test "$vi_cv_path_perl" = no; then
 		AC_MSG_ERROR([No perl5 utility found.])
 	fi
-	$vi_cv_path_perl -e 'close(STDERR);require 5.004' || {
-		AC_MSG_WARN([Please upgrade your perl to at least 5.004;])
-		AC_MSG_WARN([    Older versions are no longer supported and])
-		AC_MSG_WARN([    future versions of nvi won't even compile with them.])
-	}
-	$vi_cv_path_perl -e 'require 5.002' || {
-		AC_MSG_ERROR([perl5 must be version 5.002 or later.])
+	$vi_cv_path_perl -e 'require 5.004' || {
+		AC_MSG_ERROR([perl5 must be version 5.004 or later.])
 	}
 	$vi_cv_path_perl -e 'close(STDERR);require 5.003_01' &&
 	    AC_DEFINE(HAVE_PERL_5_003_01)
@@ -333,18 +328,9 @@ if test "$vi_cv_termlib" != no; then
 	LIBS="$vi_cv_termlib $LIBS"
 fi
 AC_SUBST(cobjs)
-AC_MSG_CHECKING(if --disable-curses option specified)
-AC_ARG_ENABLE(curses,
-	[  --disable-curses        DON'T use the nvi-provided curses routines.],
-	[vi_cv_curses="other curses"], [vi_cv_curses="bundled curses"])
-AC_MSG_RESULT($vi_cv_curses)
-case "$vi_cv_curses" in
-"bundled curses")
-	CPPFLAGS="-I\$(srcdir)/curses $CPPFLAGS"
-	cobjs="\$(COBJS)";;
-"other curses")
-	LIBS="-lcurses $LIBS";;
-esac
+
+# XXX actually check for curses !
+LIBS="-lcurses $LIBS"
 
 dnl Checks for header files.
 AC_MSG_CHECKING(for sys/mman.h)
@@ -597,19 +583,6 @@ if test "$vi_cv_sprintf_count" = no; then
 fi
 AC_MSG_RESULT($vi_cv_sprintf_count)
 
-dnl We compile in nvi's RE routines unless the user specifies otherwise.
-AC_MSG_CHECKING(if --disable-re option specified)
-AC_ARG_ENABLE(re,
-	[  --disable-re            DON'T use the nvi-provided RE routines.],
-	[vi_cv_re_lib="other RE"], [vi_cv_re_lib="bundled RE"])
-AC_MSG_RESULT($vi_cv_re_lib)
-case "$vi_cv_re_lib" in
-"bundled RE")
-	CPPFLAGS="-I\$(srcdir)/regex $CPPFLAGS"
-	LIBOBJS="\$(REOBJS) $LIBOBJS";;
-"other RE")
-	;;
-esac
 
 dnl Check for the standard shorthand types.
 AC_SUBST(u_char_decl)
@@ -717,6 +690,85 @@ fi
 if test "$vi_cv_int32" != yes; then
 	int32_decl="typedef $vi_cv_int32 int32_t;"
 fi
+
+AC_CACHE_CHECK([return type of fprintf], vi_cv_type_fprintf,
+[AC_TRY_COMPILE([#include <stdio.h>
+int fprintf ();
+],[int i;], vi_cv_type_fprintf=int, vi_cv_type_fprintf=void)])
+
+AC_SUBST(NEED_FPRINTF_PROTO)
+AC_CACHE_CHECK([fprintf prototype needed], vi_cv_proto_fprintf,
+[AC_TRY_COMPILE([ #include <stdio.h>
+typedef int     (*funcPtr)();
+],[funcPtr ptr = (funcPtr) fprintf;], 
+vi_cv_proto_fprintf=no, 
+[vi_cv_proto_fprintf=yes, AC_DEFINE(NEED_FPRINTF_PROTO)])])
+
+
+dnl Check for DB 3
+AC_ARG_WITH(db3,
+	[  --with-db3=db3prefix    Path to db3 installation. ])
+if test "$with_db3" = "no"; then
+	AC_MSG_ERROR([Need DB 3.])
+fi
+
+saveLDFLAGS="$LDFLAGS"
+if test "x$with_db3" != "x"; then
+	LDFLAGS="-L$with_db3/lib $LDFLAGS"
+	CFLAGS="-I$with_db3/include $CFLAGS"
+fi;
+
+AC_CHECK_LIB(db, db_create,
+	[vi_cv_dbfatal="no"], [vi_cv_dbfatal="yes"])
+if test "$vi_cv_dbfatal" = "yes"; then
+	AC_MSG_ERROR([Need DB 3.])
+fi
+
+LDFLAGS="$saveLDFLAGS"
+
+AC_SUBST(dl_src)
+AC_MSG_CHECKING(if --enable-dynamic-loading option specified)
+AC_ARG_ENABLE(dynamic-loading,
+	[  --enable-dynamic-loading Load DB 3 dynamically.],
+	[vi_cv_dl="yes"], [vi_cv_dl="no"])
+AC_MSG_RESULT($vi_cv_dl)
+if test "$vi_cv_dl" = yes; then
+	AC_CHECK_LIB(dl, dlopen,
+		[vi_cv_dlfatal="no"], [vi_cv_dlfatal="yes"])
+	if test "$vi_cv_dlfatal" = "yes"; then
+		AC_MSG_ERROR([Need dl to support dynamic loading.])
+	fi
+	OLDPATH="$PATH"
+
+	PATH="$with_db3/lib:/usr/lib:/lib"
+	AC_PATH_PROG(vi_cv_path_db3, libdb-3.so, no)
+	if test "$vi_cv_path_db3" = no; then
+		AC_MSG_ERROR([Path of libdb-3.so not found.])
+	fi
+	PATH="$OLDPATH"
+
+	AC_DEFINE(USE_DYNAMIC_LOADING)
+	LIBOBJS="dldb.o $LIBOBJS"
+	dl_src=../common/dldb.c
+	LIBS="-ldl $LIBS"
+else
+	LIBS="-ldb $LIBS"
+	LDFLAGS="-L$with_db3/lib $LDFLAGS"
+fi
+
+dnl We compile in nvi's RE routines unless the user specifies otherwise.
+AC_MSG_CHECKING(if --disable-re option specified)
+AC_ARG_ENABLE(re,
+	[  --disable-re            DON'T use the nvi-provided RE routines.],
+	[vi_cv_re_lib="other RE"], [vi_cv_re_lib="bundled RE"])
+AC_MSG_RESULT($vi_cv_re_lib)
+case "$vi_cv_re_lib" in
+"bundled RE")
+	CPPFLAGS="-I\$(srcdir)/regex $CPPFLAGS"
+	LIBOBJS="\$(REOBJS) $LIBOBJS";;
+"other RE")
+	;;
+esac
 
 AC_OUTPUT(Makefile port.h:port.h.in
     pathnames.h:pathnames.h.in recover:recover.in)

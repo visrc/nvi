@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.50 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
+static const char sccsid[] = "$Id: msg.c,v 10.51 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -106,6 +106,7 @@ msgq(sp, mt, fmt, va_alist)
 			break;
 		case M_ERR:
 		case M_SYSERR:
+		case M_DBERR:
 			break;
 		default:
 			abort();
@@ -142,7 +143,7 @@ retry:		FREE_SPACE(sp, bp, blen);
 #define	REM	(blen - mlen)
 	mp = bp;
 	mlen = 0;
-	if (mt == M_SYSERR) {
+	if (mt == M_SYSERR || mt == M_DBERR) {
 		p = msg_cat(sp, "020|Error: ", &len);
 		if (REM < len)
 			goto retry;
@@ -328,6 +329,13 @@ nofmt:	mp += len;
 		goto retry;
 	if (mt == M_SYSERR) {
 		len = snprintf(mp, REM, ": %s", strerror(errno));
+		mp += len;
+		if ((mlen += len) > blen)
+			goto retry;
+		mt = M_ERR;
+	}
+	if (mt == M_DBERR) {
+		len = snprintf(mp, REM, ": %s", db_strerror(sp->db_error));
 		mp += len;
 		if ((mlen += len) > blen)
 			goto retry;
@@ -696,19 +704,20 @@ msg_open(sp, file)
 	char *p, *t, buf[MAXPATHLEN];
 
 	if ((p = strrchr(file, '/')) != NULL && p[1] == '\0' &&
-	    ((t = getenv("LC_MESSAGES")) != NULL && t[0] != '\0' ||
-	    (t = getenv("LANG")) != NULL && t[0] != '\0')) {
+	    (((t = getenv("LC_MESSAGES")) != NULL && t[0] != '\0') ||
+	    ((t = getenv("LANG")) != NULL && t[0] != '\0'))) {
 		(void)snprintf(buf, sizeof(buf), "%s%s", file, t);
 		p = buf;
 	} else
 		p = file;
-	if ((db = dbopen(p,
-	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
+	if ((sp->db_error = db_create(&db, sp->gp->env, 0)) != 0 ||
+	    (sp->db_error = db->set_re_source(db, p)) != 0 ||
+	    (sp->db_error = db->open(db, NULL, NULL, DB_RECNO, 0, 0)) != 0) {
 		if (first) {
 			first = 0;
 			return (1);
 		}
-		msgq_str(sp, M_SYSERR, p, "%s");
+		msgq_str(sp, M_DBERR, p, "%s");
 		return (1);
 	}
 
@@ -717,25 +726,27 @@ msg_open(sp, file)
 	 * the message catalog build finds it.
 	 */
 #define	VMC	"VI_MESSAGE_CATALOG"
+	memset(&key, 0, sizeof(key));
 	key.data = &msgno;
 	key.size = sizeof(db_recno_t);
+	memset(&data, 0, sizeof(data));
 	msgno = 1;
-	if (db->get(db, &key, &data, 0) != 0 ||
+	if ((sp->db_error = db->get(db, NULL, &key, &data, 0)) != 0 ||
 	    data.size != sizeof(VMC) - 1 ||
 	    memcmp(data.data, VMC, sizeof(VMC) - 1)) {
-		(void)db->close(db);
+		(void)db->close(db, DB_NOSYNC);
 		if (first) {
 			first = 0;
 			return (1);
 		}
-		msgq_str(sp, M_ERR, p,
+		msgq_str(sp, M_DBERR, p,
 		    "030|The file %s is not a message catalog");
 		return (1);
 	}
 	first = 0;
 
 	if (sp->gp->msg != NULL)
-		(void)sp->gp->msg->close(sp->gp->msg);
+		(void)sp->gp->msg->close(sp->gp->msg, DB_NOSYNC);
 	sp->gp->msg = db;
 	return (0);
 }
@@ -751,7 +762,7 @@ msg_close(gp)
 	GS *gp;
 {
 	if (gp->msg != NULL)
-		(void)gp->msg->close(gp->msg);
+		(void)gp->msg->close(gp->msg, 0);
 }
 
 /*
@@ -814,8 +825,10 @@ msg_cat(sp, str, lenp)
 	 */
 	if (isdigit(str[0]) &&
 	    isdigit(str[1]) && isdigit(str[2]) && str[3] == '|') {
+		memset(&key, 0, sizeof(key));
 		key.data = &msgno;
 		key.size = sizeof(db_recno_t);
+		memset(&data, 0, sizeof(data));
 		msgno = atoi(str);
 
 		/*
@@ -828,7 +841,7 @@ msg_cat(sp, str, lenp)
 		 */
 		gp = sp == NULL ? NULL : sp->gp;
 		if (gp != NULL && gp->msg != NULL &&
-		    gp->msg->get(gp->msg, &key, &data, 0) == 0 &&
+		    gp->msg->get(gp->msg, NULL, &key, &data, 0) == 0 &&
 		    data.size != 0) {
 			if (lenp != NULL)
 				*lenp = data.size - 1;

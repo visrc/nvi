@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.22 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $";
+static const char sccsid[] = "$Id: recover.c,v 10.23 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -217,12 +217,15 @@ rcv_init(sp)
 		/* Turn on a busy message, and sync it to backing store. */
 		sp->gp->scr_busy(sp,
 		    "057|Copying file for recovery...", BUSY_ON);
+		/* XXXX */
+		/*
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			msgq_str(sp, M_SYSERR, ep->rcv_path,
 			    "058|Preservation failed: %s");
 			sp->gp->scr_busy(sp, NULL, BUSY_OFF);
 			goto err;
 		}
+		*/
 		sp->gp->scr_busy(sp, NULL, BUSY_OFF);
 	}
 
@@ -264,15 +267,12 @@ rcv_sync(sp, flags)
 
 	/* Sync the file if it's been modified. */
 	if (F_ISSET(ep, F_MODIFIED)) {
-		SIGBLOCK;
-		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
+		if (ep->db->sync(ep->db, 0)) {
 			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
 			msgq_str(sp, M_SYSERR,
 			    ep->rcv_path, "060|File backup failed: %s");
-			SIGUNBLOCK;
 			return (1);
 		}
-		SIGUNBLOCK;
 
 		/* REQUEST: don't remove backing file on exit. */
 		if (LF_ISSET(RCV_PRESERVE))
