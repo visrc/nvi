@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.10 1995/01/30 15:11:35 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:11:35 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.11 1995/01/30 16:17:04 bostic Exp $ (Berkeley) $Date: 1995/01/30 16:17:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,6 +78,10 @@ svi_split(sp, topp, botp)
 	 */
 	tsp->cols = sp->cols;
 
+	/*
+	 * Recalculate current cursor position based on sp->lno, we're called
+	 * with the cursor on the colon command line.
+	 */
 	cnt = svi_sm_cursor(sp, &smp) ? 0 : smp - HMAP;
 	if (cnt <= half) {			/* Parent is top half. */
 		/* Child. */
