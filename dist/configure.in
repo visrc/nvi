@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.97 1996/04/30 20:11:04 bostic Exp $ (Berkeley) $Date: 1996/04/30 20:11:04 $
+dnl	$Id: configure.in,v 8.98 1996/05/10 11:42:13 bostic Exp $ (Berkeley) $Date: 1996/05/10 11:42:13 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -125,7 +125,6 @@ AC_PATH_PROG(vi_cv_path_chmod, chmod, missing_chmod)
 AC_PATH_PROG(vi_cv_path_cp, cp, missing_cp)
 AC_PATH_PROG(vi_cv_path_ln, ln, missing_ln)
 AC_PATH_PROG(vi_cv_path_mkdir, mkdir, missing_mkdir)
-AC_PATH_PROG(vi_cv_path_mv, mv, missing_mv)
 AC_PATH_PROG(vi_cv_path_rm, rm, missing_rm)
 AC_PATH_PROG(vi_cv_path_strip, strip, missing_strip)
 
