@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.39 1993/05/15 21:20:41 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:20:41 $";
+static char sccsid[] = "$Id: search.c,v 5.40 1993/05/16 12:30:17 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:30:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,7 +157,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 {
 	regmatch_t match[1];
 	regex_t *re, lre;
-	recno_t lno;
+	recno_t lastlno, lno;
 	size_t coff, len;
 	long delta;
 	int eval, wordoffset, wrapped;
@@ -188,14 +188,14 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	} else {
 		if ((l = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
-			return (1);
+			goto ret1;
 		}
 		if (fm->cno + 1 >= len) {
 			if (fm->lno == lno) {
 				if (!O_ISSET(sp, O_WRAPSCAN)) {
 					if (LF_ISSET(SEARCH_MSG))
 						msgq(sp, M_INFO, EOFMSG);
-					return (1);
+					goto ret1;
 				}
 				lno = 1;
 			} else
@@ -207,7 +207,11 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		}
 	}
 
+	if (sp->s_position(sp, ep, &lastlno, 0, P_BOTTOM))
+		return (1);
+
 	wrapped = 0;
+	(void)sp->s_busy_cursor(sp, 0, NULL);
 	for (;; ++lno, coff = 0) {
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
@@ -228,6 +232,10 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		/* If already at EOL, just keep going. */
 		if (len && coff == len)
 			continue;
+
+		/* If it's going to be awhile, put up a message. */
+		if (lno == lastlno)
+			(void)sp->s_busy_cursor(sp, 0, "Searching...");
 
 		/* Set the termination. */
 		match[0].rm_so = coff;
@@ -274,8 +282,10 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			if (rm->cno >= len)
 				rm->cno = len ? len - 1 : 0;
 		}
+		(void)sp->s_busy_cursor(sp, 1, NULL);
 		return (0);
 	}
+ret1:	(void)sp->s_busy_cursor(sp, 1, NULL);
 	return (1);
 }
 
@@ -289,7 +299,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 {
 	regmatch_t match[1];
 	regex_t *re, lre;
-	recno_t lno;
+	recno_t firstlno, lno;
 	size_t coff, len, last;
 	long delta;
 	int eval, wordoffset, wrapped;
@@ -320,7 +330,11 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	} else
 		lno = fm->lno;
 
+	if (sp->s_position(sp, ep, &firstlno, 0, P_TOP))
+		return (1);
+
 	wrapped = 0;
+	(void)sp->s_busy_cursor(sp, 0, NULL);
 	for (coff = fm->cno;; --lno, coff = 0) {
 		if (lno == 0) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
@@ -329,7 +343,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 				break;
 			}
 			if (file_lline(sp, ep, &lno))
-				return (1);
+				goto ret1;
 			if (lno == 0) {
 				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, EMPTYMSG);
@@ -345,7 +359,11 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		}
 
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL)
-			return (1);
+			goto ret1;
+
+		/* If it's going to be awhile, put up a message. */
+		if (lno == firstlno)
+			(void)sp->s_busy_cursor(sp, 0, "Searching...");
 
 		/* Set the termination. */
 		match[0].rm_so = 0;
@@ -395,7 +413,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 					break;
 				if (eval != 0) {
 					re_error(sp, eval, re);
-					return (1);
+					goto ret1;
 				}
 			}
 			rm->lno = lno;
@@ -404,8 +422,10 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			if (wordoffset)
 				++rm->cno;
 		}
+		(void)sp->s_busy_cursor(sp, 1, NULL);
 		return (0);
 	}
+ret1:	(void)sp->s_busy_cursor(sp, 1, NULL);
 	return (1);
 }
 
