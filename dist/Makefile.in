@@ -1,9 +1,8 @@
-#	$Id: Makefile.in,v 8.6 1996/02/21 10:35:41 bostic Exp $ (Berkeley) $Date: 1996/02/21 10:35:41 $
+#	$Id: Makefile.in,v 8.7 1996/02/21 11:36:36 bostic Exp $ (Berkeley) $Date: 1996/02/21 11:36:36 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
 LFLAGS=	@lflags@
-OORG=	-g
 INCS=	-I. -I../include @dbinc@ @reinc@ @cinc@
 CFLAGS=	-c ${GCCF} ${DEBUG} ${LFLAGS} ${OORG} ${INCS}
 
