@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.98 1994/04/10 13:08:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:08:15 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.99 1994/04/10 14:32:41 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1594,7 +1594,7 @@ txt_resolve(sp, ep, tiqh, flags)
 	if (file_sline(sp, ep, tp->lno, tp->lb, tp->len))
 		return (1);
 
-	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno) {
+	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)sp->tiqp; ++lno) {
 		if (LF_ISSET(TXT_AUTOINDENT))
 			txt_ai_resolve(sp, tp);
 		if (file_aline(sp, ep, 0, lno, tp->lb, tp->len))
@@ -1774,7 +1774,7 @@ txt_Rcleanup(sp, tiqh, tp, lp, olen)
 	 */
 	for (ttp = tiqh->cqh_first, ilen = 0;;) {
 		ilen += ttp == tp ? sp->cno : ttp->len + ttp->R_erase;
-		if ((ttp = ttp->q.cqe_next) == (void *)&sp->tiq)
+		if ((ttp = ttp->q.cqe_next) == (void *)sp->tiqp)
 			break;
 	}
 

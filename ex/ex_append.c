@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.12 1994/04/10 13:46:00 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:46:00 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.13 1994/04/10 14:32:27 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,6 +79,7 @@ aci(sp, ep, cmdp, cmd)
 	enum which cmd;
 {
 	MARK m;
+	TEXTH *sv_tiqp, tiq;
 	TEXT *tp;
 	recno_t cnt;
 	u_int flags;
@@ -114,6 +115,17 @@ aci(sp, ep, cmdp, cmd)
 	/* Input is interruptible. */
 	F_SET(sp, S_INTERRUPTIBLE);
 
+	/*
+	 * If we're called by vi, the standard TEXTH structure (sp->tiqp) may
+	 * already be in use, e.g. ":append|s/abc/ABC/" doesn't work because
+	 * we're only halfway through the line when the append code fires.
+	 * Use a local structure instead.
+	 */
+	memset(tiq, 0, sizeof(TEXTH));
+	CIRCLEQ_INIT(&tiq);
+	sv_tiqp = sp->tiqp;
+	sp->tiqp = &tiq;
+
 	if (cmd == CHANGE)
 		for (;; ++m.lno) {
 			if (m.lno > cmdp->addr2.lno) {
@@ -121,14 +133,14 @@ aci(sp, ep, cmdp, cmd)
 				--m.lno;
 				break;
 			}
-			switch (sp->s_get(sp, ep, &sp->tiq, 0, flags)) {
+			switch (sp->s_get(sp, ep, &tiq, 0, flags)) {
 			case INP_OK:
 				break;
 			case INP_EOF:
 			case INP_ERR:
 				goto err;
 			}
-			tp = sp->tiq.cqh_first;
+			tp = tiq.cqh_first;
 			if (tp->len == 1 && tp->lb[0] == '.') {
 				for (cnt =
 				    (cmdp->addr2.lno - m.lno) + 1; cnt--;)
@@ -146,14 +158,14 @@ aci(sp, ep, cmdp, cmd)
 
 	if (cmd == APPEND)
 		for (;; ++m.lno) {
-			switch (sp->s_get(sp, ep, &sp->tiq, 0, flags)) {
+			switch (sp->s_get(sp, ep, &tiq, 0, flags)) {
 			case INP_OK:
 				break;
 			case INP_EOF:
 			case INP_ERR:
 				goto err;
 			}
-			tp = sp->tiq.cqh_first;
+			tp = tiq.cqh_first;
 			if (tp->len == 1 && tp->lb[0] == '.')
 				break;
 			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len))
@@ -172,5 +184,7 @@ done:	if (aiset)
 	/* Set the line number to the last line successfully modified. */
 	sp->lno = rval ? m.lno : m.lno + 1;
 
+	sp->tiqp = sv_tiqp;
+	text_lfree(&tiq);
 	return (rval);
 }

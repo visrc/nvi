@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.113 1994/04/10 13:49:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:49:15 $";
+static char sccsid[] = "$Id: ex.c,v 8.114 1994/04/10 14:32:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ ex(sp, ep)
 		 */
 		F_CLR(sp, S_INTERRUPTED);
 		F_SET(sp, S_INTERRUPTIBLE);
-		irval = sp->s_get(sp, ep, &sp->tiq, ':', flags);
+		irval = sp->s_get(sp, ep, sp->tiqp, ':', flags);
 		if (F_ISSET(sp, S_INTERRUPTED)) {
 			(void)fputc('\n', stdout);
 			(void)fflush(stdout);
@@ -100,7 +100,7 @@ ex(sp, ep)
 		}
 
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
-		tp = sp->tiq.cqh_first;
+		tp = sp->tiqp->cqh_first;
 		if (tp->len == 0) {
 			if (F_ISSET(sp->gp, G_STDIN_TTY)) {
 				/* Special case \r command. */
