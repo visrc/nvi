@@ -62,97 +62,6 @@ extern struct _viflags
 #ifndef MAXPATHLEN			/* XXX */
 #define	MAXPATHLEN	1024
 #endif
-/* The options */
-extern char	o_autoindent[1];
-extern char	o_autoprint[1];
-extern char	o_autotab[1];
-extern char	o_autowrite[1];
-extern char	o_columns[3];
-extern char	o_directory[MAXPATHLEN];
-extern char	o_edcompatible[1];
-extern char	o_equalprg[80];
-extern char	o_errorbells[1];
-extern char	o_exrefresh[1];
-extern char	o_ignorecase[1];
-extern char	o_keytime[3];
-extern char	o_keywordprg[80];
-extern char	o_lines[3];
-extern char	o_list[1];
-extern char	o_number[1];
-extern char	o_readonly[1];
-extern char	o_report[3];
-extern char	o_scroll[3];
-extern char	o_shell[MAXPATHLEN];
-extern char	o_shiftwidth[3];
-extern char	o_sidescroll[3];
-extern char	o_sync[1];
-extern char	o_tabstop[3];
-extern char	o_term[30];
-extern char	o_vbell[1];
-extern char	o_warn[1];
-extern char	o_wrapscan[1];
-
-#ifndef CRUNCH
-extern char	o_beautify[1];
-extern char	o_exrc[1];
-extern char	o_mesg[1];
-extern char	o_more[1];
-extern char	o_novice[1];
-extern char	o_prompt[1];
-extern char	o_taglength[3];
-extern char	o_terse[1];
-extern char	o_window[3];
-extern char	o_wrapmargin[3];
-extern char	o_writeany[1];
-#endif
-
-#ifndef NO_ERRLIST
-extern char	o_cc[30];
-extern char	o_make[30];
-#endif
-
-#ifndef NO_CHARATTR
-extern char	o_charattr[1];
-#endif
-
-#ifndef NO_DIGRAPH
-extern char	o_digraph[1];
-extern char	o_flipcase[80];
-#endif
-
-#ifndef NO_SENTENCE
-extern char	o_hideformat[1];
-#endif
-
-#ifndef NO_EXTENSIONS
-extern char	o_inputmode[1];
-extern char	o_ruler[1];
-#endif
-
-#ifndef NO_MAGIC
-extern char	o_magic[1];
-#endif
-
-#ifndef NO_MODELINE
-extern char	o_modeline[1];
-#endif
-
-#ifndef NO_SENTENCE
-extern char	o_paragraphs[30];
-extern char	o_sections[30];
-#endif
-
-#if MSDOS
-extern char	o_pcbios[1];
-#endif
-
-#ifndef NO_SHOWMATCH
-extern char	o_showmatch[1];
-#endif
-
-#ifndef	NO_SHOWMODE
-extern char	o_smd[1];
-#endif
 
 /*------------------------------------------------------------------------*/
 /* These help support the single-line multi-change "undo" -- shift-U      */
@@ -199,7 +108,7 @@ extern BLK	tmpblk;		/* a block used to accumulate changes */
 extern long	topline;	/* file line number of top line */
 extern int	leftcol;	/* column number of left col */
 #define		botline	 (topline + LINES - 2)
-#define		rightcol (leftcol + COLS - (*o_number ? 9 : 1))
+#define		rightcol (leftcol + COLS - (LVAL(O_NUMBER) ? 9 : 1))
 extern int	physcol;	/* physical column number that cursor is on */
 extern int	physrow;	/* physical row number that cursor is on */
 extern int	exwrote;	/* used to detect verbose ex commands */

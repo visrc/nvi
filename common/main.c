@@ -12,14 +12,17 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.5 1992/01/16 13:26:35 bostic Exp $ (Berkeley) $Date: 1992/01/16 13:26:35 $";
+static char sccsid[] = "$Id: main.c,v 5.6 1992/02/20 14:14:35 bostic Exp $ (Berkeley) $Date: 1992/02/20 14:14:35 $";
 #endif /* not lint */
 
+#include <sys/types.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "config.h"
+#include "options.h"
 #include "vi.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -51,11 +54,11 @@ main(argc, argv)
 	mode = MODE_VI;
 #ifndef NO_EXTENSIONS
 	if (!strcmp(*argv, "edit"))
-		*o_inputmode = TRUE;
+		SET(O_INPUTMODE)
 	else
 #endif
 	if (!strcmp(*argv, "view"))
-		*o_readonly = TRUE;
+		SET(O_READONLY)
 	else if (!strcmp(argv, "ex"))
 		mode = MODE_EX;
 
@@ -71,7 +74,7 @@ main(argc, argv)
 			break;
 #ifndef NO_EXTENSIONS
 		case 'i':		/* Input mode. */
-			*o_inputmode = TRUE;
+			SET(O_INPUTMODE);
 			break;
 #endif
 #ifndef NO_ERRLIST
@@ -80,7 +83,7 @@ main(argc, argv)
 			break;
 #endif
 		case 'R':		/* Readonly. */
-			*o_readonly = TRUE;
+			SET(O_READONLY);
 			break;
 		case 'r':		/* Recover. */
 			msg("use the `elvrec` program to recover lost files");
@@ -135,7 +138,7 @@ main(argc, argv)
 	 * Initialize the options -- must be done after initscr(), so that
 	 * we can alter LINES and COLS if necessary.
 	 */
-	initopts();
+	opts_init();
 
 	/*
 	 * Map the arrow keys.  The KU, KD, KL,and KR variables correspond to
@@ -181,7 +184,7 @@ main(argc, argv)
 		doexrc(tmpblk.c);
 	}
 #endif
-	if (*o_exrc)
+	if (ISSET(O_EXRC))
 		doexrc(_NAME_EXRC);
 	if ((str = getenv("EXINIT")) != NULL)
 		exstring(str, strlen(str));

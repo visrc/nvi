@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.3 1991/12/17 16:22:45 bostic Exp $ (Berkeley) $Date: 1991/12/17 16:22:45 $";
+static char sccsid[] = "$Id: key.c,v 5.4 1992/02/20 14:15:10 bostic Exp $ (Berkeley) $Date: 1992/02/20 14:15:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,6 +15,7 @@ static char sccsid[] = "$Id: key.c,v 5.3 1991/12/17 16:22:45 bostic Exp $ (Berke
 #include <stdio.h>
 
 #include "config.h"
+#include "options.h"
 #include "vi.h"
 #include "extern.h"
 
@@ -55,7 +56,7 @@ ttyread(buf, len, time)
 	/*
 	 * Select until characters become available, and then read them.  Try
 	 * to handle SIGWINCH -- if a signal arrives during the select call,
-	 * adjust the o_columns and o_lines variables, and fake a control-L.
+	 * adjust the O_COLUMNS and O_LINES variables, and fake a control-L.
 	 */
 	FD_SET(STDIN_FILENO, &rd);
 	for (;;)
@@ -68,9 +69,9 @@ ttyread(buf, len, time)
 			 * XXX
 			 * Should check EINTR, not just make the assumption.
 			 */
-			if (*o_lines != LINES || *o_columns != COLS) {
-				*o_lines = LINES;
-				*o_columns = COLS;
+			if (LVAL(O_LINES) != LINES || LVAL(O_COLUMNS) != COLS) {
+				LVAL(O_LINES) = LINES;
+				LVAL(O_COLUMNS) = COLS;
 				if (mode != MODE_EX) {
 					*buf = ctrl('L');
 					return (1);

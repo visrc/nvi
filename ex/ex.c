@@ -1,7 +1,10 @@
 /* This file contains the code for reading ex commands. */
 
+#include <sys/types.h>
 #include <stdio.h>
+
 #include "config.h"
+#include "options.h"
 #include "ctype.h"
 #include "vi.h"
 #include "pathnames.h"
@@ -292,7 +295,7 @@ void ex()
 #ifdef CRUNCH
 		cmdlen = vgets(':', cmdbuf, sizeof(cmdbuf));
 #else
-		cmdlen = vgets(*o_prompt ? ':' : '\0', cmdbuf, sizeof(cmdbuf));
+		cmdlen = vgets(PVAL(O_PROMPT) ? ':' : '\0', cmdbuf, sizeof(cmdbuf));
 #endif
 		if (cmdlen < 0)
 		{
@@ -320,7 +323,7 @@ void ex()
 		{
 			significant = FALSE;
 			oldline = markline(cursor);
-			if (*o_autoprint && mode == MODE_EX)
+			if (ISSET(O_AUTOPRINT) && mode == MODE_EX)
 			{
 				cmd_print(cursor, cursor, CMD_PRINT, FALSE, "");
 			}

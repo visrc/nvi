@@ -10,9 +10,12 @@
  * and any O.S./Compiler combination which adheres to UNIX forking conventions.
  */
 
+#include <sys/types.h>
 #include <signal.h>
 #include <stdio.h>
+
 #include "config.h"
+#include "options.h"
 #include "vi.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -68,7 +71,7 @@ int rpipe(cmd, in)
 		signal(SIGINT, SIG_DFL);
 
 		/* exec the shell to run the command */
-		execle(o_shell, o_shell, "-c", cmd, (char *)0, environ);
+		execle(PVAL(O_SHELL), PVAL(O_SHELL), "-c", cmd, NULL, environ);
 		exit(1); /* if we get here, exec failed */
 
 	  default:						/* parent */
@@ -208,7 +211,7 @@ int filter(from, to, cmd)
 	if (to)
 	{
 		/* we have lines */
-		(void)sprintf(scrout, _PATH_SCRATCH, o_directory);
+		(void)sprintf(scrout, _PATH_SCRATCH, PVAL(O_DIRECTORY));
 		mktemp(scrout);
 		cmd_write(from, to, CMD_BANG, 0, scrout);
 

@@ -3,7 +3,9 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "config.h"
+#include "options.h"
 #include "vi.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -104,7 +106,7 @@ static void maybezap(num)
 	/* if nobody else needs it, then discard the tmp file */
 	if (i < 0)
 	{
-		sprintf(cutfname, _PATH_TMPNAME, o_directory, getpid(), num);
+		sprintf(cutfname, _PATH_TMPNAME, PVAL(O_DIRECTORY), getpid(), num);
 		unlink(cutfname);
 	}
 }
@@ -415,7 +417,7 @@ static void readcutblk(cb, blkno)
 	}
 	else
 	{
-		sprintf(cutfname, _PATH_TMPNAME, o_directory, getpid(), cb->tmpnum);
+		sprintf(cutfname, _PATH_TMPNAME, PVAL(O_DIRECTORY), getpid(), cb->tmpnum);
 		fd = open(cutfname, O_RDONLY);
 	}
 

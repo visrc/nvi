@@ -10,7 +10,10 @@
 
 /* This function contains the movement functions that perform RE searching */
 
+#include <sys/types.h>
+
 #include "config.h"
+#include "options.h"
 #include "vi.h"
 #include "regexp.h"
 
@@ -140,7 +143,7 @@ MARK	m_fsrch(m, ptrn)
 			}
 
 			/* else maybe we should wrap now? */
-			if (*o_wrapscan)
+			if (ISSET(O_WRAPSCAN))
 			{
 				l = 0;
 				wrapped = TRUE;
@@ -159,7 +162,7 @@ MARK	m_fsrch(m, ptrn)
 		if (regexec(re, &line[pos], (pos == 0)))
 		{
 			/* match! */
-			if (wrapped && *o_warn)
+			if (wrapped && ISSET(O_WARN))
 				msg("(wrapped)");
 #ifndef CRUNCH
 			if (delta != INFINITY)
@@ -180,7 +183,7 @@ MARK	m_fsrch(m, ptrn)
 	}
 
 	/* not found */
-	msg(*o_wrapscan ? "Not found" : "Hit bottom without finding RE");
+	msg(ISSET(O_WRAPSCAN) ? "Not found" : "Hit bottom without finding RE");
 	return MARK_UNSET;
 }
 
@@ -237,7 +240,7 @@ MARK	m_bsrch(m, ptrn)
 		/* wrap search */
 		if (l < 1)
 		{
-			if (*o_wrapscan)
+			if (ISSET(O_WRAPSCAN))
 			{
 				l = nlines + 1;
 				wrapped = TRUE;
@@ -264,7 +267,7 @@ MARK	m_bsrch(m, ptrn)
 				 && regexec(re, &line[try], FALSE)
 				 && (int)(re->startp[0] - line) < pos);
 
-			if (wrapped && *o_warn)
+			if (wrapped && ISSET(O_WARN))
 				msg("(wrapped)");
 #ifndef CRUNCH
 			if (delta != INFINITY)
@@ -285,7 +288,7 @@ MARK	m_bsrch(m, ptrn)
 	}
 
 	/* not found */
-	msg(*o_wrapscan ? "Not found" : "Hit top without finding RE");
+	msg(ISSET(O_WRAPSCAN) ? "Not found" : "Hit top without finding RE");
 	return MARK_UNSET;
 }
 

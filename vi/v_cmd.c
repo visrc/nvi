@@ -6,10 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.2 1991/12/18 10:17:06 bostic Exp $ (Berkeley) $Date: 1991/12/18 10:17:06 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.3 1992/02/20 14:15:16 bostic Exp $ (Berkeley) $Date: 1992/02/20 14:15:16 $";
 #endif /* not lint */
 
+#include <sys/types.h>
+
 #include "config.h"
+#include "options.h"
 #include "ctype.h"
 #include "vi.h"
 
@@ -290,7 +293,7 @@ void vi()
 	/* go immediately into insert mode, if ":set inputmode" */
 	firstkey = 0;
 #ifndef NO_EXTENSIONS
-	if (*o_inputmode)
+	if (ISSET(O_INPUTMODE))
 	{
 		firstkey = 'i';
 	}
@@ -306,7 +309,7 @@ void vi()
 		}
 
 		/* report any changes from the previous command */
-		if (rptlines >= *o_report)
+		if (rptlines >= LVAL(O_REPORT))
 		{
 			redraw(cursor, FALSE);
 			msg("%ld line%s %s", rptlines, (rptlines==1?"":"s"), rptlabel);
@@ -774,16 +777,17 @@ MARK adjmove(old, new, flags)
 		/* adjust the mark to get as close as possible to column# */
 		for (i = 0, text = ptext; i <= colno && *text; text++)
 		{
-			if (*text == '\t' && !*o_list)
+			if (*text == '\t' && !ISSET(O_LIST))
 			{
-				i += *o_tabstop - (i % *o_tabstop);
+				i += LVAL(O_TABSTOP) - (i % LVAL(O_TABSTOP));
 			}
 			else if (UCHAR(*text) < ' ' || *text == 127)
 			{
 				i += 2;
 			}
 #ifndef NO_CHARATTR
-			else if (*o_charattr && text[0] == '\\' && text[1] == 'f' && text[2])
+			else if (ISSET(O_CHARATTR) &&
+			    text[0] == '\\' && text[1] == 'f' && text[2])
 			{
 				text += 2; /* plus one more in "for()" stmt */
 			}

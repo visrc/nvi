@@ -10,7 +10,10 @@
 
 /* This file contains movement functions which are screen-relative */
 
+#include <sys/types.h>
+
 #include "config.h"
+#include "options.h"
 #include "vi.h"
 
 /* This moves the cursor to a particular row on the screen */
@@ -77,7 +80,7 @@ MARK m_z(m, cnt, key)
 #ifndef CRUNCH
 	if (i > 0 && i <= LINES - 1)
 	{
-		*o_window = i;
+		LVAL(O_WINDOW) = i;
 	}
 #endif
 
@@ -134,7 +137,7 @@ MARK m_scroll(m, cnt, key)
 {
 	MARK	tmp;	/* a temporary mark, used as arg to redraw() */
 
-	/* adjust cnt, and maybe *o_scroll, depending of key */
+	/* adjust cnt, and maybe O_SCROLL, depending of key */
 	switch (key)
 	{
 	  case ctrl('F'):
@@ -153,7 +156,7 @@ MARK m_scroll(m, cnt, key)
 	  case ctrl('D'):
 		if (cnt == 0) /* default */
 		{
-			cnt = *o_scroll;
+			cnt = LVAL(O_SCROLL);
 		}
 		else
 		{
@@ -161,7 +164,7 @@ MARK m_scroll(m, cnt, key)
 			{
 				cnt = LINES - 1;
 			}
-			*o_scroll = cnt;
+			LVAL(O_SCROLL) = cnt;
 		}
 		break;
 	}
