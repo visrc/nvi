@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.29 2001/06/09 22:05:47 skimo Exp $ (Berkeley) $Date: 2001/06/09 22:05:47 $
+ *	$Id: cl.h,v 10.30 2001/06/24 19:48:05 skimo Exp $ (Berkeley) $Date: 2001/06/24 19:48:05 $
  */
 #ifdef USE_SLANG_CURSES
 #include <slcurses.h>
@@ -23,7 +23,11 @@
 #endif
 
 typedef struct _cl_private {
-	CHAR_T	 ibuf[256];	/* Input keys. */
+	char	 ibuf[256];	/* Input keys. */
+
+	size_t	 skip;		/* Remaining keys. */
+
+	CONVWIN cw;		/* Conversion buffer. */
 
 	int	 eof_count;	/* EOF count. */
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.22 2001/06/18 20:08:09 skimo Exp $ (Berkeley) $Date: 2001/06/18 20:08:09 $";
+static const char sccsid[] = "$Id: conv.c,v 1.23 2001/06/24 19:48:06 skimo Exp $ (Berkeley) $Date: 2001/06/24 19:48:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen,
 		errno != E2BIG*/)					\
 	    goto err;							\
 	if ((len = CONV_BUFFER_SIZE - outleft) == 0) {			\
-	    error = CONV_INCOMPLETE;					\
+	    error = -left;						\
 	    goto err;							\
 	}				    				\
 	src = buffer;							\
@@ -104,7 +104,7 @@ default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw,
     for (i = 0, j = 0; j < len; ) {
 	n = mbrtowc((*tostr)+i, src+j, len-j, &mbs);
 	/* NULL character converted */
-	if (n == -2) error = CONV_INCOMPLETE;
+	if (n == -2) error = -(len-j);
 	if (n == -1 || n == -2) goto err;
 	if (n == 0) n = 1;
 	j += n;
