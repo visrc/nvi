@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.56 1994/08/07 13:45:20 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:45:20 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.57 1994/08/07 13:54:29 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:54:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -829,7 +829,7 @@ ret1:		rval = 1;
 	}
 
 	if (bp != NULL)
-		free(bp);
+		FREE_SPACE(sp, bp, blen);
 	if (lb != NULL)
 		free(lb);
 	return (rval);
