@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.9 1995/11/05 14:44:04 bostic Exp $ (Berkeley) $Date: 1995/11/05 14:44:04 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.10 1995/11/07 10:17:12 bostic Exp $ (Berkeley) $Date: 1995/11/07 10:17:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ v_ia(sp, vp)
 	} else
 		LF_SET(TXT_APPENDEOL);
 
-	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, flags));
+	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, vp->count, flags));
 }
 
 /*
@@ -166,7 +166,7 @@ v_ii(sp, vp)
 
 	if (len == 0)
 		LF_SET(TXT_APPENDEOL);
-	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, flags));
+	return (v_txt(sp, vp, NULL, p, len, 0, OOBLNO, vp->count, flags));
 }
 
 enum which { o_cmd, O_cmd };
@@ -241,7 +241,7 @@ insert:		p = "";
 			ai_line = sp->lno - 1;
 		}
 	}
-	return (v_txt(sp, vp, NULL, p, len, 0, ai_line, flags));
+	return (v_txt(sp, vp, NULL, p, len, 0, ai_line, vp->count, flags));
 }
 
 /*
@@ -323,7 +323,8 @@ v_change(sp, vp)
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
 		LF_SET(TXT_EMARK | TXT_OVERWRITE);
-		return (v_txt(sp, vp, &vp->m_stop, p, len, 0, OOBLNO, flags));
+		return (v_txt(sp,
+		    vp, &vp->m_stop, p, len, 0, OOBLNO, vp->count, flags));
 	}
 
 	/*
@@ -378,7 +379,7 @@ v_change(sp, vp)
 	if (vp->m_start.cno >= len)
 		LF_SET(TXT_APPENDEOL);
 
-	rval = v_txt(sp, vp, NULL, p, len, 0, OOBLNO, flags);
+	rval = v_txt(sp, vp, NULL, p, len, 0, OOBLNO, vp->count, flags);
 
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
@@ -417,7 +418,8 @@ v_Replace(sp, vp)
 	vp->m_stop.lno = vp->m_start.lno;
 	vp->m_stop.cno = len ? len - 1 : 0;
 
-	return (v_txt(sp, vp, &vp->m_stop, p, len, 0, OOBLNO, flags));
+	return (v_txt(sp,
+	    vp, &vp->m_stop, p, len, 0, OOBLNO, vp->count, flags));
 }
 
 /*
@@ -456,15 +458,12 @@ v_subst(sp, vp)
 	if (vp->m_stop.cno > len - 1)
 		vp->m_stop.cno = len - 1;
 
-	/* We've used the count; reset so it's not used as a repeat count. */
-	vp->count = 1;
-
 	if (p != NULL && cut(sp,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
 
-	return (v_txt(sp, vp, &vp->m_stop, p, len, 0, OOBLNO, flags));
+	return (v_txt(sp, vp, &vp->m_stop, p, len, 0, OOBLNO, 1, flags));
 }
 
 /*
