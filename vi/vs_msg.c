@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.16 1995/10/01 11:43:31 bostic Exp $ (Berkeley) $Date: 1995/10/01 11:43:31 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.17 1995/10/02 18:27:51 bostic Exp $ (Berkeley) $Date: 1995/10/02 18:27:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -219,10 +219,15 @@ vs_msg(sp, mtype, line, rlen)
 	 */
 	if (F_ISSET(sp, S_EX)) {
 		if (!F_ISSET(sp, S_SCREEN_READY) &&
-		    sp->gp->scr_screen(sp, S_EX))
+		    gp->scr_screen(sp, S_EX))
 			return (0);
 		F_SET(sp, S_EX_WROTE | S_SCREEN_READY);
-		return (printf("%.*s", (int)rlen, line));
+		if (mtype == M_ERR)
+			(void)gp->scr_attr(sp, SA_INVERSE, 1);
+		(void)printf("%.*s", (int)rlen, line);
+		if (mtype == M_ERR)
+			(void)gp->scr_attr(sp, SA_INVERSE, 0);
+		return (rlen);
 	}
 
 	/* Save the cursor position. */
@@ -314,7 +319,7 @@ ret:	/* Restore the cursor position. */
 	(void)gp->scr_move(sp, oldy, oldx);
 
 	/* Refresh the screen. */
-	(void)sp->gp->scr_refresh(sp, 0);
+	(void)gp->scr_refresh(sp, 0);
 	return (rlen);
 }
 
