@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.30 1993/12/09 19:42:13 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:13 $";
+static char sccsid[] = "$Id: search.c,v 8.31 1993/12/19 16:17:24 bostic Exp $ (Berkeley) $Date: 1993/12/19 16:17:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,10 +52,18 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 	 * did not reuse any delta supplied.
 	 */
 	flags = *flagp;
-	if (ptrn == NULL || ptrn[1] == '\0' ||
-	    ptrn[0] == ptrn[1] && ptrn[2] == '\0') {
+	if (ptrn == NULL)
+		goto prev;
+	if (ptrn[1] == '\0') {
+		if (epp != NULL)
+			*epp = ptrn + 1;
+		goto prev;
+	}
+	if (ptrn[0] == ptrn[1] && ptrn[2] == '\0') {
+		if (epp != NULL)
+			*epp = ptrn + 2;
 prev:		if (!F_ISSET(sp, S_SRE_SET)) {
-			msgq(sp, M_INFO, "No previous search pattern.");
+			msgq(sp, M_ERR, "No previous search pattern.");
 			return (1);
 		}
 		*rep = &sp->sre;
