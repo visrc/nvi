@@ -260,7 +260,7 @@ gtk_vi_screen_class_init (GtkViScreenClass *class)
   class->rename = NULL;
   class->resized = NULL;
 
-  gb_font = gdk_font_load ("-*-*-*-*-*-*-12-*-*-*-*-*-gb2312.1980-*");
+  gb_font = gdk_font_load ("-*-*-*-*-*-*-16-*-*-*-*-*-gb2312.1980-*");
 }
 
 static void
@@ -317,7 +317,8 @@ gtk_vi_screen_init (GtkViScreen *vi)
   vi->rows = 0;
 
   style = gtk_style_copy(GTK_WIDGET(vi)->style);
-  style->font = gdk_font_load("fixed");
+  gdk_font_unref(style->font);
+  style->font = gdk_font_load("-*-fixed-*-*-*-*-16-*-*-*-*-*-iso8859-*");
   GTK_WIDGET(vi)->style = style;
 }
 
@@ -470,7 +471,7 @@ gtk_vi_screen_size_request (GtkWidget      *widget,
   ythickness = widget->style->klass->ythickness + VI_SCREEN_BORDER_ROOM;
   
   vi->ch_ascent = widget->style->font->ascent;
-  vi->ch_height = (widget->style->font->ascent + widget->style->font->descent);
+  vi->ch_height = (widget->style->font->ascent + widget->style->font->descent) + 1;
   vi->ch_width = gdk_text_width (widget->style->font, "A", 1);
   char_height = DEFAULT_VI_SCREEN_HEIGHT_LINES * vi->ch_height;
   char_width = DEFAULT_VI_SCREEN_WIDTH_CHARS * vi->ch_width;
