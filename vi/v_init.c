@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 10.2 1995/05/05 18:55:10 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:10 $";
+static char sccsid[] = "$Id: v_init.c,v 10.3 1995/06/08 19:01:58 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:01:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ v_screen_copy(orig, sp)
 		nvip->lastckey = ovip->lastckey;
 		nvip->csearchdir = ovip->csearchdir;
 
-		nvip->srows = nvip->srows;
+		nvip->srows = ovip->srows;
 	}
 	return (0);
 }

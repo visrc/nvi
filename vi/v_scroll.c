@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 10.2 1995/05/05 18:55:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:57 $";
+static char sccsid[] = "$Id: v_scroll.c,v 10.3 1995/06/08 19:02:00 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -367,12 +367,7 @@ v_pagedown(sp, vp)
 	 * It possible for this calculation to be less than 1; move at
 	 * least one line.
 	 */
-#define	IS_SPLIT_SCREEN(sp)						\
-	((sp)->q.cqe_prev != (void *)&(sp)->gp->dq ||			\
-	    (sp)->q.cqe_next != (void *)&(sp)->gp->dq)
-
-	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) *
-	    (IS_SPLIT_SCREEN(sp) ?
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (IS_SPLIT(sp) ?
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
 	offset = offset <= 2 ? 1 : offset - 2;
 	if (vs_sm_scroll(sp, &vp->m_stop, offset, CNTRL_F))
@@ -425,8 +420,7 @@ v_pageup(sp, vp)
 	 * It possible for this calculation to be less than 1; move at
 	 * least one line.
 	 */
-	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) *
-	    (IS_SPLIT_SCREEN(sp) ?
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (IS_SPLIT(sp) ?
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
 	offset = offset <= 2 ? 1 : offset - 2;
 	if (vs_sm_scroll(sp, &vp->m_stop, offset, CNTRL_B))

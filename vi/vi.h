@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.1 1995/04/13 17:19:17 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:17 $
+ *	$Id: vi.h,v 10.2 1995/06/08 19:02:15 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:15 $
  */
 
 /* Definition of a vi "word". */
@@ -48,10 +48,10 @@ typedef struct _vicmd {
 	 * the flags in the VICMD and VIKEYS structures live in the same name
 	 * space.
 	 */
-#define	VM_CUTREQ	0x00000001	/* Always cut into numeric buffers. */
-#define	VM_LDOUBLE	0x00000002	/* Doubled command for line mode. */
-#define	VM_LMODE	0x00000004	/* Motion is line oriented. */
-#define	VM_NOMOTION	0x00000008	/* Motion command not entered. */
+#define	VM_CMDFAILED	0x00000001	/* Command failed. */
+#define	VM_CUTREQ	0x00000002	/* Always cut into numeric buffers. */
+#define	VM_LDOUBLE	0x00000004	/* Doubled command for line mode. */
+#define	VM_LMODE	0x00000008	/* Motion is line oriented. */
 #define	VM_COMMASK	0x0000000f	/* Mask for VM flags. */
 
 	/*
@@ -214,8 +214,6 @@ typedef enum { CNOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH } cdir_t;
 
 typedef enum {				/* Vi state. */
 	VS_GET_CMD1 = 0,		/* Command (initial state). */
-	VS_EX_SEARCH_TEARDOWN1,		/* Ex search command setup. */
-	VS_EX_SEARCH_TEARDOWN2,		/* Ex search command running. */
 	VS_EX_TEARDOWN1,		/* Ex colon command setup. */
 	VS_EX_TEARDOWN2,		/* Ex colon command running. */
 	VS_FILTER_TEARDOWN,		/* Ex filter command exit. */
@@ -236,7 +234,7 @@ typedef enum {				/* Vi state. */
 	VS_REPLACE_CHAR1,		/* Get replacement character. */
 	VS_REPLACE_CHAR2,		/* Get replacement character. */
 	VS_RUNNING,			/* Something else is running. */
-	VS_SEARCH_TEARDOWN,		/* Vi search command teardown. */
+	VS_SEARCH_TEARDOWN,		/* Ex search command setup. */
 	VS_TEXT_TEARDOWN,		/* Text input mode exit. */
 } s_vi_t;
 
@@ -247,6 +245,7 @@ typedef enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quote_t;
 typedef struct _vi_private {
 	VICMD cmd;		/* Current command, motion. */
 	VICMD motion;
+	VICMD *vp;		/* Current VICMD (command or motion). */
 
 	/*
 	 * !!!
@@ -275,13 +274,13 @@ typedef struct _vi_private {
 	cdir_t	 csearchdir;	/* Character search direction. */
 
 				/* Running function. */
-	VICMD *run_vp;		/* Command/motion that started run. */
 	int	(*run_func) __P((SCR *, EVENT *, int *));
 
 				/* Vi command mode state. */
 	s_vi_t	 cm_state;	/* Current state. */
 	s_vi_t	 cm_next;	/* Next state. */
 	u_long	*cm_countp;	/* Current count location. */
+
 
 	const			/* Vi text input mode state. */
 	   char *im_lp;		/* Starting line. */
@@ -331,12 +330,6 @@ typedef struct _vi_private {
 #define	_TMAP(sp)	(VIP(sp)->t_smap)
 #define	TMAP		_TMAP(sp)
 
-	/*
-	 * We use the screen map pointer to indicate that the screen has been
-	 * initialized and it's ready to be manipulated (including split).
-	 */
-#define	VI_SCRINIT(sp)	(_HMAP(sp) != NULL)
-
 	recno_t	 ss_lno;	/* 1-N: vi_opt_screens cached line number. */
 	size_t	 ss_screens;	/* vi_opt_screens cached return value. */
 #define	VI_SCR_CFLUSH(vip)	vip->ss_lno = OOBLNO
@@ -347,18 +340,24 @@ typedef struct _vi_private {
 	size_t	 sc_col;	/* 0-N: LOGICAL screen column. */
 	SMAP	*sc_smap;	/* SMAP entry where sc_col occurs. */
 
-#define	VIP_AB_TURNOFF	0x0001	/* If abbreviations turned off. */
-#define	VIP_CUR_INVALID	0x0002	/* Cursor position is unknown. */
-#define	VIP_INFOLINE	0x0004	/* The infoline is being used by v_ntext(). */
-#define	VIP_MAPPED	0x0008	/* If command included mapped chars. */
-#define	VIP_PARTIAL	0x0010	/* If partial command entered. */
-#define	VIP_RCM_LAST	0x0020	/* Cursor drawn to the last column. */
-#define	VIP_REPLAY_TEST	0x0040	/* Test first character for nul replay. */
-#define	VIP_SCR_DIRTY	0x0080	/* Screen needs refreshing. */
-#define	VIP_SCR_NUMBER	0x0100	/* Screen numbering changed. */
-#define	VIP_SKIPREFRESH	0x0200	/* Skip next refresh. */
-#define	VIP_WM_SET	0x0400	/* Wrapmargin: happened. */
-#define	VIP_WM_SKIP	0x0800	/* Wrapmargin: skip follow blanks. */
+	mtype_t	 mtype;		/* Last displayed message type. */
+	size_t	 linecount;	/* 1-N: Output overwrite count. */
+	size_t	 lcontinue;	/* 1-N: Output line continue value. */
+	size_t	 totalcount;	/* 1-N: Output overwrite count. */
+
+#define	VIP_AB_TURNOFF	0x00001	/* If abbreviations turned off. */
+#define	VIP_CUR_INVALID	0x00002	/* Cursor position is unknown. */
+#define	VIP_DIVIDER	0x00004	/* Divider line was displayed. */
+#define	VIP_INFOLINE	0x00008	/* The infoline is being used by v_ntext(). */
+#define	VIP_MAPPED	0x00010	/* If command included mapped chars. */
+#define	VIP_PARTIAL	0x00020	/* If partial command entered. */
+#define	VIP_RCM_LAST	0x00040	/* Cursor drawn to the last column. */
+#define	VIP_REPLAY_TEST	0x00080	/* Test first character for nul replay. */
+#define	VIP_SCR_DIRTY	0x00100	/* Screen needs refreshing. */
+#define	VIP_SCR_NUMBER	0x00200	/* Screen numbering changed. */
+#define	VIP_SKIPREFRESH	0x00400	/* Skip next refresh. */
+#define	VIP_WM_SET	0x00800	/* Wrapmargin: happened. */
+#define	VIP_WM_SKIP	0x01000	/* Wrapmargin: skip follow blanks. */
 	u_int16_t flags;
 } VI_PRIVATE;
 
@@ -401,13 +400,6 @@ typedef struct _vi_private {
 #define	ADDCH(sp, ch)							\
     (sp)->gp->scr_addnstr(sp, KEY_NAME(sp, ch), KEY_LEN(sp, ch));
 
-/* If messages waiting to be displayed. */
-#define	MSGS_WAITING(sp)						\
-	((sp)->msgq.lh_first != NULL &&					\
-	    !F_ISSET((sp)->msgq.lh_first, M_EMPTY) ||			\
-	 (sp)->gp->msgq.lh_first != NULL &&				\
-	    !F_ISSET((sp)->gp->msgq.lh_first, M_EMPTY))
-
 /* If more than one screen being shown. */
 #define	IS_SPLIT(sp)							\
 	((sp)->q.cqe_next != (void *)&(sp)->gp->dq ||			\
@@ -425,144 +417,9 @@ typedef enum {
 	CNTRL_U, CNTRL_Y, Z_CARAT, Z_PLUS
 } scroll_t;
 
-/* Vi common messages. */
-enum vimtype {
-    VIM_COMBUF, VIM_EOF, VIM_EOL, VIM_NOCOM,
-    VIM_NOCOM_B, VIM_NOSINIT, VIM_USAGE,
-};
-void	v_message __P((SCR *, char *, enum vimtype));
+/* Vi common error messages. */
+typedef enum {
+    VIM_COMBUF, VIM_EOF, VIM_EOL, VIM_NOCOM, VIM_NOCOM_B, VIM_USAGE
+} vim_t;
 
-int	v_Put __P((SCR *, VICMD *));
-int	v_Replace __P((SCR *, VICMD *));
-int	v_Undo __P((SCR *, VICMD *));
-int	v_Xchar __P((SCR *, VICMD *));
-int	v_a_td1 __P((SCR *, VICMD *));
-int	v_a_td2 __P((SCR *, VICMD *));
-int	v_again __P((SCR *, VICMD *));
-int	v_at __P((SCR *, VICMD *));
-int	v_bmark __P((SCR *, VICMD *));
-int	v_bottom __P((SCR *, VICMD *));
-int	v_buildps __P((SCR *));
-int	v_cfirst __P((SCR *, VICMD *));
-int	v_chF __P((SCR *, VICMD *));
-int	v_chT __P((SCR *, VICMD *));
-int	v_change __P((SCR *, VICMD *));
-int	v_chf __P((SCR *, VICMD *));
-int	v_chrepeat __P((SCR *, VICMD *));
-int	v_chrrepeat __P((SCR *, VICMD *));
-int	v_cht __P((SCR *, VICMD *));
-int	v_comlog __P((SCR *, VICMD *));
-int	v_correct __P((SCR *, VICMD *, int));
-int	v_cr __P((SCR *, VICMD *));
-int	v_delete __P((SCR *, VICMD *));
-int	v_dollar __P((SCR *, VICMD *));
-int	v_down __P((SCR *, VICMD *));
-void	v_eof __P((SCR *, MARK *));
-void	v_eol __P((SCR *, MARK *));
-int	v_ex __P((SCR *, VICMD *));
-int	v_ex_td1 __P((SCR *, VICMD *));
-int	v_ex_td2 __P((SCR *, VICMD *));
-int	v_exmode __P((SCR *, VICMD *));
-int	v_filter __P((SCR *, VICMD *));
-int	v_filter_td __P((SCR *, VICMD *));
-int	v_first __P((SCR *, VICMD *));
-int	v_fmark __P((SCR *, VICMD *));
-int	v_home __P((SCR *, VICMD *));
-int	v_hpagedown __P((SCR *, VICMD *));
-int	v_hpageup __P((SCR *, VICMD *));
-int	v_iA __P((SCR *, VICMD *));
-int	v_iI __P((SCR *, VICMD *));
-int	v_iO __P((SCR *, VICMD *));
-int	v_ia __P((SCR *, VICMD *));
-int	v_ii __P((SCR *, VICMD *));
-int	v_increment __P((SCR *, VICMD *));
-int	v_io __P((SCR *, VICMD *));
-int	v_isempty __P((char *, size_t));
-int	v_join __P((SCR *, VICMD *));
-int	v_left __P((SCR *, VICMD *));
-int	v_lgoto __P((SCR *, VICMD *));
-int	v_linedown __P((SCR *, VICMD *));
-int	v_lineup __P((SCR *, VICMD *));
-int	v_mark __P((SCR *, VICMD *));
-int	v_match __P((SCR *, VICMD *));
-int	v_middle __P((SCR *, VICMD *));
-int	v_mulcase __P((SCR *, VICMD *));
-int	v_ncol __P((SCR *, VICMD *));
-void	v_nomove __P((SCR *));
-int	v_optchange __P((SCR *, int));
-int	v_pagedown __P((SCR *, VICMD *));
-int	v_pageup __P((SCR *, VICMD *));
-int	v_paragraphb __P((SCR *, VICMD *));
-int	v_paragraphf __P((SCR *, VICMD *));
-int	v_put __P((SCR *, VICMD *));
-int	v_redraw __P((SCR *, VICMD *));
-int	v_replace __P((SCR *, VICMD *));
-int	v_replace_td __P((SCR *, VICMD *));
-int	v_right __P((SCR *, VICMD *));
-int	v_screen __P((SCR *, VICMD *));
-int	v_screen_copy __P((SCR *, SCR *));
-int	v_screen_end __P((SCR *));
-int	v_searchN __P((SCR *, VICMD *));
-int	v_searchb __P((SCR *, VICMD *));
-int	v_searchf __P((SCR *, VICMD *));
-int	v_searchn __P((SCR *, VICMD *));
-int	v_searchw __P((SCR *, VICMD *));
-int	v_sectionb __P((SCR *, VICMD *));
-int	v_sectionf __P((SCR *, VICMD *));
-int	v_sentenceb __P((SCR *, VICMD *));
-int	v_sentencef __P((SCR *, VICMD *));
-int	v_shiftl __P((SCR *, VICMD *));
-int	v_shiftr __P((SCR *, VICMD *));
-void	v_sof __P((SCR *, MARK *));
-void	v_sol __P((SCR *));
-int	v_status __P((SCR *, VICMD *));
-int	v_stop __P((SCR *, VICMD *));
-int	v_subst __P((SCR *, VICMD *));
-int	v_switch __P((SCR *, VICMD *));
-int	v_tagpop __P((SCR *, VICMD *));
-int	v_tagpush __P((SCR *, VICMD *));
-int	v_tcmd_setup __P((SCR *, VICMD *, ARG_CHAR_T, u_int));
-int	v_tcmd_td __P((SCR *, VICMD *));
-int	v_txt_auto __P((SCR *, recno_t, TEXT *, size_t, TEXT *));
-int	v_txt_ev __P((SCR *, EVENT *, int *));
-int	v_txt_setup __P((SCR *, VICMD *, MARK *, const char *, size_t, ARG_CHAR_T, recno_t));
-int	v_ulcase __P((SCR *, VICMD *));
-int	v_undo __P((SCR *, VICMD *));
-int	v_up __P((SCR *, VICMD *));
-int	v_wordB __P((SCR *, VICMD *));
-int	v_wordE __P((SCR *, VICMD *));
-int	v_wordW __P((SCR *, VICMD *));
-int	v_wordb __P((SCR *, VICMD *));
-int	v_worde __P((SCR *, VICMD *));
-int	v_wordw __P((SCR *, VICMD *));
-int	v_xchar __P((SCR *, VICMD *));
-int	v_yank __P((SCR *, VICMD *));
-int	v_z __P((SCR *, VICMD *));
-int	v_zero __P((SCR *, VICMD *));
-int	v_zexit __P((SCR *, VICMD *));
-int	vi __P((SCR *, EVENT *));
-int	vs_bg __P((SCR *));
-int	vs_change __P((SCR *, recno_t, lnop_t));
-size_t	vs_colpos __P((SCR *, recno_t, size_t));
-int	vs_column __P((SCR *, size_t *));
-int	vs_crel __P((SCR *, long));
-int	vs_fg __P((SCR *, CHAR_T *));
-int	vs_join __P((SCR *, SCR *, SCR *, SCR **));
-int	vs_line __P((SCR *, SMAP *, size_t *, size_t *));
-int	vs_number __P((SCR *));
-size_t	vs_opt_screens __P((SCR *, recno_t, size_t *));
-size_t	vs_rcm __P((SCR *, recno_t, int));
-int	vs_refresh __P((SCR *));
-int	vs_repaint __P((SCR *, EVENT *));
-int	vs_resize __P((SCR *, long, adj_t));
-int	vs_sm_1down __P((SCR *));
-int	vs_sm_1up __P((SCR *));
-int	vs_sm_cursor __P((SCR *, SMAP **));
-int	vs_sm_fill __P((SCR *, recno_t, pos_t));
-int	vs_sm_next __P((SCR *, SMAP *, SMAP *));
-recno_t	vs_sm_nlines __P((SCR *, SMAP *, recno_t, size_t));
-int	vs_sm_position __P((SCR *, MARK *, u_long, pos_t));
-int	vs_sm_prev __P((SCR *, SMAP *, SMAP *));
-int	vs_sm_scroll __P((SCR *, MARK *, recno_t, scroll_t));
-int	vs_split __P((SCR *, SCR **, SCR **));
-int	vs_swap __P((SCR *, SCR **, char *));
+#include "vi_extern.h"

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.1 1995/04/13 17:19:03 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:03 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.2 1995/06/08 19:01:57 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:01:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: v_ex.c,v 10.1 1995/04/13 17:19:03 bostic Exp $ (Ber
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+#include <unistd.h>
 
 #include "compat.h"
 #include <db.h>
@@ -36,6 +37,8 @@ static int v_ex_done __P((SCR *, VICMD *));
 /*
  * v_again -- &
  *	Repeat the previous substitution.
+ *
+ * PUBLIC: int v_again __P((SCR *, VICMD *));
  */
 int
 v_again(sp, vp)
@@ -53,6 +56,8 @@ v_again(sp, vp)
 /*
  * v_exmode -- Q
  *	Switch the editor into EX mode.
+ *
+ * PUBLIC: int v_exmode __P((SCR *, VICMD *));
  */
 int
 v_exmode(sp, vp)
@@ -73,6 +78,8 @@ v_exmode(sp, vp)
 /*
  * v_join -- [count]J
  *	Join lines together.
+ *
+ * PUBLIC: int v_join __P((SCR *, VICMD *));
  */
 int
 v_join(sp, vp)
@@ -103,6 +110,8 @@ v_join(sp, vp)
 /*
  * v_shiftl -- [count]<motion
  *	Shift lines left.
+ *
+ * PUBLIC: int v_shiftl __P((SCR *, VICMD *));
  */
 int
 v_shiftl(sp, vp)
@@ -120,6 +129,8 @@ v_shiftl(sp, vp)
 /*
  * v_shiftr -- [count]>motion
  *	Shift lines right.
+ *
+ * PUBLIC: int v_shiftr __P((SCR *, VICMD *));
  */
 int
 v_shiftr(sp, vp)
@@ -137,6 +148,8 @@ v_shiftr(sp, vp)
 /*
  * v_switch -- ^^
  *	Switch to the previous file.
+ *
+ * PUBLIC: int v_switch __P((SCR *, VICMD *));
  */
 int
 v_switch(sp, vp)
@@ -167,6 +180,8 @@ v_switch(sp, vp)
 /*
  * v_tagpush -- ^[
  *	Do a tag search on a the cursor keyword.
+ *
+ * PUBLIC: int v_tagpush __P((SCR *, VICMD *));
  */
 int
 v_tagpush(sp, vp)
@@ -183,6 +198,8 @@ v_tagpush(sp, vp)
 /*
  * v_tagpop -- ^T
  *	Pop the tags stack.
+ *
+ * PUBLIC: int v_tagpop __P((SCR *, VICMD *));
  */
 int
 v_tagpop(sp, vp)
@@ -199,6 +216,8 @@ v_tagpop(sp, vp)
 /*
  * v_filter -- [count]!motion command(s)
  *	Run range through shell commands, replacing text.
+ *
+ * PUBLIC: int v_filter __P((SCR *, VICMD *));
  */
 int
 v_filter(sp, vp)
@@ -251,6 +270,8 @@ v_filter(sp, vp)
 /*
  * v_filter_td --
  *	Tear down the filter text input setup and run the filter command.
+ *
+ * PUBLIC: int v_filter_td __P((SCR *, VICMD *));
  */
 int
 v_filter_td(sp, vp)
@@ -260,10 +281,6 @@ v_filter_td(sp, vp)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 	TEXT *tp;
-
-	/* Tear down the v_tcmd_setup structures. */
-	if (v_tcmd_td(sp, vp))
-		return (1);
 
 	/*
 	 * Check to see if the user changed their mind.
@@ -318,6 +335,8 @@ v_ex_cmd(sp, vp, exp)
  * e.g. a '!' command.  At that point, we no longer know what the screen looks
  * like, and can't afford to overwrite anything.  The solution is to go into
  * real ex mode until we get to the end of the command strings.
+ *
+ * PUBLIC: int v_ex __P((SCR *, VICMD *));
  */
 int
 v_ex(sp, vp)
@@ -333,17 +352,16 @@ v_ex(sp, vp)
 /*
  * v_ex_td1 --
  *	Tear down the colon text input setup and run the ex command.
+ *
+ * PUBLIC: int v_ex_td1 __P((SCR *, VICMD *));
  */
 int
 v_ex_td1(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
+	GS *gp;
 	TEXT *tp;
-
-	/* Tear down the v_tcmd_setup structures. */
-	if (v_tcmd_td(sp, vp))
-		return (1);
 
 	/* If the user didn't enter anything, we're done. */
 	tp = sp->tiq.cqh_first;
@@ -360,15 +378,19 @@ v_ex_td1(sp, vp)
 	 * Don't specify any of the E_* flags, we get the correct behavior
 	 * because we're in vi mode.
 	 */
-	sp->gp->excmd.cp = tp->lb;
-	sp->gp->excmd.cplen = tp->len;
-	F_INIT(&sp->gp->excmd, 0);
+	gp = sp->gp;
+	gp->cm_state = ES_PARSE;
+	gp->excmd.cp = tp->lb;
+	gp->excmd.clen = tp->len;
+	F_INIT(&gp->excmd, 0);
 	return (v_ex_td2(sp, vp));
 }
 
 /*
  * v_ex_td2 --
  *	Start or continue with the ex command.
+ *
+ * PUBLIC: int v_ex_td2 __P((SCR *, VICMD *));
  */
 int
 v_ex_td2(sp, vp)
@@ -376,12 +398,11 @@ v_ex_td2(sp, vp)
 	VICMD *vp;
 {
 	GS *gp;
-	EX_PRIVATE *exp;
 	VI_PRIVATE *vip;
+	int isc;
 
 	gp = sp->gp;
 	vip = VIP(sp);
-	exp = EXP(sp);
 
 	/*
 	 * Vi is in one of two states:
@@ -404,38 +425,39 @@ v_ex_td2(sp, vp)
 	}
 
 	/*
-	 * Call the ex parser.  The ex parser will be in one of several
-	 * states when it returns:
+	 * Call the ex parser.  The ex parser will be in one of two states
+	 * when it returns:
 	 *
 	 *	ES_PARSE:	Done.
-	 *	ES_PARSE_ERROR:	Done, but the command had an error.
-	 *	ES_PARSE_EXIT:	Not done, but screen is exiting.
 	 *	ES_RUNNING:	Not done.
 	 *
-	 * The first two are easy, clean up and return.  The third means that
-	 * we clean up and return, but also set things up so that next screen
-	 * will continue the command (there's additional code in the main vi
-	 * loop to make this happen.)  The fourth means that we have to set up
-	 * the teardown functions so that ex_cmd is correctly called after
-	 * whatever is currently running finishes.
+	 * The first one is easy, clean up and return.  The second means we
+	 * clean up and return, but also set things up so that we'll continue
+	 * the command (there's additional code in the main vi loop to make
+	 * this happen.)
 	 */
 	if (ex_cmd(sp))
 		return (1);
 
 	switch (gp->cm_state) {
-	case ES_PARSE_ERROR:
-		gp->cm_state = ES_PARSE;
-		/* FALLTHROUGH */
 	case ES_PARSE:
-	case ES_PARSE_EXIT:
 		if (v_ex_done(sp, vp))
 			return (1);
-		return (sp->gp->scr_continue(sp) ? v_ex(sp, vp) : 0);
+		/*
+	 	 * Get a continue character; users may continue in ex mode by
+		 * entering a ':'.  Historic practice is that any key can be
+		 * used to continue.  Nvi used to require a <carriage-return>
+		 * or <newline>, but this broke historic users badly.
+		 */
+		isc = 1;
+		if (vs_msgflush(sp, &isc, NULL))
+			return (1);
+		return (isc ? v_ex(sp, vp) : 0);
 	case ES_RUNNING:
-		vip->run_func = exp->run_func;
-		vip->run_vp = vp;
+		vip->run_func = EXP(sp)->run_func;
 		vip->cm_state = VS_RUNNING;
 		vip->cm_next = VS_EX_TEARDOWN2;
+		F_SET(vip, VIP_SKIPREFRESH);
 		break;
 	default:
 		abort();
@@ -452,18 +474,13 @@ v_ex_done(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
+	CHAR_T ch;
+	VI_PRIVATE *vip;
 	recno_t lno;
-	size_t cnt, len;
+	size_t len;
 
-	/*
-	 * !!!
-	 * Clean up from dipping into ex.  Get a continue character; users
-	 * may continue in ex mode by entering a ':'.  Historic practice is
-	 * that any key can be used to continue.  Nvi used to require a
-	 * <carriage-return> or <newline>, but this broke historic users
-	 * badly.
-	 */
-	(void)ex_fflush(EXCOOKIE);
+	/* Flush any remaining output, and clear screen tracking information. */
+	(void)ex_fflush(sp);
 
 	/*
 	 * The only cursor modifications are real, however, the underlying
@@ -491,5 +508,36 @@ v_ex_done(sp, vp)
 
 	vp->m_final.lno = sp->lno;
 	vp->m_final.cno = sp->cno;
+
+
+	/*
+	 * If ex entered canonical mode for some reason, we have to wait to
+	 * ensure that the user saw any messages and reset the terminal.  The
+	 * entire screen will need repainting.
+	 */
+	if (F_ISSET(sp, S_EX_CANON)) {
+		if (sp->gp->scr_canon(sp, 0))
+			return (1);
+		F_CLR(sp, S_EX_CANON);
+
+		if (F_ISSET(sp, S_EX_WROTE)) {
+			F_CLR(sp, S_EX_WROTE);
+			(void)write(STDOUT_FILENO,
+			    STR_CMSG, sizeof(STR_CMSG) - 1);
+			if (v_getkey(sp, &ch))
+				return (1);
+			/*
+			 * XXX
+			 * We've already waited, don't wait again in the refresh
+			 * code.
+			 */
+			vip = VIP(sp);
+			vip->lcontinue = vip->linecount = vip->totalcount = 0;
+		}
+
+		F_SET(sp, S_SCR_REDRAW);
+		(void)vs_refresh(sp);
+	}
+
 	return (0);
 }

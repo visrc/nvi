@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.2 1995/05/05 18:57:32 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:57:32 $";
+static char sccsid[] = "$Id: vi.c,v 10.3 1995/06/08 19:02:10 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ vi(sp, evp)
 	GS *gp;
 	MARK abs, m;
 	SCR *tsp;
-	VICMD *dp, *dmp, *vp, *vmp;
+	VICMD *vmp, *vp;
 	VI_PRIVATE *vip;
 	s_vi_t state;
 	size_t len;
@@ -86,10 +86,15 @@ vi(sp, evp)
 	/* Local variables. */
 	gp = sp->gp;
 	vip = VIP(sp);
-	vp = &vip->cmd;
 	vmp = &vip->motion;
-	dp = &vip->sdot;
-	dmp = &vip->sdotmotion;
+
+	/*
+	 * The first time we enter the screen, we have to initialize the
+	 * VICMD structure we're using.  Don't try and move this further
+	 * down in the code, it won't work.
+	 */
+	if ((vp = vip->vp) == NULL)
+		vp = vip->vp = &vip->cmd;
 
 	tilde_reset = 0;
 
@@ -104,8 +109,6 @@ vi(sp, evp)
 		if (vip->cm_state == VS_RUNNING)
 			break;
 		goto interrupt;
-	case E_REPAINT:
-		return (vs_repaint(sp, evp));
 	case E_RESIZE:
 		v_dtoh(sp);
 		if (v_scr_init(sp))
@@ -119,33 +122,10 @@ vi(sp, evp)
 			return (1);
 		
 		/* Reset strange attraction. */
-		F_SET(vp, VM_RCM_SET);
+		F_SET(&vip->cmd, VM_RCM_SET);
 		goto cmd;
 	case E_STOP:
 		return (0);
-	case E_TIMEOUT:
-		/*
-		 * If we left an ex command running when the screen exited,
-		 * continue it.
-		 */
-		if (gp->cm_state == ES_PARSE_EXIT) {
-			if (ex_cmd(sp))
-				return (1);
-			switch (gp->cm_state) {
-			case ES_PARSE_ERROR:
-				gp->cm_state = ES_PARSE;
-				/* FALLTHROUGH */
-			case ES_PARSE:
-			case ES_PARSE_EXIT:
-				FL_CLR(gp->ec_flags, EC_INTERRUPT);
-				goto cmd;
-			case ES_RUNNING:
-				return (0);
-			default:
-				abort();
-			}
-		}
-		break;
 	default:
 		abort();
 	}
@@ -155,24 +135,25 @@ next_state:
 	/*
 	 * VS_RUNNING:
 	 *
-	 * Something else is running -- a search loop or a text input loop,
-	 * and wanted to check for interrupts, or a file switched and the
-	 * main code is the only thing that can handle that.  Pass the event
-	 * on to the handler.  If the handler finishes, move to the next state.
+	 * Something else is running -- a search loop or a text input loop.
 	 */
 	case VS_RUNNING:
 		intext = F_ISSET(sp, S_INPUT);
 
+		/*
+		 * Pass the event on to the handler.  If the handler finishes,
+		 * move to the next state.
+		 */
 		if (vip->run_func != NULL) {
 			if (vip->run_func(sp, evp, &complete))
 				return (1);
 			if (!complete)
 				return (0);
 		}
-		FL_CLR(gp->ec_flags, EC_INTERRUPT);
 
 		/*
-		 * If we quit because of an interrupt, clean up.
+		 * If we quit because of an interrupt, move to the command
+		 * state.
 		 *
 		 * !!!
 		 * Historically, vi beeped on command level and text input
@@ -187,11 +168,10 @@ next_state:
 		 * a test, later.)
 		 */
 		if (evp->e_event == E_INTERRUPT) {
-			if (!intext)
+			if (!intext) {
 interrupt:			(void)gp->scr_bell(sp);
-			msgq(sp, M_ERR, v_event_flush(sp, CH_MAPPED) ?
-			    "167|Interrupted: mapped keys discarded" :
-			    "245|Interrupted");
+				ex_message(sp, NULL, EXM_INTERRUPT);
+			}
 			goto cmd;
 		}
 
@@ -199,24 +179,16 @@ interrupt:			(void)gp->scr_bell(sp);
 		goto next_state;
 
 	/*
-	 * VS_TEXT_TEARDOWN:
-	 *
-	 * We have just ended text input mode.  Tear down the setup.
-	 */
-	case VS_TEXT_TEARDOWN:
-		goto command_restart;
-
-	/*
 	 * VS_EX_TEARDOWN1:
 	 *
 	 * We have just finished getting input for an ex command.  Tear down
-	 * the text input setup and execute it.  As part of teardown, we may
-	 * have to service interrupts (e.g. the ex command has a search
-	 * component) and/or the user may continue executing ex commands.  If
-	 * the state is modified, that's what's happened.
+	 * the text input setup and execute it.  If v_ex_td1 returns without
+	 * resetting the state, then we've finished.
 	 */
 	case VS_EX_TEARDOWN1:
-		if (v_ex_td1(sp, vip->run_vp))
+		if (v_tcmd_td(sp, vp))
+			return (1);
+		if (v_ex_td1(sp, vp))
 			return (1);
 		if (vip->cm_state != VS_EX_TEARDOWN1)
 			break;
@@ -225,10 +197,11 @@ interrupt:			(void)gp->scr_bell(sp);
 	/*
 	 * VS_EX_TEARDOWN2:
 	 *
-	 * We have just finished the search component of an ex command.
+	 * We are continuing to execute the ex command.  If v_ex_td2 returns
+	 * without resetting the state, then we've finished.
 	 */
 	case VS_EX_TEARDOWN2:
-		if (v_ex_td2(sp, vip->run_vp))
+		if (v_ex_td2(sp, vp))
 			return (1);
 		if (vip->cm_state != VS_EX_TEARDOWN2)
 			break;
@@ -237,39 +210,42 @@ interrupt:			(void)gp->scr_bell(sp);
 	/*
 	 * VS_FILTER_TEARDOWN:
 	 *
-	 * We have just finished getting input for an ex filter command.
-	 * Tear down the text input setup and execute it.
+	 * We have just finished getting input for an ex filter command.  Tear
+	 * down the text input setup and execute it.
 	 */
 	case VS_FILTER_TEARDOWN:
-		if (v_filter_td(sp, vip->run_vp))
+		if (v_tcmd_td(sp, vp))
+			return (1);
+		if (v_filter_td(sp, vp))
 			return (1);
 		goto command_restart;
 
 	/*
-	 * VS_SEARCH_TEARDOWN:
+	 * VS_SEARCH_TEARDOWN1:
 	 *
-	 * We have just finished a search.  Save off the information and
-	 * restart the command.
+	 * We have just finished getting input for a ex address search command,
+	 * used as a normal or motion command.  Tear down the text input setup
+	 * and execute it.
 	 */
 	case VS_SEARCH_TEARDOWN:
-		if (ISMOTION(vip->run_vp)) {
-			if (v_correct(sp, vip->run_vp, 0))
-				return (1);
+		if (v_tcmd_td(sp, vp))
+			return (1);
+		if (v_a_td(sp, vp))
+			return (1);
+		if (ISMOTION(vp))
 			goto motion_restart;
-		}
-		vip->run_vp->m_final = vip->run_vp->m_stop;
 		goto command_restart;
 
 	/*
 	 * VS_REPLACE_CHAR1, VS_REPLACE_CHAR2:
 	 *
 	 * We have the replace command, and we're looking for a character.
-	 * <escape> cancels the replacement, <literal> escapes whatever
-	 * follows.
+	 * <escape> cancels the replacement, <literal> escapes the following
+	 * character.
 	 */
 	case VS_REPLACE_CHAR1:
 		if (evp->e_value == K_ESCAPE)
-			goto command_restart;
+			goto cmd;
 		if (evp->e_value == K_VLNEXT) {
 			vip->cm_state = VS_REPLACE_CHAR2;
 			break;
@@ -279,35 +255,16 @@ interrupt:			(void)gp->scr_bell(sp);
 	case VS_REPLACE_CHAR2:
 		vip->rlast = evp->e_c;
 		vip->rvalue = evp->e_value;
-		v_replace_td(sp, vip->run_vp);
+		if (v_replace_td(sp, vp))
+			return (1);
 		goto command_restart;
 
 	/*
-	 * VS_EX_SEARCH_TEARDOWN1:
+	 * VS_TEXT_TEARDOWN:
 	 *
-	 * We have just finished getting input for a ex address search
-	 * command, used as a normal or motion command.  Tear down the
-	 * text input setup and execute it.
+	 * We have just ended text input mode.  Finish the command.
 	 */
-	case VS_EX_SEARCH_TEARDOWN1:
-		if (v_a_td1(sp, vip->run_vp))
-			return (1);
-		break;
-
-	/*
-	 * VS_EX_SEARCH_TEARDOWN2:
-	 *
-	 * We have just finished an ex address search command.  Restart
-	 * the command.  Note, if there are multiple search expressions,
-	 * the search may continue.
-	 */
-	case VS_EX_SEARCH_TEARDOWN2:
-		if (v_a_td2(sp, vip->run_vp))
-			return (1);
-		if (vip->cm_state != VS_EX_SEARCH_TEARDOWN2)
-			break;
-		if (ISMOTION(vip->run_vp))
-			goto motion_restart;
+	case VS_TEXT_TEARDOWN:
 		goto command_restart;
 
 	/*
@@ -440,7 +397,7 @@ interrupt:			(void)gp->scr_bell(sp);
 		}
 
 		/* A repeatable command must have been executed. */
-		if (!F_ISSET(dp, VC_ISDOT)) {
+		if (!F_ISSET(&vip->sdot, VC_ISDOT)) {
 			msgq(sp, M_ERR, "208|No command to repeat");
 			goto err;
 		}
@@ -463,15 +420,15 @@ interrupt:			(void)gp->scr_bell(sp);
 			 * a total of 5 words.
 			 */
 			if (F_ISSET(vp, VC_C1SET)) {
-				F_SET(dp, VC_C1SET);
-				dp->count = vp->count;
-				dmp->count = 1;
+				F_SET(&vip->sdot, VC_C1SET);
+				vip->sdot.count = vp->count;
+				vip->sdotmotion.count = 1;
 			}
 			if (F_ISSET(vp, VC_BUFFER)) {
-				F_SET(dp, VC_BUFFER);
-				dp->buffer = vp->buffer;
+				F_SET(&vip->sdot, VC_BUFFER);
+				vip->sdot.buffer = vp->buffer;
 			}
-			*vp = *dp;
+			*vp = vip->sdot;
 		}
 		goto dot_done;
 
@@ -538,7 +495,7 @@ dot_done:	/* Prepare to set the previous context. */
 		 * command. 
 		 */
 		if (F_ISSET(vp, VC_ISDOT)) {
-			*vmp = *dmp;
+			*vmp = vip->sdotmotion;
 			F_SET(vmp, VC_ISDOT);
 
 			/*
@@ -656,14 +613,18 @@ get_motion1:	/*
 			 * If the state changed (e.g. the motion command needs
 			 * input text), then have to reenter the main loop with
 			 * a different state, and jump back here after that's
-			 * done.  Feel free to call me old-fashioned, but event
-			 * driven programming just sucks.
+			 * done.  Note that we reset the current command/motion
+			 * structure pointer, for the duration of that effort.
+			 * Feel free to call me old-fashioned, but event driven
+			 * programming just sucks.
 			 */
+			vip->vp = &vip->motion;
 			if (state != vip->cm_state)
 				break;
+motion_restart:		vip->vp = &vip->cmd;
 
-motion_restart:		/* If no motion provided, we're done. */
-			if (F_ISSET(vmp, VM_NOMOTION))
+			/* If no motion provided, we're done. */
+			if (F_ISSET(vmp, VM_CMDFAILED))
 				goto err;
 
 			/*
@@ -718,8 +679,8 @@ motion_restart:		/* If no motion provided, we're done. */
 		 * above and will eventually be reset.
 		 */
 		if (F_ISSET(vp->kp, V_DOT)) {
-			*dmp = *vmp;
-			dmp->count = sv_cnt;
+			vip->sdotmotion = *vmp;
+			vip->sdotmotion.count = sv_cnt;
 		}
 
 no_motion:	/*
@@ -761,7 +722,11 @@ no_motion:	/*
 		if (state != vip->cm_state)
 			break;
 
-command_restart:/*
+command_restart:/* If the command failed, we're done. */
+		if (F_ISSET(vmp, VM_CMDFAILED))
+			goto err;
+
+		/*
 		 * Set the dot command structure.
 		 *
 		 * !!!
@@ -770,8 +735,8 @@ command_restart:/*
 		 * input commands.
 		 */
 		if (F_ISSET(vp, V_DOT) && !F_ISSET(vip, VIP_MAPPED)) {
-			*dp = *vp;
-			F_SET(dp, VC_ISDOT);
+			vip->sdot = *vp;
+			F_SET(&vip->sdot, VC_ISDOT);
 
 			/*
 			 * If a count was supplied for both the command and
@@ -779,10 +744,10 @@ command_restart:/*
 			 * Turn the count back on for the dot structure.
 			 */
 			if (F_ISSET(vp, VC_C1RESET))
-				F_SET(dp, VC_C1SET);
+				F_SET(&vip->sdot, VC_C1SET);
 
 			/* VM flags aren't retained. */
-			F_CLR(dp, VM_COMMASK | VM_RCM_MASK);
+			F_CLR(&vip->sdot, VM_COMMASK | VM_RCM_MASK);
 		}
 
 		/*
@@ -1101,11 +1066,15 @@ err:		if (v_event_flush(sp, CH_MAPPED))
 	}
 
 	if (0) {
-cmd:		vip->cm_state = VS_GET_CMD1;
+cmd:		vp = vip->vp = &vip->cmd;
+		vip->cm_state = VS_GET_CMD1;
 		sp->showmode = SM_COMMAND;
 		FL_CLR(gp->ec_flags, EC_MAPINPUT);
 		FL_SET(gp->ec_flags, EC_MAPCOMMAND);
 	}
+
+	/* Clear any interrupt, it's been dealt with. */
+	F_CLR(sp, S_INTERRUPTED);
 
 done:	/* If we're exiting the screen, clean up. */
 	switch (F_ISSET(sp, S_EX | S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
@@ -1124,37 +1093,30 @@ done:	/* If we're exiting the screen, clean up. */
 		 * Find a new screen, either by joining an old one or by
 		 * switching with a hidden one.
 		 */
-		(void)vs_join(sp, NULL, NULL, &tsp);
+		(void)vs_discard(sp, &tsp);
 		if (tsp == NULL)
 			(void)vs_swap(sp, &tsp, NULL);
 		if ((sp->nextdisp = tsp) == NULL)
 			return (0);
 		goto sswitch;
 	case S_SSWITCH:				/* Exit the screen. */
-		/* Paint the old screen's status line. */
-		(void)msg_status(sp, sp->lno, 0, 1);
-
 		/* Save the old screen's cursor information. */
 		sp->frp->lno = sp->lno;
 		sp->frp->cno = sp->cno;
 		F_SET(sp->frp, FR_CURSORSET);
 
-sswitch:	/*
-		 * XXX
-		 * We might have put up various one-line messages while in
-		 * other screens -- clear the wait-for-key flag.  This has
-		 * no business whatever being done here...
-		 */
-		F_CLR(sp->nextdisp, S_SCR_UMODE);
+		/* Display a status line. */
+		F_SET(sp, S_STATUS);
 
-		vip->cm_state = VS_GET_CMD1;
+sswitch:	vip->cm_state = VS_GET_CMD1;
 
 		/* Refresh based on the new screen, so the cursor's right. */
+		F_SET(vip, VIP_CUR_INVALID);
 		return (vs_refresh(sp->nextdisp));
 	}
 
 	/* If no mapped keys waiting, refresh the screen. */
-	if (!MAPPED_KEYS_WAITING(sp) && vip->cm_state == VS_GET_CMD1)
+	if (!MAPPED_KEYS_WAITING(sp))
 		if (F_ISSET(vip, VIP_SKIPREFRESH))
 			F_CLR(vip, VIP_SKIPREFRESH);
 		else {
@@ -1294,7 +1256,6 @@ v_scr_init(sp)
 	 */
 	sp->rows = vip->srows;
 	sp->cols = O_VAL(sp, O_COLUMNS);
-	sp->woff = 0;
 	sp->t_rows = sp->t_minrows = O_VAL(sp, O_WINDOW);
 	if (sp->rows != 1) {
 		if (sp->t_rows > sp->rows - 1) {

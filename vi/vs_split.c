@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.4 1995/05/26 11:06:50 bostic Exp $ (Berkeley) $Date: 1995/05/26 11:06:50 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.5 1995/06/08 19:02:20 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,22 +36,15 @@ static char sccsid[] = "$Id: vs_split.c,v 10.4 1995/05/26 11:06:50 bostic Exp $ 
  * vs_split --
  *	Create a new screen.
  *
- * PUBLIC: int vs_split __P((SCR *, SCR **, SCR **));
+ * PUBLIC: int vs_split __P((SCR *, SCR *));
  */
 int
-vs_split(sp, topp, botp)
-	SCR *sp, **topp, **botp;
+vs_split(sp, new)
+	SCR *sp, *new;
 {
-	SCR *tsp;
 	SMAP *smp;
-	size_t cnt, half;
+	size_t half;
 	int issmallscreen, splitup;
-
-	/* Can be called from ex before we're ready. */
-	if (!VI_SCRINIT(sp)) {
-		v_message(sp, "screen split", VIM_NOSINIT);
-		return (1);
-	}
 
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
@@ -61,12 +54,11 @@ vs_split(sp, topp, botp)
 		return (1);
 	}
 
-	/* Get a new screen. */
-	if (screen_init(sp->gp, sp, &tsp))
+	/* Get a new screen map. */
+	CALLOC(sp, _HMAP(new), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
+	if (_HMAP(new) == NULL)
 		return (1);
-	CALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
-	if (_HMAP(tsp) == NULL)
-		return (1);
+	_HMAP(new)->lno = sp->lno;
 
 	/*
 	 * Small screens: see vs_refresh.c section 6a.  Set a flag so
@@ -81,57 +73,46 @@ vs_split(sp, topp, botp)
 	 *
 	 * The columns in the screen don't change.
 	 */
-	tsp->cols = sp->cols;
+	new->cols = sp->cols;
 
 	/*
 	 * Recalculate current cursor position based on sp->lno, we're called
 	 * with the cursor on the colon command line.
 	 */
-	cnt = vs_sm_cursor(sp, &smp) ? 0 : smp - HMAP;
-	if (cnt <= half) {			/* Parent is top half. */
-		/* Child. */
-		tsp->rows = sp->rows - half;
-		tsp->woff = sp->woff + half;
-		tsp->t_maxrows = IS_ONELINE(tsp) ? 1 : tsp->rows - 1;
+	splitup = (vs_sm_cursor(sp, &smp) ? 0 : smp - HMAP) > half;
+		
+	/* Get new screen real-estate. */
+	if (sp->gp->scr_split(sp, new, splitup))
+		return (1);
 
-		/* Parent. */
-		sp->rows = half;
-		sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
-
-		*topp = sp;
-		*botp = tsp;
-		splitup = 0;
-	} else {				/* Parent is bottom half. */
-		/* Child. */
-		tsp->rows = sp->rows - half;
-		tsp->woff = sp->woff;
-		tsp->t_maxrows = IS_ONELINE(tsp) ? 1 : tsp->rows - 1;
-
-		/* Parent. */
-		sp->rows = half;
-		sp->woff += tsp->rows;
-		sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
-
-		/* Shift the parent's map down. */
-		memmove(_HMAP(sp),
-		    _HMAP(sp) + tsp->rows, sp->t_maxrows * sizeof(SMAP));
-
-		*topp = tsp;
-		*botp = sp;
-		splitup = 1;
+	/* Enter the new screen into the queue. */
+	SIGBLOCK(sp->gp);
+	if (splitup) {				/* Link in before old. */
+		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
+	} else {				/* Link in after old. */
+		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
 	}
+	SIGUNBLOCK(sp->gp);
+
+	/*
+	 * If the parent is the bottom half of the screen, shift the map
+	 * down to match on-screen text.
+	 */
+	if (splitup)
+		memmove(_HMAP(sp),
+		    _HMAP(sp) + new->rows, sp->t_maxrows * sizeof(SMAP));
 
 	/*
 	 * Small screens: see vs_refresh.c, section 6a.
 	 *
-	 * The child may have different screen options sizes than the
-	 * parent, so use them.  Make sure that the text counts aren't
-	 * larger than the new screen sizes.
+	 * The child may have different screen options sizes than the parent,
+	 * so use them.  Guarantee that text counts aren't larger than the
+	 * new screen sizes.
 	 */
 	if (issmallscreen) {
 		/* Fix the text line count for the parent. */
 		if (splitup)
-			sp->t_rows -= tsp->rows;
+			sp->t_rows -= new->rows;
 
 		/* Fix the parent screen. */
 		if (sp->t_rows > sp->t_maxrows)
@@ -140,207 +121,89 @@ vs_split(sp, topp, botp)
 			sp->t_minrows = sp->t_maxrows;
 
 		/* Fix the child screen. */
-		tsp->t_minrows = tsp->t_rows = O_VAL(sp, O_WINDOW);
-		if (tsp->t_rows > tsp->t_maxrows)
-			tsp->t_rows = tsp->t_maxrows;
-		if (tsp->t_minrows > tsp->t_maxrows)
-			tsp->t_minrows = tsp->t_maxrows;
-
-		/*
-		 * If we split up, i.e. the child is on top, lines that
-		 * were painted in the parent may not be painted in the
-		 * child.  Clear any lines not being used in the child
-		 * screen.
-		 */
-		if (splitup)
-			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				(void)sp->gp->scr_move(tsp, cnt, 0);
-				(void)sp->gp->scr_clrtoeol(tsp);
-			}
+		new->t_minrows = new->t_rows = O_VAL(sp, O_WINDOW);
+		if (new->t_rows > new->t_maxrows)
+			new->t_rows = new->t_maxrows;
+		if (new->t_minrows > new->t_maxrows)
+			new->t_minrows = new->t_maxrows;
 	} else {
 		sp->t_minrows = sp->t_rows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
 
 		/*
-		 * The new screen may be a small screen, even though the
-		 * parent was not.  Don't complain if O_WINDOW is too large,
-		 * we're splitting the screen so the screen is much smaller
-		 * than normal.  Clear any lines not being used in the child
-		 * screen.
+		 * The new screen may be a small screen, even if the parent
+		 * was not.  Don't complain if O_WINDOW is too large, we're
+		 * splitting the screen so the screen is much smaller than
+		 * normal.
 		 */
-		tsp->t_minrows = tsp->t_rows = O_VAL(sp, O_WINDOW);
-		if (tsp->t_rows > tsp->rows - 1)
-			tsp->t_minrows = tsp->t_rows =
-			    IS_ONELINE(tsp) ? 1 : tsp->rows - 1;
-		else
-			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				(void)sp->gp->scr_move(tsp, cnt, 0);
-				(void)sp->gp->scr_clrtoeol(tsp);
-			}
+		new->t_minrows = new->t_rows = O_VAL(sp, O_WINDOW);
+		if (new->t_rows > new->rows - 1)
+			new->t_minrows = new->t_rows =
+			    IS_ONELINE(new) ? 1 : new->rows - 1;
 	}
 
-	/* Copy the parent's map into the child's map. */
-	memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
+	/* Adjust maximum text count. */
+	sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
+	new->t_maxrows = IS_ONELINE(new) ? 1 : new->rows - 1;
 
-	/* Adjust the ends of both maps. */
+	/* Adjust the ends of the new and old maps. */
 	_TMAP(sp) = IS_ONELINE(sp) ?
 	    _HMAP(sp) : _HMAP(sp) + (sp->t_rows - 1);
-	_TMAP(tsp) = IS_ONELINE(tsp) ?
-	    _HMAP(tsp) : _HMAP(tsp) + (tsp->t_rows - 1);
+	_TMAP(new) = IS_ONELINE(new) ?
+	    _HMAP(new) : _HMAP(new) + (new->t_rows - 1);
 
 	/* Reset the length of the default scroll. */
 	if ((sp->defscroll = sp->t_maxrows / 2) == 0)
 		sp->defscroll = 1;
-	if ((tsp->defscroll = tsp->t_maxrows / 2) == 0)
-		tsp->defscroll = 1;
+	if ((new->defscroll = new->t_maxrows / 2) == 0)
+		new->defscroll = 1;
 
 	/* The new screen has to be drawn from scratch. */
-	F_SET(tsp, S_SCR_REFORMAT);
+	F_SET(new, S_SCR_REFORMAT | S_STATUS);
 	return (0);
 }
 
 /*
- * vs_bg --
- *	Background the screen, and switch to the next one.
+ * vs_discard --
+ *	Discard the screen, folding the real-estate into a related screen,
+ *	if one exists, and return that screen.
  *
- * PUBLIC: int vs_bg __P((SCR *));
+ * PUBLIC: int vs_discard __P((SCR *, SCR **));
  */
 int
-vs_bg(csp)
-	SCR *csp;
+vs_discard(csp, spp)
+	SCR *csp, **spp;
 {
 	SCR *sp;
 
-	/* Can be called from ex before we're ready. */
-	if (!VI_SCRINIT(csp)) {
-		v_message(csp, "bg", VIM_NOSINIT);
+	/* Discard the underlying screen. */
+	if (csp->gp->scr_discard(csp, &sp))
 		return (1);
-	}
-
-	/* Try and join with another screen. */
-	if ((vs_join(csp, NULL, NULL, &sp)))
-		return (1);
-	if (sp == NULL) {
-		msgq(csp, M_ERR,
-		    "222|You may not background your only displayed screen");
-		return (1);
-	}
-
-	/* Move the old screen to the hidden queue. */
-	SIGBLOCK(csp->gp);
-	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
-	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
-	SIGUNBLOCK(csp->gp);
-
-	/* Toss the screen map. */
-	FREE(_HMAP(csp), SIZE_HMAP(csp) * sizeof(SMAP));
-	_HMAP(csp) = NULL;
-
-	/* Switch screens. */
-	csp->nextdisp = sp;
-	F_SET(csp, S_SSWITCH);
-
-	return (0);
-}
-
-/*
- * vs_join --
- *	Join the screen into a related screen, if one exists,
- *	and return that screen.
- *
- * PUBLIC: int vs_join __P((SCR *, SCR *, SCR *, SCR **));
- */
-int
-vs_join(csp, prev, next, nsp)
-	SCR *csp, *prev, *next, **nsp;
-{
-	SCR *sp;
-	SMAP *p;
-	size_t cnt;
-	int shift;
-
+	if (spp != NULL)
+		*spp = sp;
+	if (sp == NULL)
+		return (0);
+		
 	/*
-	 * If a split screen, add space to the specified previous or next
-	 * screen, or, if none specified, to the parent/child.  Make no
-	 * effort to clean up the screen's values.  If it's not exiting,
-	 * we'll get it when the user asks to display it again.
+	 * Make no effort to clean up the discarded screen's information.  If
+	 * it's not exiting, we'll do the work when the user redisplays it.
+	 *
+	 * Small screens: see vs_refresh.c section 6a.  Adjust text line info,
+	 * unless it's a small screen.
+	 *
+	 * Reset the length of the default scroll.
 	 */
-	if ((sp = prev) != NULL) {
-		shift = 0;
-		goto found;
-	}
-	if ((sp = next) != NULL) {
-		shift = 1;
-		sp->woff = csp->woff;
-		goto found;
-	}
-	if ((sp = csp->q.cqe_prev) != (void *)&csp->gp->dq) {
-		shift = 0;
-		goto found;
-	}
-	if ((sp = csp->q.cqe_next) != (void *)&csp->gp->dq) {
-		shift = 1;
-		sp->woff = csp->woff;
-		goto found;
-	}
-
-	if (nsp != NULL)
-		*nsp = NULL;
-	return (0);
-
-found:	sp->rows += csp->rows;
-
-	if (IS_SMALL(sp)) {
-		sp->t_maxrows += csp->rows;
-		for (cnt = sp->t_rows; ++cnt <= sp->t_maxrows;) {
-			(void)sp->gp->scr_move(sp, cnt, 0);
-			(void)sp->gp->scr_clrtoeol(sp);
-		}
-		TMAP = HMAP + (sp->t_rows - 1);
-	} else {
-		if (!IS_ONELINE(csp)) {
-			sp->t_maxrows += csp->rows;
-			sp->t_rows = sp->t_minrows = sp->t_maxrows;
-		}
-		if (shift) {
-			/*
-			 * Shift the screen map down, and fill in the missing
-			 * information.  If we fail, assume it's because there
-			 * aren't enough lines and fill in from scratch.
-			 */
-			memmove(HMAP + csp->rows,
-			    HMAP, csp->rows * sizeof(SMAP));
-			for (p = HMAP + csp->rows; p > HMAP;) {
-				if (vs_sm_prev(sp, p, p - 1)) {
-					if (vs_sm_fill(sp, 1, P_TOP))
-						return (1);
-					break;
-				}
-				/* vs_sm_prev() flushed the cache. */
-				if (vs_line(sp, --p, NULL, NULL))
-					return (1);
-			}
-			TMAP = HMAP + (sp->t_rows - 1);
-		} else
-			/* Fill in the end of the screen map. */
-			for (p = TMAP,
-			    TMAP = HMAP + (sp->t_rows - 1); p < TMAP;) {
-				if (vs_sm_next(sp, p, p + 1))
-					return (1);
-				/* vs_sm_next() flushed the cache. */
-				if (vs_line(sp, ++p, NULL, NULL))
-					return (1);
-			}
-	}
-
-	/* Reset the length of the default scroll. */
+	if (!IS_SMALL(sp))
+		sp->t_rows = sp->t_minrows = sp->rows - 1;
+	sp->t_maxrows = sp->rows - 1;
 	sp->defscroll = sp->t_maxrows / 2;
+	TMAP = HMAP + (sp->t_rows - 1);
 
 	/*
 	 * Save the old screen's cursor information.
 	 *
 	 * XXX
-	 * If called after file_end(), if the underlying file was a tmp
-	 * file it may have gone away.
+	 * If called after file_end(), if the underlying file was a tmp file
+	 * it may have gone away.
 	 */
 	if (csp->frp != NULL) {
 		csp->frp->lno = csp->lno;
@@ -348,8 +211,14 @@ found:	sp->rows += csp->rows;
 		F_SET(csp->frp, FR_CURSORSET);
 	}
 
-	if (nsp != NULL)
-		*nsp = sp;
+	/*
+	 * The new screen has to be drawn from scratch.
+	 *
+	 * XXX
+	 * Actually, we could play games with the map, but it's unclear it's
+	 * worth the effort.
+	 */
+	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
@@ -367,12 +236,6 @@ vs_fg(csp, name)
 	SCR *sp;
 	int nf;
 	char *p;
-
-	/* Can be called from ex before we're ready. */
-	if (!VI_SCRINIT(csp)) {
-		v_message(csp, "fg", VIM_NOSINIT);
-		return (1);
-	}
 
 	if (vs_swap(csp, &sp, name))
 		return (1);
@@ -395,6 +258,44 @@ vs_fg(csp, name)
 	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
 	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
 	SIGUNBLOCK(csp->gp);
+
+	return (0);
+}
+
+/*
+ * vs_bg --
+ *	Background the screen, and switch to the next one.
+ *
+ * PUBLIC: int vs_bg __P((SCR *));
+ */
+int
+vs_bg(csp)
+	SCR *csp;
+{
+	SCR *sp;
+
+	/* Try and join with another screen. */
+	if (vs_discard(csp, &sp))
+		return (1);
+	if (sp == NULL) {
+		msgq(csp, M_ERR,
+		    "222|You may not background your only displayed screen");
+		return (1);
+	}
+
+	/* Move the old screen to the hidden queue. */
+	SIGBLOCK(csp->gp);
+	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
+	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
+	SIGUNBLOCK(csp->gp);
+
+	/* Toss the screen map. */
+	FREE(_HMAP(csp), SIZE_HMAP(csp) * sizeof(SMAP));
+	_HMAP(csp) = NULL;
+
+	/* Switch screens. */
+	csp->nextdisp = sp;
+	F_SET(csp, S_SSWITCH | S_STATUS);
 
 	return (0);
 }
@@ -428,8 +329,8 @@ vs_swap(csp, nsp, name)
 	 * Save the old screen's cursor information.
 	 *
 	 * XXX
-	 * If called after file_end(), if the underlying file was a tmp
-	 * file it may have gone away.
+	 * If called after file_end(), if the underlying file was a tmp file
+	 * it may have gone away.
 	 */
 	if (csp->frp != NULL) {
 		csp->frp->lno = csp->lno;
@@ -447,9 +348,9 @@ vs_swap(csp, nsp, name)
 	issmallscreen = IS_SMALL(sp);
 
 	/* Initialize screen information. */
-	sp->rows = csp->rows;
 	sp->cols = csp->cols;
-	sp->woff = csp->woff;
+	sp->rows = csp->rows;	/* XXX: Only place in vi that sets rows. */
+	sp->woff = csp->woff;	/* XXX: Only place in vi that sets woff. */
 
 	/*
 	 * Small screens: see vs_refresh.c, section 6a.
@@ -513,12 +414,7 @@ vs_resize(sp, count, adj)
 	adj_t adj;
 {
 	SCR *g, *s;
-
-	/* Can be called from ex before we're ready. */
-	if (!VI_SCRINIT(sp)) {
-		v_message(sp, "resize", VIM_NOSINIT);
-		return (1);
-	}
+	size_t g_off, s_off;
 
 	/*
 	 * Figure out which screens will grow, which will shrink, and
@@ -537,6 +433,8 @@ vs_resize(sp, count, adj)
 			count = count - sp->t_maxrows;
 		}
 	}
+
+	g_off = s_off = 0;
 	if (adj == A_DECREASE) {
 		if (count < 0)
 			count = -count;
@@ -546,57 +444,57 @@ vs_resize(sp, count, adj)
 		if ((g = sp->q.cqe_prev) == (void *)&sp->gp->dq) {
 			if ((g = sp->q.cqe_next) == (void *)&sp->gp->dq)
 				goto toobig;
-			g->woff -= count;
+			g_off = -count;
 		} else
-			s->woff += count;
+			s_off = count;
 	} else {
 		g = sp;
 		if ((s = sp->q.cqe_next) != (void *)&sp->gp->dq)
 			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count)
 				s = NULL;
 			else
-				s->woff += count;
+				s_off = count;
 		else
 			s = NULL;
 		if (s == NULL) {
-			if ((s = sp->q.cqe_prev) == (void *)&sp->gp->dq) {
-toobig:				msgq(sp, M_BERR, adj == A_DECREASE ?
-				    "225|The screen cannot shrink" :
-				    "226|The screen cannot grow");
-				return (1);
-			}
+			if ((s = sp->q.cqe_prev) == (void *)&sp->gp->dq)
+				goto toobig;
 			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count) {
 toosmall:			msgq(sp, M_BERR,
 				    "227|The screen can only shrink to %d rows",
 				    MINIMUM_SCREEN_ROWS);
 				return (1);
 			}
-			g->woff -= count;
+			g_off = -count;
 		}
 	}
 
+	/* Update the underlying screens. */
+	if (sp->gp->scr_resize(s, -count, s_off, g, count, g_off)) {
+toobig:		msgq(sp, M_BERR, adj == A_DECREASE ?
+		    "225|The screen cannot shrink" :
+		    "226|The screen cannot grow");
+		return (1);
+	}
+
 	/*
-	 * Update the screens; we could optimize the reformatting of the
+	 * Fix up the screens; we could optimize the reformatting of the
 	 * screen, but this isn't likely to be a common enough operation
 	 * to make it worthwhile.
 	 */
-	g->rows += count;
 	g->t_rows += count;
 	if (g->t_minrows == g->t_maxrows)
 		g->t_minrows += count;
 	g->t_maxrows += count;
 	_TMAP(g) += count;
-	(void)msg_status(g, g->lno, 0);
-	F_SET(g, S_SCR_REFORMAT);
+	F_SET(g, S_SCR_REFORMAT | S_STATUS);
 
-	s->rows -= count;
 	s->t_rows -= count;
 	s->t_maxrows -= count;
 	if (s->t_minrows > s->t_maxrows)
 		s->t_minrows = s->t_maxrows;
 	_TMAP(s) -= count;
-	(void)msg_status(s, s->lno, 0);
-	F_SET(s, S_SCR_REFORMAT);
+	F_SET(s, S_SCR_REFORMAT | S_STATUS);
 
 	return (0);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.2 1995/05/05 18:56:32 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:32 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.3 1995/06/08 19:02:04 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,10 +259,6 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	vip->im_quote = Q_NOTSET;
 	vip->im_carat = C_NOTSET;
 
-	/* Run function setup. */
-	vip->run_func = v_txt_ev;
-	vip->run_vp = vp;
-
 	/* If it's dot, just do it now. */
 	if (F_ISSET(vp, VC_ISDOT)) {
 		vip->cm_next = VS_GET_CMD1;
@@ -270,6 +266,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	}
 
 	/* Set up default teardown state, move to text input loop. */
+	vip->run_func = v_txt_ev;
 	vip->cm_state = VS_RUNNING;
 	vip->cm_next = VS_TEXT_TEARDOWN;
 	return (0);
@@ -319,7 +316,7 @@ v_txt_ev(sp, evp, completep)
 
 	gp = sp->gp;
 	vip = VIP(sp);
-	vp = vip->run_vp;
+	vp = vip->vp;
 	tp = vip->im_tp;
 
 	rcount = showmatch = 0;

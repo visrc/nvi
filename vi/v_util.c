@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 10.2 1995/05/05 18:56:48 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:48 $";
+static char sccsid[] = "$Id: v_util.c,v 10.3 1995/06/08 19:02:09 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,13 +148,13 @@ v_isempty(p, len)
  * v_message --
  *	Display a few common messages.
  *
- * PUBLIC: void v_message __P((SCR *, char *, enum vimtype));
+ * PUBLIC: void v_message __P((SCR *, char *, vim_t));
  */
 void
 v_message(sp, p, which)
 	SCR *sp;
 	char *p;
-	enum vimtype which;
+	vim_t which;
 {
 	switch (which) {
 	case VIM_COMBUF:
@@ -172,10 +172,6 @@ v_message(sp, p, which)
 		msgq(sp,
 		    which == VIM_NOCOM_B ? M_BERR : M_ERR,
 		    "206|%s isn't a vi command", p);
-		break;
-	case VIM_NOSINIT:
-		msgq(sp, M_ERR,
-		    "270|%s command failed, screen not yet initialized", p);
 		break;
 	case VIM_USAGE:
 		msgq(sp, M_ERR, "177|Usage: %s", p);

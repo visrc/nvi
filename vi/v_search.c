@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.2 1995/05/05 18:56:03 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:03 $";
+static char sccsid[] = "$Id: v_search.c,v 10.3 1995/06/08 19:02:02 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,28 +87,29 @@ v_a_setup(sp, vp, dir)
 	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
 
-	VIP(sp)->cm_next = VS_EX_SEARCH_TEARDOWN1;
+	VIP(sp)->cm_next = VS_SEARCH_TEARDOWN;
 	return (0);
 }
 
 /*
- * v_a_td1 --
- *	Tear down the ex address search text input and start the search.
+ * v_a_td --
+ *	Do the search.
  *
- * PUBLIC: int v_a_td1 __P((SCR *, VICMD *));
+ * PUBLIC: int v_a_td __P((SCR *, VICMD *));
  */
 int
-v_a_td1(sp, vp)
+v_a_td(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
+	static EXCMDLIST fake = { "search" };
+	EXCMD *cmdp;
 	GS *gp;
 	TEXT *tp;
 	VI_PRIVATE *vip;
-
-	/* Tear down the v_txt_gsetup routine. */
-	if (v_tcmd_td(sp, vp))
-		return (1);
+	size_t len, tlen;
+	int err, nb, type;
+	char *p, *t, buf[20];
 
 	/*
 	 * If the user backspaced over the prompt, do nothing.  If the user
@@ -118,65 +119,21 @@ v_a_td1(sp, vp)
 	 */
 	tp = sp->tiq.cqh_first;
 	if (tp->term == TERM_BS) {
-		F_SET(vp, VM_NOMOTION);
+		F_SET(vp, VM_CMDFAILED);
 		return (0);
 	}
 
 	/* Build a fake ex command structure. */
 	gp = sp->gp;
 	gp->excmd.cp = tp->lb;
-	gp->excmd.cplen = tp->len;
+	gp->excmd.clen = tp->len;
 	gp->cm_state = ES_PARSE;
 	F_SET(&gp->excmd, E_VISEARCH);
 
+	/* Save the current line/column. */
 	vip = VIP(sp);
 	vip->s_lno = sp->lno;
 	vip->s_cno = sp->cno;
-
-	return (v_a_td2(sp, vp));
-}
-
-/*
- * v_a_td2 --
- *	 Start or continue an ex address search.
- *
- * PUBLIC: int v_a_td2 __P((SCR *, VICMD *));
- */
-int
-v_a_td2(sp, vp)
-	SCR *sp;
-	VICMD *vp;
-{
-	static EXCMDLIST fake = { "search" };
-	EXCMD *cmdp;
-	GS *gp;
-	VI_PRIVATE *vip;
-	size_t len, tlen;
-	int nb, type;
-	char *p, *t, buf[20];
-
-	gp = sp->gp;
-	vip = VIP(sp);
-
-	/*
-	 * Vi is in one of two states:
-	 *
-	 *	VS_EX_SEARCH_TEARDOWN1 -- haven't called the ex routine.
-	 *	VS_EX_SEARCH_TEARDOWN2 -- restarting the ex routine.
-	 *
-	 * If the latter, update the ex state, the running command has
-	 * finished.
-	 */
-	switch (vip->cm_state) {
-	case VS_EX_SEARCH_TEARDOWN1:
-		break;
-	case VS_EX_SEARCH_TEARDOWN2:
-		gp->cm_state = gp->cm_next;
-		break;
-	default:
-		abort();
-		/* NOTREACHED */
-	}
 
 	/*
 	 * !!!
@@ -201,47 +158,37 @@ v_a_td2(sp, vp)
 	 * !!!
 	 * Historically, the command "/STRING/;   " failed, apparently it
 	 * confused the parser.  We're not that compatible.
-	 *
-	 * Call the ex line routine.  The ex machine will be in one
-	 * of three states when it returns:
-	 *
-	 *		
-	 *	ES_PARSE:	Done.
-	 *	ES_PARSE_ERROR:	Done, but the command had an error.
-	 *	ES_RUNNING:	Not done.
-	 *
-	 * The first two are easy, clean up and return.  The third means that
-	 * we have to set up teardown functions so that ex_range is correctly
-	 * called after whatever is currently running finishes.
 	 */
 	cmdp = &gp->excmd;
-	if (ex_range(sp, cmdp))
+	if (ex_range(sp, cmdp, &err))
 		return (1);
-	switch (gp->cm_state) {
-	case ES_PARSE:
-		/* Copy out the new cursor position and make sure it's okay. */
-		vp->m_stop.lno = cmdp->caddr.lno;
-		vp->m_stop.cno = cmdp->caddr.cno;
-		if (vp->m_stop.lno == 0 || !file_eline(sp, vp->m_stop.lno)) {
-			ex_badaddr(sp, &fake,
-			    vp->m_stop.lno == 0 ? A_ZERO : A_EOF, NUM_OK);
-			goto err2;
-		}
-		break;
-	case ES_PARSE_ERROR:
-		gp->cm_state = ES_PARSE;
+	if (err)
 		goto err2;
-	case ES_RUNNING:
-		vip->run_func = EXP(sp)->run_func;
-		vip->run_vp = vp;
 
-		vip->cm_state = VS_RUNNING;
-		vip->cm_next = VS_EX_SEARCH_TEARDOWN2;
-		return (0);
-	default:
-		abort();
+	/* Copy out the new cursor position and make sure it's okay. */
+	switch (cmdp->addrcnt) {
+	case 1:
+		vp->m_stop = cmdp->addr1;
+		break;
+	case 2:
+		vp->m_stop = cmdp->addr2;
+		break;
+	}
+	if (!file_eline(sp, vp->m_stop.lno)) {
+		ex_badaddr(sp, &fake,
+		    vp->m_stop.lno == 0 ? A_ZERO : A_EOF, NUM_OK);
+		goto err2;
 	}
 
+	/*
+	 * !!!
+	 * Historic practice is that a trailing 'z' was ignored if it was a
+	 * motion command.  Should probably be an error, but not worth the
+	 * effort.
+	 */
+	if (ISMOTION(vp))
+		return (v_correct(sp, vp, F_ISSET(cmdp, E_DELTA)));
+		
 	/*
 	 * !!!
 	 * Historically, if it wasn't a motion command, a delta in the search
@@ -249,17 +196,8 @@ v_a_td2(sp, vp)
 	 */
 	nb = F_ISSET(cmdp, E_DELTA);
 
-	/*
-	 * !!!
-	 * Historic practice is that a trailing 'z' was ignored if
-	 * it was a motion command.  Should probably be an error,
-	 * but not worth the effort.
-	 */
-	if (ISMOTION(vp))
-		return (v_correct(sp, vp, F_ISSET(cmdp, E_DELTA)));
-		
 	/* Check for the 'z' command. */
-	if ((len = cmdp->cplen) != 0) {
+	if ((len = cmdp->clen) != 0) {
 		p = cmdp->cp;
 		if (*p != 'z')
 			goto err1;
@@ -308,9 +246,10 @@ v_a_td2(sp, vp)
 	return (0);
 
 err1:	msgq(sp, M_ERR,
-    "188|Characters after search string, line offset, and/or z command");
-err2:	sp->lno = vip->s_lno;
-	sp->cno = vip->s_cno;
+	    "188|Characters after search string, line offset and/or z command");
+err2:	vp->m_final.lno = vip->s_lno;
+	vp->m_final.cno = vip->s_cno;
+	F_SET(vp, VM_CMDFAILED);
 	return (0);
 }
 
@@ -394,27 +333,30 @@ v_s_setup(sp, vp, ptrn, flags, dir)
 {
 	VI_PRIVATE *vip;
 
-	if (dir == NOTSET) {
+	switch (dir) {
+	case BACKWARD:
+		if (b_search(sp, &vp->m_start, &vp->m_stop, ptrn, NULL,
+		    flags | SEARCH_MSG | (ISMOTION(vp) ? SEARCH_EOL : 0)))
+			return (1);
+		break;
+	case FORWARD:
+		if (f_search(sp, &vp->m_start, &vp->m_stop, ptrn, NULL,
+		    flags | SEARCH_MSG | (ISMOTION(vp) ? SEARCH_EOL : 0)))
+			return (1);
+		break;
+	case NOTSET:
 		msgq(sp, M_ERR, "187|No previous search pattern");
 		return (1);
+	default:
+		abort();
 	}
 
-	if (srch_setup(sp, dir, ptrn, NULL,
-	    flags | SEARCH_MSG | (ISMOTION(vp) ? SEARCH_EOL : 0)))
-		return (1);
-
-	/* Set up the search state. */
-	sp->srch_fm = &vp->m_start;
-	sp->srch_rm = &vp->m_stop;
-	FL_SET(sp->gp->ec_flags, EC_INTERRUPT);
-
-	/* Set up the running function. */
-	vip = VIP(sp);
-	vip->run_func = dir == BACKWARD ? bsrch : fsrch;
-	vip->run_vp = vp;
-
-	vip->cm_state = VS_RUNNING;
-	vip->cm_next = VS_SEARCH_TEARDOWN;
+	/* Correct motion commands, otherwise, simply move to the location. */
+	if (ISMOTION(vp)) {
+		if (v_correct(sp, vp, 0))
+			return(1);
+	} else
+		vp->m_final = vp->m_stop;
 	return (0);
 }
 

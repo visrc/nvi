@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.2 1995/05/05 18:55:38 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:38 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.3 1995/06/08 19:01:59 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:01:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,8 +64,8 @@ v_replace(sp, vp)
 	if (v_rcheck(sp, vp->m_start.lno, &p, &len))
 		return (1);
 
-	/* Replace char has its own mode. */
-	sp->showmode = SM_REPLACE_CHAR;
+	/* Update the mode line. */
+	sp->showmode = SM_REPLACE;
 
 	/* Get the replacement character. */
 	VIP(sp)->cm_state = VS_REPLACE_CHAR1;
