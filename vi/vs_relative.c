@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.17 2001/06/25 15:19:38 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:38 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.18 2001/07/08 13:02:48 skimo Exp $ (Berkeley) $Date: 2001/07/08 13:02:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,6 +102,15 @@ vs_columns(SCR *sp, CHAR_T *lp, db_recno_t lno, size_t *cnop, size_t *diffp)
 	int ch, leftright, listset;
 	CHAR_T *p;
 
+	/*
+	 * Initialize the screen offset.
+	 */
+	scno = 0;
+
+	/* Leading number if O_NUMBER option set. */
+	if (O_ISSET(sp, O_NUMBER))
+		scno += O_NUMBER_LENGTH;
+
 	/* Need the line to go any further. */
 	if (lp == NULL) {
 		(void)db_get(sp, lno, 0, &lp, &len);
@@ -113,7 +122,7 @@ vs_columns(SCR *sp, CHAR_T *lp, db_recno_t lno, size_t *cnop, size_t *diffp)
 	if (lp == NULL) {
 done:		if (diffp != NULL)		/* XXX */
 			*diffp = 0;
-		return (0);
+		return scno;
 	}
 
 	/* Store away the values of the list and leftright edit options. */
@@ -121,15 +130,10 @@ done:		if (diffp != NULL)		/* XXX */
 	leftright = O_ISSET(sp, O_LEFTRIGHT);
 
 	/*
-	 * Initialize the pointer into the buffer and screen and current
-	 * offsets.
+	 * Initialize the pointer into the buffer and current offset.
 	 */
 	p = lp;
-	curoff = scno = 0;
-
-	/* Leading number if O_NUMBER option set. */
-	if (O_ISSET(sp, O_NUMBER))
-		scno += O_NUMBER_LENGTH;
+	curoff = 0;
 
 	/* Macro to return the display length of any signal character. */
 #define	CHLEN(val) (ch = *(UCHAR_T *)p++) == '\t' &&			\
