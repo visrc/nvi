@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.68 1993/05/11 17:22:53 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:22:53 $";
+static char sccsid[] = "$Id: exf.c,v 5.69 1993/05/12 11:26:47 bostic Exp $ (Berkeley) $Date: 1993/05/12 11:26:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	struct stat sb;
 	FILE *fp;
 	MARK from, to;
-	int fd;
+	int fd, oflags;
 
 	/*
 	 * Don't permit writing to temporary files.  The problem is that
@@ -370,12 +370,12 @@ file_write(sp, ep, fm, tm, fname, flags)
 	F_CLR(ep, F_NAMECHANGED);
 
 	/* Open the file, either appending or truncating. */
-	flags = O_CREAT | O_WRONLY;
+	oflags = O_CREAT | O_WRONLY;
 	if (LF_ISSET(FS_APPEND))
-		flags |= O_APPEND;
+		oflags |= O_APPEND;
 	else
-		flags |= O_TRUNC;
-	if ((fd = open(fname, flags, DEFFILEMODE)) < 0) {
+		oflags |= O_TRUNC;
+	if ((fd = open(fname, oflags, DEFFILEMODE)) < 0) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
