@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.22 1992/11/04 10:54:57 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:54:57 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.23 1992/11/06 18:04:02 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:04:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,25 +32,24 @@ int
 ex_next(cmdp)
 	EXCMDARG *cmdp;
 {
-	DEFMODSYNC;
+	EXF *ep;
 
-	/*
-	 * If a file list specified or there are more files to edit, the
-	 * next command will succeed.  Toss the last file.
-	 */
-	if (cmdp->argc || file_next(curf) != NULL) {
-		if (file_modify(curf, 0) || file_stop(curf, 0))
+	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
+
+	if (cmdp->argc) {
+		if (file_stop(curf, cmdp->flags & E_FORCE))
 			return (1);
-	} else {
+		if (file_set(cmdp->argc, (char **)cmdp->argv))
+			PANIC;
+		if ((ep = file_first(1)) == NULL)
+			PANIC;
+	} else if ((ep = file_next(curf, 0)) == NULL) {
 		msg("No more files to edit.");
 		return (1);
 	}
 
-	/* Take any file list specified. */
-	if (cmdp->argc)
-		file_set(cmdp->argc, (char **)cmdp->argv);
-
-	return (file_start(file_next(curf)));
+	if (file_start(ep))
+		PANIC;
 }
 
 /*
@@ -63,15 +62,19 @@ ex_prev(cmdp)
 {
 	EXF *ep;
 
-	if ((ep = file_prev(curf)) == NULL) {
+	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
+
+	if ((ep = file_prev(curf, 0)) == NULL) {
 		msg("No previous files to edit.");
 		return (1);
 	}
 
-	DEFMODSYNC;
-	if (file_modify(curf, 0) || file_stop(curf, 0))
+	if (file_stop(curf, cmdp->flags & E_FORCE))
 		return (1);
-	return (file_start(ep));
+
+	if (file_start(ep))
+		PANIC;
+	return (0);
 }
 
 /*
@@ -82,16 +85,25 @@ int
 ex_rew(cmdp)
 	EXCMDARG *cmdp;
 {
-	if (file_prev(curf) == NULL) {
+	EXF *ep;
+
+	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
+
+	if (file_prev(curf, 0) == NULL) {
 		msg("No previous files to rewind.");
 		return (1);
 	}
-
-	DEFMODSYNC;
-
-	if (file_modify(curf, 0) || file_stop(curf, 0))
+	if ((ep = file_first(0)) == NULL) {
+		msg("No previous files to rewind.");
 		return (1);
-	return (file_start(file_first()));
+	}
+	
+	if (file_stop(curf, 0))
+		return (1);
+
+	if (file_start(ep))
+		PANIC;
+	return (0);
 }
 
 /*
@@ -107,8 +119,15 @@ ex_args(cmdp)
 	int len;
 
 	col = len = sep = 0;
-	for (cnt = 1, ep = file_first(); ep; ++cnt, ep = file_next(ep)) {
-		if (ep->flags & F_IGNORE)
+	for (cnt = 1, ep = file_first(1); ep; ep = file_next(ep, 1)) {
+		/*
+		 * Ignore files that aren't in the "argument" list unless
+		 * they are the one we're currently editing.  I'm not sure
+		 * this is right, but the historic vi behavior of not
+		 * showing the current file if it was the result of a ":e"
+		 * command seems wrong.
+		 */
+		if (ep->flags & F_IGNORE && curf != ep)
 			continue;
 		col += len = strlen(ep->name) + sep + (curf == ep ? 2 : 0);
 		if (col >= curf->cols - 1) {
@@ -123,6 +142,7 @@ ex_args(cmdp)
 			(void)fprintf(curf->stdfp, "[%s]", ep->name);
 		else
 			(void)fprintf(curf->stdfp, "%s", ep->name);
+		++cnt;
 	}
 	if (cnt == 1)
 		(void)fprintf(curf->stdfp, "No files.\n");
