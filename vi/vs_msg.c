@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.4 1995/07/06 12:17:23 bostic Exp $ (Berkeley) $Date: 1995/07/06 12:17:23 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.5 1995/07/06 12:55:11 bostic Exp $ (Berkeley) $Date: 1995/07/06 12:55:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -315,7 +315,7 @@ cl_resolve(sp, fakecomplete)
 	if (F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT))
 		return;
 
-	(void)getyx(stdscr, oldy, oldx);
+	getyx(stdscr, oldy, oldx);
 
 	/*
 	 * If a command hasn't just completed:
@@ -384,7 +384,7 @@ cl_resolve(sp, fakecomplete)
 		(void)v_event_handler(sp, &ev, &notused);
 
 		/* The repaint event also reset the cursor for us. */
-		(void)getyx(stdscr, oldy, oldx);
+		getyx(stdscr, oldy, oldx);
 	}
 
 	/*

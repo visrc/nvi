@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.9 1995/07/06 11:53:38 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:53:38 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.10 1995/07/06 12:55:11 bostic Exp $ (Berkeley) $Date: 1995/07/06 12:55:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -469,7 +469,7 @@ cl_deleteln(sp)
 	 *	Restore the busy message.
 	 */ 
 	if (clp->busy_state == BUSY_ON) {
-		(void)getyx(stdscr, oldy, oldx);
+		getyx(stdscr, oldy, oldx);
 		p = NULL;
 		len = llen = 0;
 		if (cl_lline_copy(sp, &len, &p, &llen))
@@ -507,7 +507,7 @@ cl_deleteln(sp)
 		if (clp->lline_len == 0)
 			(void)clrtoeol();
 		else {
-			(void)getyx(stdscr, oldy, oldx);
+			getyx(stdscr, oldy, oldx);
 			(void)move(RLNO(sp, INFOLINE(sp)), 0);
 			(void)addnstr(clp->lline, clp->lline_len);
 			(void)move(oldy, oldx);
