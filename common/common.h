@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.20 1992/05/02 09:11:05 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:11:05 $
+ *	$Id: common.h,v 5.21 1992/05/04 11:50:19 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:50:19 $
  */
 
 #ifndef TRUE
@@ -23,6 +23,7 @@
 
 #define INFINITY	2000000001L	/* a very large integer */
 
+#ifdef NOTDEF
 /*------------------------------------------------------------------------*/
 /* These describe how temporary files are divided into blocks             */
 
@@ -32,7 +33,7 @@ typedef union
 	char		c[BLKSIZE];	/* for text blocks */
 	unsigned short	n[MAXBLKS];	/* for the header block */
 }
-	BLK;
+BLK;
 
 /*------------------------------------------------------------------------*/
 /* These are used manipulate BLK buffers.                                 */
@@ -40,29 +41,9 @@ typedef union
 extern BLK	hdr;		/* buffer for the header block */
 extern BLK	*blkget();	/* given index into hdr.c[], reads block */
 extern BLK	*blkadd();	/* inserts a new block into hdr.c[] */
-
-/*------------------------------------------------------------------------*/
-/* These are used to keep track of various flags                          */
-extern struct _viflags
-{
-	short	file;		/* file flags */
-}
-	viflags;
-
-/* file flags */
-#define NEWFILE		0x0001	/* the file was just created */
-#define READONLY	0x0002	/* the file is read-only */
-#define HADNUL		0x0004	/* the file contained NUL characters */
-#define MODIFIED	0x0008	/* the file has been modified */
-#define NONAME		0x0010	/* no name is known for the current text */
-#define ADDEDNL		0x0020	/* newlines were added to the file */
-#define HADBS		0x0040	/* backspace chars were lost from the file */
-
-/* macros used to set/clear/test flags */
-#define setflag(x,y)	viflags.x |= y
-#define clrflag(x,y)	viflags.x &= ~y
-#define tstflag(x,y)	(viflags.x & y)
-#define initflags()	viflags.file = 0;
+void blkflush();
+void blkdirty();
+#endif
 
 typedef long MARK;
 
@@ -80,24 +61,20 @@ extern MARK	cursor;		/* mark where line is */
 /*------------------------------------------------------------------------*/
 /* These are used to keep track of the current & previous files.	  */
 
-extern long	origtime;	/* modification date&time of the current file */
-extern char	origname[256];	/* name of the current file */
-extern char	prevorig[256];	/* name of the preceding file */
-extern long	prevline;	/* line number from preceding file */
-
-void blkflush();
-void blkdirty();
 MARK paste();
-char *fetchline();
 /*------------------------------------------------------------------------*/
 /* misc housekeeping variables & functions				  */
 
+#ifdef NOTDEF
 extern int	tmpfd;		/* fd used to access the tmp file */
 extern int	tmpnum;		/* counter used to generate unique filenames */
 extern long	lnum[MAXBLKS];	/* last line# of each block */
+#endif
 extern long	nlines;		/* number of lines in the file */
 extern long	changes;	/* counts changes, to prohibit short-cuts */
+#ifdef NOTDEF
 extern BLK	tmpblk;		/* a block used to accumulate changes */
+#endif
 extern int	doingdot;	/* boolean: are we doing the "." command? */
 extern int	doingglobal;	/* boolean: are doing a ":g" command? */
 extern int	force_lnmd;	/* boolean: force a command to work in line mode? */
@@ -108,8 +85,13 @@ extern char	*rptlabel;	/* description of how lines were affected */
 /*------------------------------------------------------------------------*/
 /* macros that are used as control structures                             */
 
+#ifdef NOTDEF
 #define BeforeAfter(before, after) for((before),bavar=1;bavar;(after),bavar=0)
 #define ChangeText	BeforeAfter(beforedo(FALSE),afterdo())
+#else
+#define BeforeAfter(before, after) for((before),bavar=1;bavar;(after),bavar=0)
+#define ChangeText	BeforeAfter(bavar=1,bavar=0)
+#endif
 
 extern int	bavar;		/* used only in BeforeAfter macros */
 

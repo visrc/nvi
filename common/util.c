@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.10 1992/05/02 09:10:46 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:10:46 $";
+static char sccsid[] = "$Id: util.c,v 5.11 1992/05/04 11:50:13 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:50:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -86,18 +86,18 @@ onhup(signo)
 	/* Restore the terminal's sanity. */
 	endwin();
 
+#ifdef RIP_THIS_OUT
 	/* If we had a temp file going, then preserve it. */
 	if (tmpnum > 0 && tmpfd >= 0) {
 		(void)close(tmpfd);
-#ifdef RIP_THIS_OUT
 		(void)snprintf(buf, sizeof(buf),
 		    "%s %s", _PATH_PRESERVE, tmpname);
 		(void)esystem(PVAL(O_SHELL), tmpblk.c);
-#endif
 	}
 
 	/* Delete any old temp files. */
 	cutend();
+#endif
 
 	/* Exit with the proper exit status. */
 	(void)signal(SIGHUP, SIG_DFL);

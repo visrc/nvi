@@ -11,6 +11,7 @@
 #include "pathnames.h"
 #include "extern.h"
 
+#ifdef NOTDEF
 # define NANONS	9	/* number of anonymous buffers */
 
 static struct cutbuf {
@@ -643,3 +644,33 @@ cb2str(name, lenp)
 		*lenp = len;
 	return (p);
 }
+#else
+int
+cutneeds(need)
+	void *need;
+{}
+void
+cutswitch()
+{}
+void
+cutend()
+{}
+void
+cutname(name)
+	int name;
+{}
+void
+cut(from, to)
+	MARK from, to;
+{}
+MARK
+paste(at, after, retend)
+	MARK at;
+	int after, retend;
+{}
+u_char *
+cb2str(name, lenp)
+	int name;
+	size_t *lenp;
+{}
+#endif

@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.21 1992/05/02 09:08:03 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:08:03 $";
+static char sccsid[] = "$Id: main.c,v 5.22 1992/05/04 11:50:06 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:50:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -106,9 +106,12 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
-	/* The remaining arguments are file names. */
+	/* Any remaining arguments are file names. */
+	file_init();
 	if (argc)
-		file_set(argc, argv, 0);
+		file_set(argc, argv);
+	else
+		(void)file_default();
 
 	/* Temporarily ignore interrupts. */
 	(void)signal(SIGINT, SIG_IGN);
@@ -168,37 +171,20 @@ main(argc, argv)
 		}
 
 	/* Search for a tag (or an error) now, if desired. */
-	blkinit();
 	if (tag) {
 		SETCMDARG(cmd, C_TAG, 2, MARK_FIRST, MARK_FIRST, 0, tag);
 		ex_tag(&cmd);
-	}
+	} else
 #ifndef NO_ERRLIST
-	else if (err) {
+	if (err) {
 		SETCMDARG(cmd, C_ERRLIST, 2, MARK_FIRST, MARK_FIRST, 0, err);
 		ex_errlist(&cmd);
-	}
+	} else
 #endif
+		if (file_start(file_first()))
+			goto mexit;
 
-	/* If no tag/err, or tag failed, start with first file. */
-	if (tmpfd < 0) {
-		if (file_cnt()) {
-			SETCMDARG(cmd,
-			    C_NEXT, 0, MARK_UNSET, MARK_UNSET, 0, NULL);
-			ex_next(&cmd);
-		} else
-			tmpstart("");
-
-		/* pretend to do something, just to force a recoverable
-		 * version of the file out to disk
-		 */
-		ChangeText
-		{
-		}
-		clrflag(file, MODIFIED);
-	}
-
-	/* Now we do the immediate ex command that we noticed before. */
+	/* Now we do any commands from the command line. */
 	if (excmdarg)
 		(void)ex_cstring(excmdarg, strlen(excmdarg), 0);
 
@@ -208,9 +194,11 @@ main(argc, argv)
 	 */
 	while (mode != MODE_QUIT) {
 
+#ifdef NOT_RIGHT_NOW
 		/* Maybe we just aborted a change? */
 		if (setjmp(jmpenv))
 			abortdo();
+#endif
 
 		(void)signal(SIGINT, trapint);
 
@@ -225,10 +213,13 @@ main(argc, argv)
 	}
 
 	/* Free up the cut buffers. */
-	cutend();
+mexit:	cutend();
 
 	/* End the window. */
 	endwin();
+
+	/* Flush any left-over error message. */
+	msg_eflush();
 
 	exit(0);
 	/* NOTREACHED */
@@ -239,8 +230,8 @@ void
 trapint(signo)
 	int signo;
 {
+#ifdef NOT_RIGHT_NOW
 	abortdo();
-#ifdef XXX_notdef
 	resume_curses(FALSE);
 #endif
 	doingglobal = FALSE;

@@ -6,15 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.1 1992/05/03 11:04:23 bostic Exp $ (Berkeley) $Date: 1992/05/03 11:04:23 $";
+static char sccsid[] = "$Id: delete.c,v 5.2 1992/05/04 11:49:55 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:49:55 $";
 #endif /* not lint */
 
-#ifdef NOTDEF
 #include <sys/types.h>
 
 #include "vi.h"
 #include "extern.h"
 
+#ifdef NOTDEF
 /* delete a range of text from the file */
 void delete(frommark, tomark)
 	MARK		frommark;	/* first char to be deleted */
@@ -157,4 +157,8 @@ void delete(frommark, tomark)
 		cursor = MARK_FIRST;
 	}
 }
+#else
+void delete(frommark, tomark)
+	MARK frommark, tomark;
+{}
 #endif
