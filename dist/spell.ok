@@ -29,6 +29,7 @@ distclean
 env
 filesystem
 foo
+gcc
 ksh
 lcurses
 ldb
