@@ -426,16 +426,17 @@ AC_ARG_ENABLE(tclinterp,
 	[vi_cv_tclinterp="yes"], [vi_cv_tclinterp="no"])
 AC_MSG_RESULT($vi_cv_tclinterp)
 if test "$vi_cv_tclinterp" = "yes"; then
-	LIBOBJS="tcl.o $LIBOBJS"
-	LIBS="-ltk -ltcl -lm $XLIBS $LIBS"
-	AC_DEFINE(HAVE_TCL_INTERP)
-
-	AC_CHECK_LIB(tcl, main,
-		[vi_cv_tkfatal="no"], [vi_cv_tkfatal="yes"], -ltk -lm)
-	if test "$vi_cv_tkfatal" = "yes"; then
-		AC_MSG_WARN([No Tk/Tcl library found;])
-		AC_MSG_ERROR([    see the section ADDING LIBRARIES AND INCLUDE FILES in the README file.])
+	AC_MSG_CHECKING([for tclConfig.sh])
+	AC_CACHE_VAL(vi_cv_tclconfig, [
+		vi_cv_tclconfig=`$srcdir/findconfig`])
+	AC_MSG_RESULT($vi_cv_tclconfig)
+	if test "x$vi_cv_tclconfig" = x; then
+		AC_MSG_ERROR([No Tcl library found;])
 	fi
+	. $vi_cv_tclconfig
+	LTLIBOBJS="tcl.lo $LTLIBOBJS"
+	LIBS="$TCL_LIB_SPEC $TCL_LIBS $LIBS"
+	AC_DEFINE(HAVE_TCL_INTERP)
 fi
 
 dnl check for curses

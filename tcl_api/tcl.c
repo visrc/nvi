@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: tcl.c,v 8.18 2000/04/21 19:00:39 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:39 $";
+static const char sccsid[] = "$Id: tcl.c,v 8.19 2001/08/24 12:17:27 skimo Exp $ (Berkeley) $Date: 2001/08/24 12:17:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,11 +43,11 @@ extern GS *__global_list;			/* XXX */
  * INITMESSAGE --
  *	Macros to point messages at the Tcl message handler.
  */
-#define	INITMESSAGE							\
-	scr_msg = __global_list->scr_msg;				\
-	__global_list->scr_msg = msghandler;
-#define	ENDMESSAGE							\
-	__global_list->scr_msg = scr_msg;
+#define	INITMESSAGE(sp)							\
+	scr_msg = sp->wp->scr_msg;					\
+	sp->wp->scr_msg = msghandler;
+#define	ENDMESSAGE(sp)							\
+	sp->wp->scr_msg = scr_msg;
 
 /*
  * tcl_fscreen --
@@ -104,9 +104,9 @@ tcl_aline(clientData, interp, argc, argv)
 	if (getscreenid(interp, &sp, argv[1], NULL) ||
 	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_aline(sp, (db_recno_t)lno, argv[3], strlen(argv[3]));
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -138,9 +138,9 @@ tcl_dline(clientData, interp, argc, argv)
 	if (getscreenid(interp, &sp, argv[1], NULL) ||
 	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_dline(sp, (db_recno_t)lno);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -173,9 +173,9 @@ tcl_gline(clientData, interp, argc, argv)
 	if (getscreenid(interp, &sp, argv[1], NULL) ||
 	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_gline(sp, (db_recno_t)lno, &p, &len);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	if (rval)
 		return (TCL_ERROR);
@@ -215,9 +215,9 @@ tcl_iline(clientData, interp, argc, argv)
 	if (getscreenid(interp, &sp, argv[1], NULL) ||
 	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_iline(sp, (db_recno_t)lno, argv[3], strlen(argv[3]));
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -248,9 +248,9 @@ tcl_lline(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_lline(sp, &last);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 	if (rval)
 		return (TCL_ERROR);
 
@@ -285,9 +285,9 @@ tcl_sline(clientData, interp, argc, argv)
 	if (getscreenid(interp, &sp, argv[1], NULL) ||
 	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_sline(sp, (db_recno_t)lno, argv[3], strlen(argv[3]));
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -321,9 +321,9 @@ tcl_getmark(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_getmark(sp, (int)argv[2][0], &cursor);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	if (rval)
 		return (TCL_ERROR);
@@ -368,9 +368,9 @@ tcl_setmark(clientData, interp, argc, argv)
 	if (getint(interp, "column number", argv[4], &i))
 		return (TCL_ERROR);
 	cursor.cno = i;
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_setmark(sp, (int)argv[2][0], &cursor);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -404,9 +404,9 @@ tcl_getcursor(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_getcursor(sp, &cursor);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	if (rval)
 		return (TCL_ERROR);
@@ -451,9 +451,9 @@ tcl_setcursor(clientData, interp, argc, argv)
 	if (getint(interp, "screen id", argv[3], &i))
 		return (TCL_ERROR);
 	cursor.cno = i;
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_setcursor(sp, &cursor);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -513,9 +513,9 @@ tcl_iscreen(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_edit(sp, argv[2], &nsp, 1);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	if (rval)
 		return (TCL_ERROR);
@@ -550,9 +550,9 @@ tcl_escreen(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_escreen(sp);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -586,9 +586,9 @@ tcl_swscreen(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	if (getscreenid(interp, &new, argv[2], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_swscreen(sp, new);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -620,10 +620,10 @@ tcl_map(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	(void)snprintf(command, sizeof(command), ":tcl %s\n", argv[3]);
 	rval = api_map(sp, argv[2], command, strlen(command));
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -654,9 +654,9 @@ tcl_unmap(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_unmap(sp, argv[2]);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -688,14 +688,14 @@ tcl_opts_set(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	/*rval = api_opts_set(sp, argv[2]);*/
 	MALLOC(sp, setting, char *, strlen(argv[2])+6);
 	strcpy(setting, ":set ");
 	strcpy(setting+5, argv[2]);
 	rval=api_run_str(sp, setting);
 	free(setting);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 
 	return (rval ? TCL_ERROR : TCL_OK);
 }
@@ -727,9 +727,9 @@ tcl_opts_get(clientData, interp, argc, argv)
 
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
-	INITMESSAGE;
+	INITMESSAGE(sp);
 	rval = api_opts_get(sp, argv[2], &value, NULL);
-	ENDMESSAGE;
+	ENDMESSAGE(sp);
 	if (rval)
 		return (TCL_ERROR);
 

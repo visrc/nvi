@@ -148,8 +148,6 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/regex/regex2.h \
 	$(visrcdir)/regex/utils.h \
 	$(visrcdir)/common/dldb.c \
-	$(visrcdir)/perl_api/perl.xs \
-	$(visrcdir)/perl_api/perlsfio.c \
 	$(visrcdir)/clib/bsearch.c \
 	$(visrcdir)/clib/env.c \
 	$(visrcdir)/clib/gethostname.c \
@@ -165,6 +163,9 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/clib/strtoul.c \
 	$(visrcdir)/clib/vsnprintf.c \
 	$(visrcdir)/common/pthread.c \
+	$(visrcdir)/perl_api/perl.xs \
+	$(visrcdir)/perl_api/perlsfio.c \
+	$(visrcdir)/tcl_api/tcl.c \
 	perl.c \
 	perlxsi.c
 # Is this the way to do it ?
