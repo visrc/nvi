@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.15 1995/10/17 11:46:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:46:52 $";
+static char sccsid[] = "$Id: options.c,v 10.16 1995/10/18 11:35:11 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:35:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,6 +65,8 @@ OPTLIST const optlist[] = {
 	{"directory",	NULL,		OPT_STR,	0},
 /* O_EDCOMPATIBLE   4BSD */
 	{"edcompatible",NULL,		OPT_0BOOL,	0},
+/* O_ESCAPETIME	  4.4BSD */
+	{"escapetime",	NULL,		OPT_NUM,	0},
 /* O_ERRORBELLS	    4BSD */
 	{"errorbells",	NULL,		OPT_0BOOL,	0},
 /* O_EXRC	System V (undocumented) */
@@ -329,6 +331,7 @@ opts_init(sp, oargs, rows, cols)
 	(void)snprintf(b1, sizeof(b1), "directory=%s",
 	    (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
 	OI(O_DIRECTORY, b1, 1);
+	OI(O_ESCAPETIME, "escapetime=1", 1);
 	OI(O_KEYTIME, "keytime=6", 1);
 	OI(O_MATCHTIME, "matchtime=7", 1);
 	(void)snprintf(b1, sizeof(b1), "msgcat=%s", _PATH_MSGCAT);

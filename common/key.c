@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.14 1995/10/05 10:48:16 bostic Exp $ (Berkeley) $Date: 1995/10/05 10:48:16 $";
+static char sccsid[] = "$Id: key.c,v 10.15 1995/10/18 11:35:14 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:35:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -631,21 +631,20 @@ newmap:	evp = &gp->i_event[gp->i_next];
 	 * unmapped.
 	 *
 	 * !!!
-	 * <escape> characters are a problem.  Input mode ends with an
-	 * <escape>, and cursor keys start with one, so there's an ugly
-	 * pause at the end of an input session.  If it's an <escape>,
-	 * check for follow-on characters, but timeout after a 10th of
-	 * a second.  This loses if users create maps that use <escape>
-	 * as the first character, and that aren't entered fast enough.
-	 * Since such maps are generally function keys, we're probably
-	 * safe.
+	 * <escape> characters are a problem.  Cursor keys start with <escape>
+	 * characters, so there's almost always a map in place that begins with
+	 * an <escape> character.  If we timeout <escape> keys in the same way
+	 * that we timeout other keys, the user will get a noticeable pause as
+	 * they enter <escape> to terminate input mode.  If key timeout is set
+	 * for a slow link, users will get an even longer pause.  Nvi used to
+	 * simply timeout <escape> characters at 1/10th of a second, but this
+	 * loses over PPP links where the latency is greater than 100Ms.
 	 */
 	if (ispartial) {
 		if (O_ISSET(sp, O_TIMEOUT)) {
-			if (evp->e_value == K_ESCAPE)
-				timeout = 100;	/* 1/10th of a sec. */
-			else
-				timeout = O_VAL(sp, O_KEYTIME) * 100;
+			timeout = (evp->e_value == K_ESCAPE ?
+			    O_VAL(sp, O_ESCAPETIME) :
+			    O_VAL(sp, O_KEYTIME)) * 100;
 			goto loop;
 		}
 		timeout = 0;
