@@ -4,10 +4,11 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.15 1992/05/15 11:06:46 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:06:46 $
+ *	$Id: ex.h,v 5.16 1992/05/21 12:56:13 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:56:13 $
  */
 
 #include "exf.h"
+#include "mark.h"
 
 struct excmdarg;
 
@@ -57,7 +58,7 @@ typedef struct excmdarg {
 	char *command;		/* Command line, if parse locally. */
 	char *plus;		/* '+' command word. */
 	char *string;		/* String. */
-	u_char buffer;		/* Named buffer. */
+	int buffer;		/* Named buffer. */
 } EXCMDARG;
 
 extern char *defcmdarg[2];	/* Default array. */
