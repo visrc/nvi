@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.23 1994/07/15 20:11:44 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:11:44 $";
+static char sccsid[] = "$Id: v_init.c,v 8.24 1994/07/16 13:07:35 bostic Exp $ (Berkeley) $Date: 1994/07/16 13:07:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,6 +137,10 @@ v_init(sp, ep)
 			sp->cno = 0;
 			if (nonblank(sp, ep, sp->lno, &sp->cno))
 				return (1);
+
+			/* Reset strange attraction. */
+			sp->rcm = 0;
+			sp->rcm_last = 0;
 		}
 	} else {
 		sp->lno = 1;
@@ -148,11 +152,11 @@ v_init(sp, ep)
 		/* Vi always starts up on the first non-<blank>. */
 		if (nonblank(sp, ep, sp->lno, &sp->cno))
 			return (1);
-	}
 
-	/* Reset strange attraction. */
-	sp->rcm = 0;
-	sp->rcm_last = 0;
+		/* Reset strange attraction. */
+		sp->rcm = 0;
+		sp->rcm_last = 0;
+	}
 
 	/* Make ex display to a special function. */
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
