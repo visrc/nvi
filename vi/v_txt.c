@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.126 1994/09/02 13:22:48 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:22:48 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.127 1994/09/07 11:30:45 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:30:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,7 +89,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 				/* State of the hex input character. */
 	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
-	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
+	enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quoted;
 	enum input tval;
 	struct termios t;	/* Terminal characteristics. */
 	CH ikey;		/* Input character structure. */
@@ -315,7 +315,7 @@ nullreplay:
 		}
 
 		/* Get the next character. */
-next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
+next_ch:	tval = term_key(sp, &ikey, quoted == Q_VTHIS ?
 		    iflags & ~(TXT_MAPCOMMAND | TXT_MAPINPUT) : iflags);
 		ch = ikey.ch;
 
@@ -388,19 +388,24 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		 * If quoted by someone else, simply insert the character.
 		 *
 		 * !!!
-		 * If the character was quoted, replace the last character
-		 * (the literal mark) with the new character.  Skip tests
-		 * for abbreviations, so ":ab xa XA", "ixa^V<space>" doesn't
-		 * perform the abbreviation.
+		 * If this character was quoted by a K_VLNEXT or a backslash,
+		 * replace the placeholder (a carat or a backslash) with the
+		 * new character.  Skip tests for abbreviations; ":ab xa XA"
+		 * followed by "ixa^V<space>" doesn't perform an abbreviation.
 		 */
 		if (ikey.flags & CH_QUOTED)
 			goto insq_ch;
-		if (quoted == Q_THISCHAR) {
-			--sp->cno;
-			++tp->owrite;
+		if (quoted != Q_NOTSET) {
+			if (quoted == Q_VTHIS || quoted == Q_BTHIS &&
+			    (ikey.value == K_VERASE || ikey.value == K_VKILL)) {
+				--sp->cno;
+				++tp->owrite;
+				quoted = Q_NOTSET;
+				goto insl_ch;
+			}
 			quoted = Q_NOTSET;
-			goto insl_ch;
 		}
+
 		/*
 		 * !!!
 		 * Extension.  If the user enters "<CH_HEX>[isxdigit()]*" we
@@ -882,9 +887,35 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 		case K_RIGHTPAREN:
 			showmatch = LF_ISSET(TXT_SHOWMATCH);
 			goto ins_ch;
-		case K_VLNEXT:			/* Quote the next character. */
+		case K_BACKSLASH:		/* Quote next erase/kill. */
+			/*
+			 * !!!
+			 * Historic vi tried to make abbreviations after a
+			 * backslash escape work.  If you did ":ab x y", and
+			 * inserted "x\^H", (assuming the erase character was
+			 * ^H) you got "x^H", and no abbreviation was done.
+			 * If you inserted "x\z", however, it tried to back up
+			 * and do the abbreviation, i.e. replace 'x' with 'y'.
+			 * The problem was it got it wrong, and you ended up
+			 * with "zy\".
+			 *
+			 * This is really hard to do (you have to remember the
+			 * word/non-word state, for example), and doesn't make
+			 * any sense to me.  Both backslash and the characters
+			 * it (usually) escapes will individually trigger the
+			 * abbreviation, so I don't see why the combination of
+			 * them wouldn't.  I don't expect to get caught on this
+			 * one, particularly since it never worked right, but
+			 * I've been wrong before.
+			 *
+			 * Do the tests for abbreviations, so ":ab xa XA",
+			 * "ixa\<K_VERASE>" performs the abbreviation.
+			 */
+			quoted = Q_BNEXT;
+			goto insq_ch;
+		case K_VLNEXT:			/* Quote next character. */
 			ch = '^';
-			quoted = Q_NEXTCHAR;
+			quoted = Q_VNEXT;
 			/*
 			 * If there are no keys in the queue, reset the tty
 			 * so that the user can enter a ^C, ^Q, ^S.  There's
@@ -904,9 +935,6 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * !!!
 			 * Skip the tests for abbreviations, so ":ab xa XA",
 			 * "ixa^V<space>" doesn't perform the abbreviation.
-			 * Historic vi did something weird here: ":ab x y",
-			 * "ix\<space>" resulted in "<space>x\", for no known
-			 * reason.  Must be a bug.
 			 */
 			goto insl_ch;
 		case K_HEXCHAR:
@@ -1003,8 +1031,12 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 
 			if (hex == H_NEXTCHAR)
 				hex = H_INHEX;
-			if (quoted == Q_NEXTCHAR)
-				quoted = Q_THISCHAR;
+			if (quoted != Q_NOTSET) {
+				if (quoted == Q_BNEXT)
+					quoted = Q_BTHIS;
+				if (quoted == Q_VNEXT)
+					quoted = Q_VTHIS;
+			}
 			break;
 		}
 #if defined(DEBUG) && 1

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.83 1994/09/02 13:24:53 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:24:53 $";
+static char sccsid[] = "$Id: key.c,v 8.84 1994/09/07 11:31:38 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:31:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,6 +76,7 @@ static int __term_read_grow __P((SCR *, IBUF *, int));
  * THIS REQUIRES THAT ALL SCREENS SHARE A SPECIAL KEY SET.
  */
 KEYLIST keylist[] = {
+	{K_BACKSLASH,	  '\\'},	/*  \ */
 	{K_CARAT,	   '^'},	/*  ^ */
 	{K_CNTRLD,	'\004'},	/* ^D */
 	{K_CNTRLR,	'\022'},	/* ^R */

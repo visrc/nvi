@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.48 1994/07/25 17:05:38 bostic Exp $ (Berkeley) $Date: 1994/07/25 17:05:38 $
+ *	$Id: key.h,v 8.49 1994/09/07 11:31:41 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:31:41 $
  */
 
 /*
@@ -31,25 +31,26 @@ struct _ch {
 	CHAR_T	 ch;		/* Character. */
 
 #define K_NOTUSED	 0
-#define	K_CARAT		 1
-#define	K_CNTRLD	 2
-#define	K_CNTRLR	 3
-#define	K_CNTRLT	 4
-#define	K_CNTRLZ	 5
-#define	K_COLON	 	 6
-#define	K_CR		 7
-#define	K_ESCAPE	 8
-#define	K_FORMFEED	 9
-#define	K_HEXCHAR	10
-#define	K_NL		11
-#define	K_RIGHTBRACE	12
-#define	K_RIGHTPAREN	13
-#define	K_TAB		14
-#define	K_VERASE	15
-#define	K_VKILL		16
-#define	K_VLNEXT	17
-#define	K_VWERASE	18
-#define	K_ZERO		19
+#define	K_BACKSLASH	 1
+#define	K_CARAT		 2
+#define	K_CNTRLD	 3
+#define	K_CNTRLR	 4
+#define	K_CNTRLT	 5
+#define	K_CNTRLZ	 6
+#define	K_COLON	 	 7
+#define	K_CR		 8
+#define	K_ESCAPE	 9
+#define	K_FORMFEED	10
+#define	K_HEXCHAR	11
+#define	K_NL		12
+#define	K_RIGHTBRACE	13
+#define	K_RIGHTPAREN	14
+#define	K_TAB		15
+#define	K_VERASE	16
+#define	K_VKILL		17
+#define	K_VLNEXT	18
+#define	K_VWERASE	19
+#define	K_ZERO		20
 	u_int8_t value;		/* Special character flag values. */
 
 #define	CH_ABBREVIATED	0x01	/* Character from an abbreviation. */
