@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.48 1994/04/14 10:18:10 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:10 $";
+static char sccsid[] = "$Id: util.c,v 8.49 1994/04/15 00:33:55 bostic Exp $ (Berkeley) $Date: 1994/04/15 00:33:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -428,6 +428,20 @@ set_window_size(sp, set_row, ign_env)
 		}
 #endif
 	}
+
+	/*
+	 * If it's something completely unreasonable, stop now.  The
+	 * actual error is likely to be much less informative.
+	 */
+	if (row > 1000) {
+		msgq(sp, M_SYSERR, "%lu rows is too large", (u_long)row);
+		return (1);
+	}
+	if (col > 1000) {
+		msgq(sp, M_ERR, "%lu columns is too large.", (u_long)col);
+		return (1);
+	}
+
 	/* If nothing else, well, it's probably a VT100. */
 	if (row == 0)
 		row = 24;
