@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.36 1993/05/20 20:31:47 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:31:47 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.37 1993/05/21 18:34:18 bostic Exp $ (Berkeley) $Date: 1993/05/21 18:34:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,6 +48,8 @@ ex_edit(sp, ep, cmdp)
 	/* Switch files. */
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
+
+	set_altfname(sp, ep->name);
 
 	if (cmdp->plus)
 		if ((tep->icommand = strdup(cmdp->plus)) == NULL)
@@ -92,6 +94,8 @@ ex_visual(sp, ep, cmdp)
 	/* Switch files. */
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
+
+	set_altfname(sp, ep->name);
 
 	if (cmdp->plus)
 		if ((tep->icommand = strdup(cmdp->plus)) == NULL)
