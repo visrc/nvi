@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.21 1993/09/27 11:30:24 bostic Exp $ (Berkeley) $Date: 1993/09/27 11:30:24 $";
+static char sccsid[] = "$Id: exf.c,v 8.22 1993/09/27 16:17:35 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:17:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -262,13 +262,7 @@ file_init(sp, ep, frp, rcv_fname)
 			msgq(sp, M_VINFO, "%s cannot be locked", oname);
 	}
 
-	/*
-	 * Init file marks.
-	 *
-	 * XXX
-	 * This shouldn't go here, but I'm not sure
-	 * where else to put it.
-	 */
+	/* Init file marks. */
 	if (mark_init(sp, ep)) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		goto err;
@@ -347,6 +341,7 @@ file_end(sp, ep, force)
 	EXF *ep;
 	int force;
 {
+	MARK *mp;
 	int termsignal;
 
 	/* If multiply referenced, decrement count and return. */
@@ -406,6 +401,12 @@ file_end(sp, ep, force)
 				FREE(sp->frp->tname, strlen(sp->frp->tname));
 			sp->frp->tname = NULL;
 		}
+	}
+
+	/* Free up any marks. */
+	while ((mp = ep->marks.next) != NULL && mp != (MARK *)&ep->marks) {
+		HDR_DELETE(mp, next, prev, MARK);
+		FREE(mp, sizeof(MARK));
 	}
 
 	if (!termsignal) {
