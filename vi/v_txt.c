@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.125 1994/09/01 10:49:29 bostic Exp $ (Berkeley) $Date: 1994/09/01 10:49:29 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.126 1994/09/02 13:22:48 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:22:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -359,7 +359,7 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			if (ch == ' ')
 				goto next_ch;
 		}
-			
+
 		/*
 		 * !!!
 		 * Historic feature.  If the first character of the input is
@@ -385,9 +385,13 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 
 		/*
+		 * If quoted by someone else, simply insert the character.
+		 *
+		 * !!!
 		 * If the character was quoted, replace the last character
-		 * (the literal mark) with the new character.  If quoted
-		 * by someone else, simply insert the character.
+		 * (the literal mark) with the new character.  Skip tests
+		 * for abbreviations, so ":ab xa XA", "ixa^V<space>" doesn't
+		 * perform the abbreviation.
 		 */
 		if (ikey.flags & CH_QUOTED)
 			goto insq_ch;
@@ -395,7 +399,7 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			--sp->cno;
 			++tp->owrite;
 			quoted = Q_NOTSET;
-			goto insq_ch;
+			goto insl_ch;
 		}
 		/*
 		 * !!!
@@ -435,7 +439,8 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			 * Handle abbreviations.  If there was one,	\
 			 * discard the replay characters.		\
 			 */						\
-			if (abb == A_INWORD && !replay) {		\
+			if (abb == A_INWORD && !replay &&		\
+			    F_ISSET(sp->gp, G_ABBREV)) {		\
 				if (txt_abbrev(sp, tp, &ch,		\
 				    LF_ISSET(TXT_INFOLINE), &tmp,	\
 				    &ab_turnoff))			\
@@ -470,7 +475,7 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 				goto err;
 
-			/* 
+			/*
 			 * Historic practice was to delete <blank> characters
 			 * following the inserted newline.  This affected the
 			 * 'R', 'c', and 's' commands; 'c' and 's' retained
@@ -896,12 +901,12 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 				    TCSASOFT | TCSADRAIN, &t);
 			}
 			/*
-			 * XXX
-			 * Pass the tests for abbreviations, so ":ab xa XA",
-			 * "ixa^V<space>" works.  Historic vi did something
-			 * weird here: ":ab x y", "ix\<space>" resulted in
-			 * "<space>x\", for some unknown reason.  Had to be
-			 * a bug.
+			 * !!!
+			 * Skip the tests for abbreviations, so ":ab xa XA",
+			 * "ixa^V<space>" doesn't perform the abbreviation.
+			 * Historic vi did something weird here: ":ab x y",
+			 * "ix\<space>" resulted in "<space>x\", for no known
+			 * reason.  Must be a bug.
 			 */
 			goto insl_ch;
 		case K_HEXCHAR:
@@ -934,7 +939,8 @@ insq_ch:		/*
 			 * check for unmap commands, as well.
 			 */
 			if (!inword(ch)) {
-				if (abb == A_INWORD && !replay) {
+				if (abb == A_INWORD && !replay &&
+				    F_ISSET(sp->gp, G_ABBREV)) {
 					if (txt_abbrev(sp, tp, &ch,
 					    LF_ISSET(TXT_INFOLINE),
 					    &tmp, &ab_turnoff))
@@ -1040,26 +1046,55 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	size_t len, off;
 	char *p;
 
+	/* Check to make sure we're not at the start of an append. */
+	*didsubp = 0;
+	if (sp->cno == tp->offset)
+		return (0);
+
 	/*
-	 * Find the start of the "word".  Historically, abbreviations could
-	 * be preceded by any whitespace character or the beginning of the
-	 * insert, e.g. inserting an abbreviated string in the middle of a
-	 * string triggered the replacement.
+	 * Find the start of the "word".
 	 *
-	 * XXX
-	 * Note, we check for abbreviations using a non-word character to
-	 * end the abbreviation, but a whitespace character to start it.
-	 * This is historic practice.
+	 * !!!
+	 * We match historic practice, which, as far as I can tell, had an
+	 * off-by-one error.  The way this worked was that when the inserted
+	 * text switched from a "word" character to a non-word character,
+	 * vi would check for possible abbreviations.  It would then take the
+	 * type (i.e. word/non-word) of the character entered TWO characters
+	 * ago, and move backward in the text until reaching a character that
+	 * was not that type, or the beginning of the insert, the line, or
+	 * the file.  For example, in the string "abc<space>", when the <space>
+	 * character triggered the abbreviation check, the type of the 'b'
+	 * character was used for moving through the string.  Maybe there's a
+	 * reason for not using the 'c' character, but I can't think of one.
+	 *
+	 * Terminate at the beginning of the insert or the character after the
+	 * offset character -- both can be tested for using tp->offset.
 	 */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
-		if (isblank(*p)) {
-			++p;
-			break;
+	off = sp->cno - 1;			/* Previous character. */
+	p = tp->lb + off;
+	len = 1;				/* One character test. */
+	if (off == tp->offset || isblank(p[-1]))
+		goto search;
+
+	--off;					/* Type character. */
+	--p;
+	++len;
+	if (off == tp->offset)			/* Two characters test. */
+		goto search;
+	if (inword(*p))				/* Move backward to change. */
+		for (;; --p, ++len) {
+			if (--off == tp->offset)
+				break;
+			if (!inword(p[-1]))
+				break;
 		}
-		++len;
-		if (off == tp->ai || off == tp->offset)
-			break;
-	}
+	else
+		for (;; --p, ++len) {
+			if (--off == tp->offset)
+				break;
+			if (inword(p[-1]) || isblank(p[-1]))
+				break;
+		}
 
 	/*
 	 * !!!
@@ -1099,8 +1134,7 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	 *
 	 * This makes the layering look like a Nachos Supreme.
 	 */
-	*didsubp = 0;
-	if (isinfoline)
+search:	if (isinfoline)
 		if (off == tp->ai || off == tp->offset)
 			if (ex_is_abbrev(p, len)) {
 				*turnoffp = 1;
