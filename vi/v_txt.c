@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.16 1995/01/30 10:10:10 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:10:10 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.17 1995/01/30 18:10:14 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:10:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -360,9 +360,9 @@ next_ch:	if (replay) {
 #define	MAX_ABBREVIATION_EXPANSION	256
 		if (F_ISSET(ikeyp, CH_ABBREVIATED)) {
 			if (++ab_cnt > MAX_ABBREVIATION_EXPANSION) {
-				term_flush(sp,
-			"Abbreviation exceeded maximum number of characters",
-				    CH_ABBREVIATED);
+				if (term_flush(sp, CH_ABBREVIATED))
+					msgq(sp, M_ERR,
+	"116|Abbreviation exceeded expansion limit: characters discarded");
 				ab_cnt = 0;
 				continue;
 			}
