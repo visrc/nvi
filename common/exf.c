@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.27 1995/02/15 12:02:28 bostic Exp $ (Berkeley) $Date: 1995/02/15 12:02:28 $";
+static char sccsid[] = "$Id: exf.c,v 9.28 1995/02/17 11:34:50 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:34:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -383,8 +383,8 @@ file_init(sp, frp, rcv_name, flags)
 	sp->frp = frp;
 
 	/* If we were executing a global, discard further execution. */
-	if (F_ISSET(sp, S_GLOBAL))
-		F_SET(sp, S_GLOBAL_ABORT);
+	if (F_ISSET(sp, S_EX_GLOBAL))
+		F_SET(sp, S_EX_CMDABORT);
 
 	/* Set the initial cursor position, execute initial command. */
 	file_cinit(sp);
@@ -818,7 +818,7 @@ file_write(sp, fm, tm, name, flags)
 	}
 
 	/* Turn on the busy message. */
-	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Writing...");
+	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Writing...");
 	rval = ex_writefp(sp, name, fp, fm, tm, &nlno, &nch);
 	if (btear)
 		busy_off(sp);
