@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.20 2003/01/26 15:39:46 skimo Exp $ (Berkeley) $Date: 2003/01/26 15:39:46 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.21 2003/11/05 17:11:54 skimo Exp $ (Berkeley) $Date: 2003/11/05 17:11:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -404,7 +404,7 @@ err:		if (to_cs[0] != -1)
 #define	CSCOPE_CMD_FMT		"cd '%s' && exec cscope -dl -f %s"
 		(void)snprintf(cmd, sizeof(cmd),
 		    CSCOPE_CMD_FMT, csc->dname, dbname);
-		(void)execl(_PATH_BSHELL, "sh", "-c", cmd, NULL);
+		(void)execl(_PATH_BSHELL, "sh", "-c", cmd, (char *)NULL);
 		msgq_str(sp, M_SYSERR, cmd, "execl: %s");
 		_exit (127);
 		/* NOTREACHED */

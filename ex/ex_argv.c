@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.38 2001/06/25 15:19:14 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:14 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.39 2003/11/05 17:11:54 skimo Exp $ (Berkeley) $Date: 2003/11/05 17:11:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -684,7 +684,7 @@ err:		if (ifp != NULL)
 		 * Assume that all shells have -c.
 		 */
 		INT2CHAR(sp, bp, STRLEN(bp)+1, np, nlen);
-		execl(sh_path, sh, "-c", np, NULL);
+		execl(sh_path, sh, "-c", np, (char *)NULL);
 		msgq_str(sp, M_SYSERR, sh_path, "118|Error: execl: %s");
 		_exit(127);
 	default:			/* Parent. */

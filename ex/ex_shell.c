@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.41 2001/06/25 15:19:19 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:19 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.42 2003/11/05 17:11:54 skimo Exp $ (Berkeley) $Date: 2003/11/05 17:11:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -121,7 +121,7 @@ ex_exec_proc(SCR *sp, EXCMD *cmdp, char *cmd, const char *msg, int need_newline)
 			name = O_STR(sp, O_SHELL);
 		else
 			++name;
-		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
+		execl(O_STR(sp, O_SHELL), name, "-c", cmd, (char *)NULL);
 		msgq_str(sp, M_SYSERR, O_STR(sp, O_SHELL), "execl: %s");
 		_exit(127);
 		/* NOTREACHED */
