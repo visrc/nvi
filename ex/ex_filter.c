@@ -19,65 +19,6 @@
 
 extern char	**environ;
 
-#if ANY_UNIX
-
-/* This is a new version of the system() function.  The only difference
- * between this one and the library one is: this one uses the o_shell option.
- */
-int system(cmd)
-	char	*cmd;	/* a command to run */
-{
-	int	pid;	/* process ID of child */
-	int	died;
-	int	status;	/* exit status of the command */
-
-
-	signal(SIGINT, SIG_IGN);
-	pid = fork();
-	switch (pid)
-	{
-	  case -1:						/* error */
-		msg("fork() failed");
-		status = -1;
-		break;
-
-	  case 0:						/* child */
-		/* for the child, close all files except stdin/out/err */
-		for (status = 3; status < 60 && (close(status), errno != EINVAL); status++)
-		{
-		}
-
-		signal(SIGINT, SIG_DFL);
-		if (cmd == o_shell)
-		{
-			execle(o_shell, o_shell, (char *)0, environ);
-		}
-		else
-		{
-			execle(o_shell, o_shell, "-c", cmd, (char *)0, environ);
-		}
-		msg("execle(\"%s\", ...) failed", o_shell);
-		exit(1); /* if we get here, the exec failed */
-
-	  default:						/* parent */
-		do
-		{
-			died = wait(&status);
-		} while (died >= 0 && died != pid);
-		if (died < 0)
-		{
-			status = -1;
-		}
-#if __GNUC__
-		signal(SIGINT, (void (*)()) trapint);
-#else
-		signal(SIGINT, trapint);
-#endif
-	}
-
-	return status;
-}
-
 /* This private function opens a pipe from a filter.  It is similar to the
  * system() function above, and to popen(cmd, "r").
  */
@@ -137,8 +78,6 @@ int rpipe(cmd, in)
 		return r0w1[0];
 	}
 }
-
-#endif /* non-DOS */
 
 #if OSK
 
