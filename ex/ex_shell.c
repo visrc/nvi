@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 9.6 1995/01/23 17:03:16 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:16 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.1 1995/04/13 17:22:27 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -29,10 +29,7 @@ static char sccsid[] = "$Id: ex_shell.c,v 9.6 1995/01/23 17:03:16 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../sex/sex_screen.h"
-#include "../svi/svi_screen.h"
+#include "common.h"
 
 /*
  * ex_shell -- :sh[ell]
@@ -42,7 +39,7 @@ static char sccsid[] = "$Id: ex_shell.c,v 9.6 1995/01/23 17:03:16 bostic Exp $ (
 int
 ex_shell(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	char buf[MAXPATHLEN];
 
@@ -61,11 +58,11 @@ ex_exec_proc(sp, cmd, p1, p2)
 {
 	const char *name;
 	pid_t pid;
-	int nf, rval, teardown;
+	int nf, notused, rval, teardown;
 	char *p;
 
 	/* Clear the rest of the screen. */
-	sp->e_clrtoeos(sp);
+	(void)sp->gp->scr_clrtoeos(sp);
 
 	/* Save ex/vi terminal settings, and restore the original ones. */
 	teardown = !ex_sleave(sp);
@@ -74,7 +71,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	 * Flush waiting messages (autowrite, for example) so the output
 	 * matches historic practice.
 	 */
-	(void)sex_refresh(sp);
+	(void)sp->gp->scr_msgflush(sp, &notused);
 
 	/* Put out various messages. */
 	if (p1 != NULL)
@@ -82,18 +79,12 @@ ex_exec_proc(sp, cmd, p1, p2)
 	if (p2 != NULL)
 		(void)write(STDOUT_FILENO, p2, strlen(p2));
 
-	SIGBLOCK(sp->gp);
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
-		SIGUNBLOCK(sp->gp);
-
 		msgq(sp, M_SYSERR, "vfork");
 		rval = 1;
 		break;
 	case 0:				/* Utility. */
-		/* The utility has default signal behavior. */
-		sig_restore(sp);
-
 		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
 			name = O_STR(sp, O_SHELL);
 		else
@@ -106,8 +97,6 @@ ex_exec_proc(sp, cmd, p1, p2)
 		_exit(127);
 		/* NOTREACHED */
 	default:			/* Parent. */
-		SIGUNBLOCK(sp->gp);
-
 		rval = proc_wait(sp, (long)pid, cmd, 0);
 		break;
 	}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 9.7 1995/02/10 12:33:25 bostic Exp $ (Berkeley) $Date: 1995/02/10 12:33:25 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.1 1995/04/13 17:22:46 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,8 +32,7 @@ static char sccsid[] = "$Id: ex_filter.c,v 9.7 1995/02/10 12:33:25 bostic Exp $ 
 #include <regex.h>
 #include <pathnames.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 static int	filter_ldisplay __P((SCR *, FILE *));
 
@@ -103,11 +102,8 @@ filtercmd(sp, fm, tm, rp, cmd, ftype)
 	teardown = ftype != FILTER_WRITE && !ex_sleave(sp);
 
 	/* Fork off the utility process. */
-	SIGBLOCK(sp->gp);
 	switch (utility_pid = vfork()) {
 	case -1:			/* Error. */
-		SIGUNBLOCK(sp->gp);
-
 		msgq(sp, M_SYSERR, "vfork");
 err:		if (input[0] != -1)
 			(void)close(input[0]);
@@ -122,9 +118,6 @@ err:		if (input[0] != -1)
 		rval = 1;
 		goto ret;
 	case 0:				/* Utility. */
-		/* The utility has default signal behavior. */
-		sig_restore(sp);
-
 		/*
 		 * Redirect stdin from the read end of the input pipe, and
 		 * redirect stdout/stderr to the write end of the output pipe.
@@ -161,8 +154,6 @@ err:		if (input[0] != -1)
 		_exit (127);
 		/* NOTREACHED */
 	default:			/* Parent-reader, parent-writer. */
-		SIGUNBLOCK(sp->gp);
-
 		/* Close the pipe ends neither parent will use. */
 		if (input[0] != -1)
 			(void)close(input[0]);
@@ -226,12 +217,8 @@ err:		if (input[0] != -1)
 	 */
 	rval = 0;
 	F_SET(sp->ep, F_MULTILOCK);
-
-	SIGBLOCK(sp->gp);
 	switch (parent_writer_pid = fork()) {
 	case -1:			/* Error. */
-		SIGUNBLOCK(sp->gp);
-
 		msgq(sp, M_SYSERR, "fork");
 		(void)close(input[1]);
 		(void)close(output[0]);
@@ -249,8 +236,6 @@ err:		if (input[0] != -1)
 
 		/* NOTREACHED */
 	default:			/* Parent-reader. */
-		SIGUNBLOCK(sp->gp);
-
 		(void)close(input[1]);
 		if (ftype == FILTER_WRITE)
 			/*

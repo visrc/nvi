@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 9.3 1995/01/11 16:15:31 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:31 $";
+static char sccsid[] = "$Id: ex_file.c,v 10.1 1995/04/13 17:22:09 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,7 @@ static char sccsid[] = "$Id: ex_file.c,v 9.3 1995/01/11 16:15:31 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_file -- :f[ile] [name]
@@ -38,7 +37,7 @@ static char sccsid[] = "$Id: ex_file.c,v 9.3 1995/01/11 16:15:31 bostic Exp $ (B
 int
 ex_file(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	CHAR_T *p;
 	FREF *frp;
@@ -77,5 +76,5 @@ ex_file(sp, cmdp)
 	default:
 		abort();
 	}
-	return (msg_status(sp, sp->lno, 1));
+	return (msg_status(sp, sp->lno, 1, 0));
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 9.2 1995/01/11 16:15:24 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:24 $";
+static char sccsid[] = "$Id: ex_delete.c,v 10.1 1995/04/13 17:22:05 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,7 @@ static char sccsid[] = "$Id: ex_delete.c,v 9.2 1995/01/11 16:15:24 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_delete: [line [,line]] d[elete] [buffer] [count] [flags]
@@ -36,7 +35,7 @@ static char sccsid[] = "$Id: ex_delete.c,v 9.2 1995/01/11 16:15:24 bostic Exp $ 
 int
 ex_delete(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	recno_t lno;
 
@@ -49,7 +48,7 @@ ex_delete(sp, cmdp)
 	 * vi buffers accidentally.
 	 */
 	if (cut(sp,
-	    F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
+	    FL_ISSET(cmdp->iflags, E_C_BUFFER) ? &cmdp->buffer : NULL,
 	    &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE))
 		return (1);
 

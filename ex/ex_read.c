@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 9.11 1995/02/17 11:40:50 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:40:50 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.1 1995/04/13 17:22:21 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,7 @@ static char sccsid[] = "$Id: ex_read.c,v 9.11 1995/02/17 11:40:50 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_read --	:read [file]
@@ -44,7 +43,7 @@ static char sccsid[] = "$Id: ex_read.c,v 9.11 1995/02/17 11:40:50 bostic Exp $ (
 int
 ex_read(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	enum { R_ARG, R_EXPANDARG, R_FILTER } which;
 	struct stat sb;
@@ -119,7 +118,7 @@ ex_read(sp, cmdp)
 			p[0] = '!';
 			memmove(p + 1,
 			    cmdp->argv[argc]->bp, cmdp->argv[argc]->len + 1);
-			(void)sp->e_busy(sp, p);
+			sp->gp->scr_busy(sp, p, 1);
 			FREE_SPACE(sp, p, blen);
 		}
 
@@ -128,7 +127,7 @@ ex_read(sp, cmdp)
 			return (1);
 
 		/* The filter version of read set the autoprint flag. */
-		F_SET(EXP(sp), EX_AUTOPRINT);
+		F_SET(cmdp, E_AUTOPRINT);
 
 		/* If in vi mode, move to the first nonblank. */
 		sp->lno = rm.lno;
@@ -217,10 +216,9 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		msgq(sp, M_ERR, "264|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Reading...");
+	sp->gp->scr_busy(sp, msg_cat(sp, "285|Reading ...", NULL), 1);
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
-	if (btear)
-		busy_off(sp);
+	sp->gp->scr_busy(sp, NULL, 0);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read

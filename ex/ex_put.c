@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 9.2 1995/01/11 16:15:44 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:44 $";
+static char sccsid[] = "$Id: ex_put.c,v 10.1 1995/04/13 17:22:20 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,7 @@ static char sccsid[] = "$Id: ex_put.c,v 9.2 1995/01/11 16:15:44 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_put -- [line] pu[t] [buffer]
@@ -38,7 +37,7 @@ static char sccsid[] = "$Id: ex_put.c,v 9.2 1995/01/11 16:15:44 bostic Exp $ (Be
 int
 ex_put(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	MARK m;
 
@@ -46,7 +45,8 @@ ex_put(sp, cmdp)
 
 	m.lno = sp->lno;
 	m.cno = sp->cno;
-	if (put(sp, NULL, F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
+	if (put(sp, NULL,
+	    FL_ISSET(cmdp->iflags, E_C_BUFFER) ? &cmdp->buffer : NULL,
 	    &cmdp->addr1, &m, 1))
 		return (1);
 	sp->lno = m.lno;

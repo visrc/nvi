@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 9.2 1995/01/11 16:15:40 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:40 $";
+static char sccsid[] = "$Id: ex_move.c,v 10.1 1995/04/13 17:22:16 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,7 @@ static char sccsid[] = "$Id: ex_move.c,v 9.2 1995/01/11 16:15:40 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_copy -- :[line [,line]] co[py] line [flags]
@@ -37,7 +36,7 @@ static char sccsid[] = "$Id: ex_move.c,v 9.2 1995/01/11 16:15:40 bostic Exp $ (B
 int
 ex_copy(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	CB cb;
 	MARK fm1, fm2, m, tm;
@@ -90,7 +89,7 @@ err:	text_lfree(&cb.textq);
 int
 ex_move(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	LMARK *lmp;
 	MARK fm1, fm2;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 9.5 1995/02/17 11:39:15 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:39:15 $";
+static char sccsid[] = "$Id: ex_usage.c,v 10.1 1995/04/13 17:22:36 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,9 +26,8 @@ static char sccsid[] = "$Id: ex_usage.c,v 9.5 1995/02/17 11:39:15 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../vi/vcmd.h"
+#include "common.h"
+#include "../vi/vi.h"
 
 /*
  * ex_help -- :help
@@ -37,9 +36,9 @@ static char sccsid[] = "$Id: ex_usage.c,v 9.5 1995/02/17 11:39:15 bostic Exp $ (
 int
 ex_help(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
-	F_SET(sp, S_SCR_EXWROTE);
+	F_SET(sp, S_EX_WROTE);
 	(void)ex_printf(EXCOOKIE,
 	    "To see the list of vi commands, enter \":viusage<CR>\"\n");
 	(void)ex_printf(EXCOOKIE,
@@ -59,7 +58,7 @@ ex_help(sp, cmdp)
 int
 ex_usage(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	ARGS *ap;
 	EXCMDLIST const *cp;
@@ -67,7 +66,7 @@ ex_usage(sp, cmdp)
 
 	switch (cmdp->argc) {
 	case 1:
-		F_SET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_EX_WROTE);
 		ap = cmdp->argv[0];
 		for (cp = cmds; cp->name != NULL &&
 		    memcmp(ap->bp, cp->name, ap->len); ++cp);
@@ -103,7 +102,7 @@ ex_usage(sp, cmdp)
 				name = cp->name;
 			(void)ex_printf(EXCOOKIE,
 			    "%*s: %s\n", MAXCMDNAMELEN, name, cp->help);
-			F_SET(sp, S_SCR_EXWROTE);
+			F_SET(sp, S_EX_WROTE);
 		}
 		break;
 	default:
@@ -119,14 +118,14 @@ ex_usage(sp, cmdp)
 int
 ex_viusage(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	VIKEYS const *kp;
 	int key;
 
 	switch (cmdp->argc) {
 	case 1:
-		F_SET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_EX_WROTE);
 		if (cmdp->argv[0]->len != 1) {
 			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
@@ -163,7 +162,7 @@ nokey:			(void)ex_printf(EXCOOKIE,
 				kp = &vikeys[key];
 			if (kp->help != NULL)
 				(void)ex_printf(EXCOOKIE, "%s\n", kp->help);
-			F_SET(sp, S_SCR_EXWROTE);
+			F_SET(sp, S_EX_WROTE);
 		}
 		break;
 	default:

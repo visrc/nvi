@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 9.8 1995/02/09 18:21:03 bostic Exp $ (Berkeley) $Date: 1995/02/09 18:21:03 $";
+static char sccsid[] = "$Id: ex_edit.c,v 10.1 1995/04/13 17:22:07 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,11 +28,10 @@ static char sccsid[] = "$Id: ex_edit.c,v 9.8 1995/02/09 18:21:03 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../svi/svi_screen.h"
+#include "common.h"
+#include "../vi/vi.h"
 
-static int ex_N_edit __P((SCR *, EXCMDARG *, FREF *, int));
+static int ex_N_edit __P((SCR *, EXCMD *, FREF *, int));
 
 /*
  * ex_edit --	:e[dit][!] [+cmd] [file]
@@ -45,12 +44,13 @@ static int ex_N_edit __P((SCR *, EXCMDARG *, FREF *, int));
  *
  * !!!
  * Historic vi didn't permit the '+' command form without specifying
- * a file name as well.
+ * a file name as well.  This seems unreasonable, so we support it
+ * regardless.
  */
 int
 ex_edit(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	FREF *frp;
 	int attach, setalt;
@@ -93,12 +93,12 @@ ex_edit(sp, cmdp)
 	 * !!!
 	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
 	 */
-	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
+	if (file_m2(sp, FL_ISSET(cmdp->iflags, E_C_FORCE)))
 		return (1);
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, (setalt ? FS_SETALT : 0) |
-	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	return (0);
 }
@@ -110,14 +110,14 @@ ex_edit(sp, cmdp)
 static int
 ex_N_edit(sp, cmdp, frp, attach)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 	FREF *frp;
 	int attach;
 {
 	SCR *bot, *new, *top;
 
 	/* Get a new screen. */
-	if (svi_split(sp, &top, &bot))
+	if (vs_split(sp, &top, &bot))
 		return (1);
 	new = sp == top ? bot : top;
 
@@ -132,12 +132,12 @@ ex_N_edit(sp, cmdp, frp, attach)
 
 		new->lno = sp->lno;
 		new->cno = sp->cno;
-	} else if (file_init(new, frp, NULL,
-	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0))) {
+	} else if (file_init(new, frp, NULL, FS_WELCOME |
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
 		if (sp == top)
-			(void)svi_join(new, sp, NULL, NULL);
+			(void)vs_join(new, sp, NULL, NULL);
 		else
-			(void)svi_join(new, NULL, sp, NULL);
+			(void)vs_join(new, NULL, sp, NULL);
 		(void)screen_end(new);
 		return (1);
 	}

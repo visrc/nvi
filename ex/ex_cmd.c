@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.11 1995/02/17 11:40:04 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:40:04 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 10.1 1995/04/13 17:22:42 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 9.11 1995/02/17 11:40:04 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * This array maps ex command names to command functions.
@@ -66,7 +65,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] ! command",
 	    "filter lines through commands or run commands"},
 /* C_HASH */
-	{"#",		ex_number,	E_ADDR2|E_F_PRCLEAR,
+	{"#",		ex_number,	E_ADDR2|E_CLRFLAG,
 	    "ca1",
 	    "[line [,line]] # [count] [l]",
 	    "display numbered lines"},
@@ -86,7 +85,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] <[<...] [count] [flags]",
 	    "shift lines left"},
 /* C_EQUAL */
-	{"=",		ex_equal,	E_ADDR1|E_ZERO|E_ZERODEF,
+	{"=",		ex_equal,	E_ADDR1|E_ADDR_ZERO|E_ADDR_ZERODEF,
 	    "1",
 	    "[line] = [flags]",
 	    "display line number"},
@@ -101,7 +100,7 @@ EXCMDLIST const cmds[] = {
 	    "@ [buffer]",
 	    "execute a buffer"},
 /* C_APPEND */
-	{"append",	ex_append,	E_ADDR1|E_ZERO|E_ZERODEF,
+	{"append",	ex_append,	E_ADDR1|E_ADDR_ZERO|E_ADDR_ZERODEF,
 	    "!",
 	    "[line] a[ppend][!]",
 	    "append input to a line"},
@@ -121,7 +120,7 @@ EXCMDLIST const cmds[] = {
 	    "bg",
 	    "background the current screen"},
 /* C_CHANGE */
-	{"change",	ex_change,	E_ADDR2|E_ZERODEF,
+	{"change",	ex_change,	E_ADDR2|E_ADDR_ZERODEF,
 	    "!ca",
 	    "[line [,line]] c[hange][!] [count]",
 	    "change lines to input"},
@@ -163,12 +162,12 @@ EXCMDLIST const cmds[] = {
 /* C_EDIT */
 	{"edit",	ex_edit,	E_NEWSCREEN,
 	    "f1o",
-	    "e[dit][!] [+cmd] [file]",
+	    "[Ee][dit][!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EX */
 	{"ex",		ex_edit,	E_NEWSCREEN,
 	    "f1o",
-	    "ex[!] [+cmd] [file]",
+	    "[Ee]x[!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EXUSAGE */
 	{"exusage",	ex_usage,	0,
@@ -196,7 +195,7 @@ EXCMDLIST const cmds[] = {
 	    "he[lp]",
 	    "display help statement"},
 /* C_INSERT */
-	{"insert",	ex_insert,	E_ADDR1|E_ZERO|E_ZERODEF,
+	{"insert",	ex_insert,	E_ADDR1|E_ADDR_ZERO|E_ADDR_ZERODEF,
 	    "!",
 	    "[line] i[nsert][!]",
 	    "insert input before a line"},
@@ -211,7 +210,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] k key",
 	    "mark a line position"},
 /* C_LIST */
-	{"list",	ex_list,	E_ADDR2|E_F_PRCLEAR,
+	{"list",	ex_list,	E_ADDR2|E_CLRFLAG,
 	    "ca1",
 	    "[line [,line]] l[ist] [count] [#]",
 	    "display lines in an unambiguous form"},
@@ -238,10 +237,10 @@ EXCMDLIST const cmds[] = {
 /* C_NEXT */
 	{"next",	ex_next,	E_NEWSCREEN,
 	    "!fN",
-	    "n[ext][!] [+cmd] [file ...]",
+	    "[Nn][ext][!] [+cmd] [file ...]",
 	    "edit (and optionally specify) the next file"},
 /* C_NUMBER */
-	{"number",	ex_number,	E_ADDR2|E_F_PRCLEAR,
+	{"number",	ex_number,	E_ADDR2|E_CLRFLAG,
 	    "ca1",
 	    "[line [,line]] nu[mber] [count] [l]",
 	    "change display to number lines"},
@@ -251,7 +250,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] o[pen] [/RE/] [flags]",
 	    "enter \"open\" mode (not implemented)"},
 /* C_PRINT */
-	{"print",	ex_pr,		E_ADDR2|E_F_PRCLEAR,
+	{"print",	ex_pr,		E_ADDR2|E_CLRFLAG,
 	    "ca1",
 	    "[line [,line]] p[rint] [count] [#l]",
 	    "display lines"},
@@ -263,11 +262,11 @@ EXCMDLIST const cmds[] = {
 /* C_PREVIOUS */
 	{"previous",	ex_prev,	E_NEWSCREEN,
 	    "!",
-	    "prev[ious][!]",
+	    "[Pp]rev[ious][!]",
 	    "edit the previous file in the file argument list"},
 /* C_PUT */
 	{"put",		ex_put,	
-	    E_ADDR1|E_AUTOPRINT|E_ZERO|E_ZERODEF,
+	    E_ADDR1|E_AUTOPRINT|E_ADDR_ZERO|E_ADDR_ZERODEF,
 	    "b",
 	    "[line] pu[t] [buffer]",
 	    "append a cut buffer to the line"},
@@ -277,7 +276,7 @@ EXCMDLIST const cmds[] = {
 	    "q[uit][!]",
 	    "exit ex/vi"},
 /* C_READ */
-	{"read",	ex_read,	E_ADDR1|E_ZERO|E_ZERODEF,
+	{"read",	ex_readfp,	E_ADDR1|E_ADDR_ZERO|E_ADDR_ZERODEF,
 	    "s",
 	    "[line] r[ead] [!cmd | [file]]",
 	    "append input from a command or file to the line"},
@@ -344,7 +343,7 @@ EXCMDLIST const cmds[] = {
 /* C_TAG */
 	{"tag",		ex_tagpush,	E_NEWSCREEN,
 	    "!w1o",
-	    "ta[g][!] [string]",
+	    "[Tt]a[g][!] [string]",
 	    "edit the file containing the tag"},
 /* C_TAGPOP */
 	{"tagpop",	ex_tagpop,	0,
@@ -382,14 +381,14 @@ EXCMDLIST const cmds[] = {
 	    "version",
 	    "display the program version information"},
 /* C_VISUAL_EX */
-	{"visual",	ex_visual,	E_ADDR1|E_ZERODEF,
+	{"visual",	ex_visual,	E_ADDR1|E_ADDR_ZERODEF,
 	    "2c11",
 	    "[line] vi[sual] [-|.|+|^] [window_size] [flags]",
 	    "enter visual (vi) mode from ex mode"},
 /* C_VISUAL_VI */
 	{"visual",	ex_edit,	E_NEWSCREEN,
 	    "f1o",
-	    "vi[sual][!] [+cmd] [file]",
+	    "[Vv]i[sual][!] [+cmd] [file]",
 	    "edit another file (from vi mode only)"},
 /* C_VIUSAGE */
 	{"viusage",	ex_viusage,	0,
@@ -397,22 +396,22 @@ EXCMDLIST const cmds[] = {
 	    "[viu]sage [key]",
 	    "display vi key usage statement"},
 /* C_WRITE */
-	{"write",	ex_write,	E_ADDR2_ALL|E_ZERODEF,
+	{"write",	ex_write,	E_ADDR2_ALL|E_ADDR_ZERODEF,
 	    "!s",
 	    "[line [,line]] w[rite][!] [!cmd | [>>] [file]]",
 	    "write the file"},
 /* C_WN */
-	{"wn",		ex_wn,		E_ADDR2_ALL|E_ZERODEF,
+	{"wn",		ex_wn,		E_ADDR2_ALL|E_ADDR_ZERODEF,
 	    "!s",
 	    "[line [,line]] wn[!] [>>] [file]",
 	    "write the file and switch to the next file"},
 /* C_WQ */
-	{"wq",		ex_wq,		E_ADDR2_ALL|E_ZERODEF,
+	{"wq",		ex_wq,		E_ADDR2_ALL|E_ADDR_ZERODEF,
 	    "!s",
 	    "[line [,line]] wq[!] [>>] [file]",
 	    "write the file and exit"},
 /* C_XIT */
-	{"xit",		ex_xit,		E_ADDR2_ALL|E_ZERODEF,
+	{"xit",		ex_xit,		E_ADDR2_ALL|E_ADDR_ZERODEF,
 	    "!f1o",
 	    "[line [,line]] x[it][!] [file]",
 	    "exit"},

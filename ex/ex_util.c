@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 9.8 1995/02/17 11:39:47 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:39:47 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.1 1995/04/13 17:22:37 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,7 @@ static char sccsid[] = "$Id: ex_util.c,v 9.8 1995/02/17 11:39:47 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_cbuild --
@@ -39,20 +38,20 @@ static char sccsid[] = "$Id: ex_util.c,v 9.8 1995/02/17 11:39:47 bostic Exp $ (B
  */
 void
 ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 	int cmd_id, force, naddr;
 	recno_t lno1, lno2;
 	ARGS *ap[2], *a;
 	char *arg;
 {
-	memset(cmdp, 0, sizeof(EXCMDARG));
+	memset(cmdp, 0, sizeof(EXCMD));
 	cmdp->cmd = &cmds[cmd_id];
 	cmdp->addrcnt = naddr;
 	cmdp->addr1.lno = lno1;
 	cmdp->addr2.lno = lno2;
 	cmdp->addr1.cno = cmdp->addr2.cno = 1;
 	if (force)
-		cmdp->flags |= E_FORCE;
+		cmdp->iflags |= E_C_FORCE;
 	if ((a->bp = arg) == NULL) {
 		cmdp->argc = 0;
 		a->len = 0;
@@ -67,7 +66,7 @@ ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
 
 /*
  * ex_getline --
- *	Return a line from the terminal.
+ *	Return a line from the file.
  */
 int
 ex_getline(sp, fp, lenp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 9.5 1995/02/17 11:40:38 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:40:38 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.1 1995/04/13 17:22:39 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,11 +32,10 @@ static char sccsid[] = "$Id: ex_write.c,v 9.5 1995/02/17 11:40:38 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 enum which {WN, WQ, WRITE, XIT};
-static int exwr __P((SCR *, EXCMDARG *, enum which));
+static int exwr __P((SCR *, EXCMD *, enum which));
 
 /*
  * ex_wn --	:wn[!] [>>] [file]
@@ -45,7 +44,7 @@ static int exwr __P((SCR *, EXCMDARG *, enum which));
 int
 ex_wn(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	if (exwr(sp, cmdp, WN))
 		return (1);
@@ -65,7 +64,7 @@ ex_wn(sp, cmdp)
 int
 ex_wq(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	int force;
 
@@ -74,7 +73,7 @@ ex_wq(sp, cmdp)
 	if (file_m3(sp, 0))
 		return (1);
 
-	force = F_ISSET(cmdp, E_FORCE);
+	force = FL_ISSET(cmdp->iflags, E_C_FORCE);
 
 	if (ex_ncheck(sp, force))
 		return (1);
@@ -91,7 +90,7 @@ ex_wq(sp, cmdp)
 int
 ex_write(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	return (exwr(sp, cmdp, WRITE));
 }
@@ -105,7 +104,7 @@ ex_write(sp, cmdp)
 int
 ex_xit(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	int force;
 
@@ -116,7 +115,7 @@ ex_xit(sp, cmdp)
 	if (file_m3(sp, 0))
 		return (1);
 
-	force = F_ISSET(cmdp, E_FORCE);
+	force = FL_ISSET(cmdp->iflags, E_C_FORCE);
 
 	if (ex_ncheck(sp, force))
 		return (1);
@@ -132,7 +131,7 @@ ex_xit(sp, cmdp)
 static int
 exwr(sp, cmdp, cmd)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 	enum which cmd;
 {
 	MARK rm;
@@ -143,7 +142,7 @@ exwr(sp, cmdp, cmd)
 
 	/* All write commands can have an associated '!'. */
 	LF_INIT(FS_POSSIBLE);
-	if (F_ISSET(cmdp, E_FORCE))
+	if (FL_ISSET(cmdp->iflags, E_C_FORCE))
 		LF_SET(FS_FORCE);
 
 	/* Skip any leading whitespace. */

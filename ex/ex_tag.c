@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.21 1995/02/09 15:28:28 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:28:28 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.1 1995/04/13 17:22:33 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -37,14 +37,13 @@ static char sccsid[] = "$Id: ex_tag.c,v 9.21 1995/02/09 15:28:28 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
+#include "../vi/vi.h"
 #include "tag.h"
-#include "../svi/svi_screen.h"
 
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
-static int	 ex_N_tagpush __P((SCR *, EXCMDARG *, FREF *, char *, char *));
+static int	 ex_N_tagpush __P((SCR *, EXCMD *, FREF *, char *, char *));
 static char	*linear_search __P((char *, char *, char *));
 static int	 search __P((SCR *, TAGF *, char *, char **));
 static int	 tag_get __P((SCR *, char *, char **, char **, char **));
@@ -85,7 +84,7 @@ ex_tagfirst(sp, tagarg)
 	free(tag);
 
 	/* Put up the welcome message on the right line. */
-	(void)msg_status(sp, sp->lno, 0);
+	(void)msg_status(sp, sp->lno, 0, 1);
 
 	/* Might as well make this the default tag. */
 	if ((EXP(sp)->tlast = strdup(tagarg)) == NULL) {
@@ -125,7 +124,7 @@ ex_tagfirst(sp, tagarg)
 int
 ex_tagpush(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	enum {TC_CHANGE, TC_CURRENT} which;
 	EX_PRIVATE *exp;
@@ -174,7 +173,8 @@ ex_tagpush(sp, cmdp)
 	if (sp->frp == frp)
 		which = TC_CURRENT;
 	else {
-		if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		if (file_m1(sp,
+		    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
 			goto err;
 		which = TC_CHANGE;
 	}
@@ -226,7 +226,7 @@ err:		free(tag);
 			return (1);
 		break;
 	case TC_CHANGE:
-		(void)msg_status(sp, sp->lno, 0);
+		(void)msg_status(sp, sp->lno, 0, 1);
 		break;
 	}
 	F_SET(sp, S_SCR_CENTER);
@@ -240,14 +240,14 @@ err:		free(tag);
 static int
 ex_N_tagpush(sp, cmdp, frp, search, tag)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 	FREF *frp;
 	char *search, *tag;
 {
 	SCR *new, *top, *bot;
 
 	/* Get a new screen. */
-	if (svi_split(sp, &top, &bot))
+	if (vs_split(sp, &top, &bot))
 		return (1);
 	new = sp == top ? bot : top;
 
@@ -260,11 +260,11 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 		new->frp = frp;
 		new->frp->flags = sp->frp->flags;
 	} else if (file_init(new, frp, NULL,
-	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0))) {
+	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
 		if (sp == top)
-			(void)svi_join(new, sp, NULL, NULL);
+			(void)vs_join(new, sp, NULL, NULL);
 		else
-			(void)svi_join(new, NULL, sp, NULL);
+			(void)vs_join(new, NULL, sp, NULL);
 		(void)screen_end(new);
 		return (1);
 	}
@@ -298,7 +298,7 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 int
 ex_tagpop(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	EX_PRIVATE *exp;
 	TAG *ntp, *tp;
@@ -367,14 +367,15 @@ ex_tagpop(sp, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		if (file_m1(sp,
+		    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
 			return (1);
 		tp->frp->lno = tp->lno;
 		tp->frp->cno = tp->cno;
 		F_SET(sp->frp, FR_CURSORSET);
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
-		(void)msg_status(sp, tp->lno, 0);
+		(void)msg_status(sp, tp->lno, 0, 1);
 	}
 
 	/* Pop entries off the queue up to ntp. */
@@ -398,7 +399,7 @@ ex_tagpop(sp, cmdp)
 int
 ex_tagtop(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	EX_PRIVATE *exp;
 	TAG *tp;
@@ -417,14 +418,15 @@ ex_tagtop(sp, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		if (file_m1(sp,
+		    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
 			return (1);
 		tp->frp->lno = tp->lno;
 		tp->frp->cno = tp->cno;
 		F_SET(sp->frp, FR_CURSORSET);
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
-		(void)msg_status(sp, tp->lno, 0);
+		(void)msg_status(sp, tp->lno, 0, 1);
 	}
 
 	/* Empty out the queue. */
@@ -484,7 +486,7 @@ ex_tagdisplay(sp)
 				(void)ex_printf(EXCOOKIE, "%2d %*.*s %s\n",
 				    cnt, (int)maxlen, (int)len, name,
 				    tp->search);
-		F_SET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_EX_WROTE);
 	}
 	return (0);
 }
@@ -499,7 +501,7 @@ tag_search(sp, search, tag)
 	char *search, *tag;
 {
 	MARK m;
-	int sval;
+	int notused;
 	char *p;
 
 	/*
@@ -521,16 +523,24 @@ tag_search(sp, search, tag)
 		 */
 		m.lno = 1;
 		m.cno = 0;
-		sval = f_search(sp, &m, &m,
-		    search, NULL, SEARCH_FILE | SEARCH_TAG);
-		if (sval && (p = strrchr(search, '(')) != NULL) {
+		if (fsrch_setup(sp, &m, &m,
+		    search, NULL, SEARCH_FILE | SEARCH_TAG))
+			goto notfound;
+		if (fsrch(sp, NULL, &notused))
+			return (1);
+		if (!FL_ISSET(sp->srch_flags, SEARCH_FOUND) &&
+		    (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			sval = f_search(sp, &m, &m,
-			    search, NULL, SEARCH_FILE | SEARCH_TAG);
+			if (fsrch_setup(sp, &m, &m,
+			    search, NULL, SEARCH_FILE | SEARCH_TAG))
+				goto notfound;
 			p[1] = '(';
-		}
-		if (sval) {
-			tag_msg(sp, TAG_SEARCH, tag);
+			if (fsrch(sp, NULL, &notused))
+				return (1);
+			if (!FL_ISSET(sp->srch_flags, SEARCH_FOUND))
+				goto notfound;
+		} else {
+notfound:		tag_msg(sp, TAG_SEARCH, tag);
 			return (1);
 		}
 	}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 9.4 1995/01/30 10:01:14 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:01:14 $";
+static char sccsid[] = "$Id: ex_join.c,v 10.1 1995/04/13 17:22:12 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,7 @@ static char sccsid[] = "$Id: ex_join.c,v 9.4 1995/01/30 10:01:14 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_join -- :[line [,line]] j[oin][!] [count] [flags]
@@ -38,7 +37,7 @@ static char sccsid[] = "$Id: ex_join.c,v 9.4 1995/01/30 10:01:14 bostic Exp $ (B
 int
 ex_join(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	recno_t from, to;
 	size_t blen, clen, len, tlen;
@@ -62,7 +61,7 @@ ex_join(sp, cmdp)
 	 * The count for the join command was off-by-one,
 	 * historically, to other counts for other commands.
 	 */
-	if (F_ISSET(cmdp, E_COUNT))
+	if (FL_ISSET(cmdp->iflags, E_C_COUNT))
 		++cmdp->addr2.lno;
 
 	/*
@@ -114,7 +113,7 @@ ex_join(sp, cmdp)
 		 * Echar is the last character in the last line joined.
 		 */
 		extra = 0;
-		if (!first && !F_ISSET(cmdp, E_FORCE)) {
+		if (!first && !FL_ISSET(cmdp->iflags, E_C_FORCE)) {
 			if (isblank(echar))
 				for (; len && isblank(*p); --len, ++p);
 			else if (p[0] != ')') {

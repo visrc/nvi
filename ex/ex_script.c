@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 9.7 1995/01/23 17:03:14 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:14 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.1 1995/04/13 17:22:25 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,8 +31,7 @@ static char sccsid[] = "$Id: ex_script.c,v 9.7 1995/01/23 17:03:14 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 #include "script.h"
 
 /*
@@ -57,7 +56,7 @@ static int sscr_setprompt __P((SCR *, char *, size_t));
 int
 ex_script(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	/* Vi only command. */
 	if (!F_ISSET(sp, S_VI)) {
@@ -131,14 +130,12 @@ sscr_init(sp)
 #endif
 
 	/*
+	 * __TK__ huh?
 	 * Don't use vfork() here, because the signal semantics differ from
 	 * implementation to implementation.
 	 */
-	SIGBLOCK(sp->gp);
 	switch (sc->sh_pid = fork()) {
 	case -1:			/* Error. */
-		SIGUNBLOCK(sp->gp);
-
 		msgq(sp, M_SYSERR, "fork");
 err:		if (sc->sh_master != -1)
 			(void)close(sc->sh_master);
@@ -146,9 +143,6 @@ err:		if (sc->sh_master != -1)
 			(void)close(sc->sh_slave);
 		return (1);
 	case 0:				/* Utility. */
-		/* The utility has default signal behavior. */
-		sig_restore(sp);
-
 		/*
 		 * XXX
 		 * So that shells that do command line editing turn it off.
@@ -186,7 +180,6 @@ err:		if (sc->sh_master != -1)
 			FREE_SPACE(sp, p, 0);
 		_exit(127);
 	default:			/* Parent. */
-		SIGUNBLOCK(sp->gp);
 		break;
 	}
 
@@ -452,7 +445,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 	/* The cursor moves to EOF. */
 	sp->lno = lno;
 	sp->cno = len ? len - 1 : 0;
-	rval = sp->e_refresh(sp);
+	rval = sp->gp->scr_refresh(sp);
 
 ret:	FREE_SPACE(sp, bp, blen);
 	return (rval);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 9.10 1995/02/17 11:39:08 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:39:08 $";
+static char sccsid[] = "$Id: ex_screen.c,v 10.1 1995/04/13 17:22:23 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,9 +27,8 @@ static char sccsid[] = "$Id: ex_screen.c,v 9.10 1995/02/17 11:39:08 bostic Exp $
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../svi/svi_screen.h"
+#include "common.h"
+#include "../vi/vi.h"
 
 /*
  * ex_bg --	:bg
@@ -38,9 +37,9 @@ static char sccsid[] = "$Id: ex_screen.c,v 9.10 1995/02/17 11:39:08 bostic Exp $
 int
 ex_bg(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
-	return (svi_bg(sp));
+	return (vs_bg(sp));
 }
 
 /*
@@ -50,9 +49,9 @@ ex_bg(sp, cmdp)
 int
 ex_fg(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
-	return (svi_fg(sp, cmdp->argc ? cmdp->argv[0]->bp : NULL));
+	return (vs_fg(sp, cmdp->argc ? cmdp->argv[0]->bp : NULL));
 }
 
 /*
@@ -62,21 +61,26 @@ ex_fg(sp, cmdp)
 int
 ex_resize(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	adj_t adj;
 
-	if (!F_ISSET(cmdp, E_COUNT)) {
+	switch (FL_ISSET(cmdp->iflags,
+	    E_C_COUNT | E_C_COUNT_NEG | E_C_COUNT_POS)) {
+	case E_C_COUNT:
+		adj = A_SET;
+		break;
+	case E_C_COUNT | E_C_COUNT_NEG:
+		adj = A_DECREASE;
+		break;
+	case E_C_COUNT | E_C_COUNT_POS:
+		adj = A_INCREASE;
+		break;
+	default:
 		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
-	if (F_ISSET(cmdp, E_COUNT_NEG))
-		adj = A_DECREASE;
-	else if (F_ISSET(cmdp, E_COUNT_POS))
-		adj = A_INCREASE;
-	else
-		adj = A_SET;
-	return (svi_resize(sp, cmdp->count, adj));
+	return (vs_resize(sp, cmdp->count, adj));
 }
 
 /*
@@ -113,6 +117,6 @@ ex_sdisplay(sp)
 	if (!INTERRUPTED(sp))
 		(void)ex_printf(EXCOOKIE, "\n");
 
-	F_SET(sp, S_SCR_EXWROTE);
+	F_SET(sp, S_EX_WROTE);
 	return (0);
 }

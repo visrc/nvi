@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 9.7 1995/02/02 15:08:27 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:08:27 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.1 1995/04/13 17:22:19 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,7 @@ static char sccsid[] = "$Id: ex_print.c,v 9.7 1995/02/02 15:08:27 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 static int ex_prchars __P((SCR *, const char *, size_t *, size_t, u_int, int));
 
@@ -40,11 +39,11 @@ static int ex_prchars __P((SCR *, const char *, size_t *, size_t, u_int, int));
 int
 ex_list(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	NEEDFILE(sp, cmdp->cmd);
 
-	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_LIST))
+	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_LIST))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -59,11 +58,11 @@ ex_list(sp, cmdp)
 int
 ex_number(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	NEEDFILE(sp, cmdp->cmd);
 
-	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_HASH))
+	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_HASH))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -78,7 +77,7 @@ ex_number(sp, cmdp)
 int
 ex_pr(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	NEEDFILE(sp, cmdp->cmd);
 
@@ -112,7 +111,7 @@ ex_print(sp, fp, tp, flags)
 		 * by POSIX 1003.2, and is almost certainly large enough.
 		 * Check, though, just in case.
 		 */
-		if (LF_ISSET(E_F_HASH)) {
+		if (LF_ISSET(E_C_HASH)) {
 			if (from <= 999999) {
 				snprintf(buf, sizeof(buf), "%6ld  ", from);
 				p = buf;
@@ -123,7 +122,7 @@ ex_print(sp, fp, tp, flags)
 		}
 
 		/*
-		 * Display the line.  The format for E_F_PRINT isn't very good,
+		 * Display the line.  The format for E_C_PRINT isn't very good,
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
@@ -132,8 +131,8 @@ ex_print(sp, fp, tp, flags)
 			return (1);
 		}
 
-		if (len == 0 && !LF_ISSET(E_F_LIST)) {
-			F_SET(sp, S_SCR_EXWROTE);
+		if (len == 0 && !LF_ISSET(E_C_LIST)) {
+			F_SET(sp, S_EX_WROTE);
 			(void)ex_printf(EXCOOKIE, "\n");
 		} else if (ex_ldisplay(sp, p, len, col, flags))
 			return (1);
@@ -155,11 +154,11 @@ ex_ldisplay(sp, p, len, col, flags)
 	size_t len, col;
 	u_int flags;
 {
-	if (len > 0 && ex_prchars(sp, p, &col, len, LF_ISSET(E_F_LIST), 0))
+	if (len > 0 && ex_prchars(sp, p, &col, len, LF_ISSET(E_C_LIST), 0))
 		return (1);
-	if (!INTERRUPTED(sp) && LF_ISSET(E_F_LIST)) {
+	if (!INTERRUPTED(sp) && LF_ISSET(E_C_LIST)) {
 		p = "$";
-		if (ex_prchars(sp, p, &col, 1, LF_ISSET(E_F_LIST), 0))
+		if (ex_prchars(sp, p, &col, 1, LF_ISSET(E_C_LIST), 0))
 			return (1);
 	}
 	if (!INTERRUPTED(sp))
@@ -221,10 +220,10 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 	CHAR_T ch, *kp;
 
 	if (O_ISSET(sp, O_LIST))
-		LF_SET(E_F_LIST);
+		LF_SET(E_C_LIST);
 	ts = O_VAL(sp, O_TABSTOP);
 	for (col = *colp; len--;) {
-		if ((ch = *p++) == '\t' && !LF_ISSET(E_F_LIST))
+		if ((ch = *p++) == '\t' && !LF_ISSET(E_C_LIST))
 			for (tlen = ts - col % ts;
 			    col < sp->cols && tlen--; ++col)
 				(void)ex_printf(EXCOOKIE,
@@ -245,7 +244,7 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 					    "%c", repeatc ? repeatc : *kp);
 				}
 		}
-		F_SET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_EX_WROTE);
 		if (INTERRUPTED(sp))
 			break;
 	}

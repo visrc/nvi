@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.13 1995/02/17 11:37:50 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:37:50 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.1 1995/04/13 17:22:31 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,8 @@ static char sccsid[] = "$Id: ex_subst.c,v 9.13 1995/02/17 11:37:50 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
+#include "../vi/vi.h"
 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
@@ -39,7 +39,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 9.13 1995/02/17 11:37:50 bostic Exp $ 
 static __inline int
 		regsub __P((SCR *,
 		    char *, char **, size_t *, size_t *, regmatch_t [10]));
-static int	s __P((SCR *, EXCMDARG *, char *, regex_t *, u_int));
+static int	s __P((SCR *, EXCMD *, char *, regex_t *, u_int));
 
 /*
  * ex_s --
@@ -50,7 +50,7 @@ static int	s __P((SCR *, EXCMDARG *, char *, regex_t *, u_int));
 int
 ex_s(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	regex_t *re, lre;
 	size_t blen, len;
@@ -271,7 +271,7 @@ tilde:				++p;
 int
 ex_subagain(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	if (!F_ISSET(sp, S_RE_SUBST)) {
 		ex_message(sp, NULL, EXM_NOPREVRE);
@@ -290,7 +290,7 @@ ex_subagain(sp, cmdp)
 int
 ex_subtilde(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	if (!F_ISSET(sp, S_RE_SEARCH)) {
 		ex_message(sp, NULL, EXM_NOPREVRE);
@@ -354,7 +354,7 @@ ex_subtilde(sp, cmdp)
 static int
 s(sp, cmdp, s, re, flags)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 	char *s;
 	regex_t *re;
 	u_int flags;
@@ -624,7 +624,22 @@ nextmatch:	match[0].rm_so = 0;
 				if (from.cno >= llen)
 					from.cno = llen - 1;
 			}
-			switch (sp->e_confirm(sp, &from, &to)) {
+			/*
+			 * Refresh the screen first -- this means that we won't
+			 * have to set S_SCR_UMODE to keep refresh from erasing
+			 * the mode line or VIP_CUR_INVALID because we sneaked
+			 * the cursor off somewhere else.
+			 */
+			if (F_ISSET(sp, S_VI)) {
+				sp->lno = from.lno;
+				sp->cno = from.cno;
+				if (vs_refresh(sp))
+					goto conf_quit;
+			} else
+				if (ex_print(sp, &from, &to, 0) ||
+				    ex_scprint(sp, &from, &to))
+					goto conf_quit;
+			switch (sp->gp->scr_confirm(sp)) {
 			case CONF_YES:
 				break;
 			case CONF_NO:
@@ -633,8 +648,10 @@ nextmatch:	match[0].rm_so = 0;
 				goto skip;
 			case CONF_QUIT:
 				/* Set the quit/interrupted flags. */
-				quit = 1;
+conf_quit:			quit = 1;
+#ifdef __TK__
 				F_SET(sp, S_INTERRUPTED);
+#endif
 
 				/*
 				 * Resolve any changes, then return to (and
@@ -784,11 +801,11 @@ endmatch:	if (!linechanged)
 			from.lno = to.lno = lno;
 			from.cno = to.cno = 0;
 			if (lflag)
-				ex_print(sp, &from, &to, E_F_LIST);
+				(void)ex_print(sp, &from, &to, E_C_LIST);
 			if (nflag)
-				ex_print(sp, &from, &to, E_F_HASH);
+				(void)ex_print(sp, &from, &to, E_C_HASH);
 			if (pflag)
-				ex_print(sp, &from, &to, E_F_PRINT);
+				(void)ex_print(sp, &from, &to, E_C_PRINT);
 		}
 
 		if (!sp->c_suffix)
@@ -826,7 +843,7 @@ endmatch:	if (!linechanged)
 			goto err;
 		}
 	} else if (!lflag && !nflag && !pflag)
-		F_SET(EXP(sp), EX_AUTOPRINT);
+		F_SET(cmdp, E_AUTOPRINT);
 
 	if (0) {
 err:		rval = 1;

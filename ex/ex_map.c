@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 9.5 1995/02/12 18:37:31 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:37:31 $";
+static char sccsid[] = "$Id: ex_map.c,v 10.1 1995/04/13 17:22:13 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,7 @@ static char sccsid[] = "$Id: ex_map.c,v 9.5 1995/02/12 18:37:31 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_map -- :map[!] [input] [replacement]
@@ -49,12 +48,12 @@ static char sccsid[] = "$Id: ex_map.c,v 9.5 1995/02/12 18:37:31 bostic Exp $ (Be
 int
 ex_map(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
-	enum seqtype stype;
+	seq_t stype;
 	CHAR_T *input, *p;
 
-	stype = F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND;
+	stype = FL_ISSET(cmdp->iflags, E_C_FORCE) ? SEQ_INPUT : SEQ_COMMAND;
 
 	switch (cmdp->argc) {
 	case 0:
@@ -85,8 +84,8 @@ ex_map(sp, cmdp)
 		    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype,
 		    SEQ_FUNCMAP | SEQ_USERDEF))
 			return (1);
-		return (sp->e_fmap == NULL ? 0 :
-		    sp->e_fmap(sp, stype, input, cmdp->argv[0]->len,
+		return (sp->gp->scr_fmap == NULL ? 0 :
+		    sp->gp->scr_fmap(sp, stype, input, cmdp->argv[0]->len,
 		    cmdp->argv[1]->bp, cmdp->argv[1]->len));
 	}
 
@@ -112,13 +111,13 @@ nofunc:	if (stype == SEQ_COMMAND && input[1] == '\0')
 int
 ex_unmap(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	int nf;
 	char *p;
 
 	if (seq_delete(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len,
-	    F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
+	    FL_ISSET(cmdp->iflags, E_C_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
 		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
 		msgq(sp, M_INFO, "139|\"%s\" isn't currently mapped", p);
 		if (nf)
@@ -126,18 +125,4 @@ ex_unmap(sp, cmdp)
 		return (1);
 	}
 	return (0);
-}
-
-/*
- * map_save --
- *	Save the mapped sequences to a file.
- */
-int
-map_save(sp, fp)
-	SCR *sp;
-	FILE *fp;
-{
-	if (seq_save(sp, fp, "map ", SEQ_COMMAND))
-		return (1);
-	return (seq_save(sp, fp, "map! ", SEQ_INPUT));
 }

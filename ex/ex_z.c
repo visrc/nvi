@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 9.3 1995/01/11 16:16:10 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:10 $";
+static char sccsid[] = "$Id: ex_z.c,v 10.1 1995/04/13 17:22:41 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,7 @@ static char sccsid[] = "$Id: ex_z.c,v 9.3 1995/01/11 16:16:10 bostic Exp $ (Berk
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_z -- :[line] z [^-.+=] [count] [flags]
@@ -38,7 +37,7 @@ static char sccsid[] = "$Id: ex_z.c,v 9.3 1995/01/11 16:16:10 bostic Exp $ (Berk
 int
 ex_z(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	MARK abs;
 	recno_t cnt, equals, lno;
@@ -57,7 +56,7 @@ ex_z(sp, cmdp)
 	 * a line from the cnt if using the window size to leave room for
 	 * the next ex prompt.
 	 */
-	if (F_ISSET(cmdp, E_COUNT))
+	if (FL_ISSET(cmdp->iflags, E_C_COUNT))
 		cnt = cmdp->count;
 	else
 #ifdef HISTORIC_PRACTICE
@@ -70,9 +69,9 @@ ex_z(sp, cmdp)
 	eofcheck = 0;
 	lno = cmdp->addr1.lno;
 
-	switch (F_ISSET(cmdp,
-	    E_F_CARAT | E_F_DASH | E_F_DOT | E_F_EQUAL | E_F_PLUS)) {
-	case E_F_CARAT:		/* Display cnt * 2 before the line. */
+	switch (FL_ISSET(cmdp->iflags,
+	    E_C_CARAT | E_C_DASH | E_C_DOT | E_C_EQUAL | E_C_PLUS)) {
+	case E_C_CARAT:		/* Display cnt * 2 before the line. */
 		eofcheck = 1;
 		if (lno > cnt * 2)
 			cmdp->addr1.lno = (lno - cnt * 2) + 1;
@@ -80,11 +79,11 @@ ex_z(sp, cmdp)
 			cmdp->addr1.lno = 1;
 		cmdp->addr2.lno = (cmdp->addr1.lno + cnt) - 1;
 		break;
-	case E_F_DASH:		/* Line goes at the bottom of the screen. */
+	case E_C_DASH:		/* Line goes at the bottom of the screen. */
 		cmdp->addr1.lno = lno > cnt ? (lno - cnt) + 1 : 1;
 		cmdp->addr2.lno = lno;
 		break;
-	case E_F_DOT:		/* Line goes in the middle of the screen. */
+	case E_C_DOT:		/* Line goes in the middle of the screen. */
 		/*
 		 * !!!
 		 * Historically, the "middleness" of the line overrode the
@@ -105,7 +104,7 @@ ex_z(sp, cmdp)
 		abs.cno = sp->cno;
 		(void)mark_set(sp, ABSMARK1, &abs, 1);
 		break;
-	case E_F_EQUAL:		/* Center with hyphens. */
+	case E_C_EQUAL:		/* Center with hyphens. */
 		/*
 		 * !!!
 		 * Strangeness.  The '=' flag is like the '.' flag (see the
@@ -129,14 +128,14 @@ ex_z(sp, cmdp)
 		    "%s", "----------------------------------------\n");
 		cmdp->addr1.lno = lno + 1;
 		cmdp->addr2.lno = (lno + cnt) - 1;
-		F_SET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_EX_WROTE);
 		break;
 	default:
 		/* If no line specified, move to the next one. */
-		if (F_ISSET(cmdp, E_ADDRDEF))
+		if (F_ISSET(cmdp, E_ADDR_DEF))
 			++lno;
 		/* FALLTHROUGH */
-	case E_F_PLUS:		/* Line goes at the top of the screen. */
+	case E_C_PLUS:		/* Line goes at the top of the screen. */
 		eofcheck = 1;
 		cmdp->addr1.lno = lno;
 		cmdp->addr2.lno = (lno + cnt) - 1;

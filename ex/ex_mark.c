@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mark.c,v 9.2 1995/01/11 16:15:38 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:38 $";
+static char sccsid[] = "$Id: ex_mark.c,v 10.1 1995/04/13 17:22:14 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,13 +25,12 @@ static char sccsid[] = "$Id: ex_mark.c,v 9.2 1995/01/11 16:15:38 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 int
 ex_mark(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	NEEDFILE(sp, cmdp->cmd);
 

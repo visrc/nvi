@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 9.4 1995/02/17 11:38:26 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:38:26 $";
+static char sccsid[] = "$Id: ex_display.c,v 10.1 1995/04/13 17:22:06 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,9 +27,8 @@ static char sccsid[] = "$Id: ex_display.c,v 9.4 1995/02/17 11:38:26 bostic Exp $
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
+#include "common.h"
 #include "tag.h"
-#include "excmd.h"
 
 static int	bdisplay __P((SCR *));
 static void	db __P((SCR *, CB *, CHAR_T *));
@@ -42,7 +41,7 @@ static void	db __P((SCR *, CB *, CHAR_T *));
 int
 ex_display(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	switch (cmdp->argv[0]->bp[0]) {
 	case 'b':
@@ -87,7 +86,7 @@ bdisplay(sp)
 		return (0);
 	}
 
-	F_SET(sp, S_SCR_EXWROTE);
+	F_SET(sp, S_EX_WROTE);
 
 	/* Display regular cut buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {

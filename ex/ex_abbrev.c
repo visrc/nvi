@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 9.2 1995/01/11 16:15:14 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:14 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 10.1 1995/04/13 17:21:55 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,9 +28,8 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 9.2 1995/01/11 16:15:14 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../vi/vcmd.h"
+#include "common.h"
+#include "../vi/vi.h"
 
 /*
  * ex_abbr -- :abbreviate [key replacement]
@@ -39,7 +38,7 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 9.2 1995/01/11 16:15:14 bostic Exp $ 
 int
 ex_abbr(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	CHAR_T *p;
 	size_t len;
@@ -66,8 +65,7 @@ ex_abbr(sp, cmdp)
 	 * addition, because of the way the test is done, there can't be any
 	 * transitions from word to non-word character (or vice-versa) other
 	 * than between the next-to-last and last characters of the string,
-	 * and there can't be any <blank> characters.
-	 * Warn the user.
+	 * and there can't be any <blank> characters.  Warn the user.
 	 */
 	if (!inword(cmdp->argv[0]->bp[cmdp->argv[0]->len - 1])) {
 		msgq(sp, M_ERR,
@@ -104,7 +102,7 @@ ex_abbr(sp, cmdp)
 int
 ex_unabbr(sp, cmdp)
 	SCR *sp;
-        EXCMDARG *cmdp;
+        EXCMD *cmdp;
 {
 	ARGS *ap;
 	int nf;
@@ -120,16 +118,4 @@ ex_unabbr(sp, cmdp)
 		return (1);
 	}
 	return (0);
-}
-
-/*
- * abbr_save --
- *	Save the abbreviation sequences to a file.
- */
-int
-abbr_save(sp, fp)
-	SCR *sp;
-	FILE *fp;
-{
-	return (seq_save(sp, fp, "abbreviate ", SEQ_ABBREV));
 }

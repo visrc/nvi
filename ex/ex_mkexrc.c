@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 9.3 1995/01/11 16:15:39 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:39 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 10.1 1995/04/13 17:22:15 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,8 +32,7 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 9.3 1995/01/11 16:15:39 bostic Exp $ 
 #include <regex.h>
 #include <pathnames.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_mkexrc -- :mkexrc[!] [file]
@@ -43,7 +42,7 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 9.3 1995/01/11 16:15:39 bostic Exp $ 
 int
 ex_mkexrc(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	struct stat sb;
 	FILE *fp;
@@ -62,7 +61,7 @@ ex_mkexrc(sp, cmdp)
 		abort();
 	}
 
-	if (!F_ISSET(cmdp, E_FORCE) && !stat(fname, &sb)) {
+	if (!FL_ISSET(cmdp->iflags, E_C_FORCE) && !stat(fname, &sb)) {
 		p = msg_print(sp, fname, &nf);
 		msgq(sp, M_ERR,
 		    "141|%s exists, not written; use ! to override", p);
@@ -87,9 +86,11 @@ ex_mkexrc(sp, cmdp)
 		goto e2;
 	}
 
-	if (abbr_save(sp, fp) || ferror(fp))
+	if (seq_save(sp, fp, "abbreviate ", SEQ_ABBREV) || ferror(fp))
 		goto e1;
-	if (map_save(sp, fp) || ferror(fp))
+	if (seq_save(sp, fp, "map ", SEQ_COMMAND) || ferror(fp))
+		goto e1;
+	if (seq_save(sp, fp, "map! ", SEQ_INPUT) || ferror(fp))
 		goto e1;
 	if (opts_save(sp, fp) || ferror(fp))
 		goto e1;

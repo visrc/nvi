@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 9.4 1995/01/23 17:03:17 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:17 $";
+static char sccsid[] = "$Id: ex_stop.c,v 10.1 1995/04/13 17:22:30 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,9 +28,7 @@ static char sccsid[] = "$Id: ex_stop.c,v 9.4 1995/01/23 17:03:17 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../sex/sex_screen.h"
+#include "common.h"
 
 /*
  * ex_stop -- :stop[!]
@@ -40,11 +38,11 @@ static char sccsid[] = "$Id: ex_stop.c,v 9.4 1995/01/23 17:03:17 bostic Exp $ (B
 int
 ex_stop(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	/* For some strange reason, the force flag turns off autowrite. */
-	if (!F_ISSET(cmdp, E_FORCE) && file_aw(sp, FS_ALL))
+	if (!FL_ISSET(cmdp->iflags, E_C_FORCE) && file_aw(sp, FS_ALL))
 		return (1);
 
-	return (sp->e_suspend(sp));
+	return (sp->gp->scr_suspend(sp));
 }

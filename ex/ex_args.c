@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 9.10 1995/02/15 17:38:27 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:38:27 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.1 1995/04/13 17:21:58 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,11 +28,10 @@ static char sccsid[] = "$Id: ex_args.c,v 9.10 1995/02/15 17:38:27 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../svi/svi_screen.h"
+#include "common.h"
+#include "../vi/vi.h"
 
-static int ex_N_next __P((SCR *, EXCMDARG *));
+static int ex_N_next __P((SCR *, EXCMD *));
 
 /*
  * ex_next -- :next [+cmd] [files]
@@ -47,7 +46,7 @@ static int ex_N_next __P((SCR *, EXCMDARG *));
 int
 ex_next(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	ARGS **argv;
 	FREF *frp;
@@ -72,7 +71,8 @@ ex_next(sp, cmdp)
 	}
 
 	/* Check modification. */
-	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+	if (file_m1(sp,
+	    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
 
 	/* Any arguments are a replacement file list. */
@@ -109,8 +109,8 @@ ex_next(sp, cmdp)
 		noargs = 1;
 	}
 
-	if (file_init(sp, frp, NULL,
-	    FS_SETALT | FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	if (file_init(sp, frp, NULL, FS_SETALT |
+	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	if (noargs)
 		++sp->cargv;
@@ -124,7 +124,7 @@ ex_next(sp, cmdp)
 static int
 ex_N_next(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	SCR *bot, *new, *top;
 	ARGS **argv;
@@ -140,7 +140,7 @@ ex_N_next(sp, cmdp)
 	*ap = NULL;
 
 	/* Get a new screen. */
-	if (svi_split(sp, &top, &bot))
+	if (vs_split(sp, &top, &bot))
 		return (1);
 	new = sp == top ? bot : top;
 
@@ -148,11 +148,11 @@ ex_N_next(sp, cmdp)
 	new->cargv = new->argv = s_argv;
 	if ((frp = file_add(new, *new->cargv)) == NULL ||
 	    file_init(new, frp, NULL,
-	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0))) {
+	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
 		if (sp == top)
-			(void)svi_join(new, sp, NULL, NULL);
+			(void)vs_join(new, sp, NULL, NULL);
 		else
-			(void)svi_join(new, NULL, sp, NULL);
+			(void)vs_join(new, NULL, sp, NULL);
 		(void)screen_end(new);
 		return (1);
 	}
@@ -182,7 +182,7 @@ ex_N_next(sp, cmdp)
 int
 ex_prev(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	FREF *frp;
 
@@ -197,14 +197,15 @@ ex_prev(sp, cmdp)
 		return (ex_edit(sp, cmdp));
 	}
 
-	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+	if (file_m1(sp,
+	    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
 
 	if ((frp = file_add(sp, sp->cargv[-1])) == NULL)
 		return (1);
 
-	if (file_init(sp, frp, NULL,
-	    FS_SETALT | FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	if (file_init(sp, frp, NULL, FS_SETALT |
+	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	--sp->cargv;
 
@@ -225,7 +226,7 @@ ex_prev(sp, cmdp)
 int
 ex_rew(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	FREF *frp;
 
@@ -238,15 +239,16 @@ ex_rew(sp, cmdp)
 		return (1);
 	}
 
-	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+	if (file_m1(sp,
+	    FL_ISSET(cmdp->iflags, E_C_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
 
 	/* Switch to the first one. */
 	sp->cargv = sp->argv;
 	if ((frp = file_add(sp, *sp->cargv)) == NULL)
 		return (1);
-	if (file_init(sp, frp, NULL,
-	    FS_SETALT | FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	if (file_init(sp, frp, NULL, FS_SETALT |
+	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	return (0);
 }
@@ -258,7 +260,7 @@ ex_rew(sp, cmdp)
 int
 ex_args(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	int cnt, col, len, sep;
 	char **ap;
@@ -290,7 +292,7 @@ ex_args(sp, cmdp)
 	}
 	if (!INTERRUPTED(sp))
 		(void)ex_printf(EXCOOKIE, "\n");
-	F_SET(sp, S_SCR_EXWROTE);
+	F_SET(sp, S_EX_WROTE);
 
 	return (0);
 }

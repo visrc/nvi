@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 9.4 1995/02/08 12:48:55 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:48:55 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 10.1 1995/04/13 17:22:18 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,7 @@ static char sccsid[] = "$Id: ex_preserve.c,v 9.4 1995/02/08 12:48:55 bostic Exp 
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_preserve -- :pre[serve]
@@ -37,7 +36,7 @@ static char sccsid[] = "$Id: ex_preserve.c,v 9.4 1995/02/08 12:48:55 bostic Exp 
 int
 ex_preserve(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	recno_t lno;
 
@@ -72,7 +71,7 @@ ex_preserve(sp, cmdp)
 int
 ex_recover(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	ARGS *ap;
 	FREF *frp;
@@ -86,7 +85,7 @@ ex_recover(sp, cmdp)
 	 * Check for modifications.  Autowrite did not historically
 	 * affect :recover.
 	 */
-	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
+	if (file_m2(sp, FL_ISSET(cmdp->iflags, E_C_FORCE)))
 		return (1);
 
 	/* Get a file structure for the file. */
@@ -97,8 +96,8 @@ ex_recover(sp, cmdp)
 	F_SET(frp, FR_RECOVER);
 
 	/* Switch files. */
-	if (file_init(sp, frp, NULL,
-	    FS_SETALT | FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	if (file_init(sp, frp, NULL, FS_SETALT |
+	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	return (0);
 }

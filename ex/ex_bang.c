@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 9.7 1995/02/17 11:42:19 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:42:19 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.1 1995/04/13 17:22:03 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,9 +29,7 @@ static char sccsid[] = "$Id: ex_bang.c,v 9.7 1995/02/17 11:42:19 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../sex/sex_screen.h"
+#include "common.h"
 
 /*
  * ex_bang -- :[line [,line]] ! command
@@ -52,7 +50,7 @@ static char sccsid[] = "$Id: ex_bang.c,v 9.7 1995/02/17 11:42:19 bostic Exp $ (B
 int
 ex_bang(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	enum filtertype ftype;
 	ARGS *ap;
@@ -60,7 +58,7 @@ ex_bang(sp, cmdp)
 	MARK rm;
 	recno_t lno;
 	size_t blen;
-	int rval;
+	int notused, rval;
 	char *bp, *msg;
 
 	NEEDFILE(sp, cmdp->cmd);
@@ -89,7 +87,7 @@ ex_bang(sp, cmdp)
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
 		if (F_ISSET(sp, S_EX)) {
-			F_SET(sp, S_SCR_EXWROTE);
+			F_SET(sp, S_EX_WROTE);
 			(void)ex_printf(EXCOOKIE, "!%s\n", ap->bp);
 			(void)ex_fflush(EXCOOKIE);
 		}
@@ -123,7 +121,7 @@ ex_bang(sp, cmdp)
 	 */
 	if (cmdp->addrcnt != 0) {
 		/* Autoprint is set historically, even if the command fails. */
-		F_SET(exp, EX_AUTOPRINT);
+		F_SET(cmdp, E_AUTOPRINT);
 
 		/*
 		 * Vi gets a busy message.
@@ -133,7 +131,7 @@ ex_bang(sp, cmdp)
 		 */
 		if (bp != NULL) {
 			bp[ap->len + 1] = '\0';
-			(void)sp->e_busy(sp, bp);
+			(void)sp->gp->scr_busy(sp, bp, 1);
 		}
 
 		/*
@@ -206,7 +204,7 @@ ret2:	if (F_ISSET(sp, S_EX)) {
 		 * the autoprint output.
 		 */
 		if (rval)
-			(void)sex_refresh(sp);
+			(void)sp->gp->scr_msgflush(sp, &notused);
 
 		/* Ex terminates with a bang, even if the command fails. */
 		if (!F_ISSET(sp, S_EX_SILENT))

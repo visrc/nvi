@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 9.2 1995/01/11 16:15:45 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:45 $";
+static char sccsid[] = "$Id: ex_quit.c,v 10.1 1995/04/13 17:22:21 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,7 @@ static char sccsid[] = "$Id: ex_quit.c,v 9.2 1995/01/11 16:15:45 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_quit -- :quit[!]
@@ -35,11 +34,11 @@ static char sccsid[] = "$Id: ex_quit.c,v 9.2 1995/01/11 16:15:45 bostic Exp $ (B
 int
 ex_quit(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	int force;
 
-	force = F_ISSET(cmdp, E_FORCE);
+	force = FL_ISSET(cmdp->iflags, E_C_FORCE);
 
 	/* Check for file modifications, or more files to edit. */
 	if (file_m2(sp, force) || ex_ncheck(sp, force))

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 9.6 1995/01/23 17:03:07 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:07 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.1 1995/04/13 17:21:59 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,11 +30,10 @@ static char sccsid[] = "$Id: ex_argv.c,v 9.6 1995/01/23 17:03:07 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 static int argv_alloc __P((SCR *, size_t));
-static int argv_fexp __P((SCR *, EXCMDARG *,
+static int argv_fexp __P((SCR *, EXCMD *,
 	       char *, size_t, char *, size_t *, char **, size_t *, int));
 static int argv_sexp __P((SCR *, char **, size_t *, size_t *));
 
@@ -45,7 +44,7 @@ static int argv_sexp __P((SCR *, char **, size_t *, size_t *));
 int
 argv_init(sp, excp)
 	SCR *sp;
-	EXCMDARG *excp;
+	EXCMD *excp;
 {
 	EX_PRIVATE *exp;
 
@@ -65,7 +64,7 @@ argv_init(sp, excp)
 int
 argv_exp0(sp, excp, cmd, cmdlen)
 	SCR *sp;
-	EXCMDARG *excp;
+	EXCMD *excp;
 	char *cmd;
 	size_t cmdlen;
 {
@@ -90,7 +89,7 @@ argv_exp0(sp, excp, cmd, cmdlen)
 int
 argv_exp1(sp, excp, cmd, cmdlen, is_bang)
 	SCR *sp;
-	EXCMDARG *excp;
+	EXCMD *excp;
 	char *cmd;
 	size_t cmdlen;
 	int is_bang;
@@ -132,7 +131,7 @@ ret:	FREE_SPACE(sp, bp, blen);
 int
 argv_exp2(sp, excp, cmd, cmdlen)
 	SCR *sp;
-	EXCMDARG *excp;
+	EXCMD *excp;
 	char *cmd;
 	size_t cmdlen;
 {
@@ -216,7 +215,7 @@ err:	FREE_SPACE(sp, bp, blen);
 int
 argv_exp3(sp, excp, cmd, cmdlen)
 	SCR *sp;
-	EXCMDARG *excp;
+	EXCMD *excp;
 	char *cmd;
 	size_t cmdlen;
 {
@@ -246,7 +245,7 @@ argv_exp3(sp, excp, cmd, cmdlen)
 		 */
 		for (ap = cmd, len = 0; cmdlen > 0; ++cmd, --cmdlen, ++len) {
 			ch = *cmd;
-			if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
+			if (IS_ESCAPE(sp, excp, ch) && cmdlen > 1) {
 				++cmd;
 				--cmdlen;
 			} else if (isblank(ch))
@@ -264,7 +263,7 @@ argv_exp3(sp, excp, cmd, cmdlen)
 		off = exp->argsoff;
 		exp->args[off]->len = len;
 		for (p = exp->args[off]->bp; len > 0; --len, *p++ = *ap++)
-			if (IS_ESCAPE(sp, *ap))
+			if (IS_ESCAPE(sp, excp, *ap))
 				++ap;
 		*p = '\0';
 	}
@@ -285,7 +284,7 @@ argv_exp3(sp, excp, cmd, cmdlen)
 static int
 argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 	SCR *sp;
-	EXCMDARG *excp;
+	EXCMD *excp;
 	char *cmd, *p, **bpp;
 	size_t cmdlen, *lenp, *blenp;
 	int is_bang;
@@ -513,10 +512,8 @@ argv_sexp(sp, bpp, blenp, lenp)
 	 * Do the minimal amount of work possible, the shell is going
 	 * to run briefly and then exit.  We hope.
 	 */
-	SIGBLOCK(sp->gp);
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
-		SIGUNBLOCK(sp->gp);
 		msgq(sp, M_SYSERR, "vfork");
 err:		if (ifp != NULL)
 			(void)fclose(ifp);
@@ -532,9 +529,6 @@ err:		if (ifp != NULL)
 			close(std_output[0]);
 		return (1);
 	case 0:				/* Utility. */
-		/* The utility has default signal behavior. */
-		sig_restore(sp);
-
 		/* Redirect stdout/stderr to the write end of the pipe. */
 		(void)dup2(std_output[1], STDOUT_FILENO);
 		(void)dup2(err_output[1], STDERR_FILENO);
@@ -553,8 +547,6 @@ err:		if (ifp != NULL)
 			FREE_SPACE(sp, p, 0);
 		_exit(127);
 	default:			/* Parent. */
-		SIGUNBLOCK(sp->gp);
-
 		/* Close the pipe ends the parent won't use. */
 		(void)close(std_output[1]);
 		(void)close(err_output[1]);

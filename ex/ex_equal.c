@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 9.2 1995/01/11 16:15:29 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:29 $";
+static char sccsid[] = "$Id: ex_equal.c,v 10.1 1995/04/13 17:22:08 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,7 @@ static char sccsid[] = "$Id: ex_equal.c,v 9.2 1995/01/11 16:15:29 bostic Exp $ (
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_equal -- :address =
@@ -34,7 +33,7 @@ static char sccsid[] = "$Id: ex_equal.c,v 9.2 1995/01/11 16:15:29 bostic Exp $ (
 int
 ex_equal(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	recno_t lno;
 
@@ -52,13 +51,13 @@ ex_equal(sp, cmdp)
 	 * lno to get away with any address from 0 to the end of the
 	 * file, which, in an empty file, is 0.
 	 */
-	if (F_ISSET(cmdp, E_ADDRDEF)) {
+	if (F_ISSET(cmdp, E_ADDR_DEF)) {
 		if (file_lline(sp, &lno))
 			return (1);
 	} else
 		lno = cmdp->addr1.lno;
 
-	F_SET(sp, S_SCR_EXWROTE);
+	F_SET(sp, S_EX_WROTE);
 	(void)ex_printf(EXCOOKIE, "%ld\n", lno);
 	return (0);
 }

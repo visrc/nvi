@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 9.3 1995/02/17 11:43:17 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:43:17 $";
+static char sccsid[] = "$Id: ex_at.c,v 10.1 1995/04/13 17:22:01 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,7 @@ static char sccsid[] = "$Id: ex_at.c,v 9.3 1995/02/17 11:43:17 bostic Exp $ (Ber
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 /*
  * ex_at -- :@[@ | buffer]
@@ -40,22 +39,22 @@ static char sccsid[] = "$Id: ex_at.c,v 9.3 1995/02/17 11:43:17 bostic Exp $ (Ber
 int
 ex_at(sp, cmdp)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	EXCMD *cmdp;
 {
 	CB *cbp;
 	CHAR_T name;
+	GAT *gatp;
+	RANGE *rp;
 	TEXT *tp;
-	recno_t elno, lno;
-	int rval;
-	char *bp, *p;
 	size_t len;
+	char *p;
 
 	/*
 	 * !!!
 	 * Historically, [@*]<carriage-return> and [@*][@*] executed the most
 	 * recently executed buffer in ex mode.
 	 */
-	name = F_ISSET(cmdp, E_BUFFER) ? cmdp->buffer : '@';
+	name = FL_ISSET(cmdp->iflags, E_C_BUFFER) ? cmdp->buffer : '@';
 	if (name == '@' || name == '*') {
 		if (!F_ISSET(sp, S_AT_SET)) {
 			ex_message(sp, NULL, EXM_NOPREVBUF);
@@ -74,22 +73,11 @@ ex_at(sp, cmdp)
 	sp->at_lbuf = name;
 
 	/*
-	 * Buffers executed in ex mode or from the colon command line in vi
-	 * were ex commands.  We can't push it on the terminal queue, since
-	 * we may be executing a command from the vi colon command line.
-	 * Build two copies of the command.  We need two copies because the
-	 * ex parser may step on the command string when it's parsing it.
+	 * Get a GAT structure.  We use the same structure for both global
+	 * commands and @ buffer commands because they have to hang on the
+	 * same stack, and they have lots of similarities.
 	 */
-	for (len = 0, tp = cbp->textq.cqh_last;
-	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
-		len += tp->len + 1;
-	MALLOC_RET(sp, bp, char *, len * 2);
-	for (p = bp, tp = cbp->textq.cqh_last;
-	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev) {
-		memmove(p, tp->lb, tp->len);
-		p += tp->len;
-		*p++ = '\n';
-	}
+	CALLOC_RET(sp, gatp, GAT *, 1, sizeof(GAT));
 
 	/*
 	 * !!!
@@ -101,35 +89,52 @@ ex_at(sp, cmdp)
 	 * and enter :8,10@<buffer>.  We take the same approach as for global
 	 * commands, i.e. if we exit or switch to a new file/screen, the rest
 	 * of the command is discarded.
+	 *
+	 * All of this is implemented in the ex_cmd() parse loop, BECAUSE EVENT
+	 * DRIVEN PROGRAMMING JUST SUCKS!! (Uh, sorry.  But this code used to
+	 * be so very, very much cleaner before I made it work with an X event
+	 * loop.  Just as an example, the vi parser was three, mildly complex
+	 * 200 line functions.  I had to trade them in for a roughly 1000 line
+	 * switch statement, with 20 goto's.  I won't even talk about what's in
+	 * the ex parser, now.  I'm NOT pleased.)
 	 */
-	rval = 0;
-	for (lno = cmdp->addr1.lno,
-	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
-		/*
-		 * Make a new copy and execute the command, setting the cursor
-		 * to the line so that relative addressing works.  This means
-		 * that the cursor moves to the last line sent to the command,
-		 * by default, even if the command fails.
-		 */
-		sp->lno = lno;
-		memmove(bp + len, bp, len);
-		if (ex_cmd(sp, bp + len, len, 0))
-			goto err;
+	CIRCLEQ_INIT(&gatp->rangeq);
+	CALLOC_RET(sp, rp, RANGE *, 1, sizeof(RANGE));
+	rp->start = cmdp->addr1.lno;
+	rp->stop = cmdp->addr2.lno;
+	CIRCLEQ_INSERT_HEAD(&gatp->rangeq, rp, q);
 
-		/* Someone's unhappy, time to stop. */
-		if (INTERRUPTED(sp))
-			break;
-
-		/*
-		 * If we've exited or switched to a new file/screen, the rest
-		 * of the command is discarded.
-		 */
-		if (F_ISSET(sp,
-		    S_EXIT | S_EXIT_FORCE | S_EX_CMDABORT | S_SSWITCH))
-			break;
+	/*
+	 * Save any remaining portion of the current command for restoration
+	 * when this command is finished.
+	 */
+	if (cmdp->save_cmdlen != 0) {
+		MALLOC_RET(sp, gatp->save_cmd, char *, cmdp->save_cmdlen);
+		memmove(gatp->save_cmd, cmdp->save_cmd, cmdp->save_cmdlen);
+		gatp->save_cmdlen = cmdp->save_cmdlen;
+		cmdp->save_cmdlen = 0;
 	}
-	if (0)
-err:		rval = 1;
-	free(bp);
-	return (rval);
+
+	/*
+	 * Buffers executed in ex mode or from the colon command line in vi
+	 * were ex commands.  We can't push it on the terminal queue, since
+	 * it has to be executed immediately, and we may be in the middle of
+	 * an ex command already.  Push the command on the ex command stack.
+	 * Build two copies of the command.  We need two copies because the
+	 * ex parser may step on the command string when it's parsing it.
+	 */
+	for (len = 0, tp = cbp->textq.cqh_last;
+	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
+		len += tp->len + 1;
+	MALLOC_RET(sp, gatp->cmd, char *, len * 2);
+	for (p = gatp->cmd, tp = cbp->textq.cqh_last;
+	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev) {
+		memmove(p, tp->lb, tp->len);
+		p += tp->len;
+		*p++ = '\n';
+	}
+	gatp->cmd_len = len;
+
+	LIST_INSERT_HEAD(&EXP(sp)->gatq, gatp, q);
+	return (0);
 }
