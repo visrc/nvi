@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: msg.h,v 10.8 1996/04/27 11:41:11 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:11 $
+ *	$Id: msg.h,v 10.9 1996/05/02 09:42:43 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:43 $
  */
 
 /*
@@ -58,3 +58,7 @@ struct _msg {
 	char	*buf;		/* Message buffer. */
 	size_t	 len;		/* Message length. */
 };
+
+/* Flags to msgq_status(). */
+#define	MSTAT_SHOWLAST	0x01	/* Show the line number of the last line. */
+#define	MSTAT_TRUNCATE	0x02	/* Truncate the file name if it's too long. */

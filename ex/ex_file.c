@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_file.c,v 10.10 1996/04/15 20:31:35 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:35 $";
+static const char sccsid[] = "$Id: ex_file.c,v 10.11 1996/05/02 09:42:49 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,6 +75,6 @@ ex_file(sp, cmdp)
 	default:
 		abort();
 	}
-	msgq_status(sp, sp->lno, 1);
+	msgq_status(sp, sp->lno, MSTAT_SHOWLAST);
 	return (0);
 }

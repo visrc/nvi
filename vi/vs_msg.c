@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.63 1996/05/02 09:20:05 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:20:05 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.64 1996/05/02 09:42:56 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -681,7 +681,7 @@ vs_resolve(sp)
 	/* Display new file status line. */
 	if (F_ISSET(sp, SC_STATUS)) {
 		F_CLR(sp, SC_STATUS);
-		msgq_status(sp, sp->lno, 0);
+		msgq_status(sp, sp->lno, MSTAT_TRUNCATE);
 	}
 
 	/* Report on line modifications. */

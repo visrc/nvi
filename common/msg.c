@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.33 1996/05/02 09:22:04 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:22:04 $";
+static const char sccsid[] = "$Id: msg.c,v 10.34 1996/05/02 09:42:43 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -507,13 +507,13 @@ alloc_err:
  * msgq_status --
  *	Report on the file's status.
  *
- * PUBLIC: void msgq_status __P((SCR *, recno_t, int));
+ * PUBLIC: void msgq_status __P((SCR *, recno_t, u_int));
  */
 void
-msgq_status(sp, lno, showlast)
+msgq_status(sp, lno, flags)
 	SCR *sp;
 	recno_t lno;
-	int showlast;
+	u_int flags;
 {
 	recno_t last;
 	const char *t;
@@ -588,7 +588,7 @@ msgq_status(sp, lno, showlast)
 		*p++ = ':';
 		*p++ = ' ';
 	}
-	if (showlast) {
+	if (LF_ISSET(MSTAT_SHOWLAST)) {
 		if (db_last(sp, &last))
 			return;
 		if (last == 0) {
@@ -619,18 +619,19 @@ msgq_status(sp, lno, showlast)
 	 * characters in the filenames and informational messages only take a
 	 * single screen column each, we can trim the filename.
 	 */
-	if ((p - bp) >= sp->cols) {
-		for (s = bp;
-		    s < np && (*s != '/' || (p - s) > sp->cols - 3); ++s);
-		if (s == np)
-			s = bp;
-		else {
-			*--s = '.';
-			*--s = '.';
-			*--s = '.';
+	s = bp;
+	if (LF_ISSET(MSTAT_TRUNCATE))
+		if ((p - s) >= sp->cols) {
+			for (; s < np &&
+			    (*s != '/' || (p - s) > sp->cols - 3); ++s);
+			if (s == np)
+				s = bp;
+			else {
+				*--s = '.';
+				*--s = '.';
+				*--s = '.';
+			}
 		}
-	} else
-		s = bp;
 	len = p - s;
 
 	/* Flush any waiting ex messages. */

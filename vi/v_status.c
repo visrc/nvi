@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_status.c,v 10.7 1996/03/06 19:54:39 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:39 $";
+static const char sccsid[] = "$Id: v_status.c,v 10.8 1996/05/02 09:42:55 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,6 +36,6 @@ v_status(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	(void)msgq_status(sp, vp->m_start.lno, 1);
+	(void)msgq_status(sp, vp->m_start.lno, MSTAT_SHOWLAST);
 	return (0);
 }
