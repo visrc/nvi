@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.22 1993/04/12 14:36:07 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:36:07 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.23 1993/05/04 18:51:57 bostic Exp $ (Berkeley) $Date: 1993/05/04 18:51:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,10 @@ static char sccsid[] = "$Id: ex_file.c,v 5.22 1993/04/12 14:36:07 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 
+/*
+ * ex_file -- :f[ile] [name]
+ *	Status line and change the file's name.
+ */
 int
 ex_file(sp, ep, cmdp)
 	SCR *sp;
@@ -44,6 +48,6 @@ ex_file(sp, ep, cmdp)
 	default:
 		abort();
 	}
-	status(sp, ep, cmdp->addr1.lno);
+	status(sp, ep, sp->lno);
 	return (0);
 }
