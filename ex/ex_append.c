@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.11 1995/02/02 11:28:12 bostic Exp $ (Berkeley) $Date: 1995/02/02 11:28:12 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.12 1995/02/02 18:18:41 bostic Exp $ (Berkeley) $Date: 1995/02/02 18:18:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,53 +90,6 @@ aci(sp, cmdp, cmd)
 
 	NEEDFILE(sp, cmdp->cmd);
 
-	if (F_ISSET(sp, S_GLOBAL)) {
-		if (cmdp->aci_len == 0)
-			return (0);
-	} else {
-		/*
-		 * Set input flags; the ! flag turns off autoindent for append,
-		 * change and insert.
-		 */
-		LF_INIT(TXT_DOTTERM | TXT_NUMBER);
-		if (!F_ISSET(cmdp, E_FORCE) && O_ISSET(sp, O_AUTOINDENT))
-			LF_SET(TXT_AUTOINDENT);
-		if (O_ISSET(sp, O_BEAUTIFY))
-			LF_SET(TXT_BEAUTIFY);
-
-		/* The screen is now dirty. */
-		F_SET(sp, S_SCR_EXWROTE);
-
-		/*
-		 * If this code is called by vi, the screen TEXTH structure
-		 * (sp->tiqp) may already be in use, e.g. ":append|s/abc/ABC/"
-		 * would fail as we're only halfway through the line when the
-		 * append code fires.  Use the local structure instead.
-		 *
-		 * If this code is called by vi, we want to reset the terminal
-		 * and use ex's line get routine.  It actually works fine if we
-		 * use vi's get routine, but it doesn't look as nice.  Maybe if
-		 * we had a separate window or something, but getting a line at
-		 * a time looks awkward.
-		 */
-		if (F_ISSET(sp, S_VI)) {
-			memset(&tiq, 0, sizeof(TEXTH));
-			CIRCLEQ_INIT(&tiq);
-			sv_tiqp = sp->tiqp;
-			sp->tiqp = &tiq;
-
-			if (sex_tsetup(sp, &ts))
-				return (1);
-			(void)write(STDOUT_FILENO, "\n", 1);
-		}
-
-		/* Set the line number, so that autoindent works correctly. */
-		sp->lno = cmdp->addr1.lno;
-
-		if (sex_get(sp, sp->tiqp, 0, flags) != INP_OK)
-			goto err;
-	}
-
 	/*
 	 * If doing a change, replace lines for as long as possible.  Then,
 	 * append more lines or delete remaining lines.  Changes to an empty
@@ -174,7 +127,7 @@ aci(sp, cmdp, cmd)
 	if (cmd == CHANGE && cmdp->addr1.lno != 0 &&
 	    (cut(sp, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE) ||
 	    delete(sp, &cmdp->addr1, &cmdp->addr2, 1)))
-		goto err;
+		return (1);
 
 	/*
 	 * !!!
@@ -197,14 +150,14 @@ aci(sp, cmdp, cmd)
 					break;
 				}
 				if (file_aline(sp, 1, m.lno, p, t - p))
-					goto err;
+					return (1);
 				sp->lno = ++m.lno;
 			}
 			if (len != 0) {
 				++t;
 				if (--len == 0) {
 					if (file_aline(sp, 1, m.lno, "", 0))
-						goto err;
+						return (1);
 					sp->lno = ++m.lno;
 				}
 			}
@@ -219,8 +172,55 @@ aci(sp, cmdp, cmd)
 		} else
 			cmdp->aci_text = NULL;
 	}
+
 	if (F_ISSET(sp, S_GLOBAL))
 		return (0);
+
+	/*
+	 * If not in a global command, read from the terminal.
+	 *
+	 * Set input flags; the ! flag turns off autoindent for append,
+	 * change and insert.
+	 */
+	LF_INIT(TXT_DOTTERM | TXT_NUMBER);
+	if (!F_ISSET(cmdp, E_FORCE) && O_ISSET(sp, O_AUTOINDENT))
+		LF_SET(TXT_AUTOINDENT);
+	if (O_ISSET(sp, O_BEAUTIFY))
+		LF_SET(TXT_BEAUTIFY);
+
+	/* The screen is now dirty. */
+	F_SET(sp, S_SCR_EXWROTE);
+
+	/*
+	 * If this code is called by vi, the screen TEXTH structure (sp->tiqp)
+	 * may already be in use, e.g. ":append|s/abc/ABC/" would fail as we
+	 * are only halfway through the line when the append code fires.  Use
+	 * the local structure instead.  The ex code would also have to use a
+	 * local structure except that we're guaranteed to finish with the
+	 * remaining characters in the screen TEXTH structure when they were
+	 * inserted into the file, above.
+	 *
+	 * If this code is called by vi, we want to reset the terminal and use
+	 * ex's line get routine.  It actually works fine if we use vi's get
+	 * routine, but it doesn't look as nice.  Maybe if we had a separate
+	 * window or something, but getting a line at a time looks awkward.
+	 */
+	if (F_ISSET(sp, S_VI)) {
+		memset(&tiq, 0, sizeof(TEXTH));
+		CIRCLEQ_INIT(&tiq);
+		sv_tiqp = sp->tiqp;
+		sp->tiqp = &tiq;
+
+		if (sex_tsetup(sp, &ts))
+			return (1);
+		(void)write(STDOUT_FILENO, "\n", 1);
+	}
+
+	/* Set the line number, so that autoindent works correctly. */
+	sp->lno = cmdp->addr1.lno;
+
+	if (sex_get(sp, sp->tiqp, 0, flags) != INP_OK)
+		goto err;
 
 	for (tp = sp->tiqp->cqh_first;
 	    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
@@ -238,7 +238,6 @@ err:		rval = 1;
 		sp->tiqp = sv_tiqp;
 		text_lfree(&tiq);
 
-		/* Reset the terminal state. */
 		if (sex_tteardown(sp, &ts))
 			rval = 1;
 		F_SET(sp, S_SCR_REFRESH);
