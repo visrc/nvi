@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.59 2000/08/27 19:02:50 skimo Exp $ (Berkeley) $Date: 2000/08/27 19:02:50 $";
+static const char sccsid[] = "$Id: exf.c,v 10.60 2000/09/01 09:43:02 skimo Exp $ (Berkeley) $Date: 2000/09/01 09:43:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -279,6 +279,36 @@ file_init(sp, frp, rcv_name, flags)
 	if (rcv_name == NULL)
 		ep->db->set_re_source(ep->db, oname);
 
+/* 
+ * Don't let db use mmap when using fcntl for locking
+ */
+#ifdef HAVE_LOCK_FCNTL
+#define NOMMAPIFFCNTL DB_NOMMAP
+#else
+#define NOMMAPIFFCNTL 0
+#endif
+
+	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL, DB_RECNO, 
+	    ((rcv_name == 0) ? DB_TRUNCATE : 0) | DB_THREAD | NOMMAPIFFCNTL,
+	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != 0) {
+		msgq_str(sp,
+		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
+		/*
+		 * !!!
+		 * Historically, vi permitted users to edit files that couldn't
+		 * be read.  This isn't useful for single files from a command
+		 * line, but it's quite useful for "vi *.c", since you can skip
+		 * past files that you can't read.
+		 */ 
+		ep->db = NULL; /* Don't close it; it wasn't opened */
+
+		if (LF_ISSET(FS_OPENERR)) 
+		    goto err;
+
+		open_err = 1;
+		goto oerr;
+	}
+
 	/*
 	 * Do the remaining things that can cause failure of the new file,
 	 * mark and logging initialization.
@@ -361,28 +391,6 @@ no_lock:
 		case LOCK_SUCCESS:
 			break;
 		}
-	}
-
-	if (ep->refcnt == 0 &&
-	    (sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL,
-	    DB_RECNO, ((rcv_name == 0) ? DB_TRUNCATE : 0) | DB_THREAD,
-	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != 0) {
-		msgq_str(sp,
-		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
-		/*
-		 * !!!
-		 * Historically, vi permitted users to edit files that couldn't
-		 * be read.  This isn't useful for single files from a command
-		 * line, but it's quite useful for "vi *.c", since you can skip
-		 * past files that you can't read.
-		 */ 
-		ep->db = NULL; /* Don't close it */
-
-		if (LF_ISSET(FS_OPENERR)) 
-		    goto err;
-
-		open_err = 1;
-		goto oerr;
 	}
 
 	/*
