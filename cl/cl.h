@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.27 2001/06/03 20:01:13 skimo Exp $ (Berkeley) $Date: 2001/06/03 20:01:13 $
+ *	$Id: cl.h,v 10.28 2001/06/09 18:53:58 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:53:58 $
  */
 #ifdef USE_SLANG_CURSES
 #include <slcurses.h>
@@ -38,6 +38,8 @@ typedef struct _cl_private {
 	char	*smcup, *rmcup;	/* Terminal start/stop strings. */
 
 	char	*oname;		/* Original screen window name. */
+
+	WINDOW	*focus;		/* Screen that has the "focus". */
 
 	int	 killersig;	/* Killer signal. */
 #define	INDX_HUP	0

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.66 2001/05/14 15:50:22 skimo Exp $ (Berkeley) $Date: 2001/05/14 15:50:22 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.67 2001/06/09 18:53:58 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:53:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -626,8 +626,15 @@ cl_refresh(sp, repaint)
 	 */
 	if (repaint)
 		clearok(curscr, 1);
+	/*
+	 * Only do an actual refresh, when this is the focus window,
+	 * i.e. the one holding the cursor. This assumes that refresh
+	 * is called for that window after refreshing the others.
+	 * This prevents the cursor being drawn in the other windows.
+	 */
 	return (wnoutrefresh(stdscr) == ERR || 
-		wnoutrefresh(win) == ERR || doupdate() == ERR);
+		wnoutrefresh(win) == ERR || 
+		(win == clp->focus && doupdate() == ERR));
 }
 
 /*
@@ -667,6 +674,7 @@ cl_rename(sp, name, on)
 	clp = CLP(sp);
 
 	if (on) {
+		clp->focus = CLSP(sp) ? CLSP(sp) : stdscr;
 		if (!F_ISSET(clp, CL_RENAME_OK))
 			return (0);
 
