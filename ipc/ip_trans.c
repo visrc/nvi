@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.2 1996/11/27 12:22:09 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:22:09 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.3 1996/12/03 10:22:23 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:22:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,7 +103,5 @@ ip_trans(bp, len, skipp)
 		abort();
 
 	/* Call the underlying routine. */
-	(void)iplist[bp[0] - 1](&ipb);
-
-	return (1);
+	return (iplist[bp[0] - 1](&ipb));
 }
