@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.28 1993/11/29 14:14:56 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:56 $
+ *	$Id: common.h,v 8.29 1993/12/02 10:28:15 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:28:15 $
  */
 
 /* System includes. */
@@ -72,6 +72,7 @@ typedef	u_int		ARG_CHAR_T;
 #include "mark.h"		/* Required by most everybody. */
 
 #include "search.h"		/* Required by screen.h. */
+#include "args.h"		/* Required by options.h. */
 #include "options.h"		/* Required by screen.h. */
 #include "term.h"		/* Required by screen.h. */
 
@@ -175,6 +176,7 @@ void	 set_alt_name __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int, int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
+CHAR_T	*v_strdup __P((SCR *, CHAR_T *, size_t));
 
 #ifdef DEBUG
 void	TRACE __P((SCR *, const char *, ...));
