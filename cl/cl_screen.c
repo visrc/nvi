@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.44 1996/05/16 10:46:55 bostic Exp $ (Berkeley) $Date: 1996/05/16 10:46:55 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.45 1996/05/29 13:08:30 bostic Exp $ (Berkeley) $Date: 1996/05/29 13:08:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -575,11 +575,7 @@ cl_freecap(clp)
 
 /*
  * cl_putenv --
- *	Put a value into the environment.  We use putenv(3) because it's
- *	more portable.  The following hack is because some moron decided
- *	to keep a reference to the memory passed to putenv(3), instead of
- *	having it allocate its own.  Someone clearly needs to get promoted
- *	into management.
+ *	Put a value into the environment.
  */
 static int
 cl_putenv(name, str, value)
