@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.17 1993/09/28 18:41:17 bostic Exp $ (Berkeley) $Date: 1993/09/28 18:41:17 $";
+static char sccsid[] = "$Id: main.c,v 8.18 1993/09/29 15:49:18 bostic Exp $ (Berkeley) $Date: 1993/09/29 15:49:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -230,6 +230,8 @@ main(argc, argv)
 	/*
 	 * Source the system, environment, ~user and local .exrc values.
 	 * If the environment exists, vi historically doesn't check ~user.
+	 * This is done before the file is read in because things in the
+	 * .exrc information can set, for example, the recovery directory.
 	 */
 	if (!stat(_PATH_SYSEXRC, &sb))
 		(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
@@ -261,24 +263,6 @@ main(argc, argv)
 	if (flagchk == 'l')
 		exit(rcv_list(sp));
 
-	/*
-	 * Initialize the window change size handler.  Use sigaction(2),
-	 * not signal(3) so we can specify that we don't want to restart
-	 * read(2) system calls.
-	 */
-	act.sa_handler = rcv_winch;
-	sigemptyset(&act.sa_mask);
-	sigaddset(&act.sa_mask, SIGWINCH);
-	act.sa_flags = 0;
-	(void)sigaction(SIGWINCH, &act, NULL);
-
-	/* We never want to catch SIGQUIT. */
-	(void)signal(SIGQUIT, SIG_IGN);
-
-	/* Initialize the about-to-die handlers. */
-	(void)signal(SIGHUP, rcv_hup);
-	(void)signal(SIGTERM, rcv_term);
-
 	/* Use an error list file, tag file or recovery file if specified. */
 #ifndef NO_ERRLIST
 	if (errf != NULL) {
@@ -298,16 +282,35 @@ main(argc, argv)
 			if (file_add(sp, NULL, *argv, 0) == NULL)
 				goto err1;
 
-	/* If no argv, recovery or tag file specified, use a temporary file. */
-	if ((frp = file_first(sp, 1)) == NULL &&
-	    (frp = file_add(sp, NULL, NULL, 0)) == NULL)
-		goto err1;
-	sp->frp = frp;
-	
-	/* If no recover or tag file specified, get an EXF structure. */
-	if (tfname == NULL && rfname == NULL &&
-	    (sp->ep = file_init(sp, NULL, frp, NULL)) == NULL)
-		goto err1;
+	/*
+	 * If no recovery or tag file, get an EXF structure.
+	 * If no argv file, use a temporary file.
+	 */
+	if (tfname == NULL && rfname == NULL) {
+		if ((frp = file_first(sp, 1)) == NULL &&
+		    (frp = file_add(sp, NULL, NULL, 0)) == NULL)
+			goto err1;
+		if (file_init(sp, frp, NULL, 0))
+			goto err1;
+	}
+
+	/*
+	 * Initialize the window change size handler.  Use sigaction(2),
+	 * not signal(3) so we can specify that we don't want to restart
+	 * read(2) system calls.
+	 */
+	act.sa_handler = rcv_winch;
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGWINCH);
+	act.sa_flags = 0;
+	(void)sigaction(SIGWINCH, &act, NULL);
+
+	/* We never want to catch SIGQUIT. */
+	(void)signal(SIGQUIT, SIG_IGN);
+
+	/* Initialize the about-to-die handlers. */
+	(void)signal(SIGHUP, rcv_hup);
+	(void)signal(SIGTERM, rcv_term);
 
 	/*
 	 * If there's an initial command, push it on the command stack.
@@ -338,7 +341,7 @@ main(argc, argv)
 	 * screen flags word there's a bit if it's a vi or ex screen.
 	 * Since there are multiple vi screens, we use scr_type to decide.
 	 */
-	for (; sp != NULL; sp = nsp) {
+	for (; sp != NULL; sp = nsp)
 		if (F_ISSET(sp, S_MODE_EX)) {
 			if (sex(sp, sp->ep, &nsp))
 				goto err2;
@@ -359,15 +362,6 @@ main(argc, argv)
 				abort();
 				/* NOTREACHED */
 			}
-
-		/* If the screen has exited, clean up. */
-		switch (F_ISSET(sp, S_MAJOR_CHANGE)) {
-		case S_EXIT:
-		case S_EXIT_FORCE:
-			if (scr_end(sp))
-				goto err2;
-		}
-	}
 
 	/*
 	 * Two error paths.  The first means that something failed before
