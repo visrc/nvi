@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.12 1992/05/22 09:58:34 bostic Exp $ (Berkeley) $Date: 1992/05/22 09:58:34 $";
+static char sccsid[] = "$Id: vi.c,v 5.13 1992/05/22 10:50:45 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:50:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -362,6 +362,8 @@ usage:				bell();
 	return (0);
 }
 
+#define	innum(c)	(isdigit(c) || index("abcdefABCDEF+-", c))
+
 static int
 getkeyword(kp, flags)
 	VICMDARG *kp;
@@ -372,11 +374,13 @@ getkeyword(kp, flags)
 	char *p;
 
 	p = file_gline(curf, cursor.lno, &len);
+	beg = cursor.cno;
 
 	/* May not be a keyword at all. */
-	if (!len || flags & V_KEYW && !inword(p[cursor.cno])
-	    || flags & V_KEYNUM && !isdigit(p[cursor.cno])) {
-		bell();
+	if (!len ||
+	    flags & V_KEYW && !inword(p[beg]) ||
+	    flags & V_KEYNUM && !innum(p[beg])) {
+noword:		bell();
 		if (ISSET(O_VERBOSE))
 			msg("Cursor not in a %s.",
 			    flags & V_KEYW ? "word" : "number");
@@ -384,7 +388,7 @@ getkeyword(kp, flags)
 	}
 
 	/* Find the beginning/end of the keyword. */
-	if (beg = cursor.cno) {
+	if (beg != 0) {
 		if (flags & V_KEYW)
 			do {
 				--beg;
@@ -392,12 +396,16 @@ getkeyword(kp, flags)
 		else
 			do {
 				--beg;
-			} while (isdigit(p[beg]) && beg > 0);
+			} while (innum(p[beg]) && beg > 0);
 		++beg;
 	}
 	for (end = cursor.cno; ++end < len && inword(p[end]););
 	--end;
-	
+
+	/* Just a sign isn't a number. */
+	if (end == beg && (p[beg] == '+' || p[beg] == '-'))
+		goto noword;
+
 	/*
 	 * Getting a keyword implies moving the cursor to its beginning.
 	 * Refresh now.
