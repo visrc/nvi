@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.13 1996/05/10 18:09:34 bostic Exp $ (Berkeley) $Date: 1996/05/10 18:09:34 $";
+static const char sccsid[] = "$Id: screen.c,v 10.14 1996/07/19 19:47:16 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:47:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,6 +151,10 @@ screen_end(sp)
 	F_CLR(sp, SC_SCR_EX | SC_SCR_VI);
 
 	rval = 0;
+#ifdef HAVE_PERL_INTERP
+	if (perl_screen_end(sp))		/* End perl. */
+		rval = 1;
+#endif
 	if (v_screen_end(sp))			/* End vi. */
 		rval = 1;
 	if (ex_screen_end(sp))			/* End ex. */
