@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.60 1996/06/12 11:50:13 bostic Exp $ (Berkeley) $Date: 1996/06/12 11:50:13 $
+#	$Id: Makefile.in,v 8.61 1996/06/12 11:53:45 bostic Exp $ (Berkeley) $Date: 1996/06/12 11:53:45 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -559,7 +559,8 @@ getopt.o: $(srcdir)/clib/getopt.c
 memchr.o: $(srcdir)/clib/memchr.c
 	$(CC) $(CFLAGS) $?
 memcpy.o: $(srcdir)/clib/memmove.c
-	$(CC) $(CFLAGS) -DMEMCOPY $?
+	$(cp) $? memcpy.c
+	$(CC) $(CFLAGS) -DMEMCOPY memcpy.c
 memmove.o: $(srcdir)/clib/memmove.c
 	$(CC) $(CFLAGS) -DMEMMOVE $?
 memset.o: $(srcdir)/clib/memset.c
