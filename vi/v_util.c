@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.16 1993/02/18 14:15:22 bostic Exp $ (Berkeley) $Date: 1993/02/18 14:15:22 $";
+static char sccsid[] = "$Id: v_util.c,v 5.17 1993/02/19 11:14:43 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:14:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,21 +151,41 @@ v_msgflush(ep)
 /*
  * onwinch --
  *	Handle SIGWINCH.
- *
- * XXX
- * Using the global `curf' here is completely unreasonable.  If the signal
- * arrives while it's invalid, we're hosed.  This will change when we move
- * to an event based mechanism.
  */
 void
 onwinch(signo)
 	int signo;
 {
-	struct winsize win;
-	char *argv[2], sbuf[100];
-
 	if (mode != MODE_VI)
 		return;
+
+	/*
+	 * XXX
+	 * Using the global `curf' here is completely unreasonable.  If
+	 * the signal arrives while it's invalid, we're hosed.  This will
+	 * change when we move to an event based mechanism.
+	 */
+	if (set_window_size(curf, 0))
+		return;
+
+	/* Do the resize if waiting. */
+	if (FF_ISSET(curf, F_READING)) {
+		curf->scr_update(curf);
+		refresh();
+	}
+}
+
+/*
+ * set_window_size --
+ *	Set the window size, the row may be provided as an argument.
+ */
+int
+set_window_size(ep, row)
+	EXF *ep;
+	u_int row;
+{
+	struct winsize win;
+	char *argv[2], sbuf[100];
 
 	/*
 	 * Try TIOCGWINSZ.  If it fails, ignore the signal.  Otherwise,
@@ -173,22 +193,19 @@ onwinch(signo)
 	 * not worth making msg reentrant.
 	 */
 	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1)
-		return;
+		return (1);
 
 	argv[0] = sbuf;
 	argv[1] = NULL;
 
-	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", win.ws_row);
-	if (opts_set(curf, argv))
-		return;
+	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", row ? row : win.ws_row);
+	if (opts_set(ep, argv))
+		return (1);
 	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
-	if (opts_set(curf, argv))
-		return;
+	if (opts_set(ep, argv))
+		return (1);
 
-	/* Do the resize if waiting, otherwise just schedule it. */
+	/* Schedule resize. */
 	FF_SET(curf, F_RESIZE);
-	if (FF_ISSET(curf, F_READING)) {
-		curf->scr_update(curf);
-		refresh();
-	}
+	return (0);
 }
