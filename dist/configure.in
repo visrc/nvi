@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.104 1996/05/13 19:09:57 bostic Exp $ (Berkeley) $Date: 1996/05/13 19:09:57 $
+dnl	$Id: configure.in,v 8.105 1996/05/14 09:23:04 bostic Exp $ (Berkeley) $Date: 1996/05/14 09:23:04 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -61,7 +61,7 @@ ptx*)	   LIBS=${LIBS-"-lseq -linet -lsocket"};;
 sco3.2*)   LIBS=${LIBS-"-lsocket"};;
 sinix*)	   LIBS=${LIBS-"-lelf -lc"};;
 solaris*)  no_op_OPTFLAG=${no_op_OPTFLAG-""}
-	   LIBS=${LIBS-"-lsocket -lnsl -ldl}"
+	   LIBS=${LIBS-"-lsocket -lnsl -ldl"}
 	   RLIBS=yes;;
 sunos*)	   no_op_OPTFLAG=${no_op_OPTFLAG-""};;
 ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE);;
