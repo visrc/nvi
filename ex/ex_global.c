@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.9 1993/09/10 10:26:16 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:26:16 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.10 1993/09/10 11:01:09 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:01:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	struct termios nterm, term;
+	struct termios term;
 	recno_t elno, last1, last2, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
@@ -133,19 +133,11 @@ global(sp, ep, cmdp, cmd)
 		F_SET(sp, S_RE_SET);
 	}
 
+	F_SET(sp, S_GLOBAL);
+
 	/* Turn on interrupts and install an interrupt catcher. */
-	F_SET(sp, S_GLOBAL | S_INTERRUPTIBLE);
-	(void)signal(SIGINT, global_intr);
-	if (tcgetattr(STDIN_FILENO, &term)) {
-		msgq(sp, M_ERR, "global: tcgetattr: %s", strerror(errno));
+	if (turn_interrupts_on(sp, &term, global_intr))
 		return (1);
-	}
-	nterm = term;
-	nterm.c_lflag |= ISIG;
-	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &nterm)) {
-		msgq(sp, M_ERR, "global: tcsetattr: %s", strerror(errno));
-		return (1);
-	}
 
 	/* For each line... */
 	for (rval = 0, lno = cmdp->addr1.lno,
@@ -187,8 +179,10 @@ global(sp, ep, cmdp, cmd)
 			goto err;
 
 		/* Someone's unhappy, time to stop. */
-		if (F_ISSET(sp, S_INTERRUPTED))
+		if (F_ISSET(sp, S_INTERRUPTED)) {
+			msgq(sp, M_INFO, "Interrupted.");
 			break;
+		}
 
 		if (file_lline(sp, ep, &last2)) {
 err:			rval = 1;
@@ -207,12 +201,9 @@ err:			rval = 1;
 		/* Cursor moves to last line sent to command. */
 		sp->lno = lno;
 	}
-
-	/* Restore ex/vi terminal settings. */
-	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
-		msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
-
 	F_CLR(sp, S_GLOBAL);
+
+	(void)turn_interrupts_off(sp, &term);
 	return (rval);
 }
 

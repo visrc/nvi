@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.7 1993/09/10 10:26:56 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:26:56 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.8 1993/09/10 11:01:18 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:01:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *cmd;
 	enum filtertype ftype;
 {
-	struct termios n, t;
+	struct termios term;
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
@@ -87,10 +87,8 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	if (pipe(output) < 0 || (ofp = fdopen(output[0], "r")) == NULL)
 		goto err;
 
-	/* Install an interrupt catcher so that only the utility dies. */
-	if (tcgetattr(STDIN_FILENO, &t))
+	if (turn_interrupts_on(sp, &term, filter_intr))
 		goto err;
-	(void)signal(SIGINT, filter_intr);
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
@@ -110,14 +108,8 @@ err:		if (input[0] != -1)
 		msgq(sp, M_ERR, "filter: %s", strerror(errno));
 		return (1);
 	case 0:				/* Utility. */
-		/*
-		 * Turn interrupts on; ISIG enables VINTR, VQUIT and VSUSP.
-		 * We want both VINTR and VSUSP, VQUIT is probably a don't
-		 * care.
-		 */
-		n = t;
-		n.c_lflag |= ISIG;
-		(void)tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &n);
+		/* The utility dies on interrupt. */
+		signal(SIGINT, SIG_DFL);
 
 		/*
 		 * Redirect stdin from the read end of the input pipe,
@@ -257,10 +249,7 @@ err:		if (input[0] != -1)
 
 uwait:	rval |= filter_wait(sp, utility_pid, cmd, 0);
 
-	/* Restore ex/vi terminal settings. */
-	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &t))
-		msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
-
+	(void)turn_interrupts_off;
 	return (rval);
 }
 
