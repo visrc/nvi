@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.16 1993/09/27 10:49:08 bostic Exp $ (Berkeley) $Date: 1993/09/27 10:49:08 $";
+static char sccsid[] = "$Id: search.c,v 8.17 1993/09/30 11:22:50 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:22:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,7 +154,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
  * installed by the screen code.
  */
 #define	SET_UP_INTERRUPTS {						\
-	if ((saveintr =							\
+	if (F_ISSET(sp->gp, G_ISFROMTTY) && (saveintr =			\
 	    signal(SIGINT, search_intr)) != (sig_ret_t)-1) {		\
 		F_CLR(sp, S_INTERRUPTED);				\
 		F_SET(sp, S_INTERRUPTIBLE);				\
@@ -175,7 +175,8 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 }
 
 #define	TEAR_DOWN_INTERRUPTS {						\
-	if (saveintr != (sig_ret_t)-1) {				\
+	if (F_ISSET(sp->gp, G_ISFROMTTY) &&				\
+	    saveintr != (sig_ret_t)-1) {				\
 		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)		\
 			msgq(sp, M_ERR,					\
 			    "signal: %s", strerror(errno));		\
