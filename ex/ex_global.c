@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.19 1993/02/24 12:55:33 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:55:33 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.20 1993/02/25 17:47:26 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:47:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: ex_global.c,v 5.19 1993/02/24 12:55:33 bostic Exp $
 #include "excmd.h"
 #include "options.h"
 #include "screen.h"
-#include "search.h"
 
 enum which {GLOBAL, VGLOBAL};
 static int global __P((EXF *, EXCMDARG *, enum which));
@@ -108,8 +107,12 @@ global(ep, cmdp, cmd)
 			return (1);
 		}
 
-		/* Set saved RE. */
+		/*
+		 * Set saved RE.  Historic practice is that global set
+		 * direction as well as the RE.
+		 */
 		ep->sre = lre;
+		ep->searchdir = FORWARD;
 		FF_SET(ep, F_RE_SET);
 	}
 
