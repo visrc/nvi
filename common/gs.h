@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.3 1995/06/14 11:59:28 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:59:28 $
+ *	$Id: gs.h,v 10.4 1995/06/15 12:54:26 bostic Exp $ (Berkeley) $Date: 1995/06/15 12:54:26 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -176,8 +176,6 @@ struct _gs {
 	int	(*scr_clear) __P((SCR *));
 					/* Clear to the end of the line. */
 	int	(*scr_clrtoeol) __P((SCR *));
-					/* Clear to the end of the screen. */
-	int	(*scr_clrtoeos) __P((SCR *));
 					/* Return the cursor location. */
 	int	(*scr_cursor) __P((SCR *, size_t *, size_t *));
 					/* Delete a line. */
