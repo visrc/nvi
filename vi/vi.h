@@ -4,20 +4,20 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.7 1993/09/17 09:17:55 bostic Exp $ (Berkeley) $Date: 1993/09/17 09:17:55 $
+ *	$Id: vi.h,v 8.8 1993/09/30 11:27:57 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:27:57 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
 typedef struct _vicmdarg {
 				/* ZERO OUT. */
-	int buffer;		/* Buffer. */
-	int character;		/* Character. */
-	u_long count;		/* Count. */
-	u_long count2;		/* Second count (only used by z). */
-	int key;		/* Command key. */
+	int	buffer;		/* Buffer. */
+	CHAR_T	character;	/* Character. */
+	u_long	count;		/* Count. */
+	u_long	count2;		/* Second count (only used by z). */
+	int	key;		/* Command key. */
 				/* VIKEYS structure. */
 	struct _vikeys const *kp;
-	size_t klen;		/* Keyword length. */
+	size_t	klen;		/* Keyword length. */
 
 /*
  * Historic vi allowed "dl" when the cursor was on the last column, deleting
