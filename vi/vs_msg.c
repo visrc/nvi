@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.2 1995/07/05 22:30:57 bostic Exp $ (Berkeley) $Date: 1995/07/05 22:30:57 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.3 1995/07/06 11:53:41 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:53:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,6 +43,13 @@ static void	cl_scroll __P((SCR *, CHAR_T *, u_int));
  * cl_msg --
  *	Display ex output or error messages for the screen.
  *
+ * This routine is the editor interface for all ex printing output, and all
+ * ex and vi error/informational messages.  It implements the curses strategy
+ * of stealing lines from the bottom of the vi text screen, which requires a
+ * fair bit of work in the supporting functions in cl_funcs.c.  Screens with
+ * an alternate method of displaying messages, i.e. a dialog box, can dispense
+ * with almost this entire file.
+ *
  * PUBLIC: int cl_msg __P((SCR *, mtype_t, const char *, size_t));
  */
 int
@@ -68,7 +75,7 @@ cl_msg(sp, mtype, line, rlen)
 	 * running, or in ex canonical mode, let stdio(3) do the work.
 	 */
 	clp = CLP(sp);
-	if (F_ISSET(clp, CL_INIT_EX) &&
+	if (F_ISSET(clp, CL_INIT_EX) ||
 	    F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT)) {
 		F_SET(clp, CL_EX_WROTE);
 		return (printf("%.*s", len, line));
@@ -85,6 +92,9 @@ cl_msg(sp, mtype, line, rlen)
 
 	/* Save the current cursor. */
 	(void)cl_cursor(sp, &oldy, &oldx);
+
+	/* Avoid overwrite checks by cl_funcs.c routines. */
+	F_SET(clp, CL_PRIVWRITE);
 
 	/*
 	 * If the message type is changing, terminate any previous message
@@ -165,7 +175,10 @@ cl_msg(sp, mtype, line, rlen)
 			break;
 	}
 
-ret:	/* Restore the cursor and refresh the screen. */
+ret:	/* Clear local update flag. */
+	F_CLR(clp, CL_PRIVWRITE);
+
+	/* Restore the cursor and refresh the screen. */
 	(void)cl_move(sp, oldy, oldx);
 	(void)cl_refresh(sp, 0);
 	return (rlen);
@@ -213,7 +226,7 @@ cl_output(sp, mtype, line, llen)
 			if (!IS_ONELINE(sp)) {
 				if (clp->totalcount == 1) {
 					(void)cl_move(sp, INFOLINE(sp) - 1, 0);
-					(void)cl_clrtoeol(sp);
+					(void)clrtoeol();
 					(void)cl_divider(sp);
 					F_SET(clp, CL_DIVIDER);
 					++clp->totalcount;
@@ -250,7 +263,7 @@ cl_output(sp, mtype, line, llen)
 			(void)cl_attr(sp, SA_INVERSE, 0);
 
 		/* Clear the rest of the line. */
-		(void)cl_clrtoeol(sp);
+		(void)clrtoeol();
 
 		/* If we loop, it's a new line. */
 		clp->lcontinue = 0;
@@ -273,6 +286,11 @@ cl_output(sp, mtype, line, llen)
 /*
  * cl_resolve --
  *	Deal with message output.
+ *
+ * This routine is called from the curses screen read loop to periodically
+ * make sure that the user has seen any messages that have been displayed.
+ * Screens with alternate methods of displaying messages can discard this
+ * routine.
  *
  * PUBLIC: int cl_resolve __P((SCR *, int));
  */
@@ -326,6 +344,7 @@ cl_resolve(sp, fakecomplete)
 	 *			Repaint overwritten screen lines.
 	 *	If in canonical mode, exit canonical mode.
 	 */
+	F_SET(clp, CL_PRIVWRITE);
 	msg_rpt(sp);
 	if (F_ISSET(sp, S_STATUS)) {
 		F_CLR(sp, S_STATUS);
@@ -335,33 +354,40 @@ cl_resolve(sp, fakecomplete)
 	    F_ISSET(sp, S_EX_CANON) && F_ISSET(clp, CL_EX_WROTE)) {
 		cl_scroll(sp, &ch, SCROLL_WAIT);
 		if (F_ISSET(sp, S_COMPLETE_EX) && ch == ':') {
+			F_CLR(clp, CL_PRIVWRITE);
 			F_CLR(sp, S_COMPLETE | S_COMPLETE_EX);
 			return (1);
 		}
-		if (F_ISSET(sp, S_EX_CANON) && F_ISSET(clp, CL_EX_WROTE)) {
+		if (F_ISSET(clp, CL_REPAINT) ||
+		    F_ISSET(sp, S_EX_CANON) && F_ISSET(clp, CL_EX_WROTE)) {
 			clearok(curscr, 1);
 			ev.e_event = E_REPAINT;
 			ev.e_flno = 1;
-			ev.e_tlno = sp->rows;
-			(void)v_event_handler(sp, &ev, &notused);
 		} else {
 			ev.e_event = E_REPAINT;
 			ev.e_flno = clp->totalcount >= sp->rows ? 1 :
 			    (sp->rows - clp->totalcount) + 1;
-			ev.e_tlno = sp->rows;
-			(void)v_event_handler(sp, &ev, &notused);
 		}
+		/*
+		 * !!!
+		 * Clear the message count variables, so that the screen
+		 * code lets the user write the message area.
+		 */
 		clp->linecount = clp->lcontinue = clp->totalcount = 0;
+
+		/* Do the repaint. */
+		ev.e_tlno = sp->rows;
+		(void)v_event_handler(sp, &ev, &notused);
 
 		/* The repaint event also reset the cursor for us. */
 		(void)getyx(stdscr, oldy, oldx);
 	}
 
 	/*
-	 * Clear the wrote-in-ex-canonical mode bit, it doesn't apply across
-	 * commands.
+	 * Clear the repaint and wrote-in-ex-canonical mode bit, they
+	 * don't apply across commands.
 	 */
-	F_CLR(clp, CL_EX_WROTE);
+	F_CLR(clp, CL_EX_WROTE | CL_PRIVWRITE | CL_REPAINT);
 
 	/* Leave canonical mode. */
 	if (F_ISSET(sp, S_EX_CANON))
@@ -389,6 +415,11 @@ cl_resolve(sp, fakecomplete)
 /*
  * cl_modeline --
  *	Update the mode line.
+ *
+ * This routine is called from the curses screen read loop to update the
+ * screen modeline display.  Screens with alternate methods of displaying
+ * the modeline (e.g. ones that don't require shared screen real-estate)
+ * can discard this routine.
  */
 static void
 cl_modeline(sp)
@@ -536,7 +567,7 @@ cl_scroll(sp, chp, flags)
 		++clp->totalcount;
 		clp->linecount = 0;
 
-		(void)cl_clrtoeol(sp);
+		(void)clrtoeol();
 		(void)cl_refresh(sp, 0);
 
 		/*

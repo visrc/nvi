@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.7 1995/07/05 22:29:43 bostic Exp $ (Berkeley) $Date: 1995/07/05 22:29:43 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.8 1995/07/06 11:53:40 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:53:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,6 +41,10 @@ static void	 cl_sig_end __P((GS *));
 static GS	*gs_init __P((char *));
 static void	 killsig __P((SCR *));
 
+/*
+ * main --
+ *	This is the main loop for the standalone curses editor.
+ */
 int
 main(argc, argv)
 	int argc;
@@ -485,8 +489,7 @@ cl_sig_end(gp)
 
 /*
  * killsig --
- *	Die with the proper exit status.  Don't bother using sigaction(2)
- *	'cause we want the default behavior.
+ *	Die with the proper exit status.
  */
 static void
 killsig(sp)

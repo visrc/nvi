@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 10.3 1995/07/04 12:46:44 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:44 $
+ *	$Id: cl.h,v 10.4 1995/07/06 11:53:37 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:53:37 $
  */
 
 typedef struct _cl_private {
@@ -46,17 +46,19 @@ typedef struct _cl_private {
 #define	INDX_MAX	5	/* Original signal information. */
 	struct sigaction oact[INDX_MAX];
 
-#define	CL_DIVIDER	0x0001	/* Divider line was displayed. */
-#define	CL_EX_WROTE	0x0002	/* Ex wrote output in canonical mode. */
-#define	CL_INIT_EX	0x0004	/* Ex curses/terminal initialized. */
-#define	CL_INIT_VI	0x0008	/* Vi curses/terminal initialized. */
-#define	CL_LLINE	0x0010	/* If cursor on the screen's last line. */
-#define	CL_LLINE_IV	0x0020	/* If the last line is inverse video. */
-#define	CL_SIGCONT	0x0040	/* SIGCONT arrived. */
-#define	CL_SIGHUP	0x0080	/* SIGHUP arrived. */
-#define	CL_SIGINT	0x0100	/* SIGINT arrived. */
-#define	CL_SIGTERM	0x0200	/* SIGTERM arrived. */
-#define	CL_SIGWINCH	0x0400	/* SIGWINCH arrived. */
+#define	CL_DIVIDER	0x00001	/* Divider line was displayed. */
+#define	CL_EX_WROTE	0x00002	/* Ex wrote output in canonical mode. */
+#define	CL_INIT_EX	0x00004	/* Ex curses/terminal initialized. */
+#define	CL_INIT_VI	0x00008	/* Vi curses/terminal initialized. */
+#define	CL_LLINE	0x00010	/* If cursor on the screen's last line. */
+#define	CL_LLINE_IV	0x00020	/* If the last line is inverse video. */
+#define	CL_PRIVWRITE	0x00040	/* Local screen call, don't ignore. */
+#define	CL_REPAINT	0x00080	/* Deleteln/insertln ignored, repaint. */
+#define	CL_SIGCONT	0x00100	/* SIGCONT arrived. */
+#define	CL_SIGHUP	0x00200	/* SIGHUP arrived. */
+#define	CL_SIGINT	0x00400	/* SIGINT arrived. */
+#define	CL_SIGTERM	0x00800	/* SIGTERM arrived. */
+#define	CL_SIGWINCH	0x01000	/* SIGWINCH arrived. */
 	u_int16_t flags;
 } CL_PRIVATE;
 

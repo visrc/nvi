@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.10 1995/07/04 12:46:46 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:46 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.11 1995/07/06 11:53:39 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:53:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,15 @@ cl_vi_init(sp)
 	GS *gp;
 	struct termios t;
 
-	/* Curses vi always reads from (and writes to) a terminal. */
+	/*
+	 * This function initializes the curses library for vi.
+	 *
+	 * None of this will be useful for any other screen, with the
+	 * possible exception of as a laundry list of things that are
+	 * worth thinking about.
+	 *
+	 * Curses vi always reads from (and writes to) a terminal.
+	 */
 	gp = sp->gp;
 	if (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO)) {
 		msgq(sp, M_ERR,
@@ -170,6 +178,13 @@ cl_vi_end(sp)
 {
 	CL_PRIVATE *clp;
 
+	/*
+	 * This function ends the curses library for vi.
+	 *
+	 * None of this will be useful for any other screen, with the
+	 * possible exception of as a laundry list of things that are
+	 * worth thinking about.
+	 */
 	clp = CLP(sp);
 	if (!F_ISSET(clp, CL_INIT_VI))
 		return (0);
@@ -189,7 +204,6 @@ cl_vi_end(sp)
 	free(clp);
 #endif
 	sp->gp->cl_private = NULL;
-
 	return (0);
 }
 
@@ -207,7 +221,13 @@ cl_ex_init(sp)
 	int err;
 	char *t;
 
-	clp = CLP(sp);
+	/*
+	 * This function initializes the curses library for ex.
+	 *
+	 * None of this will be useful for any other screen, with the
+	 * possible exception of as a laundry list of things that are
+	 * worth thinking about.
+	 */
 
 #define	GETCAP(name, element) {						\
 	size_t __len;							\
@@ -221,6 +241,7 @@ cl_ex_init(sp)
 	 * Set up the terminal database information, and get cursor_address,
 	 * enter_standout_mode, exit_standout_mode, cursor_up, clr_eol.
 	 */
+	clp = CLP(sp);
 	setupterm(O_STR(sp, O_TERM), STDOUT_FILENO, &err);
 	switch (err) {
 	case -1:
@@ -275,6 +296,14 @@ cl_ex_end(sp)
 {
 	CL_PRIVATE *clp;
 
+	/*
+	 * This function ends the curses library for ex.
+	 *
+	 * None of this will be useful for any other screen, with the
+	 * possible exception of as a laundry list of things that are
+	 * worth thinking about.
+	 */
+
 	clp = CLP(sp);
 	if (!F_ISSET(clp, CL_INIT_EX))
 		return (0);
@@ -305,8 +334,7 @@ cl_ex_end(sp)
 
 /*
  * cl_ex_tinit --
- *	Enter ex terminal mode.  Separated out because it's used by the vi
- *	code to run ex commands that don't run through vi.
+ *	Enter ex terminal mode.
  *
  * PUBLIC: int cl_ex_tinit __P((SCR *));
  */
@@ -319,6 +347,16 @@ cl_ex_tinit(sp)
 
 	if (!F_ISSET(sp->gp, G_STDIN_TTY))
 		return (0);
+
+	/*
+	 * This routine is used by vi (see cl_canon) to temporarily switch
+	 * into ex canonical mode.  Examples are commands like :append, or
+	 * "r ! cat /dev/tty", which require a normal UNIX terminal interface
+	 * to run.  There are only a few of these commands, and they can
+	 * probably be discarded without too much annoyance by your users.
+	 * Returning 1 will cause the editor to print a message and fail
+	 * gracefully.
+	 */
 
 	/* Save the current settings. */
 	clp = CLP(sp);
@@ -364,8 +402,7 @@ cl_ex_tinit(sp)
 
 /*
  * cl_ex_tend --
- *	Leave ex terminal mode.  Separated out because it's used by the vi
- *	code to run ex commands that don't run through vi.
+ *	Leave ex terminal mode.
  *
  * PUBLIC: int cl_ex_tend __P((SCR *));
  */
@@ -378,6 +415,7 @@ cl_ex_tend(sp)
 	if (!F_ISSET(sp->gp, G_STDIN_TTY))
 		return (0);
 
+	/* See the comment in cl_ex_tinit. */
 	clp = CLP(sp);
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->exterm)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
