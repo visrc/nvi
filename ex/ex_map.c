@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.12 1992/10/10 13:57:54 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:54 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.13 1992/11/02 22:21:12 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:21:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <ctype.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -74,6 +75,8 @@ ex_map(cmdp)
 			msg("This terminal has no %s key.", buf);
 			return (1);
 		}
+#else
+		name = NULL;
 #endif
 	} else {
 		name = NULL;
@@ -121,6 +124,7 @@ ex_unmap(cmdp)
  * map_save --
  *	Save the mapped sequences to a file.
  */
+int
 map_save(fp)
 	FILE *fp;
 {
