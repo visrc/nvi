@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.26 1996/04/27 13:41:51 bostic Exp $ (Berkeley) $Date: 1996/04/27 13:41:51 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.27 1996/05/03 08:58:24 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:58:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,10 +52,10 @@ ex_s(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	regex_t *re, lre;
+	regex_t *re;
 	size_t blen, len;
 	u_int flags;
-	int delim, eval, reflags, replaced;
+	int delim;
 	char *bp, *ptrn, *rep, *p, *t;
 
 	/*
