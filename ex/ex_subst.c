@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.33 1994/01/09 17:56:14 bostic Exp $ (Berkeley) $Date: 1994/01/09 17:56:14 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.34 1994/03/01 13:41:30 bostic Exp $ (Berkeley) $Date: 1994/03/01 13:41:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,18 +161,20 @@ ex_substitute(sp, ep, cmdp)
 	/*
 	 * Get the replacement string.
 	 *
-	 * The special character ~ (\~ if O_MAGIC not set) inserts the
-	 * previous replacement string into this replacement string.
-	 *
 	 * The special character & (\& if O_MAGIC not set) matches the
 	 * entire RE.  No handling of & is required here, it's done by
 	 * regsub().
 	 *
+	 * The special character ~ (\~ if O_MAGIC not set) inserts the
+	 * previous replacement string into this replacement string.
+	 * Count ~'s to figure out how much space we need.  We could
+	 * special case nonexistent last patterns or whether or not
+	 * O_MAGIC is set, but it's probably not worth the effort.
+	 *
 	 * QUOTING NOTE:
 	 *
 	 * Only toss an escape character if it escapes a delimiter or
-	 * an escape character, or if O_MAGIC is set and it escapes a
-	 * tilde.
+	 * if O_MAGIC is set and it escapes a tilde.
 	 */
 	if (*p == '\0') {
 		if (sp->repl != NULL)
@@ -180,11 +182,6 @@ ex_substitute(sp, ep, cmdp)
 		sp->repl = NULL;
 		sp->repl_len = 0;
 	} else {
-		/*
-		 * Count ~'s to figure out how much space we need.  We could
-		 * special case nonexistent last patterns or whether or not
-		 * O_MAGIC is set, but it's probably not worth the effort.
-		 */
 		for (rep = p, len = 0;
 		    p[0] != '\0' && p[0] != delim; ++p, ++len)
 			if (p[0] == '~')
@@ -197,7 +194,7 @@ ex_substitute(sp, ep, cmdp)
 				break;
 			}
 			if (p[0] == '\\') {
-				if (p[1] == '\\' || p[1] == delim)
+				if (p[1] == delim)
 					++p;
 				else if (p[1] == '~') {
 					++p;
