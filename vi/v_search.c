@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.6 1993/09/02 12:07:49 bostic Exp $ (Berkeley) $Date: 1993/09/02 12:07:49 $";
+static char sccsid[] = "$Id: v_search.c,v 8.7 1993/09/10 12:19:26 bostic Exp $ (Berkeley) $Date: 1993/09/10 12:19:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,8 +18,8 @@ static char sccsid[] = "$Id: v_search.c,v 8.6 1993/09/02 12:07:49 bostic Exp $ (
 #include "vi.h"
 #include "vcmd.h"
 
-static int bcorrect __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *));
-static int fcorrect __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *));
+static int bcorrect __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, u_int));
+static int fcorrect __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, u_int));
 static int getptrn __P((SCR *, EXF *, int, char **));
 
 /*
@@ -40,17 +40,17 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 		flags |= SEARCH_EOL;
 	switch (sp->searchdir) {
 	case BACKWARD:
-		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
+		if (b_search(sp, ep, fm, rp, NULL, NULL, &flags))
 			return (1);
 		if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
-		    bcorrect(sp, ep, vp, fm, rp))
+		    bcorrect(sp, ep, vp, fm, rp, flags))
 			return (1);
 		break;
 	case FORWARD:
-		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
+		if (f_search(sp, ep, fm, rp, NULL, NULL, &flags))
 			return (1);
 		if (F_ISSET(vp, VC_C | VC_D | VC_Y| VC_SH) &&
-		    fcorrect(sp, ep, vp, fm, rp))
+		    fcorrect(sp, ep, vp, fm, rp, flags))
 			return (1);
 		break;
 	case NOTSET:
@@ -80,17 +80,17 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 		flags |= SEARCH_EOL;
 	switch (sp->searchdir) {
 	case BACKWARD:
-		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
+		if (f_search(sp, ep, fm, rp, NULL, NULL, &flags))
 			return (1);
 		if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
-		    fcorrect(sp, ep, vp, fm, rp))
+		    fcorrect(sp, ep, vp, fm, rp, flags))
 			return (1);
 		break;
 	case FORWARD:
-		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
+		if (b_search(sp, ep, fm, rp, NULL, NULL, &flags))
 			return (1);
 		if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
-		    bcorrect(sp, ep, vp, fm, rp))
+		    bcorrect(sp, ep, vp, fm, rp, flags))
 			return (1);
 		break;
 	case NOTSET:
@@ -114,6 +114,7 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t blen, len;
+	u_int flags;
 	int rval;
 	char *bp;
 
@@ -121,13 +122,14 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	GET_SPACE(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 		
-	rval = f_search(sp, ep, fm, rp, bp, NULL, SEARCH_MSG | SEARCH_TERM);
+	flags = SEARCH_MSG | SEARCH_TERM;
+	rval = f_search(sp, ep, fm, rp, bp, NULL, &flags);
 
 	FREE_SPACE(sp, bp, blen);
 	if (rval)
 		return (1);
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
-	    fcorrect(sp, ep, vp, fm, rp))
+	    fcorrect(sp, ep, vp, fm, rp, flags))
 		return (1);
 	return (0);
 }
@@ -152,10 +154,10 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
 		flags |= SEARCH_EOL;
-	if (b_search(sp, ep, fm, rp, ptrn, NULL, flags))
+	if (b_search(sp, ep, fm, rp, ptrn, NULL, &flags))
 		return (1);
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
-	    bcorrect(sp, ep, vp, fm, rp))
+	    bcorrect(sp, ep, vp, fm, rp, flags))
 		return (1);
 	return (0);
 }
@@ -180,10 +182,10 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
 		flags |= SEARCH_EOL;
-	if (f_search(sp, ep, fm, rp, ptrn, NULL, flags))
+	if (f_search(sp, ep, fm, rp, ptrn, NULL, &flags))
 		return (1);
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
-	    fcorrect(sp, ep, vp, fm, rp))
+	    fcorrect(sp, ep, vp, fm, rp, flags))
 		return (1);
 	return (0);
 }
@@ -217,20 +219,28 @@ getptrn(sp, ep, prompt, storep)
  * bcorrect --
  *	Handle command with a backward search as the motion.
  *
+ * !!!
  * Historically, commands didn't affect the line searched to if the pattern
  * match was the start or end of the line.  It did, however, become a line
  * mode operation, even if it ended up affecting only a single line, if the
- * cursor started at the beginning of the line.
+ * cursor started at the beginning of the line or any delta was specified
+ * to the search pattern.
  */
 static int
-bcorrect(sp, ep, vp, fm, rp)
+bcorrect(sp, ep, vp, fm, rp, flags)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *rp;
+	u_int flags;
 {
 	size_t len;
 	char *p;
+
+	if (LF_ISSET(SEARCH_DELTA)) {
+		F_SET(vp, VC_LMODE);
+		return (0);
+	}
 
 	if ((p = file_gline(sp, ep, rp->lno + 1, &len)) == NULL) {
 		GETLINE_ERR(sp, rp->lno);
@@ -250,14 +260,20 @@ bcorrect(sp, ep, vp, fm, rp)
  *	Handle shift command with a forward search as the motion.
  */
 static int
-fcorrect(sp, ep, vp, fm, rp)
+fcorrect(sp, ep, vp, fm, rp, flags)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *rp;
+	u_int flags;
 {
 	size_t len;
 	char *p;
+
+	if (LF_ISSET(SEARCH_DELTA)) {
+		F_SET(vp, VC_LMODE);
+		return (0);
+	}
 
 	if (rp->cno != 0)
 		return (0);
