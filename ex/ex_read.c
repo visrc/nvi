@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.31 1994/07/22 18:21:37 bostic Exp $ (Berkeley) $Date: 1994/07/22 18:21:37 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.32 1994/07/22 19:21:07 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:21:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	 * was no way to "force" it.
 	 */
 	if ((fp = fopen(name, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		msgq(sp, M_SYSERR, name);
+		msgq(sp, M_SYSERR, "%s", name);
 		return (1);
 	}
 	if (!S_ISREG(sb.st_mode)) {
@@ -215,12 +215,12 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	}
 
 	if (ferror(fp)) {
-		msgq(sp, M_SYSERR, name);
+		msgq(sp, M_SYSERR, "%s", name);
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		msgq(sp, M_SYSERR, name);
+		msgq(sp, M_SYSERR, "%s", name);
 		return (1);
 	}
 
