@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mark.c,v 8.6 1994/05/21 09:38:13 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:13 $";
+static const char sccsid[] = "$Id: ex_mark.c,v 8.7 1994/08/17 09:47:32 bostic Exp $ (Berkeley) $Date: 1994/08/17 09:47:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
