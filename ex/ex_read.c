@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.47 1994/09/28 17:04:00 bostic Exp $ (Berkeley) $Date: 1994/09/28 17:04:00 $";
+static char sccsid[] = "$Id: ex_read.c,v 9.1 1994/11/09 18:41:00 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,15 +40,15 @@ static char sccsid[] = "$Id: ex_read.c,v 8.47 1994/09/28 17:04:00 bostic Exp $ (
  * Historical vi wouldn't undo a filter read, for no apparent reason.
  */
 int
-ex_read(sp, ep, cmdp)
+ex_read(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	struct stat sb;
 	CHAR_T *arg, *name;
 	EX_PRIVATE *exp;
 	FILE *fp;
+	FREF *frp;
 	MARK rm;
 	recno_t nlines;
 	size_t arglen, blen, len;
@@ -86,9 +86,17 @@ ex_read(sp, ep, cmdp)
 		goto badarg;
 	}
 
+	/* Load a temporary file if no file being edited. */
+	if (sp->ep == NULL) {
+		if ((frp = file_add(sp, NULL)) == NULL)
+			return (1);
+		if (file_init(sp, frp, NULL, 0))
+			return (1);
+	}
+
 	if (farg != 0) {
 		/* File name and bang expand the user's argument. */
-		if (argv_exp1(sp, ep, cmdp, arg, arglen, 1))
+		if (argv_exp1(sp, cmdp, arg, arglen, 1))
 			return (1);
 
 		/* If argc unchanged, there wasn't anything to expand. */
@@ -115,7 +123,7 @@ ex_read(sp, ep, cmdp)
 			FREE_SPACE(sp, p, blen);
 		}
 
-		if (filtercmd(sp, ep, &cmdp->addr1,
+		if (filtercmd(sp, &cmdp->addr1,
 		    NULL, &rm, cmdp->argv[farg]->bp, FILTER_READ))
 			return (1);
 
@@ -126,13 +134,13 @@ ex_read(sp, ep, cmdp)
 		sp->lno = rm.lno;
 		if (IN_VI_MODE(sp)) {
 			sp->cno = 0;
-			(void)nonblank(sp, ep, sp->lno, &sp->cno);
+			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
 		return (0);
 	}
 
 	/* Shell and file name expand the user's argument. */
-	if (argv_exp2(sp, ep, cmdp, arg, arglen))
+	if (argv_exp2(sp, cmdp, arg, arglen))
 		return (1);
 
 	/*
@@ -171,7 +179,7 @@ badarg:		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
 		    "149|%s expanded into too many file names", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
-usage:		ex_message(sp, cmdp, EXM_USAGE);
+usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 
@@ -196,7 +204,7 @@ usage:		ex_message(sp, cmdp, EXM_USAGE);
 
 	/* Turn on busy message. */
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Reading...");
-	rval = ex_readfp(sp, ep, name, fp, &cmdp->addr1, &nlines, 1);
+	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
 	if (btear)
 		busy_off(sp);
 
@@ -218,9 +226,8 @@ usage:		ex_message(sp, cmdp, EXM_USAGE);
  *	Read lines into the file.
  */
 int
-ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
+ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 	SCR *sp;
-	EXF *ep;
 	char *name;
 	FILE *fp;
 	MARK *fm;
@@ -249,7 +256,7 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 				ex_message(sp, NULL, EXM_INTERRUPTED);
 			break;
 		}
-		if (file_aline(sp, ep, 1, lno, exp->ibp, len)) {
+		if (file_aline(sp, 1, lno, exp->ibp, len)) {
 			rval = 1;
 			break;
 		}

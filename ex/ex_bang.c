@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.36 1994/08/31 17:17:04 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:04 $";
+static char sccsid[] = "$Id: ex_bang.c,v 9.1 1994/11/09 18:40:34 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,9 +48,8 @@ static char sccsid[] = "$Id: ex_bang.c,v 8.36 1994/08/31 17:17:04 bostic Exp $ (
  * get it right (wrong?), so be careful.
  */
 int
-ex_bang(sp, ep, cmdp)
+ex_bang(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	enum filtertype ftype;
@@ -62,9 +61,11 @@ ex_bang(sp, ep, cmdp)
 	int rval;
 	char *bp, *msg;
 
+	NEEDFILE(sp, cmdp->cmd);
+
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
-		ex_message(sp, cmdp, EXM_USAGE);
+		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 
@@ -86,6 +87,7 @@ ex_bang(sp, ep, cmdp)
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EXSILENT)) {
 		if (IN_EX_MODE(sp)) {
+			F_SET(sp, S_SCR_EXWROTE);
 			(void)ex_printf(EXCOOKIE, "!%s\n", ap->bp);
 			(void)ex_fflush(EXCOOKIE);
 		}
@@ -136,14 +138,14 @@ ex_bang(sp, ep, cmdp)
 		 */
 		ftype = FILTER;
 		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
-			if (file_lline(sp, ep, &lno))
+			if (file_lline(sp, &lno))
 				return (1);
 			if (lno == 0) {
 				cmdp->addr1.lno = cmdp->addr2.lno = 0;
 				ftype = FILTER_READ;
 			}
 		}
-		rval = filtercmd(sp, ep,
+		rval = filtercmd(sp,
 		    &cmdp->addr1, &cmdp->addr2, &rm, ap->bp, ftype);
 
 		/*
@@ -161,7 +163,7 @@ ex_bang(sp, ep, cmdp)
 			sp->lno = rm.lno;
 			if (IN_VI_MODE(sp)) {
 				sp->cno = 0;
-				(void)nonblank(sp, ep, sp->lno, &sp->cno);
+				(void)nonblank(sp, sp->lno, &sp->cno);
 			}
 		}
 		goto ret2;
@@ -174,9 +176,9 @@ ex_bang(sp, ep, cmdp)
 	 * warn option is set, tell the user about the file.
 	 */
 	msg = NULL;
-	if (F_ISSET(ep, F_MODIFIED))
+	if (F_ISSET(sp->ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
-			if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL)) {
+			if (file_write(sp, NULL, NULL, NULL, FS_ALL)) {
 				rval = 1;
 				goto ret1;
 			}
@@ -196,7 +198,7 @@ ret2:	if (IN_EX_MODE(sp)) {
 		 * the autoprint output.
 		 */
 		if (rval)
-			(void)sex_refresh(sp, sp->ep);
+			(void)sex_refresh(sp);
 
 		/* Ex terminates with a bang, even if the command fails. */
 		if (!F_ISSET(sp, S_EXSILENT))

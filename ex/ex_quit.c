@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 8.15 1994/08/17 14:30:49 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:49 $";
+static char sccsid[] = "$Id: ex_quit.c,v 9.1 1994/11/09 18:40:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,21 +31,16 @@ static char sccsid[] = "$Id: ex_quit.c,v 8.15 1994/08/17 14:30:49 bostic Exp $ (
  *	Quit.
  */
 int
-ex_quit(sp, ep, cmdp)
+ex_quit(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int force;
 
 	force = F_ISSET(cmdp, E_FORCE);
 
-	/* Check for modifications. */
-	if (file_m2(sp, ep, force))
-		return (1);
-
-	/* Check for more files to edit. */
-	if (ex_ncheck(sp, force))
+	/* Check for file modifications, or more files to edit. */
+	if (file_m2(sp, force) || ex_ncheck(sp, force))
 		return (1);
 
 	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.42 1994/09/28 17:05:29 bostic Exp $ (Berkeley) $Date: 1994/09/28 17:05:29 $";
+static char sccsid[] = "$Id: ex_write.c,v 9.1 1994/11/09 18:41:20 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,28 +34,26 @@ static char sccsid[] = "$Id: ex_write.c,v 8.42 1994/09/28 17:05:29 bostic Exp $ 
 #include "excmd.h"
 
 enum which {WN, WQ, WRITE, XIT};
-
-static int exwr __P((SCR *, EXF *, EXCMDARG *, enum which));
+static int exwr __P((SCR *, EXCMDARG *, enum which));
 
 /*
  * ex_wn --	:wn[!] [>>] [file]
  *	Write to a file and switch to the next one.
  */
 int
-ex_wn(sp, ep, cmdp)
+ex_wn(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (exwr(sp, ep, cmdp, WN))
+	if (exwr(sp, cmdp, WN))
 		return (1);
-	if (file_m3(sp, ep, 0))
+	if (file_m3(sp, 0))
 		return (1);
 
 	/* The file name isn't a new file to edit. */
 	cmdp->argc = 0;
 
-	return (ex_next(sp, ep, cmdp));
+	return (ex_next(sp, cmdp));
 }
 
 /*
@@ -63,16 +61,15 @@ ex_wn(sp, ep, cmdp)
  *	Write to a file and quit.
  */
 int
-ex_wq(sp, ep, cmdp)
+ex_wq(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int force;
 
-	if (exwr(sp, ep, cmdp, WQ))
+	if (exwr(sp, cmdp, WQ))
 		return (1);
-	if (file_m3(sp, ep, 0))
+	if (file_m3(sp, 0))
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
@@ -90,12 +87,11 @@ ex_wq(sp, ep, cmdp)
  *	Write to a file.
  */
 int
-ex_write(sp, ep, cmdp)
+ex_write(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (exwr(sp, ep, cmdp, WRITE));
+	return (exwr(sp, cmdp, WRITE));
 }
 
 
@@ -105,16 +101,17 @@ ex_write(sp, ep, cmdp)
  *	Write out any modifications and quit.
  */
 int
-ex_xit(sp, ep, cmdp)
+ex_xit(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int force;
 
-	if (F_ISSET((ep), F_MODIFIED) && exwr(sp, ep, cmdp, XIT))
+	NEEDFILE(sp, cmdp->cmd);
+
+	if (F_ISSET(sp->ep, F_MODIFIED) && exwr(sp, cmdp, XIT))
 		return (1);
-	if (file_m3(sp, ep, 0))
+	if (file_m3(sp, 0))
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
@@ -131,9 +128,8 @@ ex_xit(sp, ep, cmdp)
  *	The guts of the ex write commands.
  */
 static int
-exwr(sp, ep, cmdp, cmd)
+exwr(sp, cmdp, cmd)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
@@ -141,6 +137,8 @@ exwr(sp, ep, cmdp, cmd)
 	MARK rm;
 	int flags, nf;
 	char *name, *p;
+
+	NEEDFILE(sp, cmdp->cmd);
 
 	/* All write commands can have an associated '!'. */
 	LF_INIT(FS_POSSIBLE);
@@ -155,7 +153,7 @@ exwr(sp, ep, cmdp, cmd)
 	if (cmdp->argc == 0 || *p == '\0') {
 		if (F_ISSET(cmdp, E_ADDR2_ALL))
 			LF_SET(FS_ALL);
-		return (file_write(sp, ep,
+		return (file_write(sp,
 		    &cmdp->addr1, &cmdp->addr2, NULL, flags));
 	}
 
@@ -164,13 +162,13 @@ exwr(sp, ep, cmdp, cmd)
 	if (cmd == WRITE && *p == '!') {
 		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
-			ex_message(sp, cmdp, EXM_USAGE);
+			ex_message(sp, cmdp->cmd, EXM_USAGE);
 			return (1);
 		}
 		/* Expand the argument. */
-		if (argv_exp1(sp, ep, cmdp, p, strlen(p), 0))
+		if (argv_exp1(sp, cmdp, p, strlen(p), 0))
 			return (1);
-		if (filtercmd(sp, ep, &cmdp->addr1, &cmdp->addr2,
+		if (filtercmd(sp, &cmdp->addr1, &cmdp->addr2,
 		    &rm, cmdp->argv[1]->bp, FILTER_WRITE))
 			return (1);
 		sp->lno = rm.lno;
@@ -186,7 +184,7 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* Build an argv so we get an argument count and file expansion. */
-	if (argv_exp2(sp, ep, cmdp, p, strlen(p)))
+	if (argv_exp2(sp, cmdp, p, strlen(p)))
 		return (1);
 
 	switch (cmdp->argc) {
@@ -224,13 +222,13 @@ exwr(sp, ep, cmdp, cmd)
 		msgq(sp, M_ERR, "172|%s expanded into too many file names", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
-		ex_message(sp, cmdp, EXM_USAGE);
+		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 
 	if (F_ISSET(cmdp, E_ADDR2_ALL))
 		LF_SET(FS_ALL);
-	return (file_write(sp, ep, &cmdp->addr1, &cmdp->addr2, name, flags));
+	return (file_write(sp, &cmdp->addr1, &cmdp->addr2, name, flags));
 }
 
 /*
@@ -238,9 +236,8 @@ exwr(sp, ep, cmdp, cmd)
  *	Write a range of lines to a FILE *.
  */
 int
-ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
+ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	SCR *sp;
-	EXF *ep;
 	char *name;
 	FILE *fp;
 	MARK *fm, *tm;
@@ -283,7 +280,7 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 			/* Caller has to provide any interrupt message. */
 			if (INTERRUPTED(sp))
 				break;
-			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
+			if ((p = file_gline(sp, fline, &len)) == NULL)
 				break;
 			if (fwrite(p, 1, len, fp) != len) {
 				p = msg_print(sp, name, &nf);
@@ -316,7 +313,7 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	}
 	return (0);
 
-err:	if (!F_ISSET(ep, F_MULTILOCK)) {
+err:	if (!F_ISSET(sp->ep, F_MULTILOCK)) {
 		p = msg_print(sp, name, &nf);
 		msgq(sp, M_SYSERR, "%s", p);
 		if (nf)

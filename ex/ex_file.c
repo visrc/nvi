@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 8.12 1994/08/17 14:30:50 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:50 $";
+static char sccsid[] = "$Id: ex_file.c,v 9.1 1994/11/09 18:40:43 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,13 +34,14 @@ static char sccsid[] = "$Id: ex_file.c,v 8.12 1994/08/17 14:30:50 bostic Exp $ (
  *	Change the file's name and display the status line.
  */
 int
-ex_file(sp, ep, cmdp)
+ex_file(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	CHAR_T *p;
 	FREF *frp;
+
+	NEEDFILE(sp, cmdp->cmd);
 
 	switch (cmdp->argc) {
 	case 0:
@@ -73,5 +74,5 @@ ex_file(sp, ep, cmdp)
 	default:
 		abort();
 	}
-	return (msg_status(sp, ep, sp->lno, 1));
+	return (msg_status(sp, sp->lno, 1));
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_open.c,v 8.7 1994/08/31 17:17:16 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:16 $";
+static char sccsid[] = "$Id: ex_open.c,v 9.1 1994/11/09 18:40:53 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,8 @@ static char sccsid[] = "$Id: ex_open.c,v 8.7 1994/08/31 17:17:16 bostic Exp $ (B
  *	Switch to single line "open" mode.
  */
 int
-ex_open(sp, ep, cmdp)
+ex_open(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	/* If open option off, disallow open command. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.32 1994/09/18 11:57:46 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:46 $";
+static char sccsid[] = "$Id: ex_args.c,v 9.1 1994/11/09 18:40:30 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,29 +40,17 @@ static char sccsid[] = "$Id: ex_args.c,v 8.32 1994/09/18 11:57:46 bostic Exp $ (
  * set.  This implementation handles them all identically.
  */
 int
-ex_next(sp, ep, cmdp)
+ex_next(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	ARGS **argv, **pc;
+	ARGS **argv;
 	FREF *frp;
 	int noargs;
 	char **ap;
 
-	if (file_m1(sp, ep, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
-
-	/*
-	 * If the first argument is a plus sign, '+', it's an initial
-	 * ex command.
-	 */
-	argv = cmdp->argv;
-	if (cmdp->argc && argv[0]->bp[0] == '+') {
-		--cmdp->argc;
-		pc = argv++;
-	} else
-		pc = NULL;
 
 	/* Any other arguments are a replacement file list. */
 	if (cmdp->argc) {
@@ -107,20 +95,6 @@ ex_next(sp, ep, cmdp)
 		return (1);
 	if (noargs)
 		++sp->cargv;
-
-	/* Push the initial command onto the stack. */
-	if (pc != NULL)
-		if (IN_EX_MODE(sp))
-			(void)term_push(sp, pc[0]->bp, pc[0]->len, 0);
-		else if (IN_VI_MODE(sp)) {
-			(void)term_push(sp, "\n", 1, 0);
-			(void)term_push(sp, pc[0]->bp, pc[0]->len, 0);
-			(void)term_push(sp, ":", 1, 0);
-			(void)file_lline(sp, sp->ep, &sp->frp->lno);
-			F_SET(sp->frp, FR_CURSORSET);
-		}
-
-	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 
@@ -129,14 +103,13 @@ ex_next(sp, ep, cmdp)
  *	Edit the previous file.
  */
 int
-ex_prev(sp, ep, cmdp)
+ex_prev(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	FREF *frp;
 
-	if (file_m1(sp, ep, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
 
 	if (sp->cargv == sp->argv) {
@@ -149,9 +122,8 @@ ex_prev(sp, ep, cmdp)
 	if (file_init(sp, frp, NULL,
 	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
-
 	--sp->cargv;
-	F_SET(sp, S_FSWITCH);
+
 	return (0);
 }
 
@@ -160,9 +132,8 @@ ex_prev(sp, ep, cmdp)
  *	Re-edit the list of files.
  */
 int
-ex_rew(sp, ep, cmdp)
+ex_rew(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	FREF *frp;
@@ -176,12 +147,13 @@ ex_rew(sp, ep, cmdp)
 		return (1);
 	}
 
-	if (file_m1(sp, ep, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
 
 	/*
 	 * !!!
-	 * Historic practice, start at the beginning of the file.
+	 * Historic practice, all files start at the beginning of the
+	 * file.
 	 */
 	for (frp = sp->frefq.cqh_first;
 	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
@@ -194,8 +166,6 @@ ex_rew(sp, ep, cmdp)
 	if (file_init(sp, frp, NULL,
 	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
-
-	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 
@@ -204,16 +174,15 @@ ex_rew(sp, ep, cmdp)
  *	Display the list of files.
  */
 int
-ex_args(sp, ep, cmdp)
+ex_args(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int cnt, col, len, sep;
 	char **ap;
 
 	if (sp->argv == NULL) {
-		(void)ex_printf(EXCOOKIE, "No file list to display.\n");
+		(void)msgq(sp, M_ERR, "263|No file list to display");
 		return (0);
 	}
 
@@ -235,6 +204,7 @@ ex_args(sp, ep, cmdp)
 		else
 			(void)ex_printf(EXCOOKIE, "%s", *ap);
 	}
+	F_SET(sp, S_SCR_EXWROTE);
 	(void)ex_printf(EXCOOKIE, "\n");
 	return (0);
 }

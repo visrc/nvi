@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 8.13 1994/07/17 00:26:49 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:26:49 $
+ *	$Id: tag.h,v 9.1 1994/11/09 18:41:31 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:31 $
  */
 
 struct _tagf {				/* Tag file. */
@@ -27,6 +27,6 @@ struct _tag {				/* Tag stack. */
 
 int	ex_tagalloc __P((SCR *, char *));
 int	ex_tagcopy __P((SCR *, SCR *));
-int	ex_tagdisplay __P((SCR *, EXF *));
+int	ex_tagdisplay __P((SCR *));
 int	ex_tagfirst __P((SCR *, char *));
 int	ex_tagfree __P((SCR *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.18 1994/09/03 13:06:05 bostic Exp $ (Berkeley) $Date: 1994/09/03 13:06:05 $";
+static char sccsid[] = "$Id: ex_shift.c,v 9.1 1994/11/09 18:41:06 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,30 +29,27 @@ static char sccsid[] = "$Id: ex_shift.c,v 8.18 1994/09/03 13:06:05 bostic Exp $ 
 #include "excmd.h"
 
 enum which {LEFT, RIGHT};
-static int shift __P((SCR *, EXF *, EXCMDARG *, enum which));
+static int shift __P((SCR *, EXCMDARG *, enum which));
 
 int
-ex_shiftl(sp, ep, cmdp)
+ex_shiftl(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (shift(sp, ep, cmdp, LEFT));
+	return (shift(sp, cmdp, LEFT));
 }
 
 int
-ex_shiftr(sp, ep, cmdp)
+ex_shiftr(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (shift(sp, ep, cmdp, RIGHT));
+	return (shift(sp, cmdp, RIGHT));
 }
 
 static int
-shift(sp, ep, cmdp, rl)
+shift(sp, cmdp, rl)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which rl;
 {
@@ -61,13 +58,15 @@ shift(sp, ep, cmdp, rl)
 	int curset;
 	char *p, *bp, *tbp;
 
+	NEEDFILE(sp, cmdp->cmd);
+
 	if (O_VAL(sp, O_SHIFTWIDTH) == 0) {
 		msgq(sp, M_INFO, "155|shiftwidth option set to 0");
 		return (0);
 	}
 
 	/* Copy the lines being shifted into the unnamed buffer. */
-	if (cut(sp, ep, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE))
+	if (cut(sp, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE))
 		return (1);
 
 	/*
@@ -87,7 +86,7 @@ shift(sp, ep, cmdp, rl)
 
 	curset = 0;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
-		if ((p = file_gline(sp, ep, from, &len)) == NULL)
+		if ((p = file_gline(sp, from, &len)) == NULL)
 			goto err;
 		if (!len) {
 			if (sp->lno == from)
@@ -139,7 +138,7 @@ shift(sp, ep, cmdp, rl)
 		memmove(tbp, p + oldidx, len - oldidx);
 
 		/* Set the replacement line. */
-		if (file_sline(sp, ep, from, bp, (tbp + (len - oldidx)) - bp)) {
+		if (file_sline(sp, from, bp, (tbp + (len - oldidx)) - bp)) {
 err:			FREE_SPACE(sp, bp, blen);
 			return (1);
 		}
@@ -171,7 +170,7 @@ err:			FREE_SPACE(sp, bp, blen);
 	if (!curset) {
 		sp->lno = to;
 		sp->cno = 0;
-		(void)nonblank(sp, ep, to, &sp->cno);
+		(void)nonblank(sp, to, &sp->cno);
 	}
 
 	FREE_SPACE(sp, bp, blen);

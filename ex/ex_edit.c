@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.21 1994/09/18 11:57:48 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:48 $";
+static char sccsid[] = "$Id: ex_edit.c,v 9.1 1994/11/09 18:40:40 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,9 +42,8 @@ static char sccsid[] = "$Id: ex_edit.c,v 8.21 1994/09/18 11:57:48 bostic Exp $ (
  * a file name as well.
  */
 int
-ex_edit(sp, ep, cmdp)
+ex_edit(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	ARGS *ap;
@@ -56,12 +55,12 @@ ex_edit(sp, ep, cmdp)
 	case 0:
 		/*
 		 * If the name has been changed, we edit that file, not the
-		 * original name.  If the user was editing a temporary file,
-		 * create another one.  The reason for this is that we do
-		 * special exit processing of temporary files, and reusing
-		 * them is tricky.
+		 * original name.  If the user was editing a temporary file
+		 * (or wasn't editing any file), create another one.  The
+		 * reason for not reusing temporary files is that there is
+		 * special exit processing of them, and reuse is tricky.
 		 */
-		if (F_ISSET(frp, FR_TMPFILE)) {
+		if (sp->ep == NULL || F_ISSET(frp, FR_TMPFILE)) {
 			if ((frp = file_add(sp, NULL)) == NULL)
 				return (1);
 		} else if ((frp = file_add(sp, frp->name)) == NULL)
@@ -85,13 +84,12 @@ ex_edit(sp, ep, cmdp)
 	 * !!!
 	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
 	 */
-	if (file_m2(sp, ep, F_ISSET(cmdp, E_FORCE)))
+	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
 		return (1);
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL,
 	    (setalt ? FS_SETALT : 0) | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
-	F_SET(sp, S_FSWITCH);
 	return (0);
 }

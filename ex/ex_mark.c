@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mark.c,v 8.9 1994/08/31 17:17:13 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:13 $";
+static char sccsid[] = "$Id: ex_mark.c,v 9.1 1994/11/09 18:40:50 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,14 +27,15 @@ static char sccsid[] = "$Id: ex_mark.c,v 8.9 1994/08/31 17:17:13 bostic Exp $ (B
 #include "excmd.h"
 
 int
-ex_mark(sp, ep, cmdp)
+ex_mark(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	NEEDFILE(sp, cmdp->cmd);
+
 	if (cmdp->argv[0]->len != 1) {
 		msgq(sp, M_ERR, "140|Mark names must be a single character");
 		return (1);
 	}
-	return (mark_set(sp, ep, cmdp->argv[0]->bp[0], &cmdp->addr1, 1));
+	return (mark_set(sp, cmdp->argv[0]->bp[0], &cmdp->addr1, 1));
 }

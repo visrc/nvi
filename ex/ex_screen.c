@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.17 1994/10/28 09:03:39 bostic Exp $ (Berkeley) $Date: 1994/10/28 09:03:39 $";
+static char sccsid[] = "$Id: ex_screen.c,v 9.1 1994/11/09 18:41:01 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,8 @@ static char sccsid[] = "$Id: ex_screen.c,v 8.17 1994/10/28 09:03:39 bostic Exp $
  *	Split the screen, optionally setting the file list.
  */
 int
-ex_split(sp, ep, cmdp)
+ex_split(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	return (sp->s_split(sp, cmdp->argc ? cmdp->argv : NULL, cmdp->argc));
@@ -46,9 +45,8 @@ ex_split(sp, ep, cmdp)
  *	Hide the screen.
  */
 int
-ex_bg(sp, ep, cmdp)
+ex_bg(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	return (sp->s_bg(sp));
@@ -59,9 +57,8 @@ ex_bg(sp, ep, cmdp)
  *	Show the screen.
  */
 int
-ex_fg(sp, ep, cmdp)
+ex_fg(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	return (sp->s_fg(sp, cmdp->argc ? cmdp->argv[0]->bp : NULL));
@@ -72,15 +69,14 @@ ex_fg(sp, ep, cmdp)
  *	Change the screen size.
  */
 int
-ex_resize(sp, ep, cmdp)
+ex_resize(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	enum adjust adj;
 
 	if (!F_ISSET(cmdp, E_COUNT)) {
-		ex_message(sp, cmdp, EXM_USAGE);
+		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 	if (F_ISSET(cmdp, E_COUNT_NEG))
@@ -97,9 +93,8 @@ ex_resize(sp, ep, cmdp)
  *	Display the list of screens.
  */
 int
-ex_sdisplay(sp, ep)
+ex_sdisplay(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	SCR *tsp;
 	int cnt, col, len, sep;
@@ -123,6 +118,7 @@ ex_sdisplay(sp, ep)
 		(void)ex_printf(EXCOOKIE, "%s", tsp->frp->name);
 		++cnt;
 	}
+	F_SET(sp, S_SCR_EXWROTE);
 	(void)ex_printf(EXCOOKIE, "\n");
 	return (0);
 }

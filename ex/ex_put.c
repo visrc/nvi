@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 8.8 1994/08/17 14:31:04 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:04 $";
+static char sccsid[] = "$Id: ex_put.c,v 9.1 1994/11/09 18:40:58 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,16 +34,17 @@ static char sccsid[] = "$Id: ex_put.c,v 8.8 1994/08/17 14:31:04 bostic Exp $ (Be
  *	Append a cut buffer into the file.
  */
 int
-ex_put(sp, ep, cmdp)
+ex_put(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	MARK m;
 
+	NEEDFILE(sp, cmdp->cmd);
+
 	m.lno = sp->lno;
 	m.cno = sp->cno;
-	if (put(sp, ep, NULL, F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
+	if (put(sp, NULL, F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
 	    &cmdp->addr1, &m, 1))
 		return (1);
 	sp->lno = m.lno;

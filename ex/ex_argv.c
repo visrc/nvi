@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.42 1994/10/05 10:40:36 bostic Exp $ (Berkeley) $Date: 1994/10/05 10:40:36 $";
+static char sccsid[] = "$Id: ex_argv.c,v 9.1 1994/11/09 18:40:31 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,9 +41,8 @@ static int argv_sexp __P((SCR *, char **, size_t *, size_t *));
  *	Build  a prototype arguments list.
  */
 int
-argv_init(sp, ep, excp)
+argv_init(sp, excp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *excp;
 {
 	EX_PRIVATE *exp;
@@ -62,9 +61,8 @@ argv_init(sp, ep, excp)
  *	Append a string to the argument list.
  */
 int
-argv_exp0(sp, ep, excp, cmd, cmdlen)
+argv_exp0(sp, excp, cmd, cmdlen)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *excp;
 	char *cmd;
 	size_t cmdlen;
@@ -88,9 +86,8 @@ argv_exp0(sp, ep, excp, cmd, cmdlen)
  *	argument list.
  */
 int
-argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
+argv_exp1(sp, excp, cmd, cmdlen, is_bang)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *excp;
 	char *cmd;
 	size_t cmdlen;
@@ -119,7 +116,7 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 	} else
 		goto ret;
 
-	(void)argv_exp0(sp, ep, excp, bp, len);
+	(void)argv_exp0(sp, excp, bp, len);
 
 ret:	FREE_SPACE(sp, bp, blen);
 	return (0);
@@ -131,9 +128,8 @@ ret:	FREE_SPACE(sp, bp, blen);
  *	the argument list.
  */
 int
-argv_exp2(sp, ep, excp, cmd, cmdlen)
+argv_exp2(sp, excp, cmd, cmdlen)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *excp;
 	char *cmd;
 	size_t cmdlen;
@@ -204,7 +200,7 @@ argv_exp2(sp, ep, excp, cmd, cmdlen)
 	TRACE(sp, "after shell: %d: {%s}\n", len, bp);
 #endif
 
-	rval = argv_exp3(sp, ep, excp, p, len);
+	rval = argv_exp3(sp, excp, p, len);
 
 err:	FREE_SPACE(sp, bp, blen);
 	return (rval);
@@ -216,9 +212,8 @@ err:	FREE_SPACE(sp, bp, blen);
  *	to the argument list.
  */
 int
-argv_exp3(sp, ep, excp, cmd, cmdlen)
+argv_exp3(sp, excp, cmd, cmdlen)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *excp;
 	char *cmd;
 	size_t cmdlen;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 8.15 1994/08/31 17:17:14 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:14 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 9.1 1994/11/09 18:40:50 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,9 +39,8 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 8.15 1994/08/31 17:17:14 bostic Exp $
  * Create (or overwrite) a .exrc file with the current info.
  */
 int
-ex_mkexrc(sp, ep, cmdp)
+ex_mkexrc(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	struct stat sb;

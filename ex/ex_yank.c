@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_yank.c,v 8.7 1994/08/17 14:31:29 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:29 $";
+static char sccsid[] = "$Id: ex_yank.c,v 9.1 1994/11/09 18:41:22 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,12 +32,13 @@ static char sccsid[] = "$Id: ex_yank.c,v 8.7 1994/08/17 14:31:29 bostic Exp $ (B
  *	Yank the lines into a buffer.
  */
 int
-ex_yank(sp, ep, cmdp)
+ex_yank(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (cut(sp, ep,
+	NEEDFILE(sp, cmdp->cmd);
+
+	return (cut(sp,
 	    F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
 	    &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE));
 }

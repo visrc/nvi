@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.61 1994/09/02 12:40:44 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:44 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.1 1994/11/09 18:41:09 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,21 +34,20 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.61 1994/09/02 12:40:44 bostic Exp $ 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
-static __inline int	regsub __P((SCR *, char *,
-			    char **, size_t *, size_t *, regmatch_t [10]));
-static int		substitute __P((SCR *, EXF *,
-			    EXCMDARG *, char *, regex_t *, u_int));
+static __inline int
+		regsub __P((SCR *,
+		    char *, char **, size_t *, size_t *, regmatch_t [10]));
+static int	s __P((SCR *, EXCMDARG *, char *, regex_t *, u_int));
 
 /*
- * ex_substitute --
+ * ex_s --
  *	[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]
  *
  *	Substitute on lines matching a pattern.
  */
 int
-ex_substitute(sp, ep, cmdp)
+ex_s(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	regex_t *re, lre;
@@ -74,11 +73,10 @@ ex_substitute(sp, ep, cmdp)
 			break;
 	}
 	if (len == 0)
-		return (ex_subagain(sp, ep, cmdp));
+		return (ex_subagain(sp, cmdp));
 	delim = *p++;
 	if (isalnum(delim))
-		return (substitute(sp, ep,
-		    cmdp, p, &sp->subre, SUB_MUSTSETR));
+		return (s(sp, cmdp, p, &sp->subre, SUB_MUSTSETR));
 
 	/*
 	 * !!!
@@ -256,7 +254,7 @@ tilde:				++p;
 		}
 		FREE_SPACE(sp, bp, blen);
 	}
-	return (substitute(sp, ep, cmdp, p, re, flags));
+	return (s(sp, cmdp, p, re, flags));
 }
 
 /*
@@ -266,16 +264,15 @@ tilde:				++p;
  *	Substitute using the last substitute RE and replacement pattern.
  */
 int
-ex_subagain(sp, ep, cmdp)
+ex_subagain(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	if (!F_ISSET(sp, S_SUBRE_SET)) {
 		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	return (substitute(sp, ep, cmdp, cmdp->argv[0]->bp, &sp->subre, 0));
+	return (s(sp, cmdp, cmdp->argv[0]->bp, &sp->subre, 0));
 }
 
 /*
@@ -285,16 +282,15 @@ ex_subagain(sp, ep, cmdp)
  *	Substitute using the last RE and last substitute replacement pattern.
  */
 int
-ex_subtilde(sp, ep, cmdp)
+ex_subtilde(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	if (!F_ISSET(sp, S_SRE_SET)) {
 		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	return (substitute(sp, ep, cmdp, cmdp->argv[0]->bp, &sp->sre, 0));
+	return (s(sp, cmdp, cmdp->argv[0]->bp, &sp->sre, 0));
 }
 
 /*
@@ -349,9 +345,8 @@ ex_subtilde(sp, ep, cmdp)
  * 	unless you're pretty confident.
  */
 static int
-substitute(sp, ep, cmdp, s, re, flags)
+s(sp, cmdp, s, re, flags)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 	char *s;
 	regex_t *re;
@@ -366,13 +361,15 @@ substitute(sp, ep, cmdp, s, re, flags)
 	int linechanged, matched, quit, rval;
 	char *bp, *lb;
 
+	NEEDFILE(sp, cmdp->cmd);
+
 	/*
 	 * !!!
 	 * Historically, the 'g' and 'c' suffices were always toggled as flags,
 	 * so ":s/A/B/" was the same as ":s/A/B/ccgg".  If O_EDCOMPATIBLE was
 	 * not set, they were initialized to 0 for all substitute commands.  If
 	 * O_EDCOMPATIBLE was set, they were initialized to 0 only if the user
-	 * specified substitute/replacement patterns (see ex_substitute()).
+	 * specified substitute/replacement patterns (see ex_s()).
 	 */
 	if (!O_ISSET(sp, O_EDCOMPATIBLE))
 		sp->c_suffix = sp->g_suffix = 0;
@@ -462,7 +459,7 @@ substitute(sp, ep, cmdp, s, re, flags)
 		}
 
 	if (*s != '\0' || !rflag && LF_ISSET(SUB_MUSTSETR)) {
-usage:		ex_message(sp, cmdp, EXM_USAGE);
+usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 
@@ -494,7 +491,7 @@ usage:		ex_message(sp, cmdp, EXM_USAGE);
 		}
 
 		/* Get the line. */
-		if ((s = file_gline(sp, ep, lno, &llen)) == NULL) {
+		if ((s = file_gline(sp, lno, &llen)) == NULL) {
 			GETLINE_ERR(sp, lno);
 			goto ret1;
 		}
@@ -618,7 +615,7 @@ nextmatch:	match[0].rm_so = 0;
 				if (from.cno >= llen)
 					from.cno = llen - 1;
 			}
-			switch (sp->s_confirm(sp, ep, &from, &to)) {
+			switch (sp->s_confirm(sp, &from, &to)) {
 			case CONF_YES:
 				break;
 			case CONF_NO:
@@ -683,7 +680,7 @@ skip:		offset += match[0].rm_eo;
 			if (sp->newl_cnt) {
 				for (cnt = 0;
 				    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
-					if (file_iline(sp, ep, lno,
+					if (file_iline(sp, lno,
 					    lb + last, sp->newl[cnt] - last))
 						goto ret1;
 					last = sp->newl[cnt] + 1;
@@ -695,9 +692,9 @@ skip:		offset += match[0].rm_eo;
 			}
 
 			/* Store and retrieve the line. */
-			if (file_sline(sp, ep, lno, lb + last, lbclen))
+			if (file_sline(sp, lno, lb + last, lbclen))
 				goto ret1;
-			if ((s = file_gline(sp, ep, lno, &llen)) == NULL) {
+			if ((s = file_gline(sp, lno, &llen)) == NULL) {
 				GETLINE_ERR(sp, lno);
 				goto ret1;
 			}
@@ -751,7 +748,7 @@ endmatch:	if (!linechanged)
 		if (sp->newl_cnt) {
 			for (cnt = 0;
 			    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
-				if (file_iline(sp, ep,
+				if (file_iline(sp,
 				    lno, lb + last, sp->newl[cnt] - last))
 					goto ret1;
 				last = sp->newl[cnt] + 1;
@@ -762,7 +759,7 @@ endmatch:	if (!linechanged)
 		}
 
 		/* Store the changed line. */
-		if (file_sline(sp, ep, lno, lb + last, lbclen))
+		if (file_sline(sp, lno, lb + last, lbclen))
 			goto ret1;
 
 		/* Update changed line counter. */
@@ -781,11 +778,11 @@ endmatch:	if (!linechanged)
 			from.lno = to.lno = lno;
 			from.cno = to.cno = 0;
 			if (lflag)
-				ex_print(sp, ep, &from, &to, E_F_LIST);
+				ex_print(sp, &from, &to, E_F_LIST);
 			if (nflag)
-				ex_print(sp, ep, &from, &to, E_F_HASH);
+				ex_print(sp, &from, &to, E_F_HASH);
 			if (pflag)
-				ex_print(sp, ep, &from, &to, E_F_PRINT);
+				ex_print(sp, &from, &to, E_F_PRINT);
 		}
 
 		if (!sp->c_suffix)
@@ -809,7 +806,7 @@ endmatch:	if (!linechanged)
 	 */
 	if (!sp->c_suffix) {
 		sp->cno = 0;
-		(void)nonblank(sp, ep, sp->lno, &sp->cno);
+		(void)nonblank(sp, sp->lno, &sp->cno);
 	}
 
 	/*

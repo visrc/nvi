@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.48 1994/09/28 17:06:13 bostic Exp $ (Berkeley) $Date: 1994/09/28 17:06:13 $";
+static char sccsid[] = "$Id: ex_filter.c,v 9.1 1994/11/09 18:41:29 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,9 +42,8 @@ static int	filter_ldisplay __P((SCR *, FILE *));
  *	the utility.
  */
 int
-filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
+filtercmd(sp, fm, tm, rp, cmd, ftype)
 	SCR *sp;
-	EXF *ep;
 	MARK *fm, *tm, *rp;
 	char *cmd;
 	enum filtertype ftype;
@@ -188,7 +187,7 @@ err:		if (input[0] != -1)
 	 * it's not past EOF because we were reading into an empty file.
 	 */
 	if (ftype == FILTER_READ) {
-		rval = ex_readfp(sp, ep, "filter", ofp, fm, &nread, 0);
+		rval = ex_readfp(sp, "filter", ofp, fm, &nread, 0);
 		sp->rptlines[L_ADDED] += nread;
 		if (fm->lno == 0)
 			rp->lno = nread;
@@ -228,7 +227,7 @@ err:		if (input[0] != -1)
 	 * set here.
 	 */
 	rval = 0;
-	F_SET(ep, F_MULTILOCK);
+	F_SET(sp->ep, F_MULTILOCK);
 
 	SIGBLOCK(sp->gp);
 	switch (parent_writer_pid = fork()) {
@@ -248,7 +247,7 @@ err:		if (input[0] != -1)
 		(void)close(output[0]);
 		if ((ifp = fdopen(input[1], "w")) == NULL)
 			_exit (1);
-		_exit(ex_writefp(sp, ep, "filter", ifp, fm, tm, NULL, NULL));
+		_exit(ex_writefp(sp, "filter", ifp, fm, tm, NULL, NULL));
 
 		/* NOTREACHED */
 	default:			/* Parent-reader. */
@@ -267,7 +266,7 @@ err:		if (input[0] != -1)
 			 * pipe.  Ex_readfp appends to the MARK and closes
 			 * ofp.
 			 */
-			rval = ex_readfp(sp, ep, "filter", ofp, tm, &nread, 0);
+			rval = ex_readfp(sp, "filter", ofp, tm, &nread, 0);
 			sp->rptlines[L_ADDED] += nread;
 		}
 
@@ -277,8 +276,8 @@ err:		if (input[0] != -1)
 
 		/* Delete any lines written to the utility. */
 		if (rval == 0 && ftype == FILTER &&
-		    (cut(sp, ep, NULL, fm, tm, CUT_LINEMODE) ||
-		    delete(sp, ep, fm, tm, 1))) {
+		    (cut(sp, NULL, fm, tm, CUT_LINEMODE) ||
+		    delete(sp, fm, tm, 1))) {
 			rval = 1;
 			break;
 		}
@@ -288,11 +287,11 @@ err:		if (input[0] != -1)
 		 * the cursor.  Don't do any real error correction, we'll
 		 * try and recover later.
 		 */
-		 if (rp->lno > 1 && file_gline(sp, ep, rp->lno, NULL) == NULL)
+		 if (rp->lno > 1 && file_gline(sp, rp->lno, NULL) == NULL)
 			--rp->lno;
 		break;
 	}
-	F_CLR(ep, F_MULTILOCK);
+	F_CLR(sp->ep, F_MULTILOCK);
 
 uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
 

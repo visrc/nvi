@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 8.8 1994/08/17 14:31:31 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:31 $";
+static char sccsid[] = "$Id: ex_z.c,v 9.1 1994/11/09 18:41:23 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,14 +34,15 @@ static char sccsid[] = "$Id: ex_z.c,v 8.8 1994/08/17 14:31:31 bostic Exp $ (Berk
  *	Adjust window.
  */
 int
-ex_z(sp, ep, cmdp)
+ex_z(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	MARK abs;
 	recno_t cnt, equals, lno;
 	int eofcheck;
+
+	NEEDFILE(sp, cmdp->cmd);
 
 	/*
 	 * !!!
@@ -100,7 +101,7 @@ ex_z(sp, ep, cmdp)
 		 */
 		abs.lno = sp->lno;
 		abs.cno = sp->cno;
-		(void)mark_set(sp, ep, ABSMARK1, &abs, 1);
+		(void)mark_set(sp, ABSMARK1, &abs, 1);
 		break;
 	case E_F_EQUAL:		/* Center with hyphens. */
 		/*
@@ -115,17 +116,18 @@ ex_z(sp, ep, cmdp)
 		cnt = (cnt - 1) / 2;
 		cmdp->addr1.lno = lno > cnt ? lno - cnt : 1;
 		cmdp->addr2.lno = lno - 1;
-		if (ex_pr(sp, ep, cmdp))
+		if (ex_pr(sp, cmdp))
 			return (1);
 		(void)ex_printf(EXCOOKIE,
 		    "%s", "----------------------------------------\n");
 		cmdp->addr2.lno = cmdp->addr1.lno = equals = lno;
-		if (ex_pr(sp, ep, cmdp))
+		if (ex_pr(sp, cmdp))
 			return (1);
 		(void)ex_printf(EXCOOKIE,
 		    "%s", "----------------------------------------\n");
 		cmdp->addr1.lno = lno + 1;
 		cmdp->addr2.lno = (lno + cnt) - 1;
+		F_SET(sp, S_SCR_EXWROTE);
 		break;
 	default:
 		/* If no line specified, move to the next one. */
@@ -140,13 +142,13 @@ ex_z(sp, ep, cmdp)
 	}
 
 	if (eofcheck) {
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			return (1);
 		if (cmdp->addr2.lno > lno)
 			cmdp->addr2.lno = lno;
 	}
 
-	if (ex_pr(sp, ep, cmdp))
+	if (ex_pr(sp, cmdp))
 		return (1);
 	if (equals)
 		sp->lno = equals;

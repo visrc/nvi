@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.21 1994/10/25 18:31:17 bostic Exp $ (Berkeley) $Date: 1994/10/25 18:31:17 $";
+static char sccsid[] = "$Id: ex_map.c,v 9.1 1994/11/09 18:40:48 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,9 +45,8 @@ static char sccsid[] = "$Id: ex_map.c,v 8.21 1994/10/25 18:31:17 bostic Exp $ (B
  *	No clue why.
  */
 int
-ex_map(sp, ep, cmdp)
+ex_map(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	enum seqtype stype;
@@ -108,9 +107,8 @@ nofunc:	if (stype == SEQ_COMMAND && input[1] == '\0')
  *	Unmap a key.
  */
 int
-ex_unmap(sp, ep, cmdp)
+ex_unmap(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	int nf;

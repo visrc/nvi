@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.16 1994/09/18 11:57:49 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:49 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 9.1 1994/11/09 18:40:54 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,28 +33,29 @@ static char sccsid[] = "$Id: ex_preserve.c,v 8.16 1994/09/18 11:57:49 bostic Exp
  *	Push the file to recovery.
  */
 int
-ex_preserve(sp, ep, cmdp)
+ex_preserve(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	recno_t lno;
 
-	if (!F_ISSET(ep, F_RCV_ON)) {
+	NEEDFILE(sp, cmdp->cmd);
+
+	if (!F_ISSET(sp->ep, F_RCV_ON)) {
 		msgq(sp, M_ERR, "147|Preservation of this file not possible");
 		return (1);
 	}
 
 	/* If recovery not initialized, do so. */
-	if (F_ISSET(ep, F_FIRSTMODIFY) && rcv_init(sp, ep))
+	if (F_ISSET(sp->ep, F_FIRSTMODIFY) && rcv_init(sp))
 		return (1);
 
 	/* Force the file to be read in, in case it hasn't yet. */
-	if (file_lline(sp, ep, &lno))
+	if (file_lline(sp, &lno))
 		return (1);
 
 	/* Sync to disk. */
-	if (rcv_sync(sp, ep, RCV_SNAPSHOT))
+	if (rcv_sync(sp, RCV_SNAPSHOT))
 		return (1);
 
 	msgq(sp, M_INFO, "148|File preserved");
@@ -67,9 +68,8 @@ ex_preserve(sp, ep, cmdp)
  * Recover the file.
  */
 int
-ex_recover(sp, ep, cmdp)
+ex_recover(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	ARGS *ap;
@@ -84,7 +84,7 @@ ex_recover(sp, ep, cmdp)
 	 * Check for modifications.  Autowrite did not historically
 	 * affect :recover.
 	 */
-	if (file_m2(sp, ep, F_ISSET(cmdp, E_FORCE)))
+	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
 		return (1);
 
 	/* Get a file structure for the file. */
@@ -98,6 +98,5 @@ ex_recover(sp, ep, cmdp)
 	if (file_init(sp, frp, NULL,
 	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
-	F_SET(sp, S_FSWITCH);
 	return (0);
 }

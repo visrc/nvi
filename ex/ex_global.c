@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.47 1994/09/27 19:38:45 bostic Exp $ (Berkeley) $Date: 1994/09/27 19:38:45 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.1 1994/11/09 18:40:44 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,20 +33,18 @@ static char sccsid[] = "$Id: ex_global.c,v 8.47 1994/09/27 19:38:45 bostic Exp $
 
 enum which {GLOBAL, V};
 
-static int	global __P((SCR *, EXF *, EXCMDARG *, enum which));
+static int	global __P((SCR *, EXCMDARG *, enum which));
 
 /*
  * ex_global -- [line [,line]] g[lobal][!] /pattern/ [commands]
  *	Exec on lines matching a pattern.
  */
 int
-ex_global(sp, ep, cmdp)
+ex_global(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (global(sp, ep,
-	    cmdp, F_ISSET(cmdp, E_FORCE) ? V : GLOBAL));
+	return (global(sp, cmdp, F_ISSET(cmdp, E_FORCE) ? V : GLOBAL));
 }
 
 /*
@@ -54,18 +52,16 @@ ex_global(sp, ep, cmdp)
  *	Exec on lines not matching a pattern.
  */
 int
-ex_v(sp, ep, cmdp)
+ex_v(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (global(sp, ep, cmdp, V));
+	return (global(sp, cmdp, V));
 }
 
 static int
-global(sp, ep, cmdp, cmd)
+global(sp, cmdp, cmd)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
@@ -79,13 +75,15 @@ global(sp, ep, cmdp, cmd)
 	int delim, eval, reflags, replaced, rval;
 	char *cb, *ptrn, *p, *t;
 
+	NEEDFILE(sp, cmdp->cmd);
+
 	/*
 	 * Skip leading white space.  Historic vi allowed any non-
 	 * alphanumeric to serve as the global command delimiter.
 	 */
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	if (*p == '\0' || isalnum(*p)) {
-		ex_message(sp, cmdp, EXM_USAGE);
+		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 	delim = *p++;
@@ -182,7 +180,7 @@ global(sp, ep, cmdp, cmd)
 	/* The global commands always set the previous context mark. */
 	abs.lno = sp->lno;
 	abs.cno = sp->cno;
-	if (mark_set(sp, ep, ABSMARK1, &abs, 1))
+	if (mark_set(sp, ABSMARK1, &abs, 1))
 		goto err;
 
 	/*
@@ -205,7 +203,7 @@ global(sp, ep, cmdp, cmd)
 			goto interrupted;
 
 		/* Get the line and search for a match. */
-		if ((t = file_gline(sp, ep, lno, &len)) == NULL) {
+		if ((t = file_gline(sp, lno, &len)) == NULL) {
 			GETLINE_ERR(sp, lno);
 			goto err;
 		}
@@ -262,7 +260,7 @@ global(sp, ep, cmdp, cmd)
 		 * the command fails.
 		 */
 		exp->range_lno = sp->lno = rp->start++;
-		if (ex_cmd(sp, ep, cb, clen, 0))
+		if (ex_cmd(sp, cb, clen, 0))
 			goto err;
 
 		/* Someone's unhappy, time to stop. */
@@ -274,7 +272,7 @@ interrupted:		ex_message(sp, NULL, EXM_INTERRUPTED);
 
 	/* Set the cursor to the new value, making sure it exists. */
 	if (exp->range_lno != OOBLNO) {
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			return (1);
 		sp->lno =
 		    lno < exp->range_lno ? (lno ? lno : 1) : exp->range_lno;
@@ -303,9 +301,8 @@ err:		rval = 1;
  *	Update the ranges based on an insertion or deletion.
  */
 void
-global_insdel(sp, ep, op, lno)
+global_insdel(sp, op, lno)
 	SCR *sp;
-	EXF *ep;
 	enum operation op;
 	recno_t lno;
 {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.20 1994/08/31 17:17:15 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:15 $";
+static char sccsid[] = "$Id: ex_move.c,v 9.1 1994/11/09 18:40:52 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,8 @@ static char sccsid[] = "$Id: ex_move.c,v 8.20 1994/08/31 17:17:15 bostic Exp $ (
  *	Copy selected lines.
  */
 int
-ex_copy(sp, ep, cmdp)
+ex_copy(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	CB cb;
@@ -44,6 +43,8 @@ ex_copy(sp, ep, cmdp)
 	int rval;
 
 	rval = 0;
+
+	NEEDFILE(sp, cmdp->cmd);
 
 	/*
 	 * It's possible to copy things into the area that's being
@@ -55,7 +56,7 @@ ex_copy(sp, ep, cmdp)
 	memset(&cb, 0, sizeof(cb));
 	CIRCLEQ_INIT(&cb.textq);
 	for (cnt = fm1.lno; cnt <= fm2.lno; ++cnt)
-		if (cut_line(sp, ep, cnt, 0, 0, &cb)) {
+		if (cut_line(sp, cnt, 0, 0, &cb)) {
 			rval = 1;
 			goto err;
 		}
@@ -64,7 +65,7 @@ ex_copy(sp, ep, cmdp)
 	/* Put the text into place. */
 	tm.lno = cmdp->lineno;
 	tm.cno = 0;
-	if (put(sp, ep, &cb, NULL, &tm, &m, 1))
+	if (put(sp, &cb, NULL, &tm, &m, 1))
 		rval = 1;
 	else {
 		/*
@@ -85,9 +86,8 @@ err:	text_lfree(&cb.textq);
  *	Move selected lines.
  */
 int
-ex_move(sp, ep, cmdp)
+ex_move(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	LMARK *lmp;
@@ -96,6 +96,8 @@ ex_move(sp, ep, cmdp)
 	size_t blen, len;
 	int mark_reset;
 	char *bp, *p;
+
+	NEEDFILE(sp, cmdp->cmd);
 
 	/*
 	 * It's not possible to move things into the area that's being
@@ -124,12 +126,12 @@ ex_move(sp, ep, cmdp)
 
 	/* Log the old positions of the marks. */
 	mark_reset = 0;
-	for (lmp = ep->marks.lh_first; lmp != NULL; lmp = lmp->q.le_next)
+	for (lmp = sp->ep->marks.lh_first; lmp != NULL; lmp = lmp->q.le_next)
 		if (lmp->name != ABSMARK1 &&
 		    lmp->lno >= fl && lmp->lno <= tl) {
 			mark_reset = 1;
 			F_CLR(lmp, MARK_USERSET);
-			(void)log_mark(sp, ep, lmp);
+			(void)log_mark(sp, lmp);
 		}
 
 	/* Get memory for the copy. */
@@ -141,39 +143,39 @@ ex_move(sp, ep, cmdp)
 		mfl = tl - diff;
 		mtl = tl;
 		for (cnt = diff; cnt--;) {
-			if ((p = file_gline(sp, ep, fl, &len)) == NULL)
+			if ((p = file_gline(sp, fl, &len)) == NULL)
 				return (1);
 			BINC_RET(sp, bp, blen, len);
 			memmove(bp, p, len);
-			if (file_aline(sp, ep, 1, tl, bp, len))
+			if (file_aline(sp, 1, tl, bp, len))
 				return (1);
 			if (mark_reset)
-				for (lmp = ep->marks.lh_first;
+				for (lmp = sp->ep->marks.lh_first;
 				    lmp != NULL; lmp = lmp->q.le_next)
 					if (lmp->name != ABSMARK1 &&
 					    lmp->lno == fl)
 						lmp->lno = tl + 1;
-			if (file_dline(sp, ep, fl))
+			if (file_dline(sp, fl))
 				return (1);
 		}
 	} else {				/* Destination < source. */
 		mfl = tl;
 		mtl = tl + diff;
 		for (cnt = diff; cnt--;) {
-			if ((p = file_gline(sp, ep, fl, &len)) == NULL)
+			if ((p = file_gline(sp, fl, &len)) == NULL)
 				return (1);
 			BINC_RET(sp, bp, blen, len);
 			memmove(bp, p, len);
-			if (file_aline(sp, ep, 1, tl++, bp, len))
+			if (file_aline(sp, 1, tl++, bp, len))
 				return (1);
 			if (mark_reset)
-				for (lmp = ep->marks.lh_first;
+				for (lmp = sp->ep->marks.lh_first;
 				    lmp != NULL; lmp = lmp->q.le_next)
 					if (lmp->name != ABSMARK1 &&
 					    lmp->lno == fl)
 						lmp->lno = tl;
 			++fl;
-			if (file_dline(sp, ep, fl))
+			if (file_dline(sp, fl))
 				return (1);
 		}
 	}
@@ -184,11 +186,11 @@ ex_move(sp, ep, cmdp)
 
 	/* Log the new positions of the marks. */
 	if (mark_reset)
-		for (lmp = ep->marks.lh_first;
+		for (lmp = sp->ep->marks.lh_first;
 		    lmp != NULL; lmp = lmp->q.le_next)
 			if (lmp->name != ABSMARK1 &&
 			    lmp->lno >= mfl && lmp->lno <= mtl)
-				(void)log_mark(sp, ep, lmp);
+				(void)log_mark(sp, lmp);
 
 
 	sp->rptlines[L_MOVED] += diff;

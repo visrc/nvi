@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.25 1994/09/02 12:40:39 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:39 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.1 1994/11/09 18:40:28 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static char sccsid[] = "$Id: ex_append.c,v 8.25 1994/09/02 12:40:39 bostic Exp $
 
 enum which {APPEND, CHANGE, INSERT};
 
-static int aci __P((SCR *, EXF *, EXCMDARG *, enum which));
+static int aci __P((SCR *, EXCMDARG *, enum which));
 
 /*
  * ex_append -- :[line] a[ppend][!]
@@ -39,12 +39,11 @@ static int aci __P((SCR *, EXF *, EXCMDARG *, enum which));
  *	or the current line if no address is specified.
  */
 int
-ex_append(sp, ep, cmdp)
+ex_append(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (aci(sp, ep, cmdp, APPEND));
+	return (aci(sp, cmdp, APPEND));
 }
 
 /*
@@ -52,12 +51,11 @@ ex_append(sp, ep, cmdp)
  *	Change one or more lines to the input text.
  */
 int
-ex_change(sp, ep, cmdp)
+ex_change(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (aci(sp, ep, cmdp, CHANGE));
+	return (aci(sp, cmdp, CHANGE));
 }
 
 /*
@@ -66,18 +64,16 @@ ex_change(sp, ep, cmdp)
  *	or the current line if no address is specified.
  */
 int
-ex_insert(sp, ep, cmdp)
+ex_insert(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (aci(sp, ep, cmdp, INSERT));
+	return (aci(sp, cmdp, INSERT));
 }
 
 static int
-aci(sp, ep, cmdp, cmd)
+aci(sp, cmdp, cmd)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
@@ -90,6 +86,8 @@ aci(sp, ep, cmdp, cmd)
 
 	rval = 0;
 
+	NEEDFILE(sp, cmdp->cmd);
+
 	/*
 	 * Set input flags; the ! flag turns off autoindent for append,
 	 * change and insert.
@@ -100,8 +98,8 @@ aci(sp, ep, cmdp, cmd)
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
 
-	/* Input is interruptible. */
-	F_SET(sp, S_INTERRUPTIBLE);
+	/* Input is interruptible, the screen is now dirty. */
+	F_SET(sp, S_INTERRUPTIBLE | S_SCR_EXWROTE);
 
 	/*
 	 * If this code is called by vi, the screen TEXTH structure (sp->tiqp)
@@ -121,7 +119,7 @@ aci(sp, ep, cmdp, cmd)
 		sp->tiqp = &tiq;
 
 		if (F_ISSET(sp->gp, G_STDIN_TTY))
-			SEX_RAW(t);
+			SEX_RAW(&t);
 		(void)write(STDOUT_FILENO, "\n", 1);
 		LF_SET(TXT_NLECHO);
 
@@ -130,7 +128,7 @@ aci(sp, ep, cmdp, cmd)
 	/* Set the line number, so that autoindent works correctly. */
 	sp->lno = cmdp->addr1.lno;
 
-	if (sex_get(sp, ep, sp->tiqp, 0, flags) != INP_OK)
+	if (sex_get(sp, sp->tiqp, 0, flags) != INP_OK)
 		goto err;
 
 	/*
@@ -166,13 +164,13 @@ aci(sp, ep, cmdp, cmd)
 	 * Cut into the unnamed buffer.
 	 */
 	if (cmd == CHANGE &&
-	    (cut(sp, ep, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE) ||
-	    delete(sp, ep, &cmdp->addr1, &cmdp->addr2, 1)))
+	    (cut(sp, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE) ||
+	    delete(sp, &cmdp->addr1, &cmdp->addr2, 1)))
 		goto err;
 
 	for (tp = sp->tiqp->cqh_first;
 	    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
-		if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len)) {
+		if (file_aline(sp, 1, m.lno, tp->lb, tp->len)) {
 err:			rval = 1;
 			break;
 		}
@@ -185,9 +183,9 @@ err:			rval = 1;
 
 		/* Reset the terminal state. */
 		if (F_ISSET(sp->gp, G_STDIN_TTY)) {
-			if (SEX_NORAW(t))
+			if (SEX_NORAW(&t))
 				rval = 1;
-			F_SET(sp, S_REFRESH);
+			F_SET(sp, S_SCR_REFRESH);
 		}
 	}
 	return (rval);

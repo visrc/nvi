@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.29 1994/09/28 17:05:09 bostic Exp $ (Berkeley) $Date: 1994/09/28 17:05:09 $";
+static char sccsid[] = "$Id: ex_shell.c,v 9.1 1994/11/09 18:41:05 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,9 +38,8 @@ static char sccsid[] = "$Id: ex_shell.c,v 8.29 1994/09/28 17:05:09 bostic Exp $ 
  *	with the argument -i.
  */
 int
-ex_shell(sp, ep, cmdp)
+ex_shell(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	char buf[MAXPATHLEN];
@@ -74,7 +73,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	 * Flush waiting messages (autowrite, for example) so the output
 	 * matches historic practice.
 	 */
-	(void)sex_refresh(sp, sp->ep);
+	(void)sex_refresh(sp);
 
 	/* Put out various messages. */
 	if (p1 != NULL)
@@ -121,9 +120,10 @@ ex_exec_proc(sp, cmd, p1, p2)
 	 * Stat of the tty structures (see ex_sleave, ex_rleave) only give
 	 * us 1-second resolution on the tty changes.  A fast '!' command,
 	 * e.g. ":!pwd" can beat us to the refresh.  When there's better
-	 * resolution from the stat(2) timers, this can go away.
+	 * resolution from the stat(2) timers, this can and should go away,
+	 * we're repainting the screen unnecessarily.
 	 */
-	F_SET(sp, S_REFRESH);
+	F_SET(sp, S_SCR_REFRESH);
 
 	return (rval);
 }

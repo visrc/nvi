@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_source.c,v 8.9 1994/10/26 09:58:25 bostic Exp $ (Berkeley) $Date: 1994/10/26 09:58:25 $";
+static char sccsid[] = "$Id: ex_source.c,v 9.1 1994/11/09 18:41:07 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,15 +31,14 @@ static char sccsid[] = "$Id: ex_source.c,v 8.9 1994/10/26 09:58:25 bostic Exp $ 
  *	Execute ex commands from a file.
  */
 int
-ex_source(sp, ep, cmdp)
+ex_source(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	/*
 	 * !!!
 	 * :source did not historically set the alternate file name.
 	 */
-
-	return (ex_cfile(sp, ep, cmdp->argv[0]->bp, 0));
+	return (ex_cfile(sp,
+	    cmdp->argv[0]->bp, EXPAR_BLIGNORE | EXPAR_VLITONLY));
 }

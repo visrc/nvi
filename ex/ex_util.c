@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.17 1994/10/23 10:21:34 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:21:34 $";
+static char sccsid[] = "$Id: ex_util.c,v 9.1 1994/11/09 18:41:17 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,7 +167,7 @@ ex_rleave(sp)
 	/* If the terminal was used, refresh the screen. */
 	if (fstat(STDIN_FILENO, &sb) || exp->leave_atime == 0 ||
 	    exp->leave_atime != sb.st_atime || exp->leave_mtime != sb.st_mtime)
-		F_SET(sp, S_REFRESH);
+		F_SET(sp, S_SCR_REFRESH);
 }
 
 /*
@@ -201,7 +201,7 @@ ex_ncheck(sp, force)
 void
 ex_message(sp, cmdp, which)
 	SCR *sp;
-	EXCMDARG *cmdp;
+	const EXCMDLIST *cmdp;
 	enum exmtype which;
 {
 	switch (which) {
@@ -211,8 +211,13 @@ ex_message(sp, cmdp, which)
 	case EXM_NOPREVRE:
 		msgq(sp, M_ERR, "230|No previous regular expression");
 		break;
+	case EXM_NORC:
+		msgq(sp, M_ERR,
+	"103|The %s command requires that a file have already been read in",
+		    cmdp->name);
+		break;
 	case EXM_USAGE:
-		msgq(sp, M_ERR, "130|Usage: %s", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "130|Usage: %s", cmdp->usage);
 		break;
 	}
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.16 1994/08/17 14:31:02 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:02 $";
+static char sccsid[] = "$Id: ex_print.c,v 9.1 1994/11/09 18:40:55 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,13 +34,13 @@ static char sccsid[] = "$Id: ex_print.c,v 8.16 1994/08/17 14:31:02 bostic Exp $ 
  *	Display the addressed lines such that the output is unambiguous.
  */
 int
-ex_list(sp, ep, cmdp)
+ex_list(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (ex_print(sp, ep,
-	    &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_LIST))
+	NEEDFILE(sp, cmdp->cmd);
+
+	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_LIST))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -53,13 +53,13 @@ ex_list(sp, ep, cmdp)
  *	Display the addressed lines with a leading line number.
  */
 int
-ex_number(sp, ep, cmdp)
+ex_number(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (ex_print(sp, ep,
-	    &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_HASH))
+	NEEDFILE(sp, cmdp->cmd);
+
+	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_HASH))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -72,12 +72,13 @@ ex_number(sp, ep, cmdp)
  *	Display the addressed lines.
  */
 int
-ex_pr(sp, ep, cmdp)
+ex_pr(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, cmdp->flags))
+	NEEDFILE(sp, cmdp->cmd);
+
+	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->flags))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -89,9 +90,8 @@ ex_pr(sp, ep, cmdp)
  *	Print the selected lines.
  */
 int
-ex_print(sp, ep, fp, tp, flags)
+ex_print(sp, fp, tp, flags)
 	SCR *sp;
-	EXF *ep;
 	MARK *fp, *tp;
 	register int flags;
 {
@@ -99,7 +99,7 @@ ex_print(sp, ep, fp, tp, flags)
 	size_t col, len;
 	char *p;
 
-	F_SET(sp, S_INTERRUPTIBLE);
+	F_SET(sp, S_INTERRUPTIBLE | S_SCR_EXWROTE);
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/*
 		 * Display the line number.  The %6 format is specified
@@ -119,7 +119,7 @@ ex_print(sp, ep, fp, tp, flags)
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
-		if ((p = file_gline(sp, ep, from, &len)) == NULL) {
+		if ((p = file_gline(sp, from, &len)) == NULL) {
 			GETLINE_ERR(sp, from);
 			return (1);
 		}
@@ -132,7 +132,6 @@ ex_print(sp, ep, fp, tp, flags)
 		if (INTERRUPTED(sp))
 			break;
 	}
-
 	return (0);
 }
 
@@ -150,6 +149,8 @@ ex_ldisplay(sp, lp, len, col, flags)
 	CHAR_T ch, *kp;
 	u_long ts;
 	size_t tlen;
+
+	F_SET(sp, S_SCR_EXWROTE);
 
 	ts = O_VAL(sp, O_TABSTOP);
 	for (;; --len) {

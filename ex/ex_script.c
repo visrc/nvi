@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.20 1994/08/31 17:17:21 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:21 $";
+static char sccsid[] = "$Id: ex_script.c,v 9.1 1994/11/09 18:41:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,8 +38,8 @@ static char sccsid[] = "$Id: ex_script.c,v 8.20 1994/08/31 17:17:21 bostic Exp $
  */
 int openpty __P((int *, int *, char *, struct termios *, struct winsize *));
 
-static int sscr_getprompt __P((SCR *, EXF *));
-static int sscr_init __P((SCR *, EXF *));
+static int sscr_getprompt __P((SCR *));
+static int sscr_init __P((SCR *));
 static int sscr_matchprompt __P((SCR *, char *, size_t, size_t *));
 static int sscr_setprompt __P((SCR *, char *, size_t));
 
@@ -49,9 +49,8 @@ static int sscr_setprompt __P((SCR *, char *, size_t));
  *	Switch to script mode.
  */
 int
-ex_script(sp, ep, cmdp)
+ex_script(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	/* Vi only command. */
@@ -62,16 +61,11 @@ ex_script(sp, ep, cmdp)
 	}
 
 	/* Switch to the new file. */
-	if (cmdp->argc != 0 && ex_edit(sp, ep, cmdp))
+	if (cmdp->argc != 0 && ex_edit(sp, cmdp))
 		return (1);
 
-	/*
-	 * Create the shell, figure out the prompt.
-	 *
-	 * !!!
-	 * The files just switched, use sp->ep.
-	 */
-	if (sscr_init(sp, sp->ep))
+	/* Create the shell, figure out the prompt. */
+	if (sscr_init(sp))
 		return (1);
 
 	return (0);
@@ -82,9 +76,8 @@ ex_script(sp, ep, cmdp)
  *	Create a pty setup for a shell.
  */
 static int
-sscr_init(sp, ep)
+sscr_init(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	SCRIPT *sc;
 	int nf;
@@ -183,12 +176,11 @@ err:		if (sc->sh_master != -1)
 		break;
 	}
 
-	if (sscr_getprompt(sp, ep))
+	if (sscr_getprompt(sp))
 		return (1);
 
-	F_SET(sp, S_REDRAW | S_SCRIPT);
+	F_SET(sp, S_SCRIPT);
 	return (0);
-
 }
 
 /*
@@ -197,9 +189,8 @@ err:		if (sc->sh_master != -1)
  *	carriage return comes; set the prompt from that line.
  */
 static int
-sscr_getprompt(sp, ep)
+sscr_getprompt(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	struct timeval tv;
 	CHAR_T *endp, *p, *t, buf[1024];
@@ -248,8 +239,8 @@ more:	len = sizeof(buf) - (endp - buf);
 	for (p = t = buf; p < endp; ++p) {
 		value = KEY_VAL(sp, *p);
 		if (value == K_CR || value == K_NL) {
-			if (file_lline(sp, ep, &lline) ||
-			    file_aline(sp, ep, 0, lline, t, p - t))
+			if (file_lline(sp, &lline) ||
+			    file_aline(sp, 0, lline, t, p - t))
 				goto prompterr;
 			t = p + 1;
 		}
@@ -279,8 +270,8 @@ more:	len = sizeof(buf) - (endp - buf);
 	endp = buf;
 
 	/* Append the line into the file. */
-	if (file_lline(sp, ep, &lline) ||
-	    file_aline(sp, ep, 0, lline, buf, llen)) {
+	if (file_lline(sp, &lline) ||
+	    file_aline(sp, 0, lline, buf, llen)) {
 prompterr:	sscr_end(sp);
 		return (1);
 	}
@@ -293,9 +284,8 @@ prompterr:	sscr_end(sp);
  *	Take a line and hand it off to the shell.
  */
 int
-sscr_exec(sp, ep, lno)
+sscr_exec(sp, lno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 {
 	SCRIPT *sc;
@@ -305,9 +295,9 @@ sscr_exec(sp, ep, lno)
 	char *bp, *p;
 
 	/* If there's a prompt on the last line, append the command. */
-	if (file_lline(sp, ep, &last_lno))
+	if (file_lline(sp, &last_lno))
 		return (1);
-	if ((p = file_gline(sp, ep, last_lno, &last_len)) == NULL) {
+	if ((p = file_gline(sp, last_lno, &last_len)) == NULL) {
 		GETLINE_ERR(sp, last_lno);
 		return (1);
 	}
@@ -319,8 +309,8 @@ sscr_exec(sp, ep, lno)
 		matchprompt = 0;
 
 	/* Get something to execute. */
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((p = file_gline(sp, lno, &len)) == NULL) {
+		if (file_lline(sp, &lno))
 			goto err1;
 		if (lno == 0)
 			goto empty;
@@ -358,7 +348,7 @@ err2:		if (nw == 0)
 	if (matchprompt) {
 		ADD_SPACE_RET(sp, bp, blen, last_len + len);
 		memmove(bp + last_len, p, len);
-		if (file_sline(sp, ep, last_lno, bp, last_len + len))
+		if (file_sline(sp, last_lno, bp, last_len + len))
 err1:			rval = 1;
 	}
 	if (matchprompt)
@@ -376,7 +366,6 @@ sscr_input(sp)
 {
 	struct timeval tv;
 	CHAR_T *endp, *p, *t;
-	EXF *ep;
 	SCRIPT *sc;
 	recno_t lno;
 	size_t blen, len, tlen;
@@ -385,8 +374,7 @@ sscr_input(sp)
 	char *bp;
 
 	/* Find out where the end of the file is. */
-	ep = sp->ep;
-	if (file_lline(sp, ep, &lno))
+	if (file_lline(sp, &lno))
 		return (1);
 
 #define	MINREAD	1024
@@ -415,7 +403,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 		value = KEY_VAL(sp, *p);
 		if (value == K_CR || value == K_NL) {
 			len = p - t;
-			if (file_aline(sp, ep, 1, lno++, t, len))
+			if (file_aline(sp, 1, lno++, t, len))
 				goto ret;
 			t = p + 1;
 		}
@@ -443,14 +431,14 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 		}
 		if (sscr_setprompt(sp, t, len))
 			return (1);
-		if (file_aline(sp, ep, 1, lno++, t, len))
+		if (file_aline(sp, 1, lno++, t, len))
 			goto ret;
 	}
 
 	/* The cursor moves to EOF. */
 	sp->lno = lno;
 	sp->cno = len ? len - 1 : 0;
-	rval = sp->s_refresh(sp, ep);
+	rval = sp->s_refresh(sp);
 
 ret:	FREE_SPACE(sp, bp, blen);
 	return (rval);

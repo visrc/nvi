@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 8.8 1994/08/17 14:30:48 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:48 $";
+static char sccsid[] = "$Id: ex_equal.c,v 9.1 1994/11/09 18:40:42 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,12 +30,13 @@ static char sccsid[] = "$Id: ex_equal.c,v 8.8 1994/08/17 14:30:48 bostic Exp $ (
  * ex_equal -- :address =
  */
 int
-ex_equal(sp, ep, cmdp)
+ex_equal(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	recno_t lno;
+
+	NEEDFILE(sp, cmdp->cmd);
 
 	/*
 	 * Print out the line number matching the specified address,
@@ -50,11 +51,12 @@ ex_equal(sp, ep, cmdp)
 	 * file, which, in an empty file, is 0.
 	 */
 	if (F_ISSET(cmdp, E_ADDRDEF)) {
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			return (1);
 	} else
 		lno = cmdp->addr1.lno;
 
+	F_SET(sp, S_SCR_EXWROTE);
 	(void)ex_printf(EXCOOKIE, "%ld\n", lno);
 	return (0);
 }

@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.48 1994/10/28 08:03:20 bostic Exp $ (Berkeley) $Date: 1994/10/28 08:03:20 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.1 1994/11/09 18:41:12 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -92,11 +92,10 @@ ex_tagfirst(sp, tagarg)
 		m.lno = 1;
 		m.cno = 0;
 		flags = SEARCH_FILE | SEARCH_TAG | SEARCH_TERM;
-		sval = f_search(sp, sp->ep, &m, &m, search, NULL, &flags);
+		sval = f_search(sp, &m, &m, search, NULL, &flags);
 		if (sval && (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			sval = f_search(sp, sp->ep,
-			    &m, &m, search, NULL, &flags);
+			sval = f_search(sp, &m, &m, search, NULL, &flags);
 		}
 		if (sval) {
 			p = msg_print(sp, tag, &nf);
@@ -107,9 +106,8 @@ ex_tagfirst(sp, tagarg)
 	}
 
 	/* Set up the screen. */
-	frp->lno = m.lno;
-	frp->cno = m.cno;
-	F_SET(frp, FR_CURSORSET);
+	sp->lno = m.lno;
+	sp->cno = m.cno;
 
 	/* Might as well make this the default tag. */
 	if ((EXP(sp)->tlast = strdup(tagarg)) == NULL) {
@@ -146,9 +144,8 @@ ex_tagfirst(sp, tagarg)
  * is used as the return location.
  */
 int
-ex_tagpush(sp, ep, cmdp)
+ex_tagpush(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	enum {TC_CHANGE, TC_CURRENT} which;
@@ -196,8 +193,7 @@ ex_tagpush(sp, ep, cmdp)
 	if (sp->frp == frp)
 		which = TC_CURRENT;
 	else {
-		if (file_m1(sp, sp->ep,
-		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 			goto err;
 		which = TC_CHANGE;
 	}
@@ -257,11 +253,10 @@ err:		free(tag);
 		m.lno = 1;
 		m.cno = 0;
 		flags = SEARCH_FILE | SEARCH_TAG | SEARCH_TERM;
-		sval = f_search(sp, sp->ep, &m, &m, search, NULL, &flags);
+		sval = f_search(sp, &m, &m, search, NULL, &flags);
 		if (sval && (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			sval = f_search(sp, sp->ep,
-			     &m, &m, search, NULL, &flags);
+			sval = f_search(sp, &m, &m, search, NULL, &flags);
 			p[1] = '(';
 		}
 		if (sval) {
@@ -274,15 +269,11 @@ err:		free(tag);
 	free(tag);
 
 	switch (which) {
-	case TC_CHANGE:
-		frp->lno = m.lno;
-		frp->cno = m.cno;
-		F_SET(frp, FR_CURSORSET);
-		F_SET(sp, S_FSWITCH);
-		break;
 	case TC_CURRENT:
 		if (sval)
 			return (1);
+		/* FALLTHROUGH */
+	case TC_CHANGE:
 		sp->lno = m.lno;
 		sp->cno = m.cno;
 		break;
@@ -295,9 +286,8 @@ err:		free(tag);
  *	Pop the tag stack.
  */
 int
-ex_tagpop(sp, ep, cmdp)
+ex_tagpop(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	EX_PRIVATE *exp;
@@ -367,17 +357,13 @@ ex_tagpop(sp, ep, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		if (file_m1(sp, ep,
-		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 			return (1);
-		if (file_init(sp, tp->frp, NULL, FS_SETALT))
-			return (1);
-
 		tp->frp->lno = tp->lno;
 		tp->frp->cno = tp->cno;
 		F_SET(sp->frp, FR_CURSORSET);
-
-		F_SET(sp, S_FSWITCH);
+		if (file_init(sp, tp->frp, NULL, FS_SETALT))
+			return (1);
 	}
 
 	/* Pop entries off the queue up to ntp. */
@@ -399,9 +385,8 @@ ex_tagpop(sp, ep, cmdp)
  *	Clear the tag stack.
  */
 int
-ex_tagtop(sp, ep, cmdp)
+ex_tagtop(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	EX_PRIVATE *exp;
@@ -421,17 +406,13 @@ ex_tagtop(sp, ep, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		if (file_m1(sp, sp->ep,
-		    F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 			return (1);
-		if (file_init(sp, tp->frp, NULL, FS_SETALT))
-			return (1);
-
 		tp->frp->lno = tp->lno;
 		tp->frp->cno = tp->cno;
-
 		F_SET(sp->frp, FR_CURSORSET);
-		F_SET(sp, S_FSWITCH);
+		if (file_init(sp, tp->frp, NULL, FS_SETALT))
+			return (1);
 	}
 
 	/* Empty out the queue. */
@@ -445,9 +426,8 @@ ex_tagtop(sp, ep, cmdp)
  *	Display the list of tags.
  */
 int
-ex_tagdisplay(sp, ep)
+ex_tagdisplay(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	EX_PRIVATE *exp;
 	TAG *tp;
@@ -492,6 +472,7 @@ ex_tagdisplay(sp, ep)
 				(void)ex_printf(EXCOOKIE, "%2d %*.*s %s\n",
 				    cnt, (int)maxlen, (int)len, name,
 				    tp->search);
+		F_SET(sp, S_SCR_EXWROTE);
 	}
 	return (0);
 }

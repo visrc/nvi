@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.20 1994/09/15 10:28:16 bostic Exp $ (Berkeley) $Date: 1994/09/15 10:28:16 $";
+static char sccsid[] = "$Id: ex_cd.c,v 9.1 1994/11/09 18:40:36 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,9 +36,8 @@ static char sccsid[] = "$Id: ex_cd.c,v 8.20 1994/09/15 10:28:16 bostic Exp $ (Be
  *	Change directories.
  */
 int
-ex_cd(sp, ep, cmdp)
+ex_cd(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	struct passwd *pw;
@@ -54,7 +53,7 @@ ex_cd(sp, ep, cmdp)
 	 * been modified, unless its name begins with a leading '/' or the
 	 * force flag is set.
 	 */
-	if (F_ISSET(ep, F_MODIFIED) &&
+	if (F_ISSET(sp->ep, F_MODIFIED) &&
 	    !F_ISSET(cmdp, E_FORCE) && sp->frp->name[0] != '/') {
 		msgq(sp, M_ERR,
     "131|File modified since last complete write; write or use ! to override");

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.25 1994/10/28 09:03:58 bostic Exp $ (Berkeley) $Date: 1994/10/28 09:03:58 $";
+static char sccsid[] = "$Id: ex_display.c,v 9.1 1994/11/09 18:40:39 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ static char sccsid[] = "$Id: ex_display.c,v 8.25 1994/10/28 09:03:58 bostic Exp 
 #include "tag.h"
 #include "excmd.h"
 
-static int	bdisplay __P((SCR *, EXF *));
+static int	bdisplay __P((SCR *));
 static void	db __P((SCR *, CB *, CHAR_T *));
 
 /*
@@ -38,9 +38,8 @@ static void	db __P((SCR *, CB *, CHAR_T *));
  *	Display buffers, tags or screens.
  */
 int
-ex_display(sp, ep, cmdp)
+ex_display(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	switch (cmdp->argv[0]->bp[0]) {
@@ -50,23 +49,23 @@ ex_display(sp, ep, cmdp)
 		if (cmdp->argv[0]->len >= sizeof(ARG) ||
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
-		return (bdisplay(sp, ep));
+		return (bdisplay(sp));
 	case 's':
 #undef	ARG
 #define	ARG	"screens"
 		if (cmdp->argv[0]->len >= sizeof(ARG) ||
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
-		return (ex_sdisplay(sp, ep));
+		return (ex_sdisplay(sp));
 	case 't':
 #undef	ARG
 #define	ARG	"tags"
 		if (cmdp->argv[0]->len >= sizeof(ARG) ||
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
-		return (ex_tagdisplay(sp, ep));
+		return (ex_tagdisplay(sp));
 	}
-	ex_message(sp, cmdp, EXM_USAGE);
+	ex_message(sp, cmdp->cmd, EXM_USAGE);
 	return (1);
 }
 
@@ -76,9 +75,8 @@ ex_display(sp, ep, cmdp)
  *	Display buffers.
  */
 static int
-bdisplay(sp, ep)
+bdisplay(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	CB *cbp;
 
@@ -128,6 +126,7 @@ db(sp, cbp, name)
 	TEXT *tp;
 	size_t len;
 
+	F_SET(sp, S_SCR_EXWROTE);
 	(void)ex_printf(EXCOOKIE, "********** %s%s\n",
 	    name == NULL ? KEY_NAME(sp, cbp->name) : name,
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : " (character mode)");

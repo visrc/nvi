@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 8.9 1994/08/17 14:31:22 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:22 $";
+static char sccsid[] = "$Id: ex_undo.c,v 9.1 1994/11/09 18:41:14 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,11 +31,11 @@ static char sccsid[] = "$Id: ex_undo.c,v 8.9 1994/08/17 14:31:22 bostic Exp $ (B
  *	Undo the last change.
  */
 int
-ex_undo(sp, ep, cmdp)
+ex_undo(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	EXF *ep;
 	MARK m;
 
 	/*
@@ -44,7 +44,7 @@ ex_undo(sp, ep, cmdp)
 	 */
 	m.lno = sp->lno;
 	m.cno = sp->cno;
-	if (mark_set(sp, ep, ABSMARK1, &m, 1))
+	if (mark_set(sp, ABSMARK1, &m, 1))
 		return (1);
 
 	/*
@@ -53,18 +53,19 @@ ex_undo(sp, ep, cmdp)
 	 * Whether 'u' is undo or redo is toggled each time, unless there
 	 * was a change since the last undo, in which case it's an undo.
 	 */
+	ep = sp->ep;
 	if (!F_ISSET(ep, F_UNDO)) {
 		F_SET(ep, F_UNDO);
 		ep->lundo = FORWARD;
 	}
 	switch (ep->lundo) {
 	case BACKWARD:
-		if (log_forward(sp, ep, &m))
+		if (log_forward(sp, &m))
 			return (1);
 		ep->lundo = FORWARD;
 		break;
 	case FORWARD:
-		if (log_backward(sp, ep, &m))
+		if (log_backward(sp, &m))
 			return (1);
 		ep->lundo = BACKWARD;
 		break;

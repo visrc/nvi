@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.18 1994/08/17 14:30:53 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:53 $";
+static char sccsid[] = "$Id: ex_init.c,v 9.1 1994/11/09 18:40:46 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,39 +111,10 @@ ex_screen_end(sp)
  *	Initialize ex.
  */
 int
-ex_init(sp, ep)
+ex_init(sp)
 	SCR *sp;
-	EXF *ep;
 {
-	size_t len;
-
-	/*
-	 * The default address is the last line of the file.  If the address
-	 * set bit is on for this file, load the address, ensuring that it
-	 * exists.
-	 */
-	if (F_ISSET(sp->frp, FR_CURSORSET)) {
-		sp->lno = sp->frp->lno;
-		sp->cno = sp->frp->cno;
-
-		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
-			if (file_lline(sp, ep, &sp->lno))
-				return (1);
-			if (sp->lno == 0)
-				sp->lno = 1;
-			sp->cno = 0;
-		} else if (sp->cno >= len)
-			sp->cno = 0;
-	} else {
-		if (file_lline(sp, ep, &sp->lno))
-			return (1);
-		if (sp->lno == 0)
-			sp->lno = 1;
-		sp->cno = 0;
-	}
-
-	/* Display the status line. */
-	return (msg_status(sp, ep, sp->lno, 0));
+	return (msg_status(sp, sp->lno, 0));
 }
 
 /*

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.78 1994/10/23 10:21:51 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:21:51 $
+ *	$Id: ex.h,v 9.1 1994/11/09 18:41:27 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:27 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -13,7 +13,7 @@
 typedef struct _excmdlist {
 	char	*name;			/* Command name. */
 					/* Underlying function. */
-	int (*fn) __P((SCR *, EXF *, EXCMDARG *));
+	int (*fn) __P((SCR *, EXCMDARG *));
 
 #define	E_ADDR1		0x0000001	/* One address. */
 #define	E_ADDR2		0x0000002	/* Two address. */
@@ -40,9 +40,8 @@ typedef struct _excmdlist {
 #define	E_MODIFY	0x0100000	/* File name expansion modified arg. */
 #define	E_NOGLOBAL	0x0200000	/* Not in a global. */
 #define	E_NOPERM	0x0400000	/* Permission denied for now. */
-#define	E_NORC		0x0800000	/* Not from a .exrc or EXINIT. */
-#define	E_ZERO		0x1000000	/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x2000000	/* 0 is default addr1 of empty files. */
+#define	E_ZERO		0x0800000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x1000000	/* 0 is default addr1 of empty files. */
 	u_int32_t flags;
 	char	 *syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
@@ -50,6 +49,18 @@ typedef struct _excmdlist {
 } EXCMDLIST;
 #define	MAXCMDNAMELEN	12		/* Longest command name. */
 extern EXCMDLIST const cmds[];		/* List of ex commands. */
+
+/*
+ * File state must be checked for each command -- any ex command may be entered
+ * at any time, and most of them won't work well if a file hasn't yet been read
+ * in.  Historic vi generally took the easy way out and dropped core.
+ */
+#define	NEEDFILE(sp, cmdp) {						\
+	if ((sp)->ep == NULL) {						\
+		ex_message(sp, cmdp, EXM_NORC);				\
+		return (1);						\
+	}								\
+}
 
 /*
  * Structure passed around to functions implementing ex commands.
@@ -100,10 +111,10 @@ typedef struct _ex_private {
 
 	CHAR_T	*lastbcomm;		/* Last bang command. */
 
-	struct termios leave_term;	/* ex_[sr]leave tty state. */
 	/* XXX: Should be struct timespec's, but time_t is more portable. */
 	time_t leave_atime;		/* ex_[sr]leave old access time. */
 	time_t leave_mtime;		/* ex_[sr]leave old mod time. */
+	struct termios leave_term;	/* ex_[sr]leave tty state. */
 
 	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag list (stack). */
 	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag file list. */
@@ -117,18 +128,21 @@ typedef struct _ex_private {
 
 #define	EX_ABSMARK	0x01		/* Set the absolute mark. */
 #define	EX_AUTOPRINT	0x02		/* Autoprint flag. */
+#define	EX_VLITONLY	0x04		/* ^V quoting only. */
 	u_int8_t flags;
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 
 /*
  * !!!
+ * QUOTING NOTE:
+ *
  * Historically, .exrc files and EXINIT variables could only use ^V
  * as an escape character, neither ^Q or a user specified character
  * worked.  We enforce that here, just in case someone depends on it.
  */
 #define	IS_ESCAPE(sp, ch)						\
-	(F_ISSET(sp, S_VLITONLY) ?					\
+	(F_ISSET(EXP(sp), EX_VLITONLY) ?				\
 	    (ch) == CH_LITERAL : KEY_VAL(sp, ch) == K_VLNEXT)
 
 /*
@@ -139,63 +153,69 @@ typedef struct _ex_private {
  *	FILTER_WRITE	Write to the utility, display its output.
  */
 enum filtertype { FILTER, FILTER_READ, FILTER_WRITE };
-int	filtercmd __P((SCR *, EXF *,
-	    MARK *, MARK *, MARK *, char *, enum filtertype));
+int	filtercmd __P((SCR *, MARK *, MARK *, MARK *, char *, enum filtertype));
 
 /* Argument expansion routines. */
-int	argv_init __P((SCR *, EXF *, EXCMDARG *));
-int	argv_exp0 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
-int	argv_exp1 __P((SCR *, EXF *, EXCMDARG *, char *, size_t, int));
-int	argv_exp2 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
-int	argv_exp3 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
+int	argv_init __P((SCR *, EXCMDARG *));
+int	argv_exp0 __P((SCR *, EXCMDARG *, char *, size_t));
+int	argv_exp1 __P((SCR *, EXCMDARG *, char *, size_t, int));
+int	argv_exp2 __P((SCR *, EXCMDARG *, char *, size_t));
+int	argv_exp3 __P((SCR *, EXCMDARG *, char *, size_t));
 int	argv_free __P((SCR *));
 
 /* Ex common messages. */
-enum exmtype { EXM_INTERRUPTED, EXM_NOPREVRE, EXM_USAGE };
-void	ex_message __P((SCR *, EXCMDARG *, enum exmtype));
+enum exmtype { EXM_INTERRUPTED, EXM_NOPREVRE, EXM_NORC, EXM_USAGE };
+void	ex_message __P((SCR *, const EXCMDLIST *, enum exmtype));
+
+/* Ex parser function prototypes. */
+#define	EXPAR_BLIGNORE	0x01		/* Ignore blank lines. */
+#define	EXPAR_NEEDSEP	0x02		/* Need ex output separator. */
+#define	EXPAR_NOAUTO	0x04		/* Don't do autoprint output. */
+#define	EXPAR_NOPRDEF	0x08		/* Don't print as default. */
+#define	EXPAR_VLITONLY	0x10		/* ^V quoting only. */
+int	ex_cfile __P((SCR *, char *, u_int));
+int	ex_cmd __P((SCR *, char *, size_t, u_int));
+int	ex_icmd __P((SCR *, char *, size_t, u_int));
 
 /* Ex function prototypes. */
-int	ex __P((SCR *, EXF *));
+int	ex __P((SCR *));
 void	ex_cbuild __P((EXCMDARG *,
 	    int, int, recno_t, recno_t, int, ARGS *[], ARGS *, char *));
-int	ex_cfile __P((SCR *, EXF *, char *, int));
-int	ex_cmd __P((SCR *, EXF *, char *, size_t, int));
 int	ex_cdalloc __P((SCR *, char *));
 int	ex_cdfree __P((SCR *));
 int	ex_end __P((SCR *));
 int	ex_exec_proc __P((SCR *, char *, char *, char *));
-int	ex_gb __P((SCR *, EXF *, TEXTH *, int, u_int));
+int	ex_gb __P((SCR *, TEXTH *, int, u_int));
 int	ex_getline __P((SCR *, FILE *, size_t *));
-int	ex_icmd __P((SCR *, EXF *, char *, size_t, int));
-int	ex_init __P((SCR *, EXF *));
+int	ex_init __P((SCR *));
 int	ex_is_abbrev __P((char *, size_t));
 int	ex_is_unmap __P((char *, size_t));
 int	ex_ldisplay __P((SCR *, CHAR_T *, size_t, size_t, u_int));
 int	ex_ncheck __P((SCR *, int));
 int	ex_offset __P((SCR *, char **, size_t *, long *, char *, char *));
-int	ex_optchange __P((SCR *, int));
-int	ex_print __P((SCR *, EXF *, MARK *, MARK *, int));
-int	ex_readfp __P((SCR *, EXF *, char *, FILE *, MARK *, recno_t *, int));
-void	ex_refresh __P((SCR *, EXF *));
+int	ex_print __P((SCR *, MARK *, MARK *, int));
+int	ex_readfp __P((SCR *, char *, FILE *, MARK *, recno_t *, int));
+void	ex_refresh __P((SCR *));
 void	ex_rleave __P((SCR *));
 int	ex_screen_copy __P((SCR *, SCR *));
 int	ex_screen_end __P((SCR *));
-int	ex_sdisplay __P((SCR *, EXF *));
+int	ex_sdisplay __P((SCR *));
 int	ex_sleave __P((SCR *));
 int	ex_suspend __P((SCR *));
-int	ex_tdisplay __P((SCR *, EXF *));
-int	ex_writefp __P((SCR *, EXF *,
+int	ex_tdisplay __P((SCR *));
+int	ex_tload __P((SCR *));
+int	ex_writefp __P((SCR *,
 	    char *, FILE *, MARK *, MARK *, u_long *, u_long *));
-void	global_insdel __P((SCR *, EXF *, enum operation, recno_t));
+void	global_insdel __P((SCR *, enum operation, recno_t));
 int	proc_wait __P((SCR *, long, const char *, int));
 int	sscr_end __P((SCR *));
-int	sscr_exec __P((SCR *, EXF *, recno_t));
+int	sscr_exec __P((SCR *, recno_t));
 int	sscr_input __P((SCR *));
 
 int	abbr_save __P((SCR *, FILE *));
 int	map_save __P((SCR *, FILE *));
 
-#define	EXPROTO(name)	int name __P((SCR *, EXF *, EXCMDARG *))
+#define	EXPROTO(name)	int name __P((SCR *, EXCMDARG *))
 EXPROTO(ex_abbr);
 EXPROTO(ex_append);
 EXPROTO(ex_args);
@@ -235,6 +255,7 @@ EXPROTO(ex_read);
 EXPROTO(ex_recover);
 EXPROTO(ex_resize);
 EXPROTO(ex_rew);
+EXPROTO(ex_s);
 EXPROTO(ex_script);
 EXPROTO(ex_set);
 EXPROTO(ex_shell);
@@ -244,7 +265,6 @@ EXPROTO(ex_source);
 EXPROTO(ex_split);
 EXPROTO(ex_stop);
 EXPROTO(ex_subagain);
-EXPROTO(ex_substitute);
 EXPROTO(ex_subtilde);
 EXPROTO(ex_tagpop);
 EXPROTO(ex_tagpush);

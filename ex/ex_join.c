@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.15 1994/08/31 17:17:10 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:10 $";
+static char sccsid[] = "$Id: ex_join.c,v 9.1 1994/11/09 18:40:47 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,8 @@ static char sccsid[] = "$Id: ex_join.c,v 8.15 1994/08/31 17:17:10 bostic Exp $ (
  *	Join lines.
  */
 int
-ex_join(sp, ep, cmdp)
+ex_join(sp, cmdp)
 	SCR *sp;
-	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	recno_t from, to;
@@ -44,11 +43,13 @@ ex_join(sp, ep, cmdp)
 	int echar, extra, first;
 	char *bp, *p, *tbp;
 
+	NEEDFILE(sp, cmdp->cmd);
+
 	from = cmdp->addr1.lno;
 	to = cmdp->addr2.lno;
 
 	/* Check for no lines to join. */
-	if ((p = file_gline(sp, ep, from + 1, &len)) == NULL) {
+	if ((p = file_gline(sp, from + 1, &len)) == NULL) {
 		msgq(sp, M_ERR, "135|No following lines to join");
 		return (1);
 	}
@@ -76,7 +77,7 @@ ex_join(sp, ep, cmdp)
 		 * Get next line.  Historic versions of vi allowed "10J" while
 		 * less than 10 lines from the end-of-file, so we do too.
 		 */
-		if ((p = file_gline(sp, ep, from, &len)) == NULL) {
+		if ((p = file_gline(sp, from, &len)) == NULL) {
 			cmdp->addr2.lno = from - 1;
 			break;
 		}
@@ -159,11 +160,11 @@ ex_join(sp, ep, cmdp)
 
 	/* Delete the joined lines. */
         for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; to > from; --to)
-		if (file_dline(sp, ep, to))
+		if (file_dline(sp, to))
 			goto err;
 
 	/* If the original line changed, reset it. */
-	if (!first && file_sline(sp, ep, from, bp, tbp - bp)) {
+	if (!first && file_sline(sp, from, bp, tbp - bp)) {
 err:		FREE_SPACE(sp, bp, blen);
 		return (1);
 	}
