@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.21 1996/10/31 09:31:20 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:31:20 $
+ *	$Id: vi.h,v 10.22 1996/12/04 09:48:07 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:48:07 $
  */
 
 /* Definition of a vi "word". */
@@ -188,11 +188,11 @@ int	cs_prev __P((SCR *, VCS *));
  * slot for the colon command line, so there is room to add any screen into
  * another one at screen exit.
  *
- * Lno is the line number.  If doing the historic vi long line folding, off
+ * Lno is the line number.  If doing the historic vi long line folding, soff
  * is the screen offset into the line.  For example, the pair 2:1 would be
  * the first screen of line 2, and 2:2 would be the second.  In the case of
  * long lines, the screen map will tend to be staggered, e.g., 1:1, 1:2, 1:3,
- * 2:1, 3:1, etc.  If doing left-right scrolling, the off field is the screen
+ * 2:1, 3:1, etc.  If doing left-right scrolling, the coff field is the screen
  * column offset into the lines, and can take on any value, as it's adjusted
  * by the user set value O_SIDESCROLL.
  */
