@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.2 1996/09/24 20:52:43 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:52:43 $
+ *	$Id: ip.h,v 8.3 1996/10/13 13:48:47 bostic Exp $ (Berkeley) $Date: 1996/10/13 13:48:47 $
  */
 
 typedef struct _ip_private {
@@ -77,7 +77,7 @@ typedef struct _ip_buf {
  * IP events sent from vi to the screen.
  */
 #define	IPO_ADDSTR	 1	/* Add a string: IPO_STR. */
-#define	IPO_ATTRIBUTE	 2	/* Set the screen attribute: IPO_INT. */
+#define	IPO_ATTRIBUTE	 2	/* Set screen attribute: IPO_INT, IPO_INT. */
 #define	IPO_BELL	 3	/* Beep/bell/flash the terminal. */
 #define	IPO_BUSY	 4	/* Display a busy message: IPO_STR. */
 #define	IPO_CLRTOEOL	 5	/* Clear to the end of the line. */
@@ -87,5 +87,6 @@ typedef struct _ip_buf {
 #define	IPO_REDRAW	 9	/* Redraw the screen. */
 #define	IPO_REFRESH	10	/* Refresh the screen. */
 #define	IPO_RENAME	11	/* Rename the screen: IPO_STR. */
+#define	IPO_REWRITE	12	/* Rewrite a line: IPO_INT. */
 
 #include "ip_extern.h"
