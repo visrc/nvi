@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.16 1992/10/10 13:57:46 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:46 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.17 1992/10/29 14:38:32 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:38:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,13 +123,9 @@ ex_bang(cmdp)
 
 	DEFMODSYNC;
 
-	EX_PRSTART(0);
-
 	/* If modified, echo the new command. */
-	if (modified) {
-		(void)printf("%s", com);
-		EX_PRNEWLINE;
-	}
+	if (modified)
+		(void)fprintf(curf->stdfp, "%s\n", com);
 
 	/*
 	 * If no addresses were specified, just run the command, otherwise

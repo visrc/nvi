@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.19 1992/10/26 17:45:39 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:45:39 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.20 1992/10/29 14:38:12 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:38:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,25 +115,24 @@ ex_args(cmdp)
 		return (1);
 	}
 
-	EX_PRSTART(1);
 	col = len = sep = 0;
 	for (cnt = 1; ep; ++cnt, ep = file_next(ep)) {
 		if (ep->flags & F_IGNORE)
 			continue;
 		col += len = strlen(ep->name) + sep + (curf == ep ? 2 : 0);
-		if (col >= COLS - 1) {
+		if (col >= curf->cols - 1) {
 			col = len;
 			sep = 0;
-			EX_PRNEWLINE;
+			(void)fprintf(curf->stdfp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)putchar(' ');
+			(void)fprintf(curf->stdfp, " ");
 		}
 		if (curf == ep)
-			(void)printf("[%s]", ep->name);
+			(void)fprintf(curf->stdfp, "[%s]", ep->name);
 		else
-			(void)printf("%s", ep->name);
+			(void)fprintf(curf->stdfp, "%s", ep->name);
 	}
-	EX_PRTRAIL;
+	(void)fprintf(curf->stdfp, "\n");
 	return (0);
 }
