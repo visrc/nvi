@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 9.7 1995/01/31 09:47:33 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:47:33 $";
+static char sccsid[] = "$Id: ex_util.c,v 9.8 1995/02/17 11:39:47 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:39:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,22 +201,28 @@ ex_ncheck(sp, force)
  *	Display a few common messages.
  */
 void
-ex_message(sp, cmdp, which)
+ex_message(sp, p, which)
 	SCR *sp;
-	const EXCMDLIST *cmdp;
+	char *p;
 	enum exmtype which;
 {
 	switch (which) {
+	case EXM_EMPTYBUF:
+		msgq(sp, M_ERR, "129|Buffer %s is empty", p);
+		break;
+	case EXM_NOPREVBUF:
+		msgq(sp, M_ERR, "128|No previous buffer to execute");
+		break;
 	case EXM_NOPREVRE:
 		msgq(sp, M_ERR, "230|No previous regular expression");
 		break;
 	case EXM_NORC:
 		msgq(sp, M_ERR,
 	"103|The %s command requires that a file have already been read in",
-		    cmdp->name);
+		    p);
 		break;
 	case EXM_USAGE:
-		msgq(sp, M_ERR, "130|Usage: %s", cmdp->usage);
+		msgq(sp, M_ERR, "130|Usage: %s", p);
 		break;
 	}
 }

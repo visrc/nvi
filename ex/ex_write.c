@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 9.4 1995/01/11 19:21:01 bostic Exp $ (Berkeley) $Date: 1995/01/11 19:21:01 $";
+static char sccsid[] = "$Id: ex_write.c,v 9.5 1995/02/17 11:40:38 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:40:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,7 +162,7 @@ exwr(sp, cmdp, cmd)
 	if (cmd == WRITE && *p == '!') {
 		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
-			ex_message(sp, cmdp->cmd, EXM_USAGE);
+			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
 		}
 		/* Expand the argument. */
@@ -235,7 +235,7 @@ exwr(sp, cmdp, cmd)
 		msgq(sp, M_ERR, "172|%s expanded into too many file names", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
-		ex_message(sp, cmdp->cmd, EXM_USAGE);
+		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
