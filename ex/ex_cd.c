@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.11 1994/05/21 09:38:04 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:04 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.12 1994/08/04 16:45:26 bostic Exp $ (Berkeley) $Date: 1994/08/04 16:45:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,7 +42,9 @@ ex_cd(sp, ep, cmdp)
 {
 	CDPATH *cdp;
 	EX_PRIVATE *exp;
-	char *dir, buf[MAXPATHLEN];
+	size_t len;
+	char *dir;		/* XXX End of the stack, don't trust getcwd. */
+	char buf[MAXPATHLEN * 2];
 
 	switch (cmdp->argc) {
 	case 0:
@@ -50,9 +52,11 @@ ex_cd(sp, ep, cmdp)
 			msgq(sp, M_ERR, "Environment variable HOME not set");
 			return (1);
 		}
+		len = strlen(dir);
 		break;
 	case 1:
 		dir = cmdp->argv[0]->bp;
+		len = cmdp->argv[0]->len;
 		break;
 	default:
 		abort();
@@ -65,19 +69,23 @@ ex_cd(sp, ep, cmdp)
 	 * !!!
 	 * This violates historic practice.  Historic vi didn't consider
 	 * CDPATH, and therefore always used the current directory. This
-	 * is probably correct; if user's have set CDPATH to not include
+	 * is probably correct; if users have set CDPATH to not include
 	 * the current directory, they probably had a reason.
 	 */
-	exp = EXP(sp);
 	if (dir[0] == '/') {
-		if (chdir(dir) < 0)
+		if (argv_exp2(sp, ep, cmdp, dir, len, 0))
+			return (1);
+		if (chdir(cmdp->argv[cmdp->argc - 1]->bp) < 0)
 			goto err;
 	} else {
+		exp = EXP(sp);
 		for (cdp = exp->cdq.tqh_first;
 		    cdp != NULL; cdp = cdp->q.tqe_next) {
-			(void)snprintf(buf,
+			len = snprintf(buf,
 			    sizeof(buf), "%s/%s", cdp->path, dir);
-			if (!chdir(buf))
+			if (argv_exp2(sp, ep, cmdp, buf, len, 0))
+				return (1);
+			if (!chdir(cmdp->argv[cmdp->argc - 1]->bp))
 				break;
 		}
 		if (cdp == NULL) {
