@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.21 1994/03/08 19:41:16 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:16 $";
+static char sccsid[] = "$Id: v_init.c,v 8.22 1994/04/06 11:37:55 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:37:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,7 +142,7 @@ v_init(sp, ep)
 
 	/* Reset strange attraction. */
 	sp->rcm = 0;
-	sp->rcmflags = 0;
+	sp->rcm_last = 0;
 
 	/* Make ex display to a special function. */
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {

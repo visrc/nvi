@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.12 1994/03/15 17:18:45 bostic Exp $ (Berkeley) $Date: 1994/03/15 17:18:45 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.13 1994/04/06 11:37:26 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:37:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -177,21 +177,14 @@ svi_rcm(sp, ep, lno)
 {
 	size_t cno, len;
 
-	/* First non-blank character. */
-	if (sp->rcmflags == RCM_FNB) {
-		cno = 0;
-		(void)nonblank(sp, ep, lno, &cno);
-		return (cno);
-	}
-
-	/* First character is easy, and common. */
-	if (sp->rcmflags != RCM_LAST && HMAP->off == 1 && sp->rcm == 0)
-		return (0);
-
 	/* Last character is easy, and common. */
-	if (sp->rcmflags == RCM_LAST)
+	if (sp->rcm_last)
 		return (file_gline(sp,
 		    ep, lno, &len) == NULL || len == 0 ? 0 : len - 1);
+
+	/* First character is easy, and common. */
+	if (HMAP->off == 1 && sp->rcm == 0)
+		return (0);
 
 	/*
 	 * Get svi_cm_private() to do the hard work.  If doing leftright

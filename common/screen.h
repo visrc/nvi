@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.92 1994/03/23 16:43:26 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:43:26 $
+ *	$Id: screen.h,v 8.93 1994/04/06 11:37:09 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:37:09 $
  */
 
 /*
@@ -109,10 +109,8 @@ struct _scr {
 	recno_t	 lno;			/* 1-N: file line. */
 	size_t	 cno;			/* 0-N: file character in line. */
 
-	size_t	 rcm;			/* Vi: 0-N: Column suck. */
-#define	RCM_FNB		0x01		/* Column suck: first non-blank. */
-#define	RCM_LAST	0x02		/* Column suck: last. */
-	u_int	 rcmflags;
+	size_t	 rcm;			/* Vi: 0-N: Most attractive column. */
+	int	 rcm_last;		/* Cursor drawn to the last column. */
 
 #define	L_ADDED		0		/* Added lines. */
 #define	L_CHANGED	1		/* Changed lines. */
