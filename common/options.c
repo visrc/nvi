@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.62 1994/07/22 19:20:20 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:20:20 $";
+static char sccsid[] = "$Id: options.c,v 8.63 1994/07/22 19:49:33 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:49:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -257,7 +257,7 @@ opts_init(sp)
 	if (str != b1)		/* GCC puts strings in text-space. */	\
 		(void)strcpy(b1, str);					\
 	a.len = strlen(b1);						\
-	if (opts_set(sp, argv)) {					\
+	if (opts_set(sp, NULL, argv)) {					\
 		msgq(sp, M_ERR,						\
 		    "Unable to set default %s option", optlist[opt]);	\
 		return (1);						\
@@ -346,8 +346,9 @@ opts_init(sp)
  *	Change the values of one or more options.
  */
 int
-opts_set(sp, argv)
+opts_set(sp, usage, argv)
 	SCR *sp;
+	char *usage;
 	ARGS *argv[];
 {
 	enum optdisp disp;
@@ -374,6 +375,11 @@ opts_set(sp, argv)
 		for (sep = NULL, equals = qmark = 0,
 		    p = name = argv[0]->bp; (ch = *p) != '\0'; ++p)
 			if (ch == '=' || ch == '?') {
+				if (p == name) {
+					if (usage != NULL)
+						msgq(sp, M_ERR, usage);
+					return (1);
+				}
 				sep = p;
 				if (ch == '=')
 					equals = 1;

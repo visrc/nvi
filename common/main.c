@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.97 1994/07/17 16:50:11 bostic Exp $ (Berkeley) $Date: 1994/07/17 16:50:11 $";
+static char sccsid[] = "$Id: main.c,v 8.98 1994/07/22 19:49:11 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:49:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -235,7 +235,7 @@ main(argc, argv)
 		b.len = 0;
 		av[0] = &a;
 		av[1] = &b;
-		if (opts_set(sp, av))
+		if (opts_set(sp, NULL, av))
 			 msgq(sp, M_ERR,
 			     "Unable to set command line window size option");
 	}

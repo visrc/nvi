@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.20 1994/07/15 16:14:43 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:14:43 $
+ *	$Id: options.h,v 8.21 1994/07/22 19:48:56 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:48:56 $
  */
 
 struct _option {
@@ -51,7 +51,7 @@ void	opts_dump __P((SCR *, enum optdisp));
 void	opts_free __P((SCR *));
 int	opts_init __P((SCR *));
 int	opts_save __P((SCR *, FILE *));
-int	opts_set __P((SCR *, ARGS *[]));
+int	opts_set __P((SCR *, char *, ARGS *[]));
 
 /* Per-option change routines. */
 int	f_altwerase __P((SCR *, OPTION *, char *, u_long));
