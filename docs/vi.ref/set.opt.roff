@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.28 1994/09/02 20:26:19 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:26:19 $
+.\"     $Id: set.opt.roff,v 8.29 1994/09/03 11:22:02 bostic Exp $ (Berkeley) $Date: 1994/09/03 11:22:02 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -105,10 +105,10 @@ if you have an indented line, containing only blanks, the first
 character you enter will erase up to end of the indent characters,
 and the second will erase back to the beginning of the line.
 (Historically, only the
-.CO <control-D>
+.LI <control-D>
 key would erase the indent characters.
 Both the
-.CO <control-D>
+.LI <control-D>
 key and the usual erase keys work in
 .CO nvi .)
 In addition, if the cursor is positioned at the end of the indent
@@ -414,26 +414,12 @@ character.
 See the section entitled
 .QB "Regular Expressions and Replacement Strings"
 for more information.
-.KY meta
-.IP "meta [~{[*?$`'""\\]"
-The set of characters that
-.EV ex
-checks for when doing file name expansion.
-If any of the specified characters are found in the file name arguments
-to the
-.CO ex
-commands,
-the arguments are expanded using the program defined by the
-.OP shell
-option.
-The default set of characters is a union of the meta characters
-from the Version 7 and the Berkeley C shell.
 .KY matchtime
 .IP "matchtime [7]"
 .CO Vi
 only.
 The 10th's of a second
-.EV ex vi
+.CO vi
 pauses on the matching character when the
 .OP showmatch
 option is set.
@@ -451,6 +437,44 @@ This option only permits you to disallow messages for the edit session.
 See the
 .XR mesg 1
 utility for more information.
+.KY meta
+.IP "meta [""""$'*?[\e`}]"
+The set of characters that
+.CO ex
+checks for when doing file name expansion.
+If any of the specified characters are found in the file name arguments
+to the
+.CO ex
+commands,
+the arguments are expanded using the program defined by the
+.OP shell
+option.
+The default set of characters is a union of the meta characters
+from the Version 7 and the Berkeley C shell.
+.KY msgcat
+.IP "msgcat [./]"
+This option selects a message catalog to be used to display error and
+informational messages in a specified language.
+If the value of this option ends with a '/', it is treated as the name
+of a directory that contains a message catalog
+.QT "vi_XXXX" ,
+where
+.QT XXXX
+is the value of the
+.LI LANG
+environmental variable, if it's set, or the value of the
+.LI LC_MESSAGES
+environmental variable if it's not.
+If neither of those environmental variables are set,
+or if the option doesn't end in a '/',
+the option is treated as the full path name of the message catalog to use.
+.sp
+If any messages are missing from the catalog,
+the backup text (English) is used instead.
+.sp
+See the distribution file
+.LI catalog/README
+for additional information on building and installing message catalogs.
 .KY modelines
 .IP "modelines, modeline [off]"
 If the
