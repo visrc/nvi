@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.3 1993/08/31 17:15:26 bostic Exp $ (Berkeley) $Date: 1993/08/31 17:15:26 $";
+static char sccsid[] = "$Id: v_section.c,v 8.4 1994/01/22 20:12:46 bostic Exp $ (Berkeley) $Date: 1994/01/22 20:12:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,5 +115,6 @@ v_sectionb(sp, ep, vp, fm, tm, rp)
 
 	/* SOF is a movement sink. */
 	rp->lno = 1;
+	rp->cno = 0;
 	return (0);
 }
