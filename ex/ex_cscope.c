@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.1 1996/05/08 18:08:27 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:08:27 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.2 1996/05/08 20:48:49 bostic Exp $ (Berkeley) $Date: 1996/05/08 20:48:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -88,7 +88,7 @@ static CC const cscope_cmds[] = {
 	{ NULL }
 };
 
-static TAGQ	*create_cs_cmd __P((SCR *, char *, char **, size_t *));
+static TAGQ	*create_cs_cmd __P((SCR *, char *, size_t *));
 static int	 csc_help __P((SCR *, char *));
 static void	 find_file __P((SCR *,
 		    CSC *, char *, char **, size_t *, int *));
@@ -459,7 +459,7 @@ cscope_find(sp, cmdp, pattern)
 	}
 
 	/* Create the cscope command. */
-	if ((tqp = create_cs_cmd(sp, pattern, &pattern, &search)) == NULL)
+	if ((tqp = create_cs_cmd(sp, pattern, &search)) == NULL)
 		goto err;
 
 	/*
@@ -483,7 +483,7 @@ cscope_find(sp, cmdp, pattern)
 		 * search cscope command character and a leading space
 		 * there.)
 		 */
-		(void)fprintf(csc->to_fp, "%d%s\n", search, pattern);
+		(void)fprintf(csc->to_fp, "%d%s\n", search, tqp->tag + 2);
 		(void)fflush(csc->to_fp);
 
 		/* Read the output. */
@@ -565,9 +565,9 @@ alloc_err:
  *	Build a cscope command, creating and initializing the base TAGQ.
  */
 static TAGQ *
-create_cs_cmd(sp, pattern, patternp, searchp)
+create_cs_cmd(sp, pattern, searchp)
 	SCR *sp;
-	char *pattern, **patternp;
+	char *pattern;
 	size_t *searchp;
 {
 	CB *cbp;
@@ -612,12 +612,10 @@ usage:		(void)csc_help(sp, "find");
 	if (p[0] == '"' && p[1] != '\0' && p[2] == '\0')
 		CBNAME(sp, cbp, p[1]);
 	if (cbp != NULL) {
-		*patternp = cbp->textq.cqh_first->lb;
+		p = cbp->textq.cqh_first->lb;
 		tlen = cbp->textq.cqh_first->len;
-	} else {
-		*patternp = p;
+	} else
 		tlen = strlen(p);
-	}
 
 	/* Allocate and initialize the TAGQ structure. */
 	CALLOC(sp, tqp, TAGQ *, 1, sizeof(TAGQ) + tlen + 3);
