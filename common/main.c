@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.71 1994/03/08 19:38:04 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:04 $";
+static char sccsid[] = "$Id: main.c,v 8.72 1994/03/14 10:29:34 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:29:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -183,7 +183,7 @@ main(argc, argv)
 
 	/* Build and initialize the GS structure. */
 	__global_list = gp = gs_init();
-		
+
 	if (snapshot)
 		F_SET(gp, G_SNAPSHOT);
 
@@ -299,7 +299,9 @@ main(argc, argv)
 				msgq(sp, M_SYSERR, NULL);
 				goto err;
 			} else {
+				F_SET(sp, S_VLITONLY);
 				(void)ex_icmd(sp, NULL, p, strlen(p));
+				F_CLR(sp, S_VLITONLY);
 				free(p);
 			}
 		else if ((p = getenv("HOME")) != NULL && *p) {
@@ -417,7 +419,7 @@ main(argc, argv)
 			if (term_push(sp, ":", 1, 0, 0))
 				goto err;
 		}
-		
+
 	/* Vi reads from the terminal. */
 	if (!F_ISSET(gp, G_STDIN_TTY) && !F_ISSET(sp, S_EX)) {
 		msgq(sp, M_ERR, "Vi's standard input must be a terminal.");
@@ -574,16 +576,16 @@ gs_end(gp)
 	for (sp = __global_list->dq.cqh_first;
 	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
 		for (mp = sp->msgq.lh_first;
-		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
+		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
 			(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
 	for (sp = __global_list->hq.cqh_first;
 	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
 		for (mp = sp->msgq.lh_first;
-		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
+		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
 			(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
 	/* Flush messages on the global queue. */
 	for (mp = gp->msgq.lh_first;
-	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
+	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
 		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
 
 	if (gp->special_key != NULL)
