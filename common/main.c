@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.11 1995/09/21 12:06:01 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:01 $";
+static char sccsid[] = "$Id: main.c,v 10.12 1995/09/22 19:28:42 bostic Exp $ (Berkeley) $Date: 1995/09/22 19:28:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,8 +40,6 @@ static char sccsid[] = "$Id: main.c,v 10.11 1995/09/21 12:06:01 bostic Exp $ (Be
 
 static void	 v_estr __P((char *, int, char *));
 static int	 v_obsolete __P((char *, char *[]));
-
-SCR *xxsp;
 
 /*
  * editor --
@@ -233,8 +231,6 @@ editor(gp, argc, argv, rows, cols)
 	}
 	F_SET(sp, S_EX);
 	CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
-
-xxsp = sp;
 
 	if (v_key_init(sp))		/* Special key initialization. */
 		goto err;
