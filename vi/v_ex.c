@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.32 1996/03/27 09:18:54 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:54 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.33 1996/03/28 16:57:44 bostic Exp $ (Berkeley) $Date: 1996/03/28 16:57:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -406,7 +406,7 @@ v_ex(sp, vp)
 			 * entered some text, move it into the edit history.
 			 */
 			if (tp->term == TERM_CEDIT) {
-				if (tp->len != 0 && v_ecl_log(sp, tp))
+				if (tp->len > 1 && v_ecl_log(sp, tp))
 					return (1);
 				vp->m_final.lno = sp->lno;
 				vp->m_final.cno = sp->cno;
