@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.13 1994/04/30 10:28:57 bostic Exp $ (Berkeley) $Date: 1994/04/30 10:28:57 $
+.\"     $Id: set.opt.roff,v 8.14 1994/05/01 12:21:15 bostic Exp $ (Berkeley) $Date: 1994/05/01 12:21:15 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -1076,13 +1076,30 @@ only.
 Break lines automatically when they reach the right-hand margin.
 #endif
 #ifdef REFERENCE
-If the value of wrapmargin is non-zero,
+If the value of
+.Sy wrapmargin
+is non-zero,
 .Nm \&vi
-will break lines, that are more than that number of characters long,
-into two lines at the blank character closest to the value.
-If wrapmargin is 0,
-or if there is no blank character upon which to break the line,
-the line will not be broken.
+will split lines so that they end at least that number of characters
+before the right-hand margin of the screen.
+(Note, the value of
+.Sy wrapmargin
+is
+.Em not
+a text length.
+In a screen that's 80 columns wide, the command
+.Dq Li ":set wrapmargin=8"
+attempts to keep the lines less than or equal to 72 columns wide.)
+.Pp
+Lines are split at the previous whitespace character closest to the
+number.
+Any trailing whitespace characters before that character are deleted.
+If the line is split because of an inserted <space> or <tab> character,
+and you then enter another <space> character, it is discarded.
+.Pp
+If wrapmargin is set to 0,
+or if there is no blank character upon which to split the line,
+the line is not broken.
 #endif
 .SP
 .It Sy "wrapscan, ws [on]"
