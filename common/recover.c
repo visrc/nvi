@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.12 1993/08/25 18:08:24 bostic Exp $ (Berkeley) $Date: 1993/08/25 18:08:24 $";
+static char sccsid[] = "$Id: recover.c,v 8.13 1993/08/27 18:42:40 bostic Exp $ (Berkeley) $Date: 1993/08/27 18:42:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -376,6 +376,10 @@ rcv_term(signo)
 }
 
 /*
+ *	people making love
+ *	never exactly the same
+ *	just like a snowflake 
+ *
  * rcv_list --
  *	List the files that can be recovered by this user.
  */
