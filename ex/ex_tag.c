@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.36 1993/05/06 01:10:54 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:10:54 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.37 1993/05/08 20:32:13 bostic Exp $ (Berkeley) $Date: 1993/05/08 20:32:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,11 +73,11 @@ ex_tagfirst(sp, tagarg)
 	m.lno = 1;
 	m.cno = 0;
 	sval = f_search(sp, tep, &m, &m, search,
-	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+	    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
 	if (sval && (p = strrchr(search, '(')) != NULL) {
 		p[1] = '\0';
 		sval = f_search(sp, tep, &m, &m, search,
-		    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+		    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
 	}
 	if (sval) {
 		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
@@ -264,11 +264,11 @@ tag_change(sp, ep, tag, fname, search, force)
 	m.lno = 1;
 	m.cno = 0;
 	sval = f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
-	    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+	    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
 	if (sval && (p = strrchr(search, '(')) != NULL) {
 		p[1] = '\0';
 		sval = f_search(sp, tep == NULL ? ep : tep, &m, &m, search,
-		    NULL, SEARCH_FILE | SEARCH_PARSE | SEARCH_TERM);
+		    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
 	}
 	if (sval) {
 		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
