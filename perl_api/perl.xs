@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.24 1996/09/25 09:56:21 bostic Exp $ (Berkeley) $Date: 1996/09/25 09:56:21 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.25 1996/09/26 11:02:03 bostic Exp $ (Berkeley) $Date: 1996/09/26 11:02:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -278,7 +278,7 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	STRLEN length;
 	size_t len;
 	int i;
-	char *str;
+	char *str, *next;
 #ifndef HAVE_PERL_5_003_01
 	char *argv[2];
 #else
@@ -322,8 +322,20 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 		if (length) break;
 		SPAGAIN;
 		if(SvTRUEx(POPs)) {
-			str = SvPV(GvSV(defgv),len);
-			api_sline(scrp, i, str, len);
+		    if (SvOK(GvSV(defgv))) {
+		    	str = SvPV(GvSV(defgv),len);
+			next = memchr(str, '\n', len);
+		    	api_sline(scrp, i, str, next ? (next - str) : len);
+			while (next++) {
+			    len -= next - str;
+			    next = memchr(str = next, '\n', len);
+			    api_iline(scrp, ++i, str, next ? (next - str) : len);
+			    t_lno++;
+			}
+		    } else {
+			api_dline(scrp, i--);
+			t_lno--;
+		    }
 		}
 		PUTBACK;
 	}
