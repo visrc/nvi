@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.7 1992/11/07 13:43:02 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:43:02 $";
+static char sccsid[] = "$Id: db.c,v 5.8 1992/11/11 18:31:33 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:31:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: db.c,v 5.7 1992/11/07 13:43:02 bostic Exp $ (Berkel
 #include <string.h>
 
 #include "exf.h"
+#include "log.h"
 #include "screen.h"
 #include "extern.h"
 
@@ -107,6 +108,9 @@ file_dline(ep, lno)
 	TRACE("delete line %lu\n", lno);
 #endif
 
+	/* Log change. */
+	log_line(ep, lno, LINE_DELETE);
+
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
@@ -147,6 +151,9 @@ file_aline(ep, lno, p, len)
 #if DEBUG && 1
 	TRACE("append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
+
+	/* Log change. */
+	log_line(ep, lno + 1, LINE_APPEND);
 
 	/* Update file. */
 	key.data = &lno;
@@ -190,6 +197,8 @@ file_iline(ep, lno, p, len)
 #if DEBUG && 1
 	TRACE("insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
+	/* Log change. */
+	log_line(ep, lno, LINE_INSERT);
 
 	/* Update file. */
 	key.data = &lno;
@@ -232,6 +241,8 @@ file_sline(ep, lno, p, len)
 #if DEBUG && 1
 	TRACE("replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
+	/* Log change. */
+	log_line(ep, lno, LINE_RESET);
 
 	/* Update file. */
 	key.data = &lno;
@@ -244,9 +255,12 @@ file_sline(ep, lno, p, len)
 		return (1);
 	}
 
-	/* Flush the cache, before screen update. */
+	/* Flush the cache, before logging or screen update. */
 	if (lno == ep->c_lno)
 		ep->c_lno = OOBLNO;
+
+	/* Log change. */
+	log_line(ep, lno, LINE_RESET);
 
 	/* Update screen. */
 	scr_update(ep, lno, p, len, LINE_RESET);
