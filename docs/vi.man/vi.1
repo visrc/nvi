@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.11 1994/05/24 18:04:58 bostic Exp $ (Berkeley) $Date: 1994/05/24 18:04:58 $
+.\"     $Id: vi.1,v 8.12 1994/07/15 15:32:12 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:32:12 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -150,7 +150,7 @@ In the
 .Nm \&ex
 interface, if standard input is not a terminal,
 .Nm \&ex
-will read commands from it regardless, however, the session will a
+will read commands from it regardless, however, the session will be a
 batch mode session, exactly as if the
 .Fl s
 option had been specified.
@@ -301,9 +301,773 @@ The above commands work on
 characters and lines, i.e. they affect the entire line no matter
 how many screen lines it takes up and the entire character no matter
 how many screen columns it takes up.
-#include <vi.cmd.roff>
-#include <ex.cmd.roff>
-#include <set.opt.roff>
+.Sh VI COMMANDS
+The following section describes the commands available in the command
+mode of the
+.Nm \&vi
+editor.
+In each entry below, the tag line is a usage synopsis for the command
+character.
+.sp
+.Bl -tag -width "XXXX" -compact
+.It Sy "[count] <control-A>"
+Search forward
+.Li count
+times for the current word.
+.It Sy "[count] <control-B>"
+Page backwards
+.Li count
+screens.
+.It Sy "[count] <control-D>"
+Scroll forward
+.Li count
+lines.
+.It Sy "[count] <control-E>"
+Scroll forward
+.Li count
+lines, leaving the current line and column as is, if possible.
+.It Sy "[count] <control-F>"
+Page forward
+.Li count
+screens.
+.It Sy "<control-G>"
+Display the file information.
+.It Sy "<control-H>"
+.It Sy "[count] h"
+Move the cursor back
+.Li count
+characters in the current line.
+.It Sy "[count] <control-J>"
+.It Sy "[count] <control-N>"
+.It Sy "[count] j"
+Move the cursor down
+.Li count
+lines without changing the current column.
+.It Sy "<control-L>"
+.It Sy "<control-R>"
+Repaint the screen.
+.It Sy "[count] <control-M>"
+.It Sy "[count] +"
+Move the cursor down
+.Li count
+lines to the first nonblank character of that line.
+.It Sy "[count] <control-P>"
+.It Sy "[count] k"
+Move the cursor up
+.Li count
+lines, without changing the current column.
+.It Sy "<control-T>"
+Return to the most recent tag context.
+.It Sy "<control-U>"
+Scroll backwards
+.Li count
+lines.
+.It Sy "<control-W>"
+Switch to the next lower screen in the window, or, to the first
+screen if there are no lower screens in the window.
+.It Sy "<control-Y>"
+Scroll backwards
+.Li count
+lines, leaving the current line and column as is, if possible.
+.It Sy "<control-Z>"
+Suspend the current editor session.
+.It Sy "<escape>"
+Execute
+.Nm \&ex
+commands or cancel partial commands.
+.It Sy "<control-]>"
+Push a tag reference onto the tag stack.
+.It Sy "<control-^>"
+Switch to the most recently edited file.
+.It Sy "[count] <space>"
+.It Sy "[count] l"
+Move the cursor forward
+.Li count
+characters without changing the current line.
+.It Sy "[count] ! motion shell-argument(s)"
+Replace text with results from a shell command.
+.It Sy "[count] # +|-|#"
+Increment or decrement the cursor number.
+.It Sy "[count] $"
+Move the cursor to the end of a line.
+.It Sy "%"
+Move to the matching character.
+.It Sy "&"
+Repeat the previous substitution command on the current line.
+.It Sy "'<character>"
+.It Sy "`<character>"
+Return to a context marked by the character
+.Li <character> .
+.It Sy "[count] ("
+Back up
+.Li count
+sentences.
+.It Sy "[count] )"
+Move forward
+.Li count
+sentences.
+.It Sy "[count] ,"
+Reverse find character
+.Li count
+times.
+.It Sy "[count] -"
+Move to first nonblank of the previous line,
+.Li count
+times.
+.It Sy "[count] ."
+Repeat the last
+.Nm \&vi
+command that modified text.
+.It Sy "/RE<carriage-return>"
+.It Sy "/RE/ [offset]<carriage-return>"
+.It Sy "?RE<carriage-return>"
+.It Sy "?RE? [offset]<carriage-return>"
+.It Sy "N"
+.It Sy "n"
+Search forward or backward for a regular expression.
+.It Sy "0"
+Move to the first character in the current line.
+.It Sy ":"
+Execute an ex command.
+.It Sy "[count] ;"
+Repeat the last character find
+.Li count
+times.
+.It Sy "[count] < motion"
+.It Sy "[count] > motion"
+Shift lines left or right.
+.It Sy "@ buffer"
+Execute a named buffer.
+.It Sy "[count] A"
+Enter input mode, appending the text after the end of the line.
+.It Sy "[count] B"
+Move backwards
+.Li count
+bigwords.
+.It Sy "[buffer] [count] C"
+Change text from the current position to the end-of-line.
+.It Sy "[buffer] D"
+Delete text from the current position to the end-of-line.
+.It Sy "[count] E"
+Move forward
+.Li count
+end-of-bigwords.
+.It Sy "[count] F <character>"
+Search
+.Li count
+times backward through the current line for
+.Li <character> .
+.It Sy "[count] G"
+Move to line
+.Li count ,
+or the last line of the file if
+.Li count
+not specified.
+.It Sy "[count] H"
+Move to the screen line
+.Li "count - 1"
+lines below the top of the screen.
+.It Sy "[count] I"
+Enter input mode, inserting the text at the beginning of the line.
+.It Sy "[count] J"
+Join lines.
+.It Sy "[count] L"
+Move to the screen line
+.Li "count - 1"
+lines above the bottom of the screen.
+.It Sy " M"
+Move to the screen line in the middle of the screen.
+.It Sy "[count] O"
+Enter input mode, appending text in a new line above the current line.
+.It Sy "[buffer] P"
+Insert text from a buffer.
+.It Sy "Q"
+Exit
+.Nm \&vi
+(or visual) mode and switch to
+.Nm \&ex
+mode.
+.It Sy "[count] R"
+Enter input mode, replacing the characters in the current line.
+.It Sy "[buffer] [count] S"
+Substitute
+.Li count
+lines.
+.It Sy "[count] T <character>"
+Search backwards,
+.Li count
+times,
+through the current line for the character
+.Em after
+the specified
+.Li <character> .
+.It Sy "U"
+Restore the current line to its state before the cursor last
+moved to it.
+.It Sy "[count] W"
+Move forward
+.Li count
+bigwords.
+.It Sy "[buffer] [count] X"
+Delete
+.Li count
+characters before the cursor.
+.It Sy "[buffer] [count] Y"
+Copy (or
+.Dq yank )
+.Li count
+lines into the specified buffer.
+.It Sy "ZZ"
+Write the file and exit
+.Nm \&vi .
+.It Sy "[count] [["
+Back up
+.Li count
+section boundaries.
+.It Sy "[count] ]]"
+Move forward
+.Li count
+section boundaries.
+.It Sy "\&^"
+Move to first nonblank character on the current line.
+.It Sy "[count] _"
+Move down
+.Li "count - 1"
+lines, to the first nonblank character.
+.It Sy "[count] a"
+Enter input mode, appending the text after the cursor.
+.It Sy "[count] b"
+Move backwards
+.Li count
+words.
+.It Sy "[buffer] [count] c motion"
+Change a region of text.
+.It Sy "[buffer] [count] d motion"
+Delete a region of text.
+.It Sy "[count] e"
+Move forward
+.Li count
+end-of-words.
+.It Sy "[count] f<character>"
+Search forward,
+.Li count
+times, through the rest of the current line for
+.Li <character> .
+.It Sy "[count] i"
+Enter input mode, inserting the text before the cursor.
+.It Sy "m <character>"
+Save the current context (line and column) as
+.Li <character> .
+.It Sy "[count] o"
+Enter input mode, appending text in a new line under the current line.
+.It Sy "[buffer] p"
+Append text from a buffer.
+.It Sy "[count] r <character>
+Replace
+.Li count
+characters.
+.It Sy "[buffer] [count] s"
+Substitute
+.Li count
+characters in the current line starting with the current character.
+.It Sy "[count] t <character>"
+Search forward,
+.Li count
+times, through the current line for the character immediately
+.Em before
+.Li <character> .
+.It Sy "u"
+Undo the last change made to the file.
+.It Sy "[count] w"
+Move forward
+.Li count
+words.
+.It Sy "[buffer] [count] x"
+Delete
+.Li count
+characters.
+.It Sy "[buffer] [count] y motion"
+Copy (or
+.Dq yank )
+a text region specified by the
+.Li count
+and motion into a buffer.
+.It Sy "[count1] z [count2] -|.|+|^|<carriage-return>"
+Redraw, optionally repositioning and resizing the screen.
+.It Sy "[count] {"
+Move backward
+.Li count
+paragraphs.
+.It Sy "[count] |"
+Move to a specific
+.Em column
+position on the current line.
+.It Sy "[count] }"
+Move forward
+.Li count
+paragraphs.
+.It Sy "[count] ~"
+Reverse the case of the next
+.Li count
+character(s).
+.It Sy "[count] ~ motion"
+Reverse the case of the characters in a text region specified by the
+.Li count
+and
+.Li motion .
+.It Sy "<interrupt>"
+Interrupt the current operation.
+.El
+.Sh VI TEXT INPUT COMMANDS
+The following section describes the commands available in the text
+input mode of the
+.Nm \&vi
+editor.
+.Pp
+.Bl -tag -width "XXXX" -compact
+.It Sy "<nul>"
+Replay the previous input.
+.It Sy "<control-D>"
+Erase the previous autoindent character.
+.It Sy "^<control-D>"
+Erase all of the autoindent characters, and reset the autoindent level.
+.It Sy "0<control-D>"
+Erase all of the autoindent characters.
+.It Sy "<control-T>"
+Insert sufficient
+.Li <tab>
+and
+.Li <space>
+characters to move the cursor forward to a column immediately
+after the next column which is an even multiple of the
+.Sy shiftwidth
+option.
+.It Sy "<erase>
+.It Sy "<control-H>"
+Erase the last character.
+.It Sy "<literal next>"
+Quote the next character.
+.It Sy "<escape>
+Resolve all text input into the file, and return to command mode.
+.It Sy "<line erase>
+Erase the current line.
+.It Sy "<control-W>"
+.It Sy "<word erase>
+Erase the last word.
+The definition of word is dependent on the
+.Sy altwerase
+and
+.Sy ttywerase
+options.
+.It Sy "<control-X>[0-9A-Fa-f]*"
+Insert a character with the specified hexadecimal value into the text.
+.It Sy "<interrupt>"
+Interrupt text input mode, returning to command mode.
+.El
+.Sh EX COMMANDS
+The following section describes the commands available in the
+.Nm \&ex
+editor.
+In each entry below, the tag line is a usage synopsis for the command.
+.sp
+.Bl -tag -width "XXXX" -compact
+.It Sy "<end-of-file>"
+Scroll the screen.
+.It Sy "! argument(s)"
+.It Sy "[range]! argument(s)"
+Execute a shell command, or filter lines through a shell command.
+.It Sy \&"
+A comment.
+.It Sy "[range] nu[mber] [count] [flags]"
+.It Sy "[range] # [count] [flags]"
+Display the selected lines, each preceded with its line number.
+.It Sy "@ buffer"
+.It Sy "* buffer"
+Execute a buffer.
+.It Sy "[range] d[elete] [buffer] [count] [flags]"
+Delete the lines from the file.
+.It Sy "di[splay] b[uffers] | s[creens] | t[ags]"
+Display buffers, screens or tags.
+.It Sy "e[dit][!] [+cmd] [file]"
+.It Sy "ex[!] [+cmd] [file]"
+Edit a different file.
+.It Sy "exu[sage] [command]"
+Display usage for an
+.Nm \&ex
+command.
+.It Sy "f[ile] [file]"
+Display and optionally change the file name.
+.It Sy "fg [name]"
+.Nm \&Vi
+mode only.
+Foreground the specified screen.
+.It Sy "[range] g[lobal] /pattern/ [commands]"
+.It Sy "[range] v /pattern/ [commands]
+Apply commands to lines matching (or not matching) a pattern.
+.It Sy "he[lp]"
+Display a help message.
+.It Sy "[line] i[nsert][!]"
+The input text is inserted before the specified line.
+.It Sy "[range] j[oin][!] [count] [flags]"
+Join lines of text together.
+.It Sy "[range] l[ist] [count] [flags]"
+Display the lines unambiguously.
+.It Sy "map[!] [lhs rhs]"
+Define or display maps (for
+.Nm \&vi
+only).
+.It Sy "[line] ma[rk] <character>"
+.It Sy "[line] k <character>"
+Mark the line with the mark
+.Li <character> .
+.It Sy "[range] m[ove] line"
+Move the specified lines after the target line.
+.It Sy "mk[exrc][!] file"
+Write the abbreviations, editor options and maps to the specified
+file.
+.It Sy "n[ext][!] [file ...]"
+Edit the next file from the argument list.
+.It Sy "[line] o[pen] /pattern/ [flags]"
+Enter open mode.
+.It Sy "pre[serve]"
+Save the file in a form that can later be recovered using the
+.Nm \&ex
+.Fl r
+option.
+.It Sy "prev[ious][!]"
+Edit the previous file from the argument list.
+.It Sy "[range] p[rint] [count] [flags]"
+Display the specified lines.
+.It Sy "[line] pu[t] [buffer]"
+Append buffer contents to the current line.
+.It Sy "q[uit][!]"
+End the editing session.
+.It Sy "[line] r[ead][!] [file]"
+Read a file.
+.It Sy "rec[over] file"
+Recover
+.Li file
+if it was previously saved.
+.It Sy "res[ize] [+|-]size"
+.Nm \&Vi
+mode only.
+Grow or shrink the current screen.
+.It Sy "rew[ind][!]"
+Rewind the argument list.
+.It Sy "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
+Display or set editor options.
+.It Sy "sh[ell]"
+Run a shell program.
+.It Sy "so[urce] file"
+Read and execute
+.Nm \&ex
+commands from a file.
+.It Sy "sp[lit] [file ...]"
+.Nm \&Vi
+mode only.
+Split the screen.
+.It Sy "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
+.It Sy "[range] & [options] [count] [flags]"
+.It Sy "[range] ~ [options] [count] [flags]"
+Make substitutions.
+.It Sy "su[spend][!]"
+.It Sy "st[op][!]"
+.It Sy <suspend>
+Suspend the edit session.
+.It Sy "ta[g][!] tagstring"
+Edit the file containing the specified tag.
+.It Sy "tagp[op][!] [file | number]"
+Pop to the specified tag in the tags stack.
+.It Sy "unm[ap][!] lhs"
+Unmap a mapped string.
+.It Sy "ve[rsion]"
+Display the version of the
+.Nm \&ex/vi
+editor.
+.It Sy "[line] vi[sual] [type] [count] [flags]"
+.Nm \&Ex
+mode only.
+Enter
+.Nm \&vi .
+.It Sy "vi[sual][!] [+cmd] [file]"
+.Nm \&Vi
+mode only.
+Edit a new file.
+.It Sy "viu[sage] [command]"
+Display usage for a
+.Nm \&vi
+command.
+.It Sy "[range] w[rite][!] [>>] [file]"
+.It Sy "[range] w[rite] [!] [file]"
+.It Sy "[range] wn[!] [>>] [file]"
+.It Sy "[range] wq[!] [>>] [file]"
+Write the file.
+.It Sy "[range] x[it][!] [file]"
+Write the file if it has been modified.
+.It Sy "[range] ya[nk] [buffer] [count]"
+Copy the specified lines to a buffer.
+.It Sy "[line] z [type] [count] [flags]"
+Adjust the window.
+.El
+.Sh SET OPTIONS
+There are a large number of options that may be set (or unset) to
+change the editor's behavior.
+This section describes the options, their abbreviations and their
+default values.
+.Pp
+In each entry below, the first part of the tag line is the full name
+of the option, followed by any equivalent abbreviations.
+The part in square brackets is the default value of the option.
+Most of the options are boolean, i.e. they are either on or off,
+and do not have an associated value.
+.Pp
+Options apply to both
+.Nm \&ex
+and
+.Nm \&vi
+modes, unless otherwise specified.
+.sp
+.Bl -tag -width "XXXX" -compact
+.It Sy "altwerase [off]"
+.Nm \&Vi
+only.
+Select an alternate word erase algorithm.
+.It Sy "autoindent, ai [off]"
+Automatically indent new lines.
+.It Sy "autoprint, ap [off]"
+.Nm \&Ex
+only.
+Display the current line automatically.
+.It Sy "autowrite, aw [off]"
+Write modified files automatically when changing files.
+.It Sy "beautify, bf [off]"
+Discard control characters.
+.It Sy "cdpath [environment variable CDPATH, or current directory]"
+The directory paths used as path prefixes for the
+.Sy cd
+command.
+.It Sy "columns, co [80]"
+Set the number of columns in the screen.
+.It Sy "comment [off]"
+.Nm \&Vi
+only.
+Skip leading comments in files.
+.It Sy "directory, dir [environment variable TMPDIR, or /tmp]"
+The directory where temporary files are created.
+.It Sy "edcompatible, ed [off]"
+Remember the values of the
+.Dq \&c
+and
+.Dq \&g
+suffices to the
+.Sy substitute
+commands, instead of initializing them as unset for each new
+command.
+.It Sy "errorbells, eb [off]"
+.Nm \&Ex
+only.
+Announce error messages with a bell.
+.It Sy "exrc, ex [off]"
+Never read startup files in the local directory.
+.It Sy "extended [off]"
+Regular expressions are extended (i.e.
+.Xr egrep 1
+style) expressions.
+.It Sy "flash [on]"
+Flash the screen instead of beeping the keyboard on error.
+.It Sy "hardtabs, ht [8]"
+Set the spacing between hardware tab settings.
+.It Sy "ignorecase, ic [off]"
+Ignore case differences in regular expressions.
+.It Sy "keytime [6]"
+The 10th's of a second
+.Nm ex/vi
+waits for a subsequent key to complete a key mapping.
+.It Sy "leftright [off]"
+.Nm \&Vi
+only.
+Do left-right scrolling.
+.It Sy "lines, li [24]"
+.Nm \&Vi
+only.
+Set the number of lines in the screen.
+.It Sy "lisp [off]"
+.Nm \&Vi
+only.
+Modify various search commands and options to work with Lisp.
+.Pp
+.Em "This option is not yet implemented."
+.It Sy "list [off]"
+Display lines in an unambiguous fashion.
+.It Sy "magic [on]"
+Treat certain characters specially in regular expressions.
+.It Sy "matchtime [7]"
+.Nm \&Vi
+only.
+The 10th's of a second
+.Nm ex/vi
+pauses on the matching character when the
+.Sy showmatch
+option is set.
+.It Sy "mesg [on]"
+Permit messages from other users.
+.It Sy "modelines, modeline [off]"
+Read the first and last few lines of each file for
+.Nm ex
+commands.
+.Pp
+.Em "This option will never be implemented."
+.It Sy "number, nu [off]"
+Precede each line displayed with its current line number.
+.It Sy "octal [off]"
+Display unknown characters as octal numbers, instead of the default
+hexadecimal.
+.It Sy "open [on]"
+.Nm \&Ex
+only.
+If this option is not set, the
+.Sy open
+and
+.Sy visual
+commands are disallowed.
+.It Sy "optimize, opt [on]"
+.Nm \&Vi
+only.
+Optimize text throughput to dumb terminals.
+.Pp
+.Em "This option is not yet implemented."
+.It Sy "paragraphs, para [IPLPPPQPP LIpplpipbp]"
+.Nm \&Vi
+only.
+Define additional paragraph boundaries for the
+.Sy \&{
+and
+.Sy \&}
+commands.
+.It Sy "prompt [on]"
+.Nm \&Ex
+only.
+Display a command prompt.
+.It Sy "readonly, ro [off]"
+Mark the file as read-only.
+.It Sy "recdir [/var/tmp/vi.recover]"
+The directory where recovery files are stored.
+.It Sy "redraw, re [off]"
+.Nm \&Vi
+only.
+Simulate an intelligent terminal on a dumb one.
+.Pp
+.Em "This option is not yet implemented."
+.It Sy "remap [on]"
+Remap keys until resolved.
+.It Sy "report [5]"
+Set the number of lines about which the editor reports changes
+or yanks.
+.It Sy "ruler [off]"
+.Nm \&Vi
+only.
+Display a row/column ruler on the colon command line.
+.It Sy "scroll, scr [window / 2]"
+Set the number of lines scrolled.
+.It Sy "sections, sect [NHSHH HUnhsh]"
+.Nm \&Vi
+only.
+Define additional section boundaries for the
+.Sy \&[[
+and
+.Sy \&]]
+commands.
+.It Sy "shell, sh [environment variable SHELL, or /bin/sh]"
+Select the shell used by the editor.
+.It Sy "shiftwidth, sw [8]"
+Set the autoindent and shift command indentation width.
+.It Sy "showdirty [off]"
+.Nm \&Vi
+only.
+Display an asterisk on the colon command line if the file has been modified.
+.It Sy "showmatch, sm [off]"
+.Nm \&Vi
+only.
+Note matching
+.Dq \&{
+and
+.Dq \&(
+for
+.Dq \&}
+and
+.Dq \&)
+characters.
+.It Sy "showmode [off]"
+.Nm \&Vi
+only.
+Display the current editor mode (command or input).
+.It Sy "sidescroll [16]"
+.Nm \&Vi
+only.
+Set the amount a left-right scroll will shift.
+.It Sy "slowopen, slow [off]"
+Delay display updating during text input.
+.Pp
+.Em "This option is not yet implemented."
+.It Sy "sourceany [off]"
+Read startup files not owned by the current user.
+.Pp
+.Em "This option will never be implemented."
+.It Sy "tabstop, ts [8]"
+This option sets tab widths for the editor display.
+.It Sy "taglength, tl [0]"
+Set the number of significant characters in tag names.
+.It Sy "tags, tag [tags /var/db/libc.tags /sys/kern/tags]"
+Set the list of tags files.
+.It Sy "term, ttytype, tty [environment variable TERM]"
+Set the terminal type.
+.It Sy "terse [off]"
+This option has historically made editor messages less verbose.
+It has no effect in this implementation.
+.It Sy "tildeop"
+Modify the
+.Sy \&~
+command to take an associated motion.
+.It Sy "timeout, to [on]"
+Time out on keys which may be mapped.
+.It Sy "ttywerase [off]"
+.Nm \&Vi
+only.
+Select an alternate erase algorithm.
+.It Sy "verbose [off]"
+.NM \&Vi
+only.
+Display an error message for every error.
+.It Sy "w300 [no default]"
+.Nm \&Vi
+only.
+Set the window size if the baud rate is less than 1200 baud.
+.It Sy "w1200 [no default]"
+.Nm \&Vi
+only.
+Set the window size if the baud rate is equal to 1200 baud.
+.It Sy "w9600 [no default]"
+.Nm \&Vi
+only.
+Set the window size if the baud rate is greater than 1200 baud.
+.It Sy "warn [on]"
+.Nm \&Ex
+only.
+This option causes a warning message to the terminal if the file has
+been modified, since it was last written, before a
+.Sy \&!
+command.
+.It Sy "window, w, wi [environment variable LINES]"
+Set the window size for the screen.
+.It Sy "wrapmargin, wm [0]"
+.Nm \&Vi
+only.
+Break lines automatically when they reach the right-hand margin.
+.It Sy "wrapscan, ws [on]"
+Set searches to wrap around the end or beginning of the file.
+.It Sy "writeany, wa [off]"
+Turn off file-overwriting checks.
+.El
 .Sh ENVIRONMENTAL VARIABLES
 .Bl -tag -width "COLUMNSXX" -compact
 .It Ev COLUMNS
@@ -375,9 +1139,6 @@ uses this signal for periodic backups of file modifications
 and to display
 .Dq busy
 messages when operations are likely to take a long time.
-.It SIGCONT
-If the editor is running in visual mode,
-the screen is repainted.
 .It SIGHUP
 .It SIGTERM
 If the current buffer has changed since it was last written in its
@@ -395,9 +1156,6 @@ and the editor returns to the command level.
 If interrupted during text input,
 the text already input is resolved into the file as if the text
 input had been normally terminated.
-.It SIGQUIT
-.Nm \&Vi/ex
-ignores this signal.
 .It SIGWINCH
 The screen is resized.
 See the
@@ -405,6 +1163,11 @@ See the
 Reference manual section entitled
 .Dq "Sizing the Screen"
 for more information.
+.It SIGCONT
+.It SIGQUIT
+.It SIGTSTP
+.Nm \&Vi/ex
+ignores these signals.
 .El
 .Sh BUGS
 See the file
@@ -419,7 +1182,7 @@ System-wide vi startup file.
 .It Pa /tmp
 Temporary file directory.
 .It Pa /var/tmp/vi.recover
-Recovery file directory.
+The default recovery file directory.
 .It Pa $HOME/.nexrc
 1st choice for user's home directory startup file.
 .It Pa $HOME/.exrc

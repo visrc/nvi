@@ -3,9 +3,8 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.22 1994/05/27 00:52:52 bostic Exp $ (Berkeley) $Date: 1994/05/27 00:52:52 $
+.\"	$Id: ex.cmd.roff,v 8.23 1994/07/15 15:31:38 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:31:38 $
 .\"
-#ifdef REFERENCE
 .SH 1 "Ex Description"
 .pp
 The following words have special meanings for
@@ -127,18 +126,12 @@ Any character, including
 and
 .QT #
 retain their literal value when preceded by a backslash.
-#endif /* REFERENCE */
-#ifdef REFERENCE
 .SH 1 "Ex Commands"
 .pp
-#else
-.Sh EX COMMANDS
-#endif
 The following section describes the commands available in the
 .CO ex
 editor.
 In each entry below, the tag line is a usage synopsis for the command.
-#ifdef REFERENCE
 .pp
 Each command can be entered as the abbreviation
 (those characters in the synopsis command word preceding the
@@ -164,20 +157,16 @@ Each
 .CO ex
 command described below notes the new current line after it
 is executed, as well as any options that affect the command.
-#endif
 .KY DOUBLEQUOTE
 .IP """"
 A comment.
-#ifdef REFERENCE
 Command lines beginning with the double-quote character
 .PQ """"
 are ignored.
 This permits comments in editor scripts and startup files.
-#endif
 .KY "<end-of-file>"
 .IP "<end-of-file>"
 Scroll the screen.
-#ifdef REFERENCE
 Write the next N lines, where N is the value of the
 .OP scroll
 option.
@@ -203,12 +192,10 @@ Set to the last line written.
 .SP Options:
 None.
 .SE
-#endif
 .KY "!"
 .IP "! argument(s)"
 .Ip "[range]! argument(s)"
 Execute a shell command, or filter lines through a shell command.
-#ifdef REFERENCE
 In the first synopsis, the remainder of the line after the
 .QT !
 character is passed to the program named by the
@@ -292,13 +279,11 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY "number"
 .IP "[range] nu[mber] [count] [flags]"
 .KY "#"
 .Ip "[range] # [count] [flags]"
 Display the selected lines, each preceded with its line number.
-#ifdef REFERENCE
 .sp
 The line number format is
 .QQ %6d ,
@@ -309,13 +294,11 @@ Set to the last line displayed.
 .SP Options:
 None.
 .SE
-#endif
 .KY "@"
 .IP "@ buffer"
 .KY "*"
 .Ip "* buffer"
 Execute a buffer.
-#ifdef REFERENCE
 Each line in the named buffer is executed as an
 .CO ex
 command.
@@ -327,7 +310,6 @@ the last buffer executed is used.
 .KY <
 .IP "[range] <[< ...] [count] [flags]"
 Shift lines left or right.
-#ifdef REFERENCE
 The specified lines are shifted to the left (for the
 .CO <
 command) or right (for the
@@ -358,11 +340,9 @@ Affected by the
 .OP shiftwidth
 option.
 .SE
-#endif
 .KY =
 .IP "[line] = [flags]"
 Display the line number.
-#ifdef REFERENCE
 Display the line number of
 .LI line
 (which defaults to the last line in the file).
@@ -372,11 +352,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY >
 .IP "[range] >[> ...] [count] [flags]"
 Shift right.
-#ifdef REFERENCE
 The specified lines are shifted to the right by the number of columns
 specified by the
 .OP shiftwidth
@@ -393,11 +371,9 @@ Set to the last line modified by the command.
 .SP Options:
 None.
 .SE
-#endif
 .KY abbrev
 .IP "ab[brev] lhs rhs"
 Add an abbreviation to the current abbreviation list.
-#ifdef REFERENCE
 In
 .CO vi ,
 if
@@ -411,11 +387,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY append
 .IP "[line] a[ppend][!]"
 The input text is appended to the specified line.
-#ifdef REFERENCE
 If line 0 is specified, the text is inserted at the beginning of the file.
 Set to the last line input.
 If no lines are input, then set to
@@ -442,11 +416,9 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY args
 .IP "ar[gs]"
 Display the argument list.
-#ifdef REFERENCE
 The current argument is displayed inside of
 .QT [
 and
@@ -462,24 +434,20 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY bg
 .IP bg
 .CO Vi
 mode only.
 Background the current screen.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Set to the current line when the screen was last edited.
 .SP Options:
 None.
 .SE
-#endif
 .KY change
 .IP "[range] c[hange][!] [count]"
 Replace the lines with input text.
-#ifdef REFERENCE
 Following the command name with a
 .QT !
 character causes the
@@ -501,13 +469,11 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY cd
 .KY chdir
 .IP "chd[ir][!] [directory]"
 .Ip "cd[!] [directory]"
 Change the current working directory.
-#ifdef REFERENCE
 The
 .LI directory
 argument is subjected to
@@ -538,7 +504,6 @@ Affected by the
 .OP cdpath
 option.
 .SE
-#endif
 .KY copy
 .KY t
 .IP "[range] co[py] line [flags]"
@@ -552,11 +517,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY delete
 .IP "[range] d[elete] [buffer] [count] [flags]"
 Delete the lines from the file.
-#ifdef REFERENCE
 The deleted text is saved in the specified buffer, or, if no buffer
 is specified, in the unnamed buffer.
 If the command name is followed by a letter that could be interpreted
@@ -579,11 +542,9 @@ or to the last line if the deleted lines were at the end.
 .SP Options:
 None.
 .SE
-#endif
 .KY display
 .IP "di[splay] b[uffers] | s[creens] | t[ags]"
 Display buffers, screens or tags.
-#ifdef REFERENCE
 The
 .CO display
 command takes one of three additional arguments, which are as follows:
@@ -602,12 +563,10 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY edit
 .IP "e[dit][!] [+cmd] [file]"
 .Ip "ex[!] [+cmd] [file]"
 Edit a different file.
-#ifdef REFERENCE
 If the current buffer has been modified since the last complete write,
 the command will fail.
 You can override this by appending a
@@ -641,13 +600,11 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY exusage
 .IP "exu[sage] [command]"
 Display usage for an
 .CO ex
 command.
-#ifdef REFERENCE
 If
 .LI command
 is specified, a usage statement for that command is displayed.
@@ -660,11 +617,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY file
 .IP "f[ile] [file]"
 Display and optionally change the file name.
-#ifdef REFERENCE
 If a file name is specified, the current pathname is changed to the
 specified name.
 The current pathname, the number of lines, and the current position
@@ -675,13 +630,11 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY fg
 .IP "fg [name]"
 .CO Vi
 mode only.
 Foreground the specified screen.
-#ifdef REFERENCE
 Swap the current screen with the specified backgrounded screen.
 If no screen is specified, the first background screen is foregrounded.
 .SS
@@ -690,13 +643,11 @@ Set to the current line when the screen was last edited.
 .SP Options:
 None.
 .SE
-#endif
 .KY global
 .IP "[range] g[lobal] /pattern/ [commands]"
 .KY v
 .Ip "[range] v /pattern/ [commands]"
 Apply commands to lines matching (or not matching) a pattern.
-#ifdef REFERENCE
 The lines within the given range that match
 .PQ g[lobal] ,
 or do not match
@@ -764,22 +715,18 @@ The last line modified.
 .SP Options:
 None.
 .SE
-#endif
 .KY help
 .IP "he[lp]"
 Display a help message.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY insert
 .IP "[line] i[nsert][!]"
 The input text is inserted before the specified line.
-#ifdef REFERENCE
 Following the command name with a
 .QT !
 character causes the
@@ -801,11 +748,9 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY join
 .IP "[range] j[oin][!] [count] [flags]"
 Join lines of text together.
-#ifdef REFERENCE
 .sp
 A
 .LI count
@@ -844,11 +789,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY list
 .IP "[range] l[ist] [count] [flags]"
 Display the lines unambiguously.
-#ifdef REFERENCE
 Tabs are displayed as
 .QT ^I ,
 and the end of the line is marked with a
@@ -860,13 +803,11 @@ Set to the last line displayed.
 .SP Options:
 None.
 .SE
-#endif
 .KY map
 .IP "map[!] [lhs rhs]"
 Define or display maps (for
 .CO vi
 only).
-#ifdef REFERENCE
 .sp
 If
 .QT lhs
@@ -930,14 +871,12 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY mark
 .KY k
 .IP "[line] ma[rk] <character>"
 .Ip "[line] k <character>"
 Mark the line with the mark
 .LI <character> .
-#ifdef REFERENCE
 The expressions
 .QT '<character>
 and
@@ -949,11 +888,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY move
 .IP "[range] m[ove] line"
 Move the specified lines after the target line.
-#ifdef REFERENCE
 A target line of 0 places the lines at the beginning of the file.
 .SS
 .SP Line:
@@ -961,12 +898,10 @@ Set to the first of the moved lines.
 .SP Options:
 None.
 .SE
-#endif
 .KY mkexrc
 .IP "mk[exrc][!] file"
 Write the abbreviations, editor options and maps to the specified
 file.
-#ifdef REFERENCE
 Information is written in a form which can later be read back in
 using the
 .CO ex
@@ -986,11 +921,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY next
 .IP "n[ext][!] [file ...]"
 Edit the next file from the argument list.
-#ifdef REFERENCE
 The
 .CO next
 command will fail if the file has been modified since the last complete
@@ -1012,11 +945,9 @@ Affected by the options
 and
 .OP writeany .
 .SE
-#endif
 .KY open
 .IP "[line] o[pen] /pattern/ [flags]"
 Enter open mode.
-#ifdef REFERENCE
 Open mode is the same as being in
 .CO vi ,
 but with a one-line window.
@@ -1036,14 +967,12 @@ Affected by the
 .OP open
 option.
 .SE
-#endif
 .KY preserve
 .IP "pre[serve]"
 Save the file in a form that can later be recovered using the
 .CO ex
 .b \-r
 option.
-#ifdef REFERENCE
 When the file is preserved, an email message is sent to the user.
 .SS
 .SP Line:
@@ -1051,11 +980,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY previous
 .IP "prev[ious][!]"
 Edit the previous file from the argument list.
-#ifdef REFERENCE
 The
 .CO previous
 command will fail if the file has been modified since the last complete
@@ -1075,22 +1002,18 @@ and
 .OP writeany .
 None.
 .SE
-#endif
 .KY print
 .IP "[range] p[rint] [count] [flags]"
 Display the specified lines.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Set to the last line displayed.
 .SP Options:
 None.
 .SE
-#endif
 .KY put
 .IP "[line] pu[t] [buffer]"
 Append buffer contents to the current line.
-#ifdef REFERENCE
 If a buffer is specified, its contents are appended to the line,
 otherwise, the contents of the unnamed buffer are used.
 .SS
@@ -1099,11 +1022,9 @@ Set to the line after the current line.
 .SP Options:
 None.
 .SE
-#endif
 .KY quit
 .IP "q[uit][!]"
 End the editing session.
-#ifdef REFERENCE
 If the file has been modified since the last complete write, the
 .CO quit
 command will fail.
@@ -1131,11 +1052,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY read
 .IP "[line] r[ead][!] [file]"
 Read a file.
-#ifdef REFERENCE
 A copy of the specified file is appended to the line.
 If
 .LI line
@@ -1178,13 +1097,11 @@ the current line is set to the first line read.
 .SP Options:
 None.
 .SE
-#endif
 .KY recover
 .IP "rec[over] file"
 Recover
 .LI file
 if it was previously saved.
-#ifdef REFERENCE
 If no saved file by that name exists, the
 .CO recover
 command behaves similarly to the
@@ -1198,13 +1115,11 @@ command.
 .SP Options:
 None.
 .SE
-#endif
 .KY resize
 .IP "res[ize] [+|-]size"
 .CO Vi
 mode only.
 Grow or shrink the current screen.
-#ifdef REFERENCE
 If
 .LI size
 is a positive, signed number, the current screen is grown by that many lines.
@@ -1222,11 +1137,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY rewind
 .IP "rew[ind][!]"
 Rewind the argument list.
-#ifdef REFERENCE
 If the current file has been modified since the last complete write,
 the
 .CO rewind
@@ -1249,11 +1162,9 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY set
 .IP "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
 Display or set editor options.
-#ifdef REFERENCE
 When no arguments are specified, the editor option
 .OP term ,
 and any editor options whose values have been changed from the
@@ -1289,11 +1200,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY shell
 .IP "sh[ell]"
 Run a shell program.
-#ifdef REFERENCE
 The program named by the
 .OP shell
 option is run with a
@@ -1306,13 +1215,11 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY source
 .IP "so[urce] file"
 Read and execute
 .CO ex
 commands from a file.
-#ifdef REFERENCE
 .CO Source
 commands may be nested.
 .SS
@@ -1321,13 +1228,11 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY split
 .IP "sp[lit] [file ...]"
 .CO Vi
 mode only.
 Split the screen.
-#ifdef REFERENCE
 The current screen is split into two screens, of approximately equal size.
 If the cursor is in the lower half of the screen, the screen will split
 up, i.e. the new screen will be above the old one.
@@ -1352,7 +1257,6 @@ command, otherwise unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY substitute
 .IP "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
 .KY &
@@ -1360,7 +1264,6 @@ None.
 .KY ~
 .Ip "[range] ~ [options] [count] [flags]"
 Make substitutions.
-#ifdef REFERENCE
 Replace the first instance of
 .LI pattern
 with the string
@@ -1444,7 +1347,6 @@ Set to the last line upon which a substitution was made.
 .SP Options:
 None.
 .SE
-#endif
 .KY suspend
 .IP "su[spend][!]"
 .KY stop
@@ -1452,7 +1354,6 @@ None.
 .KY <control-Z>
 .Ip <control-Z>
 Suspend the edit session.
-#ifdef REFERENCE
 Appending a
 .QT !
 character to these commands turns off the
@@ -1466,11 +1367,9 @@ Affected by the
 .OP autowrite
 option.
 .SE
-#endif
 .KY tag
 .IP "ta[g][!] tagstring"
 Edit the file containing the specified tag.
-#ifdef REFERENCE
 Search for the tagstring, which can be in a different file.
 If the tag is in a different file, then the new file is edited.
 If the current file has been modified since the last complete write,
@@ -1503,11 +1402,9 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY tagpop
 .IP "tagp[op][!] [file | number]"
 Pop to the specified tag in the tags stack.
-#ifdef REFERENCE
 If neither
 .LI file
 or
@@ -1533,7 +1430,6 @@ command will fail.
 This check may be overridden by appending a
 .QT !
 character to the command name.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Set to the line indicated by the tag.
@@ -1544,7 +1440,6 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY tagtop
 .IP "tagt[op][!]"
 Pop to the least recent tag on the tags stack, clearing the tags stack.
@@ -1555,7 +1450,6 @@ command will fail.
 This check may be overridden by appending a
 .QT !
 character to the command name.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Set to the line indicated by the tag.
@@ -1566,11 +1460,9 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY unabbrev
 .IP "una[bbrev] lhs"
 Delete an abbreviation.
-#ifdef REFERENCE
 Delete
 .LI lhs
 from the current list of abbreviations.
@@ -1580,7 +1472,6 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY undo
 .IP "u[ndo]"
 Undo the last change made to the file.
@@ -1598,11 +1489,9 @@ Set to the last line modified by the command.
 .SP Options:
 None.
 .SE
-#endif
 .KY unmap
 .IP "unm[ap][!] lhs"
 Unmap a mapped string.
-#ifdef REFERENCE
 Delete the command mode map definition for
 .LI lhs .
 If a
@@ -1615,7 +1504,6 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY version
 .IP "ve[rsion]"
 Display the version of the
@@ -1627,7 +1515,6 @@ editor.
 mode only.
 Enter
 .CO vi .
-#ifdef REFERENCE
 The
 .LI type
 is optional, and can be
@@ -1655,23 +1542,19 @@ is specified, in which case it is set to that line.
 .SP Options:
 None.
 .SE
-#endif
 .KY visual
 .IP "vi[sual][!] [+cmd] [file]"
 .CO Vi
 mode only.
 Edit a new file.
-#ifdef REFERENCE
 Identical to the
 .QT "edit[!] [+cmd] [file]"
 command.
-#endif
 .KY viusage
 .IP "viu[sage] [command]"
 Display usage for a
 .CO vi
 command.
-#ifdef REFERENCE
 If
 .LI command
 is specified, a usage statement for that command is displayed.
@@ -1684,7 +1567,6 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY write
 .IP "[range] w[rite][!] [>>] [file]"
 .Ip "[range] w[rite] [!] [file]"
@@ -1693,7 +1575,6 @@ None.
 .KY wq
 .Ip "[range] wq[!] [>>] [file]"
 Write the file.
-#ifdef REFERENCE
 The specified lines (the entire file, if no range is given) is written
 to
 .LI file .
@@ -1761,11 +1642,9 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY xit
 .IP "[range] x[it][!] [file]"
 Write the file if it has been modified.
-#ifdef REFERENCE
 The specified lines are written to
 .LI file ,
 if the file has been modified since the last complete write to any
@@ -1800,11 +1679,9 @@ and
 .OP writeany
 options.
 .SE
-#endif
 .KY yank
 .IP "[range] ya[nk] [buffer] [count]"
 Copy the specified lines to a buffer.
-#ifdef REFERENCE
 If no buffer is specified, the unnamed buffer is used.
 .SS
 .SP Line:
@@ -1812,11 +1689,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY z
 .IP "[line] z [type] [count] [flags]"
 Adjust the window.
-#ifdef REFERENCE
 If no
 .LI type
 is specified, then
@@ -1873,4 +1748,3 @@ Affected by the
 .Sy window
 option.
 .SE
-#endif

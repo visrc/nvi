@@ -3,9 +3,8 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.26 1994/07/05 14:58:19 bostic Exp $ (Berkeley) $Date: 1994/07/05 14:58:19 $
+.\"	$Id: vi.cmd.roff,v 8.27 1994/07/15 15:31:43 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:31:43 $
 .\"
-#ifdef REFERENCE
 .SH 1 "Vi Description"
 .pp
 .CO Vi
@@ -338,29 +337,21 @@ or question mark and the whitespace characters or end-of-line.
 .sp
 Groups of empty lines (or lines containing only whitespace characters)
 are treated as a single sentence.
-#endif /* REFERENCE */
-#ifdef REFERENCE
 .SH 1 "Vi Commands"
 .pp
-#else
-.Sh VI COMMANDS
-#endif
 The following section describes the commands available in the command
 mode of the
 .CO vi
 editor.
 In each entry below, the tag line is a usage synopsis for the command
 character.
-#ifdef REFERENCE
 In addition, the final line and column the cursor rests upon,
 and any options which affect the command are noted.
-#endif
 .KY <control-A>
 .IP "[count] <control-A>"
 Search forward
 .LI count
 times for the current word.
-#ifdef REFERENCE
 The current word begins at the first non-whitespace character on or
 after the current cursor position,
 and extends up to the next non-word character or the end of the line.
@@ -391,13 +382,11 @@ and
 .OP wrapscan
 options.
 .SE
-#endif
 .KY <control-B>
 .IP "[count] <control-B>"
 Page backward
 .LI count
 screens.
-#ifdef REFERENCE
 Two lines of overlap are maintained by displaying the window
 starting at line
 .LI "(top_line - count * window_size) + 2" ,
@@ -421,13 +410,11 @@ Set to the first nonblank character of the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-D>
 .IP "[count] <control-D>"
 Scroll forward
 .LI count
 lines.
-#ifdef REFERENCE
 If
 .LI count
 is not specified, scroll forward the number of lines specified by the last
@@ -456,13 +443,11 @@ Set to the first nonblank character of the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-E>
 .IP "[count] <control-E>"
 Scroll forward
 .LI count
 lines, leaving the cursor on the current line and column, if possible.
-#ifdef REFERENCE
 This is an error if the movement is past the end of the file.
 .SS
 .SP Line:
@@ -474,13 +459,11 @@ in which case it is set to the most attractive cursor position.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-F>
 .IP "[count] <control-F>"
 Page forward
 .LI count
 screens.
-#ifdef REFERENCE
 Two lines of overlap are maintained by displaying the window
 starting at line
 .LI "top_line + count * window_size - 2" ,
@@ -504,11 +487,9 @@ Set to the first nonblank character of the current line.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-G>
 .IP "<control-G>"
 Display the file information.
-#ifdef REFERENCE
 The information includes the current pathname, the current line,
 the number of total lines in the file, the current line as a percentage
 of the total lines in the file, if the file has been modified,
@@ -522,14 +503,12 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-H>
 .IP "<control-H>"
 .Ip "[count] h"
 Move the cursor back
 .LI count
 characters in the current line.
-#ifdef REFERENCE
 This is an error if the cursor is on the first character in the line.
 .sp
 The
@@ -553,7 +532,6 @@ before the cursor.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-J>
 .IP "[count] <control-J>"
 .KY <control-N>
@@ -563,7 +541,6 @@ None.
 Move the cursor down
 .LI count
 lines without changing the current column.
-#ifdef REFERENCE
 This is an error if the movement is past the end of the file.
 .sp
 The
@@ -584,13 +561,11 @@ The most attractive cursor position.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-L>
 .IP "<control-L>"
 .KY <control-R>
 .Ip "<control-R>"
 Repaint the screen.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Unchanged.
@@ -599,7 +574,6 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-M>
 .IP "[count] <control-M>"
 .KY +
@@ -607,7 +581,6 @@ None.
 Move the cursor down
 .LI count
 lines to the first nonblank character of that line.
-#ifdef REFERENCE
 This is an error if the movement is past the end of the file.
 .sp
 The
@@ -627,7 +600,6 @@ Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-P>
 .IP "[count] <control-P>"
 .KY k
@@ -635,7 +607,6 @@ None.
 Move the cursor up
 .LI count
 lines, without changing the current column.
-#ifdef REFERENCE
 This is an error if the movement is past the beginning of the file.
 .sp
 The
@@ -654,11 +625,9 @@ The most attractive cursor position.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-T>
 .IP "<control-T>"
 Return to the most recent tag context.
-#ifdef REFERENCE
 The
 .CO <control-T>
 command is an absolute movement.
@@ -670,13 +639,11 @@ Set to the context of the previous tag command.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-U>
 .IP "<control-U>"
 Scroll backward
 .LI count
 lines.
-#ifdef REFERENCE
 If
 .LI count
 is not specified, scroll backward the number of lines specified by the
@@ -706,12 +673,10 @@ Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-W>
 .IP "<control-W>"
 Switch to the next lower screen in the window, or, to the first
 screen if there are no lower screens in the window.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Set to the previous cursor position in the window.
@@ -720,13 +685,11 @@ Set to the previous cursor position in the window.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-Y>
 .IP "<control-Y>"
 Scroll backward
 .LI count
 lines, leaving the current line and column as is, if possible.
-#ifdef REFERENCE
 This is an error if the movement is past the beginning of the file.
 .SS
 .SP Line:
@@ -739,11 +702,9 @@ in which case it is the most attractive cursor position.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-Z>
 .IP "<control-Z>"
 Suspend the current editor session.
-#ifdef REFERENCE
 If the file has been modified since it was last completely written,
 and the
 .OP autowrite
@@ -760,13 +721,11 @@ Affected by the
 .OP autowrite
 option.
 .SE
-#endif
 .KY <escape>
 .IP "<escape>"
 Execute
 .CO ex
 commands or cancel partial commands.
-#ifdef REFERENCE
 If an
 .CO ex
 command is being entered (e.g.
@@ -798,11 +757,9 @@ Otherwise, unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY <control-]>
 .IP "<control-]>"
 Push a tag reference onto the tag stack.
-#ifdef REFERENCE
 The tags files (see the
 .OP tags
 option for more information) are searched for a tag matching the
@@ -830,11 +787,9 @@ and
 .OP taglength
 options.
 .SE
-#endif
 .KY <control-^>
 .IP "<control-^>"
 Switch to the most recently edited file.
-#ifdef REFERENCE
 .sp
 If the file has been modified since it was last completely written,
 and the
@@ -853,7 +808,6 @@ Affected by the
 .OP autowrite
 option.
 .SE
-#endif
 .KY <space>
 .IP "[count] <space>"
 .KY l
@@ -861,7 +815,6 @@ option.
 Move the cursor forward
 .LI count
 characters without changing the current line.
-#ifdef REFERENCE
 This is an error if the cursor is on the last character in the line.
 .sp
 The
@@ -888,11 +841,9 @@ current character.
 .SP Options:
 None.
 .SE
-#endif
 .KY !
 .IP "[count] ! motion shell-argument(s)"
 Replace text with results from a shell command.
-#ifdef REFERENCE
 Pass the lines specified by the
 .LI count
 and
@@ -970,11 +921,9 @@ Affected by the
 .OP shell
 option.
 .SE
-#endif
 .KY #
 .IP "[count] # +|-|#"
 Increment or decrement the current number.
-#ifdef REFERENCE
 The current number begins at the first non-number character on or
 before the current cursor position, or the beginning of the line,
 and extends up to the first non-number character on or after the
@@ -1002,11 +951,9 @@ Set to the first character in the cursor word.
 .SP Options:
 None.
 .SE
-#endif
 .KY $
 .IP "[count] $"
 Move the cursor to the end of a line.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the cursor moves down
@@ -1039,11 +986,9 @@ Set to the last character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY %
 .IP %
 Move to the matching character.
-#ifdef REFERENCE
 The cursor moves to the parenthesis or curly brace which
 .i matches
 the parenthesis or curly brace found at the current cursor position
@@ -1077,11 +1022,9 @@ Set to the matching character.
 .SP Options:
 None.
 .SE
-#endif
 .KY &
 .IP "&"
 Repeat the previous substitution command on the current line.
-#ifdef REFERENCE
 .sp
 Historically, any
 .LI count
@@ -1103,14 +1046,12 @@ and
 .OP magic
 options.
 .SE
-#endif
 .KY SQUOTE<character>
 .IP \'<character>
 .KY `<character>
 .Ip `<character>
 Return to a context marked by the character
 .LI <character> .
-#ifdef REFERENCE
 If
 .LI <character>
 is the
@@ -1172,13 +1113,11 @@ command.
 .SP Options:
 None.
 .SE
-#endif
 .KY (
 .IP "[count] ("
 Back up
 .LI count
 sentences.
-#ifdef REFERENCE
 .sp
 The
 .CO (
@@ -1202,13 +1141,11 @@ Set to the first nonblank character of the sentence.
 .SP Options:
 None.
 .SE
-#endif
 .KY )
 .IP "[count] )"
 Move forward
 .LI count
 sentences.
-#ifdef REFERENCE
 .sp
 The
 .CO )
@@ -1231,13 +1168,11 @@ Set to the first nonblank character of the sentence.
 .SP Options:
 None.
 .SE
-#endif
 .KY ,
 .IP "[count] ,"
 Reverse find character
 .LI count
 times.
-#ifdef REFERENCE
 Reverse the last
 .CO F ,
 .CO f ,
@@ -1262,13 +1197,11 @@ Set to the searched-for character.
 .SP Options:
 None.
 .SE
-#endif
 .KY MINUSSIGN
 .IP "[count] \-"
 Move to first nonblank of the previous line,
 .LI count
 times.
-#ifdef REFERENCE
 .sp
 This is an error if the movement is past the beginning of the file.
 .sp
@@ -1287,13 +1220,11 @@ Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY \&.
 .IP "[count] \&."
 Repeat the last
 .CO vi
 command that modified text.
-#ifdef REFERENCE
 The repeated command may be a command and motion component combination.
 If
 .LI count
@@ -1322,7 +1253,6 @@ Set as described for the repeated command.
 .SP Options:
 None.
 .SE
-#endif
 .KY /RE/
 .IP "/RE<carriage-return>"
 .Ip "/RE/ [offset]<carriage-return>"
@@ -1334,7 +1264,6 @@ None.
 .KY n
 .Ip "n"
 Search forward or backward for a regular expression.
-#ifdef REFERENCE
 The commands beginning with a slash
 .PQ /
 character are forward searches, the commands beginning with a
@@ -1412,11 +1341,9 @@ and
 .OP wrapscan
 options.
 .SE
-#endif
 .KY 0
 .IP "0"
 Move to the first character in the current line.
-#ifdef REFERENCE
 It is not an error to use the
 .CO 0
 command when the cursor is on the first character in the line,
@@ -1435,11 +1362,9 @@ Set to the first character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY :
 .IP ":"
 Execute an ex command.
-#ifdef REFERENCE
 .CO Vi
 prompts for an
 .CO ex
@@ -1501,13 +1426,11 @@ command.
 .SP Options:
 None.
 .SE
-#endif
 .KY ;
 .IP "[count] ;"
 Repeat the last character find
 .LI count
 times.
-#ifdef REFERENCE
 The last character find is one of the
 .CO F ,
 .CO f ,
@@ -1530,13 +1453,11 @@ Set to the searched-for character.
 .SP Options:
 None.
 .SE
-#endif
 .KY <
 .IP "[count] < motion"
 .KY >
 .Ip "[count] > motion"
 Shift lines left or right.
-#ifdef REFERENCE
 Shift the number of lines in the region specified by the motion component,
 times
 .LI count ,
@@ -1562,11 +1483,9 @@ Affected by the
 .OP shiftwidth
 option.
 .SE
-#endif
 .KY @
 .IP "@ buffer"
 Execute a named buffer.
-#ifdef REFERENCE
 Execute the named buffer as
 .CO vi
 commands.
@@ -1607,11 +1526,9 @@ The current column is set as described for the command(s).
 .SP Options:
 None.
 .SE
-#endif
 .KY A
 .IP "[count] A"
 Enter input mode, appending the text after the end of the line.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the text is repeatedly input
@@ -1633,13 +1550,11 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY B
 .IP "[count] B"
 Move backward
 .LI count
 bigwords.
-#ifdef REFERENCE
 Move the cursor backward to the beginning of a bigword by repeating the
 following algorithm: if the current position is at the beginning of a
 bigword or the character at the current position cannot be part of a bigword,
@@ -1663,11 +1578,9 @@ Set to the first character of the word selected.
 .SP Options:
 None.
 .SE
-#endif
 .KY C
 .IP "[buffer] [count] C"
 Change text from the current position to the end-of-line.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the input text replaces from the current position to
@@ -1690,11 +1603,9 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY D
 .IP "[buffer] D"
 Delete text from the current position to the end-of-line.
-#ifdef REFERENCE
 .sp
 It is not an error to execute the
 .CO D
@@ -1708,13 +1619,11 @@ the cursor was on column 1.
 .SP Options:
 None.
 .SE
-#endif
 .KY E
 .IP "[count] E"
 Move forward
 .LI count
 end-of-bigwords.
-#ifdef REFERENCE
 Move the cursor forward to the end of a bigword by repeating the
 following algorithm: if the current position is the end of a
 bigword or the character at that position cannot be part of a bigword,
@@ -1739,14 +1648,12 @@ Set to the last character of the word selected.
 .SP Options:
 None.
 .SE
-#endif
 .KY F
 .IP "[count] F <character>"
 Search
 .LI count
 times backward through the current line for
 .LI <character> .
-#ifdef REFERENCE
 .sp
 The
 .CO F
@@ -1762,7 +1669,6 @@ Set to the searched-for character.
 .SP Options:
 None.
 .SE
-#endif
 .KY G
 .IP "[count] G"
 Move to line
@@ -1770,7 +1676,6 @@ Move to line
 or the last line of the file if
 .LI count
 not specified.
-#ifdef REFERENCE
 .sp
 The
 .CO G
@@ -1791,13 +1696,11 @@ Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY H
 .IP "[count] H"
 Move to the screen line
 .LI "count - 1"
 lines below the top of the screen.
-#ifdef REFERENCE
 .sp
 The
 .CO H
@@ -1820,11 +1723,9 @@ line.
 .SP Options:
 None.
 .SE
-#endif
 .KY I
 .IP "[count] I"
 Enter input mode, inserting the text at the beginning of the line.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the text input is repeatedly input
@@ -1838,11 +1739,9 @@ Set to the last character entered.
 .SP Options:
 None.
 .SE
-#endif
 .KY J
 .IP "[count] J"
 Join lines.
-#ifdef REFERENCE
 If
 .LI count
 is specified,
@@ -1876,13 +1775,11 @@ joined line.
 .SP Options:
 None.
 .SE
-#endif
 .KY L
 .IP "[count] L"
 Move to the screen line
 .LI "count - 1"
 lines above the bottom of the screen.
-#ifdef REFERENCE
 .sp
 The
 .CO L
@@ -1905,11 +1802,9 @@ line.
 .SP Options:
 None.
 .SE
-#endif
 .KY  M
 .IP " M"
 Move to the screen line in the middle of the screen.
-#ifdef REFERENCE
 .sp
 The
 .CO M
@@ -1936,11 +1831,9 @@ line.
 .SP Options:
 None.
 .SE
-#endif
 .KY O
 .IP "[count] O"
 Enter input mode, appending text in a new line above the current line.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the text input is repeatedly input
@@ -1968,11 +1861,9 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY P
 .IP "[buffer] P"
 Insert text from a buffer.
-#ifdef REFERENCE
 Text from the buffer (the unnamed buffer by default) is inserted
 before the current column or, if the buffer is line oriented,
 before the current line.
@@ -1987,7 +1878,6 @@ of the appended text.
 .SP Options:
 None.
 .SE
-#endif
 .KY Q
 .IP "Q"
 Exit
@@ -1995,7 +1885,6 @@ Exit
 (or visual) mode and switch to
 .CO ex
 mode.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Unchanged.
@@ -2004,11 +1893,9 @@ No longer relevant.
 .SP Options:
 None.
 .SE
-#endif
 .KY R
 .IP "[count] R"
 Enter input mode, replacing the characters in the current line.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the text input is repeatedly input
@@ -2033,13 +1920,11 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY S
 .IP "[buffer] [count] S"
 Substitute
 .LI count
 lines.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Set to the last line upon which characters were entered.
@@ -2056,7 +1941,6 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY T
 .IP "[count] T <character>"
 Search backward,
@@ -2066,7 +1950,6 @@ through the current line for the character
 .i after
 the specified
 .LI <character> .
-#ifdef REFERENCE
 .sp
 The
 .CO T
@@ -2084,12 +1967,10 @@ the searched-for character.
 .SP Options:
 None.
 .SE
-#endif
 .KY U
 .IP "U"
 Restore the current line to its state before the cursor last
 moved to it.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Unchanged.
@@ -2098,13 +1979,11 @@ The first character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY W
 .IP "[count] W"
 Move forward
 .LI count
 bigwords.
-#ifdef REFERENCE
 Move the cursor forward to the beginning of a bigword by repeating the
 following algorithm: if the current position is within a bigword or the
 character at that position cannot be part of a bigword, move to the first
@@ -2127,13 +2006,11 @@ The first character of the word selected.
 .SP Options:
 None.
 .SE
-#endif
 .KY X
 .IP "[buffer] [count] X"
 Delete
 .LI count
 characters before the cursor.
-#ifdef REFERENCE
 If the number of characters to be deleted is greater than or equal to
 the number of characters to the beginning of the line, all of the
 characters before the current cursor position, to the beginning of the
@@ -2149,14 +2026,12 @@ characters in the line before the cursor.
 .SP Options:
 None.
 .SE
-#endif
 .KY Y
 .IP "[buffer] [count] Y"
 Copy (or
 .QQ yank )
 .LI count
 lines into the specified buffer.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Unchanged.
@@ -2165,12 +2040,10 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY ZZ
 .IP "ZZ"
 Write the file and exit
 .CO vi .
-#ifdef REFERENCE
 The file is only written if it has been modified since the last
 complete write of the file to any file.
 .sp
@@ -2196,13 +2069,11 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY [[
 .IP "[count] [["
 Back up
 .LI count
 section boundaries.
-#ifdef REFERENCE
 .sp
 The
 .CO [[
@@ -2230,13 +2101,11 @@ Affected by the
 .OP sections
 option.
 .SE
-#endif
 .KY ]]
 .IP "[count] ]]"
 Move forward
 .LI count
 section boundaries.
-#ifdef REFERENCE
 .sp
 The
 .CO ]]
@@ -2264,11 +2133,9 @@ Affected by the
 .OP sections
 option.
 .SE
-#endif
 .KY ^
 .IP "\&^"
 Move to first nonblank character on the current line.
-#ifdef REFERENCE
 .sp
 The
 .CO ^
@@ -2284,13 +2151,11 @@ Set to the first nonblank character of the current line.
 .SP Options:
 None.
 .SE
-#endif
 .KY _
 .IP "[count] _"
 Move down
 .LI "count - 1"
 lines, to the first nonblank character.
-#ifdef REFERENCE
 The
 .CO _
 command may be used as the motion component of other
@@ -2310,11 +2175,9 @@ The first nonblank character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY a
 .IP "[count] a"
 Enter input mode, appending the text after the cursor.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the text input is repeatedly input
@@ -2336,13 +2199,11 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY b
 .IP "[count] b"
 Move backward
 .LI count
 words.
-#ifdef REFERENCE
 Move the cursor backward to the beginning of a word by repeating the
 following algorithm: if the current position is at the beginning of a word,
 move to the first character of the preceding word.
@@ -2366,11 +2227,9 @@ Set to the first character of the word selected.
 .SP Options:
 None.
 .SE
-#endif
 .KY c
 .IP "[buffer] [count] c motion"
 Change a region of text.
-#ifdef REFERENCE
 If only part of a single line is affected, then the last character
 being changed is marked with a
 .QT $ .
@@ -2396,11 +2255,9 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY d
 .IP "[buffer] [count] d motion"
 Delete a region of text.
-#ifdef REFERENCE
 If
 .LI count
 is specified, it is applied to the
@@ -2415,13 +2272,11 @@ If no such character exists, set to the last character before the region.
 .SP Options:
 None.
 .SE
-#endif
 .KY e
 .IP "[count] e"
 Move forward
 .LI count
 end-of-words.
-#ifdef REFERENCE
 Move the cursor forward to the end of a word by repeating the following
 algorithm: if the current position is the end of a word,
 move to the last character of the following word.
@@ -2443,14 +2298,12 @@ Set to the last character of the word selected.
 .SP Options:
 None.
 .SE
-#endif
 .KY f
 .IP "[count] f <character>"
 Search forward,
 .LI count
 times, through the rest of the current line for
 .LI <character> .
-#ifdef REFERENCE
 .sp
 The
 .CO f
@@ -2466,11 +2319,9 @@ Set to the searched-for character.
 .SP Options:
 None.
 .SE
-#endif
 .KY i
 .IP "[count] i"
 Enter input mode, inserting the text before the cursor.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the text input is repeatedly input
@@ -2492,12 +2343,10 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY m
 .IP "m <character>"
 Save the current context (line and column) as
 .LI <character> .
-#ifdef REFERENCE
 The exact position is referred to by
 .QT `<character> .
 The line is referred to by
@@ -2516,11 +2365,9 @@ Unchanged.
 .SP Options:
 None.
 .SE
-#endif
 .KY o
 .IP "[count] o"
 Enter input mode, appending text in a new line under the current line.
-#ifdef REFERENCE
 If
 .LI count
 is specified, the text input is repeatedly input
@@ -2548,11 +2395,9 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY p
 .IP "[buffer] p"
 Append text from a buffer.
-#ifdef REFERENCE
 Text from the buffer (the unnamed buffer by default) is appended
 after the current column or, if the buffer is line oriented,
 after the current line.
@@ -2566,11 +2411,9 @@ is line oriented, otherwise, the last character of the appended text.
 .SP Options:
 None.
 .SE
-#endif
 .KY r
 .IP "[count] r <character>"
 Replace characters.
-#ifdef REFERENCE
 The next
 .LI count
 characters in the line are replaced with
@@ -2598,13 +2441,11 @@ in which case the cursor is in column 1 of the last line inserted.
 .SP Options:
 None.
 .SE
-#endif
 .KY s
 .IP "[buffer] [count] s"
 Substitute
 .LI count
 characters in the current line starting with the current character.
-#ifdef REFERENCE
 .SS
 .SP Line:
 Set to the last line upon which characters were entered.
@@ -2621,7 +2462,6 @@ and
 .OP wrapmargin
 options.
 .SE
-#endif
 .KY t
 .IP "[count] t <character>"
 Search forward,
@@ -2629,7 +2469,6 @@ Search forward,
 times, through the current line for the character immediately
 .i before
 .LI <character> .
-#ifdef REFERENCE
 .sp
 The
 .CO t
@@ -2647,11 +2486,9 @@ the searched-for character.
 .SP Options:
 None.
 .SE
-#endif
 .KY u
 .IP "u"
 Undo the last change made to the file.
-#ifdef REFERENCE
 If repeated, the
 .CO u
 command alternates between these two states, and is its own inverse.
@@ -2676,13 +2513,11 @@ Set to the cursor position before the change was made.
 .SP Options:
 None.
 .SE
-#endif
 .KY w
 .IP "[count] w"
 Move forward
 .LI count
 words.
-#ifdef REFERENCE
 Move the cursor forward to the beginning of a word by repeating the
 following algorithm: if the current position is at the
 beginning of a word, move to the first character of the next word.
@@ -2704,13 +2539,11 @@ Set to the first character of the word selected.
 .SP Options:
 None.
 .SE
-#endif
 .KY x
 .IP "[buffer] [count] x"
 Delete
 .LI count
 characters.
-#ifdef REFERENCE
 The deletion is at the current character position.
 If the number of characters to be deleted is greater than or equal to
 the number of characters to the end of the line, all of the characters
@@ -2725,7 +2558,6 @@ set to the previous character.
 .SP Options:
 None.
 .SE
-#endif
 .KY y
 .IP "[buffer] [count] y motion"
 Copy (or
@@ -2733,7 +2565,6 @@ Copy (or
 a text region specified by the
 .LI count
 and motion into a buffer.
-#ifdef REFERENCE
 If
 .LI count
 is specified, it is applied to the
@@ -2748,11 +2579,9 @@ in which case it is set to the character were the region starts.
 .SP Options:
 None.
 .SE
-#endif
 .KY z
 .IP "[count1] z [count2] -|.|+|^|<carriage-return>"
 Redraw, optionally repositioning and resizing the screen.
-#ifdef REFERENCE
 Redraw the screen with a window
 .LI count2
 lines long, containing line
@@ -2802,13 +2631,11 @@ Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY {
 .IP "[count] {"
 Move backward
 .LI count
 paragraphs.
-#ifdef REFERENCE
 .sp
 The
 .CO {
@@ -2830,13 +2657,11 @@ Affected by the
 .OP paragraph
 option.
 .SE
-#endif
 .KY |
 .IP "[count] |"
 Move to a specific
 .i column
 position on the current line.
-#ifdef REFERENCE
 .sp
 The
 .CO |
@@ -2860,13 +2685,11 @@ the cursor is moved to the last character in the line.
 .SP Options:
 None.
 .SE
-#endif
 .KY }
 .IP "[count] }"
 Move forward
 .LI count
 paragraphs.
-#ifdef REFERENCE
 .sp
 The
 .CO }
@@ -2889,13 +2712,11 @@ Affected by the
 .OP paragraph
 option.
 .SE
-#endif
 .KY ~
 .IP "[count] ~"
 Reverse the case of the next
 .LI count
 character(s).
-#ifdef REFERENCE
 This is the historic semantic for the
 .CO ~
 command and it is only in effect if the
@@ -2933,14 +2754,12 @@ Affected by the
 .OP tildeop
 option.
 .SE
-#endif
 .KY ~
 .IP "[count] ~ motion"
 Reverse the case of the characters in a text region specified by the
 .LI count
 and
 .LI motion .
-#ifdef REFERENCE
 Only in effect if the
 .OP tildeop
 option is set.
@@ -2958,11 +2777,9 @@ Affected by the
 .OP tildeop
 option.
 .SE
-#endif
 .KY <interrupt>
 .IP "<interrupt>"
 Interrupt the current operation.
-#ifdef REFERENCE
 Many of the potentially long-running
 .CO vi
 commands may be interrupted using the terminal interrupt character.
@@ -2991,18 +2808,12 @@ Dependent on the operation being interrupted.
 Dependent on the operation being interrupted.
 .SP Options:
 None.
-#endif
-#ifdef REFERENCE
 .SH 1 "Vi Text Input Commands"
 .pp
-#else
-.Sh VI TEXT INPUT COMMANDS
-#endif
 The following section describes the commands available in the text
 input mode of the
 .CO vi
 editor.
-#ifdef REFERENCE
 .pp
 Historically,
 .CO vi
@@ -3035,23 +2846,13 @@ as character and word erase characters, respectively, regardless of
 the current terminal settings.
 This implementation accepts, in addition to these two characters,
 the current terminal characters for those operations.
-#endif
 .KY <nul>
 .IP "<nul>"
-#ifdef MANUAL
-Replay the previous input.
-#endif
-#ifdef REFERENCE
 If the first character of the input is a
 .LI <nul> ,
 the previous input is replayed, as if just entered.
-#endif
 .KY <control-D>
 .IP "<control-D>"
-#ifdef MANUAL
-Erase the previous autoindent character.
-#endif
-#ifdef REFERENCE
 If the previous character on the line was an autoindent character,
 erase it.
 Otherwise, if the user is entering the first character in the line,
@@ -3060,26 +2861,15 @@ is ignored.
 Otherwise, a literal
 .LI <control-D>
 character is entered.
-#endif
 .KY ^<control-D>
 .IP "^<control-D>"
-#ifdef MANUAL
-Erase all of the autoindent characters, and reset the autoindent level.
-#endif
-#ifdef REFERENCE
 If the previous character on the line was an autoindent character,
 erase all of the autoindent characters on the line.
 In addition, the autoindent level is reset to 0.
-#endif
 .KY 0<control-D>
 .IP "0<control-D>"
-#ifdef MANUAL
-Erase all of the autoindent characters.
-#endif
-#ifdef REFERENCE
 If the previous character on the line was an autoindent character,
 erase all of the autoindent characters on the line.
-#endif
 .KY <control-T>
 .IP "<control-T>"
 Insert sufficient
@@ -3090,7 +2880,6 @@ characters to move the cursor forward to a column immediately
 after the next column which is an even multiple of the
 .OP shiftwidth
 option.
-#ifdef REFERENCE
 .sp
 Historically,
 .CO vi
@@ -3100,7 +2889,6 @@ command to be used unless the cursor was at the first column of a new
 line or it was preceded only by autoindent characters.
 .CO Nvi
 permits it to be used at any time during insert mode.
-#endif
 .KY <erase>
 .IP <erase>
 .KY <control-H>
@@ -3109,7 +2897,6 @@ Erase the last character.
 .KY "<literal next>"
 .IP "<literal next>"
 Quote the next character.
-#ifdef REFERENCE
 The next character will not be mapped (see the
 .CO map
 command for more information)
@@ -3118,7 +2905,6 @@ A carat
 .PQ ^
 character will be displayed immediately as a placeholder,
 but will be replaced by the next character.
-#endif
 .KY <escape>
 .IP <escape>
 Resolve all text input into the file, and return to command mode.
@@ -3141,7 +2927,6 @@ Insert a character with the specified hexadecimal value into the text.
 .KY <interrupt>
 .IP "<interrupt>"
 Interrupt text input mode, returning to command mode.
-#ifdef REFERENCE
 If the
 .LI <interrupt>
 character is used to interrupt inserting text into the file,
@@ -3149,4 +2934,3 @@ it is as if the
 .LI <escape>
 character was used; all text input up to the interruption is
 resolved into the file.
-#endif

@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.45 1994/06/28 09:01:07 bostic Exp $ (Berkeley) $Date: 1994/06/28 09:01:07 $
+.\"     $Id: vi.ref,v 8.46 1994/07/15 15:31:51 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:31:51 $
 .\"
 .\"
 .so ref.so
@@ -906,7 +906,7 @@ The unnamed buffer is a text storage area which is used by commands
 that take a buffer as an argument, when no buffer is specified by
 the user.
 There is no way to explicitly reference this buffer.
-#include <vi.cmd.roff>
+.so vi.cmd.roff
 .SH 1 "Ex Addressing"
 .pp
 Addressing in
@@ -1073,8 +1073,8 @@ The first address must be less than or equal to the second address.
 The first address must be greater than or equal to the first line of the
 file, and the last address must be less than or equal to the last line
 of the file.
-#include <ex.cmd.roff>
-#include <set.opt.roff>
+.so ex.cmd.roff
+.so set.opt.roff
 .SH 1 "Additional Features in Nex/Nvi"
 .pp
 There are a few features in
