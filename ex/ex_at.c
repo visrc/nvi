@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.11 1992/05/21 12:53:56 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:53:56 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.12 1992/05/27 10:24:44 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:24:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ ex_at(cmdp)
 	static int lastbuf = OOBCB, recurse;
 	static char rstack[UCHAR_MAX];
 	CB *cb;
-	CBLINE *lp;
+	TEXT *tp;
 	int buffer, rval;
 
 	if (cmdp->buffer == OOBCB) {
@@ -55,10 +55,10 @@ ex_at(cmdp)
 	rstack[buffer] = 1;
 	++recurse;
 
-	for (lp = cb->head;;) {
-		if (rval = ex_cstring(lp->lp, lp->len, 1))
+	for (tp = cb->head;;) {
+		if (rval = ex_cstring(tp->lp, tp->len, 1))
 			break;
-		if ((lp = lp->next) == NULL)
+		if ((tp = tp->next) == NULL)
 			break;
 	}
 		
