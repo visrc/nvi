@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 9.3 1994/12/16 12:42:59 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:42:59 $";
+static char sccsid[] = "$Id: v_increment.c,v 9.4 1995/01/07 16:36:10 bostic Exp $ (Berkeley) $Date: 1995/01/07 16:36:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ v_increment(sp, vp)
 		ntype = p[beg + 1] == 'X' ? fmt[HEXC] : fmt[HEXL];
 		if (!ishex(p[end]))
 			goto nonum;
-	} else if (len > 1 && p[beg] == '0') {
+	} else if (len > 2 && p[beg] == '0') {
 		base = 8;
 		end = beg + 1;
 		ntype = fmt[OCTAL];
@@ -202,6 +202,9 @@ nonum:			msgq(sp, M_ERR, "213|Cursor not in a number");
 			goto err;
 		}
 		lval += ltmp;
+		/* If we cross 0, signed numbers lose their sign. */
+		if (lval == 0 && ntype == fmt[SDEC])
+			ntype = fmt[DEC];
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, lval);
 	} else {
 		if ((nret = nget_uslong(sp, &ulval, t, NULL, base)) != NUM_OK)
