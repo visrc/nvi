@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.24 1994/07/16 13:07:35 bostic Exp $ (Berkeley) $Date: 1994/07/16 13:07:35 $";
+static char sccsid[] = "$Id: v_init.c,v 8.25 1994/07/28 20:59:36 bostic Exp $ (Berkeley) $Date: 1994/07/28 20:59:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,8 +65,8 @@ v_screen_copy(orig, sp)
 		nvip->inc_lastch = ovip->inc_lastch;
 		nvip->inc_lastval = ovip->inc_lastval;
 
-		if (ovip->paragraph != NULL &&
-		    (nvip->paragraph = strdup(ovip->paragraph)) == NULL) {
+		if (ovip->ps != NULL &&
+		    (nvip->ps = strdup(ovip->ps)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
@@ -90,10 +90,10 @@ v_screen_end(sp)
 	vip = VIP(sp);
 
 	if (vip->rep != NULL)
-		FREE(vip->rep, vip->rep_len);
+		free(vip->rep);
 
-	if (vip->paragraph != NULL)
-		FREE(vip->paragraph, vip->paragraph_len);
+	if (vip->ps != NULL)
+		free(vip->ps);
 
 	/* Free private memory. */
 	FREE(vip, sizeof(VI_PRIVATE));
@@ -197,7 +197,7 @@ v_optchange(sp, opt)
 	switch (opt) {
 	case O_PARAGRAPHS:
 	case O_SECTIONS:
-		return (v_buildparagraph(sp));
+		return (v_buildps(sp));
 	}
 	return (0);
 }
