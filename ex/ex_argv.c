@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.4 1993/04/17 11:55:51 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:55:51 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.5 1993/04/25 18:45:29 bostic Exp $ (Berkeley) $Date: 1993/04/25 18:45:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -188,6 +188,7 @@ fileexpand(sp, ep, globp, word, wordlen)
 		}
 
 	gp = sp->gp;
+	tpath = NULL;
 	if (len != wordlen) {
 		/*
 		 * Copy argument into temporary space, replacing file
@@ -230,9 +231,10 @@ fileexpand(sp, ep, globp, word, wordlen)
 	    GLOB_APPEND | GLOB_NOSORT | GLOB_NOCHECK | GLOB_QUOTE | GLOB_TILDE,
 	    NULL, globp);
 
-	if (tpath == gp->tmp_bp)
-		F_CLR(gp, G_TMP_INUSE);
-	else
-		free(tpath);
+	if (tpath != NULL)
+		if (tpath == gp->tmp_bp)
+			F_CLR(gp, G_TMP_INUSE);
+		else
+			free(tpath);
 	return (0);
 }
