@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.15 1992/12/05 11:04:43 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:04:43 $";
+static char sccsid[] = "$Id: delete.c,v 5.16 1993/01/23 16:30:32 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:30:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,8 +92,8 @@ delete(ep, fm, tm, lmode)
 			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		bcopy(p, bp, fm->cno);
-		bcopy(p + tm->cno, bp + fm->cno, len - tm->cno);
+		memmove(bp, p, fm->cno);
+		memmove(bp + fm->cno, p + tm->cno, len - tm->cno);
 		if (file_sline(ep, fm->lno, bp, len - (tm->cno - fm->cno)))
 			goto err;
 		goto done;
@@ -127,7 +127,7 @@ delete(ep, fm, tm, lmode)
 		GETLINE_ERR(fm->lno);
 		goto err;
 	}
-	bcopy(p, bp, fm->cno);
+	memmove(bp, p, fm->cno);
 	tlen = fm->cno;
 
 	/* Copy the end partial line into place. */
@@ -135,7 +135,7 @@ delete(ep, fm, tm, lmode)
 		GETLINE_ERR(tm->lno);
 		goto err;
 	}
-	bcopy(p + tm->cno, bp + tlen, len - tm->cno);
+	memmove(bp + tlen, p + tm->cno, len - tm->cno);
 	tlen += len - tm->cno;
 
 	/* Set the current line. */

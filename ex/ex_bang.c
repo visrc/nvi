@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.22 1993/01/11 15:51:00 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:00 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.23 1993/01/23 16:30:56 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:30:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,15 +89,15 @@ ex_bang(cmdp)
 			switch (ch) {
 			case '!':
 				len = USTRLEN(lastcom);
-				bcopy(lastcom, t, len);
+				memmove(t, lastcom, len);
 				t += len;
 				break;
 			case '%':
-				bcopy(curf->name, t, curf->nlen);
+				memmove(t, curf->name, curf->nlen);
 				t += curf->nlen;
 				break;
 			case '#':
-				bcopy(curf->name, t, curf->nlen);
+				memmove(t, curf->name, curf->nlen);
 				t += curf->nlen;
 				break;
 			case '\\':
@@ -109,7 +109,7 @@ ex_bang(cmdp)
 			}
 		*p = '\0';
 	} else
-		bcopy(cmdp->string, com, len);
+		memmove(com, cmdp->string, len);
 		
 
 	/* Swap commands. */

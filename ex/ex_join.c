@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.15 1993/01/11 15:51:02 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:02 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.16 1993/01/23 16:31:13 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:31:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,7 +98,7 @@ ex_join(cmdp)
 			first = 0;
 
 		if (len != 0) {
-			bcopy(p, bp, len);
+			memmove(bp, p, len);
 			bp += len;
 			echar = p[len - 1];
 		} else

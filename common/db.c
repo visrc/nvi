@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.13 1993/01/17 16:56:47 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:56:47 $";
+static char sccsid[] = "$Id: db.c,v 5.14 1993/01/23 16:30:49 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:30:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -349,7 +349,7 @@ file_lline(ep)
 		lno = 0;
 		break;
 	default:
-		bcopy(key.data, &lno, sizeof(lno));
+		memmove(&lno, key.data, sizeof(lno));
 		break;
 	}
 

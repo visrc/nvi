@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.4 1992/12/20 15:13:19 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:13:19 $";
+static char sccsid[] = "$Id: log.c,v 5.5 1993/01/23 16:30:44 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:30:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,7 +122,7 @@ log_cursor(ep)
 
 	m.lno = ep->lno;
 	m.cno = ep->cno;
-	bcopy(&m, ep->l_lp + sizeof(u_char), sizeof(MARK));
+	memmove(ep->l_lp + sizeof(u_char), &m, sizeof(MARK));
 
 	data.data = ep->l_lp;
 	data.size = sizeof(u_char) + sizeof(MARK);
@@ -136,7 +136,7 @@ log_cursor(ep)
 	} else if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
 		LOG_ERR;
 
-	bcopy(key.data, &recno_saved, sizeof(recno_t));
+	memmove(&recno_saved, key.data, sizeof(recno_t));
 	c_ltype = LOG_CURSOR;
 	return (0);
 }
@@ -184,8 +184,8 @@ log_line(ep, lno, action)
 	}
 
 	ep->l_lp[0] = c_ltype;
-	bcopy(&lno, ep->l_lp + sizeof(u_char), sizeof(recno_t));
-	bcopy(lp, ep->l_lp + sizeof(u_char) + sizeof(recno_t), len);
+	memmove(ep->l_lp + sizeof(u_char), &lno, sizeof(recno_t));
+	memmove(ep->l_lp + sizeof(u_char) + sizeof(recno_t), lp, len);
 
 	data.data = ep->l_lp;
 	data.size = len + sizeof(u_char) + sizeof(recno_t);
@@ -215,7 +215,7 @@ log_mark(ep, kch, mp)
 
 	ep->l_lp[0] = LOG_MARK;
 	ep->l_lp[1] = kch;
-	bcopy(mp, ep->l_lp + sizeof(u_char) + sizeof(u_char), sizeof(MARK));
+	memmove(ep->l_lp + sizeof(u_char) + sizeof(u_char), mp, sizeof(MARK));
 
 	data.data = ep->l_lp;
 	data.size = sizeof(u_char) + sizeof(u_char) + sizeof(MARK);
@@ -255,8 +255,8 @@ log_backward(ep, rp, undolno)
 		switch(*(u_char *)data.data) {
 		case LOG_CURSOR:
 			if (didop != 0 || undolno != OOBLNO) {
-				bcopy(data.data +
-				    sizeof(u_char), rp, sizeof(MARK));
+				memmove(rp, data.data +
+				    sizeof(u_char), sizeof(MARK));
 				if (undolno != OOBLNO && rp->lno == lno)
 					break;
 				if (ep->log->seq(ep->log, &key, &data, R_PREV))
@@ -268,15 +268,15 @@ log_backward(ep, rp, undolno)
 		case LOG_LINE_APPEND:
 		case LOG_LINE_INSERT:
 			didop = 1;
-			bcopy(data.data +
-			    sizeof(u_char), &lno, sizeof(recno_t));
+			memmove(&lno, data.data +
+			    sizeof(u_char), sizeof(recno_t));
 			if (file_dline(ep, lno))
 				goto err;
 			break;
 		case LOG_LINE_DELETE:
 			didop = 1;
-			bcopy(data.data +
-			    sizeof(u_char), &lno, sizeof(recno_t));
+			memmove(&lno, data.data +
+			    sizeof(u_char), sizeof(recno_t));
 			if (file_iline(ep, lno, data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
@@ -286,8 +286,8 @@ log_backward(ep, rp, undolno)
 			didop = 1;
 			if (ep->log->seq(ep->log, &key, &data, R_PREV))
 				LOG_ERR;
-			bcopy(data.data +
-			    sizeof(u_char), &lno, sizeof(recno_t));
+			memmove(&lno, data.data +
+			    sizeof(u_char), sizeof(recno_t));
 			if (file_sline(ep, lno, data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
@@ -295,8 +295,8 @@ log_backward(ep, rp, undolno)
 			break;
 		case LOG_MARK:
 			didop = 1;
-			bcopy(data.data +
-			    sizeof(u_char) + sizeof(u_char), &m, sizeof(MARK));
+			memmove(&m, data.data +
+			    sizeof(u_char) + sizeof(u_char), sizeof(MARK));
 			if (mark_set(*(((u_char *)data.data) + 1), &m))
 				goto err;
 			break;
@@ -346,8 +346,8 @@ log_forward(ep, rp)
 		switch(*(u_char *)data.data) {
 		case LOG_CURSOR:
 			if (didop != 0) {
-				bcopy(data.data +
-				    sizeof(u_char), rp, sizeof(MARK));
+				memmove(rp, data.data +
+				    sizeof(u_char), sizeof(MARK));
 				nolog = 0;
 				return (0);
 			}
@@ -355,8 +355,8 @@ log_forward(ep, rp)
 		case LOG_LINE_APPEND:
 		case LOG_LINE_INSERT:
 			didop = 1;
-			bcopy(data.data +
-			    sizeof(u_char), &lno, sizeof(recno_t));
+			memmove(&lno, data.data +
+			    sizeof(u_char), sizeof(recno_t));
 			if (file_iline(ep, lno, data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t))) {
@@ -366,8 +366,8 @@ log_forward(ep, rp)
 			break;
 		case LOG_LINE_DELETE:
 			didop = 1;
-			bcopy(data.data +
-			    sizeof(u_char), &lno, sizeof(recno_t));
+			memmove(&lno, data.data +
+			    sizeof(u_char), sizeof(recno_t));
 			if (file_dline(ep, lno)) {
 				nolog = 0;
 				return (1);
@@ -377,8 +377,8 @@ log_forward(ep, rp)
 			didop = 1;
 			if (ep->log->seq(ep->log, &key, &data, R_NEXT))
 				LOG_ERR;
-			bcopy(data.data +
-			    sizeof(u_char), &lno, sizeof(recno_t));
+			memmove(&lno, data.data +
+			    sizeof(u_char), sizeof(recno_t));
 			if (file_sline(ep, lno, data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
@@ -386,8 +386,8 @@ log_forward(ep, rp)
 			break;
 		case LOG_MARK:
 			didop = 1;
-			bcopy(data.data +
-			    sizeof(u_char) + sizeof(u_char), &m, sizeof(MARK));
+			memmove(&m, data.data +
+			    sizeof(u_char) + sizeof(u_char), sizeof(MARK));
 			if (mark_set(*(((u_char *)data.data) + 1), &m)) {
 				nolog = 0;
 				return (1);
