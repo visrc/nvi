@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 8.12 1994/08/31 17:15:07 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:07 $";
+static char sccsid[] = "$Id: v_increment.c,v 8.13 1994/10/09 13:54:12 bostic Exp $ (Berkeley) $Date: 1994/10/09 13:54:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,8 +66,11 @@ v_increment(sp, ep, vp)
 		vp->character = vip->inc_lastch;
 
 	/* Get new value. */
-	if (F_ISSET(vp, VC_C1SET))
+	if (F_ISSET(vp, VC_C1SET)) {
+		if (vp->count > LONG_MAX)
+			goto overflow;
 		vip->inc_lastval = vp->count;
+	}
 
 	if (vp->character != '+' && vp->character != '-') {
 		msgq(sp, M_ERR, "177|Usage: %s", vp->kp->usage);
