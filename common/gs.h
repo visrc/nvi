@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.22 1996/02/20 21:03:55 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:03:55 $
+ *	$Id: gs.h,v 10.23 1996/03/03 16:21:58 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:21:58 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -60,7 +60,8 @@ struct _gs {
 	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
 
-	void	*interp;		/* Tcl_Interp *: Tcl interpreter. */
+	void	*perl_interp;		/* Perl interpreter. */
+	void	*tcl_interp;		/* Tcl_Interp *: Tcl interpreter. */
 
 	void	*cl_private;		/* Curses support private area. */
 	void	*tk_private;		/* Tk/Tcl support private area. */
