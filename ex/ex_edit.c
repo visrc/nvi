@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.19 1992/10/26 17:46:03 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:46:03 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.20 1992/11/02 22:17:11 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:17:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.19 1992/10/26 17:46:03 bostic Exp $ (
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -56,7 +57,6 @@ edit(cmdp, cmd)
 {
 	EXF *ep;
 	int reset;
-	char *fname;
 
 	reset = 0;
 	switch(cmdp->argc) {
