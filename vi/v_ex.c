@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.10 1995/09/21 12:08:20 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:20 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.11 1995/09/24 12:01:00 bostic Exp $ (Berkeley) $Date: 1995/09/24 12:01:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,6 +58,13 @@ v_exmode(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
+	/* Try and switch screens -- the screen may not permit it. */
+	if (sp->gp->scr_screen(sp, S_EX)) {
+		msgq(sp, M_ERR,
+		    "207|The Q command requires the ex terminal interface");
+		return (1);
+	}
+
 	/* Save the current cursor position. */
 	sp->frp->lno = sp->lno;
 	sp->frp->cno = sp->cno;
@@ -281,6 +288,36 @@ v_filter(sp, vp)
 		return (1);
 	cmd.argc = EXP(sp)->argsoff;		/* XXX */
 	cmd.argv = EXP(sp)->args;		/* XXX */
+	return (v_ex_cmd(sp, vp, &cmd));
+}
+
+/*
+ * v_event_exec --
+ *	Execute some command(s) based on an event.
+ *
+ * PUBLIC: int v_event_exec __P((SCR *, VICMD *));
+ */
+int
+v_event_exec(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	ARGS *ap[2], a;
+	EXCMD cmd;
+
+	switch (vp->ev.e_event) {
+	case E_QUIT:
+		ex_cbuild(&cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+		break;
+	case E_WRITE:
+		ex_cbuild(&cmd, C_WRITE, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+		break;
+	case E_WRITEQUIT:
+		ex_cbuild(&cmd, C_WQ, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+		break;
+	default:
+		abort();
+	}
 	return (v_ex_cmd(sp, vp, &cmd));
 }
 
