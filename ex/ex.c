@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.166 1994/09/18 18:28:44 bostic Exp $ (Berkeley) $Date: 1994/09/18 18:28:44 $";
+static char sccsid[] = "$Id: ex.c,v 8.167 1994/09/27 12:20:17 bostic Exp $ (Berkeley) $Date: 1994/09/27 12:20:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1516,11 +1516,15 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	size_t *cmdlenp;
 {
 	MARK cur;
+	recno_t lno;
 	size_t cmdlen;
-	int tmp;
-	char *cmd;
+	int addr_found, tmp;
+	char *cmd, *endp;
 
-	/* Percent character is all lines in the file. */
+	/*
+	 * Percent character is all lines in the file, and cannot
+	 * be followed by any other address.
+	 */
 	cmd = *cmdp;
 	cmdlen = *cmdlenp;
 	if (*cmd == '%') {
@@ -1539,59 +1543,104 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 		return (0);
 	}
 
-	/* Parse comma or semi-colon delimited line specs. */
-	for (excp->addrcnt = 0; cmdlen > 0;)
+	/*
+	 * Parse comma or semi-colon delimited line specs.
+	 *
+	 * Semi-colon delimiters update the current address to be the
+	 * last address.  For example, the command
+	 *
+	 *	:3;/pattern/cmd
+	 *
+	 * will search for foo from line 3.  In addition, if cmd is not
+	 * a valid command, the current line will be left at 3, not at
+	 * the original address.
+	 *
+	 * Extra addresses are discarded, starting with the first.
+	 *
+	 * !!!
+	 * If any addresses are missing, they default to the current line.
+	 * This was true for leading and trailing comma delimited
+	 * addresses, historically, and for trailing semicolon delimited
+	 * addresses.  We make it true for leading semicolon addresses as
+	 * well, for consistency.
+	 *
+	 * !!!
+	 * Absolute <blank> separated addresses were additive, for example,
+	 * "2 2 3p" was the same as "7p", or, "/ZZZ/ 2" was the same as
+	 * "/ZZZ/+2".  However, "2 /ZZZ/" was an error.
+	 */
+	 for (excp->addrcnt = 0, addr_found = 0; cmdlen > 0;)
 		switch (*cmd) {
-		case ';':		/* Semi-colon delimiter. */
-			/*
-			 * Semi-colon delimiters update the current address
-			 * to be the last address.  For example, the command
-			 *	:3;/pattern/cmd
-			 * will search for foo from line 3.  In addition, if
-			 * cmd is not a valid command, the current line will
-			 * be left at 3, not at the original address.
-			 *
-			 * If no addresses yet, it's an error.  I don't think
-			 * that this can happen.
-			 */
-			switch (excp->addrcnt) {
-			case 0:
-				goto done;
-			case 1:
-				sp->lno = excp->addr1.lno;
-				sp->cno = excp->addr1.cno;
-				break;
-			case 2:
-				sp->lno = excp->addr2.lno;
-				sp->cno = excp->addr2.cno;
-				break;
-			}
-			++cmd;
-			--cmdlen;
-			break;
-		case ',':		/* Comma delimiter. */
-			/* If no addresses yet, defaults to ".". */
-			if (excp->addrcnt == 0) {
-				excp->addr1.lno = sp->lno;
-				excp->addr1.cno = sp->cno;
-				excp->addrcnt = 1;
-			}
+		case ',':               /* Comma delimiter. */
+		case ';':               /* Semi-colon delimiter. */
+			if (!addr_found)
+				switch (excp->addrcnt) {
+				case 0:
+					excp->addr1.lno = sp->lno;
+					excp->addr1.cno = sp->cno;
+					excp->addrcnt = 1;
+					break;
+				case 2:
+					excp->addr1 = excp->addr2;
+					/* FALLTHROUGH */
+				case 1:
+					excp->addr2.lno = sp->lno;
+					excp->addr2.cno = sp->cno;
+					excp->addrcnt = 2;
+					break;
+				}
+			if (*cmd == ';')
+				switch (excp->addrcnt) {
+				case 0:
+					abort();
+					break;
+				case 1:
+					sp->lno = excp->addr1.lno;
+					sp->cno = excp->addr1.cno;
+					break;
+				case 2:
+					sp->lno = excp->addr2.lno;
+					sp->cno = excp->addr2.cno;
+					break;
+				}
+			addr_found = 0;
 			/* FALLTHROUGH */
 		case ' ':		/* Whitespace. */
 		case '\t':		/* Whitespace. */
 			++cmd;
 			--cmdlen;
 			break;
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			if (addr_found) {
+/* 8-bit XXX */			lno = strtol(cmd, &endp, 10);
+				cmdlen -= (endp - cmd);
+				cmd = endp;
+				switch (excp->addrcnt) {
+				case 0:
+					abort();
+					break;
+				case 1:
+					excp->addr1.lno += lno;
+					break;
+				case 2:
+					excp->addr2.lno += lno;
+					break;
+				}
+				break;
+			}
+			/* FALLTHROUGH */
 		default:
 			if (ep_line(sp, ep, &cur, &cmd, &cmdlen, &tmp))
 				return (1);
 			if (!tmp)
 				goto done;
+			if (addr_found) {
+				msgq(sp, M_ERR,
+				    "253|Illegal address combination");
+				return (1);
+			}
 
-			/*
-			 * Extra addresses are discarded, starting with
-			 * the first.
-			 */
 			switch (excp->addrcnt) {
 			case 0:
 				excp->addr1 = cur;
@@ -1606,6 +1655,7 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 				excp->addr2 = cur;
 				break;
 			}
+			addr_found = 1;
 			break;
 		}
 
