@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.12 1993/11/13 18:02:27 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:27 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.13 1993/11/22 19:03:10 bostic Exp $ (Berkeley) $Date: 1993/11/22 19:03:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -130,8 +130,8 @@ ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
 		}
 	}
 
-	/* Redraw the screen. */
-	F_SET(sp, S_REDRAW);
+	/* Refresh the screen. */
+	F_SET(sp, S_REFRESH);
 
 	return (rval);
 }
