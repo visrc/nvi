@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.21 2001/06/17 14:16:30 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:30 $";
+static const char sccsid[] = "$Id: conv.c,v 1.22 2001/06/18 20:08:09 skimo Exp $ (Berkeley) $Date: 2001/06/18 20:08:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,7 @@ static const char sccsid[] = "$Id: conv.c,v 1.21 2001/06/17 14:16:30 skimo Exp $
 #include <iconv.h>
 #include <locale.h>
 
+#ifdef USE_WIDECHAR
 int 
 raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen,
 	CHAR_T **dst)
@@ -292,41 +293,6 @@ cs_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
     default_int2char(sp, str, len, cw, tolen, dst, nl_langinfo(CODESET));
 }
 
-#ifdef USE_WIDECHAR
-int 
-default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
-		size_t *tolen, char **dst)
-{
-    *dst = (char*)str;
-    *tolen = len;
-
-    return 0;
-}
-
-#else
-
-int 
-default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
-		size_t *tolen, char **dst)
-{
-    int i, j;
-    char **tostr = (char **)&cw->bp1;
-    size_t  *blen = &cw->blen1;
-
-    BINC_RET(NULL, *tostr, *blen, len * 2);
-
-    for (i = 0, j = 0; i < len; ++i)
-	if (CHAR_WIDTH(NULL, str[i]) > 1) {
-	    (*tostr)[j++] = '[';
-	    (*tostr)[j++] = ']';
-	} else
-	    (*tostr)[j++] = str[i];
-    *tolen = j;
-
-    *dst = cw->bp1;
-
-    return 0;
-}
 #endif
 
 
@@ -337,12 +303,13 @@ conv_init (SCR *orig, SCR *sp)
 	MEMCPY(&sp->conv, &orig->conv, 1);
     else {
 	setlocale(LC_ALL, "");
+#ifdef USE_WIDECHAR
 	sp->conv.sys2int = cs_char2int;
 	sp->conv.int2sys = cs_int2char;
 	sp->conv.file2int = fe_char2int;
 	sp->conv.int2file = fe_int2char;
 	sp->conv.input2int = ie_char2int;
-	sp->conv.int2disp = default_int2disp;
+#endif
 	o_set(sp, O_FILEENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
 	o_set(sp, O_INPUTENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
     }
@@ -351,6 +318,7 @@ conv_init (SCR *orig, SCR *sp)
 int
 conv_enc (SCR *sp, int option, char *enc)
 {
+#ifdef USE_WIDECHAR
     iconv_t id;
     char2wchar_t    *c2w;
     wchar2char_t    *w2c;
@@ -410,6 +378,7 @@ err:
 	msgq(sp, M_ERR,
 	    "322|Input encoding conversion not supported");
     }
+#endif
     return 1;
 }
 

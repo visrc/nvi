@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.47 2001/06/17 11:08:37 skimo Exp $ (Berkeley) $Date: 2001/06/17 11:08:37 $
+ *	$Id: key.h,v 10.48 2001/06/18 20:08:09 skimo Exp $ (Berkeley) $Date: 2001/06/18 20:08:09 $
  */
 
 #include "multibyte.h"
@@ -38,8 +38,6 @@ typedef	u_int		ARG_CHAR_T;
     sp->conv.int2sys(sp, w, wlen, &sp->wp->cw, &nlen, &n)
 #define INPUT2INT(sp,n,nlen,w,wlen)					    \
     sp->conv.input2int(sp, n, nlen, &sp->wp->cw, &wlen, &w)
-#define INT2DISP(sp,w,wlen,n,nlen) 					    \
-    sp->conv.int2disp(sp, w, wlen, &sp->wp->cw, &nlen, &n)
 #define CONST
 #define ISCNTRL(ch) \
     iswcntrl((ch))
@@ -71,8 +69,6 @@ typedef	u_int		ARG_CHAR_T;
     (n = w, nlen = wlen, 0)
 #define INPUT2INT(sp,n,nlen,w,wlen) \
     (w = n, wlen = nlen, 0)
-#define INT2DISP(sp,w,wlen,n,nlen) \
-    (n = w, nlen = wlen, 0)
 #define CONST const
 #define ISCNTRL(ch) \
     iscntrl((ch))
