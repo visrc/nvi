@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.24 1996/02/28 21:09:04 bostic Exp $ (Berkeley) $Date: 1996/02/28 21:09:04 $
+#	$Id: Makefile.in,v 8.25 1996/02/29 15:45:41 bostic Exp $ (Berkeley) $Date: 1996/02/29 15:45:41 $
 
 CC=	@CC@
 CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
@@ -46,6 +46,8 @@ all: $(HDRS) nvi @tknvi@
 NVIALL=	$(CLOBJS) $(VIOBJS) @cobjs@ @LIBOBJS@
 nvi: $(NVIALL)
 	$(CC) $(LDFLAGS) -o $@ $(NVIALL) @LIBS@
+	rm -f nex
+	ln $@ nex
 
 TKALL=	$(TKOBJS) $(VIOBJS) @LIBOBJS@
 tknvi: $(TKALL)
