@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.24 1993/12/10 16:31:27 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:31:27 $";
+static char sccsid[] = "$Id: options_f.c,v 8.25 1993/12/20 16:58:24 bostic Exp $ (Berkeley) $Date: 1993/12/20 16:58:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -342,6 +342,21 @@ DECL(f_sidescroll)
 		return (1);
 	}
 	O_VAL(sp, O_SIDESCROLL) = val;
+	return (0);
+}
+
+/*
+ * f_sourceany --
+ *	Historic vi, on startup, source'd $HOME/.exrc and ./.exrc, if they
+ *	were owned by the user.  The sourceany option was an undocumented
+ *	feature of historic vi which permitted the startup source'ing of
+ *	.exrc files the user didn't own.  This is an obvious security problem,
+ *	and we ignore the option.
+ */
+DECL(f_sourceany)
+{
+	if (!turnoff)
+		msgq(sp, M_ERR, "The sourceany option may never be set.");
 	return (0);
 }
 
