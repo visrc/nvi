@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.21 1995/10/19 11:42:51 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:42:51 $";
+static char sccsid[] = "$Id: msg.c,v 10.22 1995/10/27 20:02:15 bostic Exp $ (Berkeley) $Date: 1995/10/27 20:02:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -490,6 +490,7 @@ msgq_rpt(sp)
 
 	FREE_SPACE(sp, bp, blen);
 alloc_err:
+	return;
 
 #undef ARSIZE
 #undef MAXNUM
@@ -606,6 +607,7 @@ msgq_status(sp, lno, showlast)
 
 	FREE_SPACE(sp, bp, blen);
 alloc_err:
+	return;
 }
 
 /*
