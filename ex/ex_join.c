@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.8 1992/05/07 12:46:51 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:51 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.9 1992/05/15 11:08:33 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,6 @@ static char sccsid[] = "$Id: ex_join.c,v 5.8 1992/05/07 12:46:51 bostic Exp $ (B
 
 #include "vi.h"
 #include "excmd.h"
-#include "exf.h"
 #include "extern.h"
 
 int
@@ -45,7 +44,7 @@ ex_join(cmdp)
 	cnt = tm.lno - fm.lno;
 	do {
 		/* Get next line. */
-		if ((p = file_line(curf, lno, &llen)) == NULL)
+		if ((p = file_gline(curf, lno, &llen)) == NULL)
 			return (1);
 
 		/* Resize buffer as necessary. */

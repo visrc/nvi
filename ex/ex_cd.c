@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.9 1992/05/04 11:51:41 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:41 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.10 1992/05/15 11:09:42 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:09:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -17,7 +17,6 @@ static char sccsid[] = "$Id: ex_cd.c,v 5.9 1992/05/04 11:51:41 bostic Exp $ (Ber
 
 #include "vi.h"
 #include "excmd.h"
-#include "exf.h"
 #include "extern.h"
 
 /*
