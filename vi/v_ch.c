@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.1 1993/06/09 22:26:44 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:44 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.2 1993/12/20 12:23:03 bostic Exp $ (Berkeley) $Date: 1993/12/20 12:23:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,7 +98,7 @@ v_chrrepeat(sp, ep, vp, fm, tm, rp)
 /*
  * v_cht -- [count]tc
  *	Search forward in the line for the next occurrence of the character.
- *	Place the cursor on it if a motion command, or to its left if not.
+ *	Place the cursor on it if a motion command, to its left if its not.
  */
 int
 v_cht(sp, ep, vp, fm, tm, rp)
@@ -119,7 +119,7 @@ v_cht(sp, ep, vp, fm, tm, rp)
 /*
  * v_chf -- [count]fc
  *	Search forward in the line for the next occurrence of the character.
- *	Place the cursor to it's right if a motion command, or on it if not.
+ *	Place the cursor to its right if a motion command, on it if its not.
  */
 int
 v_chf(sp, ep, vp, fm, tm, rp)
@@ -128,15 +128,22 @@ v_chf(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	register int key;
-	register char *endp, *p;
 	size_t len;
 	recno_t lno;
 	u_long cnt;
-	char *startp;
+	int key;
+	char *endp, *p, *startp;
 
+	/*
+	 * !!!
+	 * If it's a dot command, it doesn't reset the key for which
+	 * we're searching, e.g. in "df1|f2|.|;", the ';' searches
+	 * for a '2'.
+	 */
+	key = vp->character;
+	if (!F_ISSET(vp, VC_ISDOT))
+		sp->lastckey = key;
 	sp->csearchdir = fSEARCH;
-	sp->lastckey = key = vp->character;
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
@@ -198,14 +205,22 @@ v_chF(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	register int key;
-	register char *p, *endp;
 	recno_t lno;
 	size_t len;
 	u_long cnt;
+	int key;
+	char *p, *endp;
 
+	/*
+	 * !!!
+	 * If it's a dot command, it doesn't reset the key for which
+	 * we're searching, e.g. in "df1|f2|.|;", the ';' searches
+	 * for a '2'.
+	 */
+	key = vp->character;
+	if (!F_ISSET(vp, VC_ISDOT))
+		sp->lastckey = key;
 	sp->csearchdir = FSEARCH;
-	sp->lastckey = key = vp->character;
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
