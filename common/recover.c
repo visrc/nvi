@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.65 1994/07/16 17:32:51 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:32:51 $";
+static char sccsid[] = "$Id: recover.c,v 8.66 1994/07/17 00:41:20 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:41:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -463,8 +463,16 @@ rcv_list(sp)
 		if (strncmp(dp->d_name, "recover.", 8))
 			continue;
 
-		/* If it's readable, it's recoverable. */
-		if ((fp = fopen(dp->d_name, "r")) == NULL)
+		/*
+		 * If it's readable, it's recoverable.
+		 *
+		 * XXX
+		 * Should be "r", we don't want to write the file.  However,
+		 * if we're using fcntl(2) to fake flock(2) semantics (System
+		 * V style), there's no way to lock a file descriptor that's
+		 * not open for writing.
+		 */
+		if ((fp = fopen(dp->d_name, "r+")) == NULL)
 			continue;
 
 		/* If it's locked, it's live. */
@@ -565,8 +573,14 @@ rcv_read(sp, frp)
 		 * require closing and then reopening the file so that we
 		 * could have a lock and still close the FP.  Another tip
 		 * of the hat to fcntl(2).
+		 *
+		 * XXX
+		 * Should be O_RDONLY, we don't want to write it.  However,
+		 * if we're using fcntl(2) to fake flock(2) semantics (System
+		 * V style), there's no way to lock a file descriptor that's
+		 * not open for writing.
 		 */
-		if ((fd = open(recpath, O_RDONLY, 0)) == -1)
+		if ((fd = open(recpath, O_RDWR, 0)) == -1)
 			continue;
 
 		/* If it's locked, it's live. */

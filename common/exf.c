@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.85 1994/07/16 19:13:50 bostic Exp $ (Berkeley) $Date: 1994/07/16 19:13:50 $";
+static char sccsid[] = "$Id: exf.c,v 8.86 1994/07/17 00:41:22 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:41:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -202,9 +202,21 @@ file_init(sp, frp, rcv_name, force)
 		F_SET(ep, F_MODIFIED);
 	}
 
-	/* Open a db structure. */
-	if ((ep->db = dbopen(rcv_name == NULL ? oname : NULL,
-	    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo)) == NULL) {
+	/*
+	 * Open a db structure.
+	 *
+	 * XXX
+	 * Should be O_RDONLY, we don't want to write the file, at least not
+	 * using the DB interface.  However, if we're using fcntl(2) to fake
+	 * flock(2) semantics (System V style), there's no way to lock a file
+	 * descriptor that's not open for writing.
+	 */
+	ep->db = dbopen(rcv_name == NULL ? oname : NULL,
+	      O_NONBLOCK | O_RDWR, DEFFILEMODE, DB_RECNO, &oinfo);
+	if (ep->db == NULL)
+		ep->db = dbopen(rcv_name == NULL ? oname : NULL,
+		      O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
+	if (ep->db == NULL) {
 		msgq(sp, M_SYSERR, rcv_name == NULL ? oname : rcv_name);
 		goto err;
 	}
