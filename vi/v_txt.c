@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.33 1996/02/11 12:32:50 bostic Exp $ (Berkeley) $Date: 1996/02/11 12:32:50 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.34 1996/02/25 15:23:03 bostic Exp $ (Berkeley) $Date: 1996/02/25 15:23:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,6 +175,12 @@ v_tcmd(sp, vp, prompt, flags)
 }
 
 /*
+ * XXX
+ * Workaround for Sun compiler bug, Sun #1233182.
+ */
+u_long __rcount;		/* Replay count. */
+
+/*
  * If doing input mapping on the colon command line, may need to unmap
  * based on the command.
  */
@@ -208,12 +214,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	size_t len;		/* Input line length. */
 	ARG_CHAR_T prompt;	/* Prompt to display. */
 	recno_t ai_line;	/* Line number to use for autoindent count. */
-	/*
-	 * XXX
-	 * The leading "volatile" is a workaround for a Sun compiler bug,
-	 * Sun #1233182.
-	 */
-	volatile u_long rcount;	/* Replay count. */
+	u_long rcount;		/* Replay count. */
 	u_int32_t flags;	/* TXT_* flags. */
 {
 	EVENT ev, *evp;		/* Current event. */
@@ -239,6 +240,13 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	int wm_set, wm_skip;	/* Wrapmargin happened, blank skip flags. */
 	int max, tmp;
 	char *p;
+
+	/*
+	 * XXX
+	 * Workaround for Sun compiler bug, Sun #1233182.
+	 */
+	__rcount = rcount;
+#define	rcount	__rcount
 
 	gp = sp->gp;
 	vip = VIP(sp);
