@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.11 1992/10/18 13:08:53 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:08:53 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.12 1992/10/26 17:46:42 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:46:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -43,7 +43,7 @@ v_Delete(vp, fm, tm, rp)
 	tm->lno = fm->lno;
 	tm->cno = len;
 
-	if (cut(VICB(vp), fm, tm, 0) || delete(fm, tm, 0))
+	if (cut(VICB(vp), fm, tm, 0) || delete(curf, fm, tm, 0))
 		return (1);
 
 	rp->lno = fm->lno;
@@ -61,32 +61,39 @@ v_delete(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	recno_t nlines;
+	size_t len;
 	int lmode;
+	u_char *p;
 	
 	lmode = vp->flags & VC_LMODE;
-	if (cut(VICB(vp), fm, tm, lmode) || delete(fm, tm, lmode))
+	if (cut(VICB(vp), fm, tm, lmode) || delete(curf, fm, tm, lmode))
 		return (1);
 
 	/*
 	 * If deleting lines, leave the cursor at the lowest line deleted,
-	 * correcting, of course, for deleting everything.
+	 * otherwise, leave it where it started.  Always correct for EOF.
 	 */
+	nlines = file_lline(curf);
 	if (lmode) {
 		rp->lno = MIN(fm->lno, tm->lno);
-		nlines = file_lline(curf);
 		if (rp->lno > nlines)
 			rp->lno = nlines ? nlines : 1;
 		rp->cno = fm->cno;
 		return (0);
 	}
 
-	/* If deleting forward, leave the cursor in the current spot. */
-	if (tm->lno > fm->lno || tm->lno == fm->lno && tm->cno > fm->cno) {
-		*rp = *fm;
-		return (0);
-	}
-
-	/* Else, leave the cursor where it moved. */
-	*rp = *tm;
+	*rp = *fm;
+	if (rp->lno >= nlines)
+		if (nlines == 0) {
+			rp->lno = 1;
+			rp->cno = 0;
+		} else {
+			rp->lno = nlines;
+			if ((p = file_gline(curf, nlines, &len)) == NULL) {
+				GETLINE_ERR(rp->lno);
+				return (1);
+			}
+			rp->cno = len ? len - 1 : 0;
+		}
 	return (0);
 }
