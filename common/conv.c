@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.26 2001/07/01 08:25:32 skimo Exp $ (Berkeley) $Date: 2001/07/01 08:25:32 $";
+static const char sccsid[] = "$Id: conv.c,v 1.27 2001/08/18 21:41:41 skimo Exp $ (Berkeley) $Date: 2001/08/18 21:41:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,21 +150,21 @@ int
 fe_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
 	    size_t *tolen, CHAR_T **dst)
 {
-    default_char2int(sp, str, len, cw, tolen, dst, O_STR(sp, O_FILEENCODING));
+    return default_char2int(sp, str, len, cw, tolen, dst, O_STR(sp, O_FILEENCODING));
 }
 
 int 
 ie_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
 	    size_t *tolen, CHAR_T **dst)
 {
-    default_char2int(sp, str, len, cw, tolen, dst, O_STR(sp, O_INPUTENCODING));
+    return default_char2int(sp, str, len, cw, tolen, dst, O_STR(sp, O_INPUTENCODING));
 }
 
 int 
 cs_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
 	    size_t *tolen, CHAR_T **dst)
 {
-    default_char2int(sp, str, len, cw, tolen, dst, LANGCODESET);
+    return default_char2int(sp, str, len, cw, tolen, dst, LANGCODESET);
 }
 
 int 
@@ -301,14 +301,14 @@ int
 fe_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
 	    size_t *tolen, char **dst)
 {
-    default_int2char(sp, str, len, cw, tolen, dst, O_STR(sp, O_FILEENCODING));
+    return default_int2char(sp, str, len, cw, tolen, dst, O_STR(sp, O_FILEENCODING));
 }
 
 int 
 cs_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
 	    size_t *tolen, char **dst)
 {
-    default_int2char(sp, str, len, cw, tolen, dst, LANGCODESET);
+    return default_int2char(sp, str, len, cw, tolen, dst, LANGCODESET);
 }
 
 #endif
