@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.51 1994/03/08 19:41:49 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:49 $";
+static char sccsid[] = "$Id: vi.c,v 8.52 1994/03/09 10:48:53 bostic Exp $ (Berkeley) $Date: 1994/03/09 10:48:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,16 +133,16 @@ vi(sp, ep)
 		}
 
 		/*
-		 * If a count is set, we set the to MARK here relative to the
-		 * cursor/from MARK.  This is done for commands that take both
-		 * counts and motions, i.e. "4yy" and "y%" -- there's no way
-		 * the command can know which the user did, so we have to do it
-		 * here.  There are other commands that are line mode commands
-		 * and take counts ("#G", "#H") and for which this calculation
-		 * is either meaningless or wrong.  Each command must validate
-		 * the value on its own.
+		 * If a count is set and the command is line oriented, set the
+		 * to MARK here relative to the cursor/from MARK.  This is for
+		 * commands that take both counts and motions, i.e. "4yy" and
+		 * "y%".  As there's no way the command can know which the user
+		 * did, we have to do it here.  (There are commands that are
+		 * line oriented and that take counts ("#G", "#H"), for which
+		 * this calculation is either completely meaningless or wrong.
+		 * Each command must validate the value for itself.
 		 */
-		if (F_ISSET(vp, VC_C1SET))
+		if (F_ISSET(vp, VC_C1SET) && F_ISSET(vp, VM_LMODE))
 			vp->m_stop.lno += vp->count - 1;
 
 		/* Increment the command count. */
