@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.1 1992/04/02 11:21:05 bostic Exp $ (Berkeley) $Date: 1992/04/02 11:21:05 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.2 1992/04/03 08:22:33 bostic Exp $ (Berkeley) $Date: 1992/04/03 08:22:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,32 +17,33 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 5.1 1992/04/02 11:21:05 bostic Exp $ 
 #include "pathnames.h"
 #include "extern.h"
 
-#ifndef NO_MKEXRC
 void
 ex_mkexrc(cmdp)
 	CMDARG *cmdp;
 {
-	int	fd;
-	char *extra;
+	int fd;
+	char *name;
 
-	extra = cmdp->argv[0];
-
-	/* the default name for the .exrc file EXRC */
-	if (!*extra)
-	{
-		extra = _NAME_EXRC;
+	switch (cmdp->argc) {
+	case 0:
+		name = _NAME_EXRC;
+		break;
+	case 1:
+		name = cmdp->argv[0];
+		break;
 	}
 
-	/* create the .exrc file */
-	fd = creat(extra, DEFFILEMODE);
-	if (fd < 0)
-	{
-		msg("Couldn't create a new \"%s\" file", extra);
+	/* Create with max permissions of rw-r--r--. */
+	if ((fd = open(name,
+	    O_CREAT|O_TRUNC|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+		msg("%s: %s", name, strerror(errno));
 		return;
 	}
 
-	/* save stuff */
-	savekeys(fd);
+	/* And just in case it already existed... */
+	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+
+	map_save(fd);
 	opts_save(fd);
 #ifndef NO_DIGRAPH
 	digraph_save(fd);
@@ -54,8 +55,6 @@ ex_mkexrc(cmdp)
 	color_save(fd);
 #endif
 
-	/* close the file */
-	close(fd);
-	msg("Created a new \"%s\" file", extra);
+	(void)close(fd);
+	msg("New .exrc file: %s. ", name);
 }
-#endif
