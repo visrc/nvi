@@ -1,4 +1,4 @@
-#	$Id: README,v 8.115 1995/07/26 11:01:18 bostic Exp $ (Berkeley) $Date: 1995/07/26 11:01:18 $
+#	$Id: README,v 8.116 1995/10/28 11:04:31 bostic Exp $ (Berkeley) $Date: 1995/10/28 11:04:31 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -14,16 +14,14 @@ current alpha release of nex/nvi, version 1.52.  This version reflects
 the current development tree, and is more likely to have unanticipated
 problems.
 
-Don't try and build nvi from the top-level Makefile, it's only correct
+DON'T try and build nvi from the top-level Makefile, it's only correct
 for the 4.4BSD distribution.  The directory "PORT" has subdirectories for
 specific OS/machine combinations (each including a V7-style Makefile) for
 building nex/nvi on different platforms.  See the file PORT/README for
 specific information.
 
-The nex/nvi reference manual is in USD.doc/vi.ref/, and the manual page
-is in USD.doc/vi.man/.  The files ending in the letters ".ps" are already
-formatted Postscript versions, the files ending in the letters ".txt" are
-already formatted flat text versions.
+See the file LAYOUT for a description of where everything is and what it
+does.
 
 If you have any questions about nex/nvi, or problems making it work,
 please contact me by electronic mail at one of the following addresses:
@@ -43,9 +41,6 @@ o Credit where it's due:
 
 	IEEE POSIX 1003.2 style regular expression support is courtesy
 	of Henry Spencer, for which I am *very* grateful.
-
-	The curses library was originally done by Ken Arnold.  Scrolling
-	and general reworking for 4.4BSD was done by Elan Amir.
 
 o From the original vi acknowledgements, by William Joy and Mark Horton:
 
