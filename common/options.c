@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.12 1993/10/03 15:22:15 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:22:15 $";
+static char sccsid[] = "$Id: options.c,v 8.13 1993/10/03 17:32:28 bostic Exp $ (Berkeley) $Date: 1993/10/03 17:32:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,11 +135,11 @@ static OPTLIST const optlist[] = {
 /* O_VERBOSE */
 	{"verbose",	NULL,		OPT_0BOOL,	0},
 /* O_W300 */
-	{"w300",	f_w300,		OPT_NUM,	OPT_NODISPLAY},
+	{"w300",	f_w300,		OPT_NUM,	OPT_NEVER},
 /* O_W1200 */
-	{"w1200",	f_w1200,	OPT_NUM,	OPT_NODISPLAY},
+	{"w1200",	f_w1200,	OPT_NUM,	OPT_NEVER},
 /* O_W9600 */
-	{"w9600",	f_w9600,	OPT_NUM,	OPT_NODISPLAY},
+	{"w9600",	f_w9600,	OPT_NUM,	OPT_NEVER},
 /* O_WARN */
 	{"warn",	NULL,		OPT_1BOOL,	0},
 /* O_WINDOW */
@@ -279,8 +279,8 @@ opts_init(sp)
 	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
 
 	/*
-	 * By default, the historic vi displayed information about
-	 * two options, redraw and term.  Term seems sufficient.
+	 * By default, the historic vi always displayed information
+	 * about two options, redraw and term.  Term seems sufficient.
 	 */
 	F_SET(&sp->opts[O_TERM], OPT_SET);
 	return (0);
@@ -295,22 +295,23 @@ opts_set(sp, argv)
 	SCR *sp;
 	char **argv;
 {
-	register char *p;
+	enum optdisp disp;
 	OABBREV atmp, *ap;
 	OPTLIST const *op;
 	OPTLIST otmp;
 	OPTION *spo;
 	u_long value, turnoff;
-	int all, ch, offset, rval;
-	char *endp, *equals, *name;
+	int ch, offset, rval;
+	char *endp, *equals, *name, *p;
 	
-	for (all = rval = 0; *argv; ++argv) {
+	disp = NO_DISPLAY;
+	for (rval = 0; *argv; ++argv) {
 		/*
 		 * The historic vi dumped the options for each occurrence of
 		 * "all" in the set list.  Puhleeze.
 		 */
 		if (!strcmp(*argv, "all")) {
-			all = 1;
+			disp = ALL_DISPLAY;
 			continue;
 		}
 			
@@ -414,8 +415,9 @@ found:		if (op == NULL) {
 				break;
 			}
 			if (!equals) {
-				msgq(sp, M_ERR,
-				    "set: %s option requires a value", name);
+				if (!disp)
+					disp = SELECT_DISPLAY;
+				F_SET(spo, OPT_SELECTED);
 				break;
 			}
 			value = strtol(equals, &endp, 10);
@@ -440,8 +442,9 @@ found:		if (op == NULL) {
 				break;
 			}
 			if (!equals) {
-				msgq(sp, M_ERR,
-				    "set: %s option requires a value", name);
+				if (!disp)
+					disp = SELECT_DISPLAY;
+				F_SET(spo, OPT_SELECTED);
 				break;
 			}
 			if (op->func != NULL) {
@@ -467,8 +470,8 @@ found:		if (op == NULL) {
 			abort();
 		}
 	}
-	if (all)
-		opts_dump(sp, 1);
+	if (disp)
+		opts_dump(sp, disp);
 	return (rval);
 }
 
@@ -477,9 +480,9 @@ found:		if (op == NULL) {
  *	List the current values of selected options.
  */
 void
-opts_dump(sp, all)
+opts_dump(sp, type)
 	SCR *sp;
-	int all;
+	enum optdisp type;
 {
 	OPTLIST const *op;
 	int base, b_num, chcnt, cnt, col, colwidth, curlen, endcol, s_num;
@@ -501,9 +504,29 @@ opts_dump(sp, all)
 	termwidth = (sp->cols - 1) / 2 & ~(tablen - 1);
 	for (b_num = s_num = 0, op = optlist; op->name; ++op) {
 		cnt = op - optlist;
-		if (F_ISSET(&sp->opts[cnt], OPT_NODISPLAY) ||
-		    !all && !F_ISSET(&sp->opts[cnt], OPT_SET))
+
+		/* If OPT_NEVER set, it's never displayed. */
+		if (F_ISSET(op, OPT_NEVER))
 			continue;
+
+		switch (type) {
+		case ALL_DISPLAY:		/* Display all. */
+			break;
+		case CHANGED_DISPLAY:		/* Display changed. */
+			if (!F_ISSET(&sp->opts[cnt], OPT_SET))
+				continue;
+			break;
+		case SELECT_DISPLAY:		/* Display selected. */
+			if (!F_ISSET(&sp->opts[cnt], OPT_SELECTED))
+				continue;
+			break;
+		default:
+		case NO_DISPLAY:
+			abort();
+			/* NOTREACHED */
+		}
+		F_CLR(&sp->opts[cnt], OPT_SELECTED);
+
 		curlen = strlen(op->name);
 		switch (op->type) {
 		case OPT_0BOOL:

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.5 1993/10/03 15:22:59 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:22:59 $
+ *	$Id: options.h,v 8.6 1993/10/03 17:32:46 bostic Exp $ (Berkeley) $Date: 1993/10/03 17:32:46 $
  */
 
 typedef struct _option {
@@ -14,7 +14,8 @@ typedef struct _option {
 	} o_u;
 
 #define	OPT_ALLOCATED	0x01		/* Allocated space. */
-#define	OPT_SET		0x02		/* Set (display for the user). */
+#define	OPT_SELECTED	0x02		/* Selected for display. */
+#define	OPT_SET		0x04		/* Set (display for the user). */
 	u_int	flags;
 } OPTION;
 
@@ -25,8 +26,8 @@ typedef struct _optlist {
 					/* Type of object. */	
 	enum { OPT_0BOOL, OPT_1BOOL, OPT_NUM, OPT_STR } type;
 
-#define	OPT_NODISPLAY	0x01		/* Option never displayed. */
-#define	OPT_NOSAVE	0x02		/* Option not saved by mkexrc. */
+#define	OPT_NEVER	0x01		/* Never display the option. */
+#define	OPT_NOSAVE	0x02		/* Mkexrc command doesn't save. */
 	u_int	 flags;
 } OPTLIST;
 
@@ -40,7 +41,9 @@ typedef struct _optlist {
 #define	O_STR(sp, o)		(sp)->opts[(o)].o_u.str
 
 /* Option routines. */
-void	opts_dump __P((struct _scr *, int));
+enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
+
+void	opts_dump __P((struct _scr *, enum optdisp));
 int	opts_init __P((struct _scr *));
 int	opts_save __P((struct _scr *, FILE *));
 int	opts_set __P((struct _scr *, char **));

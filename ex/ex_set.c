@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_set.c,v 8.1 1993/06/09 22:25:15 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:15 $";
+static char sccsid[] = "$Id: ex_set.c,v 8.2 1993/10/03 17:32:55 bostic Exp $ (Berkeley) $Date: 1993/10/03 17:32:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ ex_set(sp, ep, cmdp)
 {
 	switch(cmdp->argc) {
 	case 0:
-		opts_dump(sp, 0);
+		opts_dump(sp, CHANGED_DISPLAY);
 		break;
 	default:
 		opts_set(sp, cmdp->argv);
