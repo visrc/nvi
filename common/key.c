@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.12 1993/10/27 16:10:52 bostic Exp $ (Berkeley) $Date: 1993/10/27 16:10:52 $";
+static char sccsid[] = "$Id: key.c,v 8.13 1993/10/28 11:20:47 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:20:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,7 +15,6 @@ static char sccsid[] = "$Id: key.c,v 8.12 1993/10/27 16:10:52 bostic Exp $ (Berk
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -168,30 +167,8 @@ term_key(sp, chp, flags)
 {
 	enum input rval;
 	IBUF *keyp, *ttyp;
-	SCR *tsp;
 	SEQ *qp;
 	int ch, ispartial, nr;
-
-	/*
-	 * Sync the recovery file if necessary.  This has nothing to do
-	 * with input keys, but it's something that can't be done via
-	 * a signal mechanism because of race conditions, and which needs
-	 * to be done periodically.  I feel confident that this routine
-	 * will be executed, ah, periodically.  The signal recipient sets
-	 * the global flag.  If that is set, we set the local flags and
-	 * reset the global flag.
-	 */
-	if (F_ISSET(__global_list, G_SIGALRM)) {
-		for (tsp = __global_list->scrhdr.next;
-		    tsp != (SCR *)&__global_list->scrhdr; tsp = tsp->next)
-			if (tsp->ep != NULL && F_ISSET(tsp->ep, F_RCV_ON))
-				F_SET(tsp->ep, F_RCV_ALRM);
-		F_CLR(__global_list, G_SIGALRM);
-	}
-	if (F_ISSET(sp->ep, F_RCV_ALRM)) {
-		F_CLR(sp->ep, F_RCV_ALRM);
-		(void)rcv_sync(sp, sp->ep);
-	}
 
 	/* If we have expanded keys, return the next one. */
 	keyp = sp->gp->key;
