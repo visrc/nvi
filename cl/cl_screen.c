@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.3 1995/06/09 15:37:38 bostic Exp $ (Berkeley) $Date: 1995/06/09 15:37:38 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.4 1995/06/15 14:50:06 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:50:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -415,17 +415,8 @@ cl_ex_tinit(sp)
 	if (!F_ISSET(sp->gp, G_STDIN_TTY))
 		return (0);
 
-	/*
-	 * Move to the bottom of the screen, but don't clear the line, it may
-	 * have valid contents, e.g. :set|file|append.
-	 */
-	clp = CLP(sp);
-	if (F_ISSET(clp, CL_INIT_VI)) {
-		(void)move(sp->t_maxrows, 0);
-		(void)refresh();
-	}
-
 	/* Save the current settings. */
+	clp = CLP(sp);
 	if (tcgetattr(STDIN_FILENO, &clp->exterm)) {
 		msgq(sp, M_SYSERR, "tcgetattr");
 		return (1);
@@ -461,6 +452,8 @@ cl_ex_tinit(sp)
 		msgq(sp, M_SYSERR, "tcsetattr");
 		return (1);
 	}
+
+	F_SET(sp, S_EX_CANON);
 	return (0);
 }
 
@@ -485,6 +478,8 @@ cl_ex_tend(sp)
 		msgq(sp, M_SYSERR, "tcsetattr");
 		return (1);
 	}
+
+	F_CLR(sp, S_EX_CANON);
 	return (0);
 }
 
@@ -517,7 +512,6 @@ cl_common(sp)
 	gp->scr_canon = cl_canon;
 	gp->scr_clear = cl_clear;
 	gp->scr_clrtoeol = cl_clrtoeol;
-	gp->scr_clrtoeos = cl_clrtoeos;
 	gp->scr_cursor = cl_cursor;
 	gp->scr_deleteln = cl_deleteln;
 	gp->scr_discard = cl_discard;
