@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.3 1993/09/27 16:19:54 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:19:54 $";
+static char sccsid[] = "$Id: log.c,v 8.4 1993/09/29 16:22:24 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:22:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -331,7 +331,7 @@ log_backward(sp, ep, rp)
 	MARK *rp;
 {
 	DBT key, data;
-	MARK m, *mp;
+	MARK m;
 	recno_t lno;
 	int didop;
 	u_char *p;

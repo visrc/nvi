@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.27 1993/09/29 16:15:03 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:15:03 $";
+static char sccsid[] = "$Id: exf.c,v 8.28 1993/09/29 16:21:48 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:21:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,7 +150,7 @@ file_init(sp, frp, rcv_fname, force)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int e_ep, e_tname, e_rcv_path, fd, sverrno;
+	int e_ep, e_tname, e_rcv_path, fd;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	/* Create the EXF. */
