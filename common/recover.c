@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.71 1994/07/19 14:51:59 bostic Exp $ (Berkeley) $Date: 1994/07/19 14:51:59 $";
+static char sccsid[] = "$Id: recover.c,v 8.72 1994/07/21 11:33:07 bostic Exp $ (Berkeley) $Date: 1994/07/21 11:33:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -99,8 +99,8 @@ static char sccsid[] = "$Id: recover.c,v 8.71 1994/07/19 14:51:59 bostic Exp $ (
  * The recovery mail file contains normal mail headers, with two additions,
  * which occur in THIS order, as the FIRST TWO headers:
  *
- *	Vi-recover-file: file_name
- *	Vi-recover-path: recover_path
+ *	X-vi-recover-file: file_name
+ *	X-vi-recover-path: recover_path
  *
  * Since newlines delimit the headers, this means that file names cannot have
  * newlines in them, but that's probably okay.  As these files aren't intended
@@ -109,8 +109,8 @@ static char sccsid[] = "$Id: recover.c,v 8.71 1994/07/19 14:51:59 bostic Exp $ (
  * Btree files are named "vi.XXXX" and recovery files are named "recover.XXXX".
  */
 
-#define	VI_FHEADER	"Vi-recover-file: "
-#define	VI_PHEADER	"Vi-recover-path: "
+#define	VI_FHEADER	"X-vi-recover-file: "
+#define	VI_PHEADER	"X-vi-recover-path: "
 
 static int	 rcv_copy __P((SCR *, int, char *));
 static void	 rcv_email __P((SCR *, char *));
