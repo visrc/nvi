@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.16 1996/02/26 14:22:15 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:22:15 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.17 1996/02/27 20:50:08 bostic Exp $ (Berkeley) $Date: 1996/02/27 20:50:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -572,7 +572,7 @@ err:		if (ifp != NULL)
 	for (p = bp, len = 0, ch = EOF;
 	    (ch = getc(ifp)) != EOF; *p++ = ch, --blen, ++len)
 		if (blen < 5) {
-			ADD_SPACE_GOTO(sp, bp, blen, *blenp * 2);
+			ADD_SPACE_GOTO(sp, bp, *blenp, *blenp * 2);
 			p = bp + len;
 			blen = *blenp - len;
 		}
