@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 9.1 1994/11/09 18:40:31 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:31 $";
+static char sccsid[] = "$Id: ex_argv.c,v 9.2 1994/11/12 17:38:45 bostic Exp $ (Berkeley) $Date: 1994/11/12 17:38:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -342,7 +342,8 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			 * Strip any backslashes that protected the file
 			 * expansion characters.
 			 */
-			if (cmdlen > 1 && (cmd[1] == '%' || cmd[1] == '#')) {
+			if (cmdlen > 1 &&
+			    (cmd[1] == '%' || cmd[1] == '#' || cmd[1] == '!')) {
 				++cmd;
 				--cmdlen;
 			}
