@@ -1,9 +1,9 @@
-#	$Id: README,v 8.26 1996/10/19 11:25:58 bostic Exp $ (Berkeley) $Date: 1996/10/19 11:25:58 $
+#	$Id: README,v 8.27 2000/04/30 16:31:10 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:31:10 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
 
-	configure
+	../dist/configure
 	make
 
 and nvi will configure the system and build one or two binaries:  nvi and
@@ -12,7 +12,7 @@ an x86 architecture, I suggest that you do:
 
 	mkdir build.x86
 	cd build.x86
-	../build/configure
+	../dist/configure
 	make
 
 There are options that you can specify to the configure command.  See
