@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_bsd.c,v 8.26 1996/06/12 14:15:22 bostic Exp $ (Berkeley) $Date: 1996/06/12 14:15:22 $";
+static const char sccsid[] = "$Id: cl_bsd.c,v 8.27 1996/06/18 14:41:44 bostic Exp $ (Berkeley) $Date: 1996/06/18 14:41:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -227,6 +227,20 @@ static const TL list[] = {
 	"smso",		"so",		/* Standout begin. */
 };
 
+#ifdef _AIX
+/*
+ * AIX's implementation for function keys greater than 10 is different and
+ * only goes as far as 36.
+ */
+static const char codes[] = {
+/*  0-10 */ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ';',
+/* 11-20 */ '<', '>', '!', '@', '#', '$', '%', '^', '&', '*',
+/* 21-30 */ '(', ')', '-', '_', '+', ',', ':', '?', '[', ']',
+/* 31-36 */ '{', '}', '|', '~', '/', '='
+};
+
+#else
+
 /*
  * !!!
  * Historically, the 4BSD termcap code didn't support functions keys greater
@@ -244,6 +258,7 @@ static const char codes[] = {
 	    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
 	    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 };
+#endif /* _AIX */
 
 /*
  * lcmp --
@@ -274,18 +289,30 @@ tigetstr(name)
 
 	if ((tlp = bsearch(name,
 	    list, sizeof(list) / sizeof(TL), sizeof(TL), lcmp)) == NULL) {
+#ifdef _AIX
+		if (name[0] == 'k' &&
+		    name[1] == 'f' && (n = atoi(name + 2)) <= 36) {
+			keyname[0] = 'k';
+			keyname[1] = codes[n];
+			keyname[2] = '\0';
+#else
 		if (name[0] == 'k' &&
 		    name[1] == 'f' && (n = atoi(name + 2)) <= 63) {
 			keyname[0] = n <= 10 ? 'k' : 'F';
 			keyname[1] = codes[n];
 			keyname[2] = '\0';
+#endif
 			name = keyname;
 		}
 	} else
 		name = tlp->termcap;
 
 	p = sbuf;
+#ifdef _AIX
+	return ((p = tgetstr(name, &p)) == NULL ? (char *)-1 : strcpy(sbuf, p));
+#else
 	return (tgetstr(name, &p) == NULL ? (char *)-1 : sbuf);
+#endif
 }
 
 /*
