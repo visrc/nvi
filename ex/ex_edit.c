@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.4 1992/04/14 09:27:08 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:27:08 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.5 1992/04/14 10:51:18 bostic Exp $ (Berkeley) $Date: 1992/04/14 10:51:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,11 +44,11 @@ edit(cmdp, cmd)
 	char *fname;
 
 	switch(cmdp->argc) {
-	case 1:
-		fname = cmdp->argv[0];
-		break;
 	case 0:
 		fname = origname;
+		break;
+	case 1:
+		fname = cmdp->argv[0];
 		break;
 	}
 
