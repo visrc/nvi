@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.31 1995/11/17 16:17:40 bostic Exp $ (Berkeley) $Date: 1995/11/17 16:17:40 $";
+static char sccsid[] = "$Id: vi.c,v 10.32 1995/11/17 16:37:11 bostic Exp $ (Berkeley) $Date: 1995/11/17 16:37:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,8 @@ static char sccsid[] = "$Id: vi.c,v 10.31 1995/11/17 16:17:40 bostic Exp $ (Berk
 #include "vi.h"
 
 typedef enum {
-	GC_ERR, GC_ERR_NOFLUSH, GC_EVENT, GC_INTERRUPT, GC_OK } gcret_t;
+	GC_ERR, GC_ERR_NOFLUSH, GC_EVENT, GC_FATAL, GC_INTERRUPT, GC_OK
+} gcret_t;
 
 static VIKEYS const
 	       *v_alias __P((SCR *, VICMD *, VIKEYS const *));
@@ -149,6 +150,8 @@ vi(spp)
 			if (v_event_exec(sp, vp))
 				goto err;
 			goto gc_event;
+		case GC_FATAL:
+			goto ret;
 		case GC_INTERRUPT:
 			goto intr;
 		case GC_OK:
@@ -1112,7 +1115,7 @@ v_key(sp, command_events, evp, ec_flags)
 
 	for (quote = 0;;) {
 		if (v_event_get(sp, evp, 0, ec_flags | quote))
-			return (GC_ERR);
+			return (GC_FATAL);
 		quote = 0;
 
 		switch (evp->e_event) {
@@ -1131,8 +1134,7 @@ v_key(sp, command_events, evp, ec_flags)
 			return (GC_OK);
 		case E_ERR:
 		case E_EOF:
-			F_SET(sp, S_EXIT_FORCE);
-			return (GC_ERR);
+			return (GC_FATAL);
 		case E_INTERRUPT:
 			/*
 			 * !!!
@@ -1147,12 +1149,12 @@ v_key(sp, command_events, evp, ec_flags)
 			return (GC_INTERRUPT);
 		case E_REPAINT:
 			if (vs_repaint(sp, evp))
-				return (GC_ERR);
+				return (GC_FATAL);
 			break;
 		case E_RESIZE:
 			v_dtoh(sp);
 			if (v_init(sp) || vs_refresh(sp))
-				return (GC_ERR);
+				return (GC_FATAL);
 			break;
 		case E_QUIT:
 		case E_WRITE:
