@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.38 1994/08/05 08:25:54 bostic Exp $ (Berkeley) $Date: 1994/08/05 08:25:54 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.39 1994/08/08 10:13:46 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:13:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,7 +259,7 @@ global(sp, ep, cmdp, cmd)
 		 * the command fails.
 		 */
 		exp->range_lno = sp->lno = rp->start++;
-		if (ex_cmd(sp, ep, cb, clen))
+		if (ex_cmd(sp, ep, cb, clen, 0))
 			goto err;
 
 		/* Someone's unhappy, time to stop. */
