@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.8 1992/04/28 13:49:45 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:49:45 $";
+static char sccsid[] = "$Id: util.c,v 5.9 1992/04/28 17:40:31 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:40:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -92,7 +92,7 @@ onhup(signo)
 #ifdef RIP_THIS_OUT
 		(void)snprintf(buf, sizeof(buf),
 		    "%s %s", _PATH_PRESERVE, tmpname);
-		(void)system(tmpblk.c);
+		(void)esystem(PVAL(O_SHELL), tmpblk.c);
 #endif
 	}
 
