@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.14 1996/04/15 18:52:02 bostic Exp $ (Berkeley) $Date: 1996/04/15 18:52:02 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.15 1996/04/27 13:16:32 bostic Exp $ (Berkeley) $Date: 1996/04/27 13:16:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ v_exaddr(sp, vp, dir)
 	recno_t s_lno;
 	size_t len, s_cno, tlen;
 	int err, nb, type;
-	char *p, *t, buf[20];
+	char *cmd, *t, buf[20];
 
 	/*
 	 * !!!
@@ -157,7 +157,12 @@ v_exaddr(sp, vp, dir)
 	if (ex_range(sp, cmdp, &err))
 		return (1);
 	
-	/* Clean up the fake ex command. */
+	/*
+	 * Remember where any remaining command information is, and clean
+	 * up the fake ex command.
+	 */
+	cmd = cmdp->cp;
+	len = cmdp->clen;
 	gp->excmd.clen = 0;
 
 	if (err)
@@ -195,13 +200,12 @@ v_exaddr(sp, vp, dir)
 	nb = F_ISSET(cmdp, E_DELTA);
 
 	/* Check for the 'z' command. */
-	if ((len = cmdp->clen) != 0) {
-		p = cmdp->cp;
-		if (*p != 'z')
+	if (len != 0) {
+		if (*cmd != 'z')
 			goto err1;
 
 		/* No blanks, just like the z command. */
-		for (t = p + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
+		for (t = cmd + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
 			if (!isdigit(*t))
 				break;
 		if (tlen &&
@@ -223,7 +227,7 @@ v_exaddr(sp, vp, dir)
 			return (1);
 
 		/* Push the user's command. */
-		if (v_event_push(sp, NULL, p, len, CH_NOMAP | CH_QUOTED))
+		if (v_event_push(sp, NULL, cmd, len, CH_NOMAP | CH_QUOTED))
 			return (1);
 
 		/* Push line number so get correct z display. */
