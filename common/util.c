@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.52 1994/04/26 11:40:58 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:40:58 $";
+static char sccsid[] = "$Id: util.c,v 8.53 1994/04/26 11:56:49 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:56:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -385,7 +385,7 @@ set_window_size(sp, set_row, sigwinch)
 {
 	struct winsize win;
 	size_t col, row;
-	int user_set;
+	int rval, user_set;
 	ARGS *argv[2], a, b;
 	char *s, buf[2048];
 
@@ -413,45 +413,60 @@ set_window_size(sp, set_row, sigwinch)
 		goto sigw;
 	}
 
-	/* If TIOCGWINSZ failed, or had entries of 0, try termcap. */
+	/*
+	 * If TIOCGWINSZ failed, or had entries of 0, try termcap.  Get
+	 * the terminal from the environment, the options code hasn't been
+	 * initialized yet.  We permit the TERM environmental variable to
+	 * be uninitialized, we may be running ex.
+	 */
 	if (row == 0 || col == 0) {
-		s = NULL;
-		if (F_ISSET(&sp->opts[O_TERM], OPT_SET))
-			s = O_STR(sp, O_TERM);
-		else
-			s = getenv("TERM");
+		if ((s = getenv("TERM")) == NULL)
+			goto noterm;
 #ifdef SYSV_CURSES
-		if (s != NULL) {
-			if (row == 0)
-				row = tigetnum("lines");
-			if (col == 0)
-				col = tigetnum("cols");
-		}
+		if (row == 0)
+			if ((rval = tigetnum("lines")) < 0)
+				msgq(sp, M_SYSERR, "tigetnum: lines");
+			else
+				row = rval;
+		if (col == 0)
+			if ((rval = tigetnum("cols")) < 0)
+				msgq(sp, M_SYSERR, "tigetnum: cols");
+			else
+				col = rval;
 #else
-		if (s != NULL && !term_tgetent(sp, buf, s)) {
-			if (row == 0)
-				row = tgetnum("li");
-			if (col == 0)
-				col = tgetnum("co");
-		}
+		if (term_tgetent(sp, buf, s))
+			goto noterm;
+		if (row == 0)
+			if ((rval = tgetnum("li")) < 0)
+				msgq(sp, M_ERR,
+				    "no \"li\" capability for %s", s);
+			else
+				row = rval;
+		if (col == 0)
+			if ((rval = tgetnum("co")) < 0)
+				msgq(sp, M_ERR,
+				    "no \"co\" capability for %s", s);
+			else
+				col = rval;
 #endif
 	}
 
 	/*
 	 * If it's something completely unreasonable, stop now.  The
-	 * actual error is likely to be much less informative.
+	 * actual error (probably ENOMEM) is likely to be much less
+	 * informative.
 	 */
 	if (row > 1000) {
-		msgq(sp, M_SYSERR, "%lu rows is too large", (u_long)row);
+		msgq(sp, M_SYSERR, "%lu rows isn't believable", (u_long)row);
 		return (1);
 	}
 	if (col > 1000) {
-		msgq(sp, M_ERR, "%lu columns is too large.", (u_long)col);
+		msgq(sp, M_ERR, "%lu columns isn't believable.", (u_long)col);
 		return (1);
 	}
 
 	/* If nothing else, well, it's probably a VT100. */
-	if (row == 0)
+noterm:	if (row == 0)
 		row = 24;
 	if (col == 0)
 		col = 80;
