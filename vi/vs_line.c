@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.6 1995/09/21 12:09:00 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:09:00 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.7 1995/09/24 11:05:26 bostic Exp $ (Berkeley) $Date: 1995/09/24 11:05:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,11 +23,9 @@ static char sccsid[] = "$Id: vs_line.c,v 10.6 1995/09/21 12:09:00 bostic Exp $ (
 #include "../common/common.h"
 #include "vi.h"
 
-#if defined(DEBUG) && 0
+#ifdef VISIBLE_TAB_CHARS
 #define	TABCH	'-'
-#define	TABSTR	"--------------------"
 #else
-#define	TABSTR	"                    "
 #define	TABCH	' '
 #endif
 
@@ -43,13 +41,14 @@ vs_line(sp, smp, yp, xp)
 	SMAP *smp;
 	size_t *xp, *yp;
 {
+	CHAR_T *kp;
 	GS *gp;
 	SMAP *tsmp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line, nlen, oldy, oldx;
 	int ch, is_cached, is_infoline, is_partial, is_tab;
 	int list_tab, list_dollar;
-	char *p, nbuf[10];
+	char *p, *cbp, *ecbp, cbuf[128];
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "vs_line: row %u: line: %u off: %u\n",
@@ -118,9 +117,9 @@ vs_line(sp, smp, yp, xp)
 		if (O_ISSET(sp, O_NUMBER)) {
 			cols_per_screen -= O_NUMBER_LENGTH;
 			if ((smp->lno == 1 || p != NULL) && skip_screens == 0) {
-				nlen = snprintf(nbuf,
-				    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-				(void)gp->scr_addstr(sp, nbuf, nlen);
+				nlen = snprintf(cbuf,
+				    sizeof(cbuf), O_NUMBER_FMT, smp->lno);
+				(void)gp->scr_addstr(sp, cbuf, nlen);
 			}
 		}
 	}
@@ -160,7 +159,8 @@ vs_line(sp, smp, yp, xp)
 			} else
 				if (list_dollar) {
 					ch = '$';
-empty:					(void)ADDCH(sp, ch);
+empty:					(void)gp->scr_addstr(sp,
+					    KEY_NAME(sp, ch), KEY_LEN(sp, ch));
 				}
 
 		(void)gp->scr_clrtoeol(sp);
@@ -270,6 +270,7 @@ empty:					(void)ADDCH(sp, ch);
 		cno_cnt = (sp->cno - offset_in_line) + 1;
 
 	/* This is the loop that actually displays characters. */
+	ecbp = (cbp = cbuf) + sizeof(cbuf) - 1;
 	for (is_partial = 0, scno = 0;
 	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
 		if ((ch = *(u_char *)p++) == '\t' && !list_tab) {
@@ -328,20 +329,30 @@ empty:					(void)ADDCH(sp, ch);
 		if (is_cached)
 			continue;
 
+#define	FLUSH {								\
+	*cbp = '\0';							\
+	(void)gp->scr_addstr(sp, cbuf, cbp - cbuf);			\
+	cbp = cbuf;							\
+}
 		/*
-		 * Display the character.  If it's a tab and tabs aren't some
-		 * ridiculous length, do it fast.  (We do tab expansion here
-		 * because curses doesn't have a way to set the tab length.)
+		 * Display the character.  We do tab expansion here because
+		 * the screen interface doesn't have any way to set the tab
+		 * length.  Note, it's theoretically possible for chlen to
+		 * be larger than cbuf, if the user set a impossibly large
+		 * tabstop.
 		 */
-		if (is_tab) {
-			if (chlen <= sizeof(TABSTR) - 1) {
-				(void)gp->scr_addstr(sp, TABSTR, chlen);
-			} else
-				while (chlen--)
-					(void)ADDCH(sp, TABCH);
-		} else
-			(void)gp->scr_addstr(sp,
-			    KEY_NAME(sp, ch) + offset_in_char, chlen);
+		if (is_tab)
+			while (chlen--) {
+				if (cbp >= ecbp)
+					FLUSH;
+				*cbp++ = TABCH;
+			}
+		else {
+			if (cbp + chlen >= ecbp)
+				FLUSH;
+			for (kp = KEY_NAME(sp, ch) + offset_in_char; chlen--;)
+				*cbp++ = *kp++;
+		}
 	}
 
 	if (scno < cols_per_screen) {
@@ -356,7 +367,12 @@ empty:					(void)ADDCH(sp, ch);
 		 */
 		if (list_dollar) {
 			++scno;
-			(void)ADDCH(sp, '$');
+
+			chlen = KEY_LEN(sp, '$');
+			if (cbp + chlen >= ecbp)
+				FLUSH;
+			for (kp = KEY_NAME(sp, '$'); chlen--;)
+				*cbp++ = *kp++;
 		}
 
 		/* If still didn't paint the whole line, clear the rest. */
@@ -364,7 +380,10 @@ empty:					(void)ADDCH(sp, ch);
 			(void)gp->scr_clrtoeol(sp);
 	}
 
-ret:	(void)gp->scr_move(sp, oldy, oldx);
+ret:	if (cbp > cbuf)
+		FLUSH;
+
+	(void)gp->scr_move(sp, oldy, oldx);
 	return (0);
 }
 
