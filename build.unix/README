@@ -1,4 +1,4 @@
-#	$Id: README,v 8.20 1996/05/12 14:53:29 bostic Exp $ (Berkeley) $Date: 1996/05/12 14:53:29 $
+#	$Id: README,v 8.21 1996/05/18 17:05:41 bostic Exp $ (Berkeley) $Date: 1996/05/18 17:05:41 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -22,11 +22,9 @@ There are options that you can specify to the configure command.  See
 the next section for a description of these options.
 
 If you want to rebuild or reconfigure nvi, for example, because you change
-your mind as to the curses library that you want to use, enter:
-
-	make distclean
-
-and then reconfigure using "configure" and whatever options you choose.
+your mind as to the curses library that you want to use, create a new
+directory and reconfigure it using "configure" and whatever options you
+choose, don't try to selectively edit the files.
 
 By default, nvi is installed as "vi", with hard links to "ex" and "view".
 To install them using different names, use the configure program options.

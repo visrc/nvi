@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.56 1996/05/18 13:33:35 bostic Exp $ (Berkeley) $Date: 1996/05/18 13:33:35 $
+#	$Id: Makefile.in,v 8.57 1996/05/18 17:04:45 bostic Exp $ (Berkeley) $Date: 1996/05/18 17:04:45 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -56,10 +56,6 @@ clean:
 	-rm -f nex nvi tknvi core *.core *.o
 	rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
 	rm -f $(TKOBJS) $(VIOBJS)
-
-distclean: clean
-	rm -f Makefile pathnames.h port.h
-	rm -f config.cache config.h config.log config.status
 
 chmod=	@vi_cv_path_chmod@
 cp=	@vi_cv_path_cp@
