@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.20 1994/01/27 13:17:48 bostic Exp $ (Berkeley) $Date: 1994/01/27 13:17:48 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.21 1994/03/07 10:01:51 bostic Exp $ (Berkeley) $Date: 1994/03/07 10:01:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -197,6 +197,8 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	u_long *nlno, *nch;
 {
 	register u_long ccnt, fline, tline;
+	struct stat sb;
+	int sv_errno;
 	size_t len;
 	char *p;
 
@@ -238,16 +240,24 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 				break;
 			++ccnt;
 		}
-	if (fsync(fileno(fp)))
+
+	/* If it's a regular file, sync it so that NFS is forced to flush. */
+	if (!fstat(fileno(fp), &sb) &&
+	    S_ISREG(sb.st_mode) && fsync(fileno(fp))) {
+		sv_errno = errno;
+		(void)fclose(fp);
+		errno = sv_errno;
 		goto err;
-	if (fclose(fp)) {
-err:		if (!F_ISSET(ep, F_MULTILOCK))
-			msgq(sp, M_SYSERR, name);
-		return (1);
 	}
+	if (fclose(fp))
+		goto err;
 	if (nlno != NULL) {
 		*nch = ccnt;
 		*nlno = tm->lno == 0 ? 0 : tm->lno - fm->lno + 1;
 	}
 	return (0);
+
+err:	if (!F_ISSET(ep, F_MULTILOCK))
+		msgq(sp, M_SYSERR, name);
+	return (1);
 }
