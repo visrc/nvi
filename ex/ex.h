@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.21 1996/05/08 18:06:10 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:06:10 $
+ *	$Id: ex.h,v 10.22 1996/05/16 08:07:59 bostic Exp $ (Berkeley) $Date: 1996/05/16 08:07:59 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -243,5 +243,5 @@ typedef enum {
 	TAG_SEARCH		/* Tags search pattern wasn't found. */
 } tagmsg_t;
 
-#include "ex_define.h"
+#include "ex_def.h"
 #include "ex_extern.h"
