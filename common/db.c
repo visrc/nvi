@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.2 1994/11/10 16:17:33 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:17:33 $";
+static char sccsid[] = "$Id: db.c,v 9.3 1994/12/04 10:00:42 bostic Exp $ (Berkeley) $Date: 1994/12/04 10:00:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,6 +90,9 @@ file_rline(sp, lno, lenp)
 	DBT data, key;
 	EXF *ep;
 
+#if defined(DEBUG) && 0
+	TRACE(sp, "get line %lu\n", lno);
+#endif
 	/* Check the cache. */
 	ep = sp->ep;
 	if (lno == ep->c_lno) {
