@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.17 1996/03/20 20:13:16 bostic Exp $ (Berkeley) $Date: 1996/03/20 20:13:16 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.18 1996/03/20 20:17:41 bostic Exp $ (Berkeley) $Date: 1996/03/20 20:17:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -494,7 +494,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 	/* The cursor moves to EOF. */
 	sp->lno = lno;
 	sp->cno = len ? len - 1 : 0;
-	rval = sp->gp->scr_refresh(sp, 0);
+	rval = vs_refresh(sp, 1);
 
 ret:	FREE_SPACE(sp, bp, blen);
 	return (rval);
