@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.27 1995/11/27 11:27:40 bostic Exp $ (Berkeley) $Date: 1995/11/27 11:27:40 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.28 1995/11/27 11:53:50 bostic Exp $ (Berkeley) $Date: 1995/11/27 11:53:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -209,17 +209,26 @@ SIGS const sigs[] = {
 #ifdef SIGBUS
 	SIGBUS,		"Bus error",
 #endif
+#ifdef SIGCLD
+	SIGCLD,		"Child exited or stopped",
+#endif
 #ifdef SIGCHLD
 	SIGCHLD,	"Child exited",
 #endif
 #ifdef SIGCONT
 	SIGCONT,	"Continued",
 #endif
+#ifdef SIGDANGER
+	SIGDANGER,	"System crash imminent",
+#endif
 #ifdef SIGEMT
 	SIGEMT,		"EMT trap",
 #endif
 #ifdef SIGFPE
 	SIGFPE,		"Floating point exception",
+#endif
+#ifdef SIGGRANT
+	SIGGRANT,	"HFT monitor mode granted",
 #endif
 #ifdef SIGHUP
 	SIGHUP,		"Hangup",
@@ -236,20 +245,50 @@ SIGS const sigs[] = {
 #ifdef SIGIO
 	SIGIO,		"I/O possible",
 #endif
+#ifdef SIGIOT
+	SIGIOT,		"IOT trap",
+#endif
 #ifdef SIGKILL
 	SIGKILL,	"Killed",
+#endif
+#ifdef SIGLOST
+	SIGLOST,	"Record lock",
+#endif
+#ifdef SIGMIGRATE
+	SIGMIGRATE,	"Migrate process to another CPU",
+#endif
+#ifdef SIGMSG
+	SIGMSG,		"HFT input data pending",
 #endif
 #ifdef SIGPIPE
 	SIGPIPE,	"Broken pipe",
 #endif
+#ifdef SIGPOLL
+	SIGPOLL,	"I/O possible",
+#endif
+#ifdef SIGPRE
+	SIGPRE,		"Programming error",
+#endif
 #ifdef SIGPROF
 	SIGPROF,	"Profiling timer expired",
+#endif
+#ifdef SIGPWR
+	SIGPWR,		"Power failure imminent",
+#endif
+#ifdef SIGRETRACT
+	SIGRETRACT,	"HFT monitor mode retracted",
 #endif
 #ifdef SIGQUIT
 	SIGQUIT,	"Quit",
 #endif
+#ifdef SIGSAK
+	SIGSAK,		"Secure Attention Key",
+#endif
 #ifdef SIGSEGV
 	SIGSEGV,	"Segmentation fault",
+#endif
+#ifdef SIGSOUND
+	SIGSOUND,	"HFT sound sequence completed",
 #endif
 #ifdef SIGSTOP
 	SIGSTOP,	"Suspended (signal)",
