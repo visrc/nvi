@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.78 1996/08/10 15:15:45 bostic Exp $ (Berkeley) $Date: 1996/08/10 15:15:45 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.79 1996/08/11 10:09:04 bostic Exp $ (Berkeley) $Date: 1996/08/11 10:09:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1586,14 +1586,25 @@ search:	if (isinfoline)
 	if (v_event_push(sp, NULL, qp->output, qp->olen, CH_ABBREVIATED))
 		return (1);
 
-	/* Move to the start of the abbreviation, adjust the length. */
+	/*
+	 * If the size of the abbreviation is larger than or equal to the size
+	 * of the original text, move to the start of the replaced characters,
+	 * and add their length to the overwrite count.
+	 *
+	 * If the abbreviation is smaller than the original text, we have to
+	 * delete the additional overwrite characters and copy down any insert
+	 * characters.
+	 */
 	tp->cno -= len;
-	tp->owrite += len;
-
-	/* Copy any insert characters back. */
-	if (tp->insert)
-		memmove(tp->lb + tp->cno + tp->owrite,
-		    tp->lb + tp->cno + tp->owrite + len, tp->insert);
+	if (qp->olen >= len)
+		tp->owrite += len;
+	else {
+		if (tp->insert)
+			memmove(tp->lb + tp->cno + qp->olen,
+			    tp->lb + tp->cno + tp->owrite + len, tp->insert);
+		tp->owrite += qp->olen;
+		tp->len -= len - qp->olen;
+	}
 
 	/*
 	 * We return the length of the abbreviated characters.  This is so
