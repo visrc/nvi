@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.32 1992/12/04 19:52:56 bostic Exp $ (Berkeley) $Date: 1992/12/04 19:52:56 $";
+static char sccsid[] = "$Id: vi.c,v 5.33 1992/12/05 11:11:15 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,6 @@ static char sccsid[] = "$Id: vi.c,v 5.32 1992/12/04 19:52:56 bostic Exp $ (Berke
 #include "options.h"
 #include "screen.h"
 #include "term.h"
-#include "extern.h"
 
 static int getcmd __P((VICMDARG *, VICMDARG *));
 static int getkeyword __P((VICMDARG *, u_int));
@@ -78,7 +77,7 @@ vi()
 		 * a motion component, should skip repaint.
 		 */
 err:		if (msgcnt) {
-			msg_vflush(curf);
+			v_msgflush(curf);
 			needexerase = 1;
 		} else if (!needexerase)
 			scr_modeline(curf, 0);
@@ -138,6 +137,13 @@ err:		if (msgcnt) {
 		if ((vp->kp->func)(vp, &fm, &tm, &m))
 			goto err;
 
+		/*
+		 * Some commands need to remember if they were the last command
+		 * executed.  Forget the command if necessary.
+		 */
+		if (!(flags & V_REMEMBER))
+			curf->remember = F_FORGET;
+		
 		/*
 		 * If that command took us out of vi mode, then exit
 		 * the loop without further action.
@@ -254,7 +260,7 @@ getcmd(vp, ismotion)
 	if (key < 0 || key > MAXVIKEY) {
 		bell();
 		if (ISSET(O_VERBOSE))
-			msg("%s isn't a command.", charname(key));
+			msg("%s isn't a command.", CHARNAME(key));
 		return (1);
 	}
 
@@ -308,7 +314,7 @@ getcmd(vp, ismotion)
 			}
 			msg("No commands which set dot executed yet.");
 		} else
-			msg("%s isn't a command.", charname(key));
+			msg("%s isn't a command.", CHARNAME(key));
 		bell();
 		return (1);
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.13 1992/10/29 14:43:32 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:43:32 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.14 1992/12/05 11:10:40 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -16,7 +16,6 @@ static char sccsid[] = "$Id: v_delete.c,v 5.13 1992/10/29 14:43:32 bostic Exp $ 
 
 #include "vi.h"
 #include "vcmd.h"
-#include "extern.h"
 
 /*
  * v_Delete -- [buffer][count]D
@@ -43,7 +42,7 @@ v_Delete(vp, fm, tm, rp)
 	tm->lno = fm->lno;
 	tm->cno = len;
 
-	if (cut(VICB(vp), fm, tm, 0) || delete(curf, fm, tm, 0))
+	if (cut(curf, VICB(vp), fm, tm, 0) || delete(curf, fm, tm, 0))
 		return (1);
 
 	rp->lno = fm->lno;
@@ -66,7 +65,7 @@ v_delete(vp, fm, tm, rp)
 	u_char *p;
 	
 	lmode = vp->flags & VC_LMODE;
-	if (cut(VICB(vp), fm, tm, lmode) || delete(curf, fm, tm, lmode))
+	if (cut(curf, VICB(vp), fm, tm, lmode) || delete(curf, fm, tm, lmode))
 		return (1);
 
 	/*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 5.6 1992/11/02 09:40:43 bostic Exp $ (Berkeley) $Date: 1992/11/02 09:40:43 $";
+static char sccsid[] = "$Id: v_sentence.c,v 5.7 1992/12/05 11:10:58 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,6 @@ static char sccsid[] = "$Id: v_sentence.c,v 5.6 1992/11/02 09:40:43 bostic Exp $
 #include "search.h"
 #include "getc.h"
 #include "options.h"
-#include "extern.h"
 
 /*
  * Sentences are sequences of characters terminated by a period followed

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.7 1992/10/26 17:48:38 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:48:38 $";
+static char sccsid[] = "$Id: v_word.c,v 5.8 1992/12/05 11:11:09 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,7 +18,6 @@ static char sccsid[] = "$Id: v_word.c,v 5.7 1992/10/26 17:48:38 bostic Exp $ (Be
 #include "vi.h"
 #include "options.h"
 #include "vcmd.h"
-#include "extern.h"
 
 /*
  * There are two types of "words".  Bigwords are easy -- groups of anything

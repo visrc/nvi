@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.20 1992/11/07 18:48:00 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:48:00 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.21 1992/12/05 11:10:42 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,7 +23,6 @@ static char sccsid[] = "$Id: v_ex.c,v 5.20 1992/11/07 18:48:00 bostic Exp $ (Ber
 #include "screen.h"
 #include "term.h"
 #include "vcmd.h"
-#include "extern.h"
 
 static size_t exlinecount, extotalcount;
 static enum { NOTSET, NEXTLINE, THISLINE } continueline;
@@ -59,7 +58,7 @@ v_ex(vp, fm, tm, rp)
 			break;
 		}
 			
-		(void)msg_vflush(curf);
+		(void)v_msgflush(curf);
 
 		standout();
 		(void)v_exwrite(curf, CONTMSG, sizeof(CONTMSG) - 1);

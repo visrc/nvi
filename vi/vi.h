@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.23 1992/11/11 18:27:16 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:27:16 $
+ *	$Id: vi.h,v 5.24 1992/12/05 11:11:14 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:14 $
  */
 
 #include "exf.h"
@@ -73,7 +73,7 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	V_RCM_SET	0x02000	/* Set RCM absolutely. */
 #define	V_RCM_SETFNB	0x04000	/* Set RCM to first non-blank character. */
 #define	V_RCM_SETLAST	0x08000	/* Set RCM to last character. */
-#define	V_START		0x10000	/* Command implies SOL movement. */
+#define	V_REMEMBER	0x10000	/* Remember the previous command. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
@@ -81,18 +81,10 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	MAXVIKEY	126	/* List of vi commands. */
 extern VIKEYS vikeys[MAXVIKEY + 1];
 
-/*
- * This macro is used to set the default count value for an operation.
- * XXX
- * DELETE
- */
-#define SETDEFCNT(val) {						\
-	if (cnt < 1)							\
-		cnt = (val);						\
-}
-
 /* Definition of a "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
+
+void	status __P((EXF *, recno_t));
 
 int	v_again __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_at __P((VICMDARG *, MARK *, MARK *, MARK *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.10 1992/11/02 22:33:20 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:33:20 $";
+static char sccsid[] = "$Id: v_at.c,v 5.11 1992/12/05 11:10:37 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: v_at.c,v 5.10 1992/11/02 22:33:20 bostic Exp $ (Ber
 #include "vi.h"
 #include "exf.h"
 #include "vcmd.h"
-#include "extern.h"
 
 u_long atkeybuflen;				/* Length of shared buffer. */
 char *atkeybuf, *atkeyp;			/* Shared at buffer. */

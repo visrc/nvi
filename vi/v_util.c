@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.9 1992/11/02 09:42:14 bostic Exp $ (Berkeley) $Date: 1992/11/02 09:42:14 $";
+static char sccsid[] = "$Id: v_util.c,v 5.10 1992/12/05 11:11:08 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: v_util.c,v 5.9 1992/11/02 09:42:14 bostic Exp $ (Be
 #include "options.h"
 #include "screen.h"
 #include "term.h"
-#include "extern.h"
 
 /*
  * v_eof --
@@ -87,4 +86,43 @@ v_sof(mp)
 			msg("Already at the beginning of the file.");
 		else
 			msg("Movement past the beginning of the file.");
+}
+
+/*
+ * v_msgflush --
+ *	Flush any accumulated vi messages.
+ */
+int
+v_msgflush(ep)
+	EXF *ep;
+{
+	size_t oldy, oldx;
+	register int ch, cnt;
+
+	if (msgcnt == 0)
+		return (0);
+
+	getyx(stdscr, oldy, oldx);
+	MOVE(SCREENSIZE(ep), 0);
+	clrtoeol();
+	for (cnt = 0;;) {
+		standout();
+		addstr(msglist[cnt]);
+		free(msglist[cnt]);
+		if (++cnt < msgcnt)
+			addstr(" [More ...]");
+		standend();
+		clrtoeol();
+
+		if (cnt >= msgcnt)
+			break;
+
+		refresh();
+		while (special[ch = getkey(0)] != K_CR && !isspace(ch))
+			bell();
+		MOVE(SCREENSIZE(ep), 0);
+	}
+	MOVE(oldy, oldx);
+	msgcnt = 0;
+	return (0);
 }

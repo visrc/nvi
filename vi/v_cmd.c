@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.34 1992/11/11 18:22:58 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:22:58 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.35 1992/12/05 11:11:13 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,6 @@ static char sccsid[] = "$Id: v_cmd.c,v 5.34 1992/11/11 18:22:58 bostic Exp $ (Be
 
 #include "vi.h"
 #include "vcmd.h"
-#include "extern.h"
 
 /*
  * This array maps keystrokes to vi command functions.
@@ -344,7 +343,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_cht,		V_CHAR|V_CNT|V_MOVE|V_RCM_SET,
 	    "before character in line forward search: [count]t character",
 /* 165   u */
-	v_undo,		V_RCM_SET,
+	v_undo,		V_RCM_SET|V_REMEMBER,
 	    "undo last change: u",
 /* 166   v */
 	{},

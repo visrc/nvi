@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.19 1992/11/06 18:25:46 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:25:46 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.20 1992/12/05 11:11:04 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -24,7 +24,6 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.19 1992/11/06 18:25:46 bostic Exp $ (B
 #include "options.h"
 #include "screen.h"
 #include "term.h"
-#include "extern.h"
 
 #define	N_APPEND	0x01		/* Appending, so offset cursor. */
 #define	N_EMARK		0x02		/* End of replacement mark. */
@@ -278,7 +277,7 @@ v_Change(vp, fm, tm, rp)
 	size_t len;
 	u_char *p;
 
-	if (cut(VICB(vp), fm, tm, 1))
+	if (cut(curf, VICB(vp), fm, tm, 1))
 		return (1);
 
 	/*
@@ -334,7 +333,7 @@ v_change(vp, fm, tm, rp)
 	u_char *p;
 
 	lmode = vp->flags & VC_LMODE;
-	if (cut(VICB(vp), fm, tm, lmode))
+	if (cut(curf, VICB(vp), fm, tm, lmode))
 		return (1);
 
 	/*
@@ -444,7 +443,7 @@ v_subst(vp, fm, tm, rp)
 	if (tm->cno > len)
 		tm->cno = len;
 
-	if (cut(VICB(vp), fm, tm, 0))
+	if (cut(curf, VICB(vp), fm, tm, 0))
 		return (1);
 
 	return (newtext(vp, tm, p, len, rp, N_EMARK | N_OVERWRITE));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.4 1992/12/05 09:43:56 bostic Exp $ (Berkeley) $Date: 1992/12/05 09:43:56 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.5 1992/12/05 11:10:51 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: v_paragraph.c,v 5.4 1992/12/05 09:43:56 bostic Exp 
 #include "vi.h"
 #include "vcmd.h"
 #include "options.h"
-#include "extern.h"
 
 /*
  * Paragraphs are empty lines after text or values from the paragraph or

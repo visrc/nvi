@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.5 1992/11/03 14:02:24 bostic Exp $ (Berkeley) $Date: 1992/11/03 14:02:24 $";
+static char sccsid[] = "$Id: v_section.c,v 5.6 1992/12/05 11:10:58 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,7 +18,6 @@ static char sccsid[] = "$Id: v_section.c,v 5.5 1992/11/03 14:02:24 bostic Exp $ 
 #include "vi.h"
 #include "vcmd.h"
 #include "options.h"
-#include "extern.h"
 
 /*
  * In historic vi, the section commands ignored empty lines, unlike the

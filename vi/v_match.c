@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.7 1992/11/01 23:02:27 bostic Exp $ (Berkeley) $Date: 1992/11/01 23:02:27 $";
+static char sccsid[] = "$Id: v_match.c,v 5.8 1992/12/05 11:10:50 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: v_match.c,v 5.7 1992/11/01 23:02:27 bostic Exp $ (B
 #include "search.h"
 #include "getc.h"
 #include "options.h"
-#include "extern.h"
 
 static int	findmatchc __P((MARK *, u_char *, size_t, MARK *));
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.13 1992/11/11 18:28:24 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:28:24 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.14 1992/12/05 11:11:07 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: v_undo.c,v 5.13 1992/11/11 18:28:24 bostic Exp $ (B
 #include "log.h"
 #include "options.h"
 #include "screen.h"
-#include "extern.h"
 
 #define	LOG_ERR {							\
 	bell();								\
@@ -53,10 +52,15 @@ v_undo(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	static enum { BACKWARD, FORWARD } last = FORWARD;
+	static enum { BACKWARD, FORWARD } last;
 
 	if (ISSET(O_NUNDO))
 		return (log_backward(curf, rp, OOBLNO));
+
+	if (curf->remember != F_UNDO) {
+		last = FORWARD;
+		curf->remember = F_UNDO;
+	}
 
 	switch(last) {
 	case BACKWARD:
