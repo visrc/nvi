@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.4 1993/09/01 12:20:57 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:20:57 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.5 1993/09/13 19:40:18 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,9 +85,8 @@ v_home(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (sp->s_position(sp, ep, rp,
-	    F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_TOP))
-		return (1);
+	return (sp->s_position(sp, ep, rp,
+	    F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_TOP));
 }
 
 /*
@@ -107,8 +106,7 @@ v_middle(sp, ep, vp, fm, tm, rp)
 	 * historical blemish of vi, no matter how strange it might be,
 	 * we permit the user to enter a count and then ignore it.
 	 */
-	if (sp->s_position(sp, ep, rp, 0, P_MIDDLE))
-		return (1);
+	return (sp->s_position(sp, ep, rp, 0, P_MIDDLE));
 }
 
 /*
@@ -123,9 +121,8 @@ v_bottom(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (sp->s_position(sp, ep, rp,
-	    F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_BOTTOM))
-		return (1);
+	return (sp->s_position(sp, ep,
+	    rp, F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_BOTTOM));
 }
 
 /*
