@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.4 1995/01/11 16:18:58 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:18:58 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.5 1995/01/23 17:30:57 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ svi_split(sp, argv, argc)
 {
 	MSG *mp, *next;
 	SCR *tsp, saved_sp;
-	SVI_PRIVATE saved_svp;
+	SVI_PRIVATE saved_svp, *svp;
 	SMAP *smp;
 	size_t cnt, half;
 	int issmallscreen, splitup;
@@ -154,8 +154,9 @@ svi_split(sp, argv, argc)
 		 */
 		if (splitup)
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				MOVE(tsp, cnt, 0);
-				clrtoeol();
+				(void)SVP(tsp)->scr_move(tsp,
+				    RLNO(tsp, cnt), 0);
+				(void)SVP(tsp)->scr_clrtoeol(tsp);
 			}
 	} else {
 		sp->t_minrows = sp->t_rows = sp->rows - 1;
@@ -172,8 +173,9 @@ svi_split(sp, argv, argc)
 			tsp->t_minrows = tsp->t_rows = tsp->rows - 1;
 		else
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				MOVE(tsp, cnt, 0);
-				clrtoeol();
+				(void)SVP(tsp)->scr_move(tsp,
+				    RLNO(tsp, cnt), 0);
+				(void)SVP(tsp)->scr_clrtoeol(tsp);
 			}
 	}
 
@@ -243,10 +245,11 @@ svi_split(sp, argv, argc)
 	SIGUNBLOCK(sp->gp);
 
 	/* Clear the current information lines in both screens. */
-	MOVE(sp, INFOLINE(sp), 0);
-	clrtoeol();
-	MOVE(tsp, INFOLINE(tsp), 0);
-	clrtoeol();
+	svp = SVP(sp);
+	(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp)), 0);
+	(void)svp->scr_clrtoeol(sp);
+	(void)svp->scr_move(tsp, RLNO(sp, INFOLINE(tsp)), 0);
+	(void)svp->scr_clrtoeol(sp);
 
 	/* Redraw the status line for the parent screen. */
 	(void)msg_status(sp, sp->lno, 0);
@@ -333,6 +336,7 @@ svi_join(csp, nsp)
 	SCR *csp, **nsp;
 {
 	SCR *sp;
+	SVI_PRIVATE *svp;
 	size_t cnt;
 
 	/*
@@ -348,11 +352,13 @@ svi_join(csp, nsp)
 		sp->woff = csp->woff;
 	}
 	sp->rows += csp->rows;
+
+	svp = SVP(sp);
 	if (ISSMALLSCREEN(sp)) {
 		sp->t_maxrows += csp->rows;
 		for (cnt = sp->t_rows; ++cnt <= sp->t_maxrows;) {
-			MOVE(sp, cnt, 0);
-			clrtoeol();
+			(void)svp->scr_move(sp, RLNO(sp, cnt), 0);
+			(void)svp->scr_clrtoeol(sp);
 		}
 		TMAP = HMAP + (sp->t_rows - 1);
 	} else {

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.13 1995/01/12 19:28:50 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:28:50 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.14 1995/01/23 17:30:48 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,6 @@ static char sccsid[] = "$Id: vs_refresh.c,v 9.13 1995/01/12 19:28:50 bostic Exp 
 #include <termios.h>
 
 #include "compat.h"
-#include <curses.h>
 #include <db.h>
 #include <regex.h>
 
@@ -57,8 +56,8 @@ svi_refresh(sp)
 	 * which is used by curses.  Stupid, but ugly.
 	 */
 	if (F_ISSET(sp, S_SCR_RESIZE)) {
-		/* Reinitialize curses. */
-		if (svi_curses_end(sp) || svi_curses_init(sp))
+		/* Reinitialize the screen. */
+		if (svi_screen_init(sp));
 			return (1);
 
 		/* Invalidate the line size cache. */
@@ -273,12 +272,14 @@ svi_paint(sp, flags)
 						return (1);
 				}
 			else {
-small_fill:			MOVE(sp, INFOLINE(sp), 0);
-				clrtoeol();
+small_fill:			(void)svp->scr_move(sp,
+				    RLNO(sp, INFOLINE(sp)), 0);
+				(void)svp->scr_clrtoeol(sp);
 				for (; sp->t_rows > sp->t_minrows;
 				    --sp->t_rows, --TMAP) {
-					MOVE(sp, TMAP - HMAP, 0);
-					clrtoeol();
+					(void)svp->scr_move(sp,
+					    RLNO(sp, TMAP - HMAP), 0);
+					(void)svp->scr_clrtoeol(sp);
 				}
 				if (svi_sm_fill(sp, LNO, P_FILL))
 					return (1);
@@ -596,7 +597,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 	 * Retrieve the current cursor position, and correct it
 	 * for split screens.
 	 */
-fast:	getyx(stdscr, y, x);
+fast:	(void)svp->scr_cursor(sp, &y, &x);
 	y -= sp->woff;
 	goto number;
 
@@ -654,7 +655,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	    sp->q.cqe_prev == (void *)&sp->gp->dq &&
 	    sp->q.cqe_next == (void *)&sp->gp->dq) {
-		clear();
+		(void)svp->scr_clear(sp);
 		didclear = 1;
 	}
 	for (smp = HMAP; smp <= TMAP; ++smp)
@@ -672,8 +673,8 @@ paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	 */
 	if (F_ISSET(sp, S_SCR_REDRAW) && ISSMALLSCREEN(sp))
 		for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
-			MOVE(sp, cnt, 0);
-			clrtoeol();
+			(void)svp->scr_move(sp, RLNO(sp, cnt), 0);
+			(void)svp->scr_clrtoeol(sp);
 		}
 
 	didpaint = 1;
@@ -696,7 +697,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	 * it from scratch, which will do it for us.
 	 */
 	if (LF_ISSET(PAINT_FLUSH) && F_ISSET(sp, S_SCR_REFRESH) && !didclear)
-			wrefresh(curscr);
+		(void)svp->scr_restore(sp);
 
 	/*
 	 * 8: Display messages, beep the terminal.
@@ -712,7 +713,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	 *	standard status line.
 	 */
 	if (F_ISSET(sp, S_BELLSCHED))
-		svi_bell(sp);
+		(void)sp->e_bell(sp);
 	if (!F_ISSET(SVP(sp), SVI_INFOLINE) && !KEYS_WAITING(sp))
 		if (sp->msgq.lh_first != NULL &&
 		    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
@@ -733,11 +734,9 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	OCNO = CNO;
 	OLNO = LNO;
 
-	/* Place the cursor. */
-	MOVE(sp, y, SCNO);
-
-	/* Flush it all out. */
-	refresh();
+	/* Place the cursor and flush it out. */
+	(void)svp->scr_move(sp, RLNO(sp, y), SCNO);
+	(void)svp->scr_refresh(sp);
 
 	/*
 	 * XXX
@@ -766,12 +765,14 @@ static int
 svi_modeline(sp)
 	SCR *sp;
 {
+	SVI_PRIVATE *svp;
 	size_t cols, curlen, endpoint, len, midpoint;
 	char *p, buf[20];
 
 	/* Clear the mode line. */
-	MOVE(sp, INFOLINE(sp), 0);
-	clrtoeol();
+	svp = SVP(sp);
+	(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp)), 0);
+	(void)svp->scr_clrtoeol(sp);
 
 	/*
 	 * We put down the file name, the ruler, the mode and the dirty flag.
@@ -801,11 +802,11 @@ svi_modeline(sp)
 			}
 		}
 
-		MOVE(sp, INFOLINE(sp), 0);
-		standout();
+		(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp)), 0);
+		(void)svp->scr_inverse(sp, 1);
 		for (; *p != '\0'; ++p)
-			ADDCH(*p);
-		standend();
+			(void)ADDCH(sp, svp, *p);
+		(void)svp->scr_inverse(sp, 0);
 	}
 
 	/*
@@ -822,12 +823,13 @@ svi_modeline(sp)
 		    (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0) + 1);
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
-			MOVE(sp, INFOLINE(sp), midpoint);
-			ADDSTR(buf);
+			(void)svp->scr_move(sp,
+			    RLNO(sp, INFOLINE(sp)), midpoint);
+			(void)svp->scr_addstr(sp, buf);
 			curlen += len;
 		} else if (curlen + 2 + len < cols) {
-			ADDSTR("  ");
-			ADDSTR(buf);
+			(void)svp->scr_addstr(sp, "  ");
+			(void)svp->scr_addstr(sp, buf);
 			curlen += 2 + len;
 		}
 	}
@@ -852,11 +854,11 @@ svi_modeline(sp)
 	if (endpoint < curlen + 2)
 		return (0);
 
-	MOVE(sp, INFOLINE(sp), endpoint);
+	(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp)), endpoint);
 	if (O_ISSET(sp, O_SHOWMODE)) {
 		if (F_ISSET(sp->ep, F_MODIFIED))
-			ADDSTR("*");
-		ADDSTR(sp->showmode);
+			(void)svp->scr_addstr(sp, "*");
+		(void)svp->scr_addstr(sp, sp->showmode);
 	}
 	return (0);
 }

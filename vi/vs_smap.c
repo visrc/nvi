@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.4 1995/01/12 19:28:56 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:28:56 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.5 1995/01/23 17:30:54 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,6 @@ static char sccsid[] = "$Id: vs_smap.c,v 9.4 1995/01/12 19:28:56 bostic Exp $ (B
 #include <termios.h>
 
 #include "compat.h"
-#include <curses.h>
 #include <db.h>
 #include <regex.h>
 
@@ -52,6 +51,7 @@ svi_change(sp, lno, op)
 	enum operation op;
 {
 	SMAP *p;
+	SVI_PRIVATE *svp;
 	size_t oldy, oldx;
 
 	/* Appending is the same as inserting, if the line is incremented. */
@@ -69,6 +69,7 @@ svi_change(sp, lno, op)
 	 * the map.  If it's an increment, increment the map.  Otherwise,
 	 * ignore it.
 	 */
+	svp = SVP(sp);
 	if (lno < HMAP->lno) {
 		switch (op) {
 		case LINE_APPEND:
@@ -79,14 +80,14 @@ svi_change(sp, lno, op)
 				--p->lno;
 			if (sp->lno >= lno)
 				--sp->lno;
-			F_SET(SVP(sp), SVI_SCR_NUMBER);
+			F_SET(svp, SVI_SCR_NUMBER);
 			break;
 		case LINE_INSERT:
 			for (p = HMAP; p <= TMAP; ++p)
 				++p->lno;
 			if (sp->lno >= lno)
 				++sp->lno;
-			F_SET(SVP(sp), SVI_SCR_NUMBER);
+			F_SET(svp, SVI_SCR_NUMBER);
 			break;
 		case LINE_RESET:
 			break;
@@ -94,27 +95,27 @@ svi_change(sp, lno, op)
 		return (0);
 	}
 
-	F_SET(SVP(sp), SVI_SCR_DIRTY);
+	F_SET(svp, SVI_SCR_DIRTY);
 
 	/* Invalidate the cursor, if it's on this line. */
 	if (sp->lno == lno)
-		F_SET(SVP(sp), SVI_CUR_INVALID);
+		F_SET(svp, SVI_CUR_INVALID);
 
 	/* Invalidate the line size cache. */
-	SVI_SCR_CFLUSH(SVP(sp));
+	SVI_SCR_CFLUSH(svp);
 
-	getyx(stdscr, oldy, oldx);
+	(void)svp->scr_cursor(sp, &oldy, &oldx);
 
 	switch (op) {
 	case LINE_DELETE:
 		if (svi_sm_delete(sp, lno))
 			return (1);
-		F_SET(SVP(sp), SVI_SCR_NUMBER);
+		F_SET(svp, SVI_SCR_NUMBER);
 		break;
 	case LINE_INSERT:
 		if (svi_sm_insert(sp, lno))
 			return (1);
-		F_SET(SVP(sp), SVI_SCR_NUMBER);
+		F_SET(svp, SVI_SCR_NUMBER);
 		break;
 	case LINE_RESET:
 		if (svi_sm_reset(sp, lno))
@@ -124,7 +125,7 @@ svi_change(sp, lno, op)
 		abort();
 	}
 
-	MOVEA(sp, oldy, oldx);
+	(void)svp->scr_move(sp, oldy, oldx);
 
 	return (0);
 }
@@ -290,7 +291,7 @@ svi_sm_delete(sp, lno)
 	TOO_WEIRD;
 
 	/* Delete that many lines from the screen. */
-	MOVE(sp, p - HMAP, 0);
+	(void)SVP(sp)->scr_move(sp, RLNO(sp, p - HMAP), 0);
 	if (svi_deleteln(sp, cnt_orig))
 		return (1);
 
@@ -347,7 +348,7 @@ svi_sm_insert(sp, lno)
 		cnt_orig = cnt;
 
 	/* Push down that many lines. */
-	MOVE(sp, p - HMAP, 0);
+	(void)SVP(sp)->scr_move(sp, RLNO(sp, p - HMAP), 0);
 	if (svi_insertln(sp, cnt_orig))
 		return (1);
 
@@ -420,7 +421,7 @@ svi_sm_reset(sp, lno)
 			diff = cnt;
 
 		/* Push down the extra lines. */
-		MOVE(sp, p - HMAP, 0);
+		(void)SVP(sp)->scr_move(sp, RLNO(sp, p - HMAP), 0);
 		if (svi_insertln(sp, diff))
 			return (1);
 
@@ -440,7 +441,7 @@ svi_sm_reset(sp, lno)
 		diff = cnt_orig - cnt_new;
 
 		/* Delete that many lines from the screen. */
-		MOVE(sp, p - HMAP, 0);
+		(void)SVP(sp)->scr_move(sp, RLNO(sp, p - HMAP), 0);
 		if (svi_deleteln(sp, diff))
 			return (1);
 
@@ -724,7 +725,7 @@ svi_sm_1up(sp)
 	 * Delete the top line of the screen.  Shift the screen map up.
 	 * Display a new line at the bottom of the screen.
 	 */
-	MOVE(sp, 0, 0);
+	(void)SVP(sp)->scr_move(sp, RLNO(sp, 0), 0);
 	if (svi_deleteln(sp, 1))
 		return (1);
 
@@ -753,14 +754,16 @@ svi_deleteln(sp, cnt)
 	SCR *sp;
 	int cnt;
 {
+	SVI_PRIVATE *svp;
 	size_t oldy, oldx;
 
-	getyx(stdscr, oldy, oldx);
+	svp = SVP(sp);
+	(void)svp->scr_cursor(sp, &oldy, &oldx);
 	while (cnt--) {
-		deleteln();
-		MOVE(sp, INFOLINE(sp) - 1, 0);
-		insertln();
-		MOVEA(sp, oldy, oldx);
+		(void)svp->scr_deleteln(sp);
+		(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp) - 1), 0);
+		(void)svp->scr_insertln(sp);
+		(void)svp->scr_move(sp, oldy, oldx);
 	}
 	return (0);
 }
@@ -923,11 +926,14 @@ static int
 svi_sm_erase(sp)
 	SCR *sp;
 {
-	MOVE(sp, INFOLINE(sp), 0);
-	clrtoeol();
+	SVI_PRIVATE *svp;
+
+	svp = SVP(sp);
+	(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp)), 0);
+	(void)svp->scr_clrtoeol(sp);
 	for (; sp->t_rows > sp->t_minrows; --sp->t_rows, --TMAP) {
-		MOVE(sp, TMAP - HMAP, 0);
-		clrtoeol();
+		(void)svp->scr_move(sp, RLNO(sp, TMAP - HMAP), 0);
+		(void)svp->scr_clrtoeol(sp);
 	}
 	return (0);
 }
@@ -940,14 +946,17 @@ int
 svi_sm_1down(sp)
 	SCR *sp;
 {
+	SVI_PRIVATE *svp;
+
 	/*
 	 * Clear the bottom line of the screen, insert a line at the top
 	 * of the screen.  Shift the screen map down, display a new line
 	 * at the top of the screen.
 	 */
-	MOVE(sp, sp->t_rows, 0);
-	clrtoeol();
-	MOVE(sp, 0, 0);
+	svp = SVP(sp);
+	(void)svp->scr_move(sp, RLNO(sp, sp->t_rows), 0);
+	(void)svp->scr_clrtoeol(sp);
+	(void)svp->scr_move(sp, RLNO(sp, 0), 0);
 	if (svi_insertln(sp, 1))
 		return (1);
 	memmove(HMAP + 1, HMAP, (sp->rows - 1) * sizeof(SMAP));
@@ -969,14 +978,16 @@ svi_insertln(sp, cnt)
 	SCR *sp;
 	int cnt;
 {
+	SVI_PRIVATE *svp;
 	size_t oldy, oldx;
 
-	getyx(stdscr, oldy, oldx);
+	svp = SVP(sp);
+	(void)svp->scr_cursor(sp, &oldy, &oldx);
 	while (cnt--) {
-		MOVE(sp, INFOLINE(sp) - 1, 0);
-		deleteln();
-		MOVEA(sp, oldy, oldx);
-		insertln();
+		(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp) - 1), 0);
+		(void)svp->scr_deleteln(sp);
+		(void)svp->scr_move(sp, oldy, oldx);
+		(void)svp->scr_insertln(sp);
 	}
 	return (0);
 }

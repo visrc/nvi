@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 9.4 1995/01/12 20:05:59 bostic Exp $ (Berkeley) $Date: 1995/01/12 20:05:59 $";
+static char sccsid[] = "$Id: vs_line.c,v 9.5 1995/01/23 17:30:46 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:30:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,7 +23,6 @@ static char sccsid[] = "$Id: vs_line.c,v 9.4 1995/01/12 20:05:59 bostic Exp $ (B
 #include <termios.h>
 
 #include "compat.h"
-#include <curses.h>
 #include <db.h>
 #include <regex.h>
 
@@ -49,6 +48,7 @@ svi_line(sp, smp, yp, xp)
 	size_t *xp, *yp;
 {
 	SMAP *tsmp;
+	SVI_PRIVATE *svp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line, oldy, oldx;
 	int ch, is_cached, is_infoline, is_partial, is_tab;
@@ -80,8 +80,9 @@ svi_line(sp, smp, yp, xp)
 	 * the real contents of the screen are.  Because of this, we have to
 	 * return to whereever we started from.
 	 */
-	getyx(stdscr, oldy, oldx);
-	MOVE(sp, smp - HMAP, 0);
+	svp = SVP(sp);
+	(void)svp->scr_cursor(sp, &oldy, &oldx);
+	(void)svp->scr_move(sp, RLNO(sp, smp - HMAP), 0);
 
 	/* Get a copy of the line. */
 	p = file_gline(sp, smp->lno, &len);
@@ -123,7 +124,7 @@ svi_line(sp, smp, yp, xp)
 			if ((smp->lno == 1 || p != NULL) && skip_screens == 0) {
 				(void)snprintf(nbuf,
 				    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-				ADDSTR(nbuf);
+				(void)svp->scr_addstr(sp, nbuf);
 			}
 		}
 	}
@@ -163,11 +164,11 @@ svi_line(sp, smp, yp, xp)
 			} else
 				if (list_dollar) {
 					ch = '$';
-empty:					ADDCH(ch);
+empty:					(void)ADDCH(sp, svp, ch);
 				}
 
-		clrtoeol();
-		MOVEA(sp, oldy, oldx);
+		(void)svp->scr_clrtoeol(sp);
+		(void)svp->scr_move(sp, oldy, oldx);
 		return (0);
 	}
 
@@ -338,12 +339,13 @@ empty:					ADDCH(ch);
 		 */
 		if (is_tab) {
 			if (chlen <= sizeof(TABSTR) - 1) {
-				ADDNSTR(TABSTR, chlen);
+				(void)svp->scr_addnstr(sp, TABSTR, chlen);
 			} else
 				while (chlen--)
-					ADDCH(TABCH);
+					(void)ADDCH(sp, svp, TABCH);
 		} else
-			ADDNSTR(KEY_NAME(sp, ch) + offset_in_char, chlen);
+			(void)svp->scr_addnstr(sp,
+			    KEY_NAME(sp, ch) + offset_in_char, chlen);
 	}
 
 	if (scno < cols_per_screen) {
@@ -358,15 +360,15 @@ empty:					ADDCH(ch);
 		 */
 		if (list_dollar) {
 			++scno;
-			ADDCH('$');
+			(void)ADDCH(sp, svp, '$');
 		}
 
 		/* If still didn't paint the whole line, clear the rest. */
 		if (scno < cols_per_screen)
-			clrtoeol();
+			(void)svp->scr_clrtoeol(sp);
 	}
 
-ret:	MOVEA(sp, oldy, oldx);
+ret:	(void)svp->scr_move(sp, oldy, oldx);
 	return (0);
 }
 
@@ -379,6 +381,7 @@ svi_number(sp)
 	SCR *sp;
 {
 	SMAP *smp;
+	SVI_PRIVATE *svp;
 	size_t oldy, oldx;
 	char *lp, nbuf[10];
 
@@ -397,7 +400,8 @@ svi_number(sp)
 	 */
 	lp = file_gline(sp, TMAP->lno + 1, NULL);
 
-	getyx(stdscr, oldy, oldx);
+	svp = SVP(sp);
+	(void)svp->scr_cursor(sp, &oldy, &oldx);
 	for (smp = HMAP; smp <= TMAP; ++smp) {
 		if (smp->off != 1)
 			continue;
@@ -406,10 +410,10 @@ svi_number(sp)
 		if (smp->lno != 1 && lp == NULL &&
 		    file_gline(sp, smp->lno, NULL) == NULL)
 			break;
-		MOVE(sp, smp - HMAP, 0);
+		(void)svp->scr_move(sp, RLNO(sp, smp - HMAP), 0);
 		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-		ADDSTR(nbuf);
+		(void)svp->scr_addstr(sp, nbuf);
 	}
-	MOVEA(sp, oldy, oldx);
+	(void)svp->scr_move(sp, oldy, oldx);
 	return (0);
 }
