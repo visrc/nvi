@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.38 1993/12/29 17:26:44 bostic Exp $ (Berkeley) $Date: 1993/12/29 17:26:44 $";
+static char sccsid[] = "$Id: key.c,v 8.39 1994/01/07 19:29:07 bostic Exp $ (Berkeley) $Date: 1994/01/07 19:29:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -536,7 +536,6 @@ term_user_key(sp, chp)
 	CH *chp;
 {
 	enum input rval;
-	struct timeval t;
 	IBUF *tty;
 	int nr;
 
@@ -544,6 +543,36 @@ term_user_key(sp, chp)
 	 * Read any keys the user has waiting.  Make the race
 	 * condition as short as possible.
 	 */
+	if (rval = term_key_queue(sp))
+		return (rval);
+
+	/* Wait and read another key. */
+	if (rval = sp->s_key_read(sp, &nr, NULL))
+		return (rval);
+			
+	/* Fill in the return information. */
+	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
+	chp->flags = 0;
+	chp->value = term_key_val(sp, chp->ch);
+
+	tty = sp->gp->tty;
+	QREM_TAIL(tty, 1);
+	return (INP_OK);
+}
+
+/* 
+ * term_key_queue --
+ *	Read the keys off of the terminal queue until it's empty.
+ */
+int
+term_key_queue(sp)
+	SCR *sp;
+{
+	enum input rval;
+	struct timeval t;
+	IBUF *tty;
+	int nr;
+
 	t.tv_sec = 0;
 	t.tv_usec = 0;
 	for (tty = sp->gp->tty;;) {
@@ -554,17 +583,6 @@ term_user_key(sp, chp)
 		if (nr == 0)
 			break;
 	}
-
-	/* Read another key. */
-	if (rval = sp->s_key_read(sp, &nr, NULL))
-		return (rval);
-			
-	/* Fill in the return information. */
-	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
-	chp->flags = 0;
-	chp->value = term_key_val(sp, chp->ch);
-
-	QREM_TAIL(tty, 1);
 	return (INP_OK);
 }
 
