@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.26 1996/06/28 16:14:57 bostic Exp $ (Berkeley) $Date: 1996/06/28 16:14:57 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.27 1996/06/28 16:53:58 bostic Exp $ (Berkeley) $Date: 1996/06/28 16:53:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,8 @@ static const char sccsid[] = "$Id: vs_split.c,v 10.26 1996/06/28 16:14:57 bostic
 
 #include "../common/common.h"
 #include "vi.h"
+
+static SCR *vs_getbg __P((SCR *, char *));
 
 /*
  * vs_split --
@@ -262,11 +264,11 @@ vs_discard(sp, spp)
  * vs_fg --
  *	Background the current screen, and foreground a new one.
  *
- * PUBLIC: int vs_fg __P((SCR *, CHAR_T *, int));
+ * PUBLIC: int vs_fg __P((SCR *, SCR **, CHAR_T *, int));
  */
 int
-vs_fg(sp, name, newscreen)
-	SCR *sp;
+vs_fg(sp, nspp, name, newscreen)
+	SCR *sp, **nspp;
 	CHAR_T *name;
 	int newscreen;
 {
@@ -275,9 +277,15 @@ vs_fg(sp, name, newscreen)
 
 	gp = sp->gp;
 
-	if (vs_swap(sp, &nsp, name))
-		return (1);
-	if (nsp == NULL) {
+	if (newscreen)
+		/* Get the specified background screen. */
+		nsp = vs_getbg(sp, name);
+	else
+		/* Swap screens. */
+		if (vs_swap(sp, &nsp, name))
+			return (1);
+
+	if ((*nspp = nsp) == NULL) {
 		msgq_str(sp, M_ERR, name,
 		    name == NULL ?
 		    "223|There are no background screens" :
@@ -285,10 +293,20 @@ vs_fg(sp, name, newscreen)
 		return (1);
 	}
 
-	/* Move the old screen to the hidden queue. */
-	CIRCLEQ_REMOVE(&gp->dq, sp, q);
-	CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
+	if (newscreen) {
+		/* Remove the new screen from the background queue. */
+		CIRCLEQ_REMOVE(&gp->hq, nsp, q);
 
+		/* Split the screen; if we fail, hook the screen back in. */
+		if (vs_split(sp, nsp, 0)) {
+			CIRCLEQ_INSERT_TAIL(&gp->hq, nsp, q);
+			return (1);
+		}
+	} else {
+		/* Move the old screen to the background queue. */
+		CIRCLEQ_REMOVE(&gp->dq, sp, q);
+		CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
+	}
 	return (0);
 }
 
@@ -316,7 +334,7 @@ vs_bg(sp)
 		return (1);
 	}
 
-	/* Move the old screen to the hidden queue. */
+	/* Move the old screen to the background queue. */
 	CIRCLEQ_REMOVE(&gp->dq, sp, q);
 	CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
 
@@ -333,7 +351,7 @@ vs_bg(sp)
 
 /*
  * vs_swap --
- *	Swap the current screen with a hidden one.
+ *	Swap the current screen with a backgrounded one.
  *
  * PUBLIC: int vs_swap __P((SCR *, SCR **, char *));
  */
@@ -345,17 +363,11 @@ vs_swap(sp, nspp, name)
 	GS *gp;
 	SCR *nsp;
 
-	/* Find the screen, or, if name is NULL, the first screen. */
 	gp = sp->gp;
-	for (nsp = gp->hq.cqh_first;
-	    nsp != (void *)&gp->hq; nsp = nsp->q.cqe_next)
-		if (name == NULL || !strcmp(nsp->frp->name, name))
-			break;
-	if (nsp == (void *)&gp->hq) {
-		*nspp = NULL;
+
+	/* Get the specified background screen. */
+	if ((*nspp = nsp = vs_getbg(sp, name)) == NULL)
 		return (0);
-	}
-	*nspp = nsp;
 
 	/*
 	 * Save the old screen's cursor information.
@@ -413,7 +425,7 @@ vs_swap(sp, nspp, name)
 	 * The new screen replaces the old screen in the parent/child list.
 	 * We insert the new screen after the old one.  If we're exiting,
 	 * the exit will delete the old one, if we're foregrounding, the fg
-	 * code will move the old one to the hidden queue.
+	 * code will move the old one to the background queue.
 	 */
 	CIRCLEQ_REMOVE(&gp->hq, nsp, q);
 	CIRCLEQ_INSERT_AFTER(&gp->dq, sp, nsp, q);
@@ -529,4 +541,50 @@ toosmall:			msgq(sp, M_BERR,
 	F_SET(s, SC_SCR_REFORMAT | SC_STATUS);
 
 	return (0);
+}
+
+/*
+ * vs_getbg --
+ *	Get the specified background screen, or, if name is NULL, the first
+ *	background screen.
+ */
+static SCR *
+vs_getbg(sp, name)
+	SCR *sp;
+	char *name;
+{
+	GS *gp;
+	SCR *nsp;
+	char *p;
+
+	gp = sp->gp;
+
+	/* If name is NULL, return the first background screen on the list. */
+	if (name == NULL) {
+		nsp = gp->hq.cqh_first;
+		return (nsp == (void *)&gp->hq ? NULL : nsp);
+	}
+
+	/* Search for a full match. */
+	for (nsp = gp->hq.cqh_first;
+	    nsp != (void *)&gp->hq; nsp = nsp->q.cqe_next)
+		if (!strcmp(nsp->frp->name, name))
+			break;
+	if (nsp != (void *)&gp->hq)
+		return (nsp);
+
+	/* Search for a last-component match. */
+	for (nsp = gp->hq.cqh_first;
+	    nsp != (void *)&gp->hq; nsp = nsp->q.cqe_next) {
+		if ((p = strrchr(nsp->frp->name, '/')) == NULL)
+			p = nsp->frp->name;
+		else
+			++p;
+		if (!strcmp(p, name))
+			break;
+	}
+	if (nsp != (void *)&gp->hq)
+		return (nsp);
+
+	return (NULL);
 }
