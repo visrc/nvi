@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.38 1994/04/15 11:54:05 bostic Exp $ (Berkeley) $Date: 1994/04/15 11:54:05 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.39 1994/04/24 14:19:42 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:19:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -177,15 +177,9 @@ svi_split(sp, argv)
 	_TMAP(sp) = _HMAP(sp) + (sp->t_rows - 1);
 	_TMAP(tsp) = _HMAP(tsp) + (tsp->t_rows - 1);
 
-	/*
-	 * In any case, if the size of the scrolling region hasn't been
-	 * modified by the user, reset it so it's reasonable for the split
-	 * screen.
-	 */
-	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET)) {
-		O_VAL(sp, O_SCROLL) = sp->t_maxrows / 2;
-		O_VAL(tsp, O_SCROLL) = sp->t_maxrows / 2;
-	}
+	/* Reset the length of the default scroll. */
+	sp->defscroll = sp->t_maxrows / 2;
+	tsp->defscroll = tsp->t_maxrows / 2;
 
 	/*
 	 * If files specified, build the file list, else, link to the
@@ -353,12 +347,8 @@ svi_join(csp, nsp)
 		F_SET(sp, S_REDRAW);
 	}
 
-	/*
-	 * If the size of the scrolling region hasn't been modified by
-	 * the user, reset it so it's reasonable for the new screen.
-	 */
-	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET))
-		O_VAL(sp, O_SCROLL) = sp->t_maxrows / 2;
+	/* Reset the length of the default scroll. */
+	sp->defscroll = sp->t_maxrows / 2;
 
 	*nsp = sp;
 	return (0);
@@ -452,12 +442,8 @@ svi_swap(csp, nsp, name)
 	} else
 		sp->t_rows = sp->t_maxrows = sp->t_minrows = sp->rows - 1;
 
-	/*
-	 * If the size of the scrolling region hasn't been modified by
-	 * the user, reset it so it's reasonable for the new screen.
-	 */
-	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET))
-		O_VAL(sp, O_SCROLL) = sp->t_maxrows / 2;
+	/* Reset the length of the default scroll. */
+	sp->defscroll = sp->t_maxrows / 2;
 
 	/*
 	 * Don't change the screen's cursor information other than to
