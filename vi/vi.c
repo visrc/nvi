@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.69 1993/05/12 09:16:30 bostic Exp $ (Berkeley) $Date: 1993/05/12 09:16:30 $";
+static char sccsid[] = "$Id: vi.c,v 5.70 1993/05/15 10:12:18 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:12:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,17 +158,7 @@ vi(sp, ep)
 		sp->cno = m.cno;
 
 		if (!term_more_pseudo(sp)) {
-			/* Report on the changes from the command. */
-			if (sp->rptlines) {
-				if (O_VAL(sp, O_REPORT) &&
-				    sp->rptlines >= O_VAL(sp, O_REPORT)) {
-					msgq(sp, M_INFO,
-					    "%ld line%s %s", sp->rptlines,
-					    sp->rptlines == 1 ? "" : "s",
-					    sp->rptlabel);
-				}
-				sp->rptlines = 0;
-			}
+			msg_rpt(sp, NULL);
 
 			if (0)
 err:				term_flush_pseudo(sp);
