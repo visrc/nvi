@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.55 1993/12/19 18:36:03 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:36:03 $";
+static char sccsid[] = "$Id: main.c,v 8.56 1993/12/20 17:29:51 bostic Exp $ (Berkeley) $Date: 1993/12/20 17:29:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,8 +38,9 @@ static char sccsid[] = "$Id: main.c,v 8.55 1993/12/19 18:36:03 bostic Exp $ (Ber
 #include "pathnames.h"
 #include "tag.h"
 
-static GS	*gs_init __P((void));
+static int	 exrc_isok __P((SCR *, char *, int));
 static void	 gs_end __P((GS *));
+static GS	*gs_init __P((void));
 static void	 h_hup __P((int));
 static void	 h_term __P((int));
 static void	 h_winch __P((int));
@@ -236,7 +237,7 @@ main(argc, argv)
 	 * .exrc information can set, for example, the recovery directory.
 	 */
 	if (!silent) {
-		if (!stat(_PATH_SYSEXRC, &sb))
+		if (exrc_isok(sp, _PATH_SYSEXRC, 1))
 			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
 
 		/* Source the EXINIT environment variable. */
@@ -251,16 +252,28 @@ main(argc, argv)
 		else if ((p = getenv("HOME")) != NULL && *p) {
 			(void)snprintf(path,
 			    sizeof(path), "%s/%s", p, _PATH_NEXRC);
-			if (!stat(path, &sb))
+			if (exrc_isok(sp, path, 0))
 				(void)ex_cfile(sp, NULL, path);
 			else {
 				(void)snprintf(path,
 				    sizeof(path), "%s/%s", p, _PATH_EXRC);
-				if (!stat(path, &sb))
+				if (exrc_isok(sp, path, 0))
 					(void)ex_cfile(sp, NULL, path);
 			}
 		}
-		if (O_ISSET(sp, O_EXRC) && !stat(_PATH_EXRC, &sb))
+		/*
+		 * !!!
+		 * According to O'Reilly ("Learning the VI Editor", Fifth
+		 * Edition, May 1992), System V has an option, "[no]exrc"
+		 * which "allows the execution of .exrc files that reside
+		 * outside the user's home directory.  My expectation is
+		 * that this is intended to make sourcing "local" .exrc files
+		 * a bit more secure.  This isn't a reasonable fix, and it
+		 * leaves the trojan horse door widely open.  Instead we apply
+		 * the same tests to local .exrc files that we apply to the
+		 * other .exrc files.
+		 */
+		if (exrc_isok(sp, _PATH_EXRC, 0))
 			(void)ex_cfile(sp, NULL, _PATH_EXRC);
 	}
 
@@ -559,6 +572,57 @@ h_winch(signo)
 	int signo;
 {
 	F_SET(__global_list, G_SIGWINCH);
+}
+
+/*
+ * exrc_isok --
+ *	Check a .exrc for source-ability.
+ */
+static int
+exrc_isok(sp, path, rootok)
+	SCR *sp;
+	char *path;
+	int rootok;
+{
+	struct stat sb;
+	uid_t uid;
+
+	/* Check for the file's existence. */
+	if (stat(path, &sb))
+		return (0);
+
+	/*
+	 * !!!
+	 * Historically, vi did not read the .exrc files if they were owned
+	 * by someone other than the user, unless the undocumented option
+	 * sourceany was set.  We don't support the sourceany option.  We
+	 * check that the user (or root, for system files) owns the file and
+	 * require that it be unwriteable by anyone other than the owner.
+	 */
+
+	/* Owned by the user or root. */
+	uid = getuid();
+	if (rootok) {
+		if (sb.st_uid != uid && sb.st_uid != 0) {
+			msgq(sp, M_ERR,
+			    "%s not sourced: not owned by you or root.", path);
+			return (0);
+		}
+	} else
+		if (sb.st_uid != uid) {
+			msgq(sp, M_ERR,
+			    "%s not sourced: not owned by you.", path);
+			return (0);
+		}
+
+	/* Not writeable by anyone but the owner. */
+	if (sb.st_mode & (S_IWGRP | S_IWOTH)) {
+		msgq(sp, M_ERR,
+		    "%s not sourced: writeable by a user other than the owner.",
+		    path);
+		return (0);
+	}
+	return (1);
 }
 
 static void
