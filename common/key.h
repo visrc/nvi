@@ -4,16 +4,18 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.11 1992/11/01 22:58:51 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:58:51 $
+ *	$Id: key.h,v 5.12 1993/01/24 18:28:53 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:28:53 $
  */
 
-#define	K_CR		1
-#define	K_ESCAPE	2
-#define	K_NL		3
-#define	K_VERASE	4
-#define	K_VKILL		5
-#define	K_VLNEXT	6
-#define	K_VWERASE	7
+#define	K_CARAT		1
+#define	K_CNTRLD	2
+#define	K_CR		3
+#define	K_ESCAPE	4
+#define	K_NL		5
+#define	K_VERASE	6
+#define	K_VKILL		7
+#define	K_VLNEXT	8
+#define	K_VWERASE	9
 extern u_char special[];		/* Special characters. */
 
 #define	GB_BS		0x001		/* Backspace erases past command. */
