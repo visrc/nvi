@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 9.2 1994/11/12 13:10:19 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:19 $";
+static char sccsid[] = "$Id: ex_filter.c,v 9.3 1994/11/13 16:25:55 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:25:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,7 +129,7 @@ err:		if (input[0] != -1)
 		goto ret;
 	case 0:				/* Utility. */
 		/* The utility has default signal behavior. */
-		sig_end();
+		sig_end(sp);
 
 		/*
 		 * Redirect stdin from the read end of the input pipe, and

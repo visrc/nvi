@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 9.1 1994/11/09 18:41:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:02 $";
+static char sccsid[] = "$Id: ex_script.c,v 9.2 1994/11/13 16:25:53 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:25:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,7 +133,7 @@ err:		if (sc->sh_master != -1)
 		return (1);
 	case 0:				/* Utility. */
 		/* The utility has default signal behavior. */
-		sig_end();
+		sig_end(sp);
 
 		/*
 		 * XXX

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 9.2 1994/11/12 12:30:07 bostic Exp $ (Berkeley) $Date: 1994/11/12 12:30:07 $
+ *	$Id: gs.h,v 9.3 1994/11/13 16:24:58 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:24:58 $
  */
 
 struct _gs {
@@ -102,5 +102,5 @@ extern GS *__global_list;		/* List of screens. */
 
 void	 busy_off __P((SCR *));
 int	 busy_on __P((SCR *, char const *));
-void	 sig_end __P((void));
+void	 sig_end __P((SCR *));
 int	 sig_init __P((SCR *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 9.3 1994/11/10 16:22:35 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:22:35 $";
+static char sccsid[] = "$Id: ex_shell.c,v 9.4 1994/11/13 16:25:54 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:25:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -91,7 +91,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 		break;
 	case 0:				/* Utility. */
 		/* The utility has default signal behavior. */
-		sig_end();
+		sig_end(sp);
 
 		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
 			name = O_STR(sp, O_SHELL);
