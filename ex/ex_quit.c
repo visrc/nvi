@@ -6,14 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.5 1992/05/04 11:51:51 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:51 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.6 1992/05/15 11:09:10 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:09:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "excmd.h"
 #include "options.h"
 #include "extern.h"
@@ -69,7 +68,7 @@ quit(cmdp, cmd)
 		/* FALLTHROUGH */
 	case QUIT:
 	case XIT:
-		if (file_stop(curf, 0))
+		if (file_stop(curf, cmdp->flags & E_FORCE))
 			return (1);
 	}
 	mode = MODE_QUIT;
