@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.34 1996/05/02 09:42:43 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:43 $";
+static const char sccsid[] = "$Id: msg.c,v 10.35 1996/05/10 17:39:37 bostic Exp $ (Berkeley) $Date: 1996/05/10 17:39:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -750,6 +750,8 @@ msg_cmsg(sp, which, lenp)
 		return (msg_cat(sp,
 	    "270|Press any key to continue [: to enter more ex commands]: ",
 		    lenp));
+	case CMSG_CONT_R:
+		return (msg_cat(sp, "161|Press Enter to continue: ", lenp));
 	case CMSG_CONT_S:
 		return (msg_cat(sp, "275| cont?", lenp));
 	case CMSG_CONT_Q:

@@ -6,14 +6,15 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: msg.h,v 10.9 1996/05/02 09:42:43 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:43 $
+ *	$Id: msg.h,v 10.10 1996/05/10 17:39:38 bostic Exp $ (Berkeley) $Date: 1996/05/10 17:39:38 $
  */
 
 /*
  * Common messages (continuation or confirmation).
  */
 typedef enum {
-	CMSG_CONF, CMSG_CONT, CMSG_CONT_EX, CMSG_CONT_S, CMSG_CONT_Q } cmsg_t;
+	CMSG_CONF, CMSG_CONT, CMSG_CONT_EX,
+	CMSG_CONT_R, CMSG_CONT_S, CMSG_CONT_Q } cmsg_t;
 
 /*
  * Message types.
