@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.64 1996/12/17 14:53:30 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:53:30 $";
+static const char sccsid[] = "$Id: vi.c,v 10.65 1996/12/18 10:24:36 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:24:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -230,7 +230,6 @@ vi(spp)
 		/* Call the function. */
 ex_continue:	if (vp->kp->func(sp, vp))
 			goto err;
-gc_event:
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
 		if (F_ISSET(gp, G_TMP_INUSE)) {

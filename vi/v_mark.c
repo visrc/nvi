@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_mark.c,v 10.10 1996/12/04 19:25:01 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:25:01 $";
+static const char sccsid[] = "$Id: v_mark.c,v 10.11 1996/12/18 10:24:46 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:24:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,6 @@ v_emark(sp, vp)
 	VICMD *vp;
 {
 	SMAP *smp;
-	recno_t lno;
 
 	smp = HMAP + vp->ev.e_lno;
 	if (smp > TMAP) {

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_term.c,v 8.4 1996/12/17 10:44:54 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:44:54 $";
+static const char sccsid[] = "$Id: ip_term.c,v 8.5 1996/12/18 10:28:04 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,9 +16,11 @@ static const char sccsid[] = "$Id: ip_term.c,v 8.4 1996/12/17 10:44:54 bostic Ex
 
 #include <bitstring.h>
 #include <stdio.h>
+#include <string.h>
  
 #include "../common/common.h"
-#include "ip.h"
+#include "../ipc/ip.h"
+#include "extern.h"
 
 /*
  * ip_term_init --

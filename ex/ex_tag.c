@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.38 1996/12/11 13:04:49 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:49 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.39 1996/12/18 10:28:34 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -567,7 +567,7 @@ ex_tag_display(sp)
 	TAGQ *tqp;
 	int cnt;
 	size_t len;
-	char *p, *sep;
+	char *p;
 
 	exp = EXP(sp);
 	if ((tqp = exp->tq.cqh_first) == (void *)&exp->tq) {

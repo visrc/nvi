@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_ruler.c,v 8.3 1996/12/17 10:47:44 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:47:44 $";
+static const char sccsid[] = "$Id: m_ruler.c,v 8.4 1996/12/18 10:26:44 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:44 $";
 #endif /* not lint */
 
 /* This module implements a dialog for the text ruler
@@ -41,6 +41,7 @@ static const char sccsid[] = "$Id: m_ruler.c,v 8.3 1996/12/17 10:47:44 bostic Ex
 #include <stdio.h>
 
 #include "../common/common.h"
+#include "../ipc/ip.h"
 #include "m_motif.h"
 #include "vi_mextern.h"
 
@@ -103,6 +104,9 @@ redraw_text()
 }
 
 
+/*
+ * PUBLIC: void __vi_set_text_ruler __P((int, int));
+ */
 void
 __vi_set_text_ruler( row, col )
 	int row, col;
@@ -231,7 +235,6 @@ Widget	parent;
 String	title;
 #endif
 {
-    int		row, col;
     Widget 	db = create_text_ruler_dialog( parent, title ),
 		shell = XtParent(db);
     Dimension	height, width;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.10 1996/12/17 15:39:53 bostic Exp $ (Berkeley) $Date: 1996/12/17 15:39:53 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.11 1996/12/18 10:26:50 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:50 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -31,9 +31,8 @@ static const char sccsid[] = "$Id: m_search.c,v 8.10 1996/12/17 15:39:53 bostic 
 #include <stdlib.h>
 
 #include "../common/common.h"
-#include "../ip/ip.h"
+#include "../ipc/ip.h"
 #include "m_motif.h"
-#include "ipc_extern.h"
 
 
 /* types */
@@ -105,8 +104,9 @@ static	void	get_state( w )
 	Widget	w;
 #endif
 {
+#if defined(SelfTest)
     int		i;
-    String	str;
+#endif
     Widget	shell = w;
 
     /* get all the data from the root of the widget tree */

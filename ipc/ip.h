@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.16 1996/12/17 20:05:49 bostic Exp $ (Berkeley) $Date: 1996/12/17 20:05:49 $
+ *	$Id: ip.h,v 8.17 1996/12/18 10:27:47 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:27:47 $
  */
 
 extern int vi_ofd;		/* Output file descriptor. */
@@ -139,4 +139,4 @@ typedef struct _ip_buf {
 #define	SI_SPLIT	19	/* Split the screen. */
 #define	SI_EVENT_MAX	19
 
-#include "ip_extern.h"
+#include "extern.h"

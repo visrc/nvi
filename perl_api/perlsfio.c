@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perlsfio.c,v 8.1 1996/09/24 21:33:20 bostic Exp $ (Berkeley) $Date: 1996/09/24 21:33:20 $";
+static const char sccsid[] = "$Id: perlsfio.c,v 8.2 1996/12/18 10:25:12 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:25:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ static const char sccsid[] = "$Id: perlsfio.c,v 8.1 1996/09/24 21:33:20 bostic E
 #include <perl.h>
 #include <XSUB.h>
 
-#include "perl_extern.h"
+#include "extern.h"
 
 /*
  * PUBLIC: #ifdef USE_SFIO

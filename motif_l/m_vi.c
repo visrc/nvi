@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.32 1996/12/17 14:53:06 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:53:06 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.33 1996/12/18 10:26:15 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,11 +36,9 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.32 1996/12/17 14:53:06 bostic Exp 
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../ip/ip.h"
+#include "../ipc/ip.h"
 #include "m_motif.h"
-#include "m_extern.h"
 #include "vi_mextern.h"
-#include "ipc_extern.h"
 #include "pathnames.h"
 
 static	void	f_copy();
@@ -83,12 +81,18 @@ static	size_t	len, blen = sizeof(bp);
 
 static Boolean scroll_block = False;
 
+/*
+ * PUBLIC: void __vi_set_scroll_block __P((void));
+ */
 void
 __vi_set_scroll_block()
 {
 	scroll_block = True;
 }
 
+/*
+ * PUBLIC: void __vi_clear_scroll_block __P((void));
+ */
 void
 __vi_clear_scroll_block()
 {
@@ -1222,7 +1226,6 @@ String		str;
 Cardinal        *cardinal;
 #endif
 {
-    char		buffer[BufferSize];
     IP_BUF		ipb;
     int			xpos, ypos;
     XPointerMovedEvent	*ev = (XPointerMovedEvent *) event;
@@ -1426,6 +1429,9 @@ __vi_set_cursor(cur_screen, is_busy)
 
 static	String	cur_word = NULL;
 
+/*
+ * PUBLIC: void __vi_set_word_at_caret __P((xvi_screen *));
+ */
 void
 __vi_set_word_at_caret( this_screen )
 	xvi_screen *this_screen;

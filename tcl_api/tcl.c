@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: tcl.c,v 8.16 1996/10/16 14:16:53 bostic Exp $ (Berkeley) $Date: 1996/10/16 14:16:53 $";
+static const char sccsid[] = "$Id: tcl.c,v 8.17 1996/12/18 10:25:04 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:25:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static const char sccsid[] = "$Id: tcl.c,v 8.16 1996/10/16 14:16:53 bostic Exp $
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "tcl_extern.h"
+#include "extern.h"
 
 static int  getint __P((Tcl_Interp *, char *, char *, int *));
 static int  getscreenid __P((Tcl_Interp *, SCR **, char *, char *));

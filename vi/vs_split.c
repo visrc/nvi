@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.33 1996/10/31 09:49:59 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:49:59 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.34 1996/12/18 10:24:31 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:24:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -208,9 +208,7 @@ vs_vsplit(sp, new)
 	SCR *sp, *new;
 {
 	GS *gp;
-	SMAP *smp;
 	size_t cols;
-	int splitup;
 
 	gp = sp->gp;
 

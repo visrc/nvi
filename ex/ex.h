@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.24 1996/08/12 20:23:58 bostic Exp $ (Berkeley) $Date: 1996/08/12 20:23:58 $
+ *	$Id: ex.h,v 10.25 1996/12/18 10:28:33 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:33 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -225,4 +225,4 @@ typedef enum {
 } tagmsg_t;
 
 #include "ex_def.h"
-#include "ex_extern.h"
+#include "extern.h"

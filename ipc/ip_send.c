@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_send.c,v 8.6 1996/12/17 10:45:15 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:45:15 $";
+static const char sccsid[] = "$Id: ip_send.c,v 8.7 1996/12/18 10:27:39 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:27:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,8 +21,7 @@ static const char sccsid[] = "$Id: ip_send.c,v 8.6 1996/12/17 10:45:15 bostic Ex
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../ip/ip.h"
-#include "ipc_extern.h"
+#include "ip.h"
 
 extern int vi_ofd;				/* Output file descriptor. */
 
@@ -30,7 +29,7 @@ extern int vi_ofd;				/* Output file descriptor. */
  * vi_send --
  *	Construct and send an IP buffer.
  *
- * PUBLIC: int __vi_send __P((char *, IP_BUF *));
+ * PUBLIC: int vi_send __P((char *, IP_BUF *));
  */
 int
 vi_send(fmt, ipbp)
@@ -42,7 +41,7 @@ vi_send(fmt, ipbp)
 	size_t off;
 	u_int32_t ilen;
 	int nlen, n, nw;
-	char *p, *s;
+	char *p;
 
 	/*
 	 * Have not created the channel to vi yet?  -- RAZ

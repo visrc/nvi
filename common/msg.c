@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.48 1996/09/15 15:57:28 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:28 $";
+static const char sccsid[] = "$Id: msg.c,v 10.49 1996/12/18 10:28:21 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -516,7 +516,6 @@ msgq_status(sp, lno, flags)
 	recno_t lno;
 	u_int flags;
 {
-	static int poisoned;
 	recno_t last;
 	size_t blen, len;
 	int cnt, needsep;

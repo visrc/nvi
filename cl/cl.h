@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.20 1996/10/29 12:08:41 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:08:41 $
+ *	$Id: cl.h,v 10.21 1996/12/18 10:28:15 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:15 $
  */
 
 typedef struct _cl_private {
@@ -77,4 +77,4 @@ typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 #define	FALSE	0
 #endif
 
-#include "cl_extern.h"
+#include "extern.h"

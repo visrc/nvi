@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.11 1996/12/17 10:44:53 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:44:53 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.12 1996/12/18 10:28:02 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,8 +22,8 @@ static const char sccsid[] = "$Id: ip_funcs.c,v 8.11 1996/12/17 10:44:53 bostic 
 
 #include "../common/common.h"
 #include "../vi/vi.h"
-#include "ip.h"
-#include "../include/ipc_extern.h"
+#include "../ipc/ip.h"
+#include "extern.h"
 
 /*
  * ip_addstr --
@@ -337,13 +337,9 @@ ip_refresh(sp, repaint)
 	SCR *sp;
 	int repaint;
 {
-	static int first = 1;
 	IP_BUF ipb;
 	IP_PRIVATE *ipp;
-	OPTLIST const *opt;
-	SMAP *smp;
 	recno_t total;
-	int offset;
 
 	ipp = IPP(sp);
 

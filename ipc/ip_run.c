@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.10 1996/12/17 14:51:09 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:51:09 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.11 1996/12/18 10:27:33 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:27:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,8 +26,7 @@ static const char sccsid[] = "$Id: ip_run.c,v 8.10 1996/12/17 14:51:09 bostic Ex
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../ip/ip.h"
-#include "ipc_extern.h"
+#include "ip.h"
 #include "pathnames.h"
 
 static void arg_format __P((char *, int *, char **[], int, int));
@@ -53,7 +52,7 @@ vi_run(argc, argv, ip, op, pidp)
 {
 	struct stat sb;
 	int pflag, rpipe[2], wpipe[2];
-	char *execp, *p, **p_av, **t_av;
+	char *execp, **p_av, **t_av;
 
 	pflag = 0;
 	execp = VI;

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.9 1996/12/17 10:47:59 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:47:59 $";
+ *	"$Id: m_motif.h,v 8.10 1996/12/18 10:26:38 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:38 $";
  */
 
 /*
@@ -119,3 +119,5 @@ typedef struct {
 extern GC	   __vi_copy_gc;
 extern void	 (*__vi_exitp) __P((void));
 extern xvi_screen *__vi_screen;
+
+#include "extern.h"

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_prompt.c,v 8.5 1996/12/14 14:06:25 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:06:25 $";
+static const char sccsid[] = "$Id: m_prompt.c,v 8.6 1996/12/18 10:26:59 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,9 +26,8 @@ static const char sccsid[] = "$Id: m_prompt.c,v 8.5 1996/12/14 14:06:25 bostic E
 #include <string.h>
 
 #include "../common/common.h"
-#include "../ip/ip.h"
+#include "../ipc/ip.h"
 #include "m_motif.h"
-#include "m_extern.h"
 
 
 void	vi_fatal_message( parent, str )

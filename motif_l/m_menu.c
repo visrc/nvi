@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.22 1996/12/17 19:12:55 bostic Exp $ (Berkeley) $Date: 1996/12/17 19:12:55 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.23 1996/12/18 10:26:33 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:33 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -28,8 +28,8 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.22 1996/12/17 19:12:55 bostic Ex
 #include <stdio.h>
 
 #include "../common/common.h"
-#include "../ip/ip.h"
-#include "ipc_extern.h"
+#include "../ipc/ip.h"
+#include "m_motif.h"
 
 /* save this for creation of children */
 static	Widget	main_widget = NULL;
@@ -373,7 +373,7 @@ ma_find_next(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	__vi_search();
+	__vi_search( w );
 }
 
 static void
