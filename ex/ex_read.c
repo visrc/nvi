@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.38 1994/08/09 08:48:13 bostic Exp $ (Berkeley) $Date: 1994/08/09 08:48:13 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.39 1994/08/09 13:54:09 bostic Exp $ (Berkeley) $Date: 1994/08/09 13:54:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,14 +46,14 @@ ex_read(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	struct stat sb;
-	CHAR_T *arg;
+	CHAR_T *arg, *name;
 	EX_PRIVATE *exp;
 	FILE *fp;
 	MARK rm;
 	recno_t nlines;
 	size_t arglen, blen, len;
 	int btear, farg, rval;
-	char *bp, *name;
+	char *p;
 
 	/*
 	 *  0 args: we're done.
@@ -107,12 +107,12 @@ ex_read(sp, ep, cmdp)
 		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
 			len = cmdp->argv[farg]->len;
-			GET_SPACE_RET(sp, bp, blen, len + 2);
-			bp[0] = '!';
-			memmove(bp + 1,
+			GET_SPACE_RET(sp, p, blen, len + 2);
+			p[0] = '!';
+			memmove(p + 1,
 			    cmdp->argv[farg]->bp, cmdp->argv[farg]->len + 1);
-			(void)sp->s_busy(sp, bp);
-			FREE_SPACE(sp, bp, blen);
+			(void)sp->s_busy(sp, p);
+			FREE_SPACE(sp, p, blen);
 		}
 
 		if (filtercmd(sp, ep, &cmdp->addr1,
@@ -147,6 +147,7 @@ ex_read(sp, ep, cmdp)
 		name = sp->frp->name;
 		break;
 	case 2:
+		name = cmdp->argv[1]->bp;
 		/*
 		 * !!!
 		 * Historically, if you had an "unnamed" file, the read command
@@ -154,15 +155,14 @@ ex_read(sp, ep, cmdp)
 		 */
 		if (F_ISSET(sp->frp, FR_TMPFILE) &&
 		    !F_ISSET(sp->frp, FR_READNAMED)) {
-			if ((name = v_strdup(sp,
+			if ((p = v_strdup(sp,
 			    cmdp->argv[1]->bp, cmdp->argv[1]->len)) != NULL) {
 				free(sp->frp->name);
-				sp->frp->name = name;
+				sp->frp->name = p;
 			}
 			F_SET(sp->frp, FR_NAMECHANGE | FR_READNAMED);
 		} else
 			set_alt_name(sp, name);
-		name = cmdp->argv[1]->bp;
 		break;
 	default:
 badarg:		msgq(sp, M_ERR,
