@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.11 1994/12/16 11:07:54 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:07:54 $";
+static char sccsid[] = "$Id: main.c,v 9.12 1994/12/16 14:24:45 bostic Exp $ (Berkeley) $Date: 1994/12/16 14:24:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -303,9 +303,16 @@ main(argc, argv)
 	 */
 	sp->defscroll = (O_VAL(sp, O_WINDOW) + 1) / 2;
 
-	/* Use a tag file if specified. */
-	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
-		goto errexit;
+	/*
+	 * Use a tag file if specified.  Set the real screen type first,
+	 * though, so that default positioning if the tag fails is correct.
+	 */
+	if (tag_f != NULL) {
+		F_CLR(sp, S_SCREENS);
+		F_SET(sp, LF_ISSET(S_SCREENS));
+		if (ex_tagfirst(sp, tag_f))
+			goto errexit;
+	}
 
 	/*
 	 * Append any remaining arguments as file names.  Files are recovery
