@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.53 1993/04/06 11:36:34 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:34 $";
+static char sccsid[] = "$Id: key.c,v 5.54 1993/04/12 14:32:36 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:32:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,7 @@ key_special(sp)
 	sp->special['^'] = K_CARAT;
 	sp->special['\004'] = K_CNTRLD;
 	sp->special['\022'] = K_CNTRLR;
+	sp->special['\024'] = K_CNTRLT;
 	sp->special['\032'] = K_CNTRLZ;
 	sp->special['\r'] = K_CR;
 	sp->special['\033'] = K_ESCAPE;
@@ -68,7 +69,7 @@ gb_inc(sp)
 	if ((sp->gb_cb = realloc(sp->gb_cb, sp->gb_len)) == NULL ||
 	    (sp->gb_qb = realloc(sp->gb_qb, sp->gb_len)) == NULL ||
 	    (sp->gb_wb = realloc(sp->gb_wb, sp->gb_len)) == NULL) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Input too long: %s.", strerror(errno));
 			if (sp->gb_cb != NULL)
 				free(sp->gb_cb);
@@ -147,7 +148,7 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 		    &ispartial);
 		if (ispartial) {
 			if (sizeof(sp->keybuf) == sp->nkeybuf)
-				msgq(sp, M_ERROR, "Partial map is too long.");
+				msgq(sp, M_ERR, "Partial map is too long.");
 			else {
 				memmove(&sp->keybuf[sp->nextkey],
 				    sp->keybuf, sp->nkeybuf);
@@ -243,7 +244,7 @@ ttyread(sp, buf, len, time)
 				check_sigwinch(sp);
 				break;
 			}
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Terminal read error: %s", strerror(errno));
 			return (0);
 		case 0:				/* Timeout. */
