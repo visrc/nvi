@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.123 1994/07/17 00:19:11 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:19:11 $
+ *	$Id: screen.h,v 8.124 1994/07/17 10:35:05 bostic Exp $ (Berkeley) $Date: 1994/07/17 10:35:05 $
  */
 
 /*
@@ -260,16 +260,17 @@ struct _scr {
 #define	S_INPUT		0x0002000	/* Doing text input. */
 #define	S_INTERRUPTED	0x0004000	/* If have been interrupted. */
 #define	S_INTERRUPTIBLE	0x0008000	/* If can be interrupted. */
-#define	S_REDRAW	0x0010000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0020000	/* Reformat the screen. */
-#define	S_REFRESH	0x0040000	/* Refresh the screen. */
-#define	S_RENUMBER	0x0080000	/* Renumber the screen. */
-#define	S_RESIZE	0x0100000	/* Resize the screen. */
-#define	S_SCRIPT	0x0200000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0400000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0800000	/* The substitute RE has been set. */
-#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
-#define	S_VLITONLY	0x2000000	/* ^V literal next only. */
+#define	S_IVIDEO	0x0010000	/* Display in inverse video. */
+#define	S_REDRAW	0x0020000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0040000	/* Reformat the screen. */
+#define	S_REFRESH	0x0080000	/* Refresh the screen. */
+#define	S_RENUMBER	0x0100000	/* Renumber the screen. */
+#define	S_RESIZE	0x0200000	/* Resize the screen. */
+#define	S_SCRIPT	0x0400000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0800000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x1000000	/* The substitute RE has been set. */
+#define	S_UPDATE_MODE	0x2000000	/* Don't repaint modeline. */
+#define	S_VLITONLY	0x4000000	/* ^V literal next only. */
 	u_int32_t flags;
 };
 
