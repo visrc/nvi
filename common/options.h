@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.24 1994/08/31 18:37:05 bostic Exp $ (Berkeley) $Date: 1994/08/31 18:37:05 $
+ *	$Id: options.h,v 9.1 1994/11/09 18:45:29 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:45:29 $
  */
 
 struct _option {

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: args.h,v 8.5 1994/07/17 00:24:26 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:24:26 $
+ *	$Id: args.h,v 9.1 1994/11/09 18:45:27 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:45:27 $
  */
 
 /*

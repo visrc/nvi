@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 8.9 1994/08/31 17:12:09 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:09 $
+ *	$Id: mem.h,v 9.1 1994/11/09 18:45:27 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:45:27 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that

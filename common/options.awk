@@ -1,4 +1,4 @@
-#	$Id: options.awk,v 8.1 1994/04/17 17:28:01 bostic Exp $ (Berkeley) $Date: 1994/04/17 17:28:01 $
+#	$Id: options.awk,v 9.1 1994/11/09 18:45:28 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:45:28 $
  
 /^\/\* O_[0-9A-Z_]*/ {
 	printf("#define %s %d\n", $2, cnt++);
