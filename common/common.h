@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.38 1993/02/24 12:52:58 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:52:58 $
+ *	$Id: common.h,v 5.39 1993/02/25 17:43:15 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:43:15 $
  */
 
 #include <limits.h>		/* XXX */
@@ -13,6 +13,7 @@
 
 #include "mark.h"
 #include "msg.h"
+#include "search.h"
 #include "exf.h"
 #include "cut.h"
 
@@ -64,10 +65,6 @@ int	filtercmd
 
 /* Visual bell. */
 extern char *VB;
-
-/* Editor mode. */
-enum editmode {MODE_EX, MODE_VI, MODE_QUIT};
-extern enum editmode mode;
 
 /* Display characters. */
 #define	CHARNAME(c)	(asciiname[c & 0xff])
