@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.43 1994/04/12 12:25:02 bostic Exp $ (Berkeley) $Date: 1994/04/12 12:25:02 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.44 1994/04/26 17:01:16 bostic Exp $ (Berkeley) $Date: 1994/04/26 17:01:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -204,20 +204,15 @@ ex_substitute(sp, ep, cmdp)
 	 * that it was added to their version of ed(1).
 	 */
 	if (p[0] == '\0' || p[0] == delim) {
-		if (p[0] == delim) {
-			if (p[1] != '\0')
-				return (1);
-			p[0] = '\0';
-		}
+		if (p[0] == delim)
+			++p;
 		if (sp->repl != NULL)
 			FREE(sp->repl, sp->repl_len);
 		sp->repl = NULL;
 		sp->repl_len = 0;
-	} else if (p[0] == '%' && (p[1] == '\0' || p[1] == delim)) {
-		if (p[1] == delim && p[2] != '\0')
-			return (1);
-		p[0] = '\0';
-	} else {
+	} else if (p[0] == '%' && (p[1] == '\0' || p[1] == delim))
+		p += p[1] == delim ? 2 : 1;
+	else {
 		for (rep = p, len = 0;
 		    p[0] != '\0' && p[0] != delim; ++p, ++len)
 			if (p[0] == '~')
