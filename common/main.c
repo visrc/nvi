@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.24 1996/02/20 21:05:21 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:05:21 $";
+static char sccsid[] = "$Id: main.c,v 10.25 1996/02/22 11:49:05 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:49:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -429,7 +429,7 @@ void
 v_end(gp)
 	GS *gp;
 {
-	MSG *mp;
+	MSGS *mp;
 	SCR *sp;
 	char *tty;
 

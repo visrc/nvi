@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.36 1996/02/06 17:53:46 bostic Exp $ (Berkeley) $Date: 1996/02/06 17:53:46 $";
+static char sccsid[] = "$Id: ex.c,v 10.37 1996/02/22 11:49:50 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:49:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ ex(spp)
 {
 	EX_PRIVATE *exp;
 	GS *gp;
-	MSG *mp;
+	MSGS *mp;
 	SCR *sp;
 	TEXT *tp;
 	u_int32_t flags;

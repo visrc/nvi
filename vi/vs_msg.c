@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.44 1996/02/11 12:33:33 bostic Exp $ (Berkeley) $Date: 1996/02/11 12:33:33 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.45 1996/02/22 11:50:31 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:50:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -604,7 +604,7 @@ vs_resolve(sp)
 {
 	EVENT ev;
 	GS *gp;
-	MSG *mp;
+	MSGS *mp;
 	VI_PRIVATE *vip;
 	size_t oldy, oldx;
 	int redraw;
@@ -825,7 +825,7 @@ vs_msgsave(sp, mt, p, len)
 	size_t len;
 {
 	GS *gp;
-	MSG *mp_c, *mp_n;
+	MSGS *mp_c, *mp_n;
 
 	/*
 	 * We have to handle messages before we have any place to put them.
@@ -834,7 +834,7 @@ vs_msgsave(sp, mt, p, len)
 	 * allocate memory here, we're genuinely screwed, dump the message
 	 * to stderr in the (probably) vain hope that someone will see it.
 	 */
-	CALLOC_GOTO(sp, mp_n, MSG *, 1, sizeof(MSG));
+	CALLOC_GOTO(sp, mp_n, MSGS *, 1, sizeof(MSGS));
 	MALLOC_GOTO(sp, mp_n->buf, char *, len);
 
 	memmove(mp_n->buf, p, len);

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 10.8 1996/02/20 21:04:06 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:04:06 $
+ *	$Id: common.h,v 10.9 1996/02/22 11:48:40 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:48:40 $
  */
 
 /*
@@ -30,7 +30,7 @@ typedef struct _fref		FREF;
 typedef struct _gs		GS;
 typedef struct _lmark		LMARK;
 typedef struct _mark		MARK;
-typedef struct _msg		MSG;
+typedef struct _msg		MSGS;
 typedef struct _option		OPTION;
 typedef struct _optlist		OPTLIST;
 typedef struct _scr		SCR;

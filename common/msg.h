@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 10.5 1995/11/01 19:11:29 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:11:29 $
+ *	$Id: msg.h,v 10.6 1996/02/22 11:49:29 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:49:29 $
  */
 
 /*
@@ -50,7 +50,7 @@ typedef enum {
  * S_SCREEN_READY is set, that means that the screen is prepared to display
  * messages.
  */
-typedef struct _msgh MSGH;	/* MSG list head structure. */
+typedef struct _msgh MSGH;	/* MSGS list head structure. */
 LIST_HEAD(_msgh, _msg);
 struct _msg {
 	LIST_ENTRY(_msg) q;	/* Linked list of messages. */
