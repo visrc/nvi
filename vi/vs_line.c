@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.1 1993/06/09 22:25:10 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:10 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.2 1993/09/10 18:46:15 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:46:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,32 +31,34 @@ static char sccsid[] = "$Id: vs_line.c,v 8.1 1993/06/09 22:25:10 bostic Exp $ (B
  *	that it returns the screen position for the current character.
  *	Not pretty, but this is the only routine that really knows what's
  *	out there.
- * XXX
- * 	Should cache offset into last line for last screen -- this should
- *	speed up folded lines a lot.  The problem is that if a tab is broken
- *	across the line, it's going to be tricky.  Also, are there really
- *	enough folded lines that this is worthwhile?
  */
 int
-svi_line(sp, ep, smp, p, len, yp, xp)
+svi_line(sp, ep, smp, yp, xp)
 	SCR *sp;
 	EXF *ep;
 	SMAP *smp;
-	register char *p;
-	size_t len, *xp, *yp;
+	size_t *xp, *yp;
 {
 	CHNAME *cname;
+	SMAP *tsmp;
 	recno_t lno;
-	size_t chlen, cols_per_screen, cno_cnt, count_cols, last_count_cols;
-	size_t offset_in_char, skip_screens;
-	int ch, listset, partial, reverse_video;
-	char nbuf[10];
+	size_t chlen, cols_per_screen, cno_cnt, count_cols;
+	size_t len, offset_in_line, offset_in_char, skip_screens;
+	size_t oldy, oldx;
+	int ch, is_tab, listset, is_partial, reverse_video;
+	char *p, nbuf[10];
 
 #if DEBUG && 0
 	TRACE(sp, "svi_line: row %u: line: %u off: %u\n",
 	    smp - HMAP, smp->lno, smp->off);
 #endif
-	/* Move to the line. */
+	/*
+	 * Move to the line.  This routine can be called by svi_sm_position(),
+	 * which uses it to fill in the cache entry so it can figure out what
+	 * the real contents of the screen are.  Because of this, we have to
+	 * return to whereever we started from.
+	 */
+	getyx(stdscr, oldy, oldx);
 	MOVE(sp, smp - HMAP, 0);
 
 	/* Get the character map. */
@@ -74,8 +76,13 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * Set the number of screens to skip until a character is displayed.
 	 * Left-right screens are special, because we don't bother building
 	 * a buffer to be skipped over.
+	 *
+	 * If O_NUMBER is set and this is the first screen of a folding
+	 * line or any left-right line, display the line number.  Set
+	 * the number of columns for this screen.
 	 */
 	reverse_video = 0;
+	cols_per_screen = sp->cols;
 	if (ISINFOLINE(sp, smp)) {
 		if (sp->child != NULL) {
 			reverse_video = 1;
@@ -89,121 +96,179 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	} else {
 		listset = O_ISSET(sp, O_LIST);
 		skip_screens = smp->off - 1;
-	}
 
-	/*
-	 * If O_NUMBER is set and this is the first screen of a folding
-	 * line or any left-right line, display the line number.  Set
-	 * the number of columns for this screen.
-	 */
-	if (O_ISSET(sp, O_NUMBER) && !ISINFOLINE(sp, smp)) {
-		cols_per_screen = sp->cols - O_NUMBER_LENGTH;
-		if (skip_screens == 0) {
+		if (O_ISSET(sp, O_NUMBER) && skip_screens == 0) {
+			cols_per_screen -= O_NUMBER_LENGTH;
 			(void)snprintf(nbuf,
 			    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
 			ADDSTR(nbuf);
 		}
-	} else
-		cols_per_screen = sp->cols;
+	}
 
 	/*
 	 * Get a copy of the line.  Special case non-existent lines and the
 	 * first line of an empty file.  In both cases, the cursor position
 	 * is 0.
 	 */
-	if (p == NULL)
-		p = file_gline(sp, ep, smp->lno, &len);
-	if (p == NULL || len == 0) {
+	if ((p = file_gline(sp, ep, smp->lno, &len)) == NULL || len == 0) {
 		if (yp != NULL && smp->lno == sp->lno) {
 			*yp = smp - HMAP;
 			*xp = O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0;
 		}
 		if (file_lline(sp, ep, &lno))
-			return (1);
+			goto err;
 		if (smp->lno > lno) {
 			ADDCH(smp->lno == 1 ?
 			    listset && skip_screens == 0 ? '$' : ' ' : '~');
 		} else if (p == NULL) {
 			GETLINE_ERR(sp, smp->lno);
+err:			MOVEA(sp, oldy, oldx);
 			return (1);
 		} else if (listset && skip_screens == 0)
 			ADDCH('$');
 		clrtoeol();
+		MOVEA(sp, oldy, oldx);
 		return (0);
 	}
 
 	/*
-	 * Set the number of characters to skip before reach the cursor
-	 * character.  Offset by 1 and use 0 as a flag value.  We may be
-	 * called repeatedly with a valid pointer to a cursor position.
-	 * Don't fill it in unless it's the right line.
+	 * If we wrote a line that's this or a previous one, we can do this
+	 * much more quickly -- we cached the starting and ending positions
+	 * of that line.  The way it works is we keep information about the
+	 * lines displayed in the SMAP.  If we're painting the screen in
+	 * the forward, this saves us from reformatting the physical line for
+	 * every line on the screen.  This wins big on binary files with 10K
+	 * lines.
+	 *
+	 * Test for the first screen of the line, then the current screen line,
+	 * then the line behind us, then do the hard work.  Note, it doesn't
+	 * do us any good to have a line in front of us -- it would be really
+	 * hard to try and figure out tabs in the reverse direction, i.e. how
+	 * many spaces a tab takes up in the reverse direction depends on
+	 * what characters preceded it.
 	 */
-	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
+	if (smp->off == 1) {
+		smp->c_sboff = offset_in_line = 0;
+		smp->c_scoff = offset_in_char = 0;
+		p = &p[offset_in_line];
+	} else if (SMAP_CACHE(smp)) {
+		offset_in_line = smp->c_sboff;
+		offset_in_char = smp->c_scoff;
+		p = &p[offset_in_line];
+	} else if (smp != HMAP &&
+	    SMAP_CACHE(tsmp = smp - 1) && tsmp->lno == smp->lno) {
+		if (tsmp->c_eclen != tsmp->c_ecsize) {
+			offset_in_line = tsmp->c_eboff;
+			offset_in_char = tsmp->c_ecsize - tsmp->c_eclen;
+		} else {
+			offset_in_line = tsmp->c_eboff + 1;
+			offset_in_char = 0;
+		}
+
+		/* Put starting info for this line in the cache. */
+		smp->c_sboff = offset_in_line;
+		smp->c_scoff = offset_in_char;
+		p = &p[offset_in_line];
+	} else {
+		offset_in_line = 0;
+		offset_in_char = 0;
+
+		/* This is the loop that skips through screens. */
+		if (skip_screens == 0) {
+			smp->c_sboff = offset_in_line;
+			smp->c_scoff = offset_in_char;
+		} else for (count_cols = 0;
+		    offset_in_line < len; ++offset_in_line) {
+			chlen = (ch = *(u_char *)p++) == '\t' && !listset ?
+			    TAB_OFF(sp, count_cols) : cname[ch].len;
+			count_cols += chlen;
+
+			/*
+			 * If crossed the last skipped screen boundary,
+			 * start displaying the characters.
+			 */
+			if (count_cols < cols_per_screen)
+				continue;
+			count_cols -= cols_per_screen;
+			if (--skip_screens)
+				continue;
+
+			/* Put starting info for this line in the cache. */
+			if (count_cols) {
+				smp->c_sboff = offset_in_line;
+				smp->c_scoff =
+				    offset_in_char = chlen - count_cols;
+			} else {
+				smp->c_sboff = ++offset_in_line;
+				smp->c_scoff = 0;
+			}
+			break;
+		}
+	}
+
+	/*
+	 * Set the number of characters to skip before reaching the cursor
+	 * character.  Offset by 1 and use 0 as a flag value.  Svi_line is
+	 * called repeatedly with a valid pointer to a cursor position.
+	 * Don't fill anything in unless it's the right line and the right
+	 * character, and the right part of the character...
+	 */
+	if (yp == NULL || smp->lno != sp->lno || sp->cno < offset_in_line ||
+	    offset_in_line + cols_per_screen < sp->cno)
+		cno_cnt = 0;
+	else
+		cno_cnt = (sp->cno - offset_in_line) + 1;
 
 	/* This is the loop that actually displays characters. */
-	for (count_cols = last_count_cols = 0, partial = 0; len; --len) {
-		/* Get the next character and figure out its length. */
-		if ((ch = *(u_char *)p++) == '\t' && !listset)
-			chlen = TAB_OFF(sp, count_cols);
-		else
-			chlen = cname[ch].len;
-		last_count_cols = count_cols;
+	for (is_partial = 0, count_cols = 0;
+	    offset_in_line < len; ++offset_in_line) {
+		if ((ch = *(u_char *)p++) == '\t' && !listset) {
+			chlen = TAB_OFF(sp, count_cols) - offset_in_char;
+			is_tab = 1;
+		} else {
+			chlen = cname[ch].len - offset_in_char;
+			is_tab = 0;
+		}
 		count_cols += chlen;
 
 		/*
-		 * If skipping screens, see if crossed a screen boundary.  If
-		 * so, and this is the last one to skip, start displaying the
-		 * characters, assuming there's something to display.
-		 */
-		if (skip_screens) {
-			if (count_cols < cols_per_screen) {
-				if (cno_cnt)
-					--cno_cnt;
-				continue;
-			}
-			count_cols -= cols_per_screen;
-			cols_per_screen = sp->cols;
-			if (--skip_screens || !count_cols) {
-				if (cno_cnt)
-					--cno_cnt;
-				continue;
-			}
-			offset_in_char = chlen - count_cols;
-			chlen = count_cols;
-		} else
-			offset_in_char = 0;
-
-		/*
-		 * Only display up to the right-hand column, once we there
-		 * we're done.  Set a flag if the entire character wasn't
-		 * displayed for use in setting the cursor.
+		 * Only display up to the right-hand column.  Set a flag if
+		 * the entire character wasn't displayed for use in setting
+		 * the cursor.  If we filled the screen, set the cache info
+		 * for the next screen.  Don't worry about there not being
+		 * characters to display on the next screen, it's lno/off
+		 * won't match up in that case.
 		 */
 		if (count_cols >= cols_per_screen) {
+			smp->c_ecsize = chlen;
 			chlen -= count_cols - cols_per_screen;
+			smp->c_eclen = chlen;
+			smp->c_eboff = offset_in_line;
 			if (count_cols > cols_per_screen)
-				partial = 1;
-			len = 1;		/* XXX 1, not 0, for loop. */
+				is_partial = 1;
+
+			/* Terminate the loop. */
+			offset_in_line = len;
 		}
 
 		/*
 		 * If the caller wants the cursor value, and this was the
 		 * cursor character, set the value.  There are two ways to
-		 * put the cursor on a tab -- if it's normal display mode,
-		 * it goes on the last "space" of the tab.  If it's input
-		 * mode, it goes on the first.  All other characters only
-		 * set the cursor if the entire character was displayed,
-		 * as the cursor goes on the last "space" of the character.
+		 * put the cursor on a character -- if it's normal display
+		 * mode, it goes on the last column of the character.  If
+		 * it's input mode, it goes on the first.  In normal mode,
+		 * set the cursor only if the entire character was displayed.
 		 */
-		if (cno_cnt && --cno_cnt == 0) {
+		if (cno_cnt && --cno_cnt == 0 &&
+		    (F_ISSET(sp, S_INPUT) || !is_partial)) {
 			*yp = smp - HMAP;
 			if (F_ISSET(sp, S_INPUT))
-				*xp = last_count_cols;
-			else if (!partial) {
+				*xp = count_cols - chlen;
+			else
 				*xp = count_cols - 1;
-				if (O_ISSET(sp, O_NUMBER) &&
-				    !ISINFOLINE(sp, smp) && smp->off == 1)
-					*xp += O_NUMBER_LENGTH;
-			}
+			if (O_ISSET(sp, O_NUMBER) &&
+			    !ISINFOLINE(sp, smp) && smp->off == 1)
+				*xp += O_NUMBER_LENGTH;
 		}
 
 		/*
@@ -211,8 +276,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		 * ridiculous length, do it fast.  (We do tab expansion here
 		 * because curses doesn't have a way to set the tab length.)
 		 */
-		if (ch == '\t' && !listset) {
-			chlen -= offset_in_char;
+		if (is_tab) {
 			if (chlen <= sizeof(TABSTR) - 1) {
 				ADDNSTR(TABSTR, chlen);
 			} else
@@ -220,14 +284,14 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 					ADDCH(TABCH);
 		} else
 			ADDNSTR(cname[ch].name + offset_in_char, chlen);
+		offset_in_char = 0;
 	}
 
 	/*
 	 * If not the info/mode line, and O_LIST set, and at the end of
 	 * the line, and the line ended on this screen, add a trailing $.
 	 */
-	if (listset && len == 0 &&
-	    skip_screens == 0 && count_cols < cols_per_screen) {
+	if (listset && offset_in_line == len) {
 		++count_cols;
 		ADDCH('$');
 	}
@@ -238,75 +302,6 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 
 	if (reverse_video)
 		standend();
+	MOVEA(sp, oldy, oldx);
 	return (0);
-}
-
-/*
- * svi_screens --
- *	Return the number of screens required by the line, or,
- *	if a column is specified, by the column within the line.
- */
-size_t
-svi_screens(sp, ep, lno, cnop)
-	SCR *sp;
-	EXF *ep;
-	recno_t lno;
-	size_t *cnop;
-{
-	size_t cols, len;
-	char *p;
-
-	/* Get a copy of the line. */
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL || len == 0)
-		return (1);
-
-	/* Figure out how many columns the line/column needs. */
-	cols = svi_ncols(sp, p, len, cnop);
-
-	/* Leading number if O_NUMBER option set. */
-	if (O_ISSET(sp, O_NUMBER))
-		cols += O_NUMBER_LENGTH;
-
-	/* Trailing '$' if O_LIST option set. */
-	if (O_ISSET(sp, O_LIST) && cnop == NULL)
-		cols += sp->cname['$'].len;
-
-	return (cols / sp->cols + (cols % sp->cols ? 1 : 0));
-}
-
-/*
- * svi_ncols --
- *	Return the number of columns required by the line, or,
- *	if a column is specified, by the column within the line.
- */
-size_t
-svi_ncols(sp, p, len, cnop)
-	SCR *sp;
-	u_char *p;
-	size_t len, *cnop;
-{
-	CHNAME *cname;
-	size_t cno_cnt, scno;
-	int ch;
-
-	/* Check for column count. */
-	if (cnop != NULL)
-		cno_cnt = *cnop;
-
-	/* Calculate the columns needed. */
-	cname = sp->cname;
-	for (scno = 0; len; --len) {
-		if ((ch = *(u_char *)p++) == '\t' && !O_ISSET(sp, O_LIST))
-			scno += TAB_OFF(sp, scno);
-		else
-			scno += cname[ch].len;
-
-		if (cnop != NULL) {
-			if (cno_cnt == 0)
-				break;
-			--cno_cnt;
-		}
-	}
-
-	return (scno);
 }
