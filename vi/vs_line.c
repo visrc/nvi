@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.8 1993/11/04 12:19:42 bostic Exp $ (Berkeley) $Date: 1993/11/04 12:19:42 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.9 1993/11/06 17:57:17 bostic Exp $ (Berkeley) $Date: 1993/11/06 17:57:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -182,7 +182,7 @@ err:			MOVEA(sp, oldy, oldx);
 	    SMAP_CACHE(tsmp = smp - 1) && tsmp->lno == smp->lno) {
 		if (tsmp->c_eclen != tsmp->c_ecsize) {
 			offset_in_line = tsmp->c_eboff;
-			offset_in_char = tsmp->c_ecsize - tsmp->c_eclen;
+			offset_in_char = tsmp->c_eclen;
 		} else {
 			offset_in_line = tsmp->c_eboff + 1;
 			offset_in_char = 0;
