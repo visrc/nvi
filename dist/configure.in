@@ -410,6 +410,7 @@ AC_SUBST(cobjs)
 
 dnl check for curses
 AC_SUBST(CURSLIBS)
+AC_SUBST(HAVE_NCURSESW)
 
 dnl AC_ARG_WITH(slang,
 dnl 	[  --with-slang[=DIR]     Use S-Lang instead of curses. ],
@@ -426,25 +427,42 @@ dnl
 dnl 	CURSLIB=slcurses
 dnl 	],
 dnl 	[
-	CURSLIB=curses
+	SAVELIBS="$LIBS"
 	AC_ARG_WITH(curses,
 		[  --with-curses=DIR       Path to curses installation. ])
 	if test "x$with_curses" != "x"; then
 		LDFLAGS="-L$with_curses/lib $LDFLAGS"
 		CPPFLAGS="-I$with_curses/include $CPPFLAGS"
-		if test -f "$with_curses/include/ncurses.h"; then
-			AC_CHECK_HEADERS(ncurses.h)
-			CURSLIB=ncurses
-		fi
 	fi;
-
+	AC_MSG_CHECKING(for ncurses.h)
+	AC_CACHE_VAL(vi_cv_include_ncurses, [dnl
+	    AC_CHECK_HEADERS(ncurses.h, 
+		[vi_cv_include_ncurses=yes], [vi_cv_include_ncurses=no])])
+	AC_MSG_RESULT($vi_cv_include_ncurses)
+	if test "$vi_cv_include_ncurses" = yes; then
+	    CURSHEADER=ncurses.h 
+	    AC_MSG_CHECKING(for wide ncurses)
+	    AC_TRY_RUN([#include <ncurses.h> 
+			main(){exit(!(A_CHARTEXT>0xff));}],
+		[AC_DEFINE(HAVE_NCURSESW)
+		 CURSLIB="ncursesw"
+		 vi_cv_ncursesw=yes],
+		[CURSLIB="ncurses"
+		vi_cv_ncursesw=no])
+	    AC_MSG_RESULT($vi_cv_ncursesw)
+	else
+	    CURSHEADER=curses.h
+	    CURSLIB="curses"
+	fi
 
 	AC_CHECK_LIB($CURSLIB, initscr,
-		[vi_cv_cursesfatal="no"], [vi_cv_cursesfatal="yes"])
+		[vi_cv_cursesfatal="no"],
+		[vi_cv_cursesfatal="yes"])
 	if test "$vi_cv_cursesfatal" = "yes"; then
 		AC_MSG_ERROR([Need curses.])
 	fi
-	CURSLIBS="-l$CURSLIB"
+        CURSLIBS="-l$CURSLIB"
+	LIBS="$SAVELIBS"
 dnl 	])
 
 dnl Checks for header files.
@@ -558,7 +576,7 @@ LIBS="$CURSLIBS $LIBS"
 dnl Check for the tigetstr/tigetnum functions.
 AC_MSG_CHECKING(for tigetstr/tigetnum)
 AC_CACHE_VAL(vi_cv_have_curses_tigetstr, [dnl
-AC_TRY_LINK([#include <$CURSLIB.h>], [tigetstr(0);],
+AC_TRY_LINK([#include <$CURSHEADER>], [tigetstr(0);],
 	[vi_cv_have_curses_tigetstr=yes],
 	[vi_cv_have_curses_tigetstr=no])])
 if test "$vi_cv_have_curses_tigetstr" = yes; then
@@ -578,7 +596,7 @@ else
 	dnl Check for the waddnstr function.
 	AC_MSG_CHECKING(for waddnstr)
 	AC_CACHE_VAL(vi_cv_have_curses_waddnstr, [dnl
-	AC_TRY_LINK([#include <$CURSLIB.h>], [waddnstr(stdscr, 0, 0);],
+	AC_TRY_LINK([#include <$CURSHEADER>], [waddnstr(stdscr, 0, 0);],
 		[vi_cv_have_curses_waddnstr=yes],
 		[vi_cv_have_curses_waddnstr=no])])
 	if test "$vi_cv_have_curses_waddnstr" = yes; then
@@ -589,7 +607,7 @@ else
 	dnl Check for the beep function.
 	AC_MSG_CHECKING(for beep)
 	AC_CACHE_VAL(vi_cv_have_curses_beep, [dnl
-	AC_TRY_LINK([#include <$CURSLIB.h>], [beep();],
+	AC_TRY_LINK([#include <$CURSHEADER>], [beep();],
 		[vi_cv_have_curses_beep=yes],
 		[vi_cv_have_curses_beep=no])])
 	if test "$vi_cv_have_curses_beep" = yes; then
@@ -600,7 +618,7 @@ else
 	dnl Check for the flash function.
 	AC_MSG_CHECKING(for flash)
 	AC_CACHE_VAL(vi_cv_have_curses_flash, [dnl
-	AC_TRY_LINK([#include <$CURSLIB.h>], [flash();],
+	AC_TRY_LINK([#include <$CURSHEADER>], [flash();],
 		[vi_cv_have_curses_flash=yes],
 		[vi_cv_have_curses_flash=no])])
 	if test "$vi_cv_have_curses_flash" = yes; then
@@ -611,7 +629,7 @@ else
 	dnl Check for the idlok function.
 	AC_MSG_CHECKING(for idlok)
 	AC_CACHE_VAL(vi_cv_have_curses_idlok, [dnl
-	AC_TRY_LINK([#include <$CURSLIB.h>], [idlok(0, 0);],
+	AC_TRY_LINK([#include <$CURSHEADER>], [idlok(0, 0);],
 		[vi_cv_have_curses_idlok=yes],
 		[vi_cv_have_curses_idlok=no])])
 	if test "$vi_cv_have_curses_idlok" = yes; then
@@ -622,7 +640,7 @@ else
 	dnl Check for the keypad function.
 	AC_MSG_CHECKING(for keypad)
 	AC_CACHE_VAL(vi_cv_have_curses_keypad, [dnl
-	AC_TRY_LINK([#include <$CURSLIB.h>], [keypad(0, 0);],
+	AC_TRY_LINK([#include <$CURSHEADER>], [keypad(0, 0);],
 		[vi_cv_have_curses_keypad=yes],
 		[vi_cv_have_curses_keypad=no])])
 	if test "$vi_cv_have_curses_keypad" = yes; then
@@ -633,7 +651,7 @@ else
 	dnl Check for the newterm function.
 	AC_MSG_CHECKING(for newterm)
 	AC_CACHE_VAL(vi_cv_have_curses_newterm, [dnl
-	AC_TRY_LINK([#include <$CURSLIB.h>], [newterm(0, 0, 0);],
+	AC_TRY_LINK([#include <$CURSHEADER>], [newterm(0, 0, 0);],
 		[vi_cv_have_curses_newterm=yes],
 		[vi_cv_have_curses_newterm=no])])
 	if test "$vi_cv_have_curses_newterm" = yes; then
@@ -651,7 +669,7 @@ dnl using the system library, because it may be part of the underlying
 dnl termcap/termlib support, and we want to use the local one.
 AC_MSG_CHECKING(for setupterm)
 AC_CACHE_VAL(vi_cv_have_curses_setupterm, [dnl
-AC_TRY_LINK([#include <$CURSLIB.h>], [setupterm(0, 0, 0);],
+AC_TRY_LINK([#include <$CURSHEADER>], [setupterm(0, 0, 0);],
 	[vi_cv_have_curses_setupterm=yes],
 	[vi_cv_have_curses_setupterm=no])])
 if test "$vi_cv_have_curses_setupterm" = yes; then
