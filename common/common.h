@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.12 1996/05/24 12:01:44 bostic Exp $ (Berkeley) $Date: 1996/05/24 12:01:44 $
+ *	$Id: common.h,v 10.13 1996/09/25 17:15:44 bostic Exp $ (Berkeley) $Date: 1996/09/25 17:15:44 $
  */
 
 /*
@@ -93,4 +93,4 @@ typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
 #include "log.h"
 #include "mem.h"
 
-#include "common_extern.h"
+#include "com_extern.h"

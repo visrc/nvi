@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.8 1996/09/18 09:23:05 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:23:05 $
+# $Id: distrib,v 8.9 1996/09/25 17:15:17 bostic Exp $ (Berkeley) $Date: 1996/09/25 17:15:17 $
 
 # Clean
 make -f Makefile.in clean
@@ -18,7 +18,7 @@ rm -f $f
 sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../cl/*.c > $f
 chmod 444 $f
 
-f=../include/common_extern.h
+f=../include/com_extern.h
 echo "Building $f ..."
 rm -f $f
 sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../clib/*.c ../common/*.c > $f
