@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.17 1993/10/09 12:14:38 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:14:38 $";
+static char sccsid[] = "$Id: screen.c,v 8.18 1993/10/28 08:54:30 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:54:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: screen.c,v 8.17 1993/10/09 12:14:38 bostic Exp $ (B
 #include <unistd.h>
 
 #include "vi.h"
+#include "vcmd.h"
 #include "excmd.h"
 #include "tag.h"
 
@@ -158,6 +159,7 @@ mem:			msgq(orig, M_ERR,
 		sp->inc_lastval = 1;
 
 		queue_init(&sp->tagq);
+		queue_init(&sp->tagfq);
 
 		sp->searchdir = NOTSET;
 		sp->csearchdir = CNOTSET;
@@ -182,6 +184,15 @@ screen_end(sp)
 {
 	sigset_t bmask, omask;
 
+	/* Free remembered file names. */
+	{ FREF *frp;
+		while ((frp = sp->frefq.qe_next) != NULL) {
+			queue_remove(&sp->frefq, frp, FREF *, q);
+			FREE(frp->fname, frp->nlen);
+			FREE(frp, sizeof(FREF));
+		}
+	}
+
 	/* Free the argument list. */
 	(void)free_argv(sp);
 
@@ -189,13 +200,13 @@ screen_end(sp)
 	if (sp->ibp != NULL)
 		FREE(sp->ibp, sp->ibp_len);
 
-	/* Free any script information. */
-	if (F_ISSET(sp, S_SCRIPT))
-		sscr_end(sp);
-
 	/* Free text input, command chains. */
 	hdr_text_free(&sp->txthdr);
 	hdr_text_free(&sp->bhdr);
+
+	/* Free any script information. */
+	if (F_ISSET(sp, S_SCRIPT))
+		sscr_end(sp);
 
 	/* Free vi text input memory. */
 	if (sp->rep != NULL)
@@ -205,38 +216,30 @@ screen_end(sp)
 	if (sp->lastbcomm != NULL)
 		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
 
-	/* Free remembered file names. */
-	{ FREF *frp;
-		while ((frp = sp->frefq.qe_next) != NULL) {
-			queue_remove(&sp->frefq, frp, FREF *, q);
-			FREE(frp->fname, strlen(frp->fname));
-			FREE(frp, sizeof(FREF));
-		}
-	}
+	/* Free alternate file name. */
+	if (sp->alt_fname != NULL)
+		FREE(sp->alt_fname, strlen(sp->alt_fname) + 1);
 
 	/* Free paragraph search list. */
 	if (sp->paragraph != NULL)
 		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
 
 	/* Free up tag information. */
-	{ int cnt;
-		if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED) &&
-		    sp->tfhead != NULL) {
-			for (cnt = 0; sp->tfhead[cnt] != NULL; ++cnt)
-				FREE(sp->tfhead[cnt]->fname,
-				    strlen(sp->tfhead[cnt]->fname) + 1);
-			free(sp->tfhead);
-		}
-		if (sp->tlast != NULL)
-			FREE(sp->tlast, strlen(sp->tlast) + 1);
-	}
-
 	{ TAG *tp;
 		while ((tp = sp->tagq.qe_next) != NULL) {
 			queue_remove(&sp->tagq, tp, TAG *, q);
 			FREE(tp, sizeof(TAG));
 		}
 	}
+	{ TAGF *tp;
+		while ((tp = sp->tagfq.qe_next) != NULL) {
+			queue_remove(&sp->tagfq, tp, TAGF *, q);
+			FREE(tp->fname, strlen(tp->fname) + 1);
+			FREE(tp, sizeof(TAG));
+		}
+	}
+	if (sp->tlast != NULL)
+		FREE(sp->tlast, strlen(sp->tlast) + 1);
 
 	/* Free up search information. */
 	if (sp->match != NULL)
@@ -258,6 +261,9 @@ screen_end(sp)
 			FREE(qp, sizeof(SEQ));
 		}
 	}
+
+	/* Free all the options */
+	opts_free(sp);
 
 	/*
 	 * Free the message chain last, so previous failures have a place
@@ -384,12 +390,14 @@ tag_copy(a, b)
 	SCR *a, *b;
 {
 	TAG *ap, *tp;
-	TAGF **atfp, **btfp;
+	TAGF *atfp, *tfp;
 	int cnt;
 
-	/* Initialize linked list. */
+	/* Initialize queues. */
 	queue_init(&b->tagq);
+	queue_init(&b->tagfq);
 
+	/* Copy tag stack. */
 	for (ap = a->tagq.qe_next; ap != NULL; ap = ap->q.qe_next) {
 		if ((tp = malloc(sizeof(TAG))) == NULL)
 			goto nomem;
@@ -397,31 +405,20 @@ tag_copy(a, b)
 		queue_enter_tail(&b->tagq, tp, TAG *, q);
 	}
 
-	/* Copy the list of tag files. */
-	for (atfp = a->tfhead, cnt = 1; *atfp != NULL; ++atfp, ++cnt);
-
-	if (cnt > 1) {
-		if ((b->tfhead = malloc(cnt * sizeof(TAGF **))) == NULL)
+	/* Copy list of tag files. */
+	for (atfp = a->tagfq.qe_next; atfp != NULL; atfp = atfp->q.qe_next) {
+		if ((tfp = malloc(sizeof(TAGF))) == NULL)
 			goto nomem;
-		for (atfp = a->tfhead,
-		    btfp = b->tfhead; *atfp != NULL; ++atfp, ++btfp) {
-			if ((*btfp = malloc(sizeof(TAGF))) == NULL)
-				goto nomem;
-			if (((*btfp)->fname = strdup((*atfp)->fname)) == NULL) {
-				FREE(*btfp, sizeof(TAGF));
-				*btfp = NULL;
-				goto nomem;
-			}
-			(*btfp)->flags = 0;
-		}
-		*btfp = NULL;
+		*tfp = *atfp;
+		if ((tfp->fname = strdup(atfp->fname)) == NULL)
+			goto nomem;
+		queue_enter_tail(&b->tagfq, tfp, TAGF *, q);
 	}
 		
 	/* Copy the last tag. */
-	if (a->tlast != NULL && (b->tlast = strdup(a->tlast)) == NULL)
-		goto nomem;
+	if (a->tlast != NULL && (b->tlast = strdup(a->tlast)) == NULL) {
+nomem:		msgq(a, M_ERR, "Error: tag copy: %s", strerror(errno));
+		return (1);
+	}
 	return (0);
-
-nomem:	msgq(a, M_ERR, "Error: tag copy: %s", strerror(errno));
-	return (1);
 }
