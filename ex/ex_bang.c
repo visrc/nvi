@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.1 1995/04/13 17:22:03 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:03 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.2 1995/05/05 18:51:06 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,6 +46,8 @@ static char sccsid[] = "$Id: ex_bang.c,v 10.1 1995/04/13 17:22:03 bostic Exp $ (
  * There's some fairly amazing slop in this routine to make the different
  * ways of getting here display the right things.  It took a long time to
  * get it right (wrong?), so be careful.
+ *
+ * PUBLIC: int ex_bang __P((SCR *, EXCMD *));
  */
 int
 ex_bang(sp, cmdp)
@@ -58,7 +60,7 @@ ex_bang(sp, cmdp)
 	MARK rm;
 	recno_t lno;
 	size_t blen;
-	int notused, rval;
+	int rval;
 	char *bp, *msg;
 
 	NEEDFILE(sp, cmdp->cmd);
@@ -88,8 +90,8 @@ ex_bang(sp, cmdp)
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
 		if (F_ISSET(sp, S_EX)) {
 			F_SET(sp, S_EX_WROTE);
-			(void)ex_printf(EXCOOKIE, "!%s\n", ap->bp);
-			(void)ex_fflush(EXCOOKIE);
+			(void)ex_printf(sp, "!%s\n", ap->bp);
+			(void)ex_fflush(sp);
 		}
 		/*
 		 * Vi: Display the command if modified.  Historic vi displayed
@@ -204,7 +206,7 @@ ret2:	if (F_ISSET(sp, S_EX)) {
 		 * the autoprint output.
 		 */
 		if (rval)
-			(void)sp->gp->scr_msgflush(sp, &notused);
+			(void)sp->gp->scr_msgflush(sp, NULL, NULL);
 
 		/* Ex terminates with a bang, even if the command fails. */
 		if (!F_ISSET(sp, S_EX_SILENT))

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 10.1 1995/04/13 17:22:23 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:23 $";
+static char sccsid[] = "$Id: ex_screen.c,v 10.2 1995/05/05 18:51:38 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,11 +28,13 @@ static char sccsid[] = "$Id: ex_screen.c,v 10.1 1995/04/13 17:22:23 bostic Exp $
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
+#include "vi.h"
 
 /*
  * ex_bg --	:bg
  *	Hide the screen.
+ *
+ * PUBLIC: int ex_bg __P((SCR *, EXCMD *));
  */
 int
 ex_bg(sp, cmdp)
@@ -45,6 +47,8 @@ ex_bg(sp, cmdp)
 /*
  * ex_fg --	:fg [file]
  *	Show the screen.
+ *
+ * PUBLIC: int ex_fg __P((SCR *, EXCMD *));
  */
 int
 ex_fg(sp, cmdp)
@@ -57,6 +61,8 @@ ex_fg(sp, cmdp)
 /*
  * ex_resize --	:resize [+-]rows
  *	Change the screen size.
+ *
+ * PUBLIC: int ex_resize __P((SCR *, EXCMD *));
  */
 int
 ex_resize(sp, cmdp)
@@ -86,6 +92,8 @@ ex_resize(sp, cmdp)
 /*
  * ex_sdisplay --
  *	Display the list of screens.
+ *
+ * PUBLIC: int ex_sdisplay __P((SCR *));
  */
 int
 ex_sdisplay(sp)
@@ -106,16 +114,16 @@ ex_sdisplay(sp)
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)ex_printf(EXCOOKIE, "\n");
+			(void)ex_puts(sp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)ex_printf(EXCOOKIE, " ");
+			(void)ex_puts(sp, " ");
 		}
-		(void)ex_printf(EXCOOKIE, "%s", tsp->frp->name);
+		(void)ex_puts(sp, tsp->frp->name);
 		++cnt;
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_printf(EXCOOKIE, "\n");
+		(void)ex_puts(sp, "\n");
 
 	F_SET(sp, S_EX_WROTE);
 	return (0);
