@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.45 1994/02/25 19:02:16 bostic Exp $ (Berkeley) $Date: 1994/02/25 19:02:16 $
+ *	$Id: ex.h,v 8.46 1994/03/01 11:35:36 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:35:36 $
  */
 
 /* Ex command structure. */
@@ -149,7 +149,7 @@ typedef struct _ex_private {
  * have been installed by the screen code.
  */
 #define	EX_LEAVE(sp, isig, act, oact, sb, osb, term)			\
-	if (F_ISSET(sp->gp, G_ISFROMTTY)) {				\
+	if (F_ISSET(sp->gp, G_STDIN_TTY)) {				\
 		(act).sa_handler = SIG_IGN;				\
 		sigemptyset(&(act).sa_mask);				\
 		(act).sa_flags = 0;					\
@@ -178,7 +178,7 @@ typedef struct _ex_private {
 	}
 
 #define	EX_RETURN(sp, isig, act, oact, sb, osb, term)			\
-	if (F_ISSET(sp->gp, G_ISFROMTTY) && (isig)) {			\
+	if (F_ISSET(sp->gp, G_STDIN_TTY) && (isig)) {			\
 		if (sigaction(SIGINT, &(oact), NULL)) {			\
 			msgq(sp, M_SYSERR, "signal");			\
 			rval = 1;					\

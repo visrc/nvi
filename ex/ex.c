@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.92 1994/02/28 17:12:13 bostic Exp $ (Berkeley) $Date: 1994/02/28 17:12:13 $";
+static char sccsid[] = "$Id: ex.c,v 8.93 1994/03/01 11:36:04 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:36:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ex(sp, ep)
 		return (ex_end(sp));
 
 	/* If reading from a file, messages should have line info. */
-	if (!F_ISSET(sp->gp, G_ISFROMTTY)) {
+	if (!F_ISSET(sp->gp, G_STDIN_TTY)) {
 		sp->if_lno = 1;
 		sp->if_name = strdup("input");
 	}
@@ -69,14 +69,14 @@ ex(sp, ep)
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 		tp = sp->tiq.cqh_first;
 		if (tp->len == 0) {
-			if (F_ISSET(sp->gp, G_ISFROMTTY)) {
+			if (F_ISSET(sp->gp, G_STDIN_TTY)) {
 				(void)fputc('\r', stdout);
 				(void)fflush(stdout);
 			}
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
 			(void)ex_icmd(sp, ep, defcom, sizeof(DEFCOM) - 1);
 		} else {
-			if (F_ISSET(sp->gp, G_ISFROMTTY))
+			if (F_ISSET(sp->gp, G_STDIN_TTY))
 				(void)fputc('\n', stdout);
 			(void)ex_icmd(sp, ep, tp->lb, tp->len);
 		}
