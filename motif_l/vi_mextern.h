@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: vi_mextern.h,v 8.2 1996/12/12 09:32:27 bostic Exp $ (Berkeley) $Date: 1996/12/12 09:32:27 $";
+ *	"$Id: vi_mextern.h,v 8.3 1996/12/18 10:27:19 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:27:19 $";
  */
 
 /*
@@ -27,9 +27,13 @@ Widget	vi_create_editor(String, Widget, void (*)(void));
 Widget	vi_create_menubar(Widget);  
 void	vi_input_func(XtPointer, int *, XtInputId *);
 int	vi_run(int, char *[], int *, int *, pid_t *);
+int	vi_send(char *, IP_BUF *);
+int	vi_translate(char *, size_t *);
 #else
 Widget	vi_create_editor();
 Widget	vi_create_menubar();
 void	vi_input_func();
 void	vi_run();
+int	vi_send();
+int	vi_translate();
 #endif
