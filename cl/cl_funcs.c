@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.34 1996/03/06 19:49:28 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:49:28 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.35 1996/03/14 09:26:45 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:26:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,9 +59,7 @@ cl_addstr(sp, str, len)
 	    oldy == RLNO(sp, LASTLINE(sp)) && IS_SPLIT(sp)) {
 		iv = 1;
 		(void)standout();
-		F_SET(clp, CL_LLINE_IV);
-	} else
-		F_CLR(clp, CL_LLINE_IV);
+	}
 
 	if (addnstr(str, len) == ERR)
 		return (1);
@@ -247,7 +245,7 @@ cl_deleteln(sp)
 	 * spaces, and copy the trailing spaces only if there's a non-space
 	 * character following.
 	 */
-	if (F_ISSET(clp, CL_LLINE_IV)) {
+	if (!F_ISSET(sp, S_SCR_EXWROTE) && IS_SPLIT(sp)) {
 #ifdef mvchgat
 		mvchgat(RLNO(sp, LASTLINE(sp)), 0, -1, A_NORMAL, 0, NULL);
 #else
@@ -268,7 +266,6 @@ cl_deleteln(sp)
 		}
 		(void)move(oldy, oldx);
 #endif
-		F_CLR(clp, CL_LLINE_IV);
 	}
 
 	/*

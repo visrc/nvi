@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.10 1996/03/06 19:49:25 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:49:25 $
+ *	$Id: cl.h,v 10.11 1996/03/14 09:26:45 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:26:45 $
  */
 
 typedef struct _cl_private {
@@ -36,13 +36,12 @@ typedef struct _cl_private {
 	enum {			/* Tty group write mode. */
 	    TGW_UNKNOWN, TGW_SET, TGW_UNSET } tgw;
 
-#define	CL_LLINE_IV	0x001	/* Last line is in inverse video. */
-#define	CL_SCR_EX_INIT	0x002	/* Ex screen initialized. */
-#define	CL_SCR_VI_INIT	0x004	/* Vi screen initialized. */
-#define	CL_SIGHUP	0x008	/* SIGHUP arrived. */
-#define	CL_SIGINT	0x010	/* SIGINT arrived. */
-#define	CL_SIGTERM	0x020	/* SIGTERM arrived. */
-#define	CL_SIGWINCH	0x040	/* SIGWINCH arrived. */
+#define	CL_SCR_EX_INIT	0x001	/* Ex screen initialized. */
+#define	CL_SCR_VI_INIT	0x002	/* Vi screen initialized. */
+#define	CL_SIGHUP	0x004	/* SIGHUP arrived. */
+#define	CL_SIGINT	0x008	/* SIGINT arrived. */
+#define	CL_SIGTERM	0x010	/* SIGTERM arrived. */
+#define	CL_SIGWINCH	0x020	/* SIGWINCH arrived. */
 	u_int32_t flags;
 } CL_PRIVATE;
 
