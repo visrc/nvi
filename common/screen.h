@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.31 1993/04/19 15:25:14 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:25:14 $
+ *	$Id: screen.h,v 5.32 1993/05/04 15:58:53 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:58:53 $
  */
 
 /*
@@ -155,9 +155,9 @@ typedef struct _scr {
 
 	struct _cb cuts[UCHAR_MAX + 2];	/* Ex/vi: cut buffers. */
 
-	struct _tag	*thead;		/* Ex/vi: tag stack. */
+	struct _hdr	taghdr;		/* Ex/vi: tag stack. */
 	struct _tagf   **tfhead;	/* List of tag files. */
-	char	*tlast;			/* Last tag. */
+	char	*tlast;			/* Saved last tag. */
 
 					/* Ex/vi: search/substitute info. */
 	enum direction	searchdir;	/* File search direction. */
