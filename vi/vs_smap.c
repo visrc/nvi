@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.3 1993/07/20 11:51:42 bostic Exp $ (Berkeley) $Date: 1993/07/20 11:51:42 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.4 1993/08/21 19:03:27 bostic Exp $ (Berkeley) $Date: 1993/08/21 19:03:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -329,8 +329,9 @@ svi_sm_reset(sp, ep, lno)
 		 * The lines left in the screen override the number of screen
 		 * lines in the inserted line.
 		 */
-		if (diff > cnt_orig)
-			diff = cnt_orig;
+		cnt = (TMAP - p) + 1;
+		if (diff > cnt)
+			diff = cnt;
 
 		/* Push down the extra lines. */
 		MOVE(sp, p - HMAP, 0);
