@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.15 1994/08/08 09:00:30 bostic Exp $ (Berkeley) $Date: 1994/08/08 09:00:30 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.16 1994/08/08 09:05:36 bostic Exp $ (Berkeley) $Date: 1994/08/08 09:05:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: ex_cd.c,v 8.15 1994/08/08 09:00:30 bostic Exp $ (Be
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +41,7 @@ ex_cd(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	struct passwd *pw;
 	ARGS *ap;
 	CDPATH *cdp;
 	char *dir;		/* XXX END OF THE STACK, DON'T TRUST GETCWD. */
@@ -62,8 +64,13 @@ ex_cd(sp, ep, cmdp)
 	case 0:
 		/* If no argument, change to the user's home directory. */
 		if ((dir = getenv("HOME")) == NULL) {
-			msgq(sp, M_ERR, "Environment variable HOME not set");
-			return (1);
+			if ((pw = getpwuid(getuid())) == NULL ||
+			    pw->pw_dir == NULL || pw->pw_dir[0] == '\0') {
+				msgq(sp, M_ERR,
+			   "Unable to find home directory location");
+				return (1);
+			}
+			dir = pw->pw_dir;
 		}
 		break;
 	case 1:
