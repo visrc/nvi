@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.80 1996/08/13 11:29:56 bostic Exp $ (Berkeley) $Date: 1996/08/13 11:29:56 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.81 1996/09/14 15:57:36 bostic Exp $ (Berkeley) $Date: 1996/09/14 15:57:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -628,6 +628,8 @@ replay:	if (LF_ISSET(TXT_REPLAY))
 	 */
 	if (quote == Q_BTHIS || quote == Q_VTHIS) {
 		FL_CLR(ec_flags, EC_QUOTED);
+		if (LF_ISSET(TXT_MAPINPUT))
+			FL_SET(ec_flags, EC_MAPINPUT);
 
 		if (quote == Q_BTHIS &&
 		    (evp->e_value == K_VERASE || evp->e_value == K_VKILL)) {
@@ -1223,7 +1225,14 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 	case K_VLNEXT:			/* Quote next character. */
 		evp->e_c = '^';
 		quote = Q_VNEXT;
+		/*
+		 * Turn on the quote flag so that the underlying routines
+		 * quote the next character where it's possible. Turn off
+		 * the input mapbiting flag so that we don't remap the next
+		 * character.
+		 */
 		FL_SET(ec_flags, EC_QUOTED);
+		FL_CLR(ec_flags, EC_MAPINPUT);
 
 		/*
 		 * !!!
