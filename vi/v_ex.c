@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.33 1993/02/14 18:57:10 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:57:10 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.34 1993/02/15 13:42:29 bostic Exp $ (Berkeley) $Date: 1993/02/15 13:42:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,16 +44,19 @@ v_ex(vp, fm, tm, rp)
 	int flags, key;
 	u_char *p;
 
-	for (flags = GB_BS;; flags |= GB_NLECHO) {
+	for (flags = GB_BS;;) {
 		v_startex();			/* Reset. */
 
 		/*
 		 * Get an ex command; echo the newline on any prompts after
-		 * the first.  We may have to overwrite the command later;
-		 * get the length for later.
+		 * the first.
 		 */
 		if (v_gb(curf, ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
 		    p == NULL)
+			break;
+		flags |= GB_NLECHO;
+
+		if (len == 0)
 			break;
 
 		(void)ex_cstring(p, len, 0);
