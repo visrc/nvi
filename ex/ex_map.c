@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.6 1993/12/02 10:48:12 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:48:12 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.7 1994/03/07 16:54:49 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:54:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,7 @@ ex_map(sp, ep, cmdp)
 			}
 	}
 	return (seq_set(sp, name, nlen, input, cmdp->argv[0]->len,
-	    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, 1));
+	    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, S_USERDEF));
 }
 
 /*
