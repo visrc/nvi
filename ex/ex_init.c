@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.5 1993/02/19 11:13:14 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:13:14 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.6 1993/02/20 15:17:02 bostic Exp $ (Berkeley) $Date: 1993/02/20 15:17:02 $";
 #endif /* not lint */
 
 #include <limits.h>
@@ -29,6 +29,8 @@ ex_init(ep)
 	struct termios raw;
 
 	/* Initialize the terminal state. */
+	if (tcgetattr(STDIN_FILENO, &raw))
+		return (1);
 	cfmakeraw(&raw);
 	raw.c_oflag |= OPOST|ONLCR;
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &raw))
