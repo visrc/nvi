@@ -10,38 +10,42 @@
 
 /* This file contains movement functions that perform character searches */
 #include <sys/types.h>
+#include <stddef.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "vcmd.h"
 #include "extern.h"
 
-static MARK	(*prevfwdfn)();	/* function to search in same direction */
-static MARK	(*prevrevfn)();	/* function to search in opposite direction */
+static MARK	*(*prevfwdfn)();/* function to search in same direction */
+static MARK	*(*prevrevfn)();/* function to search in opposite direction */
 static char	prev_key;	/* sought cvhar from previous [fFtT] */
+static MARK rval;
 
-MARK	m__ch(m, cnt, cmd)
-	MARK	m;	/* current position */
+MARK	*m__ch(m, cnt, cmd)
+	MARK	*m;	/* current position */
 	long	cnt;
-	char	cmd;	/* command: either ',' or ';' */
+	int	cmd;	/* command: either ',' or ';' */
 {
-	MARK	(*tmp)();
+	MARK	*(*tmp)();
 
 	if (!prevfwdfn)
 	{
 		msg("No previous f, F, t, or T command");
-		return MARK_UNSET;
+		return NULL;
 	}
 
 	if (cmd == ',')
 	{
-		m =  (*prevrevfn)(m, cnt, prev_key);
+		m = (*prevrevfn)(m, cnt, prev_key);
 
 		/* Oops! we didn't want to change the prev*fn vars! */
 		tmp = prevfwdfn;
 		prevfwdfn = prevrevfn;
 		prevrevfn = tmp;
 
-		return m;
+		rval = *m;
+		return (&rval);
 	}
 	else
 	{
@@ -50,10 +54,10 @@ MARK	m__ch(m, cnt, cmd)
 }
 
 /* move forward within this line to next occurrence of key */
-MARK	m_fch(m, cnt, key)
-	MARK	m;	/* where to search from */
+MARK	*m_fch(m, cnt, key)
+	MARK	*m;	/* where to search from */
 	long	cnt;
-	char	key;	/* what to search for */
+	int	key;	/* what to search for */
 {
 	REG char	*text;
 
@@ -63,30 +67,30 @@ MARK	m_fch(m, cnt, key)
 	prevrevfn = m_Fch;
 	prev_key = key;
 
-	pfetch(markline(m));
-	text = ptext + markidx(m);
+	text = file_line(curf, m->lno, NULL);
 	while (cnt-- > 0)
 	{
 		do
 		{
-			m++;
+			++m->cno;
 			text++;
 		} while (*text && *text != key);
 	}
 	if (!*text)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
-	return m;
+	rval = *m;
+	return (&rval);
 }
 
 /* move backward within this line to previous occurrence of key */
-MARK	m_Fch(m, cnt, key)
-	MARK	m;	/* where to search from */
+MARK	*m_Fch(m, cnt, key)
+	MARK	*m;	/* where to search from */
 	long	cnt;
-	char	key;	/* what to search for */
+	int	key;	/* what to search for */
 {
-	REG char	*text;
+	REG char	*stext, *text;
 
 	SETDEFCNT(1);
 
@@ -94,70 +98,76 @@ MARK	m_Fch(m, cnt, key)
 	prevrevfn = m_fch;
 	prev_key = key;
 
-	pfetch(markline(m));
-	text = ptext + markidx(m);
+	stext = text = file_line(curf, m->lno, NULL);
 	while (cnt-- > 0)
 	{
 		do
 		{
-			m--;
+			m->cno--;
 			text--;
-		} while (text >= ptext && *text != key);
+		} while (text >= stext && *text != key);
 	}
-	if (text < ptext)
+	if (text < stext)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
-	return m;
+	rval = *m;
+	return (&rval);
 }
 
 /* move forward within this line almost to next occurrence of key */
-MARK	m_tch(m, cnt, key)
-	MARK	m;	/* where to search from */
+MARK	*m_tch(m, cnt, key)
+	MARK	*m;	/* where to search from */
 	long	cnt;
-	char	key;	/* what to search for */
+	int	key;	/* what to search for */
 {
+	size_t len;
+
 	/* skip the adjacent char */
-	pfetch(markline(m));
-	if (plen <= markidx(m))
+	(void)file_line(curf, m->lno, &len);
+	if (len <= m->cno)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
-	m++;
+	m->cno++;
 
 	m = m_fch(m, cnt, key);
-	if (m == MARK_UNSET)
+	if (m == NULL)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
 
 	prevfwdfn = m_tch;
 	prevrevfn = m_Tch;
 
-	return m - 1;
+	--m->cno;
+	rval = *m;
+	return (&rval);
 }
 
 /* move backward within this line almost to previous occurrence of key */
-MARK	m_Tch(m, cnt, key)
-	MARK	m;	/* where to search from */
+MARK	*m_Tch(m, cnt, key)
+	MARK	*m;	/* where to search from */
 	long	cnt;
-	char	key;	/* what to search for */
+	int	key;	/* what to search for */
 {
 	/* skip the adjacent char */
-	if (markidx(m) == 0)
+	if (m->cno == 1)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
-	m--;
+	m->cno--;
 
 	m = m_Fch(m, cnt, key);
-	if (m == MARK_UNSET)
+	if (m == NULL)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
 
 	prevfwdfn = m_Tch;
 	prevrevfn = m_tch;
 
-	return m + 1;
+	++m->cno;
+	rval = *m;
+	return (&rval);
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 5.5 1992/04/16 17:58:52 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:58:52 $
+ *	$Id: seq.h,v 5.6 1992/05/07 12:47:31 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:31 $
  */
 
 /*
@@ -67,7 +67,6 @@ extern SEQLIST seqhead;			/* Linked list of all sequences. */
 }
 
 extern int have_abbr;			/* If any abbreviations. */
-MARK	 abbr_expand __P((MARK, MARK *));
 int	 abbr_save __P((FILE *));
 
 int	 map_save __P((FILE *));
