@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.13 1996/03/21 18:44:00 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:44:00 $ */
+/* $Id: acconfig.h,v 8.14 1996/04/10 20:05:00 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:05:00 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -56,6 +56,9 @@
 
 /* Define if you want to compile in the Perl interpreter. */
 #undef HAVE_PERL_INTERP
+
+/* Define if your Perl is at least 5.002_01. */
+#undef HAVE_PERL_5_002_01
 
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE

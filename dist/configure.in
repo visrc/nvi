@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.88 1996/04/10 19:54:15 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:54:15 $
+dnl	$Id: configure.in,v 8.89 1996/04/10 20:05:00 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:05:00 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -150,6 +150,8 @@ if test "$vi_cv_perlinterp" = "yes"; then
 		echo "Fatal error: perl5 must be version 5.002 or later."
 		exit 1
 	}
+	$vi_cv_path_perl -e 'require 5.002_01' &&
+	    AC_DEFINE(HAVE_PERL_5_002_01)
 
 	perlcppflags=`$vi_cv_path_perl -e 'use Config;print $Config{ccflags}'`
 	if test "X$perlcppflags" != "X"; then
@@ -159,7 +161,7 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	    'use Config;print $Config{installarchlib}."/CORE"'`
 	if test "X$perlarchlib" != "X"; then
 		CPPFLAGS="-I$perlarchlib $CPPFLAGS"
-	fi 
+	fi
 	perllib=`$vi_cv_path_perl -e \
 	    'use Config;print (($Config{d_shrplib} eq "define") ? \
 	    $Config{shrpdir} : ($Config{installarchlib}."/CORE"))'`
@@ -263,7 +265,7 @@ esac
 dnl Checks for header files.
 AC_MSG_CHECKING(for sys/mman.h)
 AC_CACHE_VAL(vi_cv_include_sys_mman, [dnl
-AC_TRY_CPP([#include <sys/mman.h>], 
+AC_TRY_CPP([#include <sys/mman.h>],
 	[vi_cv_include_sys_mman=yes], [vi_cv_include_sys_mman=no])])
 if test "$vi_cv_include_sys_mman" = yes; then
 	AC_DEFINE(HAVE_SYS_MMAN_H)
@@ -272,7 +274,7 @@ AC_MSG_RESULT($vi_cv_include_sys_mman)
 
 AC_MSG_CHECKING(for sys/select.h)
 AC_CACHE_VAL(vi_cv_include_sys_select, [dnl
-AC_TRY_CPP([#include <sys/select.h>], 
+AC_TRY_CPP([#include <sys/select.h>],
 	[vi_cv_include_sys_select=yes], [vi_cv_include_sys_select=no])])
 if test "$vi_cv_include_sys_select" = yes; then
 	AC_DEFINE(HAVE_SYS_SELECT_H)
