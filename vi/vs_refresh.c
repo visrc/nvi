@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.19 1996/03/14 09:31:49 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:31:49 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.20 1996/03/14 21:26:12 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:26:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -423,7 +423,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 */
 
 	/* If the line we're working with has changed, reparse. */
-	if (F_ISSET(VIP(sp), VIP_CUR_INVALID) || LNO != OLNO)
+	if (F_ISSET(vip, VIP_CUR_INVALID) || LNO != OLNO)
 		goto slow;
 
 	/* Otherwise, if nothing's changed, go fast. */
