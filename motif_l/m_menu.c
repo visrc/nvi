@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.10 1996/12/03 12:07:58 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:07:58 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.11 1996/12/03 12:59:54 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:59:54 $";
 #endif /* not lint */
 
 #include "X11/Intrinsic.h"
@@ -554,38 +554,6 @@ XtPointer	client_data;
 
 
 #if defined(__STDC__)
-void		ma_open_above(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_open_above( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    send_command_string( "O" );
-}
-
-
-#if defined(__STDC__)
-void		ma_open_below(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_open_below( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    send_command_string( "o" );
-}
-
-
-#if defined(__STDC__)
 void		ma_find(	Widget w,
 				XtPointer call_data,
 				XtPointer client_data
@@ -702,9 +670,6 @@ pull_down	edit_menu[] = {
     { "Append",			ma_append },
     { "Insert",			ma_insert },
     { "Exit Append or Insert",	ma_escape },
-    { "",			NULL },
-    { "Open above",		ma_open_above },
-    { "Open below",		ma_open_below },
     { "",			NULL },
     { "Find",			ma_find },
     { "Find Next",		ma_find_next },
