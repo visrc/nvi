@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.13 1996/12/04 19:25:01 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:25:01 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.14 2000/04/21 19:00:42 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,12 +52,12 @@ vs_column(sp, colp)
  *	the physical character column within the line, including space
  *	required for the O_NUMBER and O_LIST options.
  *
- * PUBLIC: size_t vs_screens __P((SCR *, recno_t, size_t *));
+ * PUBLIC: size_t vs_screens __P((SCR *, db_recno_t, size_t *));
  */
 size_t
 vs_screens(sp, lno, cnop)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t *cnop;
 {
 	size_t cols, screens;
@@ -98,13 +98,13 @@ vs_screens(sp, lno, cnop)
  *	Return the screen columns necessary to display the line, or,
  *	if specified, the physical character column within the line.
  *
- * PUBLIC: size_t vs_columns __P((SCR *, char *, recno_t, size_t *, size_t *));
+ * PUBLIC: size_t vs_columns __P((SCR *, char *, db_recno_t, size_t *, size_t *));
  */
 size_t
 vs_columns(sp, lp, lno, cnop, diffp)
 	SCR *sp;
 	char *lp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t *cnop, *diffp;
 {
 	size_t chlen, cno, curoff, last, len, scno;
@@ -197,12 +197,12 @@ done:		if (diffp != NULL)		/* XXX */
  *	character closest to the currently most attractive character
  *	position (which is stored as a screen column).
  *
- * PUBLIC: size_t vs_rcm __P((SCR *, recno_t, int));
+ * PUBLIC: size_t vs_rcm __P((SCR *, db_recno_t, int));
  */
 size_t
 vs_rcm(sp, lno, islast)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	int islast;
 {
 	size_t len;
@@ -226,12 +226,12 @@ vs_rcm(sp, lno, islast)
  *	Return the physical column from the line that will display a
  *	character closest to the specified screen column.
  *
- * PUBLIC: size_t vs_colpos __P((SCR *, recno_t, size_t));
+ * PUBLIC: size_t vs_colpos __P((SCR *, db_recno_t, size_t));
  */
 size_t
 vs_colpos(sp, lno, cno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t cno;
 {
 	size_t chlen, curoff, len, llen, off, scno;

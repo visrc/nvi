@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.45 1996/12/04 19:09:58 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:58 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.46 2000/04/21 19:00:42 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,7 +147,7 @@ vs_paint(sp, flags)
 	GS *gp;
 	SMAP *smp, tmp;
 	VI_PRIVATE *vip;
-	recno_t lastline, lcnt;
+	db_recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, notused, off, y;
 	int ch, didpaint, isempty, leftright_warp;
 	char *p;

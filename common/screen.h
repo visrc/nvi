@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.27 1996/12/16 09:39:52 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:39:52 $
+ *	$Id: screen.h,v 10.28 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $
  */
 
 /*
@@ -59,7 +59,7 @@ struct _scr {
 	size_t	 roff;			/* 0-N: screen row offset in display. */
 
 					/* Cursor's: */
-	recno_t	 lno;			/* 1-N: file line. */
+	db_recno_t	 lno;			/* 1-N: file line. */
 	size_t	 cno;			/* 0-N: file character in line. */
 
 	size_t	 rcm;			/* Vi: 0-N: Most attractive column. */
@@ -71,14 +71,14 @@ struct _scr {
 #define	L_MOVED		4		/* Moved lines. */
 #define	L_SHIFT		5		/* Shift lines. */
 #define	L_YANKED	6		/* Yanked lines. */
-	recno_t	 rptlchange;		/* Ex/vi: last L_CHANGED lno. */
-	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
+	db_recno_t	 rptlchange;		/* Ex/vi: last L_CHANGED lno. */
+	db_recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
 	TEXTH	 tiq;			/* Ex/vi: text input queue. */
 
 	SCRIPT	*script;		/* Vi: script mode information .*/
 
-	recno_t	 defscroll;		/* Vi: ^D, ^U scroll information. */
+	db_recno_t	 defscroll;		/* Vi: ^D, ^U scroll information. */
 
 					/* Display character. */
 	CHAR_T	 cname[MAX_CHARACTER_COLUMNS + 1];

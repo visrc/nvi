@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.37 1997/08/02 16:48:29 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:48:29 $
+ *	$Id: gs.h,v 10.38 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -23,7 +23,7 @@ struct _fref {
 	char	*name;			/* File name. */
 	char	*tname;			/* Backing temporary file name. */
 
-	recno_t	 lno;			/* 1-N: file cursor line. */
+	db_recno_t	 lno;			/* 1-N: file cursor line. */
 	size_t	 cno;			/* 0-N: file cursor column. */
 
 #define	FR_CURSORSET	0x0001		/* If lno/cno values valid. */
@@ -93,7 +93,7 @@ struct _gs {
 	LIST_HEAD(_excmdh, _excmd) ecq;	/* Ex command linked list. */
 	EXCMD	 excmd;			/* Default ex command structure. */
 	char	 *if_name;		/* Current associated file. */
-	recno_t	  if_lno;		/* Current associated line number. */
+	db_recno_t	  if_lno;		/* Current associated line number. */
 
 	char	*c_option;		/* Ex initial, command-line command. */
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_util.c,v 10.11 1996/06/30 17:50:33 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:50:33 $";
+static const char sccsid[] = "$Id: v_util.c,v 10.12 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ v_eof(sp, mp)
 	SCR *sp;
 	MARK *mp;
 {
-	recno_t lno;
+	db_recno_t lno;
 
 	if (mp == NULL)
 		v_emsg(sp, NULL, VIM_EOF);

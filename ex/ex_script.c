@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.30 1996/09/24 20:51:11 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:51:11 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.31 2000/04/21 19:00:37 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,7 +210,7 @@ sscr_getprompt(sp)
 	CHAR_T *endp, *p, *t, buf[1024];
 	SCRIPT *sc;
 	fd_set fdset;
-	recno_t lline;
+	db_recno_t lline;
 	size_t llen, len;
 	u_int value;
 	int nr;
@@ -296,15 +296,15 @@ prompterr:	sscr_end(sp);
  * sscr_exec --
  *	Take a line and hand it off to the shell.
  *
- * PUBLIC: int sscr_exec __P((SCR *, recno_t));
+ * PUBLIC: int sscr_exec __P((SCR *, db_recno_t));
  */
 int
 sscr_exec(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	SCRIPT *sc;
-	recno_t last_lno;
+	db_recno_t last_lno;
 	size_t blen, len, last_len, tlen;
 	int isempty, matchprompt, nw, rval;
 	char *bp, *p;
@@ -426,7 +426,7 @@ sscr_insert(sp)
 	CHAR_T *endp, *p, *t;
 	SCRIPT *sc;
 	fd_set rdfd;
-	recno_t lno;
+	db_recno_t lno;
 	size_t blen, len, tlen;
 	u_int value;
 	int nr, rval;

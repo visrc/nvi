@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.13 1997/08/02 16:48:59 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:48:59 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.14 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -339,7 +339,7 @@ ip_refresh(sp, repaint)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp;
-	recno_t total;
+	db_recno_t total;
 
 	ipp = IPP(sp);
 

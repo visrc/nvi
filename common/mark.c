@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: mark.c,v 10.13 1996/07/19 19:11:37 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:11:37 $";
+static const char sccsid[] = "$Id: mark.c,v 10.14 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -218,16 +218,16 @@ mark_find(sp, key)
  * mark_insdel --
  *	Update the marks based on an insertion or deletion.
  *
- * PUBLIC: int mark_insdel __P((SCR *, lnop_t, recno_t));
+ * PUBLIC: int mark_insdel __P((SCR *, lnop_t, db_recno_t));
  */
 int
 mark_insdel(sp, op, lno)
 	SCR *sp;
 	lnop_t op;
-	recno_t lno;
+	db_recno_t lno;
 {
 	LMARK *lmp;
-	recno_t lline;
+	db_recno_t lline;
 
 	switch (op) {
 	case LINE_APPEND:

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_join.c,v 10.10 1996/09/15 15:59:11 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:11 $";
+static const char sccsid[] = "$Id: ex_join.c,v 10.11 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ ex_join(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	recno_t from, to;
+	db_recno_t from, to;
 	size_t blen, clen, len, tlen;
 	int echar, extra, first;
 	char *bp, *p, *tbp;

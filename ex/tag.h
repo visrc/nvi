@@ -8,7 +8,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: tag.h,v 10.5 1996/05/15 17:41:31 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:41:31 $
+ *	$Id: tag.h,v 10.6 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $
  */
 
 /*
@@ -78,12 +78,12 @@ struct _tag {			/* Tag list. */
 
 				/* Tag pop/return information. */
 	FREF	*frp;		/* Saved file. */
-	recno_t	 lno;		/* Saved line number. */
+	db_recno_t	 lno;		/* Saved line number. */
 	size_t	 cno;		/* Saved column number. */
 
 	char	*fname;		/* Filename. */
 	size_t	 fnlen;		/* Filename length. */
-	recno_t	 slno;		/* Search line number. */
+	db_recno_t	 slno;		/* Search line number. */
 	char	*search;	/* Search string. */
 	size_t	 slen;		/* Search string length. */
 

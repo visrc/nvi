@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.23 1996/12/11 13:04:37 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:37 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.24 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,7 +75,7 @@ ex_g_setup(sp, cmdp, cmd)
 	MARK abs;
 	RANGE *rp;
 	busy_t btype;
-	recno_t start, end;
+	db_recno_t start, end;
 	regex_t *re;
 	regmatch_t match[1];
 	size_t len;
@@ -255,13 +255,13 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
  * ex_g_insdel --
  *	Update the ranges based on an insertion or deletion.
  *
- * PUBLIC: int ex_g_insdel __P((SCR *, lnop_t, recno_t));
+ * PUBLIC: int ex_g_insdel __P((SCR *, lnop_t, db_recno_t));
  */
 int
 ex_g_insdel(sp, op, lno)
 	SCR *sp;
 	lnop_t op;
-	recno_t lno;
+	db_recno_t lno;
 {
 	EXCMD *ecp;
 	RANGE *nrp, *rp;

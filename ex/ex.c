@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.60 1996/12/17 14:50:32 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:32 $";
+static const char sccsid[] = "$Id: ex.c,v 10.61 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,7 +200,7 @@ ex_cmd(sp)
 	EXCMD *ecp;
 	GS *gp;
 	MARK cur;
-	recno_t lno;
+	db_recno_t lno;
 	size_t arg1_len, discard, len;
 	u_int32_t flags;
 	long ltmp;
@@ -2036,7 +2036,7 @@ search:		mp->lno = sp->lno;
 
 	/*
 	 * Any value less than 0 is an error.  Make sure that the new value
-	 * will fit into a recno_t.
+	 * will fit into a db_recno_t.
 	 */
 	if (*isaddrp && total != 0) {
 		if (total < 0) {
@@ -2287,7 +2287,7 @@ ex_badaddr(sp, cp, ba, nret)
 	enum badaddr ba;
 	enum nresult nret;
 {
-	recno_t lno;
+	db_recno_t lno;
 
 	switch (nret) {
 	case NUM_OK:

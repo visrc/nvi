@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.18 1997/08/02 16:49:32 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:49:32 $
+ *	$Id: ip.h,v 8.19 2000/04/21 19:00:39 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:39 $
  */
 
 extern int vi_ifd;		/* Input file descriptor. */
@@ -16,8 +16,8 @@ typedef struct _ip_private {
 	size_t	 row;		/* Current row. */
 	size_t	 col;		/* Current column. */
 
-	recno_t	 sb_total;	/* scrollbar: total lines in file. */
-	recno_t	 sb_top;	/* scrollbar: top line on screen. */
+	db_recno_t	 sb_total;	/* scrollbar: total lines in file. */
+	db_recno_t	 sb_top;	/* scrollbar: top line on screen. */
 	size_t	 sb_num;	/* scrollbar: number of lines on screen. */
 
 	size_t	 iblen;		/* Input buffer length. */

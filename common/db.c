@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.23 1996/12/17 14:50:09 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:09 $";
+static const char sccsid[] = "$Id: db.c,v 10.24 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,23 +26,23 @@ static const char sccsid[] = "$Id: db.c,v 10.23 1996/12/17 14:50:09 bostic Exp $
 #include "common.h"
 #include "../vi/vi.h"
 
-static int scr_update __P((SCR *, recno_t, lnop_t, int));
+static int scr_update __P((SCR *, db_recno_t, lnop_t, int));
 
 /*
  * db_eget --
  *	Front-end to db_get, special case handling for empty files.
  *
- * PUBLIC: int db_eget __P((SCR *, recno_t, char **, size_t *, int *));
+ * PUBLIC: int db_eget __P((SCR *, db_recno_t, char **, size_t *, int *));
  */
 int
 db_eget(sp, lno, pp, lenp, isemptyp)
 	SCR *sp;
-	recno_t lno;				/* Line number. */
+	db_recno_t lno;				/* Line number. */
 	char **pp;				/* Pointer store. */
 	size_t *lenp;				/* Length store. */
 	int *isemptyp;
 {
-	recno_t l1;
+	db_recno_t l1;
 
 	if (isemptyp != NULL)
 		*isemptyp = 0;
@@ -76,12 +76,12 @@ db_eget(sp, lno, pp, lenp, isemptyp)
  *	Look in the text buffers for a line, followed by the cache, followed
  *	by the database.
  *
- * PUBLIC: int db_get __P((SCR *, recno_t, u_int32_t, char **, size_t *));
+ * PUBLIC: int db_get __P((SCR *, db_recno_t, u_int32_t, char **, size_t *));
  */
 int
 db_get(sp, lno, flags, pp, lenp)
 	SCR *sp;
-	recno_t lno;				/* Line number. */
+	db_recno_t lno;				/* Line number. */
 	u_int32_t flags;
 	char **pp;				/* Pointer store. */
 	size_t *lenp;				/* Length store. */
@@ -89,7 +89,7 @@ db_get(sp, lno, flags, pp, lenp)
 	DBT data, key;
 	EXF *ep;
 	TEXT *tp;
-	recno_t l1, l2;
+	db_recno_t l1, l2;
 
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
@@ -185,12 +185,12 @@ err3:		if (lenp != NULL)
  * db_delete --
  *	Delete a line from the file.
  *
- * PUBLIC: int db_delete __P((SCR *, recno_t));
+ * PUBLIC: int db_delete __P((SCR *, db_recno_t));
  */
 int
 db_delete(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	DBT key;
 	EXF *ep;
@@ -243,13 +243,13 @@ db_delete(sp, lno)
  * db_append --
  *	Append a line into the file.
  *
- * PUBLIC: int db_append __P((SCR *, int, recno_t, char *, size_t));
+ * PUBLIC: int db_append __P((SCR *, int, db_recno_t, char *, size_t));
  */
 int
 db_append(sp, update, lno, p, len)
 	SCR *sp;
 	int update;
-	recno_t lno;
+	db_recno_t lno;
 	char *p;
 	size_t len;
 {
@@ -317,12 +317,12 @@ db_append(sp, update, lno, p, len)
  * db_insert --
  *	Insert a line into the file.
  *
- * PUBLIC: int db_insert __P((SCR *, recno_t, char *, size_t));
+ * PUBLIC: int db_insert __P((SCR *, db_recno_t, char *, size_t));
  */
 int
 db_insert(sp, lno, p, len)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	char *p;
 	size_t len;
 {
@@ -382,12 +382,12 @@ db_insert(sp, lno, p, len)
  * db_set --
  *	Store a line in the file.
  *
- * PUBLIC: int db_set __P((SCR *, recno_t, char *, size_t));
+ * PUBLIC: int db_set __P((SCR *, db_recno_t, char *, size_t));
  */
 int
 db_set(sp, lno, p, len)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	char *p;
 	size_t len;
 {
@@ -441,12 +441,12 @@ db_set(sp, lno, p, len)
  * db_exist --
  *	Return if a line exists.
  *
- * PUBLIC: int db_exist __P((SCR *, recno_t));
+ * PUBLIC: int db_exist __P((SCR *, db_recno_t));
  */
 int
 db_exist(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	EXF *ep;
 
@@ -476,16 +476,16 @@ db_exist(sp, lno)
  * db_last --
  *	Return the number of lines in the file.
  *
- * PUBLIC: int db_last __P((SCR *, recno_t *));
+ * PUBLIC: int db_last __P((SCR *, db_recno_t *));
  */
 int
 db_last(sp, lnop)
 	SCR *sp;
-	recno_t *lnop;
+	db_recno_t *lnop;
 {
 	DBT data, key;
 	EXF *ep;
-	recno_t lno;
+	db_recno_t lno;
 
 	/* Check for no underlying file. */
 	if ((ep = sp->ep) == NULL) {
@@ -537,12 +537,12 @@ db_last(sp, lnop)
  * db_err --
  *	Report a line error.
  *
- * PUBLIC: void db_err __P((SCR *, recno_t));
+ * PUBLIC: void db_err __P((SCR *, db_recno_t));
  */
 void
 db_err(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	msgq(sp, M_ERR,
 	    "008|Error: unable to retrieve line %lu", (u_long)lno);
@@ -556,7 +556,7 @@ db_err(sp, lno)
 static int
 scr_update(sp, lno, op, current)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	lnop_t op;
 	int current;
 {

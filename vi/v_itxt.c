@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.16 1996/10/23 09:31:46 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:31:46 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.17 2000/04/21 19:00:40 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,7 +210,7 @@ io(sp, vp, cmd)
 	VICMD *vp;
 	enum which cmd;
 {
-	recno_t ai_line, lno;
+	db_recno_t ai_line, lno;
 	size_t len;
 	u_int32_t flags;
 	char *p;

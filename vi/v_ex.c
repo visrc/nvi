@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.44 1996/12/05 12:26:42 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:26:42 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.45 2000/04/21 19:00:40 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -598,7 +598,7 @@ v_ecl_log(sp, tp)
 	TEXT *tp;
 {
 	EXF *save_ep;
-	recno_t lno;
+	db_recno_t lno;
 	int rval;
 
 	/* Initialize the screen, if necessary. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.51 1997/01/02 17:11:05 bostic Exp $ (Berkeley) $Date: 1997/01/02 17:11:05 $";
+static const char sccsid[] = "$Id: exf.c,v 10.52 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1170,7 +1170,7 @@ static void
 file_comment(sp)
 	SCR *sp;
 {
-	recno_t lno;
+	db_recno_t lno;
 	size_t len;
 	char *p;
 

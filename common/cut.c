@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.10 1996/09/15 15:56:41 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:56:41 $";
+static const char sccsid[] = "$Id: cut.c,v 10.11 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,7 @@ cut(sp, namep, fm, tm, flags)
 {
 	CB *cbp;
 	CHAR_T name;
-	recno_t lno;
+	db_recno_t lno;
 	int append, copy_one, copy_def;
 
 	/*
@@ -238,12 +238,12 @@ cb_rotate(sp)
  * cut_line --
  *	Cut a portion of a single line.
  *
- * PUBLIC: int cut_line __P((SCR *, recno_t, size_t, size_t, CB *));
+ * PUBLIC: int cut_line __P((SCR *, db_recno_t, size_t, size_t, CB *));
  */
 int
 cut_line(sp, lno, fcno, clen, cbp)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t fcno, clen;
 	CB *cbp;
 {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.91 1997/07/01 12:52:44 bostic Exp $ (Berkeley) $Date: 1997/07/01 12:52:44 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.92 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -242,7 +242,7 @@ txt_map_end(sp)
  *	Vi text input.
  *
  * PUBLIC: int v_txt __P((SCR *, VICMD *, MARK *,
- * PUBLIC:    const char *, size_t, ARG_CHAR_T, recno_t, u_long, u_int32_t));
+ * PUBLIC:    const char *, size_t, ARG_CHAR_T, db_recno_t, u_long, u_int32_t));
  */
 int
 v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
@@ -252,7 +252,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	const char *lp;		/* Input line. */
 	size_t len;		/* Input line length. */
 	ARG_CHAR_T prompt;	/* Prompt to display. */
-	recno_t ai_line;	/* Line number to use for autoindent count. */
+	db_recno_t ai_line;	/* Line number to use for autoindent count. */
 	u_long rcount;		/* Replay count. */
 	u_int32_t flags;	/* TXT_* flags. */
 {
@@ -1768,12 +1768,12 @@ txt_ai_resolve(sp, tp, changedp)
  *	Handle autoindent.  If aitp isn't NULL, use it, otherwise,
  *	retrieve the line.
  *
- * PUBLIC: int v_txt_auto __P((SCR *, recno_t, TEXT *, size_t, TEXT *));
+ * PUBLIC: int v_txt_auto __P((SCR *, db_recno_t, TEXT *, size_t, TEXT *));
  */
 int
 v_txt_auto(sp, lno, aitp, len, tp)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	TEXT *aitp, *tp;
 	size_t len;
 {
@@ -2329,7 +2329,7 @@ txt_err(sp, tiqh)
 	SCR *sp;
 	TEXTH *tiqh;
 {
-	recno_t lno;
+	db_recno_t lno;
 
 	/*
 	 * The problem with input processing is that the cursor is at an
@@ -2563,7 +2563,7 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	u_int8_t *is_flagsp;
 {
 	MARK start;
-	recno_t lno;
+	db_recno_t lno;
 	u_int sf;
 
 	/* If it's a one-line screen, we don't do incrementals. */
@@ -2687,7 +2687,7 @@ txt_resolve(sp, tiqh, flags)
 {
 	VI_PRIVATE *vip;
 	TEXT *tp;
-	recno_t lno;
+	db_recno_t lno;
 	int changed;
 
 	/*

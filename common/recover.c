@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.21 1996/09/15 15:57:45 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:45 $";
+static const char sccsid[] = "$Id: recover.c,v 10.22 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -190,7 +190,7 @@ rcv_init(sp)
 	SCR *sp;
 {
 	EXF *ep;
-	recno_t lno;
+	db_recno_t lno;
 
 	ep = sp->ep;
 

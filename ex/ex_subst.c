@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.40 1997/01/13 18:27:54 bostic Exp $ (Berkeley) $Date: 1997/01/13 18:27:54 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.41 2000/04/21 19:00:37 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -356,7 +356,7 @@ s(sp, cmdp, s, re, flags)
 	EVENT ev;
 	MARK from, to;
 	TEXTH tiq;
-	recno_t elno, lno, slno;
+	db_recno_t elno, lno, slno;
 	regmatch_t match[10];
 	size_t blen, cnt, last, lbclen, lblen, len, llen;
 	size_t offset, saved_offset, scno;

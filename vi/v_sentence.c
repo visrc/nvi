@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_sentence.c,v 10.7 1996/03/06 19:54:38 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:38 $";
+static const char sccsid[] = "$Id: v_sentence.c,v 10.8 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,7 +198,7 @@ v_sentenceb(sp, vp)
 	VICMD *vp;
 {
 	VCS cs;
-	recno_t slno;
+	db_recno_t slno;
 	size_t len, scno;
 	u_long cnt;
 	int last;

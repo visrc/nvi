@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: put.c,v 10.11 1996/09/23 19:34:18 bostic Exp $ (Berkeley) $Date: 1996/09/23 19:34:18 $";
+static const char sccsid[] = "$Id: put.c,v 10.12 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ put(sp, cbp, namep, cp, rp, append)
 {
 	CHAR_T name;
 	TEXT *ltp, *tp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t blen, clen, len;
 	int rval;
 	char *bp, *p, *t;

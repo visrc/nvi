@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.26 1996/10/31 09:33:28 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:33:28 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.27 2000/04/21 19:00:42 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,23 +28,23 @@ static const char sccsid[] = "$Id: vs_smap.c,v 10.26 1996/10/31 09:33:28 bostic 
 
 static int	vs_deleteln __P((SCR *, int));
 static int	vs_insertln __P((SCR *, int));
-static int	vs_sm_delete __P((SCR *, recno_t));
-static int	vs_sm_down __P((SCR *, MARK *, recno_t, scroll_t, SMAP *));
+static int	vs_sm_delete __P((SCR *, db_recno_t));
+static int	vs_sm_down __P((SCR *, MARK *, db_recno_t, scroll_t, SMAP *));
 static int	vs_sm_erase __P((SCR *));
-static int	vs_sm_insert __P((SCR *, recno_t));
-static int	vs_sm_reset __P((SCR *, recno_t));
-static int	vs_sm_up __P((SCR *, MARK *, recno_t, scroll_t, SMAP *));
+static int	vs_sm_insert __P((SCR *, db_recno_t));
+static int	vs_sm_reset __P((SCR *, db_recno_t));
+static int	vs_sm_up __P((SCR *, MARK *, db_recno_t, scroll_t, SMAP *));
 
 /*
  * vs_change --
  *	Make a change to the screen.
  *
- * PUBLIC: int vs_change __P((SCR *, recno_t, lnop_t));
+ * PUBLIC: int vs_change __P((SCR *, db_recno_t, lnop_t));
  */
 int
 vs_change(sp, lno, op)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	lnop_t op;
 {
 	VI_PRIVATE *vip;
@@ -169,12 +169,12 @@ vs_change(sp, lno, op)
  * slot is already filled in, P_BOTTOM means that the TMAP slot is
  * already filled in, and we just finish up the job.
  *
- * PUBLIC: int vs_sm_fill __P((SCR *, recno_t, pos_t));
+ * PUBLIC: int vs_sm_fill __P((SCR *, db_recno_t, pos_t));
  */
 int
 vs_sm_fill(sp, lno, pos)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	pos_t pos;
 {
 	SMAP *p, tmp;
@@ -301,7 +301,7 @@ err:	HMAP->lno = 1;
 static int
 vs_sm_delete(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	SMAP *p, *t;
 	size_t cnt_orig;
@@ -351,7 +351,7 @@ vs_sm_delete(sp, lno)
 static int
 vs_sm_insert(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	SMAP *p, *t;
 	size_t cnt_orig, cnt, coff;
@@ -407,7 +407,7 @@ vs_sm_insert(sp, lno)
 static int
 vs_sm_reset(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	SMAP *p, *t;
 	size_t cnt_orig, cnt_new, cnt, diff;
@@ -509,13 +509,13 @@ vs_sm_reset(sp, lno)
  *	Scroll the SMAP up/down count logical lines.  Different
  *	semantics based on the vi command, *sigh*.
  *
- * PUBLIC: int vs_sm_scroll __P((SCR *, MARK *, recno_t, scroll_t));
+ * PUBLIC: int vs_sm_scroll __P((SCR *, MARK *, db_recno_t, scroll_t));
  */
 int
 vs_sm_scroll(sp, rp, count, scmd)
 	SCR *sp;
 	MARK *rp;
-	recno_t count;
+	db_recno_t count;
 	scroll_t scmd;
 {
 	SMAP *smp;
@@ -577,7 +577,7 @@ vs_sm_up(sp, rp, count, scmd, smp)
 	SCR *sp;
 	MARK *rp;
 	scroll_t scmd;
-	recno_t count;
+	db_recno_t count;
 	SMAP *smp;
 {
 	int cursor_set, echanged, zset;
@@ -821,7 +821,7 @@ static int
 vs_sm_down(sp, rp, count, scmd, smp)
 	SCR *sp;
 	MARK *rp;
-	recno_t count;
+	db_recno_t count;
 	SMAP *smp;
 	scroll_t scmd;
 {
@@ -1168,7 +1168,7 @@ vs_sm_position(sp, rp, cnt, pos)
 	pos_t pos;
 {
 	SMAP *smp;
-	recno_t last;
+	db_recno_t last;
 
 	switch (pos) {
 	case P_TOP:
@@ -1242,16 +1242,16 @@ eof:				msgq(sp, M_BERR,
  *	Return the number of screen lines from an SMAP entry to the
  *	start of some file line, less than a maximum value.
  *
- * PUBLIC: recno_t vs_sm_nlines __P((SCR *, SMAP *, recno_t, size_t));
+ * PUBLIC: db_recno_t vs_sm_nlines __P((SCR *, SMAP *, db_recno_t, size_t));
  */
-recno_t
+db_recno_t
 vs_sm_nlines(sp, from_sp, to_lno, max)
 	SCR *sp;
 	SMAP *from_sp;
-	recno_t to_lno;
+	db_recno_t to_lno;
 	size_t max;
 {
-	recno_t lno, lcnt;
+	db_recno_t lno, lcnt;
 
 	if (O_ISSET(sp, O_LEFTRIGHT))
 		return (from_sp->lno > to_lno ?

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_scroll.c,v 10.10 1996/10/29 12:13:42 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:13:42 $";
+static const char sccsid[] = "$Id: v_scroll.c,v 10.11 2000/04/21 19:00:40 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ v_lgoto(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t nlines;
+	db_recno_t nlines;
 
 	if (F_ISSET(vp, VC_C1SET)) {
 		if (!db_exist(sp, vp->count)) {
@@ -218,7 +218,7 @@ v_up(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
+	db_recno_t lno;
 
 	lno = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	if (vp->m_start.lno <= lno) {
@@ -265,7 +265,7 @@ v_down(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
+	db_recno_t lno;
 
 	lno = vp->m_start.lno + (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
 	if (!db_exist(sp, lno)) {
@@ -344,7 +344,7 @@ v_pagedown(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t offset;
+	db_recno_t offset;
 
 	/*
 	 * !!!
@@ -392,7 +392,7 @@ v_pageup(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t offset;
+	db_recno_t offset;
 
 	/*
 	 * !!!

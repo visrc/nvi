@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_move.c,v 10.10 1996/09/15 15:59:19 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:19 $";
+static const char sccsid[] = "$Id: ex_move.c,v 10.11 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ ex_copy(sp, cmdp)
 {
 	CB cb;
 	MARK fm1, fm2, m, tm;
-	recno_t cnt;
+	db_recno_t cnt;
 	int rval;
 
 	rval = 0;
@@ -92,7 +92,7 @@ ex_move(sp, cmdp)
 {
 	LMARK *lmp;
 	MARK fm1, fm2;
-	recno_t cnt, diff, fl, tl, mfl, mtl;
+	db_recno_t cnt, diff, fl, tl, mfl, mtl;
 	size_t blen, len;
 	int mark_reset;
 	char *bp, *p;

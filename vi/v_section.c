@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_section.c,v 10.7 1996/03/06 19:54:37 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:37 $";
+static const char sccsid[] = "$Id: v_section.c,v 10.8 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ v_sectionf(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t cnt, lno;
+	db_recno_t cnt, lno;
 	size_t len;
 	char *p, *list, *lp;
 
@@ -175,7 +175,7 @@ v_sectionb(sp, vp)
 	VICMD *vp;
 {
 	size_t len;
-	recno_t cnt, lno;
+	db_recno_t cnt, lno;
 	char *p, *list, *lp;
 
 	/* An empty file or starting from line 1 is always illegal. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.34 1996/10/23 09:31:24 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:31:24 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.35 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 {
 	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
-	recno_t nread;
+	db_recno_t nread;
 	int input[2], output[2], rval;
 	char *name;
 

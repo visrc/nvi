@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.30 1997/08/07 19:03:56 bostic Exp $ (Berkeley) $Date: 1997/08/07 19:03:56 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.31 2000/04/21 19:00:39 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,14 +212,14 @@ newVIrv(rv, screen)
  * perl_ex_perl -- :[line [,line]] perl [command]
  *	Run a command through the perl interpreter.
  *
- * PUBLIC: int perl_ex_perl __P((SCR*, CHAR_T *, size_t, recno_t, recno_t));
+ * PUBLIC: int perl_ex_perl __P((SCR*, CHAR_T *, size_t, db_recno_t, db_recno_t));
  */
 int 
 perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	SCR *scrp;
 	CHAR_T *cmdp;
 	size_t cmdlen;
-	recno_t f_lno, t_lno;
+	db_recno_t f_lno, t_lno;
 {
 	static SV *svcurscr = 0, *svstart, *svstop, *svid;
 	GS *gp;
@@ -273,7 +273,7 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 static int 
 replace_line(scrp, line, t_lno)
 	SCR *scrp;
-	recno_t line, *t_lno;
+	db_recno_t line, *t_lno;
 {
 	char *str, *next;
 	size_t len;
@@ -299,21 +299,21 @@ replace_line(scrp, line, t_lno)
  * perl_ex_perldo -- :[line [,line]] perl [command]
  *	Run a set of lines through the perl interpreter.
  *
- * PUBLIC: int perl_ex_perldo __P((SCR*, CHAR_T *, size_t, recno_t, recno_t));
+ * PUBLIC: int perl_ex_perldo __P((SCR*, CHAR_T *, size_t, db_recno_t, db_recno_t));
  */
 int 
 perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	SCR *scrp;
 	CHAR_T *cmdp;
 	size_t cmdlen;
-	recno_t f_lno, t_lno;
+	db_recno_t f_lno, t_lno;
 {
 	static SV *svcurscr = 0, *svstart, *svstop, *svid;
 	CHAR_T *p;
 	GS *gp;
 	STRLEN length;
 	size_t len;
-	recno_t i;
+	db_recno_t i;
 	char *str;
 #ifndef HAVE_PERL_5_003_01
 	char *argv[2];
@@ -557,7 +557,7 @@ DelLine(screen, linenumber)
 
 	CODE:
 	INITMESSAGE;
-	rval = api_dline(screen, (recno_t)linenumber);
+	rval = api_dline(screen, (db_recno_t)linenumber);
 	ENDMESSAGE;
 
 # XS_VI_gline --
@@ -579,7 +579,7 @@ GetLine(screen, linenumber)
 
 	PPCODE:
 	INITMESSAGE;
-	rval = api_gline(screen, (recno_t)linenumber, &p, &len);
+	rval = api_gline(screen, (db_recno_t)linenumber, &p, &len);
 	ENDMESSAGE;
 
 	EXTEND(sp,1);
@@ -642,7 +642,7 @@ LastLine(screen)
 	VI screen
 
 	PREINIT:
-	recno_t last;
+	db_recno_t last;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
 

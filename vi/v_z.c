@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_z.c,v 10.10 1996/05/16 20:11:45 bostic Exp $ (Berkeley) $Date: 1996/05/16 20:11:45 $";
+static const char sccsid[] = "$Id: v_z.c,v 10.11 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ v_z(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
+	db_recno_t lno;
 	u_int value;
 
 	/*

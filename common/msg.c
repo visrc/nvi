@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.49 1996/12/18 10:28:21 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:21 $";
+static const char sccsid[] = "$Id: msg.c,v 10.50 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -417,7 +417,7 @@ mod_rpt(sp)
 		"300|line",
 		"301|lines",
 	};
-	recno_t total;
+	db_recno_t total;
 	u_long rptval;
 	int first, cnt;
 	size_t blen, len, tlen;
@@ -508,15 +508,15 @@ alloc_err:
  * msgq_status --
  *	Report on the file's status.
  *
- * PUBLIC: void msgq_status __P((SCR *, recno_t, u_int));
+ * PUBLIC: void msgq_status __P((SCR *, db_recno_t, u_int));
  */
 void
 msgq_status(sp, lno, flags)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	u_int flags;
 {
-	recno_t last;
+	db_recno_t last;
 	size_t blen, len;
 	int cnt, needsep;
 	const char *t;
@@ -692,7 +692,7 @@ msg_open(sp, file)
 	static int first = 1;
 	DB *db;
 	DBT data, key;
-	recno_t msgno;
+	db_recno_t msgno;
 	char *p, *t, buf[MAXPATHLEN];
 
 	if ((p = strrchr(file, '/')) != NULL && p[1] == '\0' &&
@@ -718,7 +718,7 @@ msg_open(sp, file)
 	 */
 #define	VMC	"VI_MESSAGE_CATALOG"
 	key.data = &msgno;
-	key.size = sizeof(recno_t);
+	key.size = sizeof(db_recno_t);
 	msgno = 1;
 	if (db->get(db, &key, &data, 0) != 0 ||
 	    data.size != sizeof(VMC) - 1 ||
@@ -806,7 +806,7 @@ msg_cat(sp, str, lenp)
 {
 	GS *gp;
 	DBT data, key;
-	recno_t msgno;
+	db_recno_t msgno;
 
 	/*
 	 * If it's not a catalog message, i.e. has doesn't have a leading
@@ -815,7 +815,7 @@ msg_cat(sp, str, lenp)
 	if (isdigit(str[0]) &&
 	    isdigit(str[1]) && isdigit(str[2]) && str[3] == '|') {
 		key.data = &msgno;
-		key.size = sizeof(recno_t);
+		key.size = sizeof(db_recno_t);
 		msgno = atoi(str);
 
 		/*

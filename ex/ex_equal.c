@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_equal.c,v 10.10 1996/03/06 19:52:17 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:17 $";
+static const char sccsid[] = "$Id: ex_equal.c,v 10.11 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ ex_equal(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	recno_t lno;
+	db_recno_t lno;
 
 	NEEDFILE(sp, cmdp);
 

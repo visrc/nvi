@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.22 1996/12/18 10:24:41 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:24:41 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.23 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ v_exaddr(sp, vp, dir)
 	EXCMD *cmdp;
 	GS *gp;
 	TEXT *tp;
-	recno_t s_lno;
+	db_recno_t s_lno;
 	size_t len, s_cno, tlen;
 	int err, nb, type;
 	char *cmd, *t, buf[20];

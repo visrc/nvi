@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.38 1996/08/12 20:36:59 bostic Exp $ (Berkeley) $Date: 1996/08/12 20:36:59 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.39 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ ex_read(sp, cmdp)
 	FREF *frp;
 	GS *gp;
 	MARK rm;
-	recno_t nlines;
+	db_recno_t nlines;
 	size_t arglen;
 	int argc, rval;
 	char *p;
@@ -288,7 +288,7 @@ ex_read(sp, cmdp)
  * ex_readfp --
  *	Read lines into the file.
  *
- * PUBLIC: int ex_readfp __P((SCR *, char *, FILE *, MARK *, recno_t *, int));
+ * PUBLIC: int ex_readfp __P((SCR *, char *, FILE *, MARK *, db_recno_t *, int));
  */
 int
 ex_readfp(sp, name, fp, fm, nlinesp, silent)
@@ -296,12 +296,12 @@ ex_readfp(sp, name, fp, fm, nlinesp, silent)
 	char *name;
 	FILE *fp;
 	MARK *fm;
-	recno_t *nlinesp;
+	db_recno_t *nlinesp;
 	int silent;
 {
 	EX_PRIVATE *exp;
 	GS *gp;
-	recno_t lcnt, lno;
+	db_recno_t lcnt, lno;
 	size_t len;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
 	int nf, rval;

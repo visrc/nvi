@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_z.c,v 10.10 1996/03/06 19:52:59 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:59 $";
+static const char sccsid[] = "$Id: ex_z.c,v 10.11 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ ex_z(sp, cmdp)
 	EXCMD *cmdp;
 {
 	MARK abs;
-	recno_t cnt, equals, lno;
+	db_recno_t cnt, equals, lno;
 	int eofcheck;
 
 	NEEDFILE(sp, cmdp);

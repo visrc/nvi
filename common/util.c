@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.12 1996/12/11 13:03:14 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:03:14 $";
+static const char sccsid[] = "$Id: util.c,v 10.13 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,12 +70,12 @@ binc(sp, bp, bsizep, min)
  *	including or after the starting column.  On error, set
  *	the column to 0, it's safest.
  *
- * PUBLIC: int nonblank __P((SCR *, recno_t, size_t *));
+ * PUBLIC: int nonblank __P((SCR *, db_recno_t, size_t *));
  */
 int
 nonblank(sp, lno, cnop)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t *cnop;
 {
 	char *p;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.25 1996/12/05 14:20:28 bostic Exp $ (Berkeley) $Date: 1996/12/05 14:20:28 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.26 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,14 +31,14 @@ static const char sccsid[] = "$Id: ex_util.c,v 10.25 1996/12/05 14:20:28 bostic 
  * ex_cinit --
  *	Create an EX command structure.
  *
- * PUBLIC: void ex_cinit __P((SCR *, EXCMD *, int, int, recno_t, recno_t, int));
+ * PUBLIC: void ex_cinit __P((SCR *, EXCMD *, int, int, db_recno_t, db_recno_t, int));
  */
 void
 ex_cinit(sp, cmdp, cmd_id, naddr, lno1, lno2, force)
 	SCR *sp;
 	EXCMD *cmdp;
 	int cmd_id, force, naddr;
-	recno_t lno1, lno2;
+	db_recno_t lno1, lno2;
 {
 	memset(cmdp, 0, sizeof(EXCMD));
 	cmdp->cmd = &cmds[cmd_id];

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.14 1996/12/11 13:04:29 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:29 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.15 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -441,7 +441,7 @@ cscope_find(sp, cmdp, pattern)
 	FREF *frp;
 	TAGQ *rtqp, *tqp;
 	TAG *rtp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t cno, search;
 	int force, istmp, matches;
 
@@ -658,7 +658,7 @@ parse(sp, csc, tqp, matchesp)
 	int *matchesp;
 {
 	TAG *tp;
-	recno_t slno;
+	db_recno_t slno;
 	size_t dlen, nlen, slen;
 	int ch, i, isolder, nlines;
 	char *dname, *name, *search, *p, *t, dummy[2], buf[2048];
@@ -710,7 +710,7 @@ parse(sp, csc, tqp, matchesp)
 			case 1:			/* Context. */
 				break;
 			case 2:			/* Line number. */
-				slno = (recno_t)atol(t);
+				slno = (db_recno_t)atol(t);
 				break;
 			}
 		if (i != 3 || p == NULL || t == NULL)

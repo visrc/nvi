@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.30 1996/07/12 20:55:27 bostic Exp $ (Berkeley) $Date: 1996/07/12 20:55:27 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.31 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -287,7 +287,7 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch, silent)
 	struct stat sb;
 	GS *gp;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
-	recno_t fline, tline, lcnt;
+	db_recno_t fline, tline, lcnt;
 	size_t len;
 	int rval;
 	char *msg, *p;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_append.c,v 10.30 1996/10/23 09:30:52 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:30:52 $";
+static const char sccsid[] = "$Id: ex_append.c,v 10.31 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,7 +86,7 @@ ex_aci(sp, cmdp, cmd)
 	GS *gp;
 	TEXT *tp;
 	TEXTH tiq;
-	recno_t cnt, lno;
+	db_recno_t cnt, lno;
 	size_t len;
 	u_int32_t flags;
 	int need_newline;

@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.27 1996/12/05 12:27:30 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:30 $";
+static const char sccsid[] = "$Id: api.c,v 8.28 2000/04/21 19:00:32 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,12 +72,12 @@ api_fscreen(id, name)
  * api_aline --
  *	Append a line.
  *
- * PUBLIC: int api_aline __P((SCR *, recno_t, char *, size_t));
+ * PUBLIC: int api_aline __P((SCR *, db_recno_t, char *, size_t));
  */
 int
 api_aline(sp, lno, line, len)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	char *line;
 	size_t len;
 {
@@ -88,12 +88,12 @@ api_aline(sp, lno, line, len)
  * api_dline --
  *	Delete a line.
  *
- * PUBLIC: int api_dline __P((SCR *, recno_t));
+ * PUBLIC: int api_dline __P((SCR *, db_recno_t));
  */
 int
 api_dline(sp, lno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 {
 	return (db_delete(sp, lno));
 }
@@ -102,12 +102,12 @@ api_dline(sp, lno)
  * api_gline --
  *	Get a line.
  *
- * PUBLIC: int api_gline __P((SCR *, recno_t, char **, size_t *));
+ * PUBLIC: int api_gline __P((SCR *, db_recno_t, char **, size_t *));
  */
 int
 api_gline(sp, lno, linepp, lenp)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	char **linepp;
 	size_t *lenp;
 {
@@ -125,12 +125,12 @@ api_gline(sp, lno, linepp, lenp)
  * api_iline --
  *	Insert a line.
  *
- * PUBLIC: int api_iline __P((SCR *, recno_t, char *, size_t));
+ * PUBLIC: int api_iline __P((SCR *, db_recno_t, char *, size_t));
  */
 int
 api_iline(sp, lno, line, len)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	char *line;
 	size_t len;
 {
@@ -141,12 +141,12 @@ api_iline(sp, lno, line, len)
  * api_lline --
  *	Return the line number of the last line in the file.
  *
- * PUBLIC: int api_lline __P((SCR *, recno_t *));
+ * PUBLIC: int api_lline __P((SCR *, db_recno_t *));
  */
 int
 api_lline(sp, lnop)
 	SCR *sp;
-	recno_t *lnop;
+	db_recno_t *lnop;
 {
 	return (db_last(sp, lnop));
 }
@@ -155,12 +155,12 @@ api_lline(sp, lnop)
  * api_sline --
  *	Set a line.
  *
- * PUBLIC: int api_sline __P((SCR *, recno_t, char *, size_t));
+ * PUBLIC: int api_sline __P((SCR *, db_recno_t, char *, size_t));
  */
 int
 api_sline(sp, lno, line, len)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	char *line;
 	size_t len;
 {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ulcase.c,v 10.7 1996/03/06 19:54:45 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:45 $";
+static const char sccsid[] = "$Id: v_ulcase.c,v 10.8 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ static const char sccsid[] = "$Id: v_ulcase.c,v 10.7 1996/03/06 19:54:45 bostic 
 #include "../common/common.h"
 #include "vi.h"
 
-static int ulcase __P((SCR *, recno_t, CHAR_T *, size_t, size_t, size_t));
+static int ulcase __P((SCR *, db_recno_t, CHAR_T *, size_t, size_t, size_t));
 
 /*
  * v_ulcase -- [count]~
@@ -51,7 +51,7 @@ v_ulcase(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	recno_t lno;
+	db_recno_t lno;
 	size_t cno, lcnt, len;
 	u_long cnt;
 	char *p;
@@ -113,7 +113,7 @@ v_mulcase(sp, vp)
 {
 	CHAR_T *p;
 	size_t len;
-	recno_t lno;
+	db_recno_t lno;
 
 	for (lno = vp->m_start.lno;;) {
 		if (db_get(sp, lno, DBG_FATAL, &p, &len))
@@ -147,7 +147,7 @@ v_mulcase(sp, vp)
 static int
 ulcase(sp, lno, lp, len, scno, ecno)
 	SCR *sp;
-	recno_t lno;
+	db_recno_t lno;
 	CHAR_T *lp;
 	size_t len, scno, ecno;
 {

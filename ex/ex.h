@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.25 1996/12/18 10:28:33 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:33 $
+ *	$Id: ex.h,v 10.26 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -65,7 +65,7 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
 typedef struct _range RANGE;
 struct _range {				/* Global command range. */
 	CIRCLEQ_ENTRY(_range) q;	/* Linked list of ranges. */
-	recno_t start, stop;		/* Start/stop of the range. */
+	db_recno_t start, stop;		/* Start/stop of the range. */
 };
 
 /* Ex command structure. */
@@ -73,7 +73,7 @@ struct _excmd {
 	LIST_ENTRY(_excmd) q;		/* Linked list of commands. */
 
 	char	 *if_name;		/* Associated file. */
-	recno_t	  if_lno;		/* Associated line number. */
+	db_recno_t	  if_lno;		/* Associated line number. */
 
 	/* Clear the structure for the ex parser. */
 #define	CLEAR_EX_PARSER(cmdp)						\
@@ -90,7 +90,7 @@ struct _excmd {
 	EXCMDLIST rcmd;			/* Command: table entry/replacement. */
 
 	CIRCLEQ_HEAD(_rh, _range) rq;	/* @/global range: linked list. */
-	recno_t   range_lno;		/* @/global range: set line number. */
+	db_recno_t   range_lno;		/* @/global range: set line number. */
 	char	 *o_cp;			/* Original @/global command. */
 	size_t	  o_clen;		/* Original @/global command length. */
 #define	AGV_AT		0x01		/* @ buffer execution. */
@@ -109,7 +109,7 @@ struct _excmd {
 }
 
 	CHAR_T	  buffer;		/* Command: named buffer. */
-	recno_t	  lineno;		/* Command: line number. */
+	db_recno_t	  lineno;		/* Command: line number. */
 	long	  count;		/* Command: signed count. */
 	long	  flagoff;		/* Command: signed flag offset. */
 	int	  addrcnt;		/* Command: addresses (0, 1 or 2). */

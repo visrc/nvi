@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.27 1996/12/17 14:50:10 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:10 $";
+static const char sccsid[] = "$Id: search.c,v 10.28 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ search_init(sp, dir, ptrn, plen, epp, flags)
 	size_t plen;
 	u_int flags;
 {
-	recno_t lno;
+	db_recno_t lno;
 	int delim;
 	char *p, *t;
 
@@ -149,7 +149,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 	u_int flags;
 {
 	busy_t btype;
-	recno_t lno;
+	db_recno_t lno;
 	regmatch_t match[1];
 	size_t coff, len;
 	int cnt, eval, rval, wrapped;
@@ -297,7 +297,7 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 	u_int flags;
 {
 	busy_t btype;
-	recno_t lno;
+	db_recno_t lno;
 	regmatch_t match[1];
 	size_t coff, last, len;
 	int cnt, eval, rval, wrapped;

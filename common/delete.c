@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: delete.c,v 10.12 1996/10/23 09:30:49 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:30:49 $";
+static const char sccsid[] = "$Id: delete.c,v 10.13 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ del(sp, fm, tm, lmode)
 	MARK *fm, *tm;
 	int lmode;
 {
-	recno_t lno;
+	db_recno_t lno;
 	size_t blen, len, nlen, tlen;
 	char *bp, *p;
 	int eof, rval;

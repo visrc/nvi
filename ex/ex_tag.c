@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.40 1997/08/03 15:37:27 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:37:27 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.41 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -105,7 +105,7 @@ ex_tag_push(sp, cmdp)
 	FREF *frp;
 	TAG *rtp;
 	TAGQ *rtqp, *tqp;
-	recno_t lno;
+	db_recno_t lno;
 	size_t cno;
 	long tl;
 	int force, istmp;

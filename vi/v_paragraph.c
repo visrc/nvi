@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_paragraph.c,v 10.7 1996/03/06 19:54:26 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:26 $";
+static const char sccsid[] = "$Id: v_paragraph.c,v 10.8 2000/04/21 19:00:40 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ v_paragraphf(sp, vp)
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t lastlen, len;
-	recno_t cnt, lastlno, lno;
+	db_recno_t cnt, lastlno, lno;
 	int isempty;
 	char *p, *lp;
 
@@ -209,7 +209,7 @@ v_paragraphb(sp, vp)
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t len;
-	recno_t cnt, lno;
+	db_recno_t cnt, lno;
 	char *p, *lp;
 
 	/*

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.23 1997/04/12 17:18:58 bostic Exp $ (Berkeley) $Date: 1997/04/12 17:18:58 $
+ *	$Id: vi.h,v 10.24 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $
  */
 
 /* Definition of a vi "word". */
@@ -149,7 +149,7 @@ extern VIKEYS const tmotion;		/* XXX Hacked ~ command. */
 
 /* Character stream structure, prototypes. */
 typedef struct _vcs {
-	recno_t	 cs_lno;		/* Line. */
+	db_recno_t	 cs_lno;		/* Line. */
 	size_t	 cs_cno;		/* Column. */
 	CHAR_T	*cs_bp;			/* Buffer. */
 	size_t	 cs_len;		/* Length. */
@@ -197,7 +197,7 @@ int	cs_prev __P((SCR *, VCS *));
  * by the user set value O_SIDESCROLL.
  */
 typedef struct _smap {
-	recno_t  lno;		/* 1-N: Physical file line number. */
+	db_recno_t  lno;		/* 1-N: Physical file line number. */
 	size_t	 coff;		/* 0-N: Column offset in the line. */
 	size_t	 soff;		/* 1-N: Screen offset in the line. */
 
@@ -271,7 +271,7 @@ typedef struct _vi_private {
 	 * One extra slot is always allocated for the map so that we can use
 	 * it to do vi :colon command input; see v_tcmd().
 	 */
-	recno_t	sv_tm_lno;	/* tcmd: saved TMAP lno field. */
+	db_recno_t	sv_tm_lno;	/* tcmd: saved TMAP lno field. */
 	size_t	sv_tm_coff;	/* tcmd: saved TMAP coff field. */
 	size_t	sv_tm_soff;	/* tcmd: saved TMAP soff field. */
 	size_t	sv_t_maxrows;	/* tcmd: saved t_maxrows. */
@@ -291,12 +291,12 @@ typedef struct _vi_private {
 #define	_TMAP(sp)	(VIP(sp)->t_smap)
 #define	TMAP		_TMAP(sp)
 
-	recno_t	ss_lno;	/* 1-N: vi_opt_screens cached line number. */
+	db_recno_t	ss_lno;	/* 1-N: vi_opt_screens cached line number. */
 	size_t	ss_screens;	/* vi_opt_screens cached return value. */
 #define	VI_SCR_CFLUSH(vip)	vip->ss_lno = OOBLNO
 
 	size_t	srows;		/* 1-N: rows in the terminal/window. */
-	recno_t	olno;		/* 1-N: old cursor file line. */
+	db_recno_t	olno;		/* 1-N: old cursor file line. */
 	size_t	ocno;		/* 0-N: old file cursor column. */
 	size_t	sc_col;		/* 0-N: LOGICAL screen column. */
 	SMAP   *sc_smap;	/* SMAP entry where sc_col occurs. */
