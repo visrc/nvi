@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.55 1994/05/18 18:52:30 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:52:30 $";
+static char sccsid[] = "$Id: recover.c,v 8.56 1994/05/18 19:59:59 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:59:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -355,10 +355,9 @@ nolock:			msgq(sp, M_SYSERR, "Unable to lock recovery file");
 		(void)fprintf(fp, " (%s)", t);
 	(void)fprintf(fp, "\n%s%s%s\n",
 	    "on the machine ", host, ", when it was saved for\nrecovery.");
-	(void)fprintf(fp, "\n%s\n%s\n%s\n\n",
+	(void)fprintf(fp, "\n%s\n%s\n\n",
 	    "You can recover most, if not all, of the changes",
-	    "to this file using the -l and -r options to nvi(1)",
-	    "or nex(1).");
+	    "to this file using the -r option to nex or nvi.");
 
 	if (ferror(fp) || fclose(fp)) {
 		msgq(sp, M_SYSERR, NULL);
