@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.22 1992/11/06 20:06:28 bostic Exp $ (Berkeley) $Date: 1992/11/06 20:06:28 $
+ *	$Id: vi.h,v 5.23 1992/11/11 18:27:16 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:27:16 $
  */
 
 #include "exf.h"
@@ -106,6 +106,7 @@ int	v_chrrepeat __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_chT __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_cht __P((VICMDARG *, MARK *, MARK *, MARK *));
 enum confirmation v_confirm __P((EXF *, MARK *, MARK *));
+void	v_comment __P((EXF *));
 int	v_Delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_dollar __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -175,6 +176,7 @@ int	v_switch __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_tagpop __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_tagpush __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ulcase __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_Undo __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_undo __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_up __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordB __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -189,11 +191,3 @@ int	v_Yank __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_yank __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_z __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_zero __P((VICMDARG *, MARK *, MARK *, MARK *));
-
-#ifndef VIROUTINE
-MARK	*v_undoline __P((MARK *));
-void	 v_undosave __P((MARK *));
-#else
-int	 v_undoline();
-void	 v_undosave();
-#endif

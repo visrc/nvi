@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.30 1992/11/07 13:42:54 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:42:54 $";
+static char sccsid[] = "$Id: vi.c,v 5.31 1992/11/11 18:27:04 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:27:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@ static char sccsid[] = "$Id: vi.c,v 5.30 1992/11/07 13:42:54 bostic Exp $ (Berke
 
 #include "vi.h"
 #include "vcmd.h"
+#include "log.h"
 #include "options.h"
 #include "screen.h"
 #include "term.h"
@@ -129,6 +130,9 @@ err:		if (msgcnt) {
 			scr_modeline(curf, 1);
 			refresh();
 		}
+
+		/* Log the start of an action. */
+		(void)log_cursor(curf);
 
 		/* Call the function, update the cursor. */
 		if ((vp->kp->func)(vp, &fm, &tm, &m))
