@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.39 1993/02/12 11:11:13 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:11:13 $";
+static char sccsid[] = "$Id: exf.c,v 5.40 1993/02/12 11:25:25 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:25:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -231,12 +231,8 @@ file_start(ep)
 		 * that doesn't work, unlink the file now, and the user just
 		 * won't be able to access the file outside of vi.
 		 */
-		if ((ep->tname = malloc(ep->nlen)) == NULL)
+		if ((ep->tname = strdup(tname)) == NULL)
 			(void)unlink(tname);
-		else {
-			memmove(ep->tname, tname, ep->nlen);
-			FF_SET(ep, F_TMPFILE);
-		}
 		openname = tname;
 	} else
 		openname = ep->name;
@@ -304,8 +300,10 @@ file_stop(ep, force)
 	log_end(ep);
 
 	/* Unlink any temporary file, ignore any error. */
-	if (FF_ISSET(ep, F_TMPFILE) && unlink(ep->tname))
-		msg("%s: remove: %s", ep->name, strerror(errno));
+	if (ep->tname != NULL && unlink(ep->tname)) {
+		msg("%s: remove: %s", ep->tname, strerror(errno));
+		free(ep->tname);
+	}
 
 	/* Only a few bits are retained between edit instances. */
 	ep->flags &= F_RETAINMASK;
