@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.8 1995/09/23 19:42:41 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:42:41 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.9 1995/09/25 07:59:49 bostic Exp $ (Berkeley) $Date: 1995/09/25 07:59:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1756,7 +1756,7 @@ nothex:		tp->lb[sp->cno] = savec;
  *	Handle ^T indents, ^D outdents.
  *
  * If anything changes here, check the ex version to see if it needs similar
- * changes.  It's in ex/ex_txt_ev.c:txt_dent().
+ * changes.
  */
 static int
 txt_dent(sp, tp, isindent)
@@ -1940,9 +1940,8 @@ txt_showmatch(sp)
 	gp = sp->gp;
 
 	/*
-	 * Do a refresh first, in case the v_ntext() code hasn't done
-	 * one in awhile, so the user can see what we're complaining
-	 * about.
+	 * Do a refresh first, in case we haven't done one in awhile,
+	 * so the user can see what we're complaining about.
 	 */
 	if (vs_refresh(sp))
 		return (1);
