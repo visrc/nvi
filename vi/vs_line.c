@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.25 2000/07/19 17:05:19 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:19 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.26 2000/07/20 19:21:54 skimo Exp $ (Berkeley) $Date: 2000/07/20 19:21:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -258,7 +258,7 @@ empty:					(void)gp->scr_addstr(sp,
 	/* Do it the hard way, for leftright scrolling screens. */
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		for (; offset_in_line < len; ++offset_in_line) {
-			chlen = (ch = *(u_char *)p++) == '\t' && !list_tab ?
+			chlen = (ch = *(UCHAR_T *)p++) == '\t' && !list_tab ?
 			    TAB_OFF(scno) : KEY_COL(sp, ch);
 			if ((scno += chlen) >= skip_cols)
 				break;
@@ -282,7 +282,7 @@ empty:					(void)gp->scr_addstr(sp,
 	/* Do it the hard way, for historic line-folding screens. */
 	else {
 		for (; offset_in_line < len; ++offset_in_line) {
-			chlen = (ch = *(u_char *)p++) == '\t' && !list_tab ?
+			chlen = (ch = *(UCHAR_T *)p++) == '\t' && !list_tab ?
 			    TAB_OFF(scno) : KEY_COL(sp, ch);
 			if ((scno += chlen) < cols_per_screen)
 				continue;
@@ -362,6 +362,10 @@ display:
 					is_partial = 1;
 			}
 			smp->c_eboff = offset_in_line;
+
+			/* don't display half a wide character */
+			if (is_partial && CHAR_WIDTH(sp, ch) > 1)
+				break;
 
 			/* Terminate the loop. */
 			offset_in_line = len;
