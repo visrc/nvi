@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.21 1992/05/07 12:47:34 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:34 $";
+static char sccsid[] = "$Id: key.c,v 5.22 1992/05/15 11:05:41 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:05:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,6 +88,7 @@ gb_inc()
 	if ((cb = realloc(cb, cblen)) == NULL ||
 	    (qb = realloc(qb, cblen)) == NULL ||
 	    (wb = realloc(wb, cblen)) == NULL) {
+			bell();
 			msg("Input too long: %s.", strerror(errno));
 			if (cb)
 				free(cb);
@@ -106,9 +107,10 @@ gb_inc()
  * gb --
  *	Fill a buffer from the terminal.
  */
-char *
-gb(prompt, lenp, flags)
+int
+gb(prompt, storep, lenp, flags)
 	int prompt;
+	char **storep;
 	size_t *lenp;
 	u_int flags;
 	
@@ -136,7 +138,7 @@ gb(prompt, lenp, flags)
 	p = flags & GB_OFF ? cb + 1 : cb;
 	for (len = quoted = 0;;) {
 		if (len >= cblen && gb_inc())
-			return (NULL);
+			return (1);
 			
 		ch = getkey(quoted ? 0 : WHEN_EX);
 
@@ -159,7 +161,7 @@ gb(prompt, lenp, flags)
 			if (flags & GB_NL) {
 				*p++ = '\n';
 				if (len >= cblen && gb_inc())
-					return (NULL);
+					return (1);
 			}
 			if (flags & GB_NLECHO) {
 				(void)putchar('\n');
@@ -168,8 +170,10 @@ gb(prompt, lenp, flags)
 			goto done;
 		case K_VERASE:
 			if (!len) {
-				if (flags & GB_BS)
-					return (NULL);
+				if (flags & GB_BS) {
+					*storep = NULL;
+					return (0);
+				}
 				break;
 			}
 			--len;
@@ -197,8 +201,13 @@ gb(prompt, lenp, flags)
 			quoted = 1;
 			break;
 		case K_VWERASE:
-			if (!len)
+			if (!len) {
+				if (flags & GB_BS) {
+					*storep = NULL;
+					return (0);
+				}
 				break;
+			}
 			while (len && isspace(*--p))
 				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
 					(void)printf("\b \b");
@@ -252,7 +261,8 @@ insch:			if (quoted) {
 done:	*p = '\0';
 	if (lenp)
 		*lenp = p - cb;
-	return (cb);
+	*storep = cb;
+	return (0);
 }
 
 /*
