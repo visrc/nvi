@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.55 1994/05/02 15:37:18 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:37:18 $";
+static char sccsid[] = "$Id: util.c,v 8.56 1994/05/02 15:38:19 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:38:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -553,10 +553,10 @@ baud_from_bval(sp)
 	/*
 	 * XXX
 	 * There's no portable way to get a "baud rate" -- cfgetospeed(3)
-	 * returns the value associated with some #define, which we never
-	 * have heard of, or which may be a purely local speed.  Vi only
-	 * cares if it's SLOW (w300), slow (w1200) or fast (w9600).  Just
-	 * try and detect the slow ones, and default to fast.
+	 * returns the value associated with some #define, which we may
+	 * never have heard of, or which may be a purely local speed.  Vi
+	 * only cares if it's SLOW (w300), slow (w1200) or fast (w9600).
+	 * Try and detect the slow ones, and default to fast.
 	 */
 	switch (cfgetospeed(&sp->gp->original_termios)) {
 	case B50:
