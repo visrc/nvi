@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 9.1 1994/11/09 18:36:35 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:35 $";
+static char sccsid[] = "$Id: v_yank.c,v 9.2 1994/11/12 11:21:33 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:21:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,8 @@ static char sccsid[] = "$Id: v_yank.c,v 9.1 1994/11/09 18:36:35 bostic Exp $ (Be
 #include "vcmd.h"
 
 /*
- * v_yank -- [buffer][count]Y
- * 	     [buffer][count]y[count][motion]
+ * v_yank -- [buffer][count]y[count][motion]
+ *	     [buffer][count]Y
  *	Yank text (or lines of text) into a cut buffer.
  *
  * !!!
