@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.4 1992/04/28 17:39:08 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:39:08 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.5 1992/05/02 09:32:48 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:32:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ v_ex()
 	char *p;
 
 	v_startex();
-	for (flags = 0;; flags = GB_NLECHO) {
+	for (flags = GB_BS;; flags |= GB_NLECHO) {
 		/*
 		 * Get an ex command; echo the newline on any prompts after
 		 * the first.  We may have to overwrite the command later;
@@ -81,6 +81,8 @@ v_ex()
 	return (cursor);
 }
 
+static u_long oldy, oldx;
+
 void
 v_startex()
 {
@@ -93,6 +95,7 @@ v_startex()
 	 * This doesn't work yet; curses needs a line oriented semantic
 	 * to force writing regardless of differences.
 	 */
+	getyx(stdscr, oldy, oldx);
 	move(LINES - 1, 0);
 	clrtoeol();
 	refresh();
@@ -121,14 +124,9 @@ v_startex()
 void
 v_leaveex()
 {
-	/* Restart the curses window; don't repaint, lines may have changed. */
-	restartwin(0);
+	/* Restart the curses window, repainting if necessary. */
+	restartwin(ex_prstate == PR_PRINTED);
 
-	/*
-	 * If the screen has been touched, repaint.
- 	 * XXX
-	 * Should check for line changes as well?
-	 */
-	if (ex_prstate == PR_PRINTED)
-		scr_redraw(1);
+	/* Return to the last cursor position. */
+	move(oldy, oldx);
 }
