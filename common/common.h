@@ -4,13 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.59 1993/05/16 10:31:37 bostic Exp $ (Berkeley) $Date: 1993/05/16 10:31:37 $
+ *	$Id: common.h,v 5.60 1993/05/16 11:08:16 bostic Exp $ (Berkeley) $Date: 1993/05/16 11:08:16 $
  */
 
 					/* Ordered before local includes. */
 #include <limits.h>			/* Required by screen.h. */
 #include <regex.h>			/* Required by screen.h. */
-#include <signal.h>			/* Required by hdr.h. */
 #include <stdio.h>			/* Required by screen.h. */
 					/* Last, includes compat.h. */
 #include <db.h>				/* Required by exf.h. */
