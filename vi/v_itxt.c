@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.44 1993/05/10 22:37:45 bostic Exp $ (Berkeley) $Date: 1993/05/10 22:37:45 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.45 1993/05/12 09:15:31 bostic Exp $ (Berkeley) $Date: 1993/05/12 09:15:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -382,46 +382,52 @@ v_change(sp, ep, vp, fm, tm, rp)
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	lmode = F_ISSET(vp, VC_LMODE);
-
-	/* Cut the line. */
-	if (cut(sp, ep, VICB(vp), fm, tm, lmode))
-		return (1);
 
 	/*
-	 * If the movement is inside the line, edit the line.  Otherwise,
-	 * delete the range, insert a new line and go into insert mode.
+	 * Move the cursor to the start of the change.  Note, the cc command
+	 * in line mode changes from the first *non-blank* character of the
+	 * line, not the first character.  And, to make it just a bit more
+	 * exciting, the initial space is handled as auto-indent characters.
 	 */
-	if (fm->lno == tm->lno ||
-	    fm->lno + 1 == tm->lno && tm->cno == 0) {
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
+	if (lmode = F_ISSET(vp, VC_LMODE)) {
+		if (nonblank(sp, ep, fm->lno, &fm->cno))
+			return (1);
+		LF_SET(TXT_AICHARS);
+	}
+	sp->lno = fm->lno;
+	sp->cno = fm->cno;
+
+	if (fm->lno == tm->lno)
+		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL ||
+		    len == 0) {
+			if (p == NULL && file_lline(sp, ep) != 0) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
 			LF_SET(TXT_APPENDEOL);
 			len = 0;
-		} else
+		} else {
+			if (cut(sp, ep, VICB(vp), fm, tm, lmode))
+				return (1);
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
-	} else {
-
-		/* Insert a line while we still can... */
-		if (file_iline(sp, ep, fm->lno, "", 0))
+		}
+	else {
+		if (cut(sp, ep, VICB(vp), fm, tm, lmode))
 			return (1);
 
+		/* Delete all but the first line. */
 		++fm->lno;
-		++tm->lno;
 		if (delete(sp, ep, fm, tm, lmode))
 			return (1);
-		if ((p = file_gline(sp, ep, --fm->lno, &len)) == NULL) {
+		--fm->lno;
+		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
 
-		sp->lno = fm->lno;
-		sp->cno = 0;
-
 		tm = NULL;
+		len = fm->cno;		/* Truncate the first line. */
+		LF_SET(TXT_APPENDEOL);
 	}
 	return (v_ntext(sp, ep,
 	    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
