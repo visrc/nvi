@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.10 1994/01/11 22:17:14 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:17:14 $
+ *	$Id: cut.h,v 8.11 1994/01/11 23:10:01 bostic Exp $ (Berkeley) $Date: 1994/01/11 23:10:01 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -45,10 +45,11 @@ struct _text {				/* Text: a linked list of lines. */
  * Translate upper-case buffer names to lower-case buffer names.
  */
 #define	CBNAME(sp, cbp, name) {						\
-	name = isupper(name) ? tolower(name) : (name);			\
+	CHAR_T __name;							\
+	__name = isupper(name) ? tolower(name) : (name);		\
 	for (cbp = sp->gp->cutq.lh_first;				\
 	    cbp != NULL; cbp = cbp->q.le_next)				\
-		if (cbp->name == name)					\
+		if (cbp->name == __name)				\
 			break;						\
 }
 
