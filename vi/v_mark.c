@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 8.4 1994/02/26 17:19:49 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:49 $";
+static char sccsid[] = "$Id: v_mark.c,v 8.5 1994/03/04 18:03:53 bostic Exp $ (Berkeley) $Date: 1994/03/04 18:03:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,17 +76,17 @@ mark(sp, ep, vp, dir)
 	if (mark_get(sp, ep, vp->character, &vp->m_stop))
 		return (1);
 
+	/* Forward marks move to the first non-blank. */
+	if (dir == FORWARD) {
+		vp->m_stop.cno = 0;
+		if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+			return (1);
+	}
+
 	/* Non-motion commands move to the end of the range. */
 	if (!ISMOTION(vp)) {
 		vp->m_final = vp->m_stop;
 		return (0);
-	}
-
-	if (dir == FORWARD) {
-		/* Move to the first non-blank. */
-		vp->m_stop.cno = 0;
-		if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
-			return (1);
 	}
 
 	/*
