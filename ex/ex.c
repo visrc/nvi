@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.39 1992/11/01 13:50:13 bostic Exp $ (Berkeley) $Date: 1992/11/01 13:50:13 $";
+static char sccsid[] = "$Id: ex.c,v 5.40 1992/11/01 22:49:35 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:49:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -673,8 +673,8 @@ linespec(cmd, cp)
 		case '/':		/* Search forward. */
 			sm.lno = curf->lno;
 			sm.cno = curf->cno;
-			if ((mp =
-			    f_search(&sm, cmd, &ep, SEARCH_PARSE)) == NULL)
+			if ((mp = f_search(curf,
+			    &sm, cmd, &ep, SEARCH_PARSE)) == NULL)
 				return (NULL);
 			curf->lno = mp->lno;
 			curf->cno = mp->cno;
@@ -683,8 +683,8 @@ linespec(cmd, cp)
 		case '?':		/* Search backward. */
 			sm.lno = curf->lno;
 			sm.cno = curf->cno;
-			if ((mp =
-			    b_search(&sm, cmd, &ep, SEARCH_PARSE)) == NULL)
+			if ((mp = b_search(curf,
+			    &sm, cmd, &ep, SEARCH_PARSE)) == NULL)
 				return (NULL);
 			curf->lno = mp->lno;
 			curf->cno = mp->cno;
