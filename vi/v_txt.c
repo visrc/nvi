@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.117 1994/07/15 16:15:24 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:15:24 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.118 1994/07/17 13:50:30 bostic Exp $ (Berkeley) $Date: 1994/07/17 13:50:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -857,9 +857,16 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (txt_indent(sp, tp))
 				goto err;
 			goto ebuf_chk;
+#ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_SUSPEND
 		case K_CNTRLZ:
+			/*
+			 * XXX
+			 * Note, historically suspend triggered an autowrite.
+			 * That needs to be done to make this work correctly.
+			 */
 			(void)sp->s_suspend(sp);
 			break;
+#endif
 #ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_REPAINT
 		case K_FORMFEED:
 			F_SET(sp, S_REFRESH);
