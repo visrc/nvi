@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.7 1996/12/11 20:57:03 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:57:03 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.8 1996/12/16 09:41:30 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:41:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ vi_run(argc, argv, ip, op, pidp)
 			break;
 		}
 		if (!strcmp(*t_av, "--")) {
-			while ((*p_av++ = *t_av++) != NULL);
+			while ((*p_av++ = *++t_av) != NULL);
 			break;
 		}
 #ifdef DEBUG
