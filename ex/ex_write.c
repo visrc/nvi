@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.23 1994/03/14 10:40:42 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:40:42 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.24 1994/03/22 21:01:31 bostic Exp $ (Berkeley) $Date: 1994/03/22 21:01:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,10 +207,11 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	MARK *fm, *tm;
 	u_long *nlno, *nch;
 {
-	register u_long ccnt, fline, tline;
 	struct stat sb;
-	int sv_errno;
+	u_long ccnt;			/* XXX: can't print off_t portably. */
+	recno_t fline, tline, lcnt;
 	size_t len;
+	int sv_errno, teardown;
 	char *p;
 
 	fline = fm->lno;
@@ -220,7 +221,6 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 		*nch = 0;
 		*nlno = 0;
 	}
-	ccnt = 0;
 
 	/*
 	 * The vi filter code has multiple processes running simultaneously,
@@ -237,11 +237,22 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	 *
 	 * "Alex, I'll take vi trivia for $1000."
 	 */
-	if (tline != 0)
-		for (; fline <= tline; ++fline) {
+	ccnt = 0;
+	lcnt = 0;
+	if (tline != 0) {
+		busy_on(sp, 1, "Writing...");
+		teardown = !intr_init(sp);
+		for (; fline <= tline; ++fline, ++lcnt) {
+			if (F_ISSET(sp, S_INTERRUPTED)) {
+				msgq(sp, M_INFO, "Interrupted.");
+				break;
+			}
 			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
 				break;
 			if (fwrite(p, 1, len, fp) != len) {
+				busy_off(sp);
+				if (teardown)
+					intr_end(sp);
 				msgq(sp, M_SYSERR, name);
 				(void)fclose(fp);
 				return (1);
@@ -251,6 +262,10 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 				break;
 			++ccnt;
 		}
+		busy_off(sp);
+		if (teardown)
+			intr_end(sp);
+	}
 
 	/* If it's a regular file, sync it so that NFS is forced to flush. */
 	if (!fstat(fileno(fp), &sb) &&
@@ -264,7 +279,7 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 		goto err;
 	if (nlno != NULL) {
 		*nch = ccnt;
-		*nlno = tm->lno == 0 ? 0 : tm->lno - fm->lno + 1;
+		*nlno = lcnt;
 	}
 	return (0);
 
