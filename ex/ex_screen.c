@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 10.4 1995/06/09 12:51:49 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:49 $";
+static char sccsid[] = "$Id: ex_screen.c,v 10.5 1995/06/23 19:22:08 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:22:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,15 +114,15 @@ ex_sdisplay(sp)
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)ex_puts(sp, "\n");
+			(void)ex_printf(sp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)ex_puts(sp, " ");
+			(void)ex_printf(sp, " ");
 		}
-		(void)ex_puts(sp, tsp->frp->name);
+		(void)ex_printf(sp, "%s", tsp->frp->name);
 		++cnt;
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_puts(sp, "\n");
+		(void)ex_printf(sp, "\n");
 	return (0);
 }
