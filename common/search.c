@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.17 1993/09/30 11:22:50 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:22:50 $";
+static char sccsid[] = "$Id: search.c,v 8.18 1993/10/04 15:58:25 bostic Exp $ (Berkeley) $Date: 1993/10/04 15:58:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,7 +127,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	} else if (LF_ISSET(SEARCH_TAG)) {
 		if (ctag_conv(sp, &ptrn, &replaced))
 			return (1);
-		re_flags &= ~REG_EXTENDED;
+		re_flags &= ~(REG_EXTENDED | REG_ICASE);
 	}
 
 	/* Compile the RE. */
