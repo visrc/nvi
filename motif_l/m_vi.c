@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.33 1996/12/18 10:26:15 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:15 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.34 1997/04/13 10:28:26 bostic Exp $ (Berkeley) $Date: 1997/04/13 10:28:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -282,7 +282,7 @@ vi_input_func(client_data, source, id)
     switch (nr = read( *source, bp + len, blen - len)) {
     case 0:
 #ifdef TRACE
-	    vtrace("vi_input_func:  empty input from vi\n");
+	    vtrace("vi_input_func: empty input from vi\n");
 #endif
 	    return;
     case -1:
@@ -652,9 +652,9 @@ Widget	w;
  */
 static	void
 command(widget, event, str, cardinal)
-	Widget widget; 
+	Widget widget;
 	XKeyEvent *event; 
-	String *str;    
+	String *str;  
 	Cardinal *cardinal;
 {
 	static struct {
@@ -708,7 +708,7 @@ static	void	insert_string( Widget widget,
 static	void	insert_string( widget, event, str, cardinal )
 Widget          widget; 
 XKeyEvent       *event; 
-String          *str;    
+String          *str;  
 Cardinal        *cardinal;
 #endif
 {
@@ -738,7 +738,7 @@ static	void	key_press( Widget widget,
 static	void	key_press( widget, event, str, cardinal )
 Widget          widget; 
 XKeyEvent       *event; 
-String          str;    
+String          str;  
 Cardinal        *cardinal;
 #endif
 {
@@ -834,7 +834,7 @@ static	xvi_screen	*create_screen( parent, rows, cols )
     resize_backing_store( new_screen );
 
     /* set up a translation table for the X toolkit */
-    if ( area_trans == NULL )   
+    if ( area_trans == NULL ) 
 	area_trans = XtParseTranslationTable(areaTrans);
 
     /* future, new screen gets inserted into the parent sash
@@ -1220,7 +1220,7 @@ static	void	select_start( Widget widget,
 			      )
 #else
 static	void	select_start( widget, event, str, cardinal )
-Widget		widget;     
+Widget		widget;   
 XEvent		*event;
 String		str; 
 Cardinal        *cardinal;
@@ -1282,7 +1282,7 @@ static	void	select_extend( Widget widget,
 			       )
 #else
 static	void	select_extend( widget, event, str, cardinal )
-Widget		widget;     
+Widget		widget;   
 XEvent		*event;
 String		str; 
 Cardinal        *cardinal;
@@ -1342,7 +1342,7 @@ static	void	select_paste( Widget widget,
 			      )
 #else
 static	void	select_paste( widget, event, str, cardinal )
-Widget		widget;     
+Widget		widget;   
 XEvent		*event;
 String		str; 
 Cardinal        *cardinal;
