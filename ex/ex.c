@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.70 1993/12/02 16:28:22 bostic Exp $ (Berkeley) $Date: 1993/12/02 16:28:22 $";
+static char sccsid[] = "$Id: ex.c,v 8.71 1993/12/02 19:29:34 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:29:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -383,37 +383,40 @@ loop:	if (nl) {
 	 * look for all the possible terminations.  There are three exciting
 	 * special cases:
 	 *
-	 * 1: The bang the filter versions of the read and write commands are
-	 *    delimited by newlines (they can contain shell pipes).
-	 * 2: The ex/edit and visual in vi mode commands take ex commands
-	 *    as arguments.
-	 * 3: The global/vglobal/substitute commands take RE's as their
-	 *    first argument, and want it to be specially delimited.
+	 * 1: The bang, global, vglobal and the filter versions of the read and
+	 *    write commands are delimited by newlines (they can contain shell
+	 *    pipes).
+	 * 2: The ex, edit and visual in vi mode commands take ex commands as
+	 *    their first arguments.
+	 * 3: The substitute command takes an RE as its first argument, and
+	 *    wants it to be specially delimited.
 	 *
 	 * Historically, '|' characters in the first argument of the ex, edit,
-	 * global, vglobal and substitute commands did not delimit the command.
-	 * And, in the filter cases for read and write, they did not delimit
-	 * the command at all.
+	 * and substitute commands did not delimit the command.  And, in the
+	 * filter cases for read and write, and the bang, global and vglobal
+	 * commands, they did not delimit the command at all.
 	 *
 	 * For example, the following commands were legal:
 	 *
 	 *	:edit +25|s/abc/ABC/ file.c
 	 *	:substitute s/|/PIPE/
 	 *	:read !spell % | columnate
+	 *	:global/pattern/p|l
 	 *
-	 * It's not quite as simple as it looks, however.  The command:
+	 * It's not quite as simple as it sounds, however.  The command:
 	 *
 	 *	:substitute s/a/b/|s/c/d|set
 	 *
 	 * was also legal, i.e. the historic ex parser (using the word loosely,
-	 * since "parser" implies some regularity of syntax) delimited the RE's
-	 * based on its delimiter and not anything so irretrievably vulgar as a
-	 * command syntax.
+	 * since "parser" implies some regularity) delimited the RE's based on
+	 * its delimiter and not anything so irretrievably vulgar as a command
+	 * syntax.
 	 *
 	 * One thing that makes this easier is that we can ignore most of the
 	 * command termination conditions for the commands that want to take
 	 * the command up to the next newline.  None of them are legal in .exrc
-	 * files, so if we're here, we only dealing with a single line.
+	 * files, so if we're here, we only dealing with a single line, and we
+	 * can just eat it.
 	 *
 	 * Anyhow, the following code makes this all work.  First, for the
 	 * special cases we move past their special argument.  Then, we do
@@ -468,7 +471,8 @@ loop:	if (nl) {
 			/* Reset, so the first argument isn't reparsed. */
 			save_cmd = cmd;
 		}
-	} else if (cp == &cmds[C_BANG]) {
+	} else if (cp == &cmds[C_BANG] ||
+	    cp == &cmds[C_GLOBAL] || cp == &cmds[C_VGLOBAL]) {
 		cmd += cmdlen;
 		cmdlen = 0;
 	} else if (cp == &cmds[C_READ] || cp == &cmds[C_WRITE]) {
@@ -485,29 +489,13 @@ loop:	if (nl) {
 			cmd += cmdlen;
 			cmdlen = 0;
 		}
-	} else if (cp == &cmds[C_GLOBAL]) {
-		/* Move to the next non-whitespace character. */
-		for (; cmdlen > 0; --cmdlen, ++cmd)
-			if (!isblank(*cmd))
-				break;
-		/*
-		 * The global command can have a optional '!', which is the
-		 * same as the vglobal command.  To paraphrase the old joke
-		 * about X11, if vi were a car, you could shift with the radio.
-		 */
-		if (cmdlen > 1 && *cmd == '!') {
-			++cmd;
-			--cmdlen;
-			goto g_ws;
-		} else
-			goto g_delim;
-	} else if (cp == &cmds[C_SUBSTITUTE] || cp == &cmds[C_VGLOBAL]) {
+	} else if (cp == &cmds[C_SUBSTITUTE]) {
 		/*
 		 * Move to the next non-whitespace character, we'll use it as
 		 * the delimiter.  Ignore if it's legal, the RE code will take
 		 * care of it if it's not.
 		 */
-g_ws:		for (; cmdlen > 0; --cmdlen, ++cmd)
+		for (; cmdlen > 0; --cmdlen, ++cmd)
 			if (!isblank(*cmd))
 				break;
 		if (cmdlen > 0) {
@@ -519,7 +507,7 @@ g_ws:		for (; cmdlen > 0; --cmdlen, ++cmd)
 			 * used by the RE code.  Move to the second or third
 			 * delimiter that's not escaped.
 			 */
-g_delim:		delim = *cmd;
+			delim = *cmd;
 			++cmd;
 			--cmdlen;
 			for (cnt = cp == &cmds[C_SUBSTITUTE] ? 2 : 1;
