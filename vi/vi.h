@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.5 1993/09/01 12:19:16 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:19:16 $
+ *	$Id: vi.h,v 8.6 1993/09/02 11:12:12 bostic Exp $ (Berkeley) $Date: 1993/09/02 11:12:12 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -33,20 +33,20 @@ typedef struct _vicmdarg {
  * be fixed.  This is implemented by setting special flags per command so that
  * the motion routines know what's really going on.
  *
- * Note, the VC_C, VC_D and VC_Y flags are set per command, and therefore
- * must have values not used the set of flags used by the VIKEYS structure
- * below.
+ * Note, the VC_COMMASK flags are set per command, and therefore must have
+ * values not used the set of flags used by the VIKEYS structure below.
  */
 #define	VC_C		0x001	/* The 'c' command. */
 #define	VC_D		0x002	/* The 'd' command. */
-#define	VC_Y		0x004	/* The 'y' command. */
-#define	VC_COMMASK	0x007	/* Mask for special flags VC_C, VC_D, VC_Y. */
+#define	VC_SH		0x004	/* The '>' command. */
+#define	VC_Y		0x008	/* The 'y' command. */
+#define	VC_COMMASK	0x00f	/* Mask for special flags. */
 
-#define	VC_C1SET	0x008	/* Count 1 set. */
-#define	VC_C1RESET	0x010	/* Reset the C1SET flag for dot commands. */
-#define	VC_C2SET	0x020	/* Count 2 set. */
-#define	VC_LMODE	0x040	/* Motion is line oriented. */
-#define	VC_ISDOT	0x080	/* Command was the dot command. */
+#define	VC_C1SET	0x010	/* Count 1 set. */
+#define	VC_C1RESET	0x020	/* Reset the C1SET flag for dot commands. */
+#define	VC_C2SET	0x040	/* Count 2 set. */
+#define	VC_LMODE	0x080	/* Motion is line oriented. */
+#define	VC_ISDOT	0x100	/* Command was the dot command. */
 
 	u_int flags;
 				/* DO NOT ZERO OUT. */
@@ -62,27 +62,27 @@ typedef struct _vikeys {	/* Underlying function. */
 	int (*func) __P((SCR *, EXF *,
 	    VICMDARG *, MARK *, MARK *, MARK *));
 
-/* XXX Check to see if these are all needed. */
-#define	V_DONTUSE1	0x00001	/* VC_C */
-#define	V_DONTUSE2	0x00002	/* VC_D */
-#define	V_DONTUSE3	0x00004	/* VC_Y */
-#define	V_ABS		0x00008	/* Absolute movement, sets the '' mark. */
-#define	V_CHAR		0x00010	/* Character (required, trailing). */
-#define	V_CNT		0x00020	/* Count (optional, leading). */
-#define	V_DOT		0x00040	/* Successful command sets dot command. */
-#define	V_KEYNUM	0x00080	/* Cursor referenced number. */
-#define	V_KEYW		0x00100	/* Cursor referenced word. */
-#define	V_LMODE		0x00200	/* Motion is line oriented. */
-#define	V_MOTION	0x00400	/* Motion (required, trailing). */
-#define	V_MOVE		0x00800	/* Command defines movement. */
-#define	V_OBUF		0x01000	/* Buffer (optional, leading). */
-#define	V_RBUF		0x02000	/* Buffer (required, trailing). */
-#define	V_RCM		0x04000	/* Use relative cursor movment (RCM). */
-#define	V_RCM_SET	0x08000	/* Set RCM absolutely. */
-#define	V_RCM_SETFNB	0x10000	/* Set RCM to first non-blank. */
-#define	V_RCM_SETLAST	0x20000	/* Set RCM to last. */
-#define	V_RCM_SETLFNB	0x40000	/* Set RCM to first non-blank if line moved. */
-#define	V_RCM_SETNNB	0x80000	/* Set RCM to next non-blank. */
+#define	V_DONTUSE1	0x000001	/* VC_C */
+#define	V_DONTUSE2	0x000002	/* VC_D */
+#define	V_DONTUSE3	0x000004	/* VC_Y */
+#define	V_DONTUSE4	0x000008	/* VC_SH */
+#define	V_ABS		0x000010	/* Absolute movement, set '' mark. */
+#define	V_CHAR		0x000020	/* Character (required, trailing). */
+#define	V_CNT		0x000040	/* Count (optional, leading). */
+#define	V_DOT		0x000080	/* On success, sets dot command. */
+#define	V_KEYNUM	0x000100	/* Cursor referenced number. */
+#define	V_KEYW		0x000200	/* Cursor referenced word. */
+#define	V_LMODE		0x000400	/* Motion is line oriented. */
+#define	V_MOTION	0x000800	/* Motion (required, trailing). */
+#define	V_MOVE		0x001000	/* Command defines movement. */
+#define	V_OBUF		0x002000	/* Buffer (optional, leading). */
+#define	V_RBUF		0x004000	/* Buffer (required, trailing). */
+#define	V_RCM		0x008000	/* Use relative cursor movment (RCM). */
+#define	V_RCM_SET	0x010000	/* RCM: set to current position. */
+#define	V_RCM_SETFNB	0x020000	/* RCM: set to first non-blank (FNB). */
+#define	V_RCM_SETLAST	0x040000	/* RCM: set to last character. */
+#define	V_RCM_SETLFNB	0x080000	/* RCM: set to FNB if line moved. */
+#define	V_RCM_SETNNB	0x100000	/* RCM: set to next non-blank. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
