@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.8 1993/08/26 18:41:47 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:41:47 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.9 1993/09/09 18:45:34 bostic Exp $ (Berkeley) $Date: 1993/09/09 18:45:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,21 +65,31 @@ ex_tagfirst(sp, tagarg)
 		return (1);
 
 	/*
-	 * Search for the tag; cheap fallback for C functions
-	 * if the name is the same but the arguments have changed.
+	 * !!!
+	 * Historic vi accepted a line number as well as a search
+	 * string, and people are apparently still using the format.
 	 */
-	m.lno = 1;
-	m.cno = 0;
-	sval = f_search(sp, tep, &m, &m, search,
-	    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
-	if (sval && (p = strrchr(search, '(')) != NULL) {
-		p[1] = '\0';
+	if (isdigit(search[0])) {
+		m.lno = atoi(search);
+		m.cno = 0;
+	} else {
+		/*
+		 * Search for the tag; cheap fallback for C functions if
+		 * the name is the same but the arguments have changed.
+		 */
+		m.lno = 1;
+		m.cno = 0;
 		sval = f_search(sp, tep, &m, &m, search,
 		    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
-	}
-	if (sval) {
-		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
-		return (1);
+		if (sval && (p = strrchr(search, '(')) != NULL) {
+			p[1] = '\0';
+			sval = f_search(sp, tep, &m, &m, search,
+			    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
+		}
+		if (sval) {
+			msgq(sp, M_ERR, "%s: search pattern not found.", tag);
+			return (1);
+		}
 	}
 
 	/* Set up the screen/file. */
@@ -161,20 +171,31 @@ ex_tagpush(sp, ep, cmdp)
 	}
 
 	/*
-	 * Search for the tag; cheap fallback for C functions
-	 * if the name is the same but the arguments have changed.
+	 * !!!
+	 * Historic vi accepted a line number as well as a search
+	 * string, and people are apparently still using the format.
 	 */
-	m.lno = 1;
-	m.cno = 0;
-	sval = f_search(sp, tep, &m, &m, search,
-	    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
-	if (sval && (p = strrchr(search, '(')) != NULL) {
-		p[1] = '\0';
+	if (isdigit(search[0])) {
+		m.lno = atoi(search);
+		m.cno = 0;
+		sval = 0;
+	} else {
+		/*
+		 * Search for the tag; cheap fallback for C functions
+		 * if the name is the same but the arguments have changed.
+		 */
+		m.lno = 1;
+		m.cno = 0;
 		sval = f_search(sp, tep, &m, &m, search,
 		    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
+		if (sval && (p = strrchr(search, '(')) != NULL) {
+			p[1] = '\0';
+			sval = f_search(sp, tep, &m, &m, search,
+			    NULL, SEARCH_FILE | SEARCH_TAG | SEARCH_TERM);
+		}
+		if (sval)
+			msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 	}
-	if (sval)
-		msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 	FREE(tag, strlen(tag));
 	if (sval) {
 		switch (which) {
@@ -513,15 +534,20 @@ linear_search(string, front, back)
  * 	o Matches up to len(s1) are EQUAL. 
  *	o Matches up to len(s2) are GREATER.
  * 
- * The string "s1" is null terminated.  The string s2 is '\t' (or "back")
- * terminated.
+ * The string "s1" is null terminated.  The string s2 is '\t', space, (or
+ * "back") terminated.
+ *
+ * !!!
+ * Reasonably modern ctags programs use tabs as separators, not spaces.
+ * However, historic programs did use spaces, and, I got complaints.
  */
 static int
 compare(s1, s2, back)
 	register char *s1, *s2, *back;
 {
-	for (; *s1 && s2 < back && *s2 != '\t'; ++s1, ++s2)
+	for (; *s1 && s2 < back && (*s2 != '\t' && *s2 != ' '); ++s1, ++s2)
 		if (*s1 != *s2)
 			return (*s1 < *s2 ? LESS : GREATER);
-	return (*s1 ? GREATER : s2 < back && *s2 != '\t' ? LESS : EQUAL);
+	return (*s1 ? GREATER : s2 < back &&
+	    (*s2 != '\t' && *s2 != ' ') ? LESS : EQUAL);
 }
