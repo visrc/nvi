@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.13 1993/04/05 07:10:35 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:35 $";
+static char sccsid[] = "$Id: v_word.c,v 5.14 1993/04/12 14:58:02 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:58:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,12 +97,18 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 		return (1);
 	}
 
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
 	 * Reset the length; the first character is the current cursor
 	 * position.  If no more characters in this line, may already
 	 * be at EOF.
+	 *
+	 * Note, there are several special cases.  Movements associated
+	 * with commands are slightly different than movement commands.
+	 * For example, in "abc def ghi", "cw" is from 'a' to 'c', while
+	 * "w" is from 'a' to 'd'.  "Bill, it's another ugly tale from
+	 * BSD's ugliest city."
 	 */
 	len -= cno;
 	empty = len == 1;
@@ -110,19 +116,25 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 		if (len != 0)
 			if (spaceonly) {
 				FW(!isspace(*p));
+				if (cnt == 0 && F_ISSET(vp, VC_C))
+					break;
 				FW(isspace(*p));
 			} else {
 				if (inword(*p))
 					FW(inword(*p));
 				else
 					FW(!isspace(*p) && !inword(*p));
+				if (cnt == 0 && F_ISSET(vp, VC_C))
+					break;
 				FW(isspace(*p));
 			}
+		if (cnt == 0 && F_ISSET(vp, VC_C))
+			break;
 		if (len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
 			if ((p = file_gline(sp, ep, ++lno, &len)) == NULL) {
 				/* If already at eof, complain. */
-				if (empty && !(vp->flags & (VC_C | VC_D))) {
+				if (empty && !F_ISSET(vp, VC_C | VC_D)) {
 					v_eof(sp, ep, NULL);
 					return (1);
 				}
@@ -132,7 +144,7 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 					return (1);
 				}
 				rp->lno = lno;
-				rp->cno = len ? vp->flags & (VC_C | VC_D) ?
+				rp->cno = len ? F_ISSET(vp, VC_C | VC_D) ? 
 				    len : len - 1 : 0;
 				return (0);
 			}
@@ -210,7 +222,7 @@ bword(sp, ep, vp, fm, rp, spaceonly)
 		return (1);
 	}
 		
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
 	 * Reset the length to the number of characters in the line; the
@@ -357,7 +369,7 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 		return (1);
 	}
 
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
 	 * Reset the length; the first character is the current cursor
