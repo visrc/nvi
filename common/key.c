@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.30 1993/11/30 09:56:21 bostic Exp $ (Berkeley) $Date: 1993/11/30 09:56:21 $";
+static char sccsid[] = "$Id: key.c,v 8.31 1993/11/30 10:29:57 bostic Exp $ (Berkeley) $Date: 1993/11/30 10:29:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,7 +127,7 @@ term_init(sp)
 }
 /*
  * VEOF, VERASE, VKILL are required by POSIX 1003.1-1990,
- * VLNEXT and VWERASE are 4.4BSD extensions.
+ * VWERASE is a 4.4BSD extension.
  */
 #ifdef VEOF
 	TERMSET(VEOF, K_VEOF);
@@ -137,9 +137,6 @@ term_init(sp)
 #endif
 #ifdef VKILL
 	TERMSET(VKILL, K_VKILL);
-#endif
-#ifdef VLNEXT
-	TERMSET(VLNEXT, K_VLNEXT);
 #endif
 #ifdef VWERASE
 	TERMSET(VWERASE, K_VWERASE);
@@ -559,6 +556,26 @@ term_user_key(sp, chp)
 
 	QREM_TAIL(tty, 1);
 	return (INP_OK);
+}
+
+/*
+ * term_key_ch --
+ *	Fill in the key for a value.
+ */
+int
+term_key_ch(sp, val, chp)
+	SCR *sp;
+	int val;
+	CHAR_T *chp;
+{
+	KEYLIST *kp;
+
+	for (kp = keylist;; ++kp)
+		if (kp->value == val) {
+			*chp = kp->ch;
+			return (0);
+		}
+	return (1);
 }
 
 /*
