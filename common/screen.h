@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.11 1993/08/23 09:56:36 bostic Exp $ (Berkeley) $Date: 1993/08/23 09:56:36 $
+ *	$Id: screen.h,v 8.12 1993/08/25 16:40:43 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:40:43 $
  */
 
 /*
@@ -29,9 +29,7 @@ enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 #define	CONTMSG		"Enter return to continue: "
 #define	CONTMSG_I	"Enter return to continue [q to quit]: "
 
-/*
- * Structure for building argc/argv vector of ex arguments.
- */
+/* Structure for building argc/argv vector of ex arguments. */
 typedef struct _args {
 	char	*bp;			/* Buffer. */
 	size_t	 len;			/* Buffer length. */
@@ -171,10 +169,10 @@ typedef struct _scr {
 					/* FWOPEN_NOT_AVAILABLE */
 	int	 trapped_fd;		/* Ex/vi trapped file descriptor. */
 
-	u_int	 nkeybuf;		/* # of keys in the input buffer. */
-	char	*mappedkey;		/* Mapped key return. */
-	u_int	 nextkey;		/* Index of next key in keybuf. */
-	char	 keybuf[256];		/* Key buffer. */
+					/* Ex/vi: input information. */
+	IBUF	 key;			/* Key input buffer. */
+	IBUF	 tty;			/* Tty input buffer. */
+	char	 at_lbuf;		/* Last at buffer executed. */
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 
@@ -183,9 +181,6 @@ typedef struct _scr {
 
 	char	*ibp;			/* Ex: line input buffer. */
 	size_t	 ibp_len;		/* Line input buffer length. */
-
-	char	*comm;			/* Ex: saved/initial command. */
-	size_t	 comm_len;		/* Saved/initial command length. */
 
 	struct _excmdlist *lastcmd;	/* Ex: last command. */
 
@@ -209,6 +204,8 @@ typedef struct _scr {
 
 	void	*sdot;			/* Vi: saved dot, motion command. */
 	void	*sdotmotion;
+
+	char	 rlast;			/* Vi: saved 'r' command character. */
 
 	char	*paragraph;		/* Vi: paragraph search list. */
 
@@ -235,17 +232,6 @@ typedef struct _scr {
 					/* Ex/vi: mapped chars, abbrevs. */
 	HDR	 seqhdr;		/* Linked list of all sequences. */
 	HDR	 seq[UCHAR_MAX];	/* Linked character sequences. */
-
-					/* Ex/vi: executed buffers. */
-	char	*atkey_buf;		/* At key buffer. */
-	char	*atkey_cur;		/* At key current pointer. */
-	int	 atkey_len;		/* Remaining keys in at buffer. */
-					/* At key stack. */
-	u_char	 atkey_stack[UCHAR_MAX + 1];
-	int	 exat_recurse;		/* Ex at recursion count. */
-	int	 exat_lbuf;		/* Ex at last buffer. */
-					/* Ex at key stack. */
-	u_char	 exat_stack[UCHAR_MAX + 1];
 
 	OPTION	 opts[O_OPTIONCOUNT];	/* Ex/vi: options. */
 
