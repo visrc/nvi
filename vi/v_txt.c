@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.32 1993/10/26 19:51:03 bostic Exp $ (Berkeley) $Date: 1993/10/26 19:51:03 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.33 1993/10/27 11:37:11 bostic Exp $ (Berkeley) $Date: 1993/10/27 11:37:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: v_txt.c,v 8.32 1993/10/26 19:51:03 bostic Exp $ (Be
 #include "vcmd.h"
 
 static int	 txt_abbrev __P((SCR *, TEXT *, int *, ARG_CHAR_T));
+static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, HDR *));
 static int	 txt_hex __P((SCR *, TEXT *, int *, ARG_CHAR_T));
@@ -337,19 +338,10 @@ next_ch:	if (replay)
 				--tp->len;				\
 				--tp->insert;				\
 			}						\
-			/*						\
-			 * If the user has not inserted any characters	\
-			 * and there aren't any other characters in the	\
-			 * line, delete the autoindent characters.	\
-			 */						\
-			if (LF_ISSET(TXT_AUTOINDENT) &&			\
-			    !tp->insert && sp->cno <= tp->ai) {		\
-				tp->len = tp->overwrite = 0;		\
-				sp->cno = 0;				\
-			}						\
 }
 			LINE_RESOLVE;
 
+			/* CR returns from the vi command line. */
 			if (LF_ISSET(TXT_CR)) {
 				if (F_ISSET(sp, S_SCRIPT))
 					(void)term_push(sp,
@@ -358,10 +350,9 @@ next_ch:	if (replay)
 			}
 
 			/*
-			 * Historic practice was to lose any whitespace
-			 * characters immediately after the inserted
-			 * newline.  This affects the 'R', 'c', and 's'
-			 * commands.
+			 * Historic practice was to delete any <blank>
+			 * characters following the inserted newline.
+			 * This affects the 'R', 'c', and 's' commands.
 			 */
 			for (p = tp->lb + sp->cno + tp->overwrite;
 			    tp->insert && isblank(*p);
@@ -381,10 +372,14 @@ next_ch:	if (replay)
 			ntp->lno = tp->lno + 1;
 			ntp->insert = tp->insert;
 
+			/* Resolve autoindented characters for the old line. */
+			if (LF_ISSET(TXT_AUTOINDENT))
+				txt_ai_resolve(sp, tp);
+
 			/*
-			 * Reset the autoindent line.  0^D keeps the ai
-			 * line from changing, ^D changes the level, even
-			 * if no characters in the line.
+			 * Reset the autoindent line value.  0^D keeps the ai
+			 * line from changing, ^^D changes the level, even if
+			 * there are no characters in the old line.
 			 */
 			if (LF_ISSET(TXT_AUTOINDENT)) {
 				if (carat_st != C_NOCHANGE)
@@ -393,8 +388,20 @@ next_ch:	if (replay)
 					ERR;
 				carat_st = C_NOTSET;
 			}
-			
-			/* Can now reset bookkeeping for the old line. */
+
+			/*
+			 * If the user hasn't entered any characters, delete
+			 * autoindent characters.
+			 *
+			 * !!!
+			 * Historic vi didn't get the insert test right, if
+			 * there were characters being inserted, entering a
+			 * <cr> left the autoindent characters on the line.
+			 */
+			if (sp->cno <= tp->ai)
+				sp->cno = 0;
+
+			/* Reset bookkeeping for the old line. */
 			tp->len = sp->cno;
 			tp->ai = tp->insert = tp->overwrite = 0;
 
@@ -432,6 +439,17 @@ next_ch:	if (replay)
 
 			LINE_RESOLVE;
 
+			/*
+			 * If there aren't any trailing characters in the line
+			 * and the user hasn't entered any characters, delete
+			 * the autoindent characters.
+			 */
+			if (!tp->insert && sp->cno <= tp->ai) {
+				tp->len = tp->overwrite = 0;
+				sp->cno = 0;
+			} else if (LF_ISSET(TXT_AUTOINDENT))
+				txt_ai_resolve(sp, tp);
+
 			/* If there are insert characters, copy them down. */
 k_escape:		if (tp->insert && tp->overwrite)
 				memmove(tp->lb + sp->cno,
@@ -451,6 +469,9 @@ k_escape:		if (tp->insert && tp->overwrite)
 			/*
 			 * If not resolving the lines into the file, end
 			 * it with a nul.
+			 *
+			 * XXX
+			 * This is wrong, should pass back a length.
 			 */
 			if (LF_ISSET(TXT_RESOLVE)) {
 				if (txt_resolve(sp, ep, hp))
@@ -850,6 +871,82 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	return (0);
 }
 
+/* Offset to next column of stop size. */
+#define	STOP_OFF(c, stop)	(stop - (c) % stop)
+
+/*
+ * txt_ai_resolve --
+ *	When a line is resolved by <esc> or <cr>, review autoindent
+ *	characters.
+ */
+static void
+txt_ai_resolve(sp, tp)
+	SCR *sp;
+	TEXT *tp;
+{
+	u_long ts;
+	size_t cno, len, new, old, scno, spaces, tab_after_sp, tabs;
+	char *p;
+
+	/*
+	 * If the line is empty, has an offset, or no autoindent
+	 * characters, we're done.
+	 */
+	if (!tp->len || tp->offset || !tp->ai)
+		return;
+
+	/*
+	 * The autoindent characters plus any leading <blank> characters
+	 * in the line are resolved into the minimum number of characters.
+	 * Historic practice.
+	 */
+	ts = O_VAL(sp, O_TABSTOP);
+
+	/* Figure out the last <blank> screen column. */
+	for (p = tp->lb, scno = 0, len = tp->len,
+	    spaces = tab_after_sp = 0; len-- && isblank(*p); ++p)
+		if (*p == '\t') {
+			if (spaces)
+				tab_after_sp = 1;
+			scno += STOP_OFF(scno, ts);
+		} else {
+			++spaces;
+			++scno;
+		}
+
+	/*
+	 * If there are no spaces, or no tabs after spaces and less than
+	 * ts spaces, it's already minimal.
+	 */
+	if (!spaces || !tab_after_sp && spaces < ts)
+		return;
+
+	/* Count up spaces/tabs needed to get to the target. */
+	for (cno = 0, tabs = 0; cno + STOP_OFF(cno, ts) <= scno; ++tabs)
+		cno += STOP_OFF(cno, ts);
+	spaces = scno - cno;
+
+	/*
+	 * Figure out how many characters we're dropping -- if we're not
+	 * dropping any, it's already minimal, we're done.
+	 */
+	old = p - tp->lb;
+	new = spaces + tabs;
+	if (old == new)
+		return;
+
+	/* Shift the rest of the characters down. */
+	memmove(p - (old - new), p, tp->len - old);
+	tp->len -= (old - new);
+	sp->cno -= (old - new);
+
+	/* Fill in space/tab characters. */
+	for (p = tp->lb; tabs--;)
+		*p++ = '\t';
+	while (spaces--)
+		*p++ = ' ';
+}
+
 /*
  * txt_auto --
  *	Handle autoindent.  If aitp isn't NULL, use it, otherwise,
@@ -993,9 +1090,9 @@ txt_err(sp, ep, hp)
  *	Let the user insert any character value they want.
  *
  * !!!
- * This is an extension.  The pattern "^V0[Xx][0-9a-fA-F]*" is a way
- * for the user to specify a character value which their keyboard may
- * not be able to enter.
+ * This is an extension.  The pattern "^Vx[0-9a-fA-F]*" is a way
+ * for the user to specify a character value which their keyboard
+ * may not be able to enter.
  */
 static int
 txt_hex(sp, tp, was_hex, pushc)
@@ -1010,9 +1107,9 @@ txt_hex(sp, tp, was_hex, pushc)
 	char *p, *wp;
 
 	/*
-	 * Null-terminate the string.  Since 0 isn't a legal hex value,
-	 * this should be okay, and let's us use the local routine to
-	 * convert the value, whatever that may be.
+	 * Null-terminate the string.  Since nul isn't a legal hex value,
+	 * this should be okay, and lets us use a local routine, which
+	 * presumably understands the character set, to convert the value.
 	 */
 	savec = tp->lb[sp->cno];
 	tp->lb[sp->cno] = 0;
@@ -1073,11 +1170,11 @@ nothex:		tp->lb[sp->cno] = savec;
  * The ^T and ^D characters in historical vi only had special meaning when
  * they were the first characters typed after entering text input mode.
  * Since normal erase characters couldn't erase autoindent (in this case
- * ^T) characters, this mean that inserting text into previously existing
+ * ^T) characters, this meant that inserting text into previously existing
  * text was quite strange, ^T only worked if it was the first keystroke,
  * and then it could only be erased by using ^D.  This implementation treats
  * ^T specially anywhere it occurs in the input, and permits the standard
- * erase characters to erase the characters it inserts.
+ * erase characters to erase characters inserted using it.
  *
  * XXX
  * Technically, txt_indent, txt_outdent should part of the screen interface,
@@ -1088,9 +1185,6 @@ nothex:		tp->lb[sp->cno] = savec;
  * for any language, we're into some serious, ah, for lack of a better word,
  * "issues".
  */
-
-/* Offset to next column of stop size. */
-#define	STOP_OFF(c, stop)	(stop - (c) % stop)
 
 /*
  * txt_indent --
