@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.40 1994/12/27 09:54:34 bostic Exp $ (Berkeley) $Date: 1994/12/27 09:54:34 $
+.\"	$Id: vi.cmd.roff,v 8.41 1995/01/11 09:23:55 bostic Exp $ (Berkeley) $Date: 1995/01/11 09:23:55 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -2943,6 +2943,10 @@ erase character and the
 and
 .QT ^<control-D>
 erase strings could erase autoindent characters.
+(Autoindent characters include both the characters inserted automatically
+at the beginning of an input line as well as characters inserted using the
+.LI <control-T>
+command.)
 This implementation permits erasure to continue past the beginning
 of the current line, and back to where text input mode was entered.
 In addition, autoindent characters may be erased using the standard
@@ -2971,7 +2975,16 @@ the previous input is replayed, as if just entered.
 .KY <control-D>
 .IP "<control-D>"
 If the previous character on the line was an autoindent character,
-erase it.
+erase characters to move the cursor back to the column immediately
+after the previous (1-based) column which is an even multiple of the
+.OP shiftwidth
+edit option.
+This may result in any number of
+.LI <tab>
+and
+.LI <space>
+characters preceding the cursor to be changed.
+.sp
 Otherwise, if the
 .OP autoindent
 option is set and the user is entering the first character in the line,
@@ -2989,16 +3002,22 @@ In addition, the autoindent level is reset to 0.
 .IP "0<control-D>"
 If the previous character on the line was an autoindent character,
 erase all of the autoindent characters on the line.
+The autoindent level is not altered.
 .KY <control-T>
 .IP "<control-T>"
 Insert sufficient
 .LI <tab>
 and
 .LI <space>
-characters to move the cursor forward to a column immediately
-after the next column which is an even multiple of the
+characters to move the cursor forward to the column immediately
+after the next (1-based) column which is an even multiple of the
 .OP shiftwidth
-option.
+edit option.
+This may result in any number of
+.LI <tab>
+and
+.LI <space>
+characters preceding the cursor to be changed.
 .sp
 Historically,
 .CO vi
