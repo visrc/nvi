@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.175 1994/10/29 16:55:16 bostic Exp $ (Berkeley) $Date: 1994/10/29 16:55:16 $";
+static char sccsid[] = "$Id: ex.c,v 8.176 1994/11/02 17:28:57 bostic Exp $ (Berkeley) $Date: 1994/11/02 17:28:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1516,32 +1516,11 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	char **cmdp;
 	size_t *cmdlenp;
 {
+	enum { ADDR_FOUND, ADDR_NEED, ADDR_NONE } addr;
 	MARK cur;
 	size_t cmdlen;
-	int addr_found, tmp;
+	int tmp;
 	char *cmd;
-
-	/*
-	 * Percent character is all lines in the file, and cannot
-	 * be followed by any other address.
-	 */
-	cmd = *cmdp;
-	cmdlen = *cmdlenp;
-	if (*cmd == '%') {
-		excp->addr1.lno = 1;
-		if (file_lline(sp, ep, &excp->addr2.lno))
-			return (1);
-
-		/* If an empty file, then the first line is 0, not 1. */
-		if (excp->addr2.lno == 0)
-			excp->addr1.lno = 0;
-		excp->addr1.cno = excp->addr2.cno = 0;
-		excp->addrcnt = 2;
-
-		++*cmdp;
-		--*cmdlenp;
-		return (0);
-	}
 
 	/*
 	 * Parse comma or semi-colon delimited line specs.
@@ -1560,15 +1539,38 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	 * !!!
 	 * If any addresses are missing, they default to the current line.
 	 * This was historically true for both leading and trailing comma
-	 * delimited addresses, and for trailing semicolon delimited
+	 * delimited addresses as well as for trailing semicolon delimited
 	 * addresses.  For consistency, we make it true for leading semicolon
 	 * addresses as well.
 	 */
-	 for (excp->addrcnt = 0, addr_found = 0; cmdlen > 0;)
+	 excp->addrcnt = 0;
+	 for (addr = ADDR_NONE, cmd = *cmdp, cmdlen = *cmdlenp; cmdlen > 0;)
 		switch (*cmd) {
+		case '%':		/* Entire file. */
+			/*
+			 * !!!
+			 * A percent character addresses all of the lines in
+			 * the file.  Historically, it couldn't be followed by
+			 * any other address.  We do it as a text substitution
+			 * for simplicity.  POSIX 1003.2 is expected to follow
+			 * this practice.
+			 *
+			 * If it's an empty file, the first line is 0, not 1.
+			 */
+			if (addr == ADDR_FOUND)
+				goto badaddr;
+			if (file_lline(sp, ep, &excp->addr2.lno))
+				return (1);
+			excp->addr1.lno = excp->addr2.lno == 0 ? 0 : 1;
+			excp->addr1.cno = excp->addr2.cno = 0;
+			excp->addrcnt = 2;
+			addr = ADDR_FOUND;
+			++cmd;
+			--cmdlen;
+			break;
 		case ',':               /* Comma delimiter. */
 		case ';':               /* Semi-colon delimiter. */
-			if (!addr_found)
+			if (addr != ADDR_FOUND)
 				switch (excp->addrcnt) {
 				case 0:
 					excp->addr1.lno = sp->lno;
@@ -1598,7 +1600,7 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 					sp->cno = excp->addr2.cno;
 					break;
 				}
-			addr_found = 0;
+			addr = ADDR_NEED;
 			/* FALLTHROUGH */
 		case ' ':		/* Whitespace. */
 		case '\t':		/* Whitespace. */
@@ -1611,8 +1613,8 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 			if (!tmp)
 				goto done;
 
-			if (addr_found) {
-				msgq(sp, M_ERR,
+			if (addr == ADDR_FOUND) {
+badaddr:			msgq(sp, M_ERR,
 				    "253|Illegal address combination");
 				return (1);
 			}
@@ -1630,11 +1632,27 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 				excp->addr2 = cur;
 				break;
 			}
-			addr_found = 1;
+			addr = ADDR_FOUND;
 			break;
 		}
 
-done:	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
+done:	if (addr == ADDR_NEED)
+		switch (excp->addrcnt) {
+		case 0:
+			excp->addr1.lno = sp->lno;
+			excp->addr1.cno = sp->cno;
+			excp->addrcnt = 1;
+			break;
+		case 2:
+			excp->addr1 = excp->addr2;
+			/* FALLTHROUGH */
+		case 1:
+			excp->addr2.lno = sp->lno;
+			excp->addr2.cno = sp->cno;
+			excp->addrcnt = 2;
+			break;
+		}
+	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
 		msgq(sp, M_ERR,
 		    "113|The second address is smaller than the first");
 		return (1);
@@ -1660,13 +1678,13 @@ done:	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
  * it's fairly close.
  */
 static int
-ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
+ep_line(sp, ep, cur, cmdp, cmdlenp, isaddrp)
 	SCR *sp;
 	EXF *ep;
 	MARK *cur;
 	char **cmdp;
 	size_t *cmdlenp;
-	int *addr_found;
+	int *isaddrp;
 {
 	EX_PRIVATE *exp;
 	MARK m;
@@ -1677,13 +1695,13 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	char *cmd, *endp, *omsg, *umsg;
 
 	exp = EXP(sp);
-	*addr_found = 0;
+	*isaddrp = 0;
 
 	cmd = *cmdp;
 	cmdlen = *cmdlenp;
 	switch (*cmd) {
 	case '$':				/* Last line in the file. */
-		*addr_found = 1;
+		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
 
 		cur->cno = 0;
@@ -1694,7 +1712,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		break;				/* Absolute line number. */
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
-		*addr_found = 1;
+		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
 
 		cur->cno = 0;
@@ -1703,7 +1721,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		cmd = endp;
 		break;
 	case '\'':				/* Use a mark. */
-		*addr_found = 1;
+		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
 
 		if (cmdlen == 1) {
@@ -1742,7 +1760,7 @@ search:		F_SET(exp, EX_ABSMARK);
 	"116|A search address requires that a file have already been read in");
 			return (1);
 		}
-		*addr_found = 1;
+		*isaddrp = 1;
 		m.lno = sp->lno;
 		m.cno = sp->cno;
 		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
@@ -1754,7 +1772,7 @@ search:		F_SET(exp, EX_ABSMARK);
 		cmd = endp;
 		break;
 	case '.':				/* Current position. */
-		*addr_found = 1;
+		*isaddrp = 1;
 		cur->cno = sp->cno;
 
 		/* If an empty file, then '.' is 0, not 1. */
@@ -1791,8 +1809,8 @@ search:		F_SET(exp, EX_ABSMARK);
 	for (; cmdlen > 0 && isblank(cmd[0]); ++cmd, --cmdlen);
 	if (cmdlen != 0 && (isdigit(cmd[0]) ||
 	    cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '^')) {
-		if (!*addr_found) {
-			*addr_found = 1;
+		if (!*isaddrp) {
+			*isaddrp = 1;
 			cur->lno = sp->lno;
 			cur->cno = sp->cno;
 		}
@@ -1800,7 +1818,7 @@ search:		F_SET(exp, EX_ABSMARK);
 			return (1);
 	}
 
-	if (*addr_found) {
+	if (*isaddrp) {
 		/*
 		 * We don't check for underflow, a value less than 0 is
 		 * bad enough.
