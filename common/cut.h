@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cut.h,v 10.8 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $
+ *	$Id: cut.h,v 10.9 2000/07/22 17:31:18 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:18 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -66,7 +66,7 @@ struct _text {				/* Text: a linked list of lines. */
 #define	CBNAME(sp, cbp, nch) {						\
 	CHAR_T L__name;							\
 	L__name = isupper(nch) ? tolower(nch) : (nch);			\
-	for (cbp = sp->gp->cutq.lh_first;				\
+	for (cbp = sp->wp->cutq.lh_first;				\
 	    cbp != NULL; cbp = cbp->q.le_next)				\
 		if (cbp->name == L__name)				\
 			break;						\

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.31 2000/07/21 17:35:02 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:02 $
+ *	$Id: key.h,v 10.32 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $
  */
 
 #include "multibyte.h"
@@ -158,10 +158,10 @@ typedef struct _keylist {
 extern KEYLIST keylist[];
 
 					/* Return if more keys in queue. */
-#define	KEYS_WAITING(sp)	((sp)->gp->i_cnt != 0)
+#define	KEYS_WAITING(sp)	((sp)->wp->i_cnt != 0)
 #define	MAPPED_KEYS_WAITING(sp)						\
 	(KEYS_WAITING(sp) &&						\
-	    FL_ISSET((sp)->gp->i_event[(sp)->gp->i_next].e_flags, CH_MAPPED))
+	    FL_ISSET((sp)->wp->i_event[(sp)->wp->i_next].e_flags, CH_MAPPED))
 
 /*
  * Ex/vi commands are generally separated by whitespace characters.  We

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_display.c,v 10.13 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_display.c,v 10.14 2000/07/22 17:31:21 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,13 +85,13 @@ bdisplay(sp)
 {
 	CB *cbp;
 
-	if (sp->gp->cutq.lh_first == NULL && sp->gp->dcbp == NULL) {
+	if (sp->wp->cutq.lh_first == NULL && sp->wp->dcbp == NULL) {
 		msgq(sp, M_INFO, "123|No cut buffers to display");
 		return (0);
 	}
 
 	/* Display regular cut buffers. */
-	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
+	for (cbp = sp->wp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (isdigit(cbp->name))
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
@@ -100,7 +100,7 @@ bdisplay(sp)
 			return (0);
 	}
 	/* Display numbered buffers. */
-	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
+	for (cbp = sp->wp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (!isdigit(cbp->name))
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
@@ -109,7 +109,7 @@ bdisplay(sp)
 			return (0);
 	}
 	/* Display default buffer. */
-	if ((cbp = sp->gp->dcbp) != NULL)
+	if ((cbp = sp->wp->dcbp) != NULL)
 		db(sp, cbp, "default buffer");
 	return (0);
 }

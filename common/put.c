@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: put.c,v 10.16 2000/07/16 20:49:29 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:29 $";
+static const char sccsid[] = "$Id: put.c,v 10.17 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ put(sp, cbp, namep, cp, rp, append)
 
 	if (cbp == NULL)
 		if (namep == NULL) {
-			cbp = sp->gp->dcbp;
+			cbp = sp->wp->dcbp;
 			if (cbp == NULL) {
 				msgq(sp, M_ERR,
 				    "053|The default buffer is empty");

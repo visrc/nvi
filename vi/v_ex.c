@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.48 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.49 2000/07/22 17:31:21 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -633,6 +633,8 @@ v_ecl_log(sp, tp)
 		return (1);
 	}
 	rval = db_append(sp, 0, lno, tp->lb, tp->len);
+	/* XXXX end "transaction" on ccl */
+	log_cursor(sp);
 	sp->ep = save_ep;
 	return (rval);
 }

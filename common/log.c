@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.18 2000/07/22 14:52:36 skimo Exp $ (Berkeley) $Date: 2000/07/22 14:52:36 $";
+static const char sccsid[] = "$Id: log.c,v 10.19 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,6 +108,7 @@ log_init(sp, ep)
 		return (1);
 	}
 
+	ep->l_win = NULL;
 	//LOCK_INIT(sp->wp, ep);
 
 	return (0);
@@ -165,12 +166,11 @@ log_cursor(sp)
 	 * put out the ending cursor record.
 	 */
 	if (ep->l_cursor.lno == OOBLNO) {
-		printf("own: %p, this: %p\n", ep->l_win, sp->wp);
-		if (ep->l_win != sp->wp)
+		if (ep->l_win && ep->l_win != sp->wp)
 			return 0;
 		ep->l_cursor.lno = sp->lno;
 		ep->l_cursor.cno = sp->cno;
-		puts("end");
+		ep->l_win = NULL;
 		return (log_cursor1(sp, LOG_CURSOR_END));
 	}
 	ep->l_cursor.lno = sp->lno;
@@ -211,7 +211,6 @@ log_cursor1(sp, type)
 	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
 
-	puts(type == LOG_CURSOR_INIT ? "log_cursor_init" : "log_cursor_end");
 #if defined(DEBUG) && 0
 	vtrace(sp, "%lu: %s: %u/%u\n", ep->l_cur,
 	    type == LOG_CURSOR_INIT ? "log_cursor_init" : "log_cursor_end",
@@ -259,15 +258,14 @@ log_line(sp, lno, action)
 
 	/* Put out one initial cursor record per set of changes. */
 	if (ep->l_cursor.lno != OOBLNO) {
-		puts("begin");
 		if (log_cursor1(sp, LOG_CURSOR_INIT))
 			return (1);
 		ep->l_cursor.lno = OOBLNO;
 		ep->l_win = sp->wp;
-	} else if (ep->l_win != sp->wp) {
+	} /*else if (ep->l_win != sp->wp) {
 		printf("log_line own: %p, this: %p\n", ep->l_win, sp->wp);
 		return 1;
-	}
+	}*/
 
 	/*
 	 * Put out the changes.  If it's a LOG_LINE_RESET_B call, it's a
@@ -359,7 +357,6 @@ log_mark(sp, lmp)
 
 	/* Put out one initial cursor record per set of changes. */
 	if (ep->l_cursor.lno != OOBLNO) {
-		puts("begin");
 		if (log_cursor1(sp, LOG_CURSOR_INIT))
 			return (1);
 		ep->l_cursor.lno = OOBLNO;

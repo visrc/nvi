@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.27 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $
+ *	$Id: ex.h,v 10.28 2000/07/22 17:31:20 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:20 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -203,6 +203,7 @@ enum filtertype { FILTER_BANG, FILTER_RBANG, FILTER_READ, FILTER_WRITE };
 typedef enum {
 	EXM_EMPTYBUF,			/* Empty buffer. */
 	EXM_FILECOUNT,			/* Too many file names. */
+	EXM_LOCKED,			/* Another thread is active. */
 	EXM_NOCANON,			/* No terminal interface. */
 	EXM_NOCANON_F,			/* EXM_NOCANO: filter version. */
 	EXM_NOFILEYET,			/* Illegal until a file read in. */

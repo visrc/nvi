@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.28 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.29 2000/07/22 17:31:21 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,6 +170,10 @@ ex_emsg(sp, p, which)
 	case EXM_FILECOUNT:
 		 msgq_str(sp, M_ERR, p, 
 		     "144|%s: expanded into too many file names");
+		break;
+	case EXM_LOCKED:
+		msgq(sp, M_ERR,
+		    "Command failed, buffer is locked");
 		break;
 	case EXM_NOCANON:
 		msgq(sp, M_ERR,

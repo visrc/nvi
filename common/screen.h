@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.37 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $
+ *	$Id: screen.h,v 10.38 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $
  */
 
 /*
@@ -50,6 +50,15 @@ struct _win {
 	EXCMD	 	excmd;		/* Default ex command structure. */
 	char	       *if_name;	/* Current associated file. */
 	db_recno_t	if_lno;		/* Current associated line number. */
+
+	EVENT	*i_event;		/* Array of input events. */
+	size_t	 i_nelem;		/* Number of array elements. */
+	size_t	 i_cnt;			/* Count of events. */
+	size_t	 i_next;		/* Offset of next event. */
+
+	CB	*dcbp;			/* Default cut buffer pointer. */
+	CB	 dcb_store;		/* Default cut buffer storage. */
+	LIST_HEAD(_cuth, _cb) cutq;	/* Linked list of cut buffers. */
 
 	/* For now, can be either char or CHAR_T buffer */
 	char	*tmp_bp;		/* Temporary buffer. */

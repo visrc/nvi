@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.33 2000/07/22 15:57:26 skimo Exp $ (Berkeley) $Date: 2000/07/22 15:57:26 $";
+static const char sccsid[] = "$Id: db.c,v 10.34 2000/07/22 17:31:18 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,6 +238,10 @@ db_delete(sp, lno)
 		ex_emsg(sp, NULL, EXM_NOFILEYET);
 		return (1);
 	}
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
+	}
 		
 	/* Update marks, @ and global commands. */
 	if (mark_insdel(sp, LINE_DELETE, lno))
@@ -369,6 +373,10 @@ db_append(sp, update, lno, p, len)
 		ex_emsg(sp, NULL, EXM_NOFILEYET);
 		return (1);
 	}
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
+	}
 		
 	/* Update file. */
 	if (append(sp, lno, p, len) != 0) {
@@ -438,6 +446,10 @@ db_insert(sp, lno, p, len)
 		ex_emsg(sp, NULL, EXM_NOFILEYET);
 		return (1);
 	}
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
+	}
 		
 	/* Update file. */
 	if (append(sp, lno - 1, p, len) != 0) {
@@ -497,6 +509,10 @@ db_set(sp, lno, p, len)
 	if ((ep = sp->ep) == NULL) {
 		ex_emsg(sp, NULL, EXM_NOFILEYET);
 		return (1);
+	}
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
 	}
 		
 	/* Log before change. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.16 2000/07/16 15:37:24 skimo Exp $ (Berkeley) $Date: 2000/07/16 15:37:24 $";
+static const char sccsid[] = "$Id: cut.c,v 10.17 2000/07/22 17:31:18 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,7 +117,7 @@ namecb:		CBNAME(sp, cbp, name);
 		cb_rotate(sp);
 		goto namecb;
 	} else
-		cbp = &sp->gp->dcb_store;
+		cbp = &sp->wp->dcb_store;
 
 copyloop:
 	/*
@@ -128,7 +128,7 @@ copyloop:
 		CALLOC_RET(sp, cbp, CB *, 1, sizeof(CB));
 		cbp->name = name;
 		CIRCLEQ_INIT(&cbp->textq);
-		LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
+		LIST_INSERT_HEAD(&sp->wp->cutq, cbp, q);
 	} else if (!append) {
 		text_lfree(&cbp->textq);
 		cbp->len = 0;
@@ -164,7 +164,7 @@ copyloop:
 	}
 
 	append = 0;		/* Only append to the named buffer. */
-	sp->gp->dcbp = cbp;	/* Repoint the default buffer on each pass. */
+	sp->wp->dcbp = cbp;	/* Repoint the default buffer on each pass. */
 
 	if (copy_one) {		/* Copy into numeric buffer 1. */
 		name = '1';
@@ -173,7 +173,7 @@ copyloop:
 		goto copyloop;
 	}
 	if (copy_def) {		/* Copy into the default buffer. */
-		cbp = &sp->gp->dcb_store;
+		cbp = &sp->wp->dcb_store;
 		copy_def = 0;
 		goto copyloop;
 	}
@@ -197,7 +197,7 @@ cb_rotate(sp)
 	CB *cbp, *del_cbp;
 
 	del_cbp = NULL;
-	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next)
+	for (cbp = sp->wp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next)
 		switch(cbp->name) {
 		case '1':
 			cbp->name = '2';
@@ -281,16 +281,16 @@ cut_line(sp, lno, fcno, clen, cbp)
  * cut_close --
  *	Discard all cut buffers.
  *
- * PUBLIC: void cut_close __P((GS *));
+ * PUBLIC: void cut_close __P((WIN *));
  */
 void
-cut_close(gp)
-	GS *gp;
+cut_close(wp)
+	WIN *wp;
 {
 	CB *cbp;
 
 	/* Free cut buffer list. */
-	while ((cbp = gp->cutq.lh_first) != NULL) {
+	while ((cbp = wp->cutq.lh_first) != NULL) {
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
 			text_lfree(&cbp->textq);
 		LIST_REMOVE(cbp, q);
@@ -298,7 +298,7 @@ cut_close(gp)
 	}
 
 	/* Free default cut storage. */
-	cbp = &gp->dcb_store;
+	cbp = &wp->dcb_store;
 	if (cbp->textq.cqh_first != (void *)&cbp->textq)
 		text_lfree(&cbp->textq);
 }

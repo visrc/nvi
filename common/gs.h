@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.49 2000/07/22 14:52:36 skimo Exp $ (Berkeley) $Date: 2000/07/22 14:52:36 $
+ *	$Id: gs.h,v 10.50 2000/07/22 17:31:18 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:18 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -90,15 +90,6 @@ struct _gs {
 #ifdef DEBUG
 	FILE	*tracefp;		/* Trace file pointer. */
 #endif
-
-	EVENT	*i_event;		/* Array of input events. */
-	size_t	 i_nelem;		/* Number of array elements. */
-	size_t	 i_cnt;			/* Count of events. */
-	size_t	 i_next;		/* Offset of next event. */
-
-	CB	*dcbp;			/* Default cut buffer pointer. */
-	CB	 dcb_store;		/* Default cut buffer storage. */
-	LIST_HEAD(_cuth, _cb) cutq;	/* Linked list of cut buffers. */
 
 #define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
 	LIST_HEAD(_seqh, _seq) seqq;	/* Linked list of maps, abbrevs. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.45 2000/07/19 17:05:18 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:18 $";
+static const char sccsid[] = "$Id: key.c,v 10.46 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -363,14 +363,16 @@ v_event_push(sp, p_evp, p_s, nitems, flags)
 {
 	EVENT *evp;
 	GS *gp;
+	WIN *wp;
 	size_t total;
 
 	/* If we have room, stuff the items into the buffer. */
 	gp = sp->gp;
-	if (nitems <= gp->i_next ||
-	    (gp->i_event != NULL && gp->i_cnt == 0 && nitems <= gp->i_nelem)) {
-		if (gp->i_cnt != 0)
-			gp->i_next -= nitems;
+	wp = sp->wp;
+	if (nitems <= wp->i_next ||
+	    (wp->i_event != NULL && wp->i_cnt == 0 && nitems <= wp->i_nelem)) {
+		if (wp->i_cnt != 0)
+			wp->i_next -= nitems;
 		goto copy;
 	}
 
@@ -380,17 +382,17 @@ v_event_push(sp, p_evp, p_s, nitems, flags)
 	 * extra.
 	 */
 #define	TERM_PUSH_SHIFT	30
-	total = gp->i_cnt + gp->i_next + nitems + TERM_PUSH_SHIFT;
-	if (total >= gp->i_nelem && v_event_grow(sp, MAX(total, 64)))
+	total = wp->i_cnt + wp->i_next + nitems + TERM_PUSH_SHIFT;
+	if (total >= wp->i_nelem && v_event_grow(sp, MAX(total, 64)))
 		return (1);
-	if (gp->i_cnt)
-		MEMMOVE(gp->i_event + TERM_PUSH_SHIFT + nitems,
-		    gp->i_event + gp->i_next, gp->i_cnt);
-	gp->i_next = TERM_PUSH_SHIFT;
+	if (wp->i_cnt)
+		MEMMOVE(wp->i_event + TERM_PUSH_SHIFT + nitems,
+		    wp->i_event + wp->i_next, wp->i_cnt);
+	wp->i_next = TERM_PUSH_SHIFT;
 
 	/* Put the new items into the queue. */
-copy:	gp->i_cnt += nitems;
-	for (evp = gp->i_event + gp->i_next; nitems--; ++evp) {
+copy:	wp->i_cnt += nitems;
+	for (evp = wp->i_event + wp->i_next; nitems--; ++evp) {
 		if (p_evp != NULL)
 			*evp = *p_evp++;
 		else {
@@ -414,17 +416,17 @@ v_event_append(sp, argp)
 {
 	CHAR_T *s;			/* Characters. */
 	EVENT *evp;
-	GS *gp;
+	WIN *wp;
 	size_t nevents;			/* Number of events. */
 
 	/* Grow the buffer as necessary. */
 	nevents = argp->e_event == E_STRING ? argp->e_len : 1;
-	gp = sp->gp;
-	if (gp->i_event == NULL ||
-	    nevents > gp->i_nelem - (gp->i_next + gp->i_cnt))
+	wp = sp->wp;
+	if (wp->i_event == NULL ||
+	    nevents > wp->i_nelem - (wp->i_next + wp->i_cnt))
 		v_event_grow(sp, MAX(nevents, 64));
-	evp = gp->i_event + gp->i_next + gp->i_cnt;
-	gp->i_cnt += nevents;
+	evp = wp->i_event + wp->i_next + wp->i_cnt;
+	wp->i_cnt += nevents;
 
 	/* Transform strings of characters into single events. */
 	if (argp->e_event == E_STRING)
@@ -441,10 +443,10 @@ v_event_append(sp, argp)
 
 /* Remove events from the queue. */
 #define	QREM(len) {							\
-	if ((gp->i_cnt -= len) == 0)					\
-		gp->i_next = 0;						\
+	if ((wp->i_cnt -= len) == 0)					\
+		wp->i_next = 0;						\
 	else								\
-		gp->i_next += len;					\
+		wp->i_next += len;					\
 }
 
 /*
@@ -545,8 +547,10 @@ v_event_get(sp, argp, timeout, flags)
 	GS *gp;
 	SEQ *qp;
 	int init_nomap, ispartial, istimeout, remap_cnt;
+	WIN *wp;
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 	/* If simply checking for interrupts, argp may be NULL. */
 	if (argp == NULL)
@@ -558,14 +562,14 @@ retry:	istimeout = remap_cnt = 0;
 	 * If the queue isn't empty and we're timing out for characters,
 	 * return immediately.
 	 */
-	if (gp->i_cnt != 0 && LF_ISSET(EC_TIMEOUT))
+	if (wp->i_cnt != 0 && LF_ISSET(EC_TIMEOUT))
 		return (0);
 
 	/*
 	 * If the queue is empty, we're checking for interrupts, or we're
 	 * timing out for characters, get more events.
 	 */
-	if (gp->i_cnt == 0 || LF_ISSET(EC_INTERRUPT | EC_TIMEOUT)) {
+	if (wp->i_cnt == 0 || LF_ISSET(EC_INTERRUPT | EC_TIMEOUT)) {
 		/*
 		 * If we're reading new characters, check any scripting
 		 * windows for input.
@@ -615,7 +619,7 @@ append:			if (v_event_append(sp, argp))
 	if (LF_ISSET(EC_INTERRUPT | EC_TIMEOUT))
 		return (0);
 	 
-newmap:	evp = &gp->i_event[gp->i_next];
+newmap:	evp = &wp->i_event[wp->i_next];
 
 	/* 
 	 * If the next event in the queue isn't a character event, return
@@ -643,7 +647,7 @@ newmap:	evp = &gp->i_event[gp->i_next];
 		goto nomap;
 
 	/* Search the map. */
-	qp = seq_find(sp, NULL, evp, NULL, gp->i_cnt,
+	qp = seq_find(sp, NULL, evp, NULL, wp->i_cnt,
 	    LF_ISSET(EC_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT, &ispartial);
 
 	/*
@@ -694,7 +698,7 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 	}
 
 	/* Find out if the initial segments are identical. */
-	init_nomap = !e_memcmp(qp->output, &gp->i_event[gp->i_next], qp->ilen);
+	init_nomap = !e_memcmp(qp->output, &wp->i_event[wp->i_next], qp->ilen);
 
 	/* Delete the mapped characters from the queue. */
 	QREM(qp->ilen);
@@ -733,7 +737,7 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 			if (v_event_push(sp, NULL,
 			    qp->output, qp->ilen, CH_NOMAP | CH_MAPPED))
 				return (1);
-			evp = &gp->i_event[gp->i_next];
+			evp = &wp->i_event[wp->i_next];
 			goto nomap;
 		}
 		if (v_event_push(sp, NULL, qp->output, qp->olen, CH_MAPPED))
@@ -830,11 +834,11 @@ v_event_flush(sp, flags)
 	SCR *sp;
 	u_int flags;
 {
-	GS *gp;
+	WIN *wp;
 	int rval;
 
-	for (rval = 0, gp = sp->gp; gp->i_cnt != 0 &&
-	    FL_ISSET(gp->i_event[gp->i_next].e_flags, flags); rval = 1)
+	for (rval = 0, wp = sp->wp; wp->i_cnt != 0 &&
+	    FL_ISSET(wp->i_event[wp->i_next].e_flags, flags); rval = 1)
 		QREM(1);
 	return (rval);
 }
@@ -848,14 +852,14 @@ v_event_grow(sp, add)
 	SCR *sp;
 	int add;
 {
-	GS *gp;
+	WIN *wp;
 	size_t new_nelem, olen;
 
-	gp = sp->gp;
-	new_nelem = gp->i_nelem + add;
-	olen = gp->i_nelem * sizeof(gp->i_event[0]);
-	BINC_RET(sp, (char *)gp->i_event, olen, new_nelem * sizeof(gp->i_event[0]));
-	gp->i_nelem = olen / sizeof(gp->i_event[0]);
+	wp = sp->wp;
+	new_nelem = wp->i_nelem + add;
+	olen = wp->i_nelem * sizeof(wp->i_event[0]);
+	BINC_RET(sp, (char *)wp->i_event, olen, new_nelem * sizeof(wp->i_event[0]));
+	wp->i_nelem = olen / sizeof(wp->i_event[0]);
 	return (0);
 }
 

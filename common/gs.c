@@ -55,8 +55,6 @@ gs_init(name)
 	/* Structures shared by screens so stored in the GS structure. */
 	CIRCLEQ_INIT(&gp->frefq);
 	CIRCLEQ_INIT(&gp->exfq);
-	CIRCLEQ_INIT(&gp->dcb_store.textq);
-	LIST_INIT(&gp->cutq);
 	LIST_INIT(&gp->seqq);
 
 	thread_init(gp);
@@ -86,6 +84,9 @@ gs_new_win(GS *gp)
 	CIRCLEQ_INSERT_TAIL(&gp->dq, wp, q);
 	CIRCLEQ_INIT(&wp->scrq);
 
+	CIRCLEQ_INIT(&wp->dcb_store.textq);
+	LIST_INIT(&wp->cutq);
+
 	wp->gp = gp;
 
 	return wp;
@@ -106,6 +107,16 @@ win_end(WIN *wp)
 
 	while ((sp = wp->scrq.cqh_first) != (void *)&wp->scrq)
 		(void)screen_end(sp);
+
+	/* Free key input queue. */
+	if (wp->i_event != NULL)
+		free(wp->i_event);
+
+	/* Free cut buffers. */
+	cut_close(wp);
+
+	/* Free default buffer storage. */
+	(void)text_lfree(&wp->dcb_store.textq);
 
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	/* Free any temporary space. */
@@ -157,18 +168,8 @@ gs_end(gp)
 		}
 	}
 
-	/* Free key input queue. */
-	if (gp->i_event != NULL)
-		free(gp->i_event);
-
-	/* Free cut buffers. */
-	cut_close(gp);
-
 	/* Free map sequences. */
 	seq_close(gp);
-
-	/* Free default buffer storage. */
-	(void)text_lfree(&gp->dcb_store.textq);
 
 	/* Close message catalogs. */
 	msg_close(gp);
