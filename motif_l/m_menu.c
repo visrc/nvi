@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.13 1996/12/05 12:30:57 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:30:57 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.14 1996/12/05 21:04:53 bostic Exp $ (Berkeley) $Date: 1996/12/05 21:04:53 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -449,39 +449,6 @@ XtPointer	client_data;
 }
 
 void
-ma_append(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
-{
-	IP_BUF ipb;
-
-	ipb.code = IPO_APPEND;
-	(void)ip_send(NULL, &ipb);
-}
-
-void
-ma_insert(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
-{
-	IP_BUF ipb;
-
-	ipb.code = IPO_INSERT;
-	(void)ip_send(NULL, &ipb);
-}
-
-void
-ma_escape(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
-{
-	IP_BUF ipb;
-
-	ipb.code = IPO_EINSERT;
-	(void)ip_send(NULL, &ipb);
-}
-
-void
 ma_find(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -575,10 +542,6 @@ pull_down	edit_menu[] = {
     { "Cut",			ma_cut },
     { "Copy",			ma_copy },
     { "Paste",			ma_paste },
-    { "",			NULL },
-    { "Append",			ma_append },
-    { "Insert",			ma_insert },
-    { "Exit Append or Insert",	ma_escape },
     { "",			NULL },
     { "Find",			ma_find },
     { "Find Next",		ma_find_next },

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.7 1996/12/05 12:29:57 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:57 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.8 1996/12/05 21:04:36 bostic Exp $ (Berkeley) $Date: 1996/12/05 21:04:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,9 +203,6 @@ ip_trans(sp, ipp, evp)
 	u_int32_t val1, val2;
 
 	switch (ipp->ibuf[0]) {
-	case IPO_APPEND:
-	case IPO_EINSERT:
-	case IPO_INSERT:
 	case IPO_QUIT:
 	case IPO_TAG:
 	case IPO_TAGSPLIT:

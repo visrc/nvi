@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.4 1996/12/05 12:29:05 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:05 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.5 1996/12/05 21:04:24 bostic Exp $ (Berkeley) $Date: 1996/12/05 21:04:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -232,20 +232,11 @@ v_event(sp, vp)
 	};
 
 	switch (vp->ev.e_ipcom) {
-	case IPO_APPEND:
-		vp->kp = &vikeys['a'];
-		break;
 	case IPO_EDIT:
 		vp->kp = &vievents[0];
 		break;
 	case IPO_EDITSPLIT:
 		vp->kp = &vievents[1];
-		break;
-	case IPO_EINSERT:
-		vp->kp = &vikeys['\033'];
-		break;
-	case IPO_INSERT:
-		vp->kp = &vikeys['i'];
 		break;
 	case IPO_MOUSE_MOVE:
 		vp->kp = &vievents[2];
