@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.21 1993/04/13 16:26:37 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:26:37 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.22 1993/04/17 12:06:13 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:06:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
+#include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
@@ -19,9 +21,10 @@ static char sccsid[] = "$Id: v_ulcase.c,v 5.21 1993/04/13 16:26:37 bostic Exp $ 
 
 /*
  * v_ulcase -- [count]~
- *	This function toggles upper & lower case letters.  This command
- *	in historic vi ignored the count.  It really should have had an
- *	associated motion, but it's too late to change it now.
+ *	This function toggles upper & lower case letters.  In historic
+ *	vi, the count was ignored.  It would have been better if there
+ *	had been an associated motion, but it's too late to change it
+ *	now.
  */
 int
 v_ulcase(sp, ep, vp, fm, tm, rp)
@@ -30,69 +33,111 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	register int ch;
-	register char *p;
-	size_t cno, len, nplen;
+	GS *gp;
 	recno_t lno;
+	size_t bplen, lcnt, len;
 	u_long cnt;
-	int change;
-	char *np;
+	int ch, change, rval;
+	char *bp, *p;
 
-	lno = fm->lno;
-	cno = fm->cno;
-
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
-		if (file_lline(sp, ep) == 0)
-			v_eof(sp, ep, NULL);
-		else
-			GETLINE_ERR(sp, lno);
-		return (1);
+	/* Figure out what memory to use. */
+	gp = sp->gp;
+	if (F_ISSET(gp, G_TMP_INUSE)) {
+		bp = NULL;
+		bplen = 0;
+	} else {
+		bp = gp->tmp_bp;
+		F_SET(gp, G_TMP_INUSE);
 	}
 
-	np = NULL;
-	nplen = 0;
-	if (binc(sp, &np, &nplen, len))
-		return (1);
-	memmove(np, p, len);
-
-	p = np + cno;
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (change = 0; cnt--; ++cno) {
-		if (cno == len) {
-			if (change) {
-				if (file_sline(sp, ep, lno, np, len)) {
-					rp->lno = lno;
-					rp->cno = cno;
-					return (1);
-				}
+	/*
+	 * Historic vi didn't permit ~ to cross newline boundaries.
+	 * I can think of no reason why it shouldn't, which at least
+	 * lets you auto-repeat through a paragraph.
+	 */
+	rval = 0;
+	for (change = -1, cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt;) {
+		/* Get the line; EOF is an infinite sink. */
+		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+			if (file_lline(sp, ep) >= fm->lno) {
+				GETLINE_ERR(sp, fm->lno);
+				rval = 1;
+				break;
 			}
-			if ((p = file_gline(sp, ep, ++lno, &len)) == NULL) {
-				rp->lno = --lno;
-				rp->cno = len - 1;
-				return (0);
-			}
-			if (binc(sp, &np, &nplen, len))
+			if (change == -1) {
+				v_eof(sp, ep, NULL);
 				return (1);
-			change = 0;
-			cno = 0;
-			p = np;
+			}
+			break;
 		}
 
-		ch = *(u_char *)p;
-		if (islower(ch)) {
-			*p++ = toupper(ch);
-			change = 1;
-		} else if (isupper(ch)) {
-			*p++ = tolower(ch);
-			change = 1;
+		/* Set current line number. */
+		lno = fm->lno;
+
+		/* Empty lines just decrement the count. */
+		if (len == 0) {
+			--cnt;
+			++fm->lno;
+			fm->cno = 0;
+			change = 0;
+			continue;
+		}
+
+		/* Get a copy of the line. */
+		if (bp == gp->tmp_bp) {
+			BINC(sp, gp->tmp_bp, gp->tmp_blen, len);
+			bp = gp->tmp_bp;
 		} else
-			++p;
+			BINC(sp, bp, bplen, len);
+		memmove(bp, p, len);
+
+		/* Set starting pointer. */
+		if (change == -1)
+			p = bp + fm->cno;
+		else
+			p = bp;
+
+		/*
+		 * Figure out how many characters get changed in this
+		 * line.  Set the final cursor column.
+		 */
+		if (fm->cno + cnt >= len) {
+			lcnt = len - fm->cno;
+			++fm->lno;
+			fm->cno = 0;
+		} else
+			fm->cno += lcnt = cnt;
+		cnt -= lcnt;
+
+		/* Change the line. */
+		for (change = 0; lcnt--; ++p) {
+			ch = *(u_char *)p;
+			if (islower(ch)) {
+				*p = toupper(ch);
+				change = 1;
+			} else if (isupper(ch)) {
+				*p = tolower(ch);
+				change = 1;
+			}
+		}
+
+		/* Update the line if necessary. */
+		if (change && file_sline(sp, ep, lno, bp, len)) {
+			rval = 1;
+			break;
+		}
 	}
-	rp->lno = lno;
-	rp->cno = cno;
-	if (change) {
-		if (file_sline(sp, ep, lno, np, len))
-			return (1);
+
+	/* If changed lines, could be on an illegal line. */
+	if (fm->lno != lno && file_gline(sp, ep, fm->lno, &len) == NULL) {
+		--fm->lno;
+		fm->cno = len ? len - 1 : 0;
 	}
-	return (0);
+	*rp = *fm;
+
+	if (bp == gp->tmp_bp)
+		F_CLR(gp, G_TMP_INUSE);
+	else
+		free(bp);
+	return (rval);
 }
