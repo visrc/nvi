@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.62 1994/01/11 22:31:01 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:31:01 $";
+static char sccsid[] = "$Id: main.c,v 8.63 1994/01/11 22:35:55 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:35:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -175,8 +175,11 @@ main(argc, argv)
 		F_SET(gp, G_SNAPSHOT);
 
 	/* Build and initialize the first/current screen. */
-	if (screen_init(NULL, &sp, flags))
+	if (screen_init(NULL, &sp, flags)) {
+		if (sp == NULL)
+			goto err2;
 		goto err1;
+	}
 	sp->saved_vi_mode = saved_vi_mode;
 	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
 
