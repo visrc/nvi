@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.65 1993/02/19 18:31:37 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:31:37 $";
+static char sccsid[] = "$Id: ex.c,v 5.66 1993/02/19 20:02:02 bostic Exp $ (Berkeley) $Date: 1993/02/19 20:02:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -556,7 +556,7 @@ addr2:	switch(cmd.addrcnt) {
 		 * "vi + nonexistent_file" to work.
 		 */
 		if (num == 0 && (mode != MODE_VI || uselastcmd != 1) &&
-		    flags & E_ZERO) {
+		    !(flags & E_ZERO)) {
 			msg(ep, M_ERROR,
 			    "The %s command doesn't permit an address of 0.",
 			    cp->name);
@@ -714,9 +714,11 @@ linespec(ep, cmd, cp)
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
 		cp->addr1.lno = 1;
-		cp->addr1.cno = 0;
 		cp->addr2.lno = file_lline(ep);
-		cp->addr2.cno = 0;
+		/* If an empty file, then the first line is 0, not 1. */
+		if (cp->addr2.lno == 0)
+			cp->addr1.lno = 0;
+		cp->addr1.cno = cp->addr2.cno = 0;
 		cp->addrcnt = 2;
 		return (++cmd);
 	}
@@ -743,11 +745,6 @@ linespec(ep, cmd, cp)
 			savecursor_set = 1;
 			/* FALLTHROUGH */
 		case ',':		/* Comma delimiter. */
-			++cmd;
-			break;
-		case '.':		/* Current position. */
-			cur.lno = ep->lno;
-			cur.cno = ep->cno;
 			++cmd;
 			break;
 		case '$':		/* Last line. */
@@ -793,9 +790,17 @@ linespec(ep, cmd, cp)
 			cur.cno = ep->cno = mp->cno;
 			cmd = endp;
 			break;
-		case '+':
-		case '-':
-			cur.lno = ep->lno;
+		case '.':		/* Current position. */
+			++cmd;
+			/* FALLTHROUGH */
+		case '+':		/* Increment. */
+		case '-':		/* Decrement. */
+			/* If an empty file, then '.' is 0, not 1. */
+			if (ep->lno == 1) {
+				if ((cur.lno = file_lline(ep)) != 0)
+					cur.lno = 1;
+			} else
+				cur.lno = ep->lno;
 			cur.cno = ep->cno;
 			break;
 		default:
