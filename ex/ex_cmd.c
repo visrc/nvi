@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.28 1993/11/23 11:00:34 bostic Exp $ (Berkeley) $Date: 1993/11/23 11:00:34 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.29 1993/12/02 10:54:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:54:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,6 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.28 1993/11/23 11:00:34 bostic Exp $ (B
  * syntax is as follows:
  *
  *	!		-- ! flag
- *	+		-- +cmd
  *	1		-- flags: [+-]*[pl#][+-]*
  *	2		-- flags: [-.+^]
  *	3		-- flags: [-.+^=]
@@ -146,12 +145,12 @@ EXCMDLIST const cmds[] = {
 	    "specify digraphs (not implemented)"},
 /* C_EDIT */
 	{"edit",	ex_edit,	E_NOGLOBAL|E_NORC,
-	    "!+f1o",
+	    "!f1o",
 	    "e[dit][!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EX */
 	{"ex",		ex_edit,	E_NOGLOBAL|E_NORC,
-	    "!+f1o",
+	    "!f1o",
 	    "ex[!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EXUSAGE */
@@ -371,7 +370,7 @@ EXCMDLIST const cmds[] = {
 	    "enter visual (vi) mode"},
 /* C_VISUAL_VI */
 	{"visual",	ex_edit,	E_NOGLOBAL|E_NORC,
-	    "!+f1o",
+	    "!f1o",
 	    "vi[sual][!] [+cmd] [file]",
 	    "enter visual (vi) mode"},
 /* C_VIUSAGE */
