@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.2 1995/05/05 18:51:31 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:31 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.3 1995/06/08 18:53:47 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ex_read(sp, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t arglen, blen, len;
-	int argc, btear, nf, rval;
+	int argc, nf, rval;
 	char *p;
 
 	/*
@@ -86,7 +86,7 @@ ex_read(sp, cmdp)
 	if (sp->ep == NULL) {
 		if ((frp = file_add(sp, NULL)) == NULL)
 			return (1);
-		if (file_init(sp, frp, NULL, FS_WELCOME))
+		if (file_init(sp, frp, NULL, 0))
 			return (1);
 	}
 
@@ -218,7 +218,7 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		msgq(sp, M_ERR, "264|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	sp->gp->scr_busy(sp, msg_cat(sp, "285|Reading ...", NULL), 1);
+	sp->gp->scr_busy(sp, "285|Reading...", 1);
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
 	sp->gp->scr_busy(sp, NULL, 0);
 

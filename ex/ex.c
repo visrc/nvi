@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.1 1995/04/13 17:21:48 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:48 $";
+static char sccsid[] = "$Id: ex.c,v 10.2 1995/06/08 18:53:17 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,20 +33,22 @@ static char sccsid[] = "$Id: ex.c,v 10.1 1995/04/13 17:21:48 bostic Exp $ (Berke
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
 
 #if defined(DEBUG) && defined(COMLOG)
 static void	ex_comlog __P((SCR *, EXCMD *));
 #endif
 static EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
-static int	ex_gat __P((SCR *, EXCMD *));
-static int	ex_gatfree __P((SCR *));
-static int	ex_line __P((SCR *, EXCMD *, int *));
+static int	ex_discard __P((SCR *));
+static int	ex_line __P((SCR *, EXCMD *, MARK *, int *, int *));
 static void	ex_unknown __P((SCR *, char *, size_t));
 
 /*
  * ex --
  *	Ex event handler.
+ *
+ * PUBLIC: int ex __P((SCR *, EVENT *));
  */
 int
 ex(sp, evp)
@@ -55,29 +57,47 @@ ex(sp, evp)
 {
 	EX_PRIVATE *exp;
 	GS *gp;
+	MSG *freep, *mp;
 	TEXT *tp;
-	int complete, notused;
+	int complete;
 
 	/* Local variables. */
 	gp = sp->gp;
 	exp = EXP(sp);
 
-	switch (evp->e_event) {			/* !E_CHARACTER events. */
+	switch (evp->e_event) {
 	case E_CHARACTER:
 		break;
+	case E_EOF:
+	case E_ERR:
+		return (0);
 	case E_INTERRUPT:
 		/* Interrupts get passed on to other handlers. */
 		if (gp->cm_state == ES_RUNNING)
 			break;
 
-		/* Command mode displays a message. */
-		goto interrupt;
-	case E_SIGCONT:
-		/* If in text input, continue works like an interrupt. */
-		if (gp->cm_state == ES_RUNNING &&
-		    gp->cm_next == ES_CTEXT_TEARDOWN)
-			goto cmd;
+		/*
+		 * Otherwise, display an interrupt message and restart in
+		 * command mode.
+		 */
+		gp->cm_state = ES_GET_CMD;
+		ex_message(sp, NULL, EXM_INTERRUPT);
+		break;
+	case E_RESIZE:
+		sp->rows = O_VAL(sp, O_LINES);
+		sp->cols = O_VAL(sp, O_COLUMNS);
 		return (0);
+	case E_SIGCONT:
+		if (gp->cm_state != ES_RUNNING ||
+		    gp->cm_next != ES_ITEXT_TEARDOWN)
+			return (0);
+		/*
+		 * !!!
+		 * Historically, it was as if the input was interrupted.
+		 * Dummy up an interrupt event.
+		 */
+		evp->e_event = E_INTERRUPT;
+		break;
 	case E_START:
 		sp->rows = O_VAL(sp, O_LINES);
 		sp->cols = O_VAL(sp, O_COLUMNS);
@@ -88,50 +108,41 @@ ex(sp, evp)
 			sp->if_name = strdup("input");
 		}
 
+		/*
+		 * Messages get written before we have a screen on which to
+		 * put them.  Make sure they get displayed as soon as we can.
+		 */
+		for (mp = sp->gp->msgq.lh_first; mp != NULL;) {
+			(void)ex_msgwrite(sp, mp->mtype, mp->buf, mp->len);
+			freep = mp;
+			mp = mp->q.le_next;
+			LIST_REMOVE(freep, q);
+			free(freep->buf);
+			free(freep);
+		}
 		gp->cm_state = ES_GET_CMD;
 		break;
-	case E_RESIZE:
-		sp->rows = O_VAL(sp, O_LINES);
-		sp->cols = O_VAL(sp, O_COLUMNS);
-		return (0);
-	case E_EOF:
-	case E_ERR:
-	case E_REPAINT:
 	case E_STOP:
 		return (0);
-	case E_TIMEOUT:
-		break;
 	default:
 		abort();
 		/* NOTREACHED */
 	}
 
 next_state:
-	switch (gp->cm_state) {		/* E_CHARACTER events. */
+	switch (gp->cm_state) {
 	/*
 	 * ES_RUNNING:
 	 *
-	 * Something else is running -- a search loop or a text input loop,
-	 * and wanted to check for interrupts, or a file switched and the
-	 * main code is the only thing that can handle that.  Pass the event
-	 * on to the handler.  If the handler finishes, move to the next state.
+	 * A command loop is running, so it gets the event.  Move to the
+	 * next state when the handler finishes if we're in ex, otherwise
+	 * return into vi.
 	 */
 	case ES_RUNNING:
-		if (exp->run_func != NULL) {
-			if (exp->run_func(sp, evp, &complete))
-				return (1);
-			if (!complete)
-				return (0);
-		}
-		FL_CLR(gp->ec_flags, EC_INTERRUPT);
-
-		if (evp->e_event == E_INTERRUPT) {
-interrupt:		(void)ex_printf(EXCOOKIE, "\n");
-			msgq(sp, M_ERR, v_event_flush(sp, CH_MAPPED) ?
-			    "072|Interrupted: mapped keys discarded" :
-			    "134|Interrupted");
-			goto cmd;
-		}
+		if (exp->run_func(sp, evp, &complete))
+			return (1);
+		if (!complete)
+			return (0);
 
 		gp->cm_state = gp->cm_next;
 		goto next_state;
@@ -142,13 +153,12 @@ interrupt:		(void)ex_printf(EXCOOKIE, "\n");
 	 * Initial command state.
 	 */
 	case ES_GET_CMD:
-cmd:		gp->cm_state = ES_GET_CMD;
+		if (F_ISSET(sp, S_STATUS)) {
+			F_CLR(sp, S_STATUS);
+			msg_status(sp, sp->lno, 0);
+		}
+		(void)msg_rpt(sp);
 
-		/* Flush everything out to the screen. */
-		(void)msg_rpt(sp, 0);
-		if (gp->scr_msgflush(sp, &notused))
-			return (1);
-				
 		/* If we're exiting the screen, clean up. */
 		switch (F_ISSET(sp, S_VI | S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
 		case S_VI:
@@ -180,10 +190,33 @@ cmd:		gp->cm_state = ES_GET_CMD;
 
 		/* Increment the line count. */
 		++sp->if_lno;
-		
+
 		if (ex_txt_setup(sp, ':'))
 			return (1);
-		break;
+		return (0);
+
+	/*
+	 * ES_CTEXT_TEARDOWN:
+	 *
+	 * We have just ended command text input mode.  Tear down the setup
+	 * and execute the command.
+	 */
+	 case ES_CTEXT_TEARDOWN:
+		/*
+		 * If the user entered a single carriage return, hand ex_cmd()
+		 * a space -- it discards single newlines.
+		 */
+		tp = exp->im_tiq.cqh_first;
+		if (tp->len == 0) {
+			tp->len = 1;
+			tp->lb[0] = ' ';	/* __TK__ why not '|'? */
+		}
+
+		gp->excmd.cp = tp->lb;
+		gp->excmd.clen = tp->len;
+		F_INIT(&gp->excmd, E_NEEDSEP);
+		gp->cm_state = ES_PARSE;
+		goto next_state;
 
 	/*
 	 * ES_ITEXT_TEARDOWN:
@@ -194,62 +227,35 @@ cmd:		gp->cm_state = ES_GET_CMD;
 	case ES_ITEXT_TEARDOWN:
 		if (ex_aci_td(sp))
 			return (1);
-		gp->cm_state = ES_PARSE_FUNC;
-		goto parse;
-
-	/*
-	 * ES_CTEXT_TEARDOWN:
-	 *
-	 * We have just ended command text input mode.  Tear down the setup
-	 * and execute the command.
-	 */
-	 case ES_CTEXT_TEARDOWN:
-		/*
-		 * If the user entered a carriage return, send ex_cmd() a
-		 * space -- it discards single newlines.
-		 */
-		tp = exp->im_tiq.cqh_first;
-		if (tp->len == 0) {
-			tp->len = 1;
-			tp->lb[0] = ' ';	/* __TK__ why not '|'? */
-		}
-
-		gp->excmd.cp = tp->lb;
-		gp->excmd.cplen = tp->len;
-		F_INIT(&gp->excmd, E_NEEDSEP);
 		gp->cm_state = ES_PARSE;
-		goto parse;
-
-	/*
-	 * ES_PARSE_EXIT, ES_PARSE_FUNC, ES_PARSE_LINE, ES_PARSE_RANGE:
-	 *
-	 * Restart the parser at some point.
-	 */
-	case ES_PARSE_EXIT:
-		FL_CLR(gp->ec_flags, EC_INTERRUPT);
-		/* FALLTHROUGH */
-
-	case ES_PARSE_FUNC:
-	case ES_PARSE_LINE:
-	case ES_PARSE_RANGE:
-		goto parse;
+		goto next_state;
 
 	/*
 	 * ES_PARSE:
+	 *	Start the parser.
+	 * ES_PARSE_CONT:
+	 *	An ES_RUNNING function just finished.
+	 * ES_PARSE_RESTART:
+	 *	We switched screens in the middle of a command.
 	 *
-	 * Start the parser.
+	 * Start or continue the parser.
 	 */
 	case ES_PARSE:
-parse:		if (ex_cmd(sp))
+	case ES_PARSE_CONT:
+	case ES_PARSE_RESTART:
+		if (ex_cmd(sp))
 			return (1);
-		if (gp->cm_state != ES_PARSE)
-			break;
-		goto cmd;
+		if (gp->cm_state == ES_RUNNING)
+			return (0);
+		gp->cm_state = ES_GET_CMD;
+		goto next_state;
 	default:
 		abort();
 		/* NOTREACHED */
 	}
-	return (0);
+
+	abort();
+	/* NOTREACHED */
 }
 
 /*
@@ -270,7 +276,12 @@ parse:		if (ex_cmd(sp))
  *	vi
  *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
  *
- * For extra credit, try it in a startup .exrc file.
+ * or:	vi
+ *	:set|file|append|set|file
+ *
+ * For extra credit, try them in a startup .exrc file.
+ *
+ * PUBLIC: int ex_cmd __P((SCR *));
  */
 int
 ex_cmd(sp)
@@ -278,135 +289,105 @@ ex_cmd(sp)
 {
 	enum nresult nret;
 	EX_PRIVATE *exp;
-	EXCMD *cmdp;
+	EXCMD *ecp;
 	GS *gp;
 	MARK cur;
 	recno_t lno;
 	size_t len;
+	u_int32_t flags;
 	long ltmp;
-	int ch, cnt, delim, isaddr, gcnt, namelen;
+	int at_found, gv_found, at_norange_found;
+	int ch, cnt, delim, isaddr, namelen;
 	int newscreen, nf, notempty, tmp, vi_address;
 	char *p, *s, *t;
 
 	gp = sp->gp;
 	exp = EXP(sp);
-	cmdp = &gp->excmd;
 
-	switch (gp->cm_state) {
+	/*
+	 * We always start running the command on the top of the stack.
+	 * This means that *everything* must be resolved when we leave
+	 * this function for any reason.
+	 */
+	if ((ecp = gp->ecq.lh_first) == NULL)
+		abort();
+
+loop:	switch (gp->cm_state) {
+	/*
+	 * ES_ITEXT_TEARDOWN:
+	 *
+	 * We have just ended text input mode CALLED FROM VI.  Tear down
+	 * the setup and finish the command.
+	 */
+	case ES_ITEXT_TEARDOWN:
+		if (ex_aci_td(sp))
+			return (1);
+		gp->cm_state = ES_PARSE;
+		goto loop;
+
 	/*
 	 * ES_PARSE:
 	 *
 	 * Starting to parse a new command, do setup and start.
 	 */
 	case ES_PARSE:
-		cmdp->sep = F_ISSET(cmdp, E_NEEDSEP) ? SEP_NOTSET : SEP_NONE;
+		ecp->sep = F_ISSET(ecp, E_NEEDSEP) ? SEP_NOTSET : SEP_NONE;
 		break;
 
-	/* 
-	 * ES_PARSE_EXIT:
-	 *
-	 * Restarting after a screen change.
-	 */
-	case ES_PARSE_EXIT:
-		gp->cm_state = ES_PARSE;
-		break;
-	
 	/*
-	 * ES_PARSE_FUNC:
+	 * ES_PARSE_CONT:
 	 *
-	 * Restarting from the underlying function.
+	 * Continue after calling an underlying function.
 	 */
-	case ES_PARSE_FUNC:
+	case ES_PARSE_CONT:
 		gp->cm_state = ES_PARSE;
 		goto func_restart;
 
 	/*
-	 * ES_PARSE_LINE:
+	 * ES_PARSE_RESTART:
 	 *
-	 * Restarting from the line routine.
+	 * Continue after switching screens or files in a command.
 	 */
-	case ES_PARSE_LINE:
-		if (ex_line(sp, cmdp, &isaddr))
-			return (1);
-		switch (gp->cm_state) {
-		case ES_PARSE:
-			goto line_restart;
-		case ES_PARSE_ERROR:
-			goto err;
-		case ES_RUNNING:
-			gp->cm_next = ES_PARSE_LINE;
-			return (0);
-		default:
-			abort();
-		}
-		/* NOTREACHED */
-
-	/*
-	 * ES_PARSE_RANGE:
-	 *
-	 * Restarting from the range routine.
-	 */
-	case ES_PARSE_RANGE:
-		if (ex_range(sp, cmdp))
-			return (1);
-		switch (gp->cm_state) {
-		case ES_PARSE:
-			goto range_restart;
-		case ES_PARSE_ERROR:
-			goto err;
-		case ES_RUNNING:
-			gp->cm_next = ES_PARSE_RANGE;
-			return (0);
-		default:
-			abort();
-		}
-		/* NOTREACHED */
+	case ES_PARSE_RESTART:
+		gp->cm_state = ES_PARSE;
+		break;
 
 	default:
 		abort();
 	}
 
-	/* Global interrupt check count. */
-	gcnt = INTERRUPT_CHECK;
 
-loop:	/*
+	/*
 	 * If a move to the end of the file is scheduled for this command,
 	 * do it now.
 	 */
-	if (F_ISSET(cmdp, E_MOVETOEND)) {
+	if (F_ISSET(ecp, E_MOVETOEND)) {
 		 if (file_lline(sp, &sp->lno))
 			return (1);
 		 sp->cno = 0;
-		 F_CLR(cmdp, E_MOVETOEND);
+		 F_CLR(ecp, E_MOVETOEND);
 	}
 
 	/* If we found a newline, increment the count now. */
-	if (F_ISSET(cmdp, E_NEWLINE)) {
-		F_CLR(cmdp, E_NEWLINE);
+	if (F_ISSET(ecp, E_NEWLINE)) {
+		F_CLR(ecp, E_NEWLINE);
 		++sp->if_lno;
 	}
 
-	/*
-	 * Initialize the EXCMD structure.  Only the current command
-	 * fields are saved.
-	 */
-	p = cmdp->cp;
-	len = cmdp->cplen;
-	memset(cmdp, 0, sizeof(EXCMD));
-	cmdp->cp = p;
-	cmdp->cplen = len;
+	/* (Re)initialize the EXCMD structure. */
+	ZERO_EXCMD(ecp);
 
 	/* Initialize the argument structures. */
-	if (argv_init(sp, cmdp))
+	if (argv_init(sp, ecp))
 		goto err;
 
 	/* Initialize +cmd, saved command information. */
-	cmdp->arg1 = NULL;
-	cmdp->save_cmdlen = 0;
+	ecp->arg1 = NULL;
+	ecp->save_cmdlen = 0;
 
 	/* Skip <blank>s, empty lines.  */
-	for (notempty = 0; cmdp->cplen > 0; ++cmdp->cp, --cmdp->cplen)
-		if ((ch = *cmdp->cp) == '\n')
+	for (notempty = 0; ecp->clen > 0; ++ecp->cp, --ecp->clen)
+		if ((ch = *ecp->cp) == '\n')
 			++sp->if_lno;
 		else if (isblank(ch))
 			notempty = 1;
@@ -420,42 +401,39 @@ loop:	/*
 	 * The stripping is done here because, historically, any command
 	 * could have preceding colons, e.g. ":g/pattern/:p" worked.
 	 */
-	if (cmdp->cplen != 0 && ch == ':') {
+	if (ecp->clen != 0 && ch == ':') {
 		notempty = 1;
-		while (--cmdp->cplen > 0 && (ch = *++cmdp->cp) == ':');
+		while (--ecp->clen > 0 && (ch = *++ecp->cp) == ':');
 	}
 
 	/*
 	 * Command lines that start with a double-quote are comments.
 	 *
 	 * !!!
-	 * Historically, there was no escape or delimiter for a comment,
-	 * e.g. :"foo|set was a single comment and nothing was output.
-	 * Since nvi permits users to escape <newline> characters into
-	 * command lines, we have to check for that case.
+	 * Historically, there was no escape or delimiter for a comment, e.g.
+	 * :"foo|set was a single comment and nothing was output.  Since nvi
+	 * permits users to escape <newline> characters into command lines, we
+	 * have to check for that case.
 	 */
-	if (cmdp->cplen != 0 && ch == '"') {
-		while (--cmdp->cplen > 0 && *++cmdp->cp != '\n');
-		if (*cmdp->cp == '\n') {
-			F_SET(cmdp, E_NEWLINE);
-			++cmdp->cp;
-			--cmdp->cplen;
+	if (ecp->clen != 0 && ch == '"') {
+		while (--ecp->clen > 0 && *++ecp->cp != '\n');
+		if (*ecp->cp == '\n') {
+			F_SET(ecp, E_NEWLINE);
+			++ecp->cp;
+			--ecp->clen;
 		}
 		goto loop;
 	}
 
 	/* Skip whitespace. */
-	for (; cmdp->cplen > 0; ++cmdp->cp, --cmdp->cplen) {
-		ch = *cmdp->cp;
+	for (; ecp->clen > 0; ++ecp->cp, --ecp->clen) {
+		ch = *ecp->cp;
 		if (!isblank(ch))
 			break;
 	}
 
 	/*
-	 * The last point at which an empty line can mean do nothing.  It may
-	 * not look like it, but here's where we end up when we finish each ex
-	 * command.  At which point, if there is an @ buffer or global command,
-	 * load them up.
+	 * The last point at which an empty line can mean do nothing.
 	 *
 	 * !!!
 	 * Historically, in ex mode, lines containing only <blank> characters
@@ -464,16 +442,20 @@ loop:	/*
 	 * annoyance, as vi kept trying to treat them as print commands.  We
 	 * ignore backward compatibility in this case, discarding lines that
 	 * contain only <blank> characters from .exrc files.
+	 *
+	 * !!!
+	 * This is where you end up when you're done a command, i.e. clen has
+	 * gone to zero.  Continue if there are more commands to run.
 	 */
-	if (cmdp->cplen == 0 &&
-	    (!notempty || F_ISSET(sp, S_VI) || F_ISSET(cmdp, E_BLIGNORE))) {
-		if (exp->gatq.lh_first != NULL) {
-			if (ex_gat(sp, cmdp))
-				return (1);
-			if (cmdp->cplen != 0)
-				goto loop;
-		}
-		goto ret;
+	if (ecp->clen == 0 &&
+	    (!notempty || F_ISSET(sp, S_VI) || F_ISSET(ecp, E_BLIGNORE))) {
+		if (ex_load(sp))
+			return (1);
+		if ((ecp = gp->ecq.lh_first) == NULL)
+			abort();
+		if (ecp->clen != 0)
+			goto loop;
+		return (0);
 	}
 
 	/*
@@ -486,35 +468,19 @@ loop:	/*
 	 * command character, but this is the ex parser, and I've been wrong
 	 * before.
 	 */
-	if (cmdp->sep == NOTSET)
-		cmdp->sep = cmdp->cplen == 0 || cmdp->cplen == 1 &&
-		    cmdp->cp[0] == '\004' ? SEP_NEED_NR : SEP_NEED_N;
+	if (ecp->sep == NOTSET)
+		ecp->sep = ecp->clen == 0 || ecp->clen == 1 &&
+		    ecp->cp[0] == '\004' ? SEP_NEED_NR : SEP_NEED_N;
 
-	/*
-	 * Parse command addresses.
-	 *
-	 * If the range contained a search expression, we may have changed
-	 * state during the call, and we're now searching the file.  Push
-	 * ourselves onto the state stack.
-	 */
-	if (ex_range(sp, cmdp))
+	/* Parse command addresses. */
+	if (ex_range(sp, ecp, &tmp))
 		return (1);
-	switch (gp->cm_state) {
-	case ES_PARSE:
-		break;
-	case ES_PARSE_ERROR:
+	if (tmp)
 		goto err;
-	case ES_RUNNING:
-		gp->cm_next = ES_PARSE_RANGE;
-		return (0);
-	default:
-		abort();
-	}
-range_restart:
 
 	/* Skip whitespace. */
-	for (; cmdp->cplen > 0; ++cmdp->cp, --cmdp->cplen) {
-		ch = *cmdp->cp;
+	for (; ecp->clen > 0; ++ecp->cp, --ecp->clen) {
+		ch = *ecp->cp;
 		if (!isblank(ch))
 			break;
 	}
@@ -541,18 +507,18 @@ range_restart:
 	 */
 #define	SINGLE_CHAR_COMMANDS	"\004!#&*<=>@~"
 	newscreen = 0;
-	if (cmdp->cplen != 0 && cmdp->cp[0] != '|' && cmdp->cp[0] != '\n') {
-		if (strchr(SINGLE_CHAR_COMMANDS, *cmdp->cp)) {
-			p = cmdp->cp;
-			++cmdp->cp;
-			--cmdp->cplen;
+	if (ecp->clen != 0 && ecp->cp[0] != '|' && ecp->cp[0] != '\n') {
+		if (strchr(SINGLE_CHAR_COMMANDS, *ecp->cp)) {
+			p = ecp->cp;
+			++ecp->cp;
+			--ecp->clen;
 			namelen = 1;
 		} else {
-			for (p = cmdp->cp;
-			    cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp)
-				if (!isalpha(*cmdp->cp))
+			for (p = ecp->cp;
+			    ecp->clen > 0; --ecp->clen, ++ecp->cp)
+				if (!isalpha(*ecp->cp))
 					break;
-			if ((namelen = cmdp->cp - p) == 0) {
+			if ((namelen = ecp->cp - p) == 0) {
 				msgq(sp, M_ERR, "099|Unknown command name");
 				goto err;
 			}
@@ -580,12 +546,12 @@ range_restart:
 			    t = cmds[C_DELETE].name; *s == *t; ++s, ++t);
 			if (s[0] == 'l' || s[0] == 'p' || s[0] == '+' ||
 			    s[0] == '-' || s[0] == '^' || s[0] == '#') {
-				len = (cmdp->cp - p) - (s - p);
-				cmdp->cp -= len;
-				cmdp->cplen += len;
-				cmdp->rcmd = cmds[C_DELETE];
-				cmdp->rcmd.syntax = "1bca1";
-				cmdp->cmd = &cmdp->rcmd;
+				len = (ecp->cp - p) - (s - p);
+				ecp->cp -= len;
+				ecp->clen += len;
+				ecp->rcmd = cmds[C_DELETE];
+				ecp->rcmd.syntax = "1bca1";
+				ecp->cmd = &ecp->rcmd;
 				goto skip_srch;
 			}
 			break;
@@ -613,13 +579,13 @@ range_restart:
 		 * follows the 's', but we limit the choices here to "cgr" so
 		 * that we get unknown command messages for wrong combinations.
 		 */
-		if ((cmdp->cmd = ex_comm_search(p, namelen)) == NULL)
+		if ((ecp->cmd = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
 			case 'k':
 				if (p[1] && !p[2]) {
-					cmdp->cp -= namelen - 1;
-					cmdp->cplen += namelen - 1;
-					cmdp->cmd = &cmds[C_K];
+					ecp->cp -= namelen - 1;
+					ecp->clen += namelen - 1;
+					ecp->cmd = &cmds[C_K];
 					break;
 				}
 				goto unknown;
@@ -629,11 +595,11 @@ range_restart:
 					    s[0] != 'g' && s[0] != 'r')
 						break;
 				if (cnt == 0) {
-					cmdp->cp -= namelen - 1;
-					cmdp->cplen += namelen - 1;
-					cmdp->rcmd = cmds[C_SUBSTITUTE];
-					cmdp->rcmd.fn = ex_subagain;
-					cmdp->cmd = &cmdp->rcmd;
+					ecp->cp -= namelen - 1;
+					ecp->clen += namelen - 1;
+					ecp->rcmd = cmds[C_SUBSTITUTE];
+					ecp->rcmd.fn = ex_subagain;
+					ecp->cmd = &ecp->rcmd;
 					break;
 				}
 				/* FALLTHROUGH */
@@ -650,8 +616,8 @@ unknown:			if (newscreen)
 		 * Make the change now, before we test for the newscreen
 		 * semantic, so that we're testing the right one.
 		 */
-skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
-			cmdp->cmd = &cmds[C_VISUAL_VI];
+skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
+			ecp->cmd = &cmds[C_VISUAL_VI];
 
 		/*
 		 * !!!
@@ -661,23 +627,23 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		 * just made Preserve and Put work by accident.  Nvi uses
 		 * Previous to mean previous-in-a-new-screen, so be careful.
 		 */
-		if (newscreen && !F_ISSET(cmdp->cmd, E_NEWSCREEN) &&
-		    (cmdp->cmd == &cmds[C_PRINT] ||
-		    cmdp->cmd == &cmds[C_PRESERVE]))
+		if (newscreen && !F_ISSET(ecp->cmd, E_NEWSCREEN) &&
+		    (ecp->cmd == &cmds[C_PRINT] ||
+		    ecp->cmd == &cmds[C_PRESERVE]))
 			newscreen = 0;
 
 		/* Test for a newscreen associated with this command. */
-		if (newscreen && !F_ISSET(cmdp->cmd, E_NEWSCREEN))
+		if (newscreen && !F_ISSET(ecp->cmd, E_NEWSCREEN))
 			goto unknown;
 
 		/*
 		 * Hook for commands that are either not yet implemented
 		 * or turned off.
 		 */
-		if (F_ISSET(cmdp->cmd, E_NOPERM)) {
+		if (F_ISSET(ecp->cmd, E_NOPERM)) {
 			msgq(sp, M_ERR,
 			    "101|The %s command is not currently supported",
-			    cmdp->cmd->name);
+			    ecp->cmd->name);
 			goto err;
 		}
 
@@ -686,30 +652,30 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		 * The string passed to the underlying function may not be
 		 * nul terminated in this case.
 		 */
-		if ((cmdp->cmd == &cmds[C_SHIFTL] && *p == '<') ||
-		    (cmdp->cmd == &cmds[C_SHIFTR] && *p == '>')) {
+		if ((ecp->cmd == &cmds[C_SHIFTL] && *p == '<') ||
+		    (ecp->cmd == &cmds[C_SHIFTR] && *p == '>')) {
 			for (ch = *p;
-			    cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp)
-				if (*cmdp->cp != ch)
+			    ecp->clen > 0; --ecp->clen, ++ecp->cp)
+				if (*ecp->cp != ch)
 					break;
-			if (argv_exp0(sp, cmdp, p, cmdp->cp - p))
+			if (argv_exp0(sp, ecp, p, ecp->cp - p))
 				goto err;
 		}
 
 		/* Set the format style flags for the next command. */
-		if (cmdp->cmd == &cmds[C_HASH])
+		if (ecp->cmd == &cmds[C_HASH])
 			exp->fdef = E_C_HASH;
-		else if (cmdp->cmd == &cmds[C_LIST])
+		else if (ecp->cmd == &cmds[C_LIST])
 			exp->fdef = E_C_LIST;
-		else if (cmdp->cmd == &cmds[C_PRINT])
+		else if (ecp->cmd == &cmds[C_PRINT])
 			exp->fdef = E_C_PRINT;
-		F_CLR(cmdp, E_USELASTCMD);
+		F_CLR(ecp, E_USELASTCMD);
 	} else {
 		/* Print is the default command. */
-		cmdp->cmd = &cmds[C_PRINT];
+		ecp->cmd = &cmds[C_PRINT];
 
 		/* Set the saved format flags. */
-		F_SET(cmdp, exp->fdef);
+		F_SET(ecp, exp->fdef);
 
 		/*
 		 * !!!
@@ -717,13 +683,13 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		 * we up the address by one.  (I have no idea why globals are
 		 * exempted, but it's (ahem) historic practice.)
 		 */
-		if (cmdp->addrcnt == 0 && !F_ISSET(sp, S_EX_GLOBAL)) {
-			cmdp->addrcnt = 1;
-			cmdp->addr1.lno = sp->lno + 1;
-			cmdp->addr1.cno = sp->cno;
+		if (ecp->addrcnt == 0 && !F_ISSET(sp, S_EX_GLOBAL)) {
+			ecp->addrcnt = 1;
+			ecp->addr1.lno = sp->lno + 1;
+			ecp->addr1.cno = sp->cno;
 		}
 
-		F_SET(cmdp, E_USELASTCMD);
+		F_SET(ecp, E_USELASTCMD);
 	}
 
 	/*
@@ -734,25 +700,26 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	 * the new format, but :1p would.
 	 */
 	if (O_ISSET(sp, O_NUMBER)) {
-		F_SET(cmdp, E_OPTNUM);
-		FL_SET(cmdp->iflags, E_C_HASH);
+		F_SET(ecp, E_OPTNUM);
+		FL_SET(ecp->iflags, E_C_HASH);
 	} else
-		F_CLR(cmdp, E_OPTNUM);
+		F_CLR(ecp, E_OPTNUM);
 
 	/* Check for ex mode legality. */
-	if (F_ISSET(sp, S_EX) && (F_ISSET(cmdp->cmd, E_VIONLY) || newscreen)) {
-		msgq(sp, M_ERR, "095|Command not available in ex mode");
+	if (F_ISSET(sp, S_EX) && (F_ISSET(ecp->cmd, E_VIONLY) || newscreen)) {
+		msgq(sp, M_ERR,
+		    "095|%s: command not available in ex mode", ecp->cmd->name);
 		goto err;
 	}
 
 	/* Add standard command flags. */
-	F_SET(cmdp, cmdp->cmd->flags);
+	F_SET(ecp, ecp->cmd->flags);
 	if (!newscreen)
-		F_CLR(cmdp, E_NEWSCREEN);
+		F_CLR(ecp, E_NEWSCREEN);
 
 	/*
 	 * There are three normal termination cases for an ex command.  They
-	 * are the end of the string (cmdp->cplen), or unescaped (by <literal
+	 * are the end of the string (ecp->clen), or unescaped (by <literal
 	 * next> characters) <newline> or '|' characters.  As we're now past
 	 * possible addresses, we can determine how long the command is, so we
 	 * don't have to look for all the possible terminations.  Naturally,
@@ -797,25 +764,25 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	 * special cases we move past their special argument(s).  Then, we
 	 * do normal command processing on whatever is left.  Barf-O-Rama.
 	 */
-	cmdp->arg1_len = 0;
-	cmdp->save_cmd = cmdp->cp;
-	if (cmdp->cmd == &cmds[C_EDIT] || cmdp->cmd == &cmds[C_EX] ||
-	    cmdp->cmd == &cmds[C_NEXT] || cmdp->cmd == &cmds[C_VISUAL_VI]) {
+	ecp->arg1_len = 0;
+	ecp->save_cmd = ecp->cp;
+	if (ecp->cmd == &cmds[C_EDIT] || ecp->cmd == &cmds[C_EX] ||
+	    ecp->cmd == &cmds[C_NEXT] || ecp->cmd == &cmds[C_VISUAL_VI]) {
 		/*
 		 * Move to the next non-whitespace character.  A '!'
 		 * immediately following the command is eaten as a
 		 * force flag.
 		 */
-		if (cmdp->cplen > 0 && *cmdp->cp == '!') {
-			++cmdp->cp;
-			--cmdp->cplen;
-			FL_SET(cmdp->iflags, E_C_FORCE);
+		if (ecp->clen > 0 && *ecp->cp == '!') {
+			++ecp->cp;
+			--ecp->clen;
+			FL_SET(ecp->iflags, E_C_FORCE);
 
 			/* Reset, don't reparse. */
-			cmdp->save_cmd = cmdp->cp;
+			ecp->save_cmd = ecp->cp;
 		}
-		for (; cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp)
-			if (!isblank(*cmdp->cp))
+		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
+			if (!isblank(*ecp->cp))
 				break;
 		/*
 		 * QUOTING NOTE:
@@ -827,59 +794,59 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		 * next character.  The literal next characters are stripped
 		 * as they're no longer useful.
 		 */
-		if (cmdp->cplen > 0 && *cmdp->cp == '+') {
-			++cmdp->cp;
-			--cmdp->cplen;
-			for (cmdp->arg1 = p = cmdp->cp;
-			    cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp) {
-				ch = *cmdp->cp;
+		if (ecp->clen > 0 && *ecp->cp == '+') {
+			++ecp->cp;
+			--ecp->clen;
+			for (ecp->arg1 = p = ecp->cp;
+			    ecp->clen > 0; --ecp->clen, ++ecp->cp) {
+				ch = *ecp->cp;
 				if (IS_ESCAPE(sp,
-				    cmdp, ch) && cmdp->cplen > 1) {
-					--cmdp->cplen;
-					ch = *++cmdp->cp;
+				    ecp, ch) && ecp->clen > 1) {
+					--ecp->clen;
+					ch = *++ecp->cp;
 				} else if (isblank(ch))
 					break;
 				*p++ = ch;
 			}
-			cmdp->arg1_len = cmdp->cp - cmdp->arg1;
+			ecp->arg1_len = ecp->cp - ecp->arg1;
 
 			/* Reset, so the first argument isn't reparsed. */
-			cmdp->save_cmd = cmdp->cp;
+			ecp->save_cmd = ecp->cp;
 		}
-	} else if (cmdp->cmd == &cmds[C_BANG] ||
-	    cmdp->cmd == &cmds[C_GLOBAL] || cmdp->cmd == &cmds[C_V]) {
-		cmdp->cp += cmdp->cplen;
-		cmdp->cplen = 0;
-	} else if (cmdp->cmd == &cmds[C_READ] || cmdp->cmd == &cmds[C_WRITE]) {
+	} else if (ecp->cmd == &cmds[C_BANG] ||
+	    ecp->cmd == &cmds[C_GLOBAL] || ecp->cmd == &cmds[C_V]) {
+		ecp->cp += ecp->clen;
+		ecp->clen = 0;
+	} else if (ecp->cmd == &cmds[C_READ] || ecp->cmd == &cmds[C_WRITE]) {
 		/*
 		 * Move to the next character.  If it's a '!', it's a filter
 		 * command and we want to eat it all, otherwise, we're done.
 		 */
-		for (; cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp) {
-			ch = *cmdp->cp;
+		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
+			ch = *ecp->cp;
 			if (!isblank(ch))
 				break;
 		}
-		if (cmdp->cplen > 0 && ch == '!') {
-			cmdp->cp += cmdp->cplen;
-			cmdp->cplen = 0;
+		if (ecp->clen > 0 && ch == '!') {
+			ecp->cp += ecp->clen;
+			ecp->clen = 0;
 		}
-	} else if (cmdp->cmd == &cmds[C_SUBSTITUTE]) {
+	} else if (ecp->cmd == &cmds[C_SUBSTITUTE]) {
 		/*
 		 * Move to the next non-whitespace character, we'll use it as
 		 * the delimiter.  If the character isn't an alphanumeric or
 		 * a '|', it's the delimiter, so parse it.  Otherwise, we're
 		 * into something like ":s g", so use the special s command.
 		 */
-		for (; cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp)
-			if (!isblank(cmdp->cp[0]))
+		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
+			if (!isblank(ecp->cp[0]))
 				break;
 
-		if (isalnum(cmdp->cp[0]) || cmdp->cp[0] == '|') {
-			cmdp->rcmd = cmds[C_SUBSTITUTE];
-			cmdp->rcmd.fn = ex_subagain;
-			cmdp->cmd = &cmdp->rcmd;
-		} else if (cmdp->cplen > 0) {
+		if (isalnum(ecp->cp[0]) || ecp->cp[0] == '|') {
+			ecp->rcmd = cmds[C_SUBSTITUTE];
+			ecp->rcmd.fn = ex_subagain;
+			ecp->cmd = &ecp->rcmd;
+		} else if (ecp->clen > 0) {
 			/*
 			 * QUOTING NOTE:
 			 *
@@ -888,16 +855,16 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 			 * used by the RE code.  Move to the third delimiter
 			 * that's not escaped (or the end of the command).
 			 */
-			delim = *cmdp->cp;
-			++cmdp->cp;
-			--cmdp->cplen;
-			for (cnt = 2; cmdp->cplen > 0 &&
-			    cnt != 0; --cmdp->cplen, ++cmdp->cp)
-				if (cmdp->cp[0] == '\\' &&
-				    cmdp->cplen > 1) {
-					++cmdp->cp;
-					--cmdp->cplen;
-				} else if (cmdp->cp[0] == delim)
+			delim = *ecp->cp;
+			++ecp->cp;
+			--ecp->clen;
+			for (cnt = 2; ecp->clen > 0 &&
+			    cnt != 0; --ecp->clen, ++ecp->cp)
+				if (ecp->cp[0] == '\\' &&
+				    ecp->clen > 1) {
+					++ecp->cp;
+					--ecp->clen;
+				} else if (ecp->cp[0] == delim)
 					--cnt;
 		}
 	}
@@ -915,24 +882,23 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	 * '|' characters or literal next characters are stripped as they're
 	 * no longer useful.
 	 */
-	vi_address = cmdp->cplen != 0 && cmdp->cp[0] != '\n';
-	for (cnt = 0,
-	    p = cmdp->cp; cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp) {
-		ch = cmdp->cp[0];
-		if (IS_ESCAPE(sp, cmdp, ch) && cmdp->cplen > 1) {
-			tmp = cmdp->cp[1];
+	vi_address = ecp->clen != 0 && ecp->cp[0] != '\n';
+	for (cnt = 0, p = ecp->cp; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
+		ch = ecp->cp[0];
+		if (IS_ESCAPE(sp, ecp, ch) && ecp->clen > 1) {
+			tmp = ecp->cp[1];
 			if (tmp == '\n' || tmp == '|') {
 				if (tmp == '\n')
 					++sp->if_lno;
-				--cmdp->cplen;
-				++cmdp->cp;
+				--ecp->clen;
+				++ecp->cp;
 				++cnt;
 				ch = tmp;
 			}
 		} else if (ch == '\n' || ch == '|') {
 			if (ch == '\n')
-				F_SET(cmdp, E_NEWLINE);
-			--cmdp->cplen;
+				F_SET(ecp, E_NEWLINE);
+			--ecp->clen;
 			break;
 		}
 		*p++ = ch;
@@ -942,11 +908,11 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	 * Save off the next command information, go back to the
 	 * original start of the command.
 	 */
-	p = cmdp->cp + 1;
-	cmdp->cp = cmdp->save_cmd;
-	cmdp->save_cmd = p;
-	cmdp->save_cmdlen = cmdp->cplen;
-	cmdp->cplen = ((cmdp->save_cmd - cmdp->cp) - 1) - cnt;
+	p = ecp->cp + 1;
+	ecp->cp = ecp->save_cmd;
+	ecp->save_cmd = p;
+	ecp->save_cmdlen = ecp->clen;
+	ecp->clen = ((ecp->save_cmd - ecp->cp) - 1) - cnt;
 
 	/*
 	 * QUOTING NOTE:
@@ -957,8 +923,8 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	 * this isn't a particularly complex trap, and if backslashes were
 	 * legal in set commands, this would have to be much more complicated.
 	 */
-	if (cmdp->cmd == &cmds[C_SET])
-		for (p = cmdp->cp, len = cmdp->cplen; len > 0; --len, ++p)
+	if (ecp->cmd == &cmds[C_SET])
+		for (p = ecp->cp, len = ecp->clen; len > 0; --len, ++p)
 			if (*p == '\\')
 				*p = CH_LITERAL;
 
@@ -980,81 +946,81 @@ skip_srch:	if (cmdp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 	 * (ex: z) care if the user specified an address of if we just used
 	 * the current cursor.
 	 */
-	switch (F_ISSET(cmdp, E_ADDR1 | E_ADDR2 | E_ADDR2_ALL | E_ADDR2_NONE)) {
+	switch (F_ISSET(ecp, E_ADDR1 | E_ADDR2 | E_ADDR2_ALL | E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
-		switch (cmdp->addrcnt) {
+		switch (ecp->addrcnt) {
 		case 0:				/* Default cursor/empty file. */
-			cmdp->addrcnt = 1;
-			F_SET(cmdp, E_ADDR_DEF);
-			if (F_ISSET(cmdp, E_ADDR_ZERODEF)) {
+			ecp->addrcnt = 1;
+			F_SET(ecp, E_ADDR_DEF);
+			if (F_ISSET(ecp, E_ADDR_ZERODEF)) {
 				if (file_lline(sp, &lno))
 					goto err;
 				if (lno == 0) {
-					cmdp->addr1.lno = 0;
-					F_SET(cmdp, E_ADDR_ZERO);
+					ecp->addr1.lno = 0;
+					F_SET(ecp, E_ADDR_ZERO);
 				} else
-					cmdp->addr1.lno = sp->lno;
+					ecp->addr1.lno = sp->lno;
 			} else
-				cmdp->addr1.lno = sp->lno;
-			cmdp->addr1.cno = sp->cno;
+				ecp->addr1.lno = sp->lno;
+			ecp->addr1.cno = sp->cno;
 			break;
 		case 1:
 			break;
 		case 2:				/* Lose the first address. */
-			cmdp->addrcnt = 1;
-			cmdp->addr1 = cmdp->addr2;
+			ecp->addrcnt = 1;
+			ecp->addr1 = ecp->addr2;
 		}
 		break;
 	case E_ADDR2_NONE:			/* Zero/two addresses: */
-		if (cmdp->addrcnt == 0)		/* Default to nothing. */
+		if (ecp->addrcnt == 0)		/* Default to nothing. */
 			break;
 		goto two_addr;
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
-		if (cmdp->addrcnt == 0) {	/* Default entire/empty file. */
-			cmdp->addrcnt = 2;
-			F_SET(cmdp, E_ADDR_DEF);
-			if (file_lline(sp, &cmdp->addr2.lno))
+		if (ecp->addrcnt == 0) {	/* Default entire/empty file. */
+			ecp->addrcnt = 2;
+			F_SET(ecp, E_ADDR_DEF);
+			if (file_lline(sp, &ecp->addr2.lno))
 				goto err;
-			if (F_ISSET(cmdp, E_ADDR_ZERODEF) &&
-			    cmdp->addr2.lno == 0) {
-				cmdp->addr1.lno = 0;
-				F_SET(cmdp, E_ADDR_ZERO);
+			if (F_ISSET(ecp, E_ADDR_ZERODEF) &&
+			    ecp->addr2.lno == 0) {
+				ecp->addr1.lno = 0;
+				F_SET(ecp, E_ADDR_ZERO);
 			} else
-				cmdp->addr1.lno = 1;
-			cmdp->addr1.cno = cmdp->addr2.cno = 0;
-			F_SET(cmdp, E_ADDR2_ALL);
+				ecp->addr1.lno = 1;
+			ecp->addr1.cno = ecp->addr2.cno = 0;
+			F_SET(ecp, E_ADDR2_ALL);
 			break;
 		}
 		/* FALLTHROUGH */
 	case E_ADDR2:				/* Two addresses: */
-two_addr:	switch (cmdp->addrcnt) {
+two_addr:	switch (ecp->addrcnt) {
 		case 0:				/* Default cursor/empty file. */
-			cmdp->addrcnt = 2;
-			F_SET(cmdp, E_ADDR_DEF);
+			ecp->addrcnt = 2;
+			F_SET(ecp, E_ADDR_DEF);
 			if (sp->lno == 1 &&
-			    F_ISSET(cmdp, E_ADDR_ZERODEF)) {
+			    F_ISSET(ecp, E_ADDR_ZERODEF)) {
 				if (file_lline(sp, &lno))
 					goto err;
 				if (lno == 0) {
-					cmdp->addr1.lno = cmdp->addr2.lno = 0;
-					F_SET(cmdp, E_ADDR_ZERO);
+					ecp->addr1.lno = ecp->addr2.lno = 0;
+					F_SET(ecp, E_ADDR_ZERO);
 				} else
-					cmdp->addr1.lno =
-					    cmdp->addr2.lno = sp->lno;
+					ecp->addr1.lno =
+					    ecp->addr2.lno = sp->lno;
 			} else
-				cmdp->addr1.lno = cmdp->addr2.lno = sp->lno;
-			cmdp->addr1.cno = cmdp->addr2.cno = sp->cno;
+				ecp->addr1.lno = ecp->addr2.lno = sp->lno;
+			ecp->addr1.cno = ecp->addr2.cno = sp->cno;
 			break;
 		case 1:				/* Default to first address. */
-			cmdp->addrcnt = 2;
-			cmdp->addr2 = cmdp->addr1;
+			ecp->addrcnt = 2;
+			ecp->addr2 = ecp->addr1;
 			break;
 		case 2:
 			break;
 		}
 		break;
 	default:
-		if (cmdp->addrcnt)		/* Error. */
+		if (ecp->addrcnt)		/* Error. */
 			goto usage;
 	}
 
@@ -1064,38 +1030,38 @@ two_addr:	switch (cmdp->addrcnt) {
 	 * option or to EOF.  It was an error if the cursor was already at EOF.
 	 * (Leading addresses were permitted, but were then ignored.)
 	 */
-	if (cmdp->cmd == &cmds[C_SCROLL]) {
-		cmdp->addrcnt = 2;
-		cmdp->addr1.lno = sp->lno + 1;
-		cmdp->addr2.lno = sp->lno + O_VAL(sp, O_SCROLL);
-		cmdp->addr1.cno = cmdp->addr2.cno = sp->cno;
+	if (ecp->cmd == &cmds[C_SCROLL]) {
+		ecp->addrcnt = 2;
+		ecp->addr1.lno = sp->lno + 1;
+		ecp->addr2.lno = sp->lno + O_VAL(sp, O_SCROLL);
+		ecp->addr1.cno = ecp->addr2.cno = sp->cno;
 		if (file_lline(sp, &lno))
 			goto err;
-		if (lno != 0 && lno > sp->lno && cmdp->addr2.lno > lno)
-			cmdp->addr2.lno = lno;
+		if (lno != 0 && lno > sp->lno && ecp->addr2.lno > lno)
+			ecp->addr2.lno = lno;
 	}
 
-	cmdp->flagoff = 0;
-	for (p = cmdp->cmd->syntax; *p != '\0'; ++p) {
+	ecp->flagoff = 0;
+	for (p = ecp->cmd->syntax; *p != '\0'; ++p) {
 		/*
 		 * The force flag is sensitive to leading whitespace, i.e.
 		 * "next !" is different from "next!".  Handle it before
 		 * skipping leading <blank>s.
 		 */
 		if (*p == '!') {
-			if (cmdp->cplen > 0 && *cmdp->cp == '!') {
-				++cmdp->cp;
-				--cmdp->cplen;
-				FL_SET(cmdp->iflags, E_C_FORCE);
+			if (ecp->clen > 0 && *ecp->cp == '!') {
+				++ecp->cp;
+				--ecp->clen;
+				FL_SET(ecp->iflags, E_C_FORCE);
 			}
 			continue;
 		}
 
 		/* Skip leading <blank>s. */
-		for (; cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp)
-			if (!isblank(*cmdp->cp))
+		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
+			if (!isblank(*ecp->cp))
 				break;
-		if (cmdp->cplen == 0)
+		if (ecp->clen == 0)
 			break;
 
 		switch (*p) {
@@ -1110,26 +1076,26 @@ two_addr:	switch (cmdp->addrcnt) {
 			 * handle them regardless of the stupidity of their
 			 * location.
 			 */
-			for (; cmdp->cplen; --cmdp->cplen, ++cmdp->cp)
-				switch (*cmdp->cp) {
+			for (; ecp->clen; --ecp->clen, ++ecp->cp)
+				switch (*ecp->cp) {
 				case '+':
-					++cmdp->flagoff;
+					++ecp->flagoff;
 					break;
 				case '-':
 				case '^':
-					--cmdp->flagoff;
+					--ecp->flagoff;
 					break;
 				case '#':
-					F_CLR(cmdp, E_OPTNUM);
-					FL_SET(cmdp->iflags, E_C_HASH);
+					F_CLR(ecp, E_OPTNUM);
+					FL_SET(ecp->iflags, E_C_HASH);
 					exp->fdef |= E_C_HASH;
 					break;
 				case 'l':
-					FL_SET(cmdp->iflags, E_C_LIST);
+					FL_SET(ecp->iflags, E_C_LIST);
 					exp->fdef |= E_C_LIST;
 					break;
 				case 'p':
-					FL_SET(cmdp->iflags, E_C_PRINT);
+					FL_SET(ecp->iflags, E_C_PRINT);
 					exp->fdef |= E_C_PRINT;
 					break;
 				default:
@@ -1138,23 +1104,23 @@ two_addr:	switch (cmdp->addrcnt) {
 end_case1:		break;
 		case '2':				/* -, ., +, ^ */
 		case '3':				/* -, ., +, ^, = */
-			for (; cmdp->cplen; --cmdp->cplen, ++cmdp->cp)
-				switch (*cmdp->cp) {
+			for (; ecp->clen; --ecp->clen, ++ecp->cp)
+				switch (*ecp->cp) {
 				case '-':
-					FL_SET(cmdp->iflags, E_C_DASH);
+					FL_SET(ecp->iflags, E_C_DASH);
 					break;
 				case '.':
-					FL_SET(cmdp->iflags, E_C_DOT);
+					FL_SET(ecp->iflags, E_C_DOT);
 					break;
 				case '+':
-					FL_SET(cmdp->iflags, E_C_PLUS);
+					FL_SET(ecp->iflags, E_C_PLUS);
 					break;
 				case '^':
-					FL_SET(cmdp->iflags, E_C_CARAT);
+					FL_SET(ecp->iflags, E_C_CARAT);
 					break;
 				case '=':
 					if (*p == '3') {
-						FL_SET(cmdp->iflags, E_C_EQUAL);
+						FL_SET(ecp->iflags, E_C_EQUAL);
 						break;
 					}
 					/* FALLTHROUGH */
@@ -1171,8 +1137,8 @@ end_case23:		break;
 			 * the 'l' and 'p' flags were legal buffer names in the
 			 * historic ex, and were used as buffers, not flags.
 			 */
-			if ((cmdp->cp[0] == '+' || cmdp->cp[0] == '-' ||
-			    cmdp->cp[0] == '^' || cmdp->cp[0] == '#') &&
+			if ((ecp->cp[0] == '+' || ecp->cp[0] == '-' ||
+			    ecp->cp[0] == '^' || ecp->cp[0] == '#') &&
 			    strchr(p, '1') != NULL)
 				break;
 			/*
@@ -1181,26 +1147,26 @@ end_case23:		break;
 			 * command "d2" would be a delete into buffer '2', and
 			 * not a two-line deletion.
 			 */
-			if (!isdigit(cmdp->cp[0])) {
-				cmdp->buffer = *cmdp->cp;
-				++cmdp->cp;
-				--cmdp->cplen;
-				FL_SET(cmdp->iflags, E_C_BUFFER);
+			if (!isdigit(ecp->cp[0])) {
+				ecp->buffer = *ecp->cp;
+				++ecp->cp;
+				--ecp->clen;
+				FL_SET(ecp->iflags, E_C_BUFFER);
 			}
 			break;
 		case 'c':				/* count [01+a] */
 			++p;
 			/* Validate any signed value. */
-			if (!isdigit(*cmdp->cp) && (*p != '+' ||
-			    (*cmdp->cp != '+' && *cmdp->cp != '-')))
+			if (!isdigit(*ecp->cp) && (*p != '+' ||
+			    (*ecp->cp != '+' && *ecp->cp != '-')))
 				break;
 			/* If a signed value, set appropriate flags. */
-			if (*cmdp->cp == '-')
-				FL_SET(cmdp->iflags, E_C_COUNT_NEG);
-			else if (*cmdp->cp == '+')
-				FL_SET(cmdp->iflags, E_C_COUNT_POS);
+			if (*ecp->cp == '-')
+				FL_SET(ecp->iflags, E_C_COUNT_NEG);
+			else if (*ecp->cp == '+')
+				FL_SET(ecp->iflags, E_C_COUNT_POS);
 			if ((nret =
-			    nget_slong(&ltmp, cmdp->cp, &t, 10)) != NUM_OK) {
+			    nget_slong(&ltmp, ecp->cp, &t, 10)) != NUM_OK) {
 				ex_badaddr(sp, NULL, A_NOTSET, nret);
 				goto err;
 			}
@@ -1208,8 +1174,8 @@ end_case23:		break;
 				msgq(sp, M_ERR, "104|Count may not be zero");
 				goto err;
 			}
-			cmdp->cplen -= (t - cmdp->cp);
-			cmdp->cp = t;
+			ecp->clen -= (t - ecp->cp);
+			ecp->cp = t;
 
 			/*
 			 * Counts as address offsets occur in commands taking
@@ -1221,14 +1187,14 @@ end_case23:		break;
 			 * line addresses.
 			 */
 			if (*p == 'a') {
-				cmdp->addr1 = cmdp->addr2;
-				cmdp->addr2.lno = cmdp->addr1.lno + ltmp - 1;
+				ecp->addr1 = ecp->addr2;
+				ecp->addr2.lno = ecp->addr1.lno + ltmp - 1;
 			} else
-				cmdp->count = ltmp;
-			FL_SET(cmdp->iflags, E_C_COUNT);
+				ecp->count = ltmp;
+			FL_SET(ecp->iflags, E_C_COUNT);
 			break;
 		case 'f':				/* file */
-			if (argv_exp2(sp, cmdp, cmdp->cp, cmdp->cplen))
+			if (argv_exp2(sp, ecp, ecp->cp, ecp->clen))
 				goto err;
 			goto arg_cnt_chk;
 		case 'l':				/* line */
@@ -1240,23 +1206,14 @@ end_case23:		break;
 			 * searching the file.  Push ourselves onto the state
 			 * stack.
 			 */
-			if (ex_line(sp, cmdp, &isaddr))
+			if (ex_line(sp, ecp, &cur, &isaddr, &tmp))
+				return (1);
+			if (tmp)
 				goto err;
-			switch (gp->cm_state) {
-			case ES_PARSE:
-				break;
-			case ES_PARSE_ERROR:
-				goto err;
-			case ES_RUNNING:
-				gp->cm_state = ES_PARSE_LINE;
-				return (0);
-			default:
-				abort();
-			}
-line_restart:
+
 			/* Line specifications are always required. */
 			if (!isaddr) {
-				p = msg_print(sp, cmdp->cp, &nf);
+				p = msg_print(sp, ecp->cp, &nf);
 				msgq(sp, M_ERR,
 				     "105|%s: bad line specification", p);
 				if (nf)
@@ -1267,23 +1224,22 @@ line_restart:
 			 * The target line should exist for these commands,
 			 * but 0 is legal for them as well.
 			 */
-			if (cmdp->caddr.lno != 0 &&
-			    !file_eline(sp, cmdp->caddr.lno)) {
+			if (cur.lno != 0 && !file_eline(sp, cur.lno)) {
 				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 				goto err;
 			}
-			cmdp->lineno = cmdp->caddr.lno;
+			ecp->lineno = cur.lno;
 			break;
 		case 'S':				/* string, file exp. */
-			if (cmdp->cplen != 0) {
-				if (argv_exp1(sp, cmdp, cmdp->cp,
-				    cmdp->cplen, cmdp->cmd == &cmds[C_BANG]))
+			if (ecp->clen != 0) {
+				if (argv_exp1(sp, ecp, ecp->cp,
+				    ecp->clen, ecp->cmd == &cmds[C_BANG]))
 					goto err;
 				goto addr_verify;
 			}
 			/* FALLTHROUGH */
 		case 's':				/* string */
-			if (argv_exp0(sp, cmdp, cmdp->cp, cmdp->cplen))
+			if (argv_exp0(sp, ecp, ecp->cp, ecp->clen))
 				goto err;
 			goto addr_verify;
 		case 'W':				/* word string */
@@ -1291,54 +1247,54 @@ line_restart:
 			 * QUOTING NOTE:
 			 *
 			 * Literal next characters escape the following
-			 * character.  Quoting characters are stripped
-			 * here since they are no longer useful.
+			 * character.  Quoting characters are stripped here
+			 * since they are no longer useful.
 			 *
 			 * First there was the word.
 			 */
-			for (p = t = cmdp->cp;
-			    cmdp->cplen > 0; --cmdp->cplen, ++cmdp->cp) {
-				ch = *cmdp->cp;
+			for (p = t = ecp->cp;
+			    ecp->clen > 0; --ecp->clen, ++ecp->cp) {
+				ch = *ecp->cp;
 				if (IS_ESCAPE(sp,
-				    cmdp, ch) && cmdp->cplen > 1) {
-					--cmdp->cplen;
-					*p++ = *++cmdp->cp;
+				    ecp, ch) && ecp->clen > 1) {
+					--ecp->clen;
+					*p++ = *++ecp->cp;
 				} else if (isblank(ch)) {
-					++cmdp->cp;
-					--cmdp->cplen;
+					++ecp->cp;
+					--ecp->clen;
 					break;
 				} else
 					*p++ = ch;
 			}
-			if (argv_exp0(sp, cmdp, t, p - t))
+			if (argv_exp0(sp, ecp, t, p - t))
 				goto err;
 
 			/* Delete intervening whitespace. */
-			for (; cmdp->cplen > 0;
-			    --cmdp->cplen, ++cmdp->cp) {
-				ch = *cmdp->cp;
+			for (; ecp->clen > 0;
+			    --ecp->clen, ++ecp->cp) {
+				ch = *ecp->cp;
 				if (!isblank(ch))
 					break;
 			}
-			if (cmdp->cplen == 0)
+			if (ecp->clen == 0)
 				goto usage;
 
 			/* Followed by the string. */
-			for (p = t = cmdp->cp; cmdp->cplen > 0;
-			    --cmdp->cplen, ++cmdp->cp, ++p) {
-				ch = *cmdp->cp;
+			for (p = t = ecp->cp; ecp->clen > 0;
+			    --ecp->clen, ++ecp->cp, ++p) {
+				ch = *ecp->cp;
 				if (IS_ESCAPE(sp,
-				    cmdp, ch) && cmdp->cplen > 1) {
-					--cmdp->cplen;
-					*p = *++cmdp->cp;
+				    ecp, ch) && ecp->clen > 1) {
+					--ecp->clen;
+					*p = *++ecp->cp;
 				} else
 					*p = ch;
 			}
-			if (argv_exp0(sp, cmdp, t, p - t))
+			if (argv_exp0(sp, ecp, t, p - t))
 				goto err;
 			goto addr_verify;
 		case 'w':				/* word */
-			if (argv_exp3(sp, cmdp, cmdp->cp, cmdp->cplen))
+			if (argv_exp3(sp, ecp, ecp->cp, ecp->clen))
 				goto err;
 arg_cnt_chk:		if (*++p != 'N') {		/* N */
 				/*
@@ -1355,13 +1311,13 @@ arg_cnt_chk:		if (*++p != 'N') {		/* N */
 		default:
 			msgq(sp, M_ERR,
 			    "106|Internal syntax table error (%s: %s)",
-			    cmdp->cmd->name, KEY_NAME(sp, *p));
+			    ecp->cmd->name, KEY_NAME(sp, *p));
 		}
 	}
 
 	/* Skip trailing whitespace. */
-	for (; cmdp->cplen > 0; --cmdp->cplen) {
-		ch = *cmdp->cp++;
+	for (; ecp->clen > 0; --ecp->clen) {
+		ch = *ecp->cp++;
 		if (!isblank(ch))
 			break;
 	}
@@ -1370,8 +1326,8 @@ arg_cnt_chk:		if (*++p != 'N') {		/* N */
 	 * There shouldn't be anything left, and no more required fields,
 	 * i.e neither 'l' or 'r' in the syntax string.
 	 */
-	if (cmdp->cplen != 0 || strpbrk(p, "lr")) {
-usage:		msgq(sp, M_ERR, "107|Usage: %s", cmdp->cmd->usage);
+	if (ecp->clen != 0 || strpbrk(p, "lr")) {
+usage:		msgq(sp, M_ERR, "107|Usage: %s", ecp->cmd->usage);
 		goto err;
 	}
 
@@ -1385,7 +1341,7 @@ usage:		msgq(sp, M_ERR, "107|Usage: %s", cmdp->cmd->usage);
 	 * If it's a "default vi command", an address of zero is okay.
 	 */
 addr_verify:
-	switch (cmdp->addrcnt) {
+	switch (ecp->addrcnt) {
 	case 2:
 		/*
 		 * Historic ex/vi permitted commands with counts to go past
@@ -1395,32 +1351,32 @@ addr_verify:
 		 * of the underlying commands handle random line numbers,
 		 * fix it here.
 		 */
-		if (cmdp->addr2.lno == 0) {
-			if (!F_ISSET(cmdp, E_ADDR_ZERO) &&
+		if (ecp->addr2.lno == 0) {
+			if (!F_ISSET(ecp, E_ADDR_ZERO) &&
 			    (F_ISSET(sp, S_EX) ||
-			    !F_ISSET(cmdp, E_USELASTCMD))) {
-				ex_badaddr(sp, cmdp->cmd, A_ZERO, NUM_OK);
+			    !F_ISSET(ecp, E_USELASTCMD))) {
+				ex_badaddr(sp, ecp->cmd, A_ZERO, NUM_OK);
 				goto err;
 			}
-		} else if (!file_eline(sp, cmdp->addr2.lno))
-			if (FL_ISSET(cmdp->iflags, E_C_COUNT)) {
+		} else if (!file_eline(sp, ecp->addr2.lno))
+			if (FL_ISSET(ecp->iflags, E_C_COUNT)) {
 				if (file_lline(sp, &lno))
 					goto err;
-				cmdp->addr2.lno = lno;
+				ecp->addr2.lno = lno;
 			} else {
 				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 				goto err;
 			}
 		/* FALLTHROUGH */
 	case 1:
-		if (cmdp->addr1.lno == 0) {
-			if (!F_ISSET(cmdp, E_ADDR_ZERO) &&
+		if (ecp->addr1.lno == 0) {
+			if (!F_ISSET(ecp, E_ADDR_ZERO) &&
 			    (F_ISSET(sp, S_EX) ||
-			    !F_ISSET(cmdp, E_USELASTCMD))) {
-				ex_badaddr(sp, cmdp->cmd, A_ZERO, NUM_OK);
+			    !F_ISSET(ecp, E_USELASTCMD))) {
+				ex_badaddr(sp, ecp->cmd, A_ZERO, NUM_OK);
 				goto err;
 			}
-		} else if (!file_eline(sp, cmdp->addr1.lno)) {
+		} else if (!file_eline(sp, ecp->addr1.lno)) {
 			ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 			goto err;
 		}
@@ -1440,30 +1396,30 @@ addr_verify:
 	 * This is done before the absolute mark gets set; historically,
 	 * "/a/,/b/" did NOT set vi's absolute mark, but "/a/,/b/d" did.
 	 */
-	if ((F_ISSET(sp, S_VI) || F_ISSET(cmdp, E_NOPRDEF)) &&
-	    F_ISSET(cmdp, E_USELASTCMD) && vi_address == 0) {
-		switch (cmdp->addrcnt) {
+	if ((F_ISSET(sp, S_VI) || F_ISSET(ecp, E_NOPRDEF)) &&
+	    F_ISSET(ecp, E_USELASTCMD) && vi_address == 0) {
+		switch (ecp->addrcnt) {
 		case 2:
 			if (sp->lno !=
-			    (cmdp->addr2.lno ? cmdp->addr2.lno : 1)) {
+			    (ecp->addr2.lno ? ecp->addr2.lno : 1)) {
 				sp->lno =
-				    cmdp->addr2.lno ? cmdp->addr2.lno : 1;
+				    ecp->addr2.lno ? ecp->addr2.lno : 1;
 				sp->cno = 0;
 				(void)nonblank(sp, sp->lno, &sp->cno);
 			}
 			break;
 		case 1:
 			if (sp->lno !=
-			    (cmdp->addr1.lno ? cmdp->addr1.lno : 1)) {
+			    (ecp->addr1.lno ? ecp->addr1.lno : 1)) {
 				sp->lno =
-				    cmdp->addr1.lno ? cmdp->addr1.lno : 1;
+				    ecp->addr1.lno ? ecp->addr1.lno : 1;
 				sp->cno = 0;
 				(void)nonblank(sp, sp->lno, &sp->cno);
 			}
 			break;
 		}
-		cmdp->cp = cmdp->save_cmd;
-		cmdp->cplen = cmdp->save_cmdlen;
+		ecp->cp = ecp->save_cmd;
+		ecp->clen = ecp->save_cmdlen;
 		goto loop;
 	}
 
@@ -1472,20 +1428,17 @@ addr_verify:
 	 * it's a compound command, e.g. ":5p|6" should set the absolute
 	 * mark for vi.
 	 */
-	if (F_ISSET(cmdp, E_ABSMARK)) {
+	if (F_ISSET(ecp, E_ABSMARK)) {
 		cur.lno = sp->lno;
 		cur.cno = sp->cno;
-		F_CLR(cmdp, E_ABSMARK);
+		F_CLR(ecp, E_ABSMARK);
 		if (mark_set(sp, ABSMARK1, &cur, 1))
 			goto err;
 	}
 
 #if defined(DEBUG) && defined(COMLOG)
-	ex_comlog(sp, cmdp);
+	ex_comlog(sp, ecp);
 #endif
-	/* Clear autoprint flag. */
-	F_CLR(cmdp, E_AUTOPRINT);
-
 	/* Increment the command count if not called from vi. */
 	if (F_ISSET(sp, S_EX))
 		++sp->ccnt;
@@ -1511,46 +1464,37 @@ addr_verify:
 	 * mode, we don't have to do anything else, a <newline> has already
 	 * been echoed by the tty driver.  It's OK if vi calls us -- we won't
 	 * be in ex mode so we'll do nothing.
-	 *
-	 * !!!
-	 * Historically, ex didn't erase the line, so, if the displayed line
-	 * was only a single character long, and <eof> was represented as ^D,
-	 * the output wouldn't overwrite the user's input.  To fix this, we
-	 * print the maxiumum character number of spaces.  Note, this won't
-	 * help if the user entered extra prompt or <blank> characters before
-	 * the command character.  We'd have to do a lot of work to make that
-	 * work, and it's not worth the effort.
 	 */
-	if (cmdp->sep != SEP_NONE) {
+	if (ecp->sep != SEP_NONE) {
 		if (sp->ep != NULL &&
 		    F_ISSET(sp, S_EX) && F_ISSET(gp, G_STDIN_TTY))
-			if (cmdp->sep == SEP_NEED_NR &&
-			    (F_ISSET(cmdp, E_USELASTCMD) ||
-			    cmdp->cmd == &cmds[C_SCROLL]))
+			if (ecp->sep == SEP_NEED_NR &&
+			    (F_ISSET(ecp, E_USELASTCMD) ||
+			    ecp->cmd == &cmds[C_SCROLL]))
 				gp->scr_exadjust(sp, EX_TERM_SCROLL);
-		cmdp->sep = SEP_NONE;
+		ecp->sep = SEP_NONE;
 	}
 
 	/* Call the underlying function for the ex command. */
-	if (cmdp->cmd->fn(sp, cmdp)) {
+	if (ecp->cmd->fn(sp, ecp)) {
 		if (!F_ISSET(gp, G_STDIN_TTY))
 			F_SET(sp, S_EXIT_FORCE);
 		goto err;
 	}
 
 #ifdef DEBUG
-	/* Make sure no function left the temporary space locked. */
+	/* Make sure no function left global temporary space locked. */
 	if (F_ISSET(gp, G_TMP_INUSE)) {
 		F_CLR(gp, G_TMP_INUSE);
 		msgq(sp, M_ERR, "109|%s: temporary buffer not released",
-		    cmdp->cmd->name);
+		    ecp->cmd->name);
 	}
 #endif
 	/*
 	 * If the state has changed, return for now, and continue this
 	 * command later.
 	 */
-	if (gp->cm_state != ES_PARSE)
+	if (gp->cm_state == ES_RUNNING)
 		return (0);
 
 func_restart:
@@ -1565,25 +1509,25 @@ func_restart:
 	 * but didn't seem to have a problem with the cursor.  If anyone
 	 * complains, ask them how it's supposed to work, they might know.
 	 */
-	if (sp->ep != NULL && cmdp->flagoff) {
-		if (cmdp->flagoff < 0) {
-			if (sp->lno <= -cmdp->flagoff) {
+	if (sp->ep != NULL && ecp->flagoff) {
+		if (ecp->flagoff < 0) {
+			if (sp->lno <= -ecp->flagoff) {
 				msgq(sp, M_ERR,
-				    "110|Flag offset before line 1");
+				    "110|Flag offset to before line 1");
 				goto err;
 			}
 		} else {
-			if (!NPFITS(MAX_REC_NUMBER, sp->lno, cmdp->flagoff)) {
+			if (!NPFITS(MAX_REC_NUMBER, sp->lno, ecp->flagoff)) {
 				ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 				goto err;
 			}
-			if (!file_eline(sp, sp->lno + cmdp->flagoff)) {
+			if (!file_eline(sp, sp->lno + ecp->flagoff)) {
 				msgq(sp, M_ERR,
 				    "111|Flag offset past end-of-file");
 				goto err;
 			}
 		}
-		sp->lno += cmdp->flagoff;
+		sp->lno += ecp->flagoff;
 	}
 
 	/*
@@ -1597,33 +1541,28 @@ func_restart:
 		 * The print commands have already handled the `print' flags.
 		 * If so, clear them.
 		 */
-		if (FL_ISSET(cmdp->iflags, E_CLRFLAG))
-			FL_CLR(cmdp->iflags, E_C_HASH | E_C_LIST | E_C_PRINT);
+		if (FL_ISSET(ecp->iflags, E_CLRFLAG))
+			FL_CLR(ecp->iflags, E_C_HASH | E_C_LIST | E_C_PRINT);
 
 		/* If hash set only because of the number option, discard it. */
-		if (F_ISSET(cmdp, E_OPTNUM))
-			FL_CLR(cmdp->iflags, E_C_HASH);
+		if (F_ISSET(ecp, E_OPTNUM))
+			FL_CLR(ecp->iflags, E_C_HASH);
 
 		/*
 		 * If there was an explicit flag to display the new cursor line,
 		 * or autoprint is set and a change was made, display the line.
 		 * If any print flags were set use them, else default to print.
 		 */
-		F_INIT(cmdp,
-		    FL_ISSET(cmdp->iflags, E_C_HASH | E_C_LIST | E_C_PRINT));
-		if (!F_ISSET(cmdp,
-		    E_C_HASH | E_C_LIST | E_C_PRINT | E_NOAUTO) &&
+		LF_INIT(FL_ISSET(ecp->iflags, E_C_HASH | E_C_LIST | E_C_PRINT));
+		if (!LF_ISSET(E_C_HASH | E_C_LIST | E_C_PRINT | E_NOAUTO) &&
 		    !F_ISSET(sp, S_EX_GLOBAL) && O_ISSET(sp, O_AUTOPRINT) &&
-		    F_ISSET(cmdp, E_AUTOPRINT))
-			FL_INIT(cmdp->iflags, E_C_PRINT);
+		    F_ISSET(ecp, E_AUTOPRINT))
+			LF_INIT(E_C_PRINT);
 
-		if (F_ISSET(cmdp, E_C_HASH | E_C_LIST | E_C_PRINT)) {
-			memset(cmdp, 0, sizeof(EXCMD));
-			cmdp->addrcnt = 2;
-			cmdp->addr1.lno = cmdp->addr2.lno = sp->lno;
-			cmdp->addr1.cno = cmdp->addr2.cno = sp->cno;
-			(void)ex_print(sp,
-			    &cmdp->addr1, &cmdp->addr2, cmdp->flags);
+		if (LF_ISSET(E_C_HASH | E_C_LIST | E_C_PRINT)) {
+			cur.lno = sp->lno;
+			cur.cno = 0;
+			(void)ex_print(sp, &cur, &cur, flags);
 		}
 	}
 
@@ -1643,24 +1582,24 @@ func_restart:
 	 * that it will still fit because we discarded at least one space
 	 * and the + character.
 	 */
-	if (cmdp->arg1_len != 0) {
+	if (ecp->arg1_len != 0) {
 		/* Add in a command separator. */
-		*--cmdp->save_cmd = '\n';
-		++cmdp->save_cmdlen;
+		*--ecp->save_cmd = '\n';
+		++ecp->save_cmdlen;
 
 		/*
 		 * If the last character of the + command were a <literal next>
 		 * character, it would be treated differently because of the
 		 * append.  Quote it, if necessary.
 		 */
-		if (IS_ESCAPE(sp, cmdp, cmdp->arg1[cmdp->arg1_len - 1])) {
-			*--cmdp->save_cmd = CH_LITERAL;
-			++cmdp->save_cmdlen;
+		if (IS_ESCAPE(sp, ecp, ecp->arg1[ecp->arg1_len - 1])) {
+			*--ecp->save_cmd = CH_LITERAL;
+			++ecp->save_cmdlen;
 		}
 
-		cmdp->save_cmd -= cmdp->arg1_len;
-		cmdp->save_cmdlen += cmdp->arg1_len;
-		memmove(cmdp->save_cmd, cmdp->arg1, cmdp->arg1_len);
+		ecp->save_cmd -= ecp->arg1_len;
+		ecp->save_cmdlen += ecp->arg1_len;
+		memmove(ecp->save_cmd, ecp->arg1, ecp->arg1_len);
 
 		/*
 		 * Any commands executed from a +cmd are executed starting at
@@ -1670,19 +1609,15 @@ func_restart:
 		 * the file.  (Note, this is safe because we must have switched
 		 * files to get here.)
 		 */
-		F_SET(cmdp, E_MOVETOEND);
+		F_SET(ecp, E_MOVETOEND);
 	}
 
 	/* Update the current command. */
-	cmdp->cp = cmdp->save_cmd;
-	cmdp->cplen = cmdp->save_cmdlen;
+	ecp->cp = ecp->save_cmd;
+	ecp->clen = ecp->save_cmdlen;
 
 	/*
 	 * !!!
-	 * If we've changed screens or underlying files, any current executing
-	 * @ buffer or global command is discarded.  This is historic practice
-	 * for globals, and necessary for @ buffers.
-	 *
 	 * If we've changed underlying files, it's not a problem, we continue
 	 * with the rest of the ex command(s), operating on the new file.
 	 * However, if we switch screens (either by exiting or by an explicit
@@ -1691,100 +1626,100 @@ func_restart:
 	 * upper layers, (e.g. we could exit/reenter a screen multiple times)
 	 * and the main event driver can't handle that correctly.  So, return
 	 * and continue after we've got a new screen.
+	 *
+	 * If we've changed screens or underlying files, any pending global or
+	 * v command, or @ buffer that has associated line numbers, has to be
+	 * discarded.  This is historic practice for globals, and necessary for
+	 * @ buffers that had associated line numbers.
 	 */
 	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
-		if (exp->gatq.lh_first != NULL) {
-			msgq(sp, M_ERR,
-    "283|Ex command changed current file: global/@ command input discarded");
-			if (ex_gatfree(sp))
-				return (1);
-		}
-		if (cmdp->save_cmdlen != 0 || cmdp->arg1_len != 0) {
-			gp->cm_state = ES_PARSE_EXIT;
-			FL_SET(gp->ec_flags, EC_INTERRUPT);
-			return (0);
-		}
-	}
-
-	/*
-	 * If we're in the middle of a global command, and we've executed
-	 * some number of commands, check for interrupts.
-	 */
-	if (gcnt-- == 0) {
-		gp->cm_state = ES_PARSE_EXIT;
-		FL_SET(gp->ec_flags, EC_INTERRUPT);
+		at_found = at_norange_found = gv_found = 0;
+		for (ecp = sp->gp->ecq.lh_first;
+		    ecp != NULL; ecp = ecp->q.le_next)
+			switch (ecp->agv_flags) {
+			case 0:
+				break;
+			case AGV_AT:
+				if (!at_found) {
+					at_found = 1;
+					msgq(sp, M_ERR,
+"283|@ with range pending when file/screen changed; commands discarded");
+				}
+				break;
+			case AGV_AT_NORANGE:
+				at_norange_found = 1;
+				break;
+			case AGV_GLOBAL:
+			case AGV_V:
+				if (!gv_found) {
+					gv_found = 1;
+					msgq(sp, M_ERR,
+"283|Global/v command pending when file/screen changed; commands discarded");
+				}
+			default:
+				abort();
+			}
+		if (at_found || gv_found)
+			ex_discard(sp);
+		else if (at_norange_found)
+			gp->cm_state = ES_PARSE_RESTART;
 		return (0);
 	}
+
+	/* The @/global commands may be infinitely looping, check interrupts. */
+	if (INTERRUPTED(sp))
+		ex_message(sp, NULL, EXM_INTERRUPT);
+
 	goto loop;
 	/* NOTREACHED */
 
 err:	/*
-	 * On error, we discard any keys we have left, as well as any keys that
-	 * were mapped and are waiting.  The test of cmdp->save_cmdlen isn't
-	 * necessarily correct.  If we fail early enough we don't know if the
-	 * entire string was a single command or not.  Try and guess, as it's
-	 * useful to know if any part of the command was discarded.
+	 * On error, we discard any keys or pending commands remaining, as well
+	 * as any keys that were mapped and waiting.  The save_cmdlen test is
+	 * not necessarily correct.  If we fail early enough we don't know if
+	 * the entire string was a single command or not.  Try and guess, as
+	 * it's useful to know if commands than the current one were discarded.
 	 */
-	if (cmdp->save_cmdlen == 0)
-		for (; cmdp->cplen; --cmdp->cplen) {
-			ch = *cmdp->cp++;
-			if (IS_ESCAPE(sp, cmdp, ch) && cmdp->cplen > 1) {
-				--cmdp->cplen;
-				++cmdp->cp;
+	if (ecp->save_cmdlen == 0)
+		for (; ecp->clen; --ecp->clen) {
+			ch = *ecp->cp++;
+			if (IS_ESCAPE(sp, ecp, ch) && ecp->clen > 1) {
+				--ecp->clen;
+				++ecp->cp;
 			} else if (ch == '\n' || ch == '|') {
-				if (cmdp->cplen > 1)
-					cmdp->save_cmdlen = 1;
+				if (ecp->clen > 1)
+					ecp->save_cmdlen = 1;
 				break;
 			}
 		}
+	if (ecp->save_cmdlen != 0 || gp->ecq.lh_first != &gp->excmd) {
+		msgq(sp, M_ERR,
+		    "112|Ex command failed: pending commands discarded");
+		ex_discard(sp);
+	}
 	if (v_event_flush(sp, CH_MAPPED))
 		msgq(sp, M_ERR, "091|Ex command failed: mapped keys discarded");
-	if (cmdp->save_cmdlen != 0 || exp->gatq.lh_first != NULL) {
-		if (ex_gatfree(sp))
-			return (1);
-		msgq(sp, M_ERR,
-		    "112|Ex command failed: remaining command input discarded");
-	}
-
-ret:	gp->cm_state = ES_PARSE;
 	return (0);
 }
 
 /*
  * ex_range --
  *	Get a line range for ex commands, or perform a vi ex address search.
+ *
+ * PUBLIC: int ex_range __P((SCR *, EXCMD *, int *));
  */
 int
-ex_range(sp, cmdp)
+ex_range(sp, ecp, errp)
 	SCR *sp;
-	EXCMD *cmdp;
+	EXCMD *ecp;
+	int *errp;
 {
 	GS *gp;
 	EX_PRIVATE *exp;
-	int isaddr;
+	MARK m;
+	int isaddr, tmp;
 
-	gp = sp->gp;
-	exp = EXP(sp);
-
-	switch (gp->cm_state) {
-	case ES_PARSE:			/* Initial state, parsing a command. */
-		break;
-	case ES_PARSE_RANGE:		/* Restarting a range. */
-		if (ex_line(sp, cmdp, &isaddr))
-			return (1);
-		switch (gp->cm_state) {
-		case ES_PARSE:		/* Continue parse. */
-			goto range_restart;
-		case ES_PARSE_ERROR:	/* Error in the parse. */
-		case ES_RUNNING:	/* Continue the search. */
-			return (0);
-		default:
-			abort();
-		}
-		/* NOTREACHED */
-	default:
-		abort();
-	}
+	*errp = 0;
 
 	/*
 	 * Parse comma or semi-colon delimited line specs.
@@ -1792,9 +1727,9 @@ ex_range(sp, cmdp)
 	 * Semi-colon delimiters update the current address to be the last
 	 * address.  For example, the command
 	 *
-	 *	:3;/pattern/cmdp->cp
+	 *	:3;/pattern/ecp->cp
 	 *
-	 * will search for pattern from line 3.  In addition, if cmdp->cp
+	 * will search for pattern from line 3.  In addition, if ecp->cp
 	 * is not a valid command, the current line will be left at 3, not
 	 * at the original address.
 	 *
@@ -1807,20 +1742,19 @@ ex_range(sp, cmdp)
 	 * addresses.  For consistency, we make it true for leading semicolon
 	 * addresses as well.
 	 */
+	gp = sp->gp;
 	exp = EXP(sp);
-	cmdp->addrcnt = 0;
-	cmdp->addr = ADDR_NONE;
-	while (cmdp->cplen > 0)
-		switch (*cmdp->cp) {
+	for (ecp->addr = ADDR_NONE, ecp->addrcnt = 0; ecp->clen > 0;)
+		switch (*ecp->cp) {
 		case '%':		/* Entire file. */
 			/* Vi ex address searches didn't permit % signs. */
-			if (F_ISSET(cmdp, E_VISEARCH))
+			if (F_ISSET(ecp, E_VISEARCH))
 				goto ret;
 
 			/* It's an error if the file is empty. */
 			if (sp->ep == NULL) {
-				gp->cm_state = ES_PARSE_ERROR;
 				ex_badaddr(sp, NULL, A_EMPTY, NUM_OK);
+				*errp = 1;
 				return (0);
 			}
 			/*
@@ -1833,112 +1767,96 @@ ex_range(sp, cmdp)
 			 *
 			 * If it's an empty file, the first line is 0, not 1.
 			 */
-			if (cmdp->addr == ADDR_FOUND) {
-				gp->cm_state = ES_PARSE_ERROR;
+			if (ecp->addr == ADDR_FOUND) {
 				ex_badaddr(sp, NULL, A_COMBO, NUM_OK);
+				*errp = 1;
 				return (0);
 			}
-			if (file_lline(sp, &cmdp->addr2.lno))
+			if (file_lline(sp, &ecp->addr2.lno))
 				return (1);
-			cmdp->addr1.lno = cmdp->addr2.lno == 0 ? 0 : 1;
-			cmdp->addr1.cno = cmdp->addr2.cno = 0;
-			cmdp->addrcnt = 2;
-			cmdp->addr = ADDR_FOUND;
-			++cmdp->cp;
-			--cmdp->cplen;
+			ecp->addr1.lno = ecp->addr2.lno == 0 ? 0 : 1;
+			ecp->addr1.cno = ecp->addr2.cno = 0;
+			ecp->addrcnt = 2;
+			ecp->addr = ADDR_FOUND;
+			++ecp->cp;
+			--ecp->clen;
 			break;
 		case ',':               /* Comma delimiter. */
 			/* Vi ex address searches didn't permit commas. */
-			if (F_ISSET(cmdp, E_VISEARCH))
+			if (F_ISSET(ecp, E_VISEARCH))
 				goto ret;
 			/* FALLTHROUGH */
 		case ';':               /* Semi-colon delimiter. */
 			if (sp->ep == NULL) {
-				gp->cm_state = ES_PARSE_ERROR;
 				ex_badaddr(sp, NULL, A_EMPTY, NUM_OK);
+				*errp = 1;
 				return (0);
 			}
-			if (cmdp->addr != ADDR_FOUND)
-				switch (cmdp->addrcnt) {
+			if (ecp->addr != ADDR_FOUND)
+				switch (ecp->addrcnt) {
 				case 0:
-					cmdp->addr1.lno = sp->lno;
-					cmdp->addr1.cno = sp->cno;
-					cmdp->addrcnt = 1;
+					ecp->addr1.lno = sp->lno;
+					ecp->addr1.cno = sp->cno;
+					ecp->addrcnt = 1;
 					break;
 				case 2:
-					cmdp->addr1 = cmdp->addr2;
+					ecp->addr1 = ecp->addr2;
 					/* FALLTHROUGH */
 				case 1:
-					cmdp->addr2.lno = sp->lno;
-					cmdp->addr2.cno = sp->cno;
-					cmdp->addrcnt = 2;
+					ecp->addr2.lno = sp->lno;
+					ecp->addr2.cno = sp->cno;
+					ecp->addrcnt = 2;
 					break;
 				}
-			if (*cmdp->cp == ';')
-				switch (cmdp->addrcnt) {
+			if (*ecp->cp == ';')
+				switch (ecp->addrcnt) {
 				case 0:
 					abort();
-					break;
+					/* NOTREACHED */
 				case 1:
-					sp->lno = cmdp->addr1.lno;
-					sp->cno = cmdp->addr1.cno;
+					sp->lno = ecp->addr1.lno;
+					sp->cno = ecp->addr1.cno;
 					break;
 				case 2:
-					sp->lno = cmdp->addr2.lno;
-					sp->cno = cmdp->addr2.cno;
+					sp->lno = ecp->addr2.lno;
+					sp->cno = ecp->addr2.cno;
 					break;
 				}
-			cmdp->addr = ADDR_NEED;
+			ecp->addr = ADDR_NEED;
 			/* FALLTHROUGH */
 		case ' ':		/* Whitespace. */
 		case '\t':		/* Whitespace. */
-			++cmdp->cp;
-			--cmdp->cplen;
+			++ecp->cp;
+			--ecp->clen;
 			break;
 		default:
-			/*
-			 * Get a line specification.
-			 *
-			 * If the line was a search expression, we may have
-			 * changed state during the call, and we're now
-			 * searching the file.  Push ourselves onto the state
-			 * stack.
-			 */
-			if (ex_line(sp, cmdp, &isaddr))
+			/* Get a line specification. */
+			if (ex_line(sp, ecp, &m, &isaddr, errp))
 				return (1);
-			switch (gp->cm_state) {
-			case ES_PARSE:
-				break;
-			case ES_PARSE_ERROR:
+			if (*errp)
 				return (0);
-			case ES_RUNNING:
-				return (0);
-			default:
-				abort();
-			}
-range_restart:
 			if (!isaddr)
 				goto ret;
-			if (cmdp->addr == ADDR_FOUND) {
-				gp->cm_state = ES_PARSE_ERROR;
+			if (ecp->addr == ADDR_FOUND) {
 				ex_badaddr(sp, NULL, A_COMBO, NUM_OK);
+				*errp = 1;
 				return (0);
 			}
-			switch (cmdp->addrcnt) {
+			switch (ecp->addrcnt) {
 			case 0:
-				cmdp->addr1 = cmdp->caddr;
-				cmdp->addrcnt = 1;
+				ecp->addr1 = m;
+				ecp->addrcnt = 1;
 				break;
 			case 1:
-				cmdp->addr2 = cmdp->caddr;
-				cmdp->addrcnt = 2;
+				ecp->addr2 = m;
+				ecp->addrcnt = 2;
 				break;
 			case 2:
-				cmdp->addr1 = cmdp->addr2;
-				cmdp->addr2 = cmdp->caddr;
+				ecp->addr1 = ecp->addr2;
+				ecp->addr2 = m;
 				break;
 			}
-			cmdp->addr = ADDR_FOUND;
+			ecp->addr = ADDR_FOUND;
 			break;
 		}
 
@@ -1947,31 +1865,30 @@ range_restart:
 	 * Vi ex address searches are indifferent to order or trailing
 	 * semi-colons.
 	 */
-ret:	if (F_ISSET(cmdp, E_VISEARCH))
+ret:	if (F_ISSET(ecp, E_VISEARCH))
 		return (0);
 
-	if (cmdp->addr == ADDR_NEED)
-		switch (cmdp->addrcnt) {
+	if (ecp->addr == ADDR_NEED)
+		switch (ecp->addrcnt) {
 		case 0:
-			cmdp->addr1.lno = sp->lno;
-			cmdp->addr1.cno = sp->cno;
-			cmdp->addrcnt = 1;
+			ecp->addr1.lno = sp->lno;
+			ecp->addr1.cno = sp->cno;
+			ecp->addrcnt = 1;
 			break;
 		case 2:
-			cmdp->addr1 = cmdp->addr2;
+			ecp->addr1 = ecp->addr2;
 			/* FALLTHROUGH */
 		case 1:
-			cmdp->addr2.lno = sp->lno;
-			cmdp->addr2.cno = sp->cno;
-			cmdp->addrcnt = 2;
+			ecp->addr2.lno = sp->lno;
+			ecp->addr2.cno = sp->cno;
+			ecp->addrcnt = 2;
 			break;
 		}
 
-	if (cmdp->addrcnt == 2 && cmdp->addr2.lno < cmdp->addr1.lno) {
-		gp->cm_state = ES_PARSE_ERROR;
+	if (ecp->addrcnt == 2 && ecp->addr2.lno < ecp->addr1.lno) {
 		msgq(sp, M_ERR,
 		    "113|The second address is smaller than the first");
-		return (0);
+		*errp = 1;
 	}
 	return (0);
 }
@@ -1993,15 +1910,15 @@ ret:	if (F_ISSET(cmdp, E_VISEARCH))
  * it's fairly close.
  */
 static int
-ex_line(sp, cmdp, isaddrp)
+ex_line(sp, ecp, mp, isaddrp, errp)
 	SCR *sp;
-	EXCMD *cmdp;
-	int *isaddrp;
+	EXCMD *ecp;
+	MARK *mp;
+	int *isaddrp, *errp;
 {
 	enum nresult nret;
 	EX_PRIVATE *exp;
 	GS *gp;
-	MARK *mp;
 	long total, val;
 	int isneg;
 	int (*sf) __P((SCR *, MARK *, MARK *, char *, char **, u_int));
@@ -2009,79 +1926,63 @@ ex_line(sp, cmdp, isaddrp)
 
 	gp = sp->gp;
 	exp = EXP(sp);
-	mp = &cmdp->caddr;
 
-	*isaddrp = 0;
-	F_CLR(cmdp, E_DELTA);
-
-	switch (gp->cm_state) {
-	case ES_PARSE:			/* Initial state, parsing a command. */
-		break;
-	case ES_PARSE_LINE:		/* Restarting after a search. */
-	case ES_PARSE_RANGE:
-		if (!FL_ISSET(sp->srch_flags, SEARCH_FOUND)) {
-			gp->cm_state = ES_PARSE_ERROR;
-			return (0);
-		}
-		gp->cm_state = ES_PARSE;
-		goto line_restart;
-	default:
-		abort();
-	}
+	*isaddrp = *errp = 0;
+	F_CLR(ecp, E_DELTA);
 
 	/* No addresses permitted until a file has been read in. */
-	if (sp->ep == NULL && strchr("$0123456789'\\/?.+-^", *cmdp->cp)) {
-		gp->cm_state = ES_PARSE_ERROR;
+	if (sp->ep == NULL && strchr("$0123456789'\\/?.+-^", *ecp->cp)) {
 		ex_badaddr(sp, NULL, A_EMPTY, NUM_OK);
+		*errp = 1;
 		return (0);
 	}
 
-	switch (*cmdp->cp) {
+	switch (*ecp->cp) {
 	case '$':				/* Last line in the file. */
 		*isaddrp = 1;
-		F_SET(cmdp, E_ABSMARK);
+		F_SET(ecp, E_ABSMARK);
 
 		mp->cno = 0;
 		if (file_lline(sp, &mp->lno))
 			return (1);
-		++cmdp->cp;
-		--cmdp->cplen;
+		++ecp->cp;
+		--ecp->clen;
 		break;				/* Absolute line number. */
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
 		*isaddrp = 1;
-		F_SET(cmdp, E_ABSMARK);
+		F_SET(ecp, E_ABSMARK);
 
-		if ((nret = nget_slong(&val, cmdp->cp, &endp, 10)) != NUM_OK) {
-			gp->cm_state = ES_PARSE_ERROR;
+		if ((nret = nget_slong(&val, ecp->cp, &endp, 10)) != NUM_OK) {
 			ex_badaddr(sp, NULL, A_NOTSET, nret);
+			*errp = 1;
 			return (0);
 		}
 		if (!NPFITS(MAX_REC_NUMBER, 0, val)) {
-			gp->cm_state = ES_PARSE_ERROR;
 			ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
+			*errp = 1;
 			return (0);
 		}
 		mp->lno = val;
 		mp->cno = 0;
-		cmdp->cplen -= (endp - cmdp->cp);
-		cmdp->cp = endp;
+		ecp->clen -= (endp - ecp->cp);
+		ecp->cp = endp;
 		break;
 	case '\'':				/* Use a mark. */
 		*isaddrp = 1;
-		F_SET(cmdp, E_ABSMARK);
+		F_SET(ecp, E_ABSMARK);
 
-		if (cmdp->cplen == 1) {
-			gp->cm_state = ES_PARSE_ERROR;
+		if (ecp->clen == 1) {
 			msgq(sp, M_ERR, "114|No mark name supplied");
+			*errp = 1;
 			return (0);
 		}
-		if (mark_get(sp, cmdp->cp[1], mp, M_ERR)) {
-			gp->cm_state = ES_PARSE_ERROR;
+		if (mark_get(sp, ecp->cp[1], mp, M_ERR)) {
+			*errp = 1;
 			return (0);
 		}
-		cmdp->cp += 2;
-		cmdp->cplen -= 2;
+		ecp->cp += 2;
+		ecp->clen -= 2;
 		break;
 	case '\\':				/* Search: forward/backward. */
 		/*
@@ -2090,40 +1991,36 @@ ex_line(sp, cmdp, isaddrp)
 		 * ?? and \?.  Mark Horton doesn't remember there being any
 		 * difference.  C'est la vie.
 		 */
-		if (cmdp->cplen < 2 ||
-		    cmdp->cp[1] != '/' && cmdp->cp[1] != '?') {
-			gp->cm_state = ES_PARSE_ERROR;
+		if (ecp->clen < 2 ||
+		    ecp->cp[1] != '/' && ecp->cp[1] != '?') {
 			msgq(sp, M_ERR, "115|\\ not followed by / or ?");
+			*errp = 1;
 			return (0);
 		}
-		++cmdp->cp;
-		--cmdp->cplen;
-		sf = cmdp->cp[0] == '/' ? fsrch_setup : bsrch_setup;
+		++ecp->cp;
+		--ecp->clen;
+		sf = ecp->cp[0] == '/' ? f_search : b_search;
 		goto search;
 	case '/':				/* Search forward. */
-		sf = fsrch_setup;
-		exp->run_func = fsrch;
+		sf = f_search;
 		goto search;
 	case '?':				/* Search backward. */
-		sf = bsrch_setup;
-		exp->run_func = bsrch;
+		sf = b_search;
 
 search:		mp->lno = sp->lno;
 		mp->cno = sp->cno;
 		if (sf(sp, mp, mp,
-		    cmdp->cp, &endp, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
-			return (1);
+		    ecp->cp, &endp, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET)) {
+			*errp = 1;
+			return (0);
+		}
 
 		/* Fix up the command pointers. */
-		cmdp->cplen -= (endp - cmdp->cp);
-		cmdp->cp = endp;
+		ecp->clen -= (endp - ecp->cp);
+		ecp->cp = endp;
 
-		/* Set up the search. */
-		gp->cm_state = ES_RUNNING;
-		return (0);
-
-line_restart:	*isaddrp = 1;
-		F_SET(cmdp, E_ABSMARK);
+		*isaddrp = 1;
+		F_SET(ecp, E_ABSMARK);
 		break;
 	case '.':				/* Current position. */
 		*isaddrp = 1;
@@ -2144,27 +2041,27 @@ line_restart:	*isaddrp = 1;
 		 * the '+' could be omitted.  (This feature is found in ed
 		 * as well.)
 		 */
-		if (cmdp->cplen > 1 && isdigit(cmdp->cp[1]))
-			*cmdp->cp = '+';
+		if (ecp->clen > 1 && isdigit(ecp->cp[1]))
+			*ecp->cp = '+';
 		else {
-			++cmdp->cp;
-			--cmdp->cplen;
+			++ecp->cp;
+			--ecp->clen;
 		}
 		break;
 	}
 
 	/* Skip trailing <blank>s. */
-	for (; cmdp->cplen > 0 &&
-	    isblank(cmdp->cp[0]); ++cmdp->cp, --cmdp->cplen);
+	for (; ecp->clen > 0 &&
+	    isblank(ecp->cp[0]); ++ecp->cp, --ecp->clen);
 
 	/*
 	 * Evaluate any offset.  If no address yet found, the offset
 	 * is relative to ".".
 	 */
 	total = 0;
-	if (cmdp->cplen != 0 && (isdigit(cmdp->cp[0]) ||
-	    cmdp->cp[0] == '+' || cmdp->cp[0] == '-' ||
-	    cmdp->cp[0] == '^')) {
+	if (ecp->clen != 0 && (isdigit(ecp->cp[0]) ||
+	    ecp->cp[0] == '+' || ecp->cp[0] == '-' ||
+	    ecp->cp[0] == '^')) {
 		if (!*isaddrp) {
 			*isaddrp = 1;
 			mp->lno = sp->lno;
@@ -2196,40 +2093,40 @@ line_restart:	*isaddrp = 1;
 		 * and handled as addresses: "/pattern/2 2 2" was legal, and
 		 * referenced the 6th line after pattern.
 		 */
-		F_SET(cmdp, E_DELTA);
+		F_SET(ecp, E_DELTA);
 		for (;;) {
-			for (; cmdp->cplen > 0 && isblank(cmdp->cp[0]);
-			    ++cmdp->cp, --cmdp->cplen);
-			if (cmdp->cplen == 0 || !isdigit(cmdp->cp[0]) &&
-			    cmdp->cp[0] != '+' && cmdp->cp[0] != '-' &&
-			    cmdp->cp[0] != '^')
+			for (; ecp->clen > 0 && isblank(ecp->cp[0]);
+			    ++ecp->cp, --ecp->clen);
+			if (ecp->clen == 0 || !isdigit(ecp->cp[0]) &&
+			    ecp->cp[0] != '+' && ecp->cp[0] != '-' &&
+			    ecp->cp[0] != '^')
 				break;
-			if (!isdigit(cmdp->cp[0]) &&
-			    !isdigit(cmdp->cp[1])) {
-				total += cmdp->cp[0] == '+' ? 1 : -1;
-				--cmdp->cplen;
-				++cmdp->cp;
+			if (!isdigit(ecp->cp[0]) &&
+			    !isdigit(ecp->cp[1])) {
+				total += ecp->cp[0] == '+' ? 1 : -1;
+				--ecp->clen;
+				++ecp->cp;
 			} else {
-				if (cmdp->cp[0] == '-' ||
-				    cmdp->cp[0] == '^') {
-					++cmdp->cp;
-					--cmdp->cplen;
+				if (ecp->cp[0] == '-' ||
+				    ecp->cp[0] == '^') {
+					++ecp->cp;
+					--ecp->clen;
 					isneg = 1;
 				} else
 					isneg = 0;
 
 				/* Get a signed long, add it to the total. */
 				if ((nret = nget_slong(&val,
-				    cmdp->cp, &endp, 10)) != NUM_OK ||
+				    ecp->cp, &endp, 10)) != NUM_OK ||
 				    (nret = NADD_SLONG(sp,
 				    total, val)) != NUM_OK) {
-					gp->cm_state = ES_PARSE_ERROR;
 					ex_badaddr(sp, NULL, A_NOTSET, nret);
+					*errp = 1;
 					return (0);
 				}
 				total += isneg ? -val : val;
-				cmdp->cplen -= (endp - cmdp->cp);
-				cmdp->cp = endp;
+				ecp->clen -= (endp - ecp->cp);
+				ecp->cp = endp;
 			}
 		}
 	}
@@ -2241,15 +2138,15 @@ line_restart:	*isaddrp = 1;
 	if (*isaddrp && total != 0) {
 		if (total < 0) {
 			if (-total > mp->lno) {
-				gp->cm_state = ES_PARSE_ERROR;
 				msgq(sp, M_ERR,
 			    "117|Reference to a line number less than 0");
+				*errp = 1;
 				return (0);
 			}
 		} else
 			if (!NPFITS(MAX_REC_NUMBER, mp->lno, total)) {
-				gp->cm_state = ES_PARSE_ERROR;
 				ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
+				*errp = 1;
 				return (0);
 			}
 		mp->lno += total;
@@ -2258,115 +2155,28 @@ line_restart:	*isaddrp = 1;
 }
 
 /*
- * ex_gat --
- *	Load up the next @ buffer or global command.
+ * ex_discard --
+ *	Discard any pending ex commands.
  */
 static int
-ex_gat(sp, cmdp)
+ex_discard(sp)
 	SCR *sp;
-	EXCMD *cmdp;
 {
-	GAT *gatp, *tp;
+	GS *gp;
+	EXCMD *ecp, *next;
 	RANGE *rp;
 
-	/*
-	 * Lose any exhausted ranges/commands.  If no lines are left to be
-	 * executed, restore the saved command.  If no saved command, set
-	 * the line number, discard the gat structure, and move to the next
-	 * one.  If no next one, we're done.
-	 */
-	while ((gatp = EXP(sp)->gatq.lh_first) != NULL) {
-		while ((rp = gatp->rangeq.cqh_first) != (void *)&gatp->rangeq)
-			if (rp->start > rp->stop) {
-				CIRCLEQ_REMOVE(&gatp->rangeq, rp, q);
+	/* We know the first command can't be an AGV command. */
+	for (gp = sp->gp; (ecp = gp->ecq.lh_first) != &gp->excmd;) {
+		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
+			while ((rp = ecp->rq.cqh_first) != (void *)&ecp->rq) {
+				CIRCLEQ_REMOVE(&ecp->rq, rp, q);
 				free(rp);
-			} else
-				break;
-		if (rp == (void *)&gatp->rangeq) {
-			/* If there was a saved command, execute it. */
-			if (gatp->save_cmdlen != 0) {
-				cmdp->cp = gatp->save_cmd;
-				cmdp->cplen = gatp->save_cmdlen;
-				gatp->save_cmdlen = 0;
-				return (0);
 			}
-
-			/*
-			 * If it's a global command, fix up the last line,
-			 * and turn off the global flag if there are no
-			 * more global commands.
-			 */
-			if (F_ISSET(gatp, GAT_ISGLOBAL | GAT_ISV)) {
-				if (gatp->range_lno != OOBLNO)
-					if (file_eline(sp, gatp->range_lno))
-						sp->lno = gatp->range_lno;
-					else {
-						if (file_lline(sp, &sp->lno))
-							return (1);
-						if (sp->lno == 0)
-							sp->lno = 1;
-					}
-				for (tp = gatp->q.le_next;
-				    tp != NULL; tp = tp->q.le_next)
-					if (F_ISSET(tp, GAT_ISGLOBAL | GAT_ISV))
-						break;
-				if (tp == NULL)
-					F_CLR(sp, S_EX_GLOBAL);
-			}
-
-			/* Free allocated memory. */
-			if (gatp->save_cmd != NULL)
-				free(gatp->save_cmd);
-			free(gatp->cmd);
-			LIST_REMOVE(gatp, q);
-			free(gatp);
-		} else
-			break;
-	}
-
-	if (gatp == NULL)
-		return (0);
-
-	/*
-	 * !!!
-	 * Globals set the current line number, @ buffers don't.  Set the
-	 * global execution flag.
-	 */
-	if (F_ISSET(gatp, GAT_ISGLOBAL | GAT_ISV)) {
-		F_SET(sp, S_EX_GLOBAL);
-		gatp->range_lno = sp->lno = rp->start;
-	}
-	++rp->start;
-
-	/* Get a fresh copy of the command and point the parser at it. */
-	memmove(gatp->cmd + gatp->cmd_len, gatp->cmd, gatp->cmd_len);
-	cmdp->cp = gatp->cmd + gatp->cmd_len;
-	cmdp->cplen = gatp->cmd_len;
-
-	return (0);
-}
-
-/*
- * ex_gatfree --
- *	Discard the linked list of gat's.
- */
-static int
-ex_gatfree(sp)
-	SCR *sp;
-{
-	GAT *gatp;
-	RANGE *rp;
-
-	while ((gatp = EXP(sp)->gatq.lh_first) != NULL) {
-		while ((rp = gatp->rangeq.cqh_first) != (void *)&gatp->rangeq) {
-			CIRCLEQ_REMOVE(&gatp->rangeq, rp, q);
-			free(rp);
+			free(ecp->cp);
 		}
-		if (gatp->save_cmd != NULL)
-			free(gatp->save_cmd);
-		free(gatp->cmd);
-		LIST_REMOVE(gatp, q);
-		free(gatp);
+		LIST_REMOVE(ecp, q);
+		free(ecp);
 	}
 	return (0);
 }
@@ -2400,9 +2210,11 @@ binc_err:
 
 /*
  * ex_is_abbrev -
- *	The vi text input routine needs to know if ex thinks this is
- *	an [un]abbreviate command, so it can turn off abbreviations.
- *	Usual ranting in the vi/v_txt_ev.c:txt_abbrev() routine.
+ *	The vi text input routine needs to know if ex thinks this is an
+ *	[un]abbreviate command, so it can turn off abbreviations.  See
+ *	the usual ranting in the vi/v_txt_ev.c:txt_abbrev() routine.
+ *
+ * PUBLIC: int ex_is_abbrev __P((char *, size_t));
  */
 int
 ex_is_abbrev(name, len)
@@ -2417,9 +2229,11 @@ ex_is_abbrev(name, len)
 
 /*
  * ex_is_unmap -
- *	The vi text input routine needs to know if ex thinks this is
- *	an unmap command, so it can turn off input mapping.  Usual
+ *	The vi text input routine needs to know if ex thinks this is an
+ *	unmap command, so it can turn off input mapping.  See the usual
  *	ranting in the vi/v_txt_ev.c:txt_unmap() routine.
+ *
+ * PUBLIC: int ex_is_unmap __P((char *, size_t));
  */
 int
 ex_is_unmap(name, len)
@@ -2439,6 +2253,10 @@ ex_is_unmap(name, len)
 	    cp == &cmds[C_UNMAP]);
 }
 
+/*
+ * ex_comm_search --
+ *	Search for a command name.
+ */
 static EXCMDLIST const *
 ex_comm_search(name, len)
 	char *name;
@@ -2457,6 +2275,13 @@ ex_comm_search(name, len)
 	return (NULL);
 }
 
+/*
+ * ex_badaddr --
+ *	Display a bad address message.
+ *
+ * PUBLIC: void ex_badaddr
+ * PUBLIC:    __P((SCR *, EXCMDLIST const *, enum badaddr, enum nresult));
+ */
 void
 ex_badaddr(sp, cp, ba, nret)
 	SCR *sp;
@@ -2519,26 +2344,30 @@ ex_badaddr(sp, cp, ba, nret)
 }
 
 #if defined(DEBUG) && defined(COMLOG)
+/*
+ * ex_comlog --
+ *	Log ex commands.
+ */
 static void
-ex_comlog(sp, cmdp)
+ex_comlog(sp, ecp)
 	SCR *sp;
-	EXCMD *cmdp;
+	EXCMD *ecp;
 {
-	TRACE(sp, "ecmd: %s", cmdp->cmd->name);
-	if (cmdp->addrcnt > 0) {
-		TRACE(sp, " a1 %d", cmdp->addr1.lno);
-		if (cmdp->addrcnt > 1)
-			TRACE(sp, " a2: %d", cmdp->addr2.lno);
+	TRACE(sp, "ecmd: %s", ecp->cmd->name);
+	if (ecp->addrcnt > 0) {
+		TRACE(sp, " a1 %d", ecp->addr1.lno);
+		if (ecp->addrcnt > 1)
+			TRACE(sp, " a2: %d", ecp->addr2.lno);
 	}
-	if (cmdp->lineno)
-		TRACE(sp, " line %d", cmdp->lineno);
-	if (cmdp->flags)
-		TRACE(sp, " flags 0x%x", cmdp->flags);
+	if (ecp->lineno)
+		TRACE(sp, " line %d", ecp->lineno);
+	if (ecp->flags)
+		TRACE(sp, " flags 0x%x", ecp->flags);
 	if (F_ISSET(&exc, E_BUFFER))
-		TRACE(sp, " buffer %c", cmdp->buffer);
-	if (cmdp->argc)
-		for (cnt = 0; cnt < cmdp->argc; ++cnt)
-			TRACE(sp, " arg %d: {%s}", cnt, cmdp->argv[cnt]->bp);
+		TRACE(sp, " buffer %c", ecp->buffer);
+	if (ecp->argc)
+		for (cnt = 0; cnt < ecp->argc; ++cnt)
+			TRACE(sp, " arg %d: {%s}", cnt, ecp->argv[cnt]->bp);
 	TRACE(sp, "\n");
 }
 #endif

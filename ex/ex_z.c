@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 10.2 1995/05/05 18:53:30 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:30 $";
+static char sccsid[] = "$Id: ex_z.c,v 10.3 1995/06/08 18:53:59 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,7 +127,6 @@ ex_z(sp, cmdp)
 		(void)ex_puts(sp, "----------------------------------------\n");
 		cmdp->addr1.lno = lno + 1;
 		cmdp->addr2.lno = (lno + cnt) - 1;
-		F_SET(sp, S_EX_WROTE);
 		break;
 	default:
 		/* If no line specified, move to the next one. */

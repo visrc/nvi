@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.2 1995/05/05 18:53:02 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:02 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.3 1995/06/08 18:53:57 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,17 +210,22 @@ ex_ncheck(sp, force)
  * ex_message --
  *	Display a few common messages.
  *
- * PUBLIC: void ex_message __P((SCR *, char *, enum exmtype));
+ * PUBLIC: void ex_message __P((SCR *, char *, exm_t));
  */
 void
 ex_message(sp, p, which)
 	SCR *sp;
 	char *p;
-	enum exmtype which;
+	exm_t which;
 {
 	switch (which) {
 	case EXM_EMPTYBUF:
 		msgq(sp, M_ERR, "129|Buffer %s is empty", p);
+		break;
+	case EXM_INTERRUPT:
+		msgq(sp, M_ERR, v_event_flush(sp, CH_MAPPED) ?
+		    "167|Interrupted: mapped keys discarded" :
+		    "245|Interrupted");
 		break;
 	case EXM_NOPREVBUF:
 		msgq(sp, M_ERR, "128|No previous buffer to execute");

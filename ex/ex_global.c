@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.2 1995/05/05 18:50:23 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:23 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.3 1995/06/08 18:53:40 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,8 +34,8 @@ static char sccsid[] = "$Id: ex_global.c,v 10.2 1995/05/05 18:50:23 bostic Exp $
 
 enum which {GLOBAL, V};
 
-static int	global __P((SCR *, EXCMD *, enum which));
-static int	gsrch __P((SCR *, EVENT *, int *));
+static int ex_g_setup __P((SCR *, EXCMD *, enum which));
+static int ex_g_search __P((SCR *, EVENT *, int *));
 
 /*
  * ex_global -- [line [,line]] g[lobal][!] /pattern/ [commands]
@@ -48,7 +48,7 @@ ex_global(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	return (global(sp,
+	return (ex_g_setup(sp,
 	    cmdp, FL_ISSET(cmdp->iflags, E_C_FORCE) ? V : GLOBAL));
 }
 
@@ -63,35 +63,34 @@ ex_v(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	return (global(sp, cmdp, V));
+	return (ex_g_setup(sp, cmdp, V));
 }
 
 /*
- * global --
+ * ex_g_setup --
  *	Ex global and v commands.
  */
 static int
-global(sp, cmdp, cmd)
+ex_g_setup(sp, cmdp, cmd)
 	SCR *sp;
 	EXCMD *cmdp;
 	enum which cmd;
 {
-	regex_t *re, lre;
-	GAT *gatp;
+	EXCMD *ecp;
 	MARK abs;
+	RANGE *rp;
+	recno_t start, end;
+	regex_t *re, lre;
+	regmatch_t match[1];
 	size_t len;
-	int delim, eval, reflags, replaced;
+	int cnt, delim, eval, reflags, replaced;
 	char *ptrn, *p, *t;
 
 	NEEDFILE(sp, cmdp->cmd);
 
-#ifdef __TK__
-Globals within globals can probably be permitted, now, as long as
-we dont lose track of the S_GLOBAL bit, i.e. when to set/unset it.
-#endif
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		msgq(sp, M_ERR,
-	"102|The %s command can't be used as part of a global command",
+	"102|The %s command can't be used as part of a global or v command",
 		    cmdp->cmd->name);
 		return (1);
 	}
@@ -190,24 +189,9 @@ usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 	if (mark_set(sp, ABSMARK1, &abs, 1))
 		return (1);
 
-	/*
-	 * Get a GAT structure.  We use the same structure for both global
-	 * commands and @ buffer commands because they have to hang on the
-	 * same stack, and they have lots of similarities.
-	 */
-	CALLOC_RET(sp, gatp, GAT *, 1, sizeof(GAT));
-	CIRCLEQ_INIT(&gatp->rangeq);
-
-	/*
-	 * Save any remaining portion of the current command for restoration
-	 * when this command is finished.
-	 */
-	if (cmdp->save_cmdlen != 0) {
-		MALLOC_RET(sp, gatp->save_cmd, char *, cmdp->save_cmdlen);
-		memmove(gatp->save_cmd, cmdp->save_cmd, cmdp->save_cmdlen);
-		gatp->save_cmdlen = cmdp->save_cmdlen;
-		cmdp->save_cmdlen = 0;
-	}
+	/* Get an EXCMD structure. */
+	CALLOC_RET(sp, ecp, EXCMD *, 1, sizeof(EXCMD));
+	CIRCLEQ_INIT(&ecp->rq);
 
 	/*
 	 * Get a copy of the command string; the default command is print.
@@ -220,49 +204,19 @@ usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		p = "pp";
 		len = 1;
 	}
-	MALLOC_RET(sp, gatp->cmd, char *, len * 2);
-	memmove(gatp->cmd, p, len);
-	gatp->cmd_len = len;
-	gatp->range_lno = OOBLNO;
-	F_SET(gatp, cmd == V ? GAT_ISV : GAT_ISGLOBAL);
+	MALLOC_RET(sp, ecp->cp, char *, len * 2);
+	ecp->o_cp = ecp->cp;
+	memmove(ecp->cp + len, p, len);
+	ecp->o_clen = len;
+	ecp->range_lno = OOBLNO;
+	FL_SET(ecp->agv_flags, cmd == GLOBAL ? AGV_GLOBAL : AGV_V);
 
 	/* Set up search state. */
-	gatp->gstart = cmdp->addr1.lno;
-	gatp->gend = cmdp->addr2.lno;
+	ecp->start = cmdp->addr1.lno;
+	ecp->end = cmdp->addr2.lno;
 
 	/* Add to the command queue. */
-	LIST_INSERT_HEAD(&EXP(sp)->gatq, gatp, q);
-
-	/* Set up the running function. */
-	EXP(sp)->run_func = gsrch;
-	sp->gp->cm_state = ES_RUNNING;
-	sp->gp->cm_next = ES_PARSE_FUNC;
-	FL_SET(sp->gp->ec_flags, EC_INTERRUPT);
-	return (0);
-}
-
-/*
- * gsrch --
- *	Search the file for matches to the global pattern.
- */
-static int
-gsrch(sp, evp, completep)
-	SCR *sp;
-	EVENT *evp;
-	int *completep;
-{
-	GAT *gatp;
-	RANGE *rp;
-	recno_t lno;
-	regmatch_t match[1];
-	size_t len;
-	int cnt, eval;
-	char *p;
-
-	if (evp->e_event == E_INTERRUPT) {
-		*completep = 1;
-		return (0);
-	}
+	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
 
 	/*
 	 * For each line...  The semantics of global matching are that we first
@@ -277,27 +231,30 @@ gsrch(sp, evp, completep)
 	 * the layering much.
 	 */
 	cnt = INTERRUPT_CHECK;
-	for (gatp = EXP(sp)->gatq.lh_first,
-	    lno = gatp->gstart; lno <= gatp->gend; ++lno) {
+	for (start = ecp->start, end = ecp->end; start <= end; ++start) {
 		if (cnt-- == 0) {
-			if (!F_ISSET(sp, S_BUSY))
-				srch_busy(sp, 1);
-			*completep = 0;
-			return (0);
+			if (INTERRUPTED(sp)) {
+				LIST_REMOVE(ecp, q);
+				free(ecp->cp);
+				free(ecp);
+				break;
+			}
+			search_busy(sp, 1);
+			cnt = INTERRUPT_CHECK;
 		}
-		if ((p = file_gline(sp, lno, &len)) == NULL) {
-			FILE_LERR(sp, lno);
+		if ((p = file_gline(sp, start, &len)) == NULL) {
+			FILE_LERR(sp, start);
 			return (1);
 		}
 		match[0].rm_so = 0;
 		match[0].rm_eo = len;
 		switch (eval = regexec(&sp->sre, p, 0, match, REG_STARTEND)) {
 		case 0:
-			if (F_ISSET(gatp, GAT_ISV))
+			if (cmd == V)
 				continue;
 			break;
 		case REG_NOMATCH:
-			if (F_ISSET(gatp, GAT_ISGLOBAL))
+			if (cmd == GLOBAL)
 				continue;
 			break;
 		default:
@@ -306,8 +263,8 @@ gsrch(sp, evp, completep)
 		}
 
 		/* If follows the last entry, extend the last entry's range. */
-		if ((rp = gatp->rangeq.cqh_last) != (void *)&gatp->rangeq &&
-		    rp->stop == lno - 1) {
+		if ((rp = ecp->rq.cqh_last) != (void *)&ecp->rq &&
+		    rp->stop == start - 1) {
 			++rp->stop;
 			continue;
 		}
@@ -316,35 +273,35 @@ gsrch(sp, evp, completep)
 		CALLOC(sp, rp, RANGE *, 1, sizeof(RANGE));
 		if (rp == NULL)
 			return (1);
-		rp->start = rp->stop = lno;
-		CIRCLEQ_INSERT_TAIL(&gatp->rangeq, rp, q);
+		rp->start = rp->stop = start;
+		CIRCLEQ_INSERT_TAIL(&ecp->rq, rp, q);
 	}
-	*completep = 1;
+	search_busy(sp, 0);
 	return (0);
 }
 
 /*
- * global_insdel --
+ * ex_g_insdel --
  *	Update the ranges based on an insertion or deletion.
  *
- * PUBLIC: void global_insdel __P((SCR *, lnop_t, recno_t));
+ * PUBLIC: void ex_g_insdel __P((SCR *, lnop_t, recno_t));
  */
 void
-global_insdel(sp, op, lno)
+ex_g_insdel(sp, op, lno)
 	SCR *sp;
 	lnop_t op;
 	recno_t lno;
 {
-	GAT *gatp;
+	EXCMD *ecp;
 	RANGE *nrp, *rp;
 
 	if (op == LINE_APPEND || op == LINE_RESET)
 		return;
 
-	for (gatp = EXP(sp)->gatq.lh_first;
-	    gatp != NULL; gatp = gatp->q.le_next) {
-		for (rp = gatp->rangeq.cqh_first;
-		    rp != (void *)&gatp->rangeq; rp = nrp) {
+	for (ecp = sp->gp->ecq.lh_first; ecp != NULL; ecp = ecp->q.le_next) {
+		if (!FL_ISSET(ecp->agv_flags, AGV_AT | AGV_GLOBAL | AGV_V))
+			continue;
+		for (rp = ecp->rq.cqh_first; rp != (void *)&ecp->rq; rp = nrp) {
 			nrp = rp->q.cqe_next;
 
 			/* If range less than the line, ignore it. */
@@ -374,7 +331,7 @@ global_insdel(sp, op, lno)
 			 */
 			if (op == LINE_DELETE) {
 				if (rp->start > --rp->stop) {
-					CIRCLEQ_REMOVE(&gatp->rangeq, rp, q);
+					CIRCLEQ_REMOVE(&ecp->rq, rp, q);
 					free(rp);
 				}
 			} else {
@@ -388,7 +345,7 @@ global_insdel(sp, op, lno)
 				nrp->start = lno + 1;
 				nrp->stop = rp->stop + 1;
 				rp->stop = lno - 1;
-				CIRCLEQ_INSERT_AFTER(&gatp->rangeq, rp, nrp, q);
+				CIRCLEQ_INSERT_AFTER(&ecp->rq, rp, nrp, q);
 				rp = nrp;
 			}
 		}
@@ -397,6 +354,79 @@ global_insdel(sp, op, lno)
 		 * If the command deleted/inserted lines, the cursor moves to
 		 * the line after the deleted/inserted line.
 		 */
-		gatp->range_lno = lno;
+		ecp->range_lno = lno;
 	}
+}
+
+/*
+ * ex_load --
+ *	Load up the next command, which may be an @ buffer or global command.
+ *
+ * PUBLIC: int ex_load __P((SCR *));
+ */
+int
+ex_load(sp)
+	SCR *sp;
+{
+	GS *gp;
+	EXCMD *ecp;
+	RANGE *rp;
+
+	F_CLR(sp, S_EX_GLOBAL);
+
+	/*
+	 * Lose any exhausted commands.  We know that the first command
+	 * can't be an AGV command, which makes things a bit easier.
+	 */
+	for (gp = sp->gp;;) {
+		if ((ecp = gp->ecq.lh_first) == &gp->excmd)
+			return (0);
+		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
+			/* Discard any exhausted ranges. */
+			while ((rp = ecp->rq.cqh_first) != (void *)&ecp->rq)
+				if (rp->start > rp->stop) {
+					CIRCLEQ_REMOVE(&ecp->rq, rp, q);
+					free(rp);
+				} else
+					break;
+
+			/* If there's another range, continue with it. */
+			if (rp != (void *)&ecp->rq)
+				break;
+
+			/* If it's a global/v command, fix up the last line. */
+			if (FL_ISSET(ecp->agv_flags,
+			    AGV_GLOBAL | AGV_V) && ecp->range_lno != OOBLNO)
+				if (file_eline(sp, ecp->range_lno))
+					sp->lno = ecp->range_lno;
+				else {
+					if (file_lline(sp, &sp->lno))
+						return (1);
+					if (sp->lno == 0)
+						sp->lno = 1;
+				}
+			free(ecp->cp);
+		} else
+			if (ecp->clen != 0)
+				return (0);
+
+		/* Discard the EXCMD. */
+		LIST_REMOVE(ecp, q);
+		free(ecp);
+	}
+
+	/*
+	 * We only get here if it's an active @, global or v command.  Set
+	 * the current line number, and get a new copy of the command for
+	 * the parser.  Note, the original pointer almost certainly moved,
+	 * so we have play games.
+	 */
+	ecp->cp = ecp->o_cp;
+	memmove(ecp->cp, ecp->cp + ecp->o_clen, ecp->o_clen);
+	ecp->clen = ecp->o_clen;
+	ecp->range_lno = sp->lno = rp->start++;
+
+	if (FL_ISSET(ecp->agv_flags, AGV_GLOBAL | AGV_V))
+		F_SET(sp, S_EX_GLOBAL);
+	return (0);
 }

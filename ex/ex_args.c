@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 10.2 1995/05/05 18:49:12 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:49:12 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.3 1995/06/08 18:53:29 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ static char sccsid[] = "$Id: ex_args.c,v 10.2 1995/05/05 18:49:12 bostic Exp $ (
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
 
 static int ex_N_next __P((SCR *, EXCMD *));
 
@@ -111,7 +112,7 @@ ex_next(sp, cmdp)
 	}
 
 	if (file_init(sp, frp, NULL, FS_SETALT |
-	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	if (noargs)
 		++sp->cargv;
@@ -127,13 +128,12 @@ ex_N_next(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	SCR *bot, *new, *top;
+	SCR *new;
 	ARGS **argv;
 	FREF *frp;
 	char **ap, **s_argv;
 
 	/* Any arguments are a replacement file list. */
-	sp->cargv = NULL;
 	CALLOC_RET(sp, s_argv, char **, cmdp->argc + 1, sizeof(char *));
 	for (ap = s_argv, argv = cmdp->argv; argv[0]->len != 0; ++ap, ++argv)
 		if ((*ap = v_strdup(sp, argv[0]->bp, argv[0]->len)) == NULL)
@@ -141,33 +141,22 @@ ex_N_next(sp, cmdp)
 	*ap = NULL;
 
 	/* Get a new screen. */
-	if (vs_split(sp, &top, &bot))
+	if (screen_init(sp->gp, sp, &new))
 		return (1);
-	new = sp == top ? bot : top;
-
-	/* Switch to the first file. */
-	new->cargv = new->argv = s_argv;
-	if ((frp = file_add(new, *new->cargv)) == NULL ||
-	    file_init(new, frp, NULL,
-	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
-		if (sp == top)
-			(void)vs_join(new, sp, NULL, NULL);
-		else
-			(void)vs_join(new, NULL, sp, NULL);
+	if (vs_split(sp, new)) {
 		(void)screen_end(new);
 		return (1);
 	}
 
-	/* Add the new screen to the queue. */
-	SIGBLOCK(sp->gp);
-	if (sp == bot) {
-		/* Split up, link in before the parent. */
-		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
-	} else {
-		/* Split down, link in after the parent. */
-		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
+	/* Get a backing file. */
+	new->cargv = new->argv = s_argv;
+	if ((frp = file_add(new, *new->cargv)) == NULL ||
+	    file_init(new, frp, NULL,
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
+		(void)vs_discard(new, NULL);
+		(void)screen_end(new);
+		return (1);
 	}
-	SIGUNBLOCK(sp->gp);
 
 	/* Set up the switch. */
 	sp->nextdisp = new;
@@ -208,7 +197,7 @@ ex_prev(sp, cmdp)
 		return (1);
 
 	if (file_init(sp, frp, NULL, FS_SETALT |
-	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	--sp->cargv;
 
@@ -253,7 +242,7 @@ ex_rew(sp, cmdp)
 	if ((frp = file_add(sp, *sp->cargv)) == NULL)
 		return (1);
 	if (file_init(sp, frp, NULL, FS_SETALT |
-	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	return (0);
 }
@@ -299,7 +288,5 @@ ex_args(sp, cmdp)
 	}
 	if (!INTERRUPTED(sp))
 		(void)ex_puts(sp, "\n");
-	F_SET(sp, S_EX_WROTE);
-
 	return (0);
 }

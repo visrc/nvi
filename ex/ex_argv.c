@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.2 1995/05/05 18:49:24 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:49:24 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.3 1995/06/08 18:53:31 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ argv_init(sp, excp)
  * argv_exp0 --
  *	Append a string to the argument list.
  *
- * PUBLIC: int argv_expo0 __P((SCR *, EXCMD *, char *, size_t));
+ * PUBLIC: int argv_exp0 __P((SCR *, EXCMD *, char *, size_t));
  */
 int
 argv_exp0(sp, excp, cmd, cmdlen)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 10.2 1995/05/05 18:50:09 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:09 $";
+static char sccsid[] = "$Id: ex_edit.c,v 10.3 1995/06/08 18:53:37 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ static char sccsid[] = "$Id: ex_edit.c,v 10.2 1995/05/05 18:50:09 bostic Exp $ (
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
 
 static int ex_N_edit __P((SCR *, EXCMD *, FREF *, int));
 
@@ -99,7 +100,7 @@ ex_edit(sp, cmdp)
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, (setalt ? FS_SETALT : 0) |
-	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	return (0);
 }
@@ -115,14 +116,17 @@ ex_N_edit(sp, cmdp, frp, attach)
 	FREF *frp;
 	int attach;
 {
-	SCR *bot, *new, *top;
+	SCR *new;
 
 	/* Get a new screen. */
-	if (vs_split(sp, &top, &bot))
+	if (screen_init(sp->gp, sp, &new))
 		return (1);
-	new = sp == top ? bot : top;
+	if (vs_split(sp, new)) {
+		(void)screen_end(new);
+		return (1);
+	}
 
-	/* Switch files. */
+	/* Get a backing file. */
 	if (attach) {
 		/* Copy file state, keep the screen and cursor the same. */
 		new->ep = sp->ep;
@@ -133,26 +137,12 @@ ex_N_edit(sp, cmdp, frp, attach)
 
 		new->lno = sp->lno;
 		new->cno = sp->cno;
-	} else if (file_init(new, frp, NULL, FS_WELCOME |
+	} else if (file_init(new, frp, NULL,
 	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
-		if (sp == top)
-			(void)vs_join(new, sp, NULL, NULL);
-		else
-			(void)vs_join(new, NULL, sp, NULL);
+		(void)vs_discard(new, NULL);
 		(void)screen_end(new);
 		return (1);
 	}
-
-	/* Add the new screen to the queue. */
-	SIGBLOCK(sp->gp);
-	if (sp == bot) {
-		/* Split up, link in before the parent. */
-		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
-	} else {
-		/* Split down, link in after the parent. */
-		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
-	}
-	SIGUNBLOCK(sp->gp);
 
 	/* Set up the switch. */
 	sp->nextdisp = new;

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.2 1995/05/05 18:53:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:57 $
+ *	$Id: ex.h,v 10.3 1995/06/08 18:53:25 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:25 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -61,23 +61,61 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
 	}								\
 }
 
+/* Ranges for global and @ commands. */
+typedef struct _range	RANGE;
+struct _range {				/* Global command range. */
+	CIRCLEQ_ENTRY(_range) q;	/* Linked list of ranges. */
+	recno_t start, stop;		/* Start/stop of the range. */
+};
+
 /* Ex command structure (EXCMD) and ex state. */
 typedef enum {
-	ES_PARSE=0,			/* Parser: Ready (initial state). */
-	ES_CTEXT_TEARDOWN,		/* Command: after text input mode. */
-	ES_GET_CMD,			/* Command: initial input. */
-	ES_ITEXT_TEARDOWN,		/* Text input mode. */
-	ES_PARSE_ERROR,			/* Parser had an error. */
-	ES_PARSE_EXIT,			/* Parser: after screen switch */
-	ES_PARSE_FUNC,			/* Parser: after function call. */
-	ES_PARSE_LINE,			/* Parser: in line search. */
-	ES_PARSE_RANGE,			/* Parser: in range search. */
+	ES_PARSE=0,			/* Parser: ready (initial state). */
+	ES_PARSE_CONT,			/* Parser: continue the command. */
+	ES_PARSE_RESTART,		/* Parser: restart the command. */
+	ES_GET_CMD,			/* Command: command input. */
+	ES_CTEXT_TEARDOWN,		/* Command: after command input. */
+	ES_ITEXT_TEARDOWN,		/* Command: after text input. */
 	ES_RUNNING,			/* Something else is running. */
 } s_ex_t;
 
 struct _excmd {
+	LIST_ENTRY(_excmd) q;		/* Linked list of commands. */
+
+	char	 *cp;			/* Current command text. */
+	size_t	  clen;			/* Current command length. */
+
+	char	 *save_cmd;		/* Remaining command. */
+	size_t	  save_cmdlen;		/* Remaining command length. */
+
+	char	 *arg1;			/* + argument text. */
+	size_t	  arg1_len;		/* + argument length. */
+
+	enum				/* Command separator state. */
+	    { SEP_NOTSET, SEP_NEED_N, SEP_NEED_NR, SEP_NONE } sep;
+	enum				/* Range address state. */
+	    { ADDR_FOUND, ADDR_FOUND_DELTA, ADDR_NEED, ADDR_NONE } addr;
+
+	CIRCLEQ_HEAD(_rh, _range) rq;	/* @/globals range: linked list. */
+	recno_t   range_lno;		/* @/global range: set line number. */
+	recno_t	  start;		/* @/global starting line number. */
+	recno_t	  end;			/* @/global end line number. */
+	char	 *o_cp;			/* Original @/global command. */
+	size_t	  o_clen;		/* Original @/global command length. */
+#define	AGV_AT		0x01		/* @ buffer execution. */
+#define	AGV_AT_NORANGE	0x02		/* @ buffer execution without range. */
+#define	AGV_GLOBAL	0x04		/* global command. */
+#define	AGV_V		0x08		/* v command. */
+#define	AGV_ALL		(AGV_AT | AGV_AT_NORANGE | AGV_GLOBAL | AGV_V)
+	u_int8_t  agv_flags;
+
 	EXCMDLIST const *cmd;		/* Command: entry in command table. */
-	EXCMDLIST rcmd;			/* Command: table entryreplacement. */
+	EXCMDLIST rcmd;			/* Command: table entry/replacement. */
+
+	/* Zero out most of the structure before each ex command. */
+#define	ZERO_EXCMD(cmdp)						\
+	memset(&((cmdp)->buffer), 0, ((char *)&(cmdp)->flags -		\
+	    (char *)&((cmdp)->buffer)) + sizeof((cmdp)->flags))
 
 	CHAR_T	  buffer;		/* Command: named buffer. */
 	recno_t	  lineno;		/* Command: line number. */
@@ -104,18 +142,6 @@ struct _excmd {
 #define	E_C_PRINT	0x00001000	/*  p flag. */
 	u_int16_t iflags;		/* User input information. */
 
-	char	 *cp;			/* Parser: current command text. */
-	size_t	  cplen;		/* Parser: current command length. */
-	char	 *save_cmd;		/* Parser: remaining command. */
-	size_t	  save_cmdlen;		/* Parser: remaining command length. */
-	char	 *arg1;			/* Parser: + argument text. */
-	size_t	  arg1_len;		/* Parser: + argument length. */
-	MARK	  caddr;		/* Parser: current address. */
-	enum				/* Parser: command separator state. */
-	    { SEP_NOTSET, SEP_NEED_N, SEP_NEED_NR, SEP_NONE } sep;
-	enum				/* Parser: range address state. */
-	    { ADDR_FOUND, ADDR_FOUND_DELTA, ADDR_NEED, ADDR_NONE } addr;
-
 #define	__INUSE2	0x000004ff	/* Same name space as EXCMDLIST. */
 #define	E_ABSMARK	0x00000800	/* Set the absolute mark. */
 #define	E_ADDR_DEF	0x00001000	/* Default addresses used. */
@@ -134,35 +160,6 @@ struct _excmd {
 	u_int32_t flags;		/* Current flags. */
 };
 
-/* Global ranges. */
-typedef struct _range	RANGE;
-struct _range {				/* Global command range. */
-	CIRCLEQ_ENTRY(_range) q;	/* Linked list of ranges. */
-	recno_t start, stop;		/* Start/stop of the range. */
-};
-
-typedef struct _gat	GAT;
-struct _gat {				/* Global and @ buffer commands. */
-	LIST_ENTRY(_gat) q;		/* Linked list of @/global commands. */
-
-	char	*cmd;			/* Command. */
-	size_t	 cmd_len;		/* Command length. */
-
-	char	*save_cmd;		/* Saved command. */
-	size_t	 save_cmdlen;		/* Saved command length. */
-
-					/* Linked list of ranges. */
-	CIRCLEQ_HEAD(_rangeh, _range) rangeq;
-	recno_t  range_lno;		/* Range set line number. */
-
-	recno_t	 gstart;		/* Global start line number. */
-	recno_t	 gend;			/* Global end line number. */
-
-#define	GAT_ISGLOBAL	0x01		/* Global command. */
-#define	GAT_ISV		0x02		/* V command. */
-	u_int8_t flags;
-};
-
 /* Cd paths. */
 typedef struct _cdpath	CDPATH;
 struct _cdpath {			/* Cd path structure. */
@@ -177,8 +174,6 @@ typedef struct _ex_private {
 	char	*tlast;			/* Saved last tag. */
 
 	TAILQ_HEAD(_cdh, _cdpath) cdq;	/* Cd path list. */
-
-	LIST_HEAD(_gath, _gat) gatq;	/* Linked list of @/global commands. */
 
 	ARGS   **args;			/* Command: argument list. */
 	int	 argscnt;		/* Command: argument list count. */
@@ -221,10 +216,17 @@ typedef struct _ex_private {
 enum filtertype { FILTER, FILTER_READ, FILTER_WRITE };
 
 /* Ex common error messages. */
-enum exmtype { EXM_EMPTYBUF, EXM_NOPREVBUF, EXM_NOPREVRE, EXM_NORC, EXM_USAGE };
+typedef enum {
+	EXM_EMPTYBUF,			/* Empty buffer. */
+	EXM_INTERRUPT,			/* Interrupted. */
+	EXM_NOPREVBUF,			/* No previous buffer specified. */
+	EXM_NOPREVRE,			/* No previous RE specified. */
+	EXM_NORC,			/* Illegal until a file read in. */
+	EXM_USAGE,			/* Standard usage message. */
+} exm_t;
 
 /* Ex address error types. */
 enum badaddr { A_COMBO, A_EMPTY, A_EOF, A_NOTSET, A_ZERO };
 
-#include "excmd_define.h"
-#include "excmd_extern.h"
+#include "ex_define.h"
+#include "ex_extern.h"

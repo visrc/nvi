@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.2 1995/05/05 18:48:27 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:48:27 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.3 1995/06/08 18:53:27 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,6 +92,7 @@ ex_aci(sp, cmdp, cmd)
 	GS *gp;
 	recno_t lno;
 	size_t len;
+	int notused;
 
 	gp = sp->gp;
 	NEEDFILE(sp, cmdp->cmd);
@@ -213,12 +214,26 @@ ex_aci(sp, cmdp, cmd)
 	 * be possible.
 	 */
 	if (F_ISSET(sp, S_VI)) {
+		/* Go into canonical mode. */
 		if (gp->scr_canon(sp, 1)) {
 			msgq(sp, M_ERR,
 		    "281|Cannot enter ex text input mode from current mode");
 			return (1);
 		}
-		(void)write(STDOUT_FILENO, "\n", 1);
+
+		/* Push out any waiting messages. */
+		(void)ex_fflush(sp);
+
+		/* Set the canonical bit AFTER pushing out messages. */
+		F_SET(sp, S_EX_CANON);
+
+		/*
+		 * !!!
+		 * Users of historical versions of vi sometimes get confused
+		 * when they enter append mode, and can't seem to get out of
+		 * it.  Give them an informational message.
+		 */
+		(void)ex_printf(sp, "\nEntering ex input mode:\n");
 	}
 
 	/*
@@ -262,21 +277,19 @@ int
 ex_aci_td(sp)
 	SCR *sp;
 {
-	TEXT *tp;
 	EX_PRIVATE *exp;
+	TEXT *tp;
 	recno_t lno;
-	int rval;
+	size_t cnt;
 
-	rval = 0;
+	F_SET(sp, S_EX_WROTE);
 
 	exp = EXP(sp);
 	lno = exp->im_lno;
-	for (tp = exp->im_tiq.cqh_first;
-	    tp != (TEXT *)&exp->im_tiq; tp = tp->q.cqe_next)
-		if (file_aline(sp, 1, lno++, tp->lb, tp->len)) {
-			rval = 1;
-			goto ret;
-		}
+	for (tp = exp->im_tiq.cqh_first, cnt = 0;
+	    tp != (TEXT *)&exp->im_tiq; tp = tp->q.cqe_next, ++cnt)
+		if (file_aline(sp, 1, lno++, tp->lb, tp->len))
+			return (1);
 
 	/*
 	 * Set sp->lno to the final line number value (correcting for a
@@ -286,14 +299,5 @@ ex_aci_td(sp)
 	if ((sp->lno = lno) == 0 && file_eline(sp, 1))
 		sp->lno = 1;
 
-ret:	if (F_ISSET(sp, S_VI)) {
-		/* The screen must be completely refreshed. */
-		F_SET(sp, S_EX_WROTE | S_SCR_REFRESH);
-
-		if (sp->gp->scr_canon(sp, 1)) {
-			msgq(sp, M_ERR, "282|Unable to restore vi screen");
-			return (1);
-		}
-	}
-	return (rval);
+	return (0);
 }

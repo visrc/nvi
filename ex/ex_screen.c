@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 10.2 1995/05/05 18:51:38 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:38 $";
+static char sccsid[] = "$Id: ex_screen.c,v 10.3 1995/06/08 18:53:48 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,5 @@ ex_sdisplay(sp)
 	}
 	if (!INTERRUPTED(sp))
 		(void)ex_puts(sp, "\n");
-
-	F_SET(sp, S_EX_WROTE);
 	return (0);
 }

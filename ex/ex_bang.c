@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.2 1995/05/05 18:51:06 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:06 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.3 1995/06/08 18:53:34 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,7 +89,6 @@ ex_bang(sp, cmdp)
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
 		if (F_ISSET(sp, S_EX)) {
-			F_SET(sp, S_EX_WROTE);
 			(void)ex_printf(sp, "!%s\n", ap->bp);
 			(void)ex_fflush(sp);
 		}
@@ -201,12 +200,14 @@ ex_bang(sp, cmdp)
 		F_SET(sp, S_CONTINUE);
 
 ret2:	if (F_ISSET(sp, S_EX)) {
+#ifdef __TK__
 		/*
 		 * Put ex error messages out so they aren't confused with
 		 * the autoprint output.
 		 */
 		if (rval)
 			(void)sp->gp->scr_msgflush(sp, NULL, NULL);
+#endif
 
 		/* Ex terminates with a bang, even if the command fails. */
 		if (!F_ISSET(sp, S_EX_SILENT))

@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.2 1995/05/05 18:52:42 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:52:42 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.3 1995/06/08 18:53:53 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,6 +38,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 10.2 1995/05/05 18:52:42 bostic Exp $ (B
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
 #include "tag.h"
 
 static char	*binary_search __P((char *, char *, char *));
@@ -83,9 +84,6 @@ ex_tagfirst(sp, tagarg)
 	/* Search the file for the tag. */
 	(void)tag_search(sp, search, tag);
 	free(tag);
-
-	/* Put up the welcome message on the right line. */
-	(void)msg_status(sp, sp->lno, 0, 1);
 
 	/* Might as well make this the default tag. */
 	if ((EXP(sp)->tlast = strdup(tagarg)) == NULL) {
@@ -229,7 +227,6 @@ err:		free(tag);
 			return (1);
 		break;
 	case TC_CHANGE:
-		(void)msg_status(sp, sp->lno, 0, 1);
 		break;
 	}
 	F_SET(sp, S_SCR_CENTER);
@@ -247,14 +244,18 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 	FREF *frp;
 	char *search, *tag;
 {
-	SCR *new, *top, *bot;
+	SCR *new;
 
 	/* Get a new screen. */
-	if (vs_split(sp, &top, &bot))
+	if (screen_init(sp->gp, sp, &new))
 		return (1);
-	new = sp == top ? bot : top;
+	if (vs_split(sp, new)) {
+		(void)file_end(new, new->ep, 1);
+		(void)screen_end(new);
+		return (1);
+	}
 
-	/* Switch files. */
+	/* Get a backing file. */
 	if (frp == sp->frp) {
 		/* Copy file state. */
 		new->ep = sp->ep;
@@ -263,11 +264,8 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 		new->frp = frp;
 		new->frp->flags = sp->frp->flags;
 	} else if (file_init(new, frp, NULL,
-	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
-		if (sp == top)
-			(void)vs_join(new, sp, NULL, NULL);
-		else
-			(void)vs_join(new, NULL, sp, NULL);
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0))) {
+		(void)vs_discard(new, NULL);
 		(void)screen_end(new);
 		return (1);
 	}
@@ -275,17 +273,6 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 	/* Search for the tag. */
 	(void)tag_search(new, search, tag);
 	free(tag);
-
-	/* Add the new screen to the queue. */
-	SIGBLOCK(sp->gp);
-	if (sp == bot) {
-		/* Split up, link in before the parent. */
-		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
-	} else {
-		/* Split down, link in after the parent. */
-		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
-	}
-	SIGUNBLOCK(sp->gp);
 
 	/* Set up the switch. */
 	sp->nextdisp = new;
@@ -380,7 +367,6 @@ ex_tagpop(sp, cmdp)
 		F_SET(sp->frp, FR_CURSORSET);
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
-		(void)msg_status(sp, tp->lno, 0, 1);
 	}
 
 	/* Pop entries off the queue up to ntp. */
@@ -433,7 +419,6 @@ ex_tagtop(sp, cmdp)
 		F_SET(sp->frp, FR_CURSORSET);
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
-		(void)msg_status(sp, tp->lno, 0, 1);
 	}
 
 	/* Empty out the queue. */
@@ -494,7 +479,6 @@ ex_tagdisplay(sp)
 				(void)ex_printf(sp, "%2d %*.*s %s\n",
 				    cnt, (int)maxlen, (int)len, name,
 				    tp->search);
-		F_SET(sp, S_EX_WROTE);
 	}
 	return (0);
 }
@@ -531,22 +515,17 @@ tag_search(sp, search, tag)
 		 */
 		m.lno = 1;
 		m.cno = 0;
-		if (fsrch_setup(sp, &m, &m,
+		if (f_search(sp, &m, &m,
 		    search, NULL, SEARCH_FILE | SEARCH_TAG))
 			goto notfound;
-		if (fsrch(sp, NULL, &notused))
-			return (1);
-		if (!FL_ISSET(sp->srch_flags, SEARCH_FOUND) &&
-		    (p = strrchr(search, '(')) != NULL) {
+		if ((p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
-			if (fsrch_setup(sp, &m, &m,
-			    search, NULL, SEARCH_FILE | SEARCH_TAG))
+			if (f_search(sp, &m, &m,
+			    search, NULL, SEARCH_FILE | SEARCH_TAG)) {
+				p[1] = '(';
 				goto notfound;
+			}
 			p[1] = '(';
-			if (fsrch(sp, NULL, &notused))
-				return (1);
-			if (!FL_ISSET(sp->srch_flags, SEARCH_FOUND))
-				goto notfound;
 		} else {
 notfound:		tag_msg(sp, TAG_SEARCH, tag);
 			return (1);

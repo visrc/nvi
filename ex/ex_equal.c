@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 10.2 1995/05/05 18:50:13 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:13 $";
+static char sccsid[] = "$Id: ex_equal.c,v 10.3 1995/06/08 18:53:39 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,6 @@ ex_equal(sp, cmdp)
 	} else
 		lno = cmdp->addr1.lno;
 
-	F_SET(sp, S_EX_WROTE);
 	(void)ex_printf(sp, "%ld\n", lno);
 	return (0);
 }

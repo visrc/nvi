@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.2 1995/05/05 18:50:30 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:30 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.3 1995/06/08 18:53:42 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -58,7 +58,6 @@ ex_screen_copy(orig, sp)
 	TAILQ_INIT(&nexp->tagq);
 	TAILQ_INIT(&nexp->tagfq);
 	TAILQ_INIT(&nexp->cdq);
-	LIST_INIT(&nexp->gatq);
 	CIRCLEQ_INIT(&nexp->im_tiq);
 
 	if (orig == NULL) {
@@ -148,7 +147,7 @@ ex_optchange(sp, opt)
 
 #define	RUN_ICMD(sp, s, len, flags) {					\
 	(sp)->gp->excmd.cp = s;						\
-	(sp)->gp->excmd.cplen = len;					\
+	(sp)->gp->excmd.clen = len;					\
 	F_INIT(&(sp)->gp->excmd, flags);				\
 	if (ex_cmd(sp))							\
 		return (1);						\

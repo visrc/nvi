@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 8.1 1995/05/18 15:37:03 bostic Exp $ (Berkeley) $Date: 1995/05/18 15:37:03 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.1 1995/06/08 18:53:55 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ static char sccsid[] = "$Id: ex_txt.c,v 8.1 1995/05/18 15:37:03 bostic Exp $ (Be
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
 
 /*
  * !!!
@@ -117,9 +118,9 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 
 	/* Other setup. */
 	exp->im_carat = C_NOTSET;
-	exp->run_func = ex_txt_ev;
 
 	/* Set up default teardown state, move to text input loop. */
+	exp->run_func = ex_txt_ev;
 	gp->cm_state = ES_RUNNING;
 	gp->cm_next = ES_CTEXT_TEARDOWN;
 	return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.2 1995/05/05 18:52:30 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:52:30 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.3 1995/06/08 18:53:50 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 10.2 1995/05/05 18:52:30 bostic Exp $ 
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
@@ -364,6 +365,7 @@ s(sp, cmdp, s, re, flags)
 	regex_t *re;
 	u_int flags;
 {
+	CHAR_T ch;
 	MARK from, to;
 	recno_t elno, lno;
 	regmatch_t match[10];
@@ -631,32 +633,31 @@ nextmatch:	match[0].rm_so = 0;
 			}
 			/*
 			 * Refresh the screen first -- this means that we won't
-			 * have to set S_SCR_UMODE to keep refresh from erasing
-			 * the mode line or VIP_CUR_INVALID because we sneaked
-			 * the cursor off somewhere else.
+			 * have to set VIP_CUR_INVALID because we sneaked the
+			 * cursor off somewhere else.
 			 */
 			if (F_ISSET(sp, S_VI)) {
 				sp->lno = from.lno;
 				sp->cno = from.cno;
 				if (vs_refresh(sp))
-					goto conf_quit;
+					goto quit;
 			} else
 				if (ex_print(sp, &from, &to, 0) ||
 				    ex_scprint(sp, &from, &to))
-					goto conf_quit;
-			switch (sp->gp->scr_confirm(sp)) {
-			case CONF_YES:
+					goto quit;
+			if (v_getkey(sp, &ch))
+				goto quit;
+			switch (ch) {
+			case CH_YES:
 				break;
-			case CONF_NO:
+			case CH_NO:
 				didsub = 0;
 				BUILD(sp, s +offset, match[0].rm_eo);
 				goto skip;
-			case CONF_QUIT:
+			case CH_QUIT:
 				/* Set the quit/interrupted flags. */
-conf_quit:			quit = 1;
-#ifdef __TK__
+quit:				quit = 1;
 				F_SET(sp, S_INTERRUPTED);
-#endif
 
 				/*
 				 * Resolve any changes, then return to (and

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 10.2 1995/05/05 18:52:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:52:57 $";
+static char sccsid[] = "$Id: ex_usage.c,v 10.3 1995/06/08 18:53:56 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,6 @@ ex_help(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	F_SET(sp, S_EX_WROTE);
 	(void)ex_puts(sp,
 	    "To see the list of vi commands, enter \":viusage<CR>\"\n");
 	(void)ex_puts(sp,
@@ -70,7 +69,6 @@ ex_usage(sp, cmdp)
 
 	switch (cmdp->argc) {
 	case 1:
-		F_SET(sp, S_EX_WROTE);
 		ap = cmdp->argv[0];
 		for (cp = cmds; cp->name != NULL &&
 		    memcmp(ap->bp, cp->name, ap->len); ++cp);
@@ -105,7 +103,6 @@ ex_usage(sp, cmdp)
 				name = cp->name;
 			(void)ex_printf(sp,
 			    "%*s: %s\n", MAXCMDNAMELEN, name, cp->help);
-			F_SET(sp, S_EX_WROTE);
 		}
 		break;
 	default:
@@ -130,7 +127,6 @@ ex_viusage(sp, cmdp)
 
 	switch (cmdp->argc) {
 	case 1:
-		F_SET(sp, S_EX_WROTE);
 		if (cmdp->argv[0]->len != 1) {
 			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
@@ -167,7 +163,6 @@ nokey:			(void)ex_printf(sp,
 				kp = &vikeys[key];
 			if (kp->help != NULL)
 				(void)ex_printf(sp, "%s\n", kp->help);
-			F_SET(sp, S_EX_WROTE);
 		}
 		break;
 	default:

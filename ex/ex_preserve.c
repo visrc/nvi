@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 10.2 1995/05/05 18:51:01 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:01 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 10.3 1995/06/08 18:53:43 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ ex_recover(sp, cmdp)
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, FS_SETALT |
-	    FS_WELCOME | (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
+	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 	return (0);
 }

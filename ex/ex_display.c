@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 10.2 1995/05/05 18:50:03 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:03 $";
+static char sccsid[] = "$Id: ex_display.c,v 10.3 1995/06/08 18:53:36 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,8 +87,6 @@ bdisplay(sp)
 		msgq(sp, M_INFO, "262|No cut buffers to display");
 		return (0);
 	}
-
-	F_SET(sp, S_EX_WROTE);
 
 	/* Display regular cut buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
