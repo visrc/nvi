@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 9.5 1995/01/23 17:03:24 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:24 $";
+static char sccsid[] = "$Id: ex_filter.c,v 9.6 1995/01/30 10:05:08 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:05:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -289,7 +289,7 @@ err:		if (input[0] != -1)
 		 * the cursor.  Don't do any real error correction, we'll
 		 * try and recover later.
 		 */
-		 if (rp->lno > 1 && file_gline(sp, rp->lno, NULL) == NULL)
+		 if (rp->lno > 1 && !file_eline(sp, rp->lno))
 			--rp->lno;
 		break;
 	}
