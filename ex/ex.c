@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.36 1995/02/08 19:38:31 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:31 $";
+static char sccsid[] = "$Id: ex.c,v 9.37 1995/02/09 09:35:45 bostic Exp $ (Berkeley) $Date: 1995/02/09 09:35:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -470,7 +470,7 @@ done:		if (bp != NULL)
 				cmd_rep = cmds[C_DELETE];
 				cmd_rep.syntax = "1bca1";
 				cp = &cmd_rep;
-				goto skip;
+				goto skip_srch;
 			}
 			break;
 		case 'E': case 'N': case 'T': case 'V':
@@ -521,6 +521,17 @@ unknown:			if (F_ISSET(&exc, E_NEWSCREEN) || tmp)
 				ex_unknown(sp, p, namelen);
 				goto err;
 			}
+
+		/*
+		 * The visual command has a different syntax when called
+		 * from ex than when called from a vi colon command.  FMH.
+		 * Make the change now, before we test for the newscreen
+		 * semantic, so that we're testing the right one.
+		 */
+skip_srch:	if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
+			cp = &cmds[C_VISUAL_VI];
+
+		/* Test for a newscreen associated with this command. */
 		if (F_ISSET(&exc, E_NEWSCREEN) && !F_ISSET(cp, E_NEWSCREEN))
 			goto unknown;
 
@@ -528,7 +539,7 @@ unknown:			if (F_ISSET(&exc, E_NEWSCREEN) || tmp)
 		 * Hook for commands that are either not yet implemented
 		 * or turned off.
 		 */
-skip:		if (F_ISSET(cp, E_NOPERM)) {
+		if (F_ISSET(cp, E_NOPERM)) {
 			msgq(sp, M_ERR,
 			    "101|The %s command is not currently supported",
 			    cp->name);
@@ -548,13 +559,6 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			if (argv_exp0(sp, &exc, p, cmd - p))
 				goto err;
 		}
-
-		/*
-		 * The visual command has a different syntax when called
-		 * from ex than when called from a vi colon command.  FMH.
-		 */
-		if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
-			cp = &cmds[C_VISUAL_VI];
 
 		/* Set the format style flags for the next command. */
 		if (cp == &cmds[C_HASH])
