@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.46 1996/09/24 19:23:51 bostic Exp $ (Berkeley) $Date: 1996/09/24 19:23:51 $";
+static const char sccsid[] = "$Id: main.c,v 10.47 1996/09/24 20:51:24 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:51:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,7 +222,7 @@ editor(gp, argc, argv)
 		v_estr(gp->progname, 0, "-s option is only applicable to ex.");
 		goto err;
 	}
-	if (LF_ISSET(SC_EX) && !F_ISSET(gp, G_STDIN_TTY))
+	if (LF_ISSET(SC_EX) && F_ISSET(gp, G_SCRIPTED))
 		silent = 1;
 
 	/*
