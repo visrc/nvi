@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.97 1994/04/10 11:14:51 bostic Exp $ (Berkeley) $Date: 1994/04/10 11:14:51 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.98 1994/04/10 13:08:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:08:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -374,6 +374,19 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		switch (ikey.value) {
 		case K_CR:
 		case K_NL:				/* New line. */
+			/* CR returns from the vi command line. */
+			if (LF_ISSET(TXT_CR)) {
+				/*
+				 * If a script window and not the colon
+				 * line, push a <cr> so it gets executed.
+				 */
+				if (F_ISSET(sp, S_SCRIPT) &&
+				    !LF_ISSET(TXT_INFOLINE))
+					(void)term_push(sp,
+					    "\r", 1, 0, CH_NOMAP);
+				goto k_escape;
+			}
+
 #define	LINE_RESOLVE {							\
 			/*						\
 			 * Handle abbreviations.  If there was one,	\
@@ -410,19 +423,6 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			}						\
 }
 			LINE_RESOLVE;
-
-			/* CR returns from the vi command line. */
-			if (LF_ISSET(TXT_CR)) {
-				/*
-				 * If a script window and not the colon
-				 * line, push a <cr> so it gets executed.
-				 */
-				if (F_ISSET(sp, S_SCRIPT) &&
-				    !LF_ISSET(TXT_INFOLINE))
-					(void)term_push(sp,
-					    "\r", 1, 0, CH_NOMAP);
-				goto k_escape;
-			}
 
 			/*
 			 * Save the current line information for restoration
@@ -532,8 +532,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		case K_ESCAPE:				/* Escape. */
 			if (!LF_ISSET(TXT_ESCAPE))
 				goto ins_ch;
-
-			LINE_RESOLVE;
+k_escape:		LINE_RESOLVE;
 
 			/*
 			 * Clean up for the 'R' command, restoring overwrite
@@ -546,7 +545,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			 * If there are any overwrite characters, copy down
 			 * any insert characters, and decrement the length.
 			 */
-k_escape:		if (tp->owrite) {
+			if (tp->owrite) {
 				if (tp->insert)
 					memmove(tp->lb + sp->cno,
 					    tp->lb + sp->cno + tp->owrite,
@@ -678,18 +677,19 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 				--tp->ai;
 			break;
 		case K_VINTR:
-			/*
-			 * !!!
-			 * Historically, <interrupt> exited the user from
-			 * editing, and returned to command mode.  It also
-			 * beeped the terminal, but that seems excessive.
-			 */
-			msgq(sp, M_INFO, "Interrupted.");
-			if (LF_ISSET(TXT_INFOLINE)) {
-				tp->lb[tp->len = 0] = '\0';
-				goto ret;
+			if (F_ISSET(sp, S_INTERRUPTIBLE)) {
+				/*
+				 * !!!
+				 * Historically, <interrupt> exited the user
+				 * from editing, and returned to command mode.
+				 * It also beeped the terminal, but that seems
+				 * excessive.
+				 */
+				F_SET(sp, S_INTERRUPTED);
+				msgq(sp, M_INFO, "Interrupted.");
+				goto k_escape;
 			}
-			goto k_escape;
+			goto ins_ch;
 		case K_VWERASE:			/* Skip back one word. */
 			/*
 			 * If at the beginning of the line, try and drop back
