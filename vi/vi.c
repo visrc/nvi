@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.85 1994/08/12 10:35:52 bostic Exp $ (Berkeley) $Date: 1994/08/12 10:35:52 $";
+static char sccsid[] = "$Id: vi.c,v 8.86 1994/08/12 10:45:34 bostic Exp $ (Berkeley) $Date: 1994/08/12 10:45:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,9 +82,18 @@ vi(sp, ep)
 			(void)sp->s_column(sp, ep, &sp->rcm);
 		}
 
-		/* If not currently in a map, log the cursor position. */
-		if (!MAPPED_KEYS_WAITING(sp) && log_cursor(sp, ep))
-			goto err;
+		/*
+		 * If not currently in a map, log the cursor position,
+		 * and set a flag so that this command can become the
+		 * DOT command.
+		 */
+		if (MAPPED_KEYS_WAITING(sp))
+			mapped = 1;
+		else {
+			if (log_cursor(sp, ep))
+				goto err;
+			mapped = 0;
+		}
 
 		/*
 		 * We get a command, which may or may not have an associated
@@ -92,7 +101,6 @@ vi(sp, ep)
 		 * function to get the resulting mark.  We then call the
 		 * command setting the cursor to the resulting mark.
 		 */
-		mapped = 0;
 		if (getcmd(sp, ep, DOT, vp, NULL, &comcount, &mapped))
 			goto err;
 
