@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.44 1992/11/07 18:42:31 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:42:31 $";
+static char sccsid[] = "$Id: ex.c,v 5.45 1992/11/07 18:55:02 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:55:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -184,7 +184,7 @@ ex_cmd(exc)
 	register u_char *p;
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
-	u_long lcount, num;
+	recno_t lcount, num;
 	long flagoff;
 	int flags, uselastcmd;
 	u_char *ep;
@@ -496,8 +496,12 @@ addr2:	switch(cmd.addrcnt) {
 			msg("%lu is an invalid address.", num);
 			return (1);
 		}
-		if (num > file_lline(curf)) {
-			msg("Only %lu lines in the file.", file_lline(curf));
+		lcount = file_lline(curf);
+		if (num > lcount) {
+			if (lcount == 0)
+				msg("The file is empty.");
+			else
+				msg("Only %lu lines in the file.", lcount);
 			return (1);
 		}
 		/* FALLTHROUGH */
@@ -578,7 +582,7 @@ addr2:	switch(cmd.addrcnt) {
 	 */
 	if (flagoff) {
 		if (flagoff < 0) {
-			if ((u_long)flagoff > curf->lno) {
+			if ((recno_t)flagoff > curf->lno) {
 				msg("Flag offset before line 1.");
 				return (1);
 			}
