@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.105 2001/07/26 17:04:08 skimo Exp $ (Berkeley) $Date: 2001/07/26 17:04:08 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.106 2001/07/26 17:15:53 skimo Exp $ (Berkeley) $Date: 2001/07/26 17:15:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -841,6 +841,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		if (rcount > 1) {
 			--rcount;
 
+			vip->rep_cnt = rcol;
 			rcol = 0;
 			abb = AB_NOTSET;
 			LF_CLR(TXT_RECORD);
