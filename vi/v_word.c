@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.19 1994/07/15 17:45:18 bostic Exp $ (Berkeley) $Date: 1994/07/15 17:45:18 $";
+static char sccsid[] = "$Id: v_word.c,v 8.20 1994/07/15 17:57:53 bostic Exp $ (Berkeley) $Date: 1994/07/15 17:57:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -531,6 +531,11 @@ ret:	if (cs.cs_lno == vp->m_start.lno && cs.cs_cno == vp->m_start.cno) {
 	 * All commands move to the end of the range.  Motion commands
 	 * adjust the starting point to the character before the current
 	 * one.
+	 *
+	 * !!!
+	 * The historic vi didn't get this right -- the `yb' command yanked
+	 * the right stuff and even updated the cursor value, but the cursor
+	 * was not actually updated on the screen.
 	 */
 	vp->m_final = vp->m_stop;
 	if (ISMOTION(vp))
