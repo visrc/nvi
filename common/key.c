@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.34 1996/11/27 11:59:36 bostic Exp $ (Berkeley) $Date: 1996/11/27 11:59:36 $";
+static const char sccsid[] = "$Id: key.c,v 10.35 1996/12/04 09:42:05 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:42:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -781,6 +781,9 @@ v_event_err(sp, evp)
 	case E_INTERRUPT:
 		msgq(sp, M_ERR, "279|Unexpected interrupt event");
 		break;
+	case E_MOVE:
+		msgq(sp, M_ERR, "318|Unexpected cursor move event");
+		break;
 	case E_QUIT:
 		msgq(sp, M_ERR, "280|Unexpected quit event");
 		break;
@@ -810,10 +813,6 @@ v_event_err(sp, evp)
 	default:
 		abort();
 	}
-
-	/* Free any allocated memory. */
-	if (evp->e_asp != NULL)
-		free(evp->e_asp);
 }
 
 /*
