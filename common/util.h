@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 9.3 1994/11/20 12:51:12 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:51:12 $
+ *	$Id: util.h,v 9.4 1994/12/03 12:54:55 bostic Exp $ (Berkeley) $Date: 1994/12/03 12:54:55 $
  */
 
 /*
@@ -29,9 +29,9 @@
  */
 enum nresult { NUM_ERR, NUM_OK, NUM_OVER, NUM_UNDER };
 #define	NNFITS(min, cur, add)						\
-	((min) - (cur) <= (add))
+	(((long)(min)) - (cur) <= (add))
 #define	NPFITS(max, cur, add)						\
-	((max) - (cur) >= (add))
+	(((unsigned long)(max)) - (cur) >= (add))
 #define	NADD_SLONG(sp, v1, v2)						\
 	((v1) < 0 ?							\
 	    ((v2) < 0 &&						\
