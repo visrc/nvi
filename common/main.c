@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.63 1993/04/18 09:36:34 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:36:34 $";
+static char sccsid[] = "$Id: main.c,v 5.64 1993/04/19 15:24:19 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:24:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -88,15 +88,21 @@ main(argc, argv)
 	HDR_INIT(sp->seqhdr, next, prev);
 	HDR_APPEND(sp, &gp->scrhdr, next, prev, SCR);
 
-	set_window_size(sp, 0);	/* Set the window size. */
-
-	if (opts_init(sp))	/* Options initialization. */
+	if (set_window_size(sp, 0))	/* Set the window size. */
 		goto err1;
 
-	if (key_special(sp))	/* Keymaps. */
+	if (opts_init(sp))		/* Options initialization. */
 		goto err1;
+
+	/*
+	 * Keymaps, special keys.
+	 * Must follow options and sequence map initializations.
+	 */
+	if (term_init(sp))
+		goto err1;
+
 #ifndef NO_DIGRAPH
-	if (digraph_init(sp))	/* Digraph initialization. */
+	if (digraph_init(sp))		/* Digraph initialization. */
 		goto err1;
 #endif
 	/* Set screen mode based on the program name. */
@@ -206,18 +212,19 @@ main(argc, argv)
 		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
 
 	/* Call a screen. */
-	switch(F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
-	case S_MODE_EX:
-		if (sex(sp, sp->ep))
-			goto err2;
-		break;
-	case S_MODE_VI:
-		if (svi(sp, sp->ep))
-			goto err2;
-		break;
-	default:
-		abort();
-	}
+	while (sp != NULL)
+		switch(F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
+		case S_MODE_EX:
+			if (sex(sp, sp->ep, &sp))
+				goto err2;
+			break;
+		case S_MODE_VI:
+			if (svi(sp, sp->ep, &sp))
+				goto err2;
+			break;
+		default:
+			abort();
+		}
 
 	/*
 	 * Two error paths.  The first means that something failed before
