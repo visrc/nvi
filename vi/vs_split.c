@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.13 1995/02/08 14:19:53 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:19:53 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.14 1995/02/09 12:11:51 bostic Exp $ (Berkeley) $Date: 1995/02/09 12:11:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,8 +238,10 @@ svi_join(csp, prev, next, nsp)
 	SCR *csp, *prev, *next, **nsp;
 {
 	SCR *sp;
+	SMAP *p;
 	SVI_PRIVATE *svp;
 	size_t cnt;
+	int shift;
 
 	/*
 	 * If a split screen, add space to the specified previous or next
@@ -247,15 +249,21 @@ svi_join(csp, prev, next, nsp)
 	 * effort to clean up the screen's values.  If it's not exiting,
 	 * we'll get it when the user asks to display it again.
 	 */
-	if ((sp = prev) != NULL)
+	if ((sp = prev) != NULL) {
+		shift = 0;
 		goto found;
+	}
 	if ((sp = next) != NULL) {
+		shift = 1;
 		sp->woff = csp->woff;
 		goto found;
 	}
-	if ((sp = csp->q.cqe_prev) != (void *)&csp->gp->dq)
+	if ((sp = csp->q.cqe_prev) != (void *)&csp->gp->dq) {
+		shift = 0;
 		goto found;
+	}
 	if ((sp = csp->q.cqe_next) != (void *)&csp->gp->dq) {
+		shift = 1;
 		sp->woff = csp->woff;
 		goto found;
 	}
@@ -279,10 +287,35 @@ found:	sp->rows += csp->rows;
 			sp->t_maxrows += csp->rows;
 			sp->t_rows = sp->t_minrows = sp->t_maxrows;
 		}
-		TMAP = HMAP + (sp->t_rows - 1);
-		if (svi_sm_fill(sp, sp->lno, P_FILL))
-			return (1);
-		F_SET(sp, S_SCR_REDRAW);
+		if (shift) {
+			/*
+			 * Shift the screen map down, and fill in the missing
+			 * information.  If we fail, assume it's because there
+			 * aren't enough lines and fill in from scratch.
+			 */
+			memmove(HMAP + csp->rows,
+			    HMAP, csp->rows * sizeof(SMAP));
+			for (p = HMAP + csp->rows; p > HMAP;) {
+				if (svi_sm_prev(sp, p, p - 1)) {
+					if (svi_sm_fill(sp, 1, P_TOP))
+						return (1);
+					break;
+				}
+				/* svi_sm_prev() flushed the cache. */
+				if (svi_line(sp, --p, NULL, NULL))
+					return (1);
+			}
+			TMAP = HMAP + (sp->t_rows - 1);
+		} else
+			/* Fill in the end of the screen map. */
+			for (p = TMAP,
+			    TMAP = HMAP + (sp->t_rows - 1); p < TMAP;) {
+				if (svi_sm_next(sp, p, p + 1))
+					return (1);
+				/* svi_sm_next() flushed the cache. */
+				if (svi_line(sp, ++p, NULL, NULL))
+					return (1);
+			}
 	}
 
 	/* Reset the length of the default scroll. */
