@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.70 1993/12/22 16:16:56 bostic Exp $ (Berkeley) $Date: 1993/12/22 16:16:56 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.71 1993/12/22 17:24:42 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:24:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: v_txt.c,v 8.70 1993/12/22 16:16:56 bostic Exp $ (Be
 #include "seq.h"
 #include "vcmd.h"
 
-static int	 txt_abbrev __P((SCR *, TEXT *, int *, ARG_CHAR_T));
+static int	 txt_abbrev __P((SCR *, TEXT *, ARG_CHAR_T, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, TEXTH *));
@@ -106,7 +106,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	size_t col;		/* Current column. */
 	u_long margin;		/* Wrapmargin value. */
 	u_int iflags;		/* Input flags. */
-	int ab_cnt;		/* Abbreviation count. */
+	int ab_cnt, ab_turnoff;	/* Abbreviation count, if turned off. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
@@ -247,7 +247,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	/* Initialize abbreviations checks. */
 	if (F_ISSET(gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
 		abb = A_NOTSPACE;
-		ab_cnt = 0;
+		ab_cnt = ab_turnoff = 0;
 	} else
 		abb = A_NOTSET;
 
@@ -380,7 +380,9 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 			 * discard the replay characters.		\
 			 */						\
 			if (abb == A_NOTSPACE && !replay) {		\
-				if (txt_abbrev(sp, tp, &tmp, ch))	\
+				if (txt_abbrev(sp, tp, ch,		\
+				    LF_ISSET(TXT_INFOLINE), &tmp,	\
+				    &ab_turnoff))			\
 					goto err;			\
 				if (tmp) {				\
 					if (LF_ISSET(TXT_RECORD))	\
@@ -857,7 +859,8 @@ ins_ch:			/*
 			 * replay characters.
 			 */
 			if (isblank(ch) && abb == A_NOTSPACE && !replay) {
-				if (txt_abbrev(sp, tp, &tmp, ch))
+				if (txt_abbrev(sp, tp, ch,
+				    LF_ISSET(TXT_INFOLINE), &tmp, &ab_turnoff))
 					goto err;
 				if (tmp) {
 					if (LF_ISSET(TXT_RECORD))
@@ -948,11 +951,11 @@ err:	eval = 1;
  *	Handle abbreviations.
  */
 static int
-txt_abbrev(sp, tp, didsubp, pushc)
+txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
 	SCR *sp;
 	TEXT *tp;
-	int *didsubp;
 	ARG_CHAR_T pushc;
+	int isinfoline, *didsubp, *turnoffp;
 {
 	CHAR_T ch;
 	SEQ *qp;
@@ -970,11 +973,52 @@ txt_abbrev(sp, tp, didsubp, pushc)
 			break;
 	}
 
+	/*
+	 * !!!
+	 * Historic vi exploded abbreviations on the command line.  This has
+	 * obvious problems in that unabbreviating the string can be extremely
+	 * tricky, particularly if the string has, say, an embedded escape
+	 * character.  Personally, I think it's a stunningly bad idea.  Other
+	 * examples of problems this caused in historic vi are:
+	 *
+	 *	:ab foo bar
+	 *	:ab foo baz
+	 *
+	 * results in "bar" abbreviated to "baz", which wasn't what the user
+	 * had in mind at all.  Also, the commands:
+	 *
+	 *	:ab foo bar
+	 *	:unab foo<space>
+	 *
+	 * resulted in an error message that "foo" wasn't mapped.  However,
+	 * people sadly neglected to first ask my opinion before they wrote
+	 * macros that depend on it.
+	 *
+	 * We make this work as follows.  When checking for an abbreviation on
+	 * the command line, if we get a string which is <blank> terminated and
+	 * which starts at the beginning of the line, we check to see it is the
+	 * abbreviate or unabbreviate commands.  If it is, turn abbreviations
+	 * off and return as if no abbreviation was found.  Note also, minor
+	 * trickiness, so that if the user erases the line and starts another
+	 * command, we turn abbreviations back on.
+	 *
+	 * This makes the layering look like a Nachos Supreme.
+	 */
+	*didsubp = 0;
+	if (isinfoline)
+		if (off == tp->ai || off == tp->offset)
+			if (ex_is_abbrev(p, len)) {
+				*turnoffp = 1;
+				return (0);
+			} else
+				*turnoffp = 0;
+		else
+			if (*turnoffp)
+				return (0);
+
 	/* Check for any abbreviations. */
-	if ((qp = seq_find(sp, NULL, p, len, SEQ_ABBREV, NULL)) == NULL) {
-		*didsubp = 0;
+	if ((qp = seq_find(sp, NULL, p, len, SEQ_ABBREV, NULL)) == NULL)
 		return (0);
-	}
 
 	/*
 	 * Push the abbreviation onto the tty stack.  Historically, characters
