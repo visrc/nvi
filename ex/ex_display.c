@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_display.c,v 10.11 1996/03/06 19:52:15 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:15 $";
+static const char sccsid[] = "$Id: ex_display.c,v 10.12 1996/04/10 11:31:30 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,9 +29,9 @@ static int	bdisplay __P((SCR *));
 static void	db __P((SCR *, CB *, CHAR_T *));
 
 /*
- * ex_display -- :display b[uffers] | s[creens] | t[ags]
+ * ex_display -- :display b[uffers] | c[onnections] | s[creens] | t[ags]
  *
- *	Display buffers, tags or screens.
+ *	Display cscope connections, buffers, tags or screens.
  *
  * PUBLIC: int ex_display __P((SCR *, EXCMD *));
  */
@@ -48,6 +48,13 @@ ex_display(sp, cmdp)
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
 		return (bdisplay(sp));
+	case 'c':
+#undef	ARG
+#define	ARG	"connections"
+		if (cmdp->argv[0]->len >= sizeof(ARG) ||
+		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
+			break;
+		return (cscope_display(sp));
 	case 's':
 #undef	ARG
 #define	ARG	"screens"
@@ -61,7 +68,7 @@ ex_display(sp, cmdp)
 		if (cmdp->argv[0]->len >= sizeof(ARG) ||
 		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
 			break;
-		return (ex_tagdisplay(sp));
+		return (ex_tag_display(sp));
 	}
 	ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 	return (1);

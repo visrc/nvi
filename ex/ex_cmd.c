@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cmd.c,v 10.15 1996/03/16 14:23:43 bostic Exp $ (Berkeley) $Date: 1996/03/16 14:23:43 $";
+static const char sccsid[] = "$Id: ex_cmd.c,v 10.16 1996/04/10 11:31:29 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,6 +134,11 @@ EXCMDLIST const cmds[] = {
 	    "l1",
 	    "[line [,line]] co[py] line [flags]",
 	    "copy lines elsewhere in the file"},
+/* C_CSCOPE */
+	{"cscope",      ex_cscope,      0,
+	    "!s",
+	    "cs[cope] command [args]",
+	    "create a set of tags using a cscope command"},
 /*
  * !!!
  * Adding new commands starting with 'd' may break the delete command code
@@ -343,20 +348,30 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] t line [flags]",
 	    "copy lines elsewhere in the file"},
 /* C_TAG */
-	{"tag",		ex_tagpush,	E_NEWSCREEN,
+	{"tag",		ex_tag_push,	E_NEWSCREEN,
 	    "!w1o",
 	    "[Tt]a[g][!] [string]",
 	    "edit the file containing the tag"},
+/* C_TAGNEXT */
+	{"tagnext",	ex_tag_next,	0,
+	    "!",
+	    "tagn[ext][!]",
+	    "move to the next tag"},
 /* C_TAGPOP */
-	{"tagpop",	ex_tagpop,	0,
+	{"tagpop",	ex_tag_pop,	0,
 	    "!w1o",
 	    "tagp[op][!] [number | file]",
-	    "return to a previous tag"},
+	    "return to the previous group of tags"},
+/* C_TAGPREV */
+	{"tagprev",	ex_tag_prev,	0,
+	    "!",
+	    "tagp[rev][!]",
+	    "move to the previous tag"},
 /* C_TAGTOP */
-	{"tagtop",	ex_tagtop,	0,
+	{"tagtop",	ex_tag_top,	0,
 	    "!",
 	    "tagt[op][!]",
-	    "return to the first tag"},
+	    "discard all tags"},
 /* C_TCLCMD */
 	{"tcl",		ex_tcl,		E_ADDR2_ALL|E_ADDR_ZERO|
 					    E_ADDR_ZERODEF|E_SECURE,

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.17 1996/03/29 19:40:11 bostic Exp $ (Berkeley) $Date: 1996/03/29 19:40:11 $
+ *	$Id: ex.h,v 10.18 1996/04/10 11:31:28 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:28 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -163,9 +163,10 @@ struct _cdpath {			/* Cd path structure. */
 
 /* Ex private, per-screen memory. */
 typedef struct _ex_private {
-	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag list (stack). */
+	CIRCLEQ_HEAD(_tqh, _tagq) tq;	/* Tag queue. */
 	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag file list. */
-	char	*tlast;			/* Saved last tag. */
+	LIST_HEAD(_csch, _csc) cscq;    /* Cscope connection list. */
+	char	*tag_last;		/* Saved last tag string. */
 
 	TAILQ_HEAD(_cdh, _cdpath) cdq;	/* Cd path list. */
 
@@ -190,6 +191,9 @@ typedef struct _ex_private {
 	 */
 	char	 obp[1024];		/* Ex output buffer. */
 	size_t	 obp_len;		/* Ex output buffer length. */
+
+#define	EXP_CSCINIT	0x01		/* Cscope initialized. */
+	u_int8_t flags;
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 
@@ -219,6 +223,13 @@ typedef enum {
 
 /* Ex address error types. */
 enum badaddr { A_COMBO, A_EMPTY, A_EOF, A_NOTSET, A_ZERO };
+
+/* Ex common tag error messages. */                                         
+typedef enum {
+	TAG_BADLNO,		/* Tag line doesn't exist. */
+	TAG_EMPTY,		/* Tags stack is empty. */
+	TAG_SEARCH		/* Tags search pattern wasn't found. */
+} tagmsg_t;
 
 #include "ex_define.h"
 #include "ex_extern.h"

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.20 1996/03/30 15:28:46 bostic Exp $ (Berkeley) $Date: 1996/03/30 15:28:46 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.21 1996/04/10 11:31:31 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,8 +33,9 @@ static const char sccsid[] = "$Id: ex_subst.c,v 10.20 1996/03/30 15:28:46 bostic
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
 static int re_conv __P((SCR *, char **, int *));
-static int re_sub
-    __P((SCR *, char *, char **, size_t *, size_t *, regmatch_t [10]));
+static int re_cscope_conv __P((SCR *, char **, int *));
+static int re_sub __P((SCR *,
+		char *, char **, size_t *, size_t *, regmatch_t [10]));
 static int re_tag_conv __P((SCR *, char **, int *));
 static int s __P((SCR *, EXCMD *, char *, regex_t *, u_int));
 
@@ -901,7 +902,7 @@ re_compile(sp, ptrn, ptrnp, lenp, rep, flags)
 
 	/* Set RE flags. */
 	reflags = 0;
-	if (!LF_ISSET(RE_C_TAG)) {
+	if (LF_ISSET(RE_C_SEARCH | RE_C_SUBST)) {
 		if (O_ISSET(sp, O_EXTENDED))
 			reflags |= REG_EXTENDED;
 		if (O_ISSET(sp, O_IGNORECASE))
@@ -936,9 +937,15 @@ re_compile(sp, ptrn, ptrnp, lenp, rep, flags)
 			free(*ptrnp);
 			*ptrnp = NULL;
 		}
-		if (LF_ISSET(RE_C_TAG) ? re_tag_conv(sp, &ptrn, &replaced) :
-		    re_conv(sp, &ptrn, &replaced))
-			return (1);
+		if (LF_ISSET(RE_C_CSCOPE)) {
+			if (re_cscope_conv(sp, &ptrn, &replaced))
+				return (1);
+		} else if (LF_ISSET(RE_C_TAG)) {
+			if (re_tag_conv(sp, &ptrn, &replaced))
+				return (1);
+		} else
+			if (re_conv(sp, &ptrn, &replaced))
+				return (1);
 		len = strlen(ptrn);
 		if (lenp != NULL)
 			*lenp = len;
@@ -1181,6 +1188,65 @@ re_tag_conv(sp, ptrnp, replacedp)
 	if (lastdollar)
 		*t++ = '$';
 	*t++ = '\0';
+
+	*ptrnp = bp;
+	*replacedp = 1;
+	return (0);
+}
+
+/*
+ * re_cscope_conv --
+ *	 Convert a cscope search path into something that the POSIX
+ *      1003.2 RE functions can handle.
+ *
+ * PUBLIC: int re_cscope_conv __P((SCR *, char **, int *));
+ */
+static int
+re_cscope_conv(sp, ptrnp, replacedp)
+	SCR *sp;
+	char **ptrnp;
+	int *replacedp;
+{
+	size_t blen, len, nspaces;
+	char *bp, *p, *re;
+
+	/*
+	 * Each space in the source line printed by cscope represents an
+	 * arbitrary sequence of spaces, tabs, and comments.
+	 */
+#define	CSCOPE_RE_SPACE		"([ \t]|/\\*([^*]|\\*/)*\\*/)*"
+	for (nspaces = 0, p = *ptrnp; *p != '\0'; ++p)
+		if (*p == ' ')
+			++nspaces;
+
+	/*
+	 * Allocate plenty of space:
+	 *	the string, plus potential escaping characters
+	 *	nspaces + 2 copies of CSCOPE_RE_SPACE
+	 *	^, $, nul terminator characters
+	 */
+	len = (p - *ptrnp) * 2 + (nspaces + 2) * sizeof(CSCOPE_RE_SPACE) + 3;
+	GET_SPACE_RET(sp, bp, blen, len);
+
+	p = bp;
+	*p++ = '^';
+	memcpy(p, CSCOPE_RE_SPACE, sizeof(CSCOPE_RE_SPACE) - 1);
+	p += sizeof(CSCOPE_RE_SPACE) - 1;
+
+	for (re = *ptrnp; *re != '\0'; ++re)
+		if (*re == ' ') {
+			memcpy(p, CSCOPE_RE_SPACE, sizeof(CSCOPE_RE_SPACE) - 1);
+			p += sizeof(CSCOPE_RE_SPACE) - 1;
+		} else {
+			if (strchr("\\^.[]$*", *re))
+				*p++ = '\\';
+			*p++ = *re;
+		}
+
+	memcpy(p, CSCOPE_RE_SPACE, sizeof(CSCOPE_RE_SPACE) - 1);
+	p += sizeof(CSCOPE_RE_SPACE) - 1;
+	*p++ = '$';
+	*p = '\0';
 
 	*ptrnp = bp;
 	*replacedp = 1;
