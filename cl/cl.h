@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.19 1996/09/24 20:48:02 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:48:02 $
+ *	$Id: cl.h,v 10.20 1996/10/29 12:08:41 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:08:41 $
  */
 
 typedef struct _cl_private {
@@ -39,15 +39,16 @@ typedef struct _cl_private {
 	    TE_SENT=0, TI_SENT } ti_te;
 
 #define	CL_IN_EX	0x0001	/* Currently running ex. */
-#define	CL_RENAME	0x0002	/* X11 xterm icon/window renamed. */
-#define	CL_RENAME_OK	0x0004	/* User wants the windows renamed. */
-#define	CL_SCR_EX_INIT	0x0008	/* Ex screen initialized. */
-#define	CL_SCR_VI_INIT	0x0010	/* Vi screen initialized. */
-#define	CL_SIGHUP	0x0020	/* SIGHUP arrived. */
-#define	CL_SIGINT	0x0040	/* SIGINT arrived. */
-#define	CL_SIGTERM	0x0080	/* SIGTERM arrived. */
-#define	CL_SIGWINCH	0x0100	/* SIGWINCH arrived. */
-#define	CL_STDIN_TTY	0x0200	/* Talking to a terminal. */
+#define	CL_LAYOUT	0x0002	/* Screen layout changed. */
+#define	CL_RENAME	0x0004	/* X11 xterm icon/window renamed. */
+#define	CL_RENAME_OK	0x0008	/* User wants the windows renamed. */
+#define	CL_SCR_EX_INIT	0x0010	/* Ex screen initialized. */
+#define	CL_SCR_VI_INIT	0x0020	/* Vi screen initialized. */
+#define	CL_SIGHUP	0x0040	/* SIGHUP arrived. */
+#define	CL_SIGINT	0x0080	/* SIGINT arrived. */
+#define	CL_SIGTERM	0x0100	/* SIGTERM arrived. */
+#define	CL_SIGWINCH	0x0200	/* SIGWINCH arrived. */
+#define	CL_STDIN_TTY	0x0400	/* Talking to a terminal. */
 	u_int32_t flags;
 } CL_PRIVATE;
 
@@ -57,8 +58,9 @@ typedef struct _cl_private {
 /* Return possibilities from the keyboard read routine. */
 typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 
-/* The screen line relative to a specific window. */
-#define	RLNO(sp, lno)	(sp)->woff + (lno)
+/* The screen position relative to a specific window. */
+#define	RCNO(sp, cno)	(sp)->coff + (cno)
+#define	RLNO(sp, lno)	(sp)->roff + (lno)
 
 /* X11 xterm escape sequence to rename the icon/window. */
 #define	XTERM_RENAME	"\033]0;%s\007"
