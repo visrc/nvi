@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.3 1992/10/20 18:25:01 bostic Exp $ (Berkeley) $Date: 1992/10/20 18:25:01 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.4 1992/10/24 14:22:46 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:22:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,20 +24,29 @@ static char sccsid[] = "$Id: vs_refresh.c,v 5.3 1992/10/20 18:25:01 bostic Exp $
 #include "extern.h"
 
 /*
- * scr_init --
+ * screen_init --
  *	Initialize curses, and draw the screen.
  */
 int
-scr_init()
+scr_init(ep)
+	EXF *ep;
 {
-	if (initscr() == NULL)
-		return (1);
-	raw();
-	noecho();
-	nonl();
-	scrollok(stdscr, 1);
+	static int first = 1;
 
-	move(0, 0);
+	if (first) {
+		first = 0;
+		if (initscr() == NULL)
+			return (1);
+		raw();
+		noecho();
+		nonl();
+		scrollok(stdscr, 1);
+	}
+
+	ep->lines = LINES;
+	ep->cols = COLS;
+
+	MOVE(0, 0);
 	return (0);
 }
 
@@ -45,39 +54,42 @@ scr_init()
  * scr_end --
  *	Move to the bottom of the screen, end curses.
  */
-void
-scr_end()
+int
+scr_end(ep)
+	EXF *ep;
 {
-	if (move(LINES - 1, 0) != ERR) {
-		clrtoeol();
-		refresh();
-	}
+	MOVE(SCREENSIZE(ep), 0);
+	clrtoeol();
+	refresh();
 	endwin();
+	return (0);
 }
 
 /*
  * scr_ref --
  *	Repaint the screen.
  */
-void
-scr_ref()
+int
+scr_ref(ep)
+	EXF *ep;
 {
 	register recno_t cnt;
 
 	/* Repaint the screen. */
-	for (cnt = BOTLINE; cnt >= curf->top; --cnt)
-		scr_update(curf, cnt, NULL, 0, LINE_RESET);
+	for (cnt = BOTLINE(ep); cnt >= ep->otop; --cnt)
+		(void)scr_update(ep, cnt, NULL, 0, LINE_RESET);
 
 	/* Put up the cursor, row/column information. */
-	scr_cchange(curf);
-	scr_modeline(curf, 0);
+	(void)scr_cchange(ep);
+	(void)scr_modeline(ep, 0);
+	return (0);
 } 
 
 /*
  * scr_modeline --
  *	Change the screen as necessary for a mode change, with refresh.
  */
-void
+int
 scr_modeline(ep, isinput)
 	EXF *ep;
 	int isinput;
@@ -90,16 +102,18 @@ scr_modeline(ep, isinput)
 	int when;
 	char *p;
 
-	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || COLS <= RULERSIZE)
-		return;
-
 	getyx(stdscr, oldy, oldx);
-	move(LINES - 1, 0);
+	MOVE(SCREENSIZE(ep), 0);
 	clrtoeol();
 
+	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || ep->cols <= RULERSIZE) {
+		MOVE(oldy, oldx);
+		return (0);
+	}
+
 	/* Display the ruler and mode. */
-	if (ISSET(O_RULER) && COLS > RULERSIZE &&
-	    move(LINES - 1, COLS / 2 - RULERSIZE / 2) != ERR) {
+	if (ISSET(O_RULER) && ep->cols > RULERSIZE) {
+		MOVE(SCREENSIZE(ep), ep->cols / 2 - RULERSIZE / 2);
 		memset(buf, ' ', sizeof(buf) - 1);
 		(void)snprintf(buf,
 		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
@@ -108,10 +122,12 @@ scr_modeline(ep, isinput)
 	}
 
 	/* Show the mode. */
-	if (ISSET(O_SHOWMODE) && COLS > MODESIZE &&
-	    move(LINES - 1, COLS - 7) != ERR)
+	if (ISSET(O_SHOWMODE) && ep->cols > MODESIZE) {
+		MOVE(SCREENSIZE(ep), ep->cols - 7);
 		addstr(isinput ? "Input" : "Command");
-	move(oldy, oldx);
+	}
+	MOVE(oldy, oldx);
+	return (0);
 }
 
 /*
@@ -140,8 +156,8 @@ onwinch(signo)
 			(void)setenv("COLUMNS", sbuf, 1);
 		}
 	}
-	scr_end();
-	(void)scr_init();
-	scr_ref();
+	(void)scr_end(curf);
+	(void)scr_init(curf);
+	(void)scr_ref(curf);
 	refresh();
 }
