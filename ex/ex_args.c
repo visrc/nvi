@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.26 1992/12/05 11:08:25 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:25 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.27 1993/01/17 16:54:59 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:54:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,9 @@ ex_next(cmdp)
 
 	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
 
+	if (file_stop(curf, cmdp->flags & E_FORCE))
+		return (1);
 	if (cmdp->argc) {
-		if (file_stop(curf, cmdp->flags & E_FORCE))
-			return (1);
 		if (file_set(cmdp->argc, (char **)cmdp->argv))
 			PANIC;
 		if ((ep = file_first(1)) == NULL)
