@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.40 1996/04/27 16:51:49 bostic Exp $ (Berkeley) $Date: 1996/04/27 16:51:49 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.41 1996/04/27 17:17:14 bostic Exp $ (Berkeley) $Date: 1996/04/27 17:17:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,11 +29,12 @@ static const char sccsid[] = "$Id: cl_screen.c,v 10.40 1996/04/27 16:51:49 bosti
 #include "../common/common.h"
 #include "cl.h"
 
-static int cl_ex_end __P((GS *));
-static int cl_ex_init __P((SCR *));
-static int cl_vi_end __P((GS *));
-static int cl_vi_init __P((SCR *));
-static int cl_putenv __P((char *, char *, u_long));
+static int	cl_ex_end __P((GS *));
+static int	cl_ex_init __P((SCR *));
+static void	cl_freecap __P((CL_PRIVATE *));
+static int	cl_vi_end __P((GS *));
+static int	cl_vi_init __P((SCR *));
+static int	cl_putenv __P((char *, char *, u_long));
 
 /*
  * cl_screen --
@@ -397,6 +398,8 @@ cl_vi_end(gp)
 		(void)refresh();
 	}
 
+	cl_freecap(clp);
+
 	/* End curses window. */
 	(void)endwin();
 
@@ -488,18 +491,8 @@ cl_ex_end(gp)
 
 	clp = GCLP(gp);
 
-#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
-	if (clp->el != NULL)
-		free(clp->el);
-	if (clp->cup != NULL)
-		free(clp->cup);
-	if (clp->cuu1 != NULL)
-		free(clp->cuu1);
-	if (clp->rmso != NULL)
-		free(clp->rmso);
-	if (clp->smso != NULL)
-		free(clp->smso);
-#endif
+	cl_freecap(clp);
+
 	return (0);
 }
 
@@ -523,6 +516,26 @@ cl_getcap(sp, name, elementp)
 		memmove(*elementp, t, len + 1);
 	}
 	return (0);
+}
+
+/*
+ * cl_freecap --
+ *	Free any allocated termcap/terminfo strings.
+ */
+static void
+cl_freecap(clp)
+	CL_PRIVATE *clp;
+{
+	if (clp->el != NULL)
+		free(clp->el);
+	if (clp->cup != NULL)
+		free(clp->cup);
+	if (clp->cuu1 != NULL)
+		free(clp->cuu1);
+	if (clp->rmso != NULL)
+		free(clp->rmso);
+	if (clp->smso != NULL)
+		free(clp->smso);
 }
 
 /*
