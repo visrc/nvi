@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.10 1992/04/27 16:38:04 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:38:04 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.11 1992/04/28 13:28:28 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:28:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,12 +107,6 @@ ex_bang(cmdp)
 		free(lastcom);
 	lastcom = com;
 
-	/* If modified, echo the new command. */
-	if (l_alt || l_cur || l_last) {
-		EX_VISTART;
-		(void)printf("%s\n", com);
-	}
-
 	/*
 	 * If autowrite set, write the file; otherwise warn the user if
 	 * the file has been modified but not written.
@@ -125,14 +119,22 @@ ex_bang(cmdp)
 		return (1);
 	}
 
+	EX_PRSTART(0);
+
+	/* If modified, echo the new command. */
+	if (l_alt || l_cur || l_last)
+		(void)printf("%s\n", com);
+
 	/*
 	 * If no addresses were specified, just run the command, otherwise
 	 * pipe lines from the file through the command.
 	 */
-	if (cmdp->addrcnt == 0)
-		system(com);
-	else {
-		filter(cmdp->addr1, cmdp->addr2, com, STANDARD);
+	if (cmdp->addrcnt == 0) {
+		if (system(com))
+			return (1);
+	} else {
+		if (filter(cmdp->addr1, cmdp->addr2, com, STANDARD))
+			return (1);
 		autoprint = 1;
 	}
 	return (0);
