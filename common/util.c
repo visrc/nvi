@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.51 1993/05/17 11:53:10 bostic Exp $ (Berkeley) $Date: 1993/05/17 11:53:10 $";
+static char sccsid[] = "$Id: util.c,v 5.52 1993/05/19 12:53:33 bostic Exp $ (Berkeley) $Date: 1993/05/19 12:53:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -182,8 +182,9 @@ msg_rpt(sp, fp)
 		if (sp->rptlines[cnt] != 0) {
 			total += sp->rptlines[cnt];
 			len = snprintf(number, sizeof(number),
-			    "%s%lu lines %s", first ? "" : "; ",
-			    sp->rptlines[cnt], *ap);
+			    "%s%lu line%s %s", first ? "" : "; ",
+			    sp->rptlines[cnt],
+			    sp->rptlines[cnt] > 1 ? "s" : "", *ap);
 			memmove(p, number, len);
 			p += len;
 			first = 0;
