@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.3 1993/08/02 15:39:05 bostic Exp $ (Berkeley) $Date: 1993/08/02 15:39:05 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.4 1993/08/05 18:08:50 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:08:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ ex_wq(sp, ep, cmdp)
 	if (exwr(sp, ep, cmdp, WQ))
 		return (1);
 
-	if (!force && ep->refcnt <= 1 && file_next(sp, ep, 0)) {
+	if (!force && ep->refcnt <= 1 && file_next(sp, 0) != NULL) {
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
@@ -85,7 +85,7 @@ ex_xit(sp, ep, cmdp)
 	if (F_ISSET((ep), F_MODIFIED) && exwr(sp, ep, cmdp, XIT))
 		return (1);
 
-	if (!force && ep->refcnt <= 1 && file_next(sp, ep, 0)) {
+	if (!force && ep->refcnt <= 1 && file_next(sp, 0) != NULL) {
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
@@ -159,7 +159,7 @@ exwr(sp, ep, cmdp, cmd)
 
 	switch(cmdp->argc) {
 	case 0:
-		fname = ep->name;
+		fname = sp->frp->fname;
 		break;
 	case 1:
 		fname = (char *)cmdp->argv[0];

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.2 1993/07/20 10:50:41 bostic Exp $ (Berkeley) $Date: 1993/07/20 10:50:41 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.3 1993/08/05 18:07:57 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:07:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,23 +56,23 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 	for (; *s; ++s)
 		switch (*s) {
 		case '%':
-			if (F_ISSET(ep, F_NONAME)) {
+			if (F_ISSET(sp->frp, FR_NONAME)) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for %%.");
 				return (1);
 			}
-			ADD_SPACE(sp, bp, blen, len + ep->nlen);
-			memmove(p, ep->name, ep->nlen);
-			p += ep->nlen;
-			len += ep->nlen;
+			ADD_SPACE(sp, bp, blen, len + sp->frp->nlen);
+			memmove(p, sp->frp->fname, sp->frp->nlen);
+			p += sp->frp->nlen;
+			len += sp->frp->nlen;
 			break;
 		case '#':
-			if (sp->altfname != NULL)
-				tlen = strlen(t = sp->altfname);
-			else if (sp->eprev != NULL &&
-			     !F_ISSET(sp->eprev, F_NONAME)) {
-				t = sp->eprev->name;
-				tlen = sp->eprev->nlen;
+			if (sp->alt_fname != NULL)
+				tlen = strlen(t = sp->alt_fname);
+			else if (sp->p_frp != NULL &&
+			     !F_ISSET(sp->p_frp, FR_NONAME)) {
+				t = sp->p_frp->fname;
+				tlen = sp->p_frp->nlen;
 			} else {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for #.");
