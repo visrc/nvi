@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.2 1992/05/27 10:33:11 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:33:11 $
+ *	$Id: cut.h,v 5.3 1992/05/28 13:52:55 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:52:55 $
  */
 
 typedef struct text {			/* Text: a linked list of lines. */
@@ -37,6 +37,8 @@ extern IB ib;				/* Input buffer. */
 
 #define	OOBCB	-1			/* Out-of-band cut buffer name. */
 #define	DEFCB	UCHAR_MAX + 1		/* Default cut buffer. */
+					/* CB to use. */
+#define	VICB(vp)	((vp)->buffer == OOBCB ? DEFCB : (vp)->buffer)
 
 /* Check a buffer name for validity. */
 #define	CBNAME(buffer, cb) {						\
