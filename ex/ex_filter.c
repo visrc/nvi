@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.32 1994/04/14 14:12:54 bostic Exp $ (Berkeley) $Date: 1994/04/14 14:12:54 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.33 1994/04/26 16:18:10 bostic Exp $ (Berkeley) $Date: 1994/04/26 16:18:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *cmd;
 	enum filtertype ftype;
 {
-	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
+	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
 	int input[2], output[2], rval, teardown;
@@ -76,7 +76,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	 * up utility input pipe.
 	 */
 	teardown = 0;
-	ifp = ofp = NULL;
+	ofp = NULL;
 	input[0] = input[1] = output[0] = output[1] = -1;
 	if (ftype == FILTER_READ) {
 		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
@@ -84,16 +84,11 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
 			return (1);
 		}
-	} else {
+	} else
 		if (pipe(input) < 0) {
 			msgq(sp, M_SYSERR, "pipe");
 			goto err;
 		}
-		if ((ifp = fdopen(input[1], "w")) == NULL) {
-			msgq(sp, M_SYSERR, "fdopen");
-			goto err;
-		}
-	}
 
 	/* Open up utility output pipe. */
 	if (pipe(output) < 0) {
@@ -117,9 +112,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 		msgq(sp, M_SYSERR, "vfork");
 err:		if (input[0] != -1)
 			(void)close(input[0]);
-		if (ifp != NULL)
-			(void)fclose(ifp);
-		else if (input[1] != -1)
+		if (input[1] != -1)
 			(void)close(input[1]);
 		if (ofp != NULL)
 			(void)fclose(ofp);
@@ -234,15 +227,17 @@ err:		if (input[0] != -1)
 		break;
 	case 0:				/* Parent-writer. */
 		/*
-		 * Write the selected lines to the write end of the
-		 * input pipe.  Ifp is closed by ex_writefp.
+		 * Write the selected lines to the write end of the input
+		 * pipe.  This instance of ifp is closed by ex_writefp.
 		 */
 		(void)close(output[0]);
+		if ((ifp = fdopen(input[1], "w")) == NULL)
+			_exit (1);
 		_exit(ex_writefp(sp, ep, "filter", ifp, fm, tm, NULL, NULL));
 
 		/* NOTREACHED */
 	default:			/* Parent-reader. */
-		(void)fclose(ifp);
+		(void)close(input[1]);
 		if (ftype == FILTER_WRITE)
 			/*
 			 * Read the output from the read end of the output
