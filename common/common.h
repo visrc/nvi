@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.55 1993/05/14 16:18:24 bostic Exp $ (Berkeley) $Date: 1993/05/14 16:18:24 $
+ *	$Id: common.h,v 5.56 1993/05/15 10:01:35 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:01:35 $
  */
 
 #include <limits.h>			/* Ordered before local includes. */
@@ -17,6 +17,7 @@
  * are far too interrelated for a clean solution.
  */
 struct _cb;
+struct _excmdarg;
 struct _excmdlist;
 struct _exf;
 struct _gs;
