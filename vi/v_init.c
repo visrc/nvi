@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.2 1992/11/04 10:43:08 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:43:08 $";
+static char sccsid[] = "$Id: v_init.c,v 5.3 1992/11/11 18:28:53 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:28:53 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -15,6 +15,7 @@ static char sccsid[] = "$Id: v_init.c,v 5.2 1992/11/04 10:43:08 bostic Exp $ (Be
 
 #include "vi.h"
 #include "vcmd.h"
+#include "options.h"
 #include "screen.h"
 #include "term.h"
 #include "extern.h"
@@ -36,6 +37,9 @@ v_init(ep)
 	ep->stdfp = fwopen(ep, v_exwrite);
 
 	scr_ref(ep);
+
+	if (ISSET(O_COMMENT))
+		v_comment(ep);
 
 	MOVE(0, 0);
 	return (0);
