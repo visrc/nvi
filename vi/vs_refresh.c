@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.10 1992/12/20 15:11:11 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:11:11 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.11 1992/12/22 14:59:29 bostic Exp $ (Berkeley) $Date: 1992/12/22 14:59:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,7 +55,7 @@ scr_end(ep)
 	MOVE(SCREENSIZE(ep), 0);
 	clrtoeol();
 	refresh();
-	endwin();
+	endwin();		/* No delwin(), initscr() does them. */
 	return (0);
 }
 
@@ -105,6 +105,10 @@ scr_modeline(ep, isinput)
 /*
  * onwinch --
  *	Handle SIGWINCH.
+ *
+ * XXX
+ *	Obvious race exists -- if receive SIGWINCH while updating the
+ *	screen, or in msg() it's possible to fail badly?
  */
 void
 onwinch(signo)
@@ -117,8 +121,10 @@ onwinch(signo)
 	 * Try TIOCGWINSZ.  If it fails, ignore the signal.  Otherwise,
 	 * reset any environmental values, so curses uses the new values.
 	 */
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1)
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1) {
+		msg("TIOCGWINSZ: %s", strerror(errno));
 		return;
+	}
 
 	(void)unsetenv("ROWS");
 	(void)unsetenv("COLUMNS");
@@ -133,9 +139,21 @@ onwinch(signo)
 	if (opts_set(argv))
 		return;
 
-	curf->lines = win.ws_row;
-	curf->cols = win.ws_col;
-	FF_SET(curf, F_RESIZE);
+	/* End the current screen. */
+	(void)scr_end(curf);
+
+	/* Set the new values and start the next one. */
+	(void)snprintf(sbuf, sizeof(sbuf), "%u", win.ws_row);
+	(void)setenv("ROWS", sbuf, 1);
+	(void)snprintf(sbuf, sizeof(sbuf), "%u", win.ws_col);
+	(void)setenv("COLUMNS", sbuf, 1);
+
+	(void)scr_init(curf);
+
+	curf->lines = LINES;
+	curf->cols = COLS;
+
+	FF_SET(curf, F_REDRAW);
 	scr_cchange(curf);
 	refresh();
 }
