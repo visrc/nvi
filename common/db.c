@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.13 1993/11/08 11:10:27 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:10:27 $";
+static char sccsid[] = "$Id: db.c,v 8.14 1993/11/16 21:46:57 bostic Exp $ (Berkeley) $Date: 1993/11/16 21:46:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -387,30 +387,8 @@ file_lline(sp, ep, lnop)
 
 /*
  * scr_update --
- *	Walk the screens and update all of them that are backed by the
- *	file that just changed.  Do the current screen last so that the
- *	cursor ends up in the right place.
- *
- * XXX
- * Don't refresh the current screen, assume that it will be refreshed
- * by the caller when the caller is done.  This is wrong, we shouldn't
- * have to refresh all of the screens this much.  It should be possible
- * to just have an scr_refresh() routine that refreshed all related
- * screens, and replace all occurrences of s_refresh with it?
- *
- * XXX
- * This routine probably depends on the "current" flag not being unset
- * during editing -- it seems to me that there may be ways to make the
- * cursor end up on the wrong screen after an update.  I think the
- * underlying assumption is that the "current" screen will be refreshed
- * after the updates to the other screens are done:
- *
- *	the user edits the text using v_ntext(), and the
- *		current screen is updated as keys are entered.
- *	the current screen is resolved, related screens
- *		updated here
- *	the current screen is refreshed and the cursor returns
- *		to the right position.
+ *	Update all of the screens that are backed by the file that
+ *	just changed.
  */
 static inline int
 scr_update(sp, ep, lno, op, current)
@@ -424,14 +402,11 @@ scr_update(sp, ep, lno, op, current)
 
 	if (ep->refcnt != 1) {
 		for (tsp = sp->parent; tsp != NULL; tsp = tsp->parent)
-			if (tsp->ep == ep && tsp->s_change != NULL) {
+			if (tsp->ep == ep)
 				(void)sp->s_change(tsp, ep, lno, op);
-			}
 		for (tsp = sp->child; tsp != NULL; tsp = tsp->child)
-			if (tsp->ep == ep && tsp->s_change != NULL) {
+			if (tsp->ep == ep)
 				(void)sp->s_change(tsp, ep, lno, op);
-			}
 	}
-	return (current &&
-	    sp->s_change != NULL ? sp->s_change(sp, ep, lno, op) : 0);
+	return (current && sp->s_change(sp, ep, lno, op));
 }
