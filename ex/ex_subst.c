@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.32 1994/01/02 17:56:04 bostic Exp $ (Berkeley) $Date: 1994/01/02 17:56:04 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.33 1994/01/09 17:56:14 bostic Exp $ (Berkeley) $Date: 1994/01/09 17:56:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,9 +15,11 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.32 1994/01/02 17:56:04 bostic Exp $ 
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "interrupt.h"
 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
@@ -25,6 +27,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.32 1994/01/02 17:56:04 bostic Exp $ 
 static int		checkmatchsize __P((SCR *, regex_t *));
 static inline int	regsub __P((SCR *,
 			    char *, char **, size_t *, size_t *));
+static void		subst_intr __P((int));
 static int		substitute __P((SCR *, EXF *,
 			    EXCMDARG *, char *, regex_t *, u_int));
 
@@ -326,11 +329,12 @@ substitute(sp, ep, cmdp, s, re, flags)
 	regex_t *re;
 	u_int flags;
 {
+	DECLARE_INTERRUPTS;
 	MARK from, to;
 	recno_t elno, lno;
 	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
-	int didsub, do_eol_match;
-	int eflags, empty_ok, eval, linechanged, matched, quit;
+	int didsub, do_eol_match, eflags, empty_ok, eval;
+	int linechanged, matched, quit, rval;
 	int cflag, gflag, lflag, nflag, pflag, rflag;
 	char *bp, *lb;
 
@@ -423,6 +427,9 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
+	if (!F_ISSET(sp, S_GLOBAL))
+		SET_UP_INTERRUPTS(subst_intr);
+
 	/*
 	 * bp:		if interactive, line cache
 	 * blen:	if interactive, line cache length
@@ -436,6 +443,13 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	/* For each line... */
 	for (matched = quit = 0, lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; !quit && lno <= elno; ++lno) {
+
+		/* Someone's unhappy, time to stop. */
+		if (F_ISSET(sp, S_INTERRUPTED)) {
+			if (!F_ISSET(sp, S_GLOBAL))
+				msgq(sp, M_INFO, "Interrupted.");
+			break;
+		}
 
 		/* Get the line. */
 		if ((s = file_gline(sp, ep, lno, &llen)) == NULL) {
@@ -750,13 +764,18 @@ endmatch:	if (!linechanged)
 	} else if (!lflag && !nflag && !pflag)
 		F_SET(EXP(sp), EX_AUTOPRINT);
 
+	rval = 0;
+	if (0) {
+ret1:		rval = 1;
+	}
+
+interrupt_err:
+	if (!F_ISSET(sp, S_GLOBAL))
+		TEAR_DOWN_INTERRUPTS;
+
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
-	return (0);
-
-ret1:	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
-	return (1);
+	return (rval);
 }
 
 /*
@@ -914,4 +933,26 @@ checkmatchsize(sp, re)
 		}
 	}
 	return (0);
+}
+
+/*
+ * subst_intr --
+ *	Set the interrupt bit in any screen that is interruptible.
+ *
+ * XXX
+ * In the future this may be a problem.  The user should be able to move to
+ * another screen and keep typing while this runs.  If so, and the user has
+ * more than one substitute running, it will be hard to decide which one to
+ * stop.
+ */
+static void
+subst_intr(signo)
+	int signo;
+{
+	SCR *sp;
+
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
+		if (F_ISSET(sp, S_INTERRUPTIBLE))
+			F_SET(sp, S_INTERRUPTED);
 }

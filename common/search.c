@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.31 1993/12/19 16:17:24 bostic Exp $ (Berkeley) $Date: 1993/12/19 16:17:24 $";
+static char sccsid[] = "$Id: search.c,v 8.32 1994/01/09 17:55:45 bostic Exp $ (Berkeley) $Date: 1994/01/09 17:55:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: search.c,v 8.31 1993/12/19 16:17:24 bostic Exp $ (B
 #include <unistd.h>
 
 #include "vi.h"
+#include "interrupt.h"
 
 static int	check_delta __P((SCR *, EXF *, long, recno_t));
 static int	ctag_conv __P((SCR *, char **, int *));
@@ -210,48 +211,6 @@ ctag_conv(sp, ptrnp, replacedp)
 }
 
 /*
- * Search interrupts.
- *
- * ISIG turns on VINTR, VQUIT and VSUSP.  We want VINTR to interrupt the
- * search, so we install a handler.  VQUIT is ignored by main() because
- * nvi never wants to catch it.  A handler for VSUSP should have been
- * installed by the screen code.
- */
-#define	SET_UP_INTERRUPTS {						\
-	act.sa_handler = search_intr;					\
-	sigemptyset(&act.sa_mask);					\
-	act.sa_flags = 0;						\
-	if (isig = !sigaction(SIGINT, &act, &oact)) {			\
-		istate = F_ISSET(sp, S_INTERRUPTIBLE);			\
-		F_CLR(sp, S_INTERRUPTED);				\
-		F_SET(sp, S_INTERRUPTIBLE);				\
-		if (tcgetattr(STDIN_FILENO, &term)) {			\
-			msgq(sp, M_SYSERR, "tcgetattr");		\
-			return (1);					\
-		}							\
-		nterm = term;						\
-		nterm.c_lflag |= ISIG;					\
-		if (tcsetattr(STDIN_FILENO,				\
-		    TCSANOW | TCSASOFT, &nterm)) {			\
-			msgq(sp, M_SYSERR, "tcsetattr");		\
-			return (1);					\
-		}							\
-	}								\
-}
-
-#define	TEAR_DOWN_INTERRUPTS {						\
-	if (isig) {							\
-		if (sigaction(SIGINT, &oact, NULL))			\
-			msgq(sp, M_SYSERR, "signal");			\
-		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))	\
-			msgq(sp, M_SYSERR, "tcsetattr");		\
-		F_CLR(sp, S_INTERRUPTED);				\
-		if (!istate)						\
-			F_CLR(sp, S_INTERRUPTIBLE);			\
-	}								\
-}
-
-/*
  * search_intr --
  *	Set the interrupt bit in any screen that is interruptible.
  *
@@ -287,15 +246,14 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
-	struct sigaction act, oact;
-	struct termios nterm, term;
+	DECLARE_INTERRUPTS;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len;
 	long delta;
-	u_int flags, istate;
-	int eval, isig, rval, wrapped;
+	u_int flags;
+	int eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -352,9 +310,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	 */
 	if (sp->s_position != NULL)
 		busy_on(sp, 1, "Searching...");
-
-	if (F_ISSET(sp->gp, G_ISFROMTTY))
-		SET_UP_INTERRUPTS;
+	SET_UP_INTERRUPTS(search_intr);
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -434,12 +390,12 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		break;
 	}
 
+interrupt_err:
+
 	/* Turn off busy message, interrupts. */
 	if (sp->s_position != NULL)
 		busy_off(sp);
-
-	if (F_ISSET(sp->gp, G_ISFROMTTY))
-		TEAR_DOWN_INTERRUPTS;
+	TEAR_DOWN_INTERRUPTS;
 
 	return (rval);
 }
@@ -452,15 +408,14 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
-	struct sigaction act, oact;
-	struct termios nterm, term;
+	DECLARE_INTERRUPTS;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len, last;
 	long delta;
-	u_int flags, istate;
-	int eval, isig, rval, wrapped;
+	u_int flags;
+	int eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -493,7 +448,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	busy_on(sp, 1, "Searching...");
 
 	if (F_ISSET(sp->gp, G_ISFROMTTY))
-		SET_UP_INTERRUPTS;
+		SET_UP_INTERRUPTS(search_intr);
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -592,6 +547,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/* Turn off busy message, interrupts. */
+interrupt_err:
 err:	busy_off(sp);
 
 	if (F_ISSET(sp->gp, G_ISFROMTTY))

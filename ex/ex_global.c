@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.28 1994/01/08 12:14:07 bostic Exp $ (Berkeley) $Date: 1994/01/08 12:14:07 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.29 1994/01/09 17:56:13 bostic Exp $ (Berkeley) $Date: 1994/01/09 17:56:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: ex_global.c,v 8.28 1994/01/08 12:14:07 bostic Exp $
 
 #include "vi.h"
 #include "excmd.h"
+#include "interrupt.h"
 
 enum which {GLOBAL, VGLOBAL};
 
@@ -59,16 +60,14 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	struct sigaction act, oact;
-	struct termios nterm, term;
+	DECLARE_INTERRUPTS;
 	RANGE *rp;
 	EX_PRIVATE *exp;
 	recno_t elno, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t clen, len;
-	u_int istate;
-	int delim, eval, isig, reflags, replaced, rval;
+	int delim, eval, reflags, replaced, rval;
 	char *cb, *ptrn, *p, *t;
 
 	/*
@@ -161,36 +160,9 @@ global(sp, ep, cmdp, cmd)
 	sp->subre = sp->sre;
 	F_SET(sp, S_SUBRE_SET);
 
-	/*
-	 * Command interrupts.
-	 *
-	 * ISIG turns on VINTR, VQUIT and VSUSP.  We want VINTR to interrupt
-	 * the command, so we install a handler.  VQUIT is ignored by main()
-	 * because nvi never wants to catch it.  A handler for VSUSP should
-	 * have been installed by the screen code.
-	 */
+	/* Set the global flag, and set up interrupts. */
 	F_SET(sp, S_GLOBAL);
-	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
-		act.sa_handler = global_intr;
-		sigemptyset(&act.sa_mask);
-		act.sa_flags = 0;
-		if (isig = !sigaction(SIGINT, &act, &oact)) {
-			istate = F_ISSET(sp, S_INTERRUPTIBLE);
-			F_CLR(sp, S_INTERRUPTED);
-			F_SET(sp, S_INTERRUPTIBLE);
-			if (tcgetattr(STDIN_FILENO, &term)) {
-				msgq(sp, M_SYSERR, "tcgetattr");
-				goto err;
-			}
-			nterm = term;
-			nterm.c_lflag |= ISIG;
-			if (tcsetattr(STDIN_FILENO,
-			    TCSANOW | TCSASOFT, &nterm)) {
-				msgq(sp, M_SYSERR, "tcsetattr");
-				goto err;
-			}
-		}
-	}
+	SET_UP_INTERRUPTS(global_intr);
 
 	/*
 	 * For each line...  The semantics of global matching are that we first
@@ -207,6 +179,10 @@ global(sp, ep, cmdp, cmd)
 	exp = EXP(sp);
 	for (rval = 0, lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
+		/* Someone's unhappy, time to stop. */
+		if (F_ISSET(sp, S_INTERRUPTED))
+			goto interrupted;
+
 		/* Get the line and search for a match. */
 		if ((t = file_gline(sp, ep, lno, &len)) == NULL) {
 			GETLINE_ERR(sp, lno);
@@ -241,13 +217,11 @@ global(sp, ep, cmdp, cmd)
 			goto err;
 		rp->start = rp->stop = lno;
 		CIRCLEQ_INSERT_TAIL(&exp->rangeq, rp, q);
-
-		/* Someone's unhappy, time to stop. */
-		if (F_ISSET(sp, S_INTERRUPTED))
-			goto interrupted;
 	}
 
-	for (exp = EXP(sp);;) {
+	exp = EXP(sp);
+	exp->range_lno = OOBLNO;
+	for (;;) {
 		/*
 		 * Start at the beginning of the range each time, it may have
 		 * been changed (or exhausted) if lines were inserted/deleted.
@@ -278,23 +252,19 @@ interrupted:		msgq(sp, M_INFO, "Interrupted.");
 	}
 
 	/* Set the cursor to the new value, making sure it exists. */
-	if (file_lline(sp, ep, &lno))
-		return (1);
-	sp->lno = lno < exp->range_lno ? (lno ? lno : 1) : exp->range_lno;
+	if (exp->range_lno != OOBLNO) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		sp->lno =
+		    lno < exp->range_lno ? (lno ? lno : 1) : exp->range_lno;
+	}
 	if (0) {
 err:		rval = 1;
 	}
 
+interrupt_err:
 	F_CLR(sp, S_GLOBAL);
-	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
-		if (sigaction(SIGINT, &oact, NULL))
-			msgq(sp, M_SYSERR, "signal");
-		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
-			msgq(sp, M_SYSERR, "tcsetattr");
-		F_CLR(sp, S_INTERRUPTED);
-		if (!istate)
-			F_CLR(sp, S_INTERRUPTIBLE);
-	}
+	TEAR_DOWN_INTERRUPTS;
 
 	/* Free any remaining ranges and the command buffer. */
 	while ((rp = exp->rangeq.cqh_first) != (void *)&exp->rangeq) {
