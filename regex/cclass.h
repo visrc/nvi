@@ -37,34 +37,47 @@
  *	@(#)cclass.h	8.2 (Berkeley) 3/16/94
  */
 
+CHAR_T ALNUM[] = {'a','l','n','u','m',0};
+CHAR_T ALPHA[] = {'a','l','p','h','a',0};
+CHAR_T BLANK[] = {'b','l','a','n','k',0};
+CHAR_T CNTRL[] = {'c','n','t','r','l',0};
+CHAR_T DIGIT[] = {'d','i','g','i','t',0};
+CHAR_T GRAPH[] = {'g','r','a','p','h',0};
+CHAR_T LOWER[] = {'l','o','w','e','r',0};
+CHAR_T PRINT[] = {'p','r','i','n','t',0};
+CHAR_T PUNCT[] = {'p','u','n','c','t',0};
+CHAR_T SPACE[] = {'s','p','a','c','e',0};
+CHAR_T UPPER[] = {'u','p','p','e','r',0};
+CHAR_T XDIGIT[] = {'x','d','i','g','i','t',0};
+
 /* character-class table */
 static struct cclass {
-	char *name;
+	CHAR_T *name;
 	char *chars;
 	char *multis;
 } cclasses[] = {
-	"alnum",	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\
+	ALNUM,	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\
 0123456789",				"",
-	"alpha",	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	ALPHA,	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 					"",
-	"blank",	" \t",		"",
-	"cntrl",	"\007\b\t\n\v\f\r\1\2\3\4\5\6\16\17\20\21\22\23\24\
+	BLANK,	" \t",		"",
+	CNTRL,	"\007\b\t\n\v\f\r\1\2\3\4\5\6\16\17\20\21\22\23\24\
 \25\26\27\30\31\32\33\34\35\36\37\177",	"",
-	"digit",	"0123456789",	"",
-	"graph",	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\
+	DIGIT,	"0123456789",	"",
+	GRAPH,	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\
 0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
 					"",
-	"lower",	"abcdefghijklmnopqrstuvwxyz",
+	LOWER,	"abcdefghijklmnopqrstuvwxyz",
 					"",
-	"print",	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\
+	PRINT,	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\
 0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ ",
 					"",
-	"punct",	"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
+	PUNCT,	"!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
 					"",
-	"space",	"\t\n\v\f\r ",	"",
-	"upper",	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+	SPACE,	"\t\n\v\f\r ",	"",
+	UPPER,	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 					"",
-	"xdigit",	"0123456789ABCDEFabcdef",
+	XDIGIT,	"0123456789ABCDEFabcdef",
 					"",
 	NULL,		0,		""
 };
