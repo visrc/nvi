@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.57 1993/12/22 17:57:42 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:57:42 $";
+static char sccsid[] = "$Id: main.c,v 8.58 1993/12/26 11:22:45 bostic Exp $ (Berkeley) $Date: 1993/12/26 11:22:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -58,7 +58,6 @@ main(argc, argv)
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
 	struct sigaction act;
-	struct stat sb;
 	GS *gp;
 	FREF *frp;
 	SCR *sp;
