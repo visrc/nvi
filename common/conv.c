@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.8 2001/04/21 06:36:25 skimo Exp $ (Berkeley) $Date: 2001/04/21 06:36:25 $";
+static const char sccsid[] = "$Id: conv.c,v 1.9 2001/04/23 22:46:55 skimo Exp $ (Berkeley) $Date: 2001/04/23 22:46:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,11 @@ static const char sccsid[] = "$Id: conv.c,v 1.8 2001/04/21 06:36:25 skimo Exp $ 
 #endif
 
 int 
-default_char2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
+default_char2int(CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i;
+    CHAR_T **tostr = (CHAR_T **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
 
     BINC_RETW(NULL, *tostr, *blen, len);
 
@@ -45,9 +47,11 @@ default_char2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size
 }
 
 int 
-default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
+default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i;
+    char **tostr = (char **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
 
     BINC_RET(NULL, *tostr, *blen, len);
 
@@ -61,10 +65,12 @@ default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
 //#ifdef HAVE_NCURSESW
 #ifdef HAVE_ADDNWSTR
 int 
-default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
+default_int2disp (CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
     chtype *dest;
+    char **tostr = (char **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
 
     BINC_RET(NULL, *tostr, *blen, len * sizeof(chtype));
 
@@ -83,9 +89,11 @@ default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
 #else
 
 int 
-default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
+default_int2disp (CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
+    char **tostr = (char **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
 
     BINC_RET(NULL, *tostr, *blen, len * 2);
 
@@ -102,9 +110,11 @@ default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
 #endif
 
 int 
-gb2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
+gb2int (CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
+    CHAR_T **tostr = (CHAR_T **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
 
     BINC_RETW(NULL, *tostr, *blen, len);
 
@@ -125,9 +135,11 @@ gb2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen,
 }
 
 int
-int2gb(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
+int2gb(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
+    char **tostr = (char **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
 
     BINC_RET(NULL, *tostr, *blen, len * 2);
 
@@ -145,10 +157,12 @@ int2gb(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen,
 }
 
 int 
-utf82int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
+utf82int (CONV *conv, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
     int i, j;
     CHAR_T c;
+    CHAR_T **tostr = (CHAR_T **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
 
     BINC_RETW(NULL, *tostr, *blen, len);
 
@@ -178,8 +192,10 @@ utf82int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tole
 }
 
 int
-int2utf8(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
+int2utf8(CONV *conv, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen)
 {
+    char **tostr = (char **)&cw->bp1;
+    size_t  *blen = &cw->blen1;
     BINC_RET(NULL, *tostr, *blen, len * 3);
 
     *tolen = ucs2utf8(str, len, *tostr);
@@ -188,11 +204,11 @@ int2utf8(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tole
 }
 
 
-CONV default_conv = { 0, 0, default_char2int, default_int2char, 
+CONV default_conv = { default_char2int, default_int2char, 
 		      default_char2int, default_int2char, default_int2disp };
-CONV gb_conv = { 0, 0, default_char2int, default_int2char, 
+CONV gb_conv = { default_char2int, default_int2char, 
 		      gb2int, int2gb, default_int2disp };
-CONV utf8_conv = { 0, 0, default_char2int, default_int2char, 
+CONV utf8_conv = { default_char2int, default_int2char, 
 		      utf82int, int2utf8, default_int2disp };
 
 void

@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.37 2001/03/14 21:48:14 skimo Exp $ (Berkeley) $Date: 2001/03/14 21:48:14 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.38 2001/04/23 22:46:56 skimo Exp $ (Berkeley) $Date: 2001/04/23 22:46:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,12 +68,11 @@ static char *errmsg = 0;
 typedef struct _perl_data {
     	PerlInterpreter*	interp;
 	SV 	*svcurscr, *svstart, *svstop, *svid;
-	void	*perl_bp;
-	size_t   perl_blen;
+	CONVWIN	 cw;
 } perl_data_t;
 
 #define CHAR2INTP(sp,n,nlen,w,wlen)					    \
-    CHAR2INTB(sp,n,nlen,w,wlen,((perl_data_t *)sp->wp->perl_private)->perl)
+    CHAR2INTB(sp,n,nlen,w,wlen,((perl_data_t *)sp->wp->perl_private)->cw)
 
 /*
  * INITMESSAGE --
@@ -191,8 +190,7 @@ perl_init(scrp)
 	}
 	MALLOC(scrp, pp, perl_data_t *, sizeof(perl_data_t));
 	wp->perl_private = pp;
-	pp->perl_blen = 0;
-	pp->perl_bp = 0;
+	memset(&pp->cw, 0, sizeof(pp->cw));
 #ifdef USE_ITHREADS
 	pp->interp = perl_clone(gp->perl_interp, 0);
         if (1) { /* hack for bug fixed in perl-current (5.6.1) */

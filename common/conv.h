@@ -20,13 +20,17 @@
 #define KEY_COL(sp, ch)							\
 	(INTISWIDE(ch) ? CHAR_WIDTH(sp, ch) : KEY_LEN(sp,ch))
 
-struct _conv {
-	void	*buffer;
-	size_t	size;
+struct _conv_win {
+    void    *bp1;
+    size_t   blen1;
+    void    *bp2;
+    size_t   blen2;
+};
 
-	int	(*char2int) (struct _conv*, const char *, ssize_t, CHAR_T **, size_t *, size_t *);
-	int	(*int2char) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *, size_t *);
-	int	(*file2int) (struct _conv*, const char *, ssize_t, CHAR_T **, size_t *, size_t *);
-	int	(*int2file) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *, size_t *);
-	int	(*int2disp) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *, size_t *);
+struct _conv {
+	int	(*char2int) (struct _conv*, const char *, ssize_t, struct _conv_win *, size_t *);
+	int	(*int2char) (struct _conv*, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
+	int	(*file2int) (struct _conv*, const char *, ssize_t, struct _conv_win *, size_t *);
+	int	(*int2file) (struct _conv*, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
+	int	(*int2disp) (struct _conv*, const CHAR_T *, ssize_t, struct _conv_win *, size_t *);
 };
