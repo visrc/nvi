@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.4 1994/03/19 15:45:19 bostic Exp $ (Berkeley) $Date: 1994/03/19 15:45:19 $
+.\"     $Id: set.opt.roff,v 8.5 1994/03/22 18:43:26 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:43:26 $
 .\"
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
@@ -668,6 +668,15 @@ if
 is set, and to
 .Dq \&B
 if it is not set.
+#endif
+.It Li "remapmax [on]"
+#ifdef MANUAL
+Limit the number of times a key may be remapped.
+#endif
+#ifdef REFERENCE
+If this option is set, a key may only be remapped 50 times.
+If it is not set, a key may be remapped an infinite number of times,
+and the editor can be placed into infinite loops.
 #endif
 .It Li "report [5]"
 #ifdef MANUAL
