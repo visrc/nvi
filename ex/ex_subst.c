@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.46 2000/09/02 13:14:15 skimo Exp $ (Berkeley) $Date: 2000/09/02 13:14:15 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.47 2000/09/22 09:37:33 skimo Exp $ (Berkeley) $Date: 2000/09/22 09:37:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -234,7 +234,7 @@ tilde:				++p;
 		if ((sp->repl_len = len) != 0) {
 			if (sp->repl != NULL)
 				free(sp->repl);
-			if ((sp->repl = malloc(len)) == NULL) {
+			if ((sp->repl = malloc(len * sizeof(CHAR_T))) == NULL) {
 				msgq(sp, M_SYSERR, NULL);
 				FREE_SPACEW(sp, bp, blen);
 				return (1);
