@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.21 1992/11/01 14:07:15 bostic Exp $ (Berkeley) $Date: 1992/11/01 14:07:15 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.22 1992/11/04 10:54:57 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:54:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,15 +106,8 @@ ex_args(cmdp)
 	register int cnt, col, sep;
 	int len;
 
-	for (ep = file_first();
-	    ep != NULL && !(ep->flags & F_IGNORE); ep = file_next(ep));
-	if (ep == NULL) {
-		msg("No file names.");
-		return (1);
-	}
-
 	col = len = sep = 0;
-	for (cnt = 1; ep; ++cnt, ep = file_next(ep)) {
+	for (cnt = 1, ep = file_first(); ep; ++cnt, ep = file_next(ep)) {
 		if (ep->flags & F_IGNORE)
 			continue;
 		col += len = strlen(ep->name) + sep + (curf == ep ? 2 : 0);
@@ -131,6 +124,9 @@ ex_args(cmdp)
 		else
 			(void)fprintf(curf->stdfp, "%s", ep->name);
 	}
-	(void)fprintf(curf->stdfp, "\n");
+	if (cnt == 1)
+		(void)fprintf(curf->stdfp, "No files.\n");
+	else
+		(void)fprintf(curf->stdfp, "\n");
 	return (0);
 }
