@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.20 1992/05/15 11:11:38 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:11:38 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.21 1992/05/21 12:57:53 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:57:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,21 +26,21 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 000 NUL -- The code in vi.c expects key 0 to be undefined. */
 	{},
 /* 001  ^A */
-	v_wsearch,	V_ABS|V_CNT|V_KEYW|V_MOVE,
+	v_wsearch,	V_ABS|V_CNT|V_KEYW,
 	    "search forward for cursor word: [count]^A",
 /* 002  ^B */
-	v_pageup,	V_CNT|V_MOVE,
+	v_pageup,	V_CNT,
 	    "page up by screens: [count]^B",
 /* 003  ^C */
 	{},
 /* 004  ^D */
-	v_hpagedown,	V_CNT|V_MOVE,
+	v_hpagedown,	V_CNT,
 	    "page down by half screens (set count): [count]^D",	
 /* 005  ^E */
 	v_linedown,	V_CNT,
 	    "page down by lines: [count]^E",
 /* 006  ^F */
-	v_pagedown,	V_CNT|V_MOVE,
+	v_pagedown,	V_CNT,
 	    "page down by screens: [count]^F",
 /* 007  ^G */
 	v_status,	0,
@@ -51,7 +51,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 011  ^I */
 	{},
 /* 012  ^J */
-	v_down,		V_CNT|V_MOVE,
+	v_down,		V_CNT|V_LMODE|V_MOVE,
 	    "move down by lines: [count]^J",
 /* 013  ^K */
 	{},
@@ -59,15 +59,15 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_redraw,	0,
 	    "redraw screen: ^L",
 /* 015  ^M */
-	v_nbdown,	V_CNT|V_MOVE,
+	v_nbdown,	V_CNT|V_LMODE|V_MOVE,
 	    "move down by lines (first non-blank): [count]^M",
 /* 016  ^N */
-	v_down,		V_CNT|V_MOVE,
+	v_down,		V_CNT|V_LMODE|V_MOVE,
 	    "move down by lines: [count]^N",
 /* 017  ^O */
 	{},
 /* 020  ^P */
-	v_up,		V_CNT|V_MOVE,
+	v_up,		V_CNT|V_LMODE|V_MOVE,
 	    "move up by lines: [count]^P",
 /* 021  ^Q */
 	{},
@@ -79,7 +79,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 024  ^T */
 	{},
 /* 025  ^U */
-	v_hpageup,	V_CNT|V_MOVE,
+	v_hpageup,	V_CNT,
 	    "half page up (set count): [count]^U",
 /* 026  ^V */
 	{},
@@ -88,10 +88,11 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 030  ^X */
 	{},
 /* 031  ^Y */
-	v_lineup,	V_CNT|V_MOVE,
+	v_lineup,	V_CNT,
 	    "page up by lines: [count]^Y",
 /* 032  ^Z */
-	{},
+	v_stop, 0,
+	    "pause the program: ^Z",
 /* 033  ^[ */
 	{},
 /* 034  ^\ */
@@ -109,7 +110,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	    "move right by columns: [count]' '",
 /* 041   ! */
 	v_filter,	V_CNT|V_DOT|V_MOTION,
-	    "filter through command(s): [count]!motion command(s)",
+	    "filter through command(s): [count]![count]motion command(s)",
 /* 042   " */
 	{},
 /* 043   # */
@@ -125,7 +126,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_again,	0,
 	    "repeat substitution: &",
 /* 047   ' */
-	v_marksq,	V_CHAR|V_MOVE,
+	v_marksq,	V_CHAR|V_LMODE|V_MOVE,
 	    "move to mark (first non-blank): '['a-z]",
 /* 050   ( */
 	v_bsentence,	V_CNT|V_MOVE,
@@ -137,13 +138,13 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_errlist,	0,
 	    "step through compile errors: *",
 /* 053   + */
-	v_nbdown,	V_CNT|V_MOVE,
+	v_nbdown,	V_CNT|V_LMODE|V_MOVE,
 	    "move down by lines (first non-blank): [count]+",
 /* 054   , */
 	v_rrepeatch,	V_CNT|V_MOVE,
 	    "reverse last F, f, T or t search: [count],",
 /* 055   - */
-	v_nbup,		V_CNT|V_MOVE,
+	v_nbup,		V_CNT|V_LMODE|V_MOVE,
 	    "move up by lines (first non-blank): [count]-",
 /* 056   . */
 	{},
@@ -179,12 +180,12 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	    "repeat last F, f, T or t search: [count];",
 /* 074   < */
 	v_shiftl,	V_CNT|V_DOT|V_MOTION,
-	    "shift lines left: [count]<motion",
+	    "shift lines left: [count]<[count]motion",
 /* 075   = */
 	{},
 /* 076   > */
 	v_shiftr,	V_CNT|V_DOT|V_MOTION,
-	    "shift lines right: [count]>motion",
+	    "shift lines right: [count]>[count]motion",
 /* 077   ? */
 	v_bsearch,	V_MOVE,
 	    "search backward: /RE",
@@ -199,17 +200,20 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 103   C */
 	v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF,	"change to end-of-line: [buffer][count]C",
 /* 104   D */
-	v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF,	"delete to end-of-line: [buffer][count]D",
+	v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF,
+	    "delete to end-of-line: [buffer][count]D",
 /* 105   E */
 	v_wordE,	V_CNT|V_MOVE,
 	    "move to end of bigword: [count]E",
 /* 106   F */
-	v_rch,		V_CHAR|V_CNT|V_MOVE,
+	v_Fch,		V_CHAR|V_CNT|V_MOVE,
 	    "character in line backward search: [count]F character",
 /* 107   G */
-	m_updnto,	V_ABS|V_CNT|V_MOVE,	"move to line: [count]G",
+	v_lgoto,	V_ABS|V_CNT|V_LMODE|V_MOVE,
+	    "move to line: [count]G",
 /* 110   H */
-	m_row,		V_CNT|V_MOVE,	"move to screen top: [count]H",
+	v_home,		V_CNT|V_LMODE,
+	    "move to count lines from screen top: [count]H",
 /* 111   I */
 	v_iI,		V_CNT|V_DOT,
 	    "insert at line beginning: [count]I",
@@ -218,9 +222,11 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 113   K */
 	{},
 /* 114   L */
-	m_row,		V_CNT|V_MOVE,	"move to screen bottom: [count]L",
+	v_bottom,	V_CNT|V_LMODE,
+	    "move to screen bottom: [count]L",
 /* 115   M */
-	m_row,		V_MOVE,		"move to screen middle: M",
+	v_middle,	V_LMODE,
+	    "move to screen middle: M",
 /* 116   N */
 	v_Nsearch,	V_MOVE,
 	    "reverse last search: n",
@@ -228,7 +234,8 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_iO,		V_CNT|V_DOT,
 	    "insert above line: [count]O",
 /* 120   P */
-	v_paste,	V_DOT|V_OBUF,	"insert from buffer: [buffer]P",
+	v_Put,		V_CNT|V_DOT|V_OBUF,
+	    "insert before cursor from buffer: [buffer]P",
 /* 121   Q */
 	v_quit,		0,		"switch to ex mode: Q",
 /* 122   R */
@@ -236,7 +243,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 123   S */
 	v_change,	V_CNT|V_DOT|V_OBUF,	"substitute lines: [buffer][count]S",
 /* 124   T */
-	v_trch,		V_CHAR|V_CNT|V_MOVE,
+	v_Tch,		V_CHAR|V_CNT|V_MOVE,
 	    "before character in line backward search: [count]T character",
 /* 125   U */
 	v_undoline,	0,		"undo current line: U",
@@ -245,9 +252,11 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 127   W */
 	v_wordW,	V_CNT|V_MOVE,	"move to next bigword: [count]W",
 /* 130   X */
-	v_xchar,	V_CNT|V_DOT|V_OBUF,	"delete character before cursor: [buffer][count]X",
+	v_Xchar,	V_CNT|V_DOT|V_OBUF,
+	    "delete character before cursor: [buffer][count]X",
 /* 131   Y */
-	v_yank,		V_CNT|V_OBUF,		"copy line: [buffer][count]Y",
+	v_yank,		V_CNT|V_LMODE|V_OBUF,
+	    "copy line: [buffer][count]Y",
 /* 132   Z */
 	v_xit,		0,		"save file and exit: ZZ",
 /* 133   [ */
@@ -257,9 +266,11 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 135   ] */
 	m_paragraph,	V_ABS|V_MOVE,		"move forward section: [[",
 /* 136   ^ */
-	m_front,	V_MOVE,		"move to first non-blank: ^",
+	v_first,	V_MOVE,
+	    "move to first non-blank: ^",
 /* 137   _ */
-	m_updnto,	0,		"move to first non-blank: _",
+	v_first,	V_MOVE,
+	    "move to first non-blank: _",
 /* 140   ` */
 	v_markbt,	V_CHAR|V_MOVE,
 	    "move to mark: `[`a-z]",
@@ -270,9 +281,10 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_wordb,	V_CNT|V_MOVE,
 	    "move back word: [count]b",
 /* 143   c */
-	v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF,		"change: [buffer][count]c motion",
+	v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF,	"change: [buffer][count]c[count]motion",
 /* 144   d */
-	v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF,		"delete: [buffer][count]d motion",
+	v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF,
+	    "delete: [buffer][count]d[count]motion",
 /* 145   e */
 	v_worde,	V_CNT|V_MOVE,
 	    "move to end of word: [count]e",
@@ -288,10 +300,10 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_ii,		V_CNT|V_DOT,
 	    "insert before cursor: [count]i",
 /* 152   j */
-	v_down,		V_CNT|V_MOVE,
+	v_down,		V_CNT|V_LMODE|V_MOVE,
 	    "move down by lines: [count]j",
 /* 153   k */
-	v_up,		V_CNT|V_MOVE,
+	v_up,		V_CNT|V_LMODE|V_MOVE,
 	    "move up by lines: [count]k",
 /* 154   l */
 	v_right,	V_CNT|V_MOVE,
@@ -306,7 +318,8 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_io,		V_CNT|V_DOT,
 	    "append after line: [count]o",
 /* 160   p */
-	v_paste,	V_DOT|V_OBUF,		"append from buffer: [buffer]p",
+	v_put,		V_CNT|V_DOT|V_OBUF,
+	    "insert after cursor from buffer: [buffer]P",
 /* 161   q */
 	{},
 /* 162   r */
@@ -314,7 +327,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 163   s */
 	v_subst,	V_CNT|V_DOT|V_OBUF,		"substitute character: [buffer][count]s",
 /* 164   t */
-	v_tfch,		V_CHAR|V_CNT|V_MOVE,
+	v_tch,		V_CHAR|V_CNT|V_MOVE,
 	    "before character in line forward search: [count]t character",
 /* 165   u */
 	v_undo,		0,		"undo: u",
@@ -326,13 +339,15 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 170   x */
 	v_xchar,	V_CNT|V_DOT|V_OBUF,		"delete character: [buffer][count]x",
 /* 171   y */
-	v_yank,		V_CNT|V_MOTION|V_OBUF,		"copy text: [buffer][count]y motion",
+	v_yank,		V_CNT|V_MOTION|V_OBUF,
+	    "copy text: [buffer][count]y[count]motion",
 /* 172   z */
 	m_z, 		V_CNT,		"redraw window: [count1]z[count2]character",
 /* 173   { */
 	m_paragraph,	V_CNT|V_MOVE,		"move back paragraph: [count]{",
 /* 174   | */
-	m_tocol,	V_ABS|V_CNT|V_MOVE,		"move to column: [count]|",
+	v_ncol,		V_ABS|V_CNT|V_MOVE,
+	    "move to column: [count]|",
 /* 175   } */
 	m_paragraph,	V_CNT|V_MOVE,		"move forward paragraph: [count]}",
 /* 176   ~ */
