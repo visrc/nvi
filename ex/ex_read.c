@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.32 1994/07/22 19:21:07 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:21:07 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.33 1994/07/27 11:02:32 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:02:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,7 +107,13 @@ ex_read(sp, ep, cmdp)
 		if (filtercmd(sp, ep,
 		    &cmdp->addr1, NULL, &rm, cmdp->argv[1]->bp, FILTER_READ))
 			return (1);
+
+		/* If in vi mode, move to the first nonblank. */
 		sp->lno = rm.lno;
+		if (IN_VI_MODE(sp)) {
+			sp->cno = 0;
+			(void)nonblank(sp, ep, sp->lno, &sp->cno);
+		}
 		return (0);
 	}
 
