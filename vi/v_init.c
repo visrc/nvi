@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.33 1993/06/01 23:18:50 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:18:50 $";
+static char sccsid[] = "$Id: v_init.c,v 5.34 1993/06/01 23:46:18 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:46:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,6 +74,7 @@ v_init(sp, ep)
 	EXF *ep;
 {
 	size_t len;
+	int needfill;
 
 	/* Make ex display to a special function. */
 #ifdef FWOPEN_NOT_AVAILABLE
@@ -90,23 +91,26 @@ v_init(sp, ep)
 	 * If no starting location specified, vi starts at the beginning.
 	 * Otherwise, check to make sure that the location exists.
 	 */
+	needfill = 0;
 	if (F_ISSET(ep, F_NOSETPOS)) {
 		sp->lno = 1;
 		sp->cno = 0;
 		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
 			return (1);
+		needfill = 1;
 		F_CLR(ep, F_NOSETPOS);
-	} else {
-		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
-			if (sp->lno != 1 || sp->cno != 0) {
-				if (file_lline(sp, ep, &sp->lno))
-					return (1);
-				if (sp->lno == 0)
-					sp->lno = 1;
-				sp->cno = 0;
-			}
-		} else if (sp->cno >= len)
+	} else if (file_gline(sp, ep, sp->lno, &len) == NULL) {
+		if (sp->lno != 1 || sp->cno != 0) {
+			if (file_lline(sp, ep, &sp->lno))
+				return (1);
+			if (sp->lno == 0)
+				sp->lno = 1;
 			sp->cno = 0;
+		}
+		needfill = 1;
+	} else if (sp->cno >= len) {
+		needfill = 1;
+		sp->cno = 0;
 	}
 
 	/*
@@ -118,6 +122,7 @@ v_init(sp, ep)
 	if (F_ISSET(ep, F_ICOMMAND)) {
 		(void)ex_cstring(sp, ep, ep->icommand, strlen(ep->icommand));
 		free(ep->icommand);
+		needfill = 1;
 		F_CLR(ep, F_ICOMMAND);
 	}
 
@@ -125,9 +130,11 @@ v_init(sp, ep)
 	 * Now have the real location the user wants.
 	 * Fill the screen map.
 	 */
-	if (sp->s_fill(sp, ep, sp->lno, P_FILL))
-		return (1);
-	F_SET(sp, S_REDRAW);
+	if (needfill) {
+		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
+			return (1);
+		F_SET(sp, S_REDRAW);
+	}
 
 	/* Display the status line. */
 	return (status(sp, ep, sp->lno, 0));
