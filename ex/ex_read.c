@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.8 1995/09/29 16:55:14 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:55:14 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.9 1995/09/29 16:56:13 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:56:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,11 +47,14 @@ ex_read(sp, cmdp)
 	EX_PRIVATE *exp;
 	FILE *fp;
 	FREF *frp;
+	GS *gp;
 	MARK rm;
 	recno_t nlines;
 	size_t arglen, blen, len;
 	int argc, nf, rval;
 	char *p;
+
+	gp = sp->gp;
 
 	/*
 	 * 0 args: read the current pathname.
@@ -114,7 +117,7 @@ ex_read(sp, cmdp)
 			p[0] = '!';
 			memmove(p + 1,
 			    cmdp->argv[argc]->bp, cmdp->argv[argc]->len + 1);
-			(void)sp->gp->scr_busy(sp, p, 1);
+			(void)gp->scr_busy(sp, p, 1);
 			FREE_SPACE(sp, p, blen);
 		}
 
@@ -174,7 +177,7 @@ ex_read(sp, cmdp)
 				F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
 
 				/* Notify the screen. */
-				(void)sp->gp->scr_rename(sp);
+				(void)gp->scr_rename(sp);
 			} else
 				set_alt_name(sp, name);
 			break;
@@ -215,9 +218,9 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		msgq(sp, M_ERR, "146|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	(void)sp->gp->scr_busy(sp, "147|Reading...", 1);
+	(void)gp->scr_busy(sp, "147|Reading...", 1);
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
-	(void)sp->gp->scr_busy(sp, NULL, 0);
+	(void)gp->scr_busy(sp, NULL, 0);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read
