@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.20 1992/11/02 22:09:57 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:09:57 $";
+static char sccsid[] = "$Id: cut.c,v 5.21 1992/11/06 18:20:07 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:20:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,7 +44,6 @@ cut(buffer, fm, tm, lmode)
 {
 	CB *cb;
 	TEXT *tp;
-	MARK m;
 	size_t len;
 	recno_t lno;
 	int append;
