@@ -66,8 +66,40 @@ vi_new_window (IPVI *ipvi, IPVIWIN **ipviwinp)
 	MALLOC_GOTO(NULL, ipviwin, IPVIWIN*, sizeof(IPVIWIN));
 	memset(ipviwin, 0, sizeof(IPVIWIN));
 
+	if (0) {
 	ipviwin->ifd = ipvi->ifd;
 	ipviwin->ofd = ipvi->ofd;
+	} else {
+	int sockets[2];
+	struct msghdr   mh;
+	IPCMSGHDR	    ch;
+	char	    dummy;
+	struct iovec    iov;
+
+	socketpair(AF_LOCAL, SOCK_STREAM, 0, sockets);
+
+	mh.msg_namelen = 0;
+	mh.msg_iovlen = 1;
+	mh.msg_iov = &iov;
+	mh.msg_controllen = sizeof(ch);
+	mh.msg_control = (void *)&ch;
+
+	iov.iov_len = 1;
+	iov.iov_base = &dummy;
+
+	ch.header.cmsg_level = SOL_SOCKET;
+	ch.header.cmsg_type = SCM_RIGHTS;
+	ch.header.cmsg_len = sizeof(ch);
+
+	*(int *)CMSG_DATA(&ch.header) = sockets[1];
+	sendmsg(ipvi->ofd, &mh, 0);
+	*(int *)CMSG_DATA(&ch.header) = sockets[1];
+	sendmsg(ipvi->ofd, &mh, 0);
+	close(sockets[1]);
+
+	ipviwin->ifd = sockets[0];
+	ipviwin->ofd = sockets[0];
+	}
 
 	*ipviwinp = ipviwin;
 

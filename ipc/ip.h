@@ -4,11 +4,17 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.23 2000/06/28 20:20:38 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:38 $
+ *	$Id: ip.h,v 8.24 2000/07/01 14:09:34 skimo Exp $ (Berkeley) $Date: 2000/07/01 14:09:34 $
  */
 
-extern int vi_ifd;		/* Input file descriptor. */
-extern int vi_ofd;		/* Output file descriptor. */
+#include <sys/socket.h>
+
+typedef struct ipcmsghdr {
+	struct	cmsghdr	header;
+	int	__room_for_fd;
+} IPCMSGHDR;
+
+struct _ip_vi_win;
 
 typedef struct _ip_private {
 	int	 i_fd;		/* Input file descriptor. */

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.14 2000/06/30 20:11:28 skimo Exp $ (Berkeley) $Date: 2000/06/30 20:11:28 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.15 2000/07/01 14:09:33 skimo Exp $ (Berkeley) $Date: 2000/07/01 14:09:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,7 +23,6 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.14 2000/06/30 20:11:28 skimo Ex
 #include <unistd.h>
 
 #include <sys/uio.h>
-#include <pthread.h>
 
 #include "../common/common.h"
 #include "../ipc/ip.h"
@@ -35,13 +34,13 @@ static void	   ip_func_std __P((GS *));
 static IP_PRIVATE *ip_init __P((WIN *wp, int i_fd, int o_fd, int argc, char *argv[]));
 static void	   perr __P((char *, char *));
 static int	   get_fds __P((char *ip_arg, int *i_fd, int *o_fd));
+static int  get_connection __P((WIN *wp, int main_ifd, int main_ofd, 
+				int *i_fd, int *o_fd, int can_pass));
 static void run_editor __P((void * vp));
 
 /*
  * ip_main --
  *      This is the main loop for the vi-as-library editor.
- *
- * PUBLIC: int ip_main __P((int, char *[], GS *, char *));
  */
 int
 main(argc, argv)
@@ -91,9 +90,12 @@ main(argc, argv)
 		*p_av++ = *t_av++;
 	}
 
-	if (get_fds(ip_arg, &i_fd, &o_fd))
+	if (get_fds(ip_arg, &main_ifd, &main_ofd))
 		return 1;
 
+	wp = NULL;
+
+	while (get_connection(wp, main_ifd, main_ofd, &i_fd, &o_fd, 1) == 0) {
 		/* Create new window */
 		wp = gs_new_win(gp);
 
@@ -102,6 +104,7 @@ main(argc, argv)
 		return (1);
 
 	run_editor((void *)wp);
+	}
 
 	/* Free the global and IP private areas. */
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
@@ -212,6 +215,43 @@ usage:		ip_usage();
 	}
 
 	return 0;
+}
+
+static int
+get_connection(WIN *wp, int main_ifd, int main_ofd, 
+	int *i_fd, int *o_fd, int can_pass)
+{
+    if (!can_pass) {
+	if (wp == NULL) {		    /* First call */
+	    *i_fd = main_ifd;
+	    *o_fd = main_ofd;
+	} else {
+	    return 1;
+	}
+    } else {
+	struct msghdr   mh;
+	IPCMSGHDR	    ch;
+	char	    dummy;
+	struct iovec    iov;
+
+	mh.msg_namelen = 0;
+	mh.msg_iovlen = 1;
+	mh.msg_iov = &iov;
+	mh.msg_controllen = sizeof(ch);
+	mh.msg_control = (void *)&ch;
+
+	iov.iov_len = 1;
+	iov.iov_base = &dummy;
+
+	if (recvmsg(main_ifd, &mh, 0) != 1)
+	    return 1;
+	*i_fd = *(int *)CMSG_DATA(&ch.header);
+	if (recvmsg(main_ifd, &mh, 0) != 1)
+	    return 1;
+	*o_fd = *(int *)CMSG_DATA(&ch.header);
+    }
+
+    return 0;
 }
 
 /*
