@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.23 1993/11/03 17:15:36 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:15:36 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.24 1993/11/04 12:18:43 bostic Exp $ (Berkeley) $Date: 1993/11/04 12:18:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,9 @@ static char sccsid[] = "$Id: vs_smap.c,v 8.23 1993/11/03 17:15:36 bostic Exp $ (
 
 static int	svi_deleteln __P((SCR *, int));
 static int	svi_insertln __P((SCR *, int));
+static int	svi_sm_delete __P((SCR *, EXF *, recno_t));
+static int	svi_sm_insert __P((SCR *, EXF *, recno_t));
+static int	svi_sm_reset __P((SCR *, EXF *, recno_t));
 
 /*
  * svi_change --
@@ -232,7 +235,7 @@ err:	HMAP->lno = 1;
  * svi_sm_delete --
  *	Delete a line out of the SMAP.
  */
-int
+static int
 svi_sm_delete(sp, ep, lno)
 	SCR *sp;
 	EXF *ep;
@@ -279,7 +282,7 @@ svi_sm_delete(sp, ep, lno)
  * svi_sm_insert --
  *	Insert a line into the SMAP.
  */
-int
+static int
 svi_sm_insert(sp, ep, lno)
 	SCR *sp;
 	EXF *ep;
@@ -332,7 +335,7 @@ svi_sm_insert(sp, ep, lno)
  * svi_sm_reset --
  *	Reset a line in the SMAP.
  */
-int
+static int
 svi_sm_reset(sp, ep, lno)
 	SCR *sp;
 	EXF *ep;
@@ -440,6 +443,13 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	/* Set the default return position. */
 	rp->lno = sp->lno;
 	rp->cno = sp->cno;
+
+	/*
+	 * Invalidate the cursor.  The line is probably going to change,
+	 * but if cursor_move isn't set it may not.  In any case, this
+	 * routine moves the cursor to draw things.
+	 */
+	F_SET(SVP(sp), SVI_CUR_INVALID);
 
 	/*
 	 * There are two forms of this command, one where the cursor tries to
@@ -631,6 +641,13 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	/* Set the default return position. */
 	rp->lno = sp->lno;
 	rp->cno = sp->cno;
+
+	/*
+	 * Invalidate the cursor.  The line is probably going to change,
+	 * but if cursor_move isn't set it may not.  In any case, this
+	 * routine moves the cursor to draw things.
+	 */
+	F_SET(SVP(sp), SVI_CUR_INVALID);
 
 	/*
 	 * There are two forms of this command, one where the cursor tries to
