@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.20 1996/02/27 19:31:24 bostic Exp $ (Berkeley) $Date: 1996/02/27 19:31:24 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.21 1996/02/29 19:03:34 bostic Exp $ (Berkeley) $Date: 1996/02/29 19:03:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,9 +252,7 @@ lcmp(a, b)
 /*
  * tigetstr --
  *
- * PUBLIC: #ifndef HAVE_CURSES_TIGETSTR
  * PUBLIC: char *tigetstr __P((char *));
- * PUBLIC: #endif
  */
 char *
 tigetstr(name)
@@ -284,9 +282,7 @@ tigetstr(name)
 /*
  * tigetnum --
  *
- * PUBLIC: #ifndef HAVE_CURSES_TIGETSTR
  * PUBLIC: int tigetnum __P((char *));
- * PUBLIC: #endif
  */
 int
 tigetnum(name)
