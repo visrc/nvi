@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.17 1993/05/05 22:00:45 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:00:45 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.18 1993/05/05 23:47:42 bostic Exp $ (Berkeley) $Date: 1993/05/05 23:47:42 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -264,7 +264,7 @@ svi_sm_insert(sp, ep, lno)
 	cnt1 = svi_screens(sp, ep, lno, NULL);
 
 	/*
-	 * If the screen only contains one line, or, if the line was the
+	 * If the screen only contains one line, or, if the line is the
 	 * entire screen, this gets fairly exciting.  Skip the fun.  The
 	 * fill may not be entirely accurate, i.e. we may be painting the
 	 * screen with something not even close to the cursor.  The refresh
@@ -278,6 +278,14 @@ svi_sm_insert(sp, ep, lno)
 		F_SET(sp, S_REDRAW);
 		return (svi_sm_fill(sp, ep, lno, P_TOP));
 	}
+
+	/*
+	 * The lines left in the screen override the number of screen
+	 * lines in the inserted line.
+	 */
+	cnt2 = (TMAP - p) + 1;
+	if (cnt1 > cnt2)
+		cnt1 = cnt2;
 
 	/* Push down that many lines. */
 	MOVE(sp, p - HMAP, 0);
