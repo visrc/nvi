@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.17 1994/02/26 17:19:59 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:59 $";
+static char sccsid[] = "$Id: v_search.c,v 8.18 1994/02/28 17:18:45 bostic Exp $ (Berkeley) $Date: 1994/02/28 17:18:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,6 +53,7 @@ v_searchN(sp, ep, vp)
 		dir = FORWARD;
 		break;
 	case FORWARD:
+	default:			/* NOTSET handled in search(). */
 		dir = BACKWARD;
 		break;
 	}
@@ -69,7 +70,6 @@ v_searchb(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
-	int flags;
 	char *ptrn;
 
 	if (F_ISSET(vp, VC_ISDOT))
@@ -94,7 +94,6 @@ v_searchf(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
-	int flags;
 	char *ptrn;
 
 	if (F_ISSET(vp, VC_ISDOT))
@@ -120,7 +119,6 @@ v_searchw(sp, ep, vp)
 	VICMDARG *vp;
 {
 	size_t blen, len;
-	u_int flags;
 	int rval;
 	char *bp;
 
