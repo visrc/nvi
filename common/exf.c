@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.71 1994/03/23 17:47:23 bostic Exp $ (Berkeley) $Date: 1994/03/23 17:47:23 $";
+static char sccsid[] = "$Id: exf.c,v 8.72 1994/03/25 12:41:29 bostic Exp $ (Berkeley) $Date: 1994/03/25 12:41:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -254,17 +254,15 @@ file_init(sp, frp, rcv_name, force)
 	oinfo.psize = psize;
 	oinfo.flags = F_ISSET(sp->gp, G_SNAPSHOT) ? R_SNAPSHOT : 0;
 	if (rcv_name == NULL) {
-		if (rcv_tmp(sp, ep, FILENAME(frp)))
-			msgq(sp, M_ERR,
-		    "Modifications not recoverable if the system crashes.");
-		else
+		if (!rcv_tmp(sp, ep, FILENAME(frp)))
 			oinfo.bfname = ep->rcv_path;
-	} else if ((ep->rcv_path = strdup(rcv_name)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		goto err;
 	} else {
+		if ((ep->rcv_path = strdup(rcv_name)) == NULL) {
+			msgq(sp, M_SYSERR, NULL);
+			goto err;
+		}
 		oinfo.bfname = ep->rcv_path;
-		F_SET(ep, F_MODIFIED | F_RCV_ON);
+		F_SET(ep, F_MODIFIED);
 	}
 
 	/* Open a db structure. */

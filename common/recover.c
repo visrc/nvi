@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.50 1994/03/23 20:24:26 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:24:26 $";
+static char sccsid[] = "$Id: recover.c,v 8.51 1994/03/25 12:41:44 bostic Exp $ (Berkeley) $Date: 1994/03/25 12:41:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -104,7 +104,7 @@ rcv_tmp(sp, ep, name)
 	if (stat(dp, &sb)) {
 		if (errno != ENOENT || mkdir(dp, 0)) {
 			msgq(sp, M_ERR, "Error: %s: %s", dp, strerror(errno));
-			return (1);
+			goto err;
 		}
 		(void)chmod(dp, S_IRWXU | S_IRWXG | S_IRWXO | S_ISVTX);
 	}
@@ -114,7 +114,7 @@ rcv_tmp(sp, ep, name)
 		if (*p == '\n') {
 			msgq(sp, M_ERR,
 		    "Files with newlines in the name are unrecoverable.");
-			return (1);
+			goto err;
 		}
 
 	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", dp);
@@ -122,12 +122,12 @@ rcv_tmp(sp, ep, name)
 	/*
 	 * !!!
 	 * We depend on mkstemp(3) setting the permissions correctly.
-	 * GP's, we do it ourselves, to keep the window as small as
-	 * possible.
+	 * For GP's, we do it ourselves, to keep the window as small
+	 * as possible.
 	 */
 	if ((fd = mkstemp(path)) == -1) {
 		msgq(sp, M_ERR, "Error: %s: %s", dp, strerror(errno));
-		return (1);
+		goto err;
 	}
 	(void)chmod(path, S_IRUSR | S_IWUSR);
 	(void)close(fd);
@@ -135,6 +135,8 @@ rcv_tmp(sp, ep, name)
 	if ((ep->rcv_path = strdup(path)) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		(void)unlink(path);
+err:		msgq(sp, M_ERR,
+		    "Modifications not recoverable if the session fails.");
 		return (1);
 	}
 
@@ -155,12 +157,17 @@ rcv_init(sp, ep)
 	recno_t lno;
 	int btear;
 
-	F_CLR(ep, F_FIRSTMODIFY | F_RCV_ON);
+	/* Only do this once. */
+	F_CLR(ep, F_FIRSTMODIFY);
 
-	/*
-	 * If not already recoverying a file, build a file to mail
-	 * to the user.
-	 */
+	/* If we already know the file isn't recoverable, we're done. */
+	if (!F_ISSET(ep, F_RCV_ON))
+		return (0);
+
+	/* Turn off recoverability until we figure out if this will work. */
+	F_CLR(ep, F_RCV_ON);
+
+	/* If not recovering a file, build a file to mail to the user. */
 	if (ep->rcv_mpath == NULL && rcv_mailfile(sp, ep))
 		goto err;
 
@@ -169,7 +176,6 @@ rcv_init(sp, ep)
 		goto err;
 
 	/* Turn on a busy message, and sync it to backing store. */
-
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 :
 	    !busy_on(sp, "Copying file for recovery...");
 	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
@@ -183,7 +189,8 @@ rcv_init(sp, ep)
 		busy_off(sp);
 
 	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp, ep)) {
-err:		msgq(sp, M_ERR, "Recovery after system crash not possible.");
+err:		msgq(sp, M_ERR,
+		    "Modifications not recoverable if the session fails.");
 		return (1);
 	}
 
@@ -593,5 +600,8 @@ next:			(void)fclose(fp);
 		(void)fclose(sv_fp);
 
 	sp->ep->rcv_mpath = recp;
+
+	/* We believe the file is recoverable. */
+	F_SET(sp->ep, F_RCV_ON);
 	return (0);
 }
