@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.38 1994/03/08 19:39:59 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:59 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.39 1994/03/11 17:16:29 bostic Exp $ (Berkeley) $Date: 1994/03/11 17:16:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,8 +176,8 @@ EXCMDLIST const cmds[] = {
 /* C_GLOBAL */
 	{"global",	ex_global,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "!s",
-	    "[line [,line]] g[lobal][!] [;/]pattern[;/] [commands]",
-	    "execute a global command on lines matching a pattern"},
+	    "[line [,line]] g[lobal][!] [;/]RE[;/] [commands]",
+	    "execute a global command on lines matching an RE"},
 /* C_HELP */
 	{"help",	ex_help,	E_NOGLOBAL|E_NORC,
 	    "",
@@ -236,7 +236,7 @@ EXCMDLIST const cmds[] = {
 /* C_OPEN */
 	{"open",	ex_open,	E_ADDR1,
 	    "s",
-	    "[line] o[pen] [/pattern/] [flags]",
+	    "[line] o[pen] [/RE/] [flags]",
 	    "enter \"open\" mode (not implemented)"},
 /* C_PRINT */
 	{"print",	ex_pr,		E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
@@ -281,8 +281,8 @@ EXCMDLIST const cmds[] = {
 /* C_SUBSTITUTE */
 	{"substitute",	ex_substitute,	E_ADDR2|E_NORC,
 	    "s",
-"[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]",
-	    "substitute on lines matching a pattern"},
+"[line [,line]] s[ubstitute] [[/;]RE[/;]/repl[/;] [cgr] [count] [#lp]]",
+	    "substitute on lines matching an RE"},
 /* C_SCRIPT */
 	{"script",	ex_script,	E_NOGLOBAL|E_NORC,
 	    "!f1o",
@@ -361,8 +361,8 @@ EXCMDLIST const cmds[] = {
 /* C_VGLOBAL */
 	{"vglobal",	ex_vglobal,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "s", 
-	    "[line [,line]] v[global] [;/]pattern[;/] [commands]",
-	    "execute a global command on lines NOT matching a pattern"},
+	    "[line [,line]] v[global] [;/]RE[;/] [commands]",
+	    "execute a global command on lines NOT matching an RE"},
 /* C_VERSION */
 	{"version",	ex_version,	E_NOGLOBAL|E_NORC,
 	    "", 
