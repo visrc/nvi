@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.47 1993/02/28 14:19:35 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:19:35 $";
+static char sccsid[] = "$Id: exf.c,v 5.48 1993/03/01 12:44:43 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:44:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -401,18 +401,22 @@ file_switch(ep, force)
 	 * back into the "to" file.  There's always a valid EXF structure,
 	 * and we don't have to figure out if we're reinitializing anything.
 	 */
-	if (ep->enext == NULL)
-		sp = file_start(ep->enext);
-	else {
+	if (ep->enext == NULL) {
+		sp = file_start(NULL);
+		if (sp == NULL)
+			return (NULL);
+	} else if (ep->enext->db == NULL) {
 		tmp = *ep->enext;
 		sp = file_start(&tmp);
-	}
-	if (sp == NULL)
-		return (NULL);
+		if (sp == NULL)
+			return (NULL);
+	} else
+		sp = ep->enext;
 
 	/* Copy what we need from the last file. */
-	sp->scrp = ep->scrp;
 	sp->msgp = ep->msgp;
+	SCRP(sp)->lines = SCRP(ep)->lines;
+	SCRP(sp)->cols = SCRP(ep)->cols;
 	sp->flags |= ep->flags & F_COPYMASK;
 
 	/* Link the edit chain. */
@@ -448,5 +452,6 @@ exf_def(ep)
 	ep->c_lno = OOBLNO;
 	ep->stdfp = stdout;
 	ep->searchdir = NOTSET;
+	ep->msg = ex_msg;
 	FF_SET(ep, F_NEWSESSION);
 }
