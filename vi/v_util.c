@@ -6,14 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.12 1992/12/20 21:12:45 bostic Exp $ (Berkeley) $Date: 1992/12/20 21:12:45 $";
+static char sccsid[] = "$Id: v_util.c,v 5.13 1992/12/27 19:43:38 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:43:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <sys/ioctl.h>
 
 #include <ctype.h>
 #include <curses.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -129,4 +131,44 @@ v_msgflush(ep)
 	refresh();
 	msgcnt = 0;
 	return (0);
+}
+
+/*
+ * onwinch --
+ *	Handle SIGWINCH.
+ */
+void
+onwinch(signo)
+	int signo;
+{
+	struct winsize win;
+	char *argv[2], sbuf[100];
+
+	if (mode != MODE_VI)
+		return;
+
+	/*
+	 * Try TIOCGWINSZ.  If it fails, ignore the signal.  Otherwise,
+	 * set the row/column options.  No error messages, because it's
+	 * not worth making msg reentrant.
+	 */
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1)
+		return;
+
+	argv[0] = sbuf;
+	argv[1] = NULL;
+
+	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", win.ws_row);
+	if (opts_set(argv))
+		return;
+	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
+	if (opts_set(argv))
+		return;
+
+	/* Do the resize if waiting, otherwise just schedule it. */
+	FF_SET(curf, F_RESIZE);
+	if (FF_ISSET(curf, F_READING)) {
+		curf->scr_update(curf);
+		refresh();
+	}
 }
