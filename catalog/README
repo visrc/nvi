@@ -1,4 +1,4 @@
-#	$Id: README,v 8.1 1994/08/31 13:27:41 bostic Exp $ (Berkeley) $Date: 1994/08/31 13:27:41 $
+#	$Id: README,v 8.2 1994/08/31 19:50:49 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:50:49 $
 
 Generally, all non-system error and informational messages in nvi are
 catalog messages, i.e. they can be tailored to a specific langauge.
@@ -131,7 +131,13 @@ Duplicate messages are only interesting if a message appears often enough
 that it's worth creating a routine to display it.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-To select a catalog when running nvi, set the O_MESSAGES variable to
-the full pathname of the catalog that you want to use.  If any messages
-are not found in this catalog, the backup text (English) will be used
-instead.
+To select a catalog when running nvi, set the "msgcat" option.  If the
+value of this option ends with a '/', it is treated as the name of a
+directory that contains a message catalog "vi_XXXX", where XXXX is the
+value of the LANG environmental variable, if it's set, or the value of
+the LC_MESSAGES environmental variable if it's not.  If neither of those
+environmental variables are set, or if the option doesn't end in a '/',
+the option is treated as the full path name of the message catalog to use.
+
+If any messages are missing from the catalog, the backup text (English)
+is used instead.
