@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.89 1996/12/05 12:26:53 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:26:53 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.90 1996/12/11 13:06:32 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:06:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -579,7 +579,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 
 	/* Abbreviation overflow check.  See comment in txt_abbrev(). */
 #define	MAX_ABBREVIATION_EXPANSION	256
-	if (F_ISSET(&evp->e_ch, CH_ABBREVIATED)) {
+	if (FL_ISSET(evp->e_flags, CH_ABBREVIATED)) {
 		if (++abcnt > MAX_ABBREVIATION_EXPANSION) {
 			if (v_event_flush(sp, CH_ABBREVIATED))
 				msgq(sp, M_ERR,
@@ -610,7 +610,7 @@ replay:	if (LF_ISSET(TXT_REPLAY))
 	}
 
 	/* If quoted by someone else, simply insert the character. */
-	if (F_ISSET(&evp->e_ch, CH_QUOTED))
+	if (FL_ISSET(evp->e_flags, CH_QUOTED))
 		goto insq_ch;
 
 	/*
