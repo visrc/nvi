@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.38 1993/12/03 15:21:50 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:21:50 $
+ *	$Id: ex.h,v 8.39 1993/12/19 12:36:45 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:36:45 $
  */
 
 /* Ex command structure. */
@@ -124,6 +124,41 @@ typedef struct _ex_private {
 		}							\
 }
 
+/*
+ * Macros to set and restore the terminal values.
+ *
+ * The old terminal values almost certainly turn on VINTR, VQUIT and VSUSP.
+ * We don't want to interrupt the parent(s), so we ignore VINTR.  VQUIT is
+ * ignored by main() because nvi never wants to catch it.  A VSUSP handler
+ * have been installed by the screen code.
+ */
+#define	EX_RESTORE_TERM(sp, isig, act, oact, term) {			\
+	(act).sa_handler = SIG_IGN;					\
+	sigemptyset(&(act).sa_mask);					\
+	(act).sa_flags = 0;						\
+	if ((isig) = !sigaction(SIGINT, &(act), &(oact))) {		\
+		if (tcgetattr(STDIN_FILENO, &(term))) {			\
+			msgq(sp, M_SYSERR, "tcgetattr");		\
+			goto err;					\
+		}							\
+		if (tcsetattr(STDIN_FILENO,				\
+		    TCSANOW | TCSASOFT, &sp->gp->original_termios)) {	\
+			msgq(sp, M_SYSERR, "tcsetattr");		\
+			goto err;					\
+		}							\
+	}								\
+}
+
+#define	EX_SET_TERM(sp, oact, term) {					\
+	if (sigaction(SIGINT, &(oact), NULL)) {				\
+		msgq(sp, M_SYSERR, "signal");				\
+		rval = 1;						\
+	}								\
+	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &(term))) {	\
+		msgq(sp, M_SYSERR, "tcsetattr");			\
+		rval = 1;						\
+	}								\
+}
 /*
  * Filter actions:
  *
