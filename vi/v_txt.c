@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.51 1993/11/19 11:53:42 bostic Exp $ (Berkeley) $Date: 1993/11/19 11:53:42 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.52 1993/11/19 12:43:05 bostic Exp $ (Berkeley) $Date: 1993/11/19 12:43:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -171,7 +171,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * screen cursor as necessary.
 	 */
 	if (LF_ISSET(TXT_AUTOINDENT) && ai_line != OOBLNO) {
-		if (txt_auto(sp, ep, ai_line, NULL, tp))
+		if (txt_auto(sp, ep, ai_line, NULL, 0, tp))
 			return (1);
 		sp->cno = tp->ai;
 	} else {
@@ -378,16 +378,23 @@ next_ch:	if (replay)
 			 * Resolve autoindented characters for the old line.
 			 * Reset the autoindent line value.  0^D keeps the ai
 			 * line from changing, ^D changes the level, even if
-			 * there are no characters in the old line.
+			 * there are no characters in the old line.  Note,
+			 * if using the current tp structure, use the cursor
+			 * as the length, the user may have erased autoindent
+			 * characters.
 			 */
 			if (LF_ISSET(TXT_AUTOINDENT)) {
 				txt_ai_resolve(sp, tp);
 
-				if (txt_auto(sp, ep, OOBLNO,
-				    carat_st == C_NOCHANGE ? &ait : tp, ntp))
-					ERR;
-				if (carat_st == C_NOCHANGE)
+				if (carat_st == C_NOCHANGE) {
+					if (txt_auto(sp, ep,
+					    OOBLNO, &ait, ait.ai, ntp))
+						ERR;
 					FREE_SPACE(sp, ait.lb, ait.lb_len);
+				} else
+					if (txt_auto(sp, ep,
+					    OOBLNO, tp, sp->cno, ntp))
+						ERR;
 				carat_st = C_NOTSET;
 			}
 
@@ -868,12 +875,13 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	 * silently only implement the last of * the abbreviations.)
 	 *
 	 * XXX
-	 * There is almost certainly an infinite loop here, if a abbreviates
-	 * b and b abbreviates a.  I think that the correct fix is to tag
-	 * each character with the number of times it has been abbreviated,
-	 * and resist any further abbreviations.  This solves recursive maps
-	 * as well, among other things, but requires a major rework of what
-	 * an input character looks like.
+	 * There obvious infinite loop, if a abbreviates to b and b to a, is
+	 * "fixed" by the looping code in the terminal read routines.  It's
+	 * an ugly fix, though because it forces the user out of input mode
+	 * when it returns an error, flushing the queued characters.  My guess
+	 * is that the correct fix is to tag each character with the number of
+	 * times it has been abbreviated, and permit only a single abbreviation.
+	 * This requires a major rework of what an input character looks like.
 	 */
 	ch = pushc;
 	if (term_push(sp, sp->gp->tty, &ch, 1))
@@ -976,22 +984,21 @@ txt_ai_resolve(sp, tp)
  *	retrieve the line.
  */
 int
-txt_auto(sp, ep, lno, aitp, tp)
+txt_auto(sp, ep, lno, aitp, len, tp)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
+	size_t len;
 	TEXT *aitp, *tp;
 {
-	size_t len, nlen;
+	size_t nlen;
 	char *p, *t;
 	
 	if (aitp == NULL) {
 		if ((p = t = file_gline(sp, ep, lno, &len)) == NULL)
 			return (0);
-	} else {
-		len = aitp->len ? aitp->len : aitp->ai;
+	} else
 		p = t = aitp->lb;
-	}
 	for (nlen = 0; len; ++p) {
 		if (!isblank(*p))
 			break;
