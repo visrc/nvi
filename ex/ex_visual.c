@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 10.9 1995/11/10 10:21:28 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:28 $";
+static char sccsid[] = "$Id: ex_visual.c,v 10.10 1995/11/13 08:26:36 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:26:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,11 +146,8 @@ nopush:	/*
 		 *
 		 * Reset the screen.
 		 */
-		if (sp->gp->scr_screen(sp, S_EX))
+		if (ex_init(sp))
 			return (1);
-		ex_e_resize(sp);
-		F_CLR(sp, S_VI);
-		F_SET(sp, S_EX | S_SCR_EX);
 
 		/* Move out of the vi screen. */
 		(void)ex_puts(sp, "\n");

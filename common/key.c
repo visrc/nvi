@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.17 1995/11/06 19:26:27 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:26:27 $";
+static char sccsid[] = "$Id: key.c,v 10.18 1995/11/13 08:25:29 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:25:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -735,6 +735,7 @@ v_resize(sp, evp)
 	EVENT *evp;
 {
 	ARGS *argv[2], a, b;
+	int rval;
 	char b1[1024];
 
 	a.bp = b1;
@@ -743,15 +744,27 @@ v_resize(sp, evp)
 	argv[0] = &a;
 	argv[1] = &b;
 
+	/*
+	 * XXX
+	 * Setting the lines/columns normally results in resize events.
+	 * Turn the screen off now, so that doesn't happen.
+	 */
+	F_CLR(sp, S_SCR_EX | S_SCR_VI);
+
 	(void)snprintf(b1, sizeof(b1), "lines=%lu", (u_long)evp->e_lno);
 	a.len = strlen(b1);
 	if (opts_set(sp, argv, 1, NULL))
-		return (1);
+		goto err;
 	(void)snprintf(b1, sizeof(b1), "columns=%lu", (u_long)evp->e_cno);
 	a.len = strlen(b1);
 	if (opts_set(sp, argv, 1, NULL))
-		return (1);
-	return (0);
+		goto err;
+
+	rval = 0;
+	if (0)
+err:		rval = 1;
+
+	return (rval);
 }
 
 /*

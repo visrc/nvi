@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.31 1995/11/10 10:16:25 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:16:25 $";
+static char sccsid[] = "$Id: ex.c,v 10.32 1995/11/13 08:26:26 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:26:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,10 +61,8 @@ ex(spp)
 	exp = EXP(sp);
 
 	/* Start the ex screen. */
-	if (gp->scr_screen(sp, S_EX))
+	if (ex_init(sp))
 		return (1);
-	ex_e_resize(sp);
-	F_SET(sp, S_EX | S_SCR_EX);
 
 	/* Flush any saved messages. */
 	while ((mp = gp->msgq.lh_first) != NULL) {

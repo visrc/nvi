@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.40 1995/11/11 12:34:16 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:34:16 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.41 1995/11/13 08:26:49 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:26:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -244,14 +244,13 @@ vs_msg(sp, mtype, line, len)
 	 * so previous opinions should be ignored.
 	 */
 	if (F_ISSET(sp, S_EX | S_SCR_EXWROTE)) {
-		if (!F_ISSET(sp, S_SCR_EX)) {
-			if (sp->gp->scr_screen(sp, S_EX))
-				return;
-			if (!F_ISSET(sp, S_SCR_EXWROTE)) {
-				ex_e_resize(sp);
-				F_SET(sp, S_EX | S_SCR_EX);
-			}
-		}
+		if (!F_ISSET(sp, S_SCR_EX))
+			if (F_ISSET(sp, S_SCR_EXWROTE)) {
+				if (sp->gp->scr_screen(sp, S_EX))
+					return;
+			} else
+				if (ex_init(sp))
+					return;
 
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 1);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.15 1995/11/05 13:08:05 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:08:05 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.16 1995/11/13 08:26:35 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,17 +131,24 @@ ex_ncheck(sp, force)
 }
 
 /*
- * ex_e_resize --
- *	Resize event handler for ex.
+ * ex_init --
+ *	Init the screen for ex.
  *
- * PUBLIC: void ex_e_resize __P((SCR *));
+ * PUBLIC: int ex_init __P((SCR *));
  */
-void
-ex_e_resize(sp)
+int
+ex_init(sp)
 	SCR *sp;
 {
+	if (sp->gp->scr_screen(sp, S_EX))
+		return (1);
+
 	sp->rows = O_VAL(sp, O_LINES);
 	sp->cols = O_VAL(sp, O_COLUMNS);
+
+	F_CLR(sp, S_VI);
+	F_SET(sp, S_EX | S_SCR_EX);
+	return (0);
 }
 
 /*
