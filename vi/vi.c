@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.17 1995/10/04 12:38:23 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:38:23 $";
+static char sccsid[] = "$Id: vi.c,v 10.18 1995/10/04 16:16:23 bostic Exp $ (Berkeley) $Date: 1995/10/04 16:16:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,15 +81,11 @@ vi(spp)
 	/* Reset strange attraction. */
 	F_SET(vp, VM_RCM_SET);
 
-	/* Initialize the vi screen. */
-	if (v_init(sp))
-		return (1);
-
-	/*
-	 * Refresh the screen so first vs_resolve works.  A side-effect of
-	 * refreshing the screen is that we can now display messages.
+	/* Initialize and refresh the vi screen.   The refresh is necessary
+	 * so the first vs_resolve() works.  (A side-effect of screen refresh
+	 * is that we can display messages.)
 	 */
-	if (vs_refresh(sp))
+	if (v_init(sp) || vs_refresh(sp))
 		return (1);
 
 	for (vip = VIP(sp), rval = 0;;) {
@@ -103,27 +99,6 @@ vi(spp)
 			F_CLR(vip, VIP_S_REFRESH);
 		else if (vs_refresh(sp))
 			goto ret;
-
-		/* If the last command switched screens, update. */
-		if (F_ISSET(sp, S_SSWITCH)) {
-			F_CLR(sp, S_SSWITCH);
-
-			/* Display the current screen's status message. */
-			F_SET(sp, S_STATUS);
-			if (vs_resolve(sp))
-				goto ret;
-
-			/* Switch screens. */
-			sp = sp->nextdisp;
-			vip = VIP(sp);
-			F_SET(vip, VIP_CUR_INVALID);
-
-			/* Display the new screen's status message. */
-			F_SET(sp, S_STATUS);
-			if (vs_refresh(sp))
-				goto ret;
-			continue;
-		}
 
 		/* Set the new favorite position. */
 		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
@@ -270,12 +245,15 @@ gc_event:
 				goto ret;
 			if (vs_discard(sp, &next))
 				goto ret;
+			if (next == NULL && vs_swap(sp, &next, NULL))
+				goto ret;
 			*spp = next;
 			if (screen_end(sp))
 				goto ret;
 			if (next == NULL)
 				break;
 
+			/* Switch, and display a status line. */
 			sp = next;
 			vip = VIP(sp);
 			F_SET(vip, VIP_CUR_INVALID);
@@ -380,6 +358,27 @@ intr:			CLR_INTERRUPT(sp);
 				    "231|Interrupted: mapped keys discarded");
 			else
 				msgq(sp, M_ERR, "236|Interrupted");
+		}
+
+		/* If the last command switched screens, update. */
+		if (F_ISSET(sp, S_SSWITCH)) {
+			F_CLR(sp, S_SSWITCH);
+
+			/*
+			 * If the current screen is still displayed, it will
+			 * want a new status line.
+			 */
+			if (F_ISSET(sp, S_STATUS) && vs_resolve(sp))
+				goto ret;
+
+			/* Switch screens. */
+			sp = sp->nextdisp;
+			vip = VIP(sp);
+			F_SET(vip, VIP_CUR_INVALID);
+
+			/* Refresh so we can display messages. */
+			if (vs_refresh(sp))
+				return (1);
 		}
 
 		/* If leaving vi, return to the main editor loop. */

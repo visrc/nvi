@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 10.5 1995/09/21 12:08:36 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:36 $";
+static char sccsid[] = "$Id: v_screen.c,v 10.6 1995/10/04 16:16:23 bostic Exp $ (Berkeley) $Date: 1995/10/04 16:16:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,6 +45,7 @@ v_screen(sp, vp)
 	} else
 		sp->nextdisp = sp->gp->dq.cqh_first;
 
-	F_SET(sp, S_SSWITCH);
+	F_SET(sp->nextdisp, S_STATUS);
+	F_SET(sp, S_SSWITCH | S_STATUS);
 	return (0);
 }

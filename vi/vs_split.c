@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.13 1995/10/04 12:39:06 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:39:06 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.14 1995/10/04 16:16:28 bostic Exp $ (Berkeley) $Date: 1995/10/04 16:16:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,8 +154,8 @@ vs_split(sp, new)
 	if ((new->defscroll = new->t_maxrows / 2) == 0)
 		new->defscroll = 1;
 
-	/* The new screen has to be drawn from scratch. */
-	F_SET(new, S_SCR_REFORMAT);
+	/* Draw the new screen from scratch, and add a status line. */
+	F_SET(new, S_SCR_REFORMAT | S_STATUS);
 
 	return (0);
 }
@@ -201,10 +201,8 @@ vs_discard(sp, spp)
 		nsp->rows += sp->rows;
 		sp = nsp;
 		dir = BACKWARD;
-	} else {
+	} else
 		sp = NULL;
-		dir = NOTSET;
-	}
 
 	if (spp != NULL)
 		*spp = sp;
@@ -228,7 +226,7 @@ vs_discard(sp, spp)
 	TMAP = HMAP + (sp->t_rows - 1);
 
 	/*
-	 * Draw the new screen from scratch.
+	 * Draw the new screen from scratch, and add a status line.
 	 *
 	 * XXX
 	 * We could play games with the map, if this were ever to be a
@@ -242,12 +240,11 @@ vs_discard(sp, spp)
 	case BACKWARD:
 		vs_sm_fill(sp, OOBLNO, P_BOTTOM);
 		break;
-	case NOTSET:
-		F_SET(sp, S_SCR_REFORMAT);
-		break;
 	default:
 		abort();
 	}
+
+	F_SET(sp, S_STATUS);
 	return (0);
 }
 
@@ -337,7 +334,7 @@ vs_swap(csp, nsp, name)
 	int issmallscreen;
 
 	/* Find the screen, or, if name is NULL, the first screen. */
-	gp = sp->gp;
+	gp = csp->gp;
 	for (sp = gp->hq.cqh_first;
 	    sp != (void *)&gp->hq; sp = sp->q.cqe_next)
 		if (name == NULL || !strcmp(sp->frp->name, name))
@@ -417,8 +414,8 @@ vs_swap(csp, nsp, name)
 	 */
 	F_SET(VIP(sp), VIP_CUR_INVALID);
 
-	/* Redraw from scratch. */
-	F_SET(sp, S_SCR_REDRAW);
+	/* Draw the new screen from scratch, and add a status line. */
+	F_SET(sp, S_SCR_REDRAW | S_STATUS);
 	return (0);
 }
 
