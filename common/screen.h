@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.37 1993/10/27 13:35:53 bostic Exp $ (Berkeley) $Date: 1993/10/27 13:35:53 $
+ *	$Id: screen.h,v 8.38 1993/10/27 23:36:37 bostic Exp $ (Berkeley) $Date: 1993/10/27 23:36:37 $
  */
 
 /*
@@ -178,7 +178,7 @@ typedef struct _scr {
 	char	*paragraph;		/* Vi: paragraph search list. */
 
 	struct queue_entry tagq;	/* Ex/vi: tag stack. */
-	struct _tagf   **tfhead;	/* Ex/vi: list of tag files. */
+	struct queue_entry tagfq;	/* Ex/vi: tag file queue. */
 	char	*tlast;			/* Ex/vi: saved last tag. */
 
 					/* Ex/vi: search/substitute info. */
