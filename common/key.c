@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.3 1994/11/16 16:52:01 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:52:01 $";
+static char sccsid[] = "$Id: key.c,v 9.4 1994/11/18 17:09:31 bostic Exp $ (Berkeley) $Date: 1994/11/18 17:09:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,11 +161,12 @@ term_init(sp)
 
 /*
  * term_key_set --
- *	Set keys found in the termios structure.  VERASE and VKILL are required
- *	by POSIX 1003.1-1990, VWERASE is a 4.4BSD extension.  We've left three
- *	open slots in the keylist table, if these values exist, put them into
- *	place.  Note, they may reset (or duplicate) values already in the table,
- *	so we check for that first.
+ *	Set keys found in the termios structure.
+ *
+ * VEOF, VERASE and VKILL are required by POSIX 1003.1-1990, VWERASE is
+ * a 4.4BSD extension.  We've left four open slots in the keylist table,
+ * if these values exist, put them into place.  Note, they may reset (or
+ * duplicate) values already in the table, so we check for that first.
  */
 static void
 term_key_set(gp, name, val)
