@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 9.1 1994/11/09 18:36:06 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:06 $";
+static char sccsid[] = "$Id: v_mark.c,v 9.2 1994/12/16 12:21:55 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:21:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ v_mark(sp, vp)
 	return (mark_set(sp, vp->character, &vp->m_start, 1));
 }
 
-enum which {BMARK, FMARK};
+enum which {BQMARK, FQMARK};
 static int mark __P((SCR *, VICMDARG *, enum which));
 
 
@@ -60,7 +60,7 @@ v_bmark(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	return (mark(sp, vp, BMARK));
+	return (mark(sp, vp, BQMARK));
 }
 
 /*
@@ -74,7 +74,7 @@ v_fmark(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	return (mark(sp, vp, FMARK));
+	return (mark(sp, vp, FQMARK));
 }
 
 static int
@@ -90,11 +90,34 @@ mark(sp, vp, cmd)
 	if (mark_get(sp, vp->character, &vp->m_stop))
 		return (1);
 
-	/* Forward marks move to the first non-blank. */
-	if (cmd == FMARK) {
+	/*
+	 * !!!
+	 * Historically, BQMARKS for character positions that no longer
+	 * existed acted as FQMARKS.
+	 *
+	 * FQMARKS move to the first non-blank.
+	 */
+	switch (cmd) {
+	case BQMARK:
+		if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
+			GETLINE_ERR(sp, vp->m_stop.lno);
+			return (1);
+		}
+		if (vp->m_stop.cno < len ||
+		    vp->m_stop.cno == len && len == 0)
+			break;
+
+		if (ISMOTION(vp))
+			F_SET(vp, VM_LMODE);
+		cmd = FQMARK;
+		/* FALLTHROUGH */
+	case FQMARK:
 		vp->m_stop.cno = 0;
 		if (nonblank(sp, vp->m_stop.lno, &vp->m_stop.cno))
 			return (1);
+		break;
+	default:
+		abort();
 	}
 
 	/* Non-motion commands move to the end of the range. */
@@ -156,8 +179,8 @@ mark(sp, vp, cmd)
 	 */
 #ifdef HISTORICAL_PRACTICE
 	if (ISCMD(vp->rkp, 'y')) {
-		if ((cmd == BMARK ||
-		    cmd == FMARK && vp->m_start.lno != vp->m_stop.lno) &&
+		if ((cmd == BQMARK ||
+		    cmd == FQMARK && vp->m_start.lno != vp->m_stop.lno) &&
 		    (vp->m_start.lno > vp->m_stop.lno ||
 		    vp->m_start.lno == vp->m_stop.lno &&
 		    vp->m_start.cno > vp->m_stop.cno))
@@ -175,11 +198,11 @@ mark(sp, vp, cmd)
 	 * Forward marks are always line oriented, and it's set in the
 	 * vcmd.c table.
 	 */
-	if (cmd == FMARK)
+	if (cmd == FQMARK)
 		return (0);
 
 	/*
-	 * BMARK'S moving backward and starting at column 0, and ones moving
+	 * BQMARK'S moving backward and starting at column 0, and ones moving
 	 * forward and ending at column 0 are corrected to the last column of
 	 * the previous line.  Otherwise, adjust the starting/ending point to
 	 * the character before the current one (this is safe because we know
