@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.1 1992/04/04 16:32:42 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:32:42 $
+ *	$Id: ex.h,v 5.2 1992/04/05 09:47:54 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:47:54 $
  */
 
 struct _cmdarg;
@@ -14,7 +14,7 @@ struct _cmdlist;
 typedef struct _cmdlist {
 	char *name;			/* Command name. */
 					/* Underlying function. */
-	void (*fn) __P((struct _cmdarg *));
+	int (*fn) __P((struct _cmdarg *));
 
 #define	E_ADDR1		0x0001		/* One address. */
 #define	E_ADDR2		0x0002		/* Two address. */
@@ -70,56 +70,62 @@ typedef struct _cmdarg {
 }
 extern char *defcmdarg[2];
 
-void	ex_abbr __P((CMDARG *));
-void	ex_append __P((CMDARG *));
-void	ex_args __P((CMDARG *));
-void	ex_at __P((CMDARG *));
-void	ex_bang __P((CMDARG *));
-void	ex_cc __P((CMDARG *));
-void	ex_cd __P((CMDARG *));
-void	ex_change __P((CMDARG *));
-void	ex_color __P((CMDARG *));
-void	ex_copy __P((CMDARG *));
-void	ex_debug __P((CMDARG *));
-void	ex_delete __P((CMDARG *));
-void	ex_digraph __P((CMDARG *));
-void	ex_edit __P((CMDARG *));
-void	ex_equal __P((CMDARG *));
-void	ex_errlist __P((CMDARG *));
-void	ex_file __P((CMDARG *));
-void	ex_global __P((CMDARG *));
-void	ex_join __P((CMDARG *));
-void	ex_list __P((CMDARG *));
-void	ex_make __P((CMDARG *));
-void	ex_map __P((CMDARG *));
-void	ex_mark __P((CMDARG *));
-void	ex_mkexrc __P((CMDARG *));
-void	ex_move __P((CMDARG *));
-void	ex_next __P((CMDARG *));
-void	ex_number __P((CMDARG *));
-void	ex_prev __P((CMDARG *));
-void	ex_print __P((CMDARG *));
-void	ex_put __P((CMDARG *));
-void	ex_quit __P((CMDARG *));
-void	ex_read __P((CMDARG *));
-void	ex_rew __P((CMDARG *));
-void	ex_set __P((CMDARG *));
-void	ex_shell __P((CMDARG *));
-void	ex_shiftl __P((CMDARG *));
-void	ex_shiftr __P((CMDARG *));
-void	ex_source __P((CMDARG *));
-void	ex_subagain __P((CMDARG *));
-void	ex_substitute __P((CMDARG *));
-void	ex_tag __P((CMDARG *));
-void	ex_undo __P((CMDARG *));
-void	ex_unmap __P((CMDARG *));
-void	ex_validate __P((CMDARG *));
-void	ex_version __P((CMDARG *));
-void	ex_vglobal __P((CMDARG *));
-void	ex_visual __P((CMDARG *));
-void	ex_wq __P((CMDARG *));
-void	ex_write __P((CMDARG *));
-void	ex_xit __P((CMDARG *));
-void	ex_yank __P((CMDARG *));
+void	ex __P((void));
+int	excmd __P((char *));
+int	exfile __P((char *, int));
+void	exrefresh __P((void));
+int	exstring __P((char *, int));
+
+int	ex_abbr __P((CMDARG *));
+int	ex_append __P((CMDARG *));
+int	ex_args __P((CMDARG *));
+int	ex_at __P((CMDARG *));
+int	ex_bang __P((CMDARG *));
+int	ex_cc __P((CMDARG *));
+int	ex_cd __P((CMDARG *));
+int	ex_change __P((CMDARG *));
+int	ex_color __P((CMDARG *));
+int	ex_copy __P((CMDARG *));
+int	ex_debug __P((CMDARG *));
+int	ex_delete __P((CMDARG *));
+int	ex_digraph __P((CMDARG *));
+int	ex_edit __P((CMDARG *));
+int	ex_equal __P((CMDARG *));
+int	ex_errlist __P((CMDARG *));
+int	ex_file __P((CMDARG *));
+int	ex_global __P((CMDARG *));
+int	ex_join __P((CMDARG *));
+int	ex_list __P((CMDARG *));
+int	ex_make __P((CMDARG *));
+int	ex_map __P((CMDARG *));
+int	ex_mark __P((CMDARG *));
+int	ex_mkexrc __P((CMDARG *));
+int	ex_move __P((CMDARG *));
+int	ex_next __P((CMDARG *));
+int	ex_number __P((CMDARG *));
+int	ex_prev __P((CMDARG *));
+int	ex_print __P((CMDARG *));
+int	ex_put __P((CMDARG *));
+int	ex_quit __P((CMDARG *));
+int	ex_read __P((CMDARG *));
+int	ex_rew __P((CMDARG *));
+int	ex_set __P((CMDARG *));
+int	ex_shell __P((CMDARG *));
+int	ex_shiftl __P((CMDARG *));
+int	ex_shiftr __P((CMDARG *));
+int	ex_source __P((CMDARG *));
+int	ex_subagain __P((CMDARG *));
+int	ex_substitute __P((CMDARG *));
+int	ex_tag __P((CMDARG *));
+int	ex_undo __P((CMDARG *));
+int	ex_unmap __P((CMDARG *));
+int	ex_validate __P((CMDARG *));
+int	ex_version __P((CMDARG *));
+int	ex_vglobal __P((CMDARG *));
+int	ex_visual __P((CMDARG *));
+int	ex_wq __P((CMDARG *));
+int	ex_write __P((CMDARG *));
+int	ex_xit __P((CMDARG *));
+int	ex_yank __P((CMDARG *));
 
 char	*linespec __P((char *, CMDARG *));
