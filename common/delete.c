@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.13 1992/11/02 22:10:15 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:10:15 $";
+static char sccsid[] = "$Id: delete.c,v 5.14 1992/11/11 18:31:22 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:31:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,10 +36,12 @@ delete(ep, fm, tm, lmode)
 	u_char *bp, *p;
 	int eof;
 
-#if DEBUG && 1
+#if DEBUG && 0
 	TRACE("delete: from %lu/%d to %lu/%d%s\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " (LINE MODE)" : "");
 #endif
+	bp = NULL;
+
 	/* Case 1 -- delete in line mode. */
 	if (lmode) {
 		for (lno = tm->lno; lno >= fm->lno; --lno)
@@ -87,11 +89,14 @@ delete(ep, fm, tm, lmode)
 			GETLINE_ERR(fm->lno);
 			return (1);
 		}
-		bcopy(p + tm->cno,
-		    p + fm->cno, len - fm->cno - (tm->cno - fm->cno));
-		len -= tm->cno - fm->cno;
-		if (file_sline(ep, fm->lno, p, len))
+		if ((bp = malloc(len)) == NULL) {
+			msg("Error: %s", strerror(errno));
 			return (1);
+		}
+		bcopy(p, bp, fm->cno);
+		bcopy(p + tm->cno, bp + fm->cno, len - tm->cno);
+		if (file_sline(ep, fm->lno, bp, len - (tm->cno - fm->cno)))
+			goto err;
 		goto done;
 	}
 
@@ -121,7 +126,7 @@ delete(ep, fm, tm, lmode)
 	/* Copy the start partial line into place. */
 	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
 		GETLINE_ERR(fm->lno);
-		return (1);
+		goto err;
 	}
 	bcopy(p, bp, fm->cno);
 	tlen = fm->cno;
@@ -129,25 +134,24 @@ delete(ep, fm, tm, lmode)
 	/* Copy the end partial line into place. */
 	if ((p = file_gline(ep, tm->lno, &len)) == NULL) {
 		GETLINE_ERR(tm->lno);
-		return (1);
+		goto err;
 	}
 	bcopy(p + tm->cno, bp + tlen, len - tm->cno);
 	tlen += len - tm->cno;
 
 	/* Set the current line. */
-	if (file_sline(ep, fm->lno, bp, tlen)) {
-		free(bp);
-		return (1);
-	}
+	if (file_sline(ep, fm->lno, bp, tlen))
+		goto err;
 
 	/* Delete the new number of the old last line. */
-	if (file_dline(ep, fm->lno + 1)) {
-		free(bp);
-		return (1);
-	}
+	if (file_dline(ep, fm->lno + 1))
+		goto err;
 
 	/* Update the marks. */
 done:	mark_delete(fm, tm, lmode);
+
+	if (bp != NULL)
+		free(bp);
 
 	/*
 	 * Reporting.
@@ -158,4 +162,8 @@ done:	mark_delete(fm, tm, lmode);
 	curf->rptlabel = "deleted";
 
 	return (0);
+
+err:	if (bp != NULL)
+		free(bp);
+	return (1);
 }
