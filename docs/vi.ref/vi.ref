@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.50 1994/08/11 12:48:41 bostic Exp $ (Berkeley) $Date: 1994/08/11 12:48:41 $
+.\"     $Id: vi.ref,v 8.51 1994/08/12 09:04:34 bostic Exp $ (Berkeley) $Date: 1994/08/12 09:04:34 $
 .\"
 .\"
 .so ref.so
@@ -378,7 +378,11 @@ If the path of your system's
 .CO sendmail
 program (or whatever mailer you're using) is not
 .LI /usr/lib/sendmail ,
-be sure to substitute the correct pathname in the recovery script.
+be sure to substitute the correct pathname for the
+.LI SENDMAIL
+value in the recovery script.
+Consult the manual page for details on recovering preserved or
+aborted editing sessions.
 .SH 1 "Sizing the Screen"
 .pp
 The size of the screen can be set in a number of ways.
@@ -400,7 +404,8 @@ The TIOCGWINSZ
 .XR ioctl 2
 is attempted on the standard error file descriptor.
 .np
-The termcap entry is checked for the
+The termcap entry (or terminfo entry on System V machines)
+is checked for the
 .QQ li
 entry (rows) and the
 .QQ co
@@ -524,7 +529,8 @@ the window.
 .SH 1 "Regular Expressions and Replacement Strings"
 .pp
 Regular expressions are used in line addresses,
-as the first part of
+as the first part of the
+.CO ex
 .CO substitute ,
 .CO global ,
 and
@@ -549,7 +555,7 @@ and
 and ERE's are the Regular Expressions found in
 .XR egrep 1 .
 .pp
-The following is not intended to provide a description Regular
+The following is not intended to provide a description of Regular
 Expressions.
 The information here only describes strings and characters which
 have special meanings in the
@@ -625,6 +631,9 @@ option is
 set) stands for the replacement part of the previous
 .CO substitute
 command.
+It is only valid after a
+.CO substitute
+command has been performed.
 .pp
 The string
 .QT \e# ,
@@ -657,7 +666,13 @@ The string
 causes the next character to be converted to lowercase;
 the string
 .QT \eu
-behaves similarly, but converts to uppercase.
+behaves similarly, but converts to uppercase
+(e.g.
+.LI s/abc/\eU&/
+replaces the string
+.LI abc
+with
+.LI ABC ).
 The strings
 .QT \eL
 causes characters up to the end of the string or the next occurrence
@@ -689,9 +704,10 @@ When
 .CO ex
 or
 .CO vi
-are executed, the text of a file is read (or a temporary file is created),
-and then all editing changes happen with the context of the copy of the
-file.
+are executed,
+the text of a file is read (or a temporary file is created),
+and then all editing changes happen within the context of the
+copy of the file.
 .i "No changes affect the actual file until the file is written out" ,
 either using a write command or another command which is affected by the
 .OP autowrite
@@ -712,7 +728,7 @@ flag had been specified).
 If a lock cannot be obtained for other reasons, the edit session will
 continue, but the file status information
 (see the
-.CO <control->G
+.CO <control-G>
 command) will reflect this fact.
 .pp
 Both
@@ -806,7 +822,8 @@ character can be escaped by preceding it with a backslash.)
 .IP "alternate pathname"
 The name of the last file name mentioned in an
 .CO ex
-command, or, the previous current pathname if the last file mentioned
+command, or,
+the previous current pathname if the last file mentioned
 becomes the current file.
 When the hash mark character
 .PQ #
@@ -820,7 +837,11 @@ character can be escaped by preceding it with a backslash.)
 .IP buffer
 One of a number of named areas for saving copies of text.
 Commands that change or delete text can save the changed or deleted
-text into a specific buffer, for later use.
+text into a specific buffer, for later use, if the command allows
+it (i.e. the
+.CO ex
+.CO change
+command cannot save the changed text in a named buffer).
 Buffers are named with a single character, preceded by a double quote,
 e.g.
 .LI """<character>" .
@@ -839,7 +860,10 @@ English character
 is the same as the buffer named by the character
 .QT a ,
 with the exception that, if the buffer contents are being changed (as
-with a text deletion or copying command), the text is
+with a text deletion or
+.CO ex
+.CO change
+command), the text is
 .i appended
 to the buffer, instead of replacing the current contents.
 .sp
