@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.49 1994/03/04 11:02:45 bostic Exp $ (Berkeley) $Date: 1994/03/04 11:02:45 $";
+static char sccsid[] = "$Id: vi.c,v 8.50 1994/03/07 18:00:21 bostic Exp $ (Berkeley) $Date: 1994/03/07 18:00:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -749,9 +749,8 @@ getkey(sp, ikeyp, map)
 	case INP_OK:
 		break;
 	case INP_EOF:
-		F_SET(sp, S_EXIT_FORCE);
-		/* FALLTHROUGH */
 	case INP_ERR:
+		F_SET(sp, S_EXIT_FORCE);
 		return (1);
 	}
 	return (ikeyp->value == K_ESCAPE);
