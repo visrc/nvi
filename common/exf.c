@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.16 1994/12/16 11:07:50 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:07:50 $";
+static char sccsid[] = "$Id: exf.c,v 9.17 1995/01/11 13:47:16 bostic Exp $ (Berkeley) $Date: 1995/01/11 13:47:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,6 +40,7 @@ static char sccsid[] = "$Id: exf.c,v 9.16 1994/12/16 11:07:50 bostic Exp $ (Berk
 
 #include "vi.h"
 #include "excmd.h"
+#include "../sex/sex_screen.h"
 
 static int file_backup __P((SCR *, char *, char *));
 
@@ -374,7 +375,7 @@ file_init(sp, frp, rcv_name, flags)
 	sp->ep = ep;
 	sp->frp = frp;
 
-	/* Set the initial cursor position. */
+	/* Set the initial cursor position, execute initial command. */
 	file_cinit(sp);
 
 	/* Redraw the screen from scratch. */
@@ -420,16 +421,37 @@ file_cinit(sp)
 	int nb;
 
 	/*
-	 * If in ex mode, move to the last line, first nonblank character.
-	 * Otherwise, if the file has previously been edited, move to the
-	 * last position, and check it for validity.  Otherwise, move to
-	 * the first line, first nonblank.  This gets called by some the
-	 * file init code, because we may be in a file of ex commands and
-	 * we want to execute them from the right location in the file.  A
-	 * few other places that want special case behavior also call here.
+	 * Historically, initial commands (the -c option) weren't executed
+	 * until a file was loaded, e.g. "vi +10 nofile", followed by an
+	 * :edit or :tag command, would execute the +10 on the file loaded
+	 * by the subsequent command, (assuming that it existed).  This
+	 * applied as well to files loaded using the tag commands, and we
+	 * follow that historic practice.  Also, all initial commands were
+	 * ex commands and were always executed on the last line of the file.
+	 *
+	 * Otherwise, if no initial command for this file:
+	 *    If in ex mode, move to the last line, first nonblank character.
+	 *    If the file has previously been edited, move to the last known
+	 *	  position, and check it for validity.
+	 *    Otherwise, move to the first line, first nonblank.
+	 *
+	 * This gets called by the file init code, because we may be in a
+	 * file of ex commands and we want to execute them from the right
+	 * location in the file.  A few other places that want special case
+	 * behavior also call here.
 	 */
 	nb = 0;
-	if (IN_EX_MODE(sp)) {
+	if (sp->gp->icommand != NULL && !F_ISSET(sp->frp, FR_NEWFILE)) {
+		/* XXX:  If this fails, we're toast. */
+		(void)file_lline(sp, &sp->lno);
+		if (sp->lno == 0) {
+			sp->lno = 1;
+			sp->cno = 0;
+		}
+
+		(void)sex_screen_icmd(sp, sp->gp->icommand);
+		sp->gp->icommand = NULL;
+	} else if (IN_EX_MODE(sp)) {
 		/* XXX:  If this fails, we're toast. */
 		(void)file_lline(sp, &sp->lno);
 		if (sp->lno == 0) {

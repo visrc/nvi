@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.12 1994/12/16 14:24:45 bostic Exp $ (Berkeley) $Date: 1994/12/16 14:24:45 $";
+static char sccsid[] = "$Id: main.c,v 9.13 1995/01/11 13:47:21 bostic Exp $ (Berkeley) $Date: 1995/01/11 13:47:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -170,6 +170,9 @@ main(argc, argv)
 	/* Build and initialize the GS structure. */
 	__global_list = gp = gs_init();
 
+	/* Set initial command string. */
+	gp->icommand = excmdarg;
+
 	/* Set the file snapshot flag. */
 	if (snapshot)
 		F_SET(gp, G_SNAPSHOT);
@@ -280,6 +283,8 @@ main(argc, argv)
 		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
 			goto done;
 	}
+	F_CLR(sp, S_SCREENS);
+	F_SET(sp, LF_ISSET(S_SCREENS));
 
 	/*
 	 * List recovery files if -r specified without file arguments.
@@ -303,16 +308,9 @@ main(argc, argv)
 	 */
 	sp->defscroll = (O_VAL(sp, O_WINDOW) + 1) / 2;
 
-	/*
-	 * Use a tag file if specified.  Set the real screen type first,
-	 * though, so that default positioning if the tag fails is correct.
-	 */
-	if (tag_f != NULL) {
-		F_CLR(sp, S_SCREENS);
-		F_SET(sp, LF_ISSET(S_SCREENS));
-		if (ex_tagfirst(sp, tag_f))
-			goto errexit;
-	}
+	/* Open a tag file if specified. */
+	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
+		goto errexit;
 
 	/*
 	 * Append any remaining arguments as file names.  Files are recovery
@@ -344,44 +342,14 @@ main(argc, argv)
 			goto errexit;
 		if (F_ISSET(sp, S_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
-
-		/*
-		 * Historically, if there's an initial command, it was always
-		 * executed from the last line of the file.  That doesn't make
-		 * sense if we've already specified an address either through
-		 * a tags entry or commands in the startup information, so we
-		 * ignore those cases, but, otherwise, move to the last line.
-		 *
-		 * The word is done in the file initialization routines, but
-		 * we define it here by setting the initial screen type.  The
-		 * user may have tried to set it themselves in the startup
-		 * information, but that's too bad -- they called us with a
-		 * specific name, and that applies now.
-		 */
-		if (excmdarg == NULL) {
-			F_CLR(sp, S_SCREENS);
-			F_SET(sp, LF_ISSET(S_SCREENS));
-		}
 		if (file_init(sp, frp, NULL, 0))
 			goto errexit;
 		(void)msg_status(sp, sp->lno, 0);
 	}
 
-	/*
-	 * If there's an initial command, execute it.  Historically, it was
-	 * always an ex command, not vi in vi mode and ex in ex mode.  The
-	 * current line value has already been set.  The screen type is also
-	 * set, regardless -- any "default" commands will change the line
-	 * number in vi mode, not print the line.
-	 */
-	F_CLR(sp, S_SCREENS);
-	F_SET(sp, LF_ISSET(S_SCREENS));
-	if (excmdarg != NULL) {
-		if (sex_screen_icmd(sp, excmdarg))
-			goto errexit;
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
-			goto done;
-	}
+	/* Startup information may have exited. */
+	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+		goto done;
 
 	for (;;) {
 		/* Edit, ignoring errors -- other screens may succeed. */
