@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.30 1993/02/19 18:37:03 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:37:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.31 1993/02/20 16:10:18 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:10:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -312,6 +312,8 @@ win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
 	 * line of the file at the top of the screen.  Otherwise, put the line
 	 * in the middle of the screen.
 	 */
+	HMAP->lno = 1;
+	HMAP->off = 1;
 	lcnt = scr_sm_nlines(ep, HMAP, ep->lno, HALFSCREEN(ep));
 	if (lcnt < HALFSCREEN(ep))
 		(void)scr_sm_fill(ep, 1, P_TOP);
