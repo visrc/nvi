@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.58 1993/02/12 14:25:44 bostic Exp $ (Berkeley) $Date: 1993/02/12 14:25:44 $";
+static char sccsid[] = "$Id: ex.c,v 5.59 1993/02/13 13:36:35 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:36:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,10 +47,10 @@ int
 ex()
 {
 	size_t len;
-	u_char *p;
-	char defcom[sizeof(DEFCOM)];
+	u_char *p, defcom[sizeof(DEFCOM)];
 
-	while (mode == MODE_EX) {
+	FF_SET(curf, F_NEWSESSION);
+	do {
 		if (FF_ISSET(curf, F_NEWSESSION)) {
 			if (ex_init(curf))
 				return (1);
@@ -64,10 +64,10 @@ ex()
 			ex_cstring(p, len, 0);
 		else {
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
-			ex_cstring((u_char *)defcom, 3, 0);
+			ex_cstring(defcom, 3, 0);
 		}
-	}
-	return (0);
+	} while (mode == MODE_EX);
+	return (ex_end(curf));
 }
 
 /*
