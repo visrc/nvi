@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.11 1992/04/05 15:46:21 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:46:21 $";
+static char sccsid[] = "$Id: main.c,v 5.12 1992/04/14 09:24:38 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:24:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,10 +36,6 @@ FILE *tracefp;
 
 static jmp_buf jmpenv;
 int reading_exrc;
-
-#ifndef NO_DIGRAPH
-static init_digraphs();
-#endif
 
 static void obsolete __P((char *[]));
 static void onhup __P((int));
@@ -141,7 +137,7 @@ main(argc, argv)
 	map_init();
 
 #ifndef NO_DIGRAPH
-	init_digraphs();
+	digraph_init();
 #endif
 
 	/*
@@ -255,73 +251,6 @@ trapint(signo)
 	doingglobal = FALSE;
 	longjmp(jmpenv, 1);
 }
-
-
-#ifndef NO_DIGRAPH
-
-/* This stuff us used to build the default digraphs table. */
-static char	digtable[][4] =
-{
-# ifdef CS_IBMPC
-	"C,\200",	"u\"\1",	"e'\2",		"a^\3",
-	"a\"\4",	"a`\5",		"a@\6",		"c,\7",
-	"e^\10",	"e\"\211",	"e`\12",	"i\"\13",
-	"i^\14",	"i`\15",	"A\"\16",	"A@\17",
-	"E'\20",	"ae\21",	"AE\22",	"o^\23",
-	"o\"\24",	"o`\25",	"u^\26",	"u`\27",
-	"y\"\30",	"O\"\31",	"U\"\32",	"a'\240",
-	"i'!",		"o'\"",		"u'#",		"n~$",
-	"N~%",		"a-&",		"o-'",		"~?(",
-	"~!-",		"\"<.",		"\">/",
-#  ifdef CS_SPECIAL
-	"2/+",		"4/,",		"^+;",		"^q<",
-	"^c=",		"^r>",		"^t?",		"pp]",
-	"^^^",		"oo_",		"*a`",		"*ba",
-	"*pc",		"*Sd",		"*se",		"*uf",
-	"*tg",		"*Ph",		"*Ti",		"*Oj",
-	"*dk",		"*Hl",		"*hm",		"*En",
-	"*No",		"eqp",		"pmq",		"ger",
-	"les",		"*It",		"*iu",		"*/v",
-	"*=w",		"sq{",		"^n|",		"^2}",
-	"^3~",		"^_\377",
-#  endif /* CS_SPECIAL */
-# endif /* CS_IBMPC */
-# ifdef CS_LATIN1
-	"~!!",		"a-*",		"\">+",		"o-:",
-	"\"<>",		"~??",
-
-	"A`@",		"A'A",		"A^B",		"A~C",
-	"A\"D",		"A@E",		"AEF",		"C,G",
-	"E`H",		"E'I",		"E^J",		"E\"K",
-	"I`L",		"I'M",		"I^N",		"I\"O",
-	"-DP",		"N~Q",		"O`R",		"O'S",
-	"O^T",		"O~U",		"O\"V",		"O/X",
-	"U`Y",		"U'Z",		"U^[",		"U\"\\",
-	"Y'_",
-
-	"a``",		"a'a",		"a^b",		"a~c",
-	"a\"d",		"a@e",		"aef",		"c,g",
-	"e`h",		"e'i",		"e^j",		"e\"k",
-	"i`l",		"i'm",		"i^n",		"i\"o",
-	"-dp",		"n~q",		"o`r",		"o's",
-	"o^t",		"o~u",		"o\"v",		"o/x",
-	"u`y",		"u'z",		"u^{",		"u\"|",
-	"y'~",
-# endif /* CS_LATIN1 */
-	""
-};
-
-static init_digraphs()
-{
-	int	i;
-
-	for (i = 0; *digtable[i]; i++)
-	{
-		do_digraph(FALSE, digtable[i]);
-	}
-	do_digraph(FALSE, (char *)0);
-}
-#endif /* NO_DIGRAPH */
 
 static void
 obsolete(argv)

@@ -92,7 +92,6 @@ void blkdirty();
 MARK paste();
 char *parseptrn();
 char *fetchline();
-void do_digraph();
 /*------------------------------------------------------------------------*/
 /* misc housekeeping variables & functions				  */
 
