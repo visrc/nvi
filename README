@@ -1,4 +1,4 @@
-#	$Id: README,v 8.80 1994/08/11 11:35:59 bostic Exp $ (Berkeley) $Date: 1994/08/11 11:35:59 $
+#	$Id: README,v 8.81 1994/08/11 13:01:06 bostic Exp $ (Berkeley) $Date: 1994/08/11 13:01:06 $
 
 This is the README for version 1.30 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed or
@@ -85,9 +85,9 @@ o And...
 o Status:
 
 This software is in beta test, and it's pretty stable.  Almost all of
-the historic functionality in ex/vi is there, the only missing pieces
-are open mode and the lisp option.  (The options hardtabs, optimize,
-redraw, and slowopen are recognized, but ignored.)
+the historic functionality in ex/vi is there, the only major missing
+pieces are open mode and the lisp option.  (Also, the options hardtabs,
+optimize, redraw, and slowopen are recognized, but ignored.)
 
 Nvi is mostly 8-bit clean.  This isn't difficult to fix, and was left
 in during initial development to keep things simple.  Wide character
@@ -101,8 +101,8 @@ you might like.  The "Additional Features" section of the reference page
 =-=-=-=-=-=-=-=-=-=-=
 o Porting information:
 
-The directory PORT has directories per OS/machine combination, with V7-style
-Makefiles, for building nex/nvi on various machines.  The PORT/README file
+The directory port has directories per OS/machine combination, with V7-style
+Makefiles, for building nex/nvi on various machines.  The port/README file
 has detailed information.
 
 =-=-=-=-=-=-=-=-=-=-=
@@ -132,21 +132,6 @@ will show up as reads of uninitialized memory in the buffer write routines.
 =-=-=-=-=-=-=-=-=-=-=
 o Directory layout:
 
-nvi:
-	Source files for pieces of code that are shared by all the
-	editors, like searching and logging code or code translating
-	line numbers into requests to the dbopen(3) database code.
-	It also has the code for adding, deleting, and changing "records"
-	in the underlying database.
-
-nvi/PORT:
-	Porting directories, one per OS/architecture combination.  See
-	nvi/PORT/README for porting information.
-
-	curses/		-- 4.4BSD curses implementation
-	db/		-- 4.4BSD DB routines.
-	regex/		-- Henry Spencer's POSIX.2 RE support.
-
 nvi/USD.doc:
 	Ex/vi documentation, both historic and current.
 
@@ -162,6 +147,13 @@ nvi/USD.doc:
 	vi.ref/		Reference document for nex/nvi; an updated version
 			of the document distributed with 4.4BSD-Lite.
 
+nvi/common:
+	Source files for pieces of code that are shared by all the
+	editors, like searching and logging code or code translating
+	line numbers into requests to the dbopen(3) database code.
+	It also has the code for adding, deleting, and changing "records"
+	in the underlying database.
+
 nvi/docs:
 	Random nvi documentation:
 
@@ -175,30 +167,36 @@ nvi/docs:
 	    input	-- Vi maps, executable buffers, and input discussion.
 	    quoting	-- Vi quoting discussion.
 	    structures	-- Out-of-date nvi internal structure description.
-	tutorial/	-- Historic vi tutorial(s).
+	tutorial/	-- Historic vi tutorial(s), of unknown quality.
 
 nvi/ex:
-	The nvi/ex directory is the ex source code.  Because vi has the
-	colon command, lots of this code is used by vi.  Generally, if
-	functionality is shared by both ex and vi, it's in nvi/ex, if
-	it's vi only, it's in nvi/vi.  Files are generally named by the
-	command(s) they support, but occasionally with a name that
-	describes their functionality.
+	The ex source code.  Because vi has the colon command, lots of
+	this code is used by vi.  Generally, if functionality is shared
+	by both ex and vi, it's in nvi/ex.  If it's vi only, it's in
+	nvi/vi.  Files are generally named by the command(s) they support,
+	but occasionally with a name that describes their functionality.
 
 nvi/install:
 	Things to install on the local system.
 
 	recover.script	-- Vi recovery script.
 
+nvi/port:
+	Porting directories, one per OS/architecture combination.  See
+	nvi/port/README for porting information.
+
+	curses/		-- 4.4BSD curses implementation
+	db/		-- 4.4BSD DB routines.
+	regex/		-- Henry Spencer's POSIX.2 RE support.
+
 nvi/sex:
-	The nvi/sex directory is the screen support for the ex editor.
+	The screen support for the ex editor.
 
 nvi/svi:
-	The nvi/svi directory is the screen support for a curses based
-	vi editor.
+	The screen support for a curses based vi editor.
 
 nvi/vi:
-	The nvi/vi directory is the vi source code.
+	The vi source code.
 
 nvi/xaw:
 	Place reserved for an X11 (Athena Widget) screen.
