@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.21 1994/03/18 11:33:21 bostic Exp $ (Berkeley) $Date: 1994/03/18 11:33:21 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.22 1994/03/24 12:21:35 bostic Exp $ (Berkeley) $Date: 1994/03/24 12:21:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -382,7 +382,7 @@ svi_number(sp, ep)
 {
 	SMAP *smp;
 	size_t oldy, oldx;
-	char *lp, *p, nbuf[10];
+	char *lp, nbuf[10];
 
 	/*
 	 * Try and avoid getting the last line in the file, by getting the
@@ -406,7 +406,7 @@ svi_number(sp, ep)
 		if (ISINFOLINE(sp, smp))
 			break;
 		if (smp->lno != 1 && lp == NULL &&
-		    (p = file_gline(sp, ep, smp->lno, NULL)) == NULL)
+		    file_gline(sp, ep, smp->lno, NULL) == NULL)
 			break;
 		MOVE(sp, smp - HMAP, 0);
 		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
