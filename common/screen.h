@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.3 1993/06/21 13:12:16 bostic Exp $ (Berkeley) $Date: 1993/06/21 13:12:16 $
+ *	$Id: screen.h,v 8.4 1993/06/21 15:10:57 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:10:57 $
  */
 
 /*
@@ -27,7 +27,7 @@ enum confirmation { YES, NO, QUIT };	/* Confirmation routine interface. */
 enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 					/* Standard continue message. */
 #define	CONTMSG		"Enter return to continue: "
-#define	CONTMSG_G	"Enter return to continue [q to quit]: "
+#define	CONTMSG_I	"Enter return to continue [q to quit]: "
 
 /*
  * Structure for building argc/argv vector of ex arguments.
@@ -259,16 +259,17 @@ typedef struct _scr {
 #define	S_CUR_INVALID	0x0000800	/* Cursor position is incalculable. */
 #define	S_DIVIDER	0x0001000	/* Ex screen divider is displayed. */
 #define	S_GLOBAL	0x0002000	/* Doing a global command. */
-#define	S_GLOBAL_QUIT	0x0004000	/* Quitting a global command. */
-#define	S_INPUT		0x0008000	/* Doing text input. */
-#define	S_ISFROMTTY	0x0010000	/* Reading from a tty. */
-#define	S_MSGREENTER	0x0020000	/* If msg routine reentered. */
-#define	S_RE_SET	0x0040000	/* The file's RE has been set. */
+#define	S_INPUT		0x0004000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0008000	/* If can be interrupted. */
+#define	S_INTERRUPTIBLE	0x0010000	/* If have been interrupted. */
+#define	S_ISFROMTTY	0x0020000	/* Reading from a tty. */
+#define	S_MSGREENTER	0x0040000	/* If msg routine reentered. */
 #define	S_REDRAW	0x0080000	/* Redraw the screen. */
 #define	S_REFORMAT	0x0100000	/* Reformat the screen. */
 #define	S_REFRESH	0x0200000	/* Refresh the screen. */
 #define	S_RESIZE	0x0400000	/* Resize the screen. */
-#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
+#define	S_RE_SET	0x0800000	/* The file's RE has been set. */
+#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY)
