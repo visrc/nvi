@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.10 1995/09/22 11:44:12 bostic Exp $ (Berkeley) $Date: 1995/09/22 11:44:12 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.11 1995/09/25 11:11:31 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:11:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,7 @@ filtercmd(sp, cmdp, fm, tm, rp, cmd, ftype)
 	 */
 	ofp = NULL;
 	input[0] = input[1] = output[0] = output[1] = -1;
-	if (ftype != FILTER_READ && pipe(input) < 0) {
+	if (ftype != FILTER_RBANG && ftype != FILTER_READ && pipe(input) < 0) {
 		msgq(sp, M_SYSERR, "pipe");
 		goto err;
 	}
@@ -165,7 +165,7 @@ err:		if (input[0] != -1)
 	}
 
 	/*
-	 * FILTER_READ:
+	 * FILTER_RBANG, FILTER_READ:
 	 *
 	 * Reading is the simple case -- we don't need a parent writer,
 	 * so the parent reads the output from the read end of the output
@@ -178,7 +178,7 @@ err:		if (input[0] != -1)
 	 * the cursor at the first line read in.  Check to make sure that
 	 * it's not past EOF because we were reading into an empty file.
 	 */
-	if (ftype == FILTER_READ) {
+	if (ftype == FILTER_RBANG || ftype == FILTER_READ) {
 		rval = ex_readfp(sp, "filter", ofp, fm, &nread, 0);
 		sp->rptlines[L_ADDED] += nread;
 		if (fm->lno == 0)
@@ -189,7 +189,7 @@ err:		if (input[0] != -1)
 	}
 
 	/*
-	 * FILTER, FILTER_WRITE
+	 * FILTER_BANG, FILTER_WRITE
 	 *
 	 * Here we need both a reader and a writer.  Temporary files are
 	 * expensive and we'd like to avoid disk I/O.  Using pipes has the
@@ -200,7 +200,7 @@ err:		if (input[0] != -1)
 	 *		write lines out
 	 *		exit
 	 *	parent
-	 *		FILTER:
+	 *		FILTER_BANG:
 	 *			read lines into the file
 	 *			delete old lines
 	 *		FILTER_WRITE
@@ -261,7 +261,7 @@ err:		if (input[0] != -1)
 		    (long)parent_writer_pid, "parent-writer", 1);
 
 		/* Delete any lines written to the utility. */
-		if (rval == 0 && ftype == FILTER &&
+		if (rval == 0 && ftype == FILTER_BANG &&
 		    (cut(sp, NULL, fm, tm, CUT_LINEMODE) ||
 		    delete(sp, fm, tm, 1))) {
 			rval = 1;

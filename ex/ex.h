@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.6 1995/09/21 10:57:19 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:19 $
+ *	$Id: ex.h,v 10.7 1995/09/25 11:11:21 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:11:21 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -184,11 +184,12 @@ typedef struct _ex_private {
 /*
  * Filter actions:
  *
- *	FILTER		Filter text through the utility.
- *	FILTER_READ	Read from the utility into the file.
- *	FILTER_WRITE	Write to the utility, display its output.
+ *	FILTER_BANG	!:	filter text through the utility.
+ *	FILTER_RBANG	!:	read from the utility (without stdin).
+ *	FILTER_READ	read:	read from the utility (with stdin).
+ *	FILTER_WRITE	write:	write to the utility, display its output.
  */
-enum filtertype { FILTER, FILTER_READ, FILTER_WRITE };
+enum filtertype { FILTER_BANG, FILTER_RBANG, FILTER_READ, FILTER_WRITE };
 
 /* Ex common error messages. */
 typedef enum {

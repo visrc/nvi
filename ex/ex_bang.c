@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.8 1995/09/21 12:07:01 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:01 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.9 1995/09/25 11:11:06 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:11:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,6 +103,27 @@ ex_bang(sp, cmdp)
 	}
 
 	/*
+	 * If no addresses were specified, run the command.  If the file has
+	 * been modified and autowrite is set, write the file back.  If the
+	 * file has been modified, autowrite is not set and the warn option is
+	 * set, tell the user about the file.
+	 */
+	if (cmdp->addrcnt == 0) {
+		msg = NULL;
+		if (F_ISSET(sp->ep, F_MODIFIED))
+			if (O_ISSET(sp, O_AUTOWRITE)) {
+				if (file_aw(sp, FS_ALL)) {
+					rval = 1;
+					goto ret1;
+				}
+			} else if (O_ISSET(sp, O_WARN) &&
+			    !F_ISSET(sp, S_EX_SILENT))
+				msg = "File modified since last write.\n";
+
+		rval = ex_exec_proc(sp, cmdp, ap->bp, msg, bp);
+	}
+
+	/*
 	 * If addresses were specified, pipe lines from the file through the
 	 * command.
 	 *
@@ -111,7 +132,7 @@ ex_bang(sp, cmdp)
 	 * no sense to me, so nvi makes it consistent for both, and matches
 	 * vi's historic behavior.
 	 */
-	if (cmdp->addrcnt != 0) {
+	else {
 		NEEDFILE(sp, cmdp);
 
 		/* Autoprint is set historically, even if the command fails. */
@@ -134,17 +155,18 @@ ex_bang(sp, cmdp)
 		 * Historical vi permitted "!!" in an empty file.  When it
 		 * happens, we get called with two addresses of 1,1 and a
 		 * bad attitude.  The simple solution is to turn it into a
-		 * FILTER_READ operation, but that means that we don't put
-		 * an empty line into the default cut buffer as did historic
-		 * vi.  Imagine, if you can, my disappointment.
+		 * FILTER_READ operation, with the exception that stdin isn't
+		 * opened for the utility.  This means that we don't put an
+		 * empty line into the default cut buffer as did historic vi.
+		 * Imagine, if you can, my disappointment.
 		 */
-		ftype = FILTER;
+		ftype = FILTER_BANG;
 		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
 			if (file_lline(sp, &lno))
 				return (1);
 			if (lno == 0) {
 				cmdp->addr1.lno = cmdp->addr2.lno = 0;
-				ftype = FILTER_READ;
+				ftype = FILTER_RBANG;
 			}
 		}
 		rval = filtercmd(sp, cmdp,
@@ -167,28 +189,9 @@ ex_bang(sp, cmdp)
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
-		goto ret2;
 	}
 
-	/*
-	 * If no addresses were specified, run the command.  If the file has
-	 * been modified and autowrite is set, write the file back.  If the
-	 * file has been modified, autowrite is not set and the warn option is
-	 * set, tell the user about the file.
-	 */
-	msg = NULL;
-	if (F_ISSET(sp->ep, F_MODIFIED))
-		if (O_ISSET(sp, O_AUTOWRITE)) {
-			if (file_aw(sp, FS_ALL)) {
-				rval = 1;
-				goto ret1;
-			}
-		} else if (O_ISSET(sp, O_WARN) && !F_ISSET(sp, S_EX_SILENT))
-			msg = "File modified since last write.\n";
-
-	rval = ex_exec_proc(sp, cmdp, ap->bp, msg, bp);
-
-ret2:	if (F_ISSET(sp, S_EX)) {
+	if (F_ISSET(sp, S_EX)) {
 		/*
 		 * Make sure all ex messages are flushed out so they aren't
 		 * confused with any autoprint output.
