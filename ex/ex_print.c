@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.5 1993/09/09 14:01:44 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:01:44 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.6 1993/11/02 18:46:49 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,7 +94,7 @@ ex_print(sp, ep, fp, tp, flags)
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
 		if (LF_ISSET(E_F_HASH))
-			col = fprintf(sp->stdfp, "%7ld ", from);
+			col = ex_printf(EXCOOKIE, "%7ld ", from);
 		else
 			col = 0;
 	
@@ -110,10 +110,10 @@ ex_print(sp, ep, fp, tp, flags)
 
 #define	WCHECK(ch) {							\
 	if (col == sp->cols) {						\
-		(void)putc('\n', sp->stdfp);				\
+		(void)ex_printf(EXCOOKIE, "\n");			\
 		col = 0;						\
 	}								\
-	(void)putc(ch, sp->stdfp);					\
+	(void)ex_printf(EXCOOKIE, "%c", ch);				\
 	++col;								\
 }
 		for (rlen = len; rlen--;) {
@@ -136,16 +136,16 @@ ex_print(sp, ep, fp, tp, flags)
 				if (ch == '\t') {
 					while (col < sp->cols &&
 					    ++col % O_VAL(sp, O_TABSTOP))
-						(void)putc(' ', sp->stdfp);
+						(void)ex_printf(EXCOOKIE, " ");
 					if (col == sp->cols) {
 						col = 0;
-						(void)putc('\n', sp->stdfp);
+						(void)ex_printf(EXCOOKIE, "\n");
 					}
 				} else if (isprint(ch)) {
 					WCHECK(ch);
 				} else if (ch == '\n') {
 					col = 0;
-					(void)putc('\n', sp->stdfp);
+					(void)ex_printf(EXCOOKIE, "\n");
 				} else {
 					WCHECK('^');
 					WCHECK(ch + 0x40);
@@ -161,7 +161,7 @@ ex_print(sp, ep, fp, tp, flags)
 			 */
 			WCHECK(' ');
 		}
-		(void)putc('\n', sp->stdfp);
+		(void)ex_printf(EXCOOKIE, "\n");
 
 		if (F_ISSET(sp, S_INTERRUPTED))
 			break;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.9 1993/10/06 17:19:16 bostic Exp $ (Berkeley) $Date: 1993/10/06 17:19:16 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.10 1993/11/02 18:46:47 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,7 +123,7 @@ ex_bang(sp, ep, cmdp)
 	sp->lastbcomm = com;
 
 	if (modified)
-		(void)fprintf(sp->stdfp, "%s\n", com);
+		(void)ex_printf(EXCOOKIE, "%s\n", com);
 
 	/*
 	 * If addresses were specified, pipe lines from the file through
@@ -174,6 +174,6 @@ ex_bang(sp, ep, cmdp)
 
 	/* Ex terminates with a bang. */
 	if (F_ISSET(sp, S_MODE_EX))
-		(void)fprintf(sp->stdfp, "!\n");
+		(void)fprintf(stdout, "!\n");
 	return (rval);
 }

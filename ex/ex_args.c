@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.5 1993/10/03 14:15:23 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:15:23 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.6 1993/11/02 18:46:46 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,20 +145,20 @@ ex_args(sp, ep, cmdp)
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)fprintf(sp->stdfp, "\n");
+			(void)ex_printf(EXCOOKIE, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)fprintf(sp->stdfp, " ");
+			(void)ex_printf(EXCOOKIE, " ");
 		}
 		if (frp == sp->frp)
-			(void)fprintf(sp->stdfp, "[%s]", frp->fname);
+			(void)ex_printf(EXCOOKIE, "[%s]", frp->fname);
 		else
-			(void)fprintf(sp->stdfp, "%s", frp->fname);
+			(void)ex_printf(EXCOOKIE, "%s", frp->fname);
 		++cnt;
 	}
 	if (cnt == 1)
-		(void)fprintf(sp->stdfp, "No files.\n");
+		(void)ex_printf(EXCOOKIE, "No files.\n");
 	else
-		(void)fprintf(sp->stdfp, "\n");
+		(void)ex_printf(EXCOOKIE, "\n");
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.6 1993/10/28 11:21:54 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:21:54 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.7 1993/11/02 18:46:50 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,7 +32,7 @@ ex_shell(sp, ep, cmdp)
 	char buf[MAXPATHLEN];
 
 	/* Start with a new line. */
-	(void)fprintf(sp->stdfp, "\n");
+	(void)ex_printf(EXCOOKIE, "\n");
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
 	return (ex_exec_process(sp, O_STR(sp, O_SHELL), buf, 0));

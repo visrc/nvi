@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.44 1993/11/01 17:12:26 bostic Exp $ (Berkeley) $Date: 1993/11/01 17:12:26 $";
+static char sccsid[] = "$Id: ex.c,v 8.45 1993/11/02 18:46:43 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,17 +67,17 @@ ex(sp, ep)
 		tp = sp->txthdr.next;
 		if (tp->len == 0) {
 			if (F_ISSET(sp->gp, G_ISFROMTTY)) {
-				(void)fputc('\r', sp->stdfp);
-				(void)fflush(sp->stdfp);
+				(void)fputc('\r', stdout);
+				(void)fflush(stdout);
 			}
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
 			(void)ex_cstring(sp, ep, defcom, sizeof(DEFCOM) - 1);
 		} else {
 			if (F_ISSET(sp->gp, G_ISFROMTTY))
-				(void)fputc('\n', sp->stdfp);
+				(void)fputc('\n', stdout);
 			(void)ex_cstring(sp, ep, tp->lb, tp->len);
 		}
-		msg_rpt(sp, sp->stdfp);
+		(void)msg_rpt(sp, 0);
 
 		if (!F_ISSET(sp, S_MODE_EX) || F_ISSET(sp, S_MAJOR_CHANGE))
 			break;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 8.2 1993/09/13 19:34:52 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:34:52 $";
+static char sccsid[] = "$Id: ex_z.c,v 8.3 1993/11/02 18:46:53 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,12 +97,12 @@ ex_z(sp, ep, cmdp)
 		cmdp->addr2.lno = lno - 1;
 		if (ex_pr(sp, ep, cmdp))
 			return (1);
-		(void)fprintf(sp->stdfp,
+		(void)ex_printf(EXCOOKIE,
 		    "%s", "----------------------------------------\n");
 		cmdp->addr2.lno = cmdp->addr1.lno = equals = lno;
 		if (ex_pr(sp, ep, cmdp))
 			return (1);
-		(void)fprintf(sp->stdfp,
+		(void)ex_printf(EXCOOKIE,
 		    "%s", "----------------------------------------\n");
 		cmdp->addr1.lno = lno + 1;
 		cmdp->addr2.lno = (lno + cnt) - 1;

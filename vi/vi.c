@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.25 1993/10/31 15:14:35 bostic Exp $ (Berkeley) $Date: 1993/10/31 15:14:35 $";
+static char sccsid[] = "$Id: vi.c,v 8.26 1993/11/02 18:47:29 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:47:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,7 +226,7 @@ vi(sp, ep)
 		sp->cno = m.cno;
 
 		if (!TERM_KEY_MORE(sp)) {
-			msg_rpt(sp, NULL);
+			(void)msg_rpt(sp, 1);
 
 			if (0)
 err:				TERM_KEY_FLUSH(sp);

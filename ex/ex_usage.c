@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.5 1993/10/11 09:38:06 bostic Exp $ (Berkeley) $Date: 1993/10/11 09:38:06 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.6 1993/11/02 18:46:51 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,15 +26,15 @@ ex_help(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	(void)fprintf(sp->stdfp,
+	(void)ex_printf(EXCOOKIE,
 	    "To see the list of vi commands, enter \":viusage<CR>\"\n");
-	(void)fprintf(sp->stdfp,
+	(void)ex_printf(EXCOOKIE,
 	    "To see the list of ex commands, enter \":exusage<CR>\"\n");
-	(void)fprintf(sp->stdfp,
+	(void)ex_printf(EXCOOKIE,
 	    "For an ex command usage statement enter \":exusage [cmd]<CR>\"\n");
-	(void)fprintf(sp->stdfp,
+	(void)ex_printf(EXCOOKIE,
 	    "For a vi key usage statement enter \":viusage [key]<CR>\"\n");
-	(void)fprintf(sp->stdfp, "To exit, enter \":q!\"\n");
+	(void)ex_printf(EXCOOKIE, "To exit, enter \":q!\"\n");
 	return (0);
 }
 
@@ -60,12 +60,12 @@ ex_usage(sp, ep, cmdp)
 			msgq(sp, M_ERR, "The %.*s command is unknown.", len, p);
 			return (1);
 		}
-		(void)fprintf(sp->stdfp,
+		(void)ex_printf(EXCOOKIE,
 		    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
 		break;
 	case 0:
 		for (cp = cmds; cp->name != NULL; ++cp)
-			(void)fprintf(sp->stdfp,
+			(void)ex_printf(EXCOOKIE,
 			    "%*s: %s\n", MAXCMDNAMELEN, cp->name, cp->help);
 		break;
 	default:
@@ -103,7 +103,7 @@ nokey:			msgq(sp, M_ERR, "The %s key has no current meaning",
 			    charname(sp, key));
 			return (1);
 		}
-		(void)fprintf(sp->stdfp,
+		(void)ex_printf(EXCOOKIE,
 		    "  Key:%s%s\nUsage: %s\n",
 		        isblank(*kp->help) ? "" : " ", kp->help, kp->usage);
 		break;
@@ -111,7 +111,7 @@ nokey:			msgq(sp, M_ERR, "The %s key has no current meaning",
 		for (key = 0; key <= MAXVIKEY; ++key) {
 			kp = &vikeys[key];
 			if (kp->help != NULL)
-				(void)fprintf(sp->stdfp, "%s\n", kp->help);
+				(void)ex_printf(EXCOOKIE, "%s\n", kp->help);
 		}
 		break;
 	default:
