@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.6 1994/12/02 09:55:08 bostic Exp $ (Berkeley) $Date: 1994/12/02 09:55:08 $";
+static char sccsid[] = "$Id: key.c,v 9.7 1994/12/17 17:14:23 bostic Exp $ (Berkeley) $Date: 1994/12/17 17:14:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,6 +243,21 @@ __key_name(sp, ach)
 	size_t len;
 	int cnt, shift;
 
+	ch = ach;
+
+	/*
+	 * See if the user has explicitly declared the character printable
+	 * or not.
+	 */
+	if ((chp = O_STR(sp, O_PRINT)) != NULL)
+		for (; *chp != '\0'; ++chp)
+			if (*chp == ch)
+				goto pr;
+	if ((chp = O_STR(sp, O_NOPRINT)) != NULL)
+		for (; *chp != '\0'; ++chp)
+			if (*chp == ch)
+				goto nopr;
+
 	/*
 	 * Historical (ARPA standard) mappings.  Printable characters are left
 	 * alone.  Control characters less than '\177' are represented as '^'
@@ -264,11 +279,12 @@ __key_name(sp, ach)
 	 * NB: There's an assumption here that all printable characters take
 	 * up a single column on the screen.  This is not always correct.
 	 */
-	ch = ach;
 	if (isprint(ch)) {
-		sp->cname[0] = ch;
+pr:		sp->cname[0] = ch;
 		len = 1;
-	} else if (ch <= '\076' && iscntrl(ch)) {
+		goto done;
+	}
+nopr:	if (ch <= '\076' && iscntrl(ch)) {
 		sp->cname[0] = '^';
 		sp->cname[1] = ch == '\177' ? '?' : '@' + ch;
 		len = 2;
@@ -291,7 +307,7 @@ __key_name(sp, ach)
 			sp->cname[len++] = hexdigit[*chp & 0x0f];
 		}
 	}
-	sp->cname[sp->clen = len] = '\0';
+done:	sp->cname[sp->clen = len] = '\0';
 	return (sp->cname);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.6 1994/11/24 10:55:29 bostic Exp $ (Berkeley) $Date: 1994/11/24 10:55:29 $";
+static char sccsid[] = "$Id: options_f.c,v 9.7 1994/12/17 17:14:20 bostic Exp $ (Berkeley) $Date: 1994/12/17 17:14:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,7 @@ static char sccsid[] = "$Id: options_f.c,v 9.6 1994/11/24 10:55:29 bostic Exp $ 
 
 static int	opt_dup __P((SCR *, int, char *));
 static int	opt_putenv __P((char *));
+static int	prset __P((SCR *, CHAR_T *, int, int));
 
 #define	DECL(f)								\
 	int								\
@@ -257,7 +258,10 @@ DECL(f_octal)
 	else
 		O_SET(sp, O_OCTAL);
 
+	/* Reinitialize the key fast lookup table. */
 	key_init(sp);
+
+	/* Reformat the screen. */
 	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
@@ -270,6 +274,64 @@ DECL(f_paragraph)
 		return (1);
 	}
 	return (opt_dup(sp, O_PARAGRAPHS, str));
+}
+
+DECL(f_noprint)
+{
+	return (prset(sp, str, O_NOPRINT, O_PRINT));
+}
+
+DECL(f_print)
+{
+	return (prset(sp, str, O_PRINT, O_NOPRINT));
+}
+
+static int
+prset(sp, str, set_index, unset_index)
+	SCR *sp;
+	CHAR_T *str;
+	int set_index, unset_index;
+{
+	CHAR_T *p, *s, *t;
+	size_t len;
+
+	/* Delete characters from the unset index edit option. */
+	if ((p = O_STR(sp, unset_index)) != NULL)
+		for (s = str; *s != NULL; ++s) {
+			for (p = t = O_STR(sp, unset_index); *p != '\0'; ++p)
+				if (*p != *s)
+					*t++ = *p;
+			*t = '\0';
+		}
+
+	/*
+	 * Create a new copy of the set_index edit option, and integrate
+	 * the new characters from str into it, avoiding any duplication.
+	 */
+	len = strlen(str);
+	if (O_STR(sp, set_index) != NULL)
+		len += strlen(O_STR(sp, set_index));
+	MALLOC_RET(sp, p, CHAR_T *, (len + 1) * sizeof(CHAR_T));
+	MEMMOVE(p, O_STR(sp, set_index), len + 1);
+	for (s = str; *s != NULL; ++s) {
+		for (t = p; *t != '\0'; ++t)
+			if (*t == *s)
+				break;
+		if (*t == '\0') {
+			*t = *s;
+			*++t = '\0';
+		}
+	}
+	if (O_STR(sp, set_index) != NULL)
+		free(O_STR(sp, set_index));
+	O_STR(sp, set_index) = p;
+
+	/* Reinitialize the key fast lookup table. */
+	key_init(sp);
+
+	/* Reformat the screen. */
+	F_SET(sp, S_SCR_REFORMAT);
+	return (0);
 }
 
 DECL(f_readonly)

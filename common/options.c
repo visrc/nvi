@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.7 1994/12/01 23:04:42 bostic Exp $ (Berkeley) $Date: 1994/12/01 23:04:42 $";
+static char sccsid[] = "$Id: options.c,v 9.8 1994/12/17 17:14:17 bostic Exp $ (Berkeley) $Date: 1994/12/17 17:14:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,6 +115,8 @@ static OPTLIST const optlist[] = {
 	{"modeline",	f_modeline,	OPT_0BOOL,	0},
 /* O_MSGCAT	  4.4BSD */
 	{"msgcat",	f_msgcat,	OPT_STR,	0},
+/* O_NOPRINT	  4.4BSD */
+	{"noprint",	f_noprint,	OPT_STR,	0},
 /* O_NUMBER	    4BSD */
 	{"number",	f_number,	OPT_0BOOL,	0},
 /* O_OCTAL	  4.4BSD */
@@ -125,6 +127,8 @@ static OPTLIST const optlist[] = {
 	{"optimize",	NULL,		OPT_1BOOL,	0},
 /* O_PARAGRAPHS	    4BSD */
 	{"paragraphs",	f_paragraph,	OPT_STR,	0},
+/* O_PRINT	  4.4BSD */
+	{"print",	f_print,	OPT_STR,	0},
 /* O_PROMPT	    4BSD */
 	{"prompt",	NULL,		OPT_1BOOL,	0},
 /* O_READONLY	    4BSD (undocumented) */
@@ -695,7 +699,8 @@ opts_dump(sp, type)
 			case OPT_STR:
 				if (O_STR(sp, cnt) == O_D_STR(sp, cnt))
 					continue;
-				if (!strcmp(O_STR(sp, cnt), O_D_STR(sp, cnt)))
+				if (O_D_STR(sp, cnt) != NULL &&
+				    !strcmp(O_STR(sp, cnt), O_D_STR(sp, cnt)))
 					continue;
 				break;
 			}
@@ -724,6 +729,7 @@ opts_dump(sp, type)
 			curlen += strlen(nbuf);
 			break;
 		case OPT_STR:
+			/* O_STR(sp, cnt) can't be NULL. */
 			curlen += strlen(O_STR(sp, cnt)) + 3;
 			break;
 		}
@@ -791,8 +797,8 @@ opts_print(sp, op)
 		     "%s=%ld", op->name, O_VAL(sp, offset));
 		break;
 	case OPT_STR:
-		curlen += ex_printf(EXCOOKIE,
-		    "%s=\"%s\"", op->name, O_STR(sp, offset));
+		curlen += ex_printf(EXCOOKIE, "%s=\"%s\"", op->name,
+		    O_STR(sp, offset) == NULL ? "" : O_STR(sp, offset));
 		break;
 	}
 	return (curlen);
@@ -828,6 +834,8 @@ opts_save(sp, fp)
 			    "set %s=%-3d\n", op->name, O_VAL(sp, cnt));
 			break;
 		case OPT_STR:
+			if (O_STR(sp, cnt) == NULL)
+				break;
 			(void)fprintf(fp, "set ");
 			for (p = op->name; (ch = *p) != '\0'; ++p) {
 				if (isblank(ch) || ch == '\\')
