@@ -1,15 +1,16 @@
 /*-
- * Copyright (c) 1993
+ * Copyright (c) 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.41 1994/03/07 12:19:22 bostic Exp $ (Berkeley) $Date: 1994/03/07 12:19:22 $";
+static char sccsid[] = "$Id: recover.c,v 8.42 1994/03/08 19:38:12 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
@@ -20,15 +21,24 @@ static char sccsid[] = "$Id: recover.c,v 8.41 1994/03/07 12:19:22 bostic Exp $ (
  */
 #include <sys/file.h>
 
-#include <netdb.h>			/* MAXHOSTNAMELEN on some systems. */
+#include <netdb.h>		/* MAXHOSTNAMELEN on some systems. */
 
+#include <bitstring.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <pwd.h>
+#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
+
+#include "compat.h"
+#include <db.h>
+#include <regex.h>
 
 #include "vi.h"
 #include "pathnames.h"

@@ -4,24 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.34 1994/02/25 18:55:45 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:55:45 $
+ *	$Id: common.h,v 8.35 1994/03/08 19:38:22 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:22 $
  */
-
-/* System includes. */
-#include <sys/queue.h>		/* Required by screen.h. */
-#include <sys/time.h>		/* Required by screen.h. */
-
-#include <bitstring.h>		/* Required by screen.h. */
-#include <limits.h>		/* Required by screen.h. */
-#include <signal.h>		/* Required by screen.h. */
-#include <stdio.h>		/* Required by screen.h. */
-#include <termios.h>		/* Required by gs.h. */
-
-/*
- * Required by screen.h.  This is the first include that can pull
- * in "compat.h".  Should be after every other system include.
- */
-#include <regex.h>
 
 /*
  * Forward structure declarations.  Not pretty, but the include files
@@ -69,8 +53,6 @@ typedef	u_int		ARG_CHAR_T;
 /*
  * Local includes.
  */
-#include <db.h>			/* Required by exf.h; includes compat.h. */
-
 #include "search.h"		/* Required by screen.h. */
 #include "args.h"		/* Required by options.h. */
 #include "options.h"		/* Required by screen.h. */

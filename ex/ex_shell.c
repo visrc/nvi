@@ -1,21 +1,32 @@
 /*-
- * Copyright (c) 1992, 1993
+ * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.17 1993/12/23 16:49:18 bostic Exp $ (Berkeley) $Date: 1993/12/23 16:49:18 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.18 1994/03/08 19:39:41 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
+#include <bitstring.h>
 #include <curses.h>
 #include <errno.h>
+#include <limits.h>
+#include <signal.h>
+#include <stdio.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
+
+#include "compat.h"
+#include <db.h>
+#include <regex.h>
 
 #include "vi.h"
 #include "excmd.h"

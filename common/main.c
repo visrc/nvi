@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 1992, 1993
+ * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
@@ -12,16 +12,22 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.70 1994/03/07 19:18:30 bostic Exp $ (Berkeley) $Date: 1994/03/07 19:18:30 $";
+static char sccsid[] = "$Id: main.c,v 8.71 1994/03/08 19:38:04 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
+#include <bitstring.h>
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
@@ -32,6 +38,10 @@ static char sccsid[] = "$Id: main.c,v 8.70 1994/03/07 19:18:30 bostic Exp $ (Ber
 #else
 #include <varargs.h>
 #endif
+
+#include "compat.h"
+#include <db.h>
+#include <regex.h>
 
 #include "vi.h"
 #include "excmd.h"
