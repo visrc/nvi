@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.27 1995/11/05 13:12:06 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:12:06 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.28 1995/11/05 15:05:11 bostic Exp $ (Berkeley) $Date: 1995/11/05 15:05:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -406,11 +406,8 @@ vs_output(sp, mtype, line, llen)
 			++vip->totalcount;
 			++vip->linecount;
 
-			if (INTERRUPTED(sp)) {
-				vip->lcontinue =
-				    vip->linecount = vip->totalcount = 0;
+			if (INTERRUPTED(sp))
 				break;
-			}
 		} else
 			(void)gp->scr_move(sp, LASTLINE(sp), vip->lcontinue);
 
@@ -521,12 +518,17 @@ vs_ex_resolve(sp, continuep)
 			return (1);
 		F_SET(sp, S_SCR_REDRAW);
 	} else {
-		/* Put up the return-to-continue message and wait. */
-		vs_scroll(sp,
-		    &ch, continuep == NULL ? SCROLL_WAIT : SCROLL_EXWAIT);
-		if (continuep != NULL && ch == ':') {
-			*continuep = 1;
-			return (0);
+		/*
+		 * If not interrupted, put up the return-to-continue message
+		 * and wait.
+		 */
+		if (!INTERRUPTED(sp)) {
+			vs_scroll(sp, &ch,
+			    continuep == NULL ? SCROLL_WAIT : SCROLL_EXWAIT);
+			if (continuep != NULL && ch == ':') {
+				*continuep = 1;
+				return (0);
+			}
 		}
 
 		/* If ex changed the underlying screen, redraw from scratch. */
