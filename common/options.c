@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.64 2001/07/08 13:26:49 skimo Exp $ (Berkeley) $Date: 2001/07/08 13:26:49 $";
+static const char sccsid[] = "$Id: options.c,v 10.65 2002/01/18 22:34:43 skimo Exp $ (Berkeley) $Date: 2002/01/18 22:34:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1055,7 +1055,7 @@ opts_search(CHAR_T *name)
 			continue;
 		if (op->name[0] > name[0])
 			break;
-		if (!memcmp(op->name, name, len)) {
+		if (!MEMCMP(op->name, name, len)) {
 			if (found != NULL)
 				return (NULL);
 			found = op;
