@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.5 1993/08/06 22:56:17 bostic Exp $ (Berkeley) $Date: 1993/08/06 22:56:17 $";
+static char sccsid[] = "$Id: db.c,v 8.6 1993/09/27 16:20:58 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:20:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,6 +149,9 @@ file_dline(sp, ep, lno)
 		(void)rcv_init(sp, ep);
 	F_SET(ep, F_MODIFIED);
 
+	/* Delete any marks in the line. */
+	mark_delete(sp, ep, lno);
+
 	/* Update screen. */
 	return (scr_update(sp, ep, lno, LINE_DELETE, 1));
 }
@@ -214,6 +217,9 @@ file_aline(sp, ep, update, lno, p, len)
 
 	/* Log change. */
 	log_line(sp, ep, lno + 1, LOG_LINE_APPEND);
+
+	/* Push any marks above the line. */
+	mark_insert(sp, ep, lno + 1);
 
 	/*
 	 * Update screen.
@@ -281,6 +287,9 @@ file_iline(sp, ep, lno, p, len)
 
 	/* Log change. */
 	log_line(sp, ep, lno, LOG_LINE_INSERT);
+
+	/* Push any marks above the line. */
+	mark_insert(sp, ep, lno);
 
 	/* Update screen. */
 	return (scr_update(sp, ep, lno, LINE_INSERT, 1));
