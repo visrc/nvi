@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.5 1993/08/23 12:30:41 bostic Exp $ (Berkeley) $Date: 1993/08/23 12:30:41 $";
+static char sccsid[] = "$Id: search.c,v 8.6 1993/09/01 12:16:45 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:16:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,9 +153,10 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	char *ptrn, **eptrn;
 	u_int flags;
 {
+	MARK m;
 	regmatch_t match[1];
 	regex_t *re, lre;
-	recno_t lastlno, lno;
+	recno_t lno;
 	size_t coff, len;
 	long delta;
 	int eval, wrapped;
@@ -211,11 +212,11 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	 * anything.
 	 */
 	if (sp->s_position != NULL) {
-		if (sp->s_position(sp, ep, &lastlno, 0, P_BOTTOM))
+		if (sp->s_position(sp, ep, &m, 0, P_BOTTOM))
 			return (1);
 		(void)sp->s_busy_cursor(sp, NULL);
 	} else
-		lastlno = OOBLNO;
+		m.lno = OOBLNO;
 
 	wrapped = 0;
 	for (;; ++lno, coff = 0) {
@@ -241,7 +242,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			continue;
 
 		/* If it's going to be awhile, put up a message. */
-		if (lno == lastlno)
+		if (lno == m.lno)
 			(void)sp->s_busy_cursor(sp, "Searching...");
 
 		/* Set the termination. */
@@ -305,9 +306,10 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	char *ptrn, **eptrn;
 	u_int flags;
 {
+	MARK m;
 	regmatch_t match[1];
 	regex_t *re, lre;
-	recno_t firstlno, lno;
+	recno_t lno;
 	size_t coff, len, last;
 	long delta;
 	int eval, wrapped;
@@ -338,7 +340,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	} else
 		lno = fm->lno;
 
-	if (sp->s_position(sp, ep, &firstlno, 0, P_TOP))
+	if (sp->s_position(sp, ep, &m, 0, P_TOP))
 		return (1);
 	(void)sp->s_busy_cursor(sp, NULL);
 
@@ -371,7 +373,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			return (1);
 
 		/* If it's going to be awhile, put up a message. */
-		if (lno == firstlno)
+		if (lno == m.lno)
 			(void)sp->s_busy_cursor(sp, "Searching...");
 
 		/* Set the termination. */
