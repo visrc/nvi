@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.4 1993/08/19 16:11:04 bostic Exp $ (Berkeley) $Date: 1993/08/19 16:11:04 $
+ *	$Id: vi.h,v 8.5 1993/09/01 12:19:16 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:19:16 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -79,8 +79,10 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	V_RBUF		0x02000	/* Buffer (required, trailing). */
 #define	V_RCM		0x04000	/* Use relative cursor movment (RCM). */
 #define	V_RCM_SET	0x08000	/* Set RCM absolutely. */
-#define	V_RCM_SETFNB	0x10000	/* Set RCM to first non-blank character. */
-#define	V_RCM_SETLAST	0x20000	/* Set RCM to last character. */
+#define	V_RCM_SETFNB	0x10000	/* Set RCM to first non-blank. */
+#define	V_RCM_SETLAST	0x20000	/* Set RCM to last. */
+#define	V_RCM_SETLFNB	0x40000	/* Set RCM to first non-blank if line moved. */
+#define	V_RCM_SETNNB	0x80000	/* Set RCM to next non-blank. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
