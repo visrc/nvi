@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.21 1993/02/19 11:17:44 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:17:44 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.22 1993/02/20 16:42:30 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:42:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,8 +159,6 @@ v_hpageup(ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t lno;
-
 	/* 
 	 * Half screens always succeed unless already at SOF.  Half screens
 	 * set the scroll value, even if the command ultimately failed, in
