@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.60 1993/04/12 14:28:37 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:28:37 $";
+static char sccsid[] = "$Id: main.c,v 5.61 1993/04/13 16:15:22 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:15:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -75,8 +75,8 @@ main(argc, argv)
 		err(1, NULL);
 	__global_list = gp;
 	memset(gp, 0, sizeof(GS));
-	HDR_INIT(gp->scrhdr, next, prev, SCR);
-	HDR_INIT(gp->exfhdr, next, prev, EXF);
+	HDR_INIT(gp->scrhdr, next, prev);
+	HDR_INIT(gp->exfhdr, next, prev);
 	if (tcgetattr(STDIN_FILENO, &gp->original_termios))
 		err(1, "tcgetattr");
 		
@@ -86,7 +86,7 @@ main(argc, argv)
 	if (scr_init(NULL, sp))
 		err(1, NULL);
 	sp->gp = gp;		/* All screens point to the GS structure. */
-	HDR_INIT(sp->seqhdr, next, prev, SEQ);
+	HDR_INIT(sp->seqhdr, next, prev);
 	HDR_APPEND(sp, &gp->scrhdr, next, prev, SCR);
 
 	set_window_size(sp, 0);	/* Set the window size. */
@@ -174,7 +174,7 @@ main(argc, argv)
 		if ((p = strdup(p)) == NULL)
 			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		else {
-			(void)ex_cstring(sp, NULL, p, strlen(p), 1);
+			(void)ex_cstring(sp, NULL, p, strlen(p));
 			free(p);
 		}
 
@@ -204,7 +204,7 @@ main(argc, argv)
 
 	/* Do commands from the command line. */
 	if (excmdarg != NULL)
-		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg), 0);
+		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
 
 	/*
 	 * XXX
