@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.24 1994/02/26 17:20:07 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:07 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.25 1994/03/03 17:09:59 bostic Exp $ (Berkeley) $Date: 1994/03/03 17:09:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -510,8 +510,7 @@ v_CS(sp, ep, vp, iflags)
 		LF_SET(TXT_APPENDEOL);
 	} else { 
 		/* The line may be empty, but that's okay. */
-		if ((p = file_gline(sp, ep,
-		    vp->m_start.lno, &vp->m_stop.cno)) == NULL) {
+		if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno != 0) {
@@ -521,12 +520,11 @@ v_CS(sp, ep, vp, iflags)
 			vp->m_stop.cno = len = 0;
 			LF_SET(TXT_APPENDEOL);
 		} else {
-			if (vp->m_stop.cno != 0)
-				len = --vp->m_stop.cno;
-			else {
-				len = 0;
+			if (len == 0) {
+				vp->m_stop.cno = 0;
 				LF_SET(TXT_APPENDEOL);
-			}
+			} else
+				vp->m_stop.cno = len - 1;
 			if (cut(sp, ep,
 			    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 			    &vp->m_start, &vp->m_stop, CUT_LINEMODE))
@@ -598,15 +596,18 @@ v_change(sp, ep, vp)
 					return (1);
 				}
 			}
-			len = 0;
+			vp->m_stop.cno = len = 0;
 			LF_SET(TXT_APPENDEOL);
 		} else {
+			if (len == 0) {
+				vp->m_stop.cno = 0;
+				LF_SET(TXT_APPENDEOL);
+			} else
+				vp->m_stop.cno = len - 1;
 			if (cut(sp, ep,
 			    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 			    &vp->m_start, &vp->m_stop, lmode))
 				return (1);
-			if (len == 0)
-				LF_SET(TXT_APPENDEOL);
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
 		}
 		return (v_ntext(sp, ep, &sp->tiq,
@@ -711,7 +712,7 @@ v_Replace(sp, ep, vp)
 		LF_SET(TXT_OVERWRITE | TXT_REPLACE);
 	}
 	vp->m_stop.lno = vp->m_start.lno;
-	vp->m_stop.cno = len ? len : 0;
+	vp->m_stop.cno = len ? len - 1 : 0;
 	if (v_ntext(sp, ep, &sp->tiq,
 	    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 		return (1);
@@ -788,9 +789,9 @@ v_subst(sp, ep, vp)
 
 	vp->m_stop.lno = vp->m_start.lno;
 	vp->m_stop.cno =
-	    vp->m_start.cno + (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
-	if (vp->m_stop.cno > len)
-		vp->m_stop.cno = len;
+	    vp->m_start.cno + (F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0);
+	if (vp->m_stop.cno > len - 1)
+		vp->m_stop.cno = len - 1;
 
 	if (p != NULL &&
 	    cut(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
