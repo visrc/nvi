@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.10 1993/09/27 17:32:49 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:32:49 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.11 1993/09/29 16:24:42 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:24:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -181,7 +181,6 @@ ex_writefp(sp, ep, fname, fp, fm, tm, nlno, nch)
 	u_long *nlno, *nch;
 {
 	register u_long ccnt, fline, tline;
-	recno_t nlines;
 	size_t len;
 	char *p;
 
