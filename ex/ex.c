@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.45 1993/11/02 18:46:43 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:43 $";
+static char sccsid[] = "$Id: ex.c,v 8.46 1993/11/03 10:23:05 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:23:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -556,7 +556,7 @@ two:		switch (cmd.addrcnt) {
 			for (; isblank(*exc); ++exc);
 
 		/*
-		 * When * reach the end of the command, quit, unless it's
+		 * When reach the end of the command, quit, unless it's
 		 * a command that does its own parsing, in which case we
 		 * want to build a reasonable argv for it.
 		 */
