@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.8 1993/09/13 17:23:10 bostic Exp $ (Berkeley) $Date: 1993/09/13 17:23:10 $";
+static char sccsid[] = "$Id: v_search.c,v 8.9 1993/09/27 10:45:07 bostic Exp $ (Berkeley) $Date: 1993/09/27 10:45:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 {
 	int flags;
 
-	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM;
+	flags = SEARCH_MSG;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
 		flags |= SEARCH_EOL;
 	switch (sp->searchdir) {
@@ -75,7 +75,7 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 {
 	int flags;
 
-	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM;
+	flags = SEARCH_MSG;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
 		flags |= SEARCH_EOL;
 	switch (sp->searchdir) {
@@ -122,7 +122,7 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	GET_SPACE(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 		
-	flags = SEARCH_MSG | SEARCH_TERM;
+	flags = SEARCH_MSG;
 	rval = f_search(sp, ep, fm, rp, bp, NULL, &flags);
 
 	FREE_SPACE(sp, bp, blen);
@@ -135,7 +135,7 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 }
 
 /*
- * v_searchb -- [count]?RE?offset
+ * v_searchb -- [count]?RE[? offset]
  *	Search backward.
  */
 int
@@ -153,7 +153,7 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 	if (ptrn == NULL)
 		return (0);
 
-	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
+	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
 		flags |= SEARCH_EOL;
 	if (b_search(sp, ep, fm, rp, ptrn, NULL, &flags))
@@ -165,7 +165,7 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 }
 
 /*
- * v_searchf -- [count]/RE/offset
+ * v_searchf -- [count]/RE[/ offset]
  *	Search forward.
  */
 int
@@ -183,7 +183,7 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 	if (ptrn == NULL)
 		return (0);
 
-	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
+	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
 		flags |= SEARCH_EOL;
 	if (f_search(sp, ep, fm, rp, ptrn, NULL, &flags))
