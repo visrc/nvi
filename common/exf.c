@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.46 1993/11/19 13:00:36 bostic Exp $ (Berkeley) $Date: 1993/11/19 13:00:36 $";
+static char sccsid[] = "$Id: exf.c,v 8.47 1993/11/19 15:12:15 bostic Exp $ (Berkeley) $Date: 1993/11/19 15:12:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -295,6 +295,9 @@ file_init(sp, frp, rcv_fname, force)
 	    (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
 	    access(frp->fname, W_OK)))
 		F_SET(frp, FR_RDONLY);
+
+	/* The file's been edited. */
+	F_SET(frp, FR_EDITED);
 
 	/* Start logging. */
 	log_init(sp, ep);
