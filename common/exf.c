@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.18 1995/01/11 15:58:01 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:01 $";
+static char sccsid[] = "$Id: exf.c,v 9.19 1995/01/12 16:34:44 bostic Exp $ (Berkeley) $Date: 1995/01/12 16:34:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,7 +44,8 @@ static char sccsid[] = "$Id: exf.c,v 9.18 1995/01/11 15:58:01 bostic Exp $ (Berk
 #include "excmd.h"
 #include "../sex/sex_screen.h"
 
-static int file_backup __P((SCR *, char *, char *));
+static int	file_backup __P((SCR *, char *, char *));
+static void	file_comment __P((SCR *));
 
 /*
  * file_add --
@@ -473,7 +474,10 @@ file_cinit(sp)
 			/* If returning to a file in vi, center the line. */
 			 F_SET(sp, S_SCR_CENTER);
 		} else {
-			sp->lno = 1;
+			if (O_ISSET(sp, O_COMMENT))
+				file_comment(sp);
+			else
+				sp->lno = 1;
 			nb = 1;
 		}
 		if (file_gline(sp, sp->lno, &len) == NULL) {
@@ -1088,6 +1092,32 @@ err:	if (rfd != -1)
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
 	return (1);
+}
+
+/*
+ * file_comment --
+ *	Skip the first comment.
+ */
+static void
+file_comment(sp)
+	SCR *sp;
+{
+	recno_t lno;
+	size_t len;
+	char *p;
+
+	for (lno = 1;
+	    (p = file_gline(sp, lno, &len)) != NULL && len == 0; ++lno);
+	if (p == NULL || len <= 1 || p[0] != '/' || p[1] != '*')
+		return;
+	F_SET(sp, S_SCR_TOP);
+	do {
+		for (; len; --len, ++p)
+			if (p[0] == '*' && len > 1 && p[1] == '/') {
+				sp->lno = lno;
+				return;
+			}
+	} while ((p = file_gline(sp, ++lno, &len)) != NULL);
 }
 
 /*
