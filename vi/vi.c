@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.8 1995/09/21 12:08:56 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:56 $";
+static char sccsid[] = "$Id: vi.c,v 10.9 1995/09/24 12:00:19 bostic Exp $ (Berkeley) $Date: 1995/09/24 12:00:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,21 +27,21 @@ static char sccsid[] = "$Id: vi.c,v 10.8 1995/09/21 12:08:56 bostic Exp $ (Berke
 #include "../common/common.h"
 #include "vi.h"
 
-static VIKEYS const
-		*v_alias __P((SCR *, VICMD *, VIKEYS const *));
-static int	 v_count __P((SCR *, ARG_CHAR_T, u_long *));
-static void	 v_dtoh __P((SCR *));
-static int	 v_init __P((SCR *));
-static int	 v_key __P((SCR *, EVENT *, u_int));
-static int	 v_keyword __P((SCR *));
-static int	 v_motion __P((SCR *, VICMD *, VICMD *, int *));
+typedef enum {
+	GC_ERR, GC_ERR_NOFLUSH, GC_EVENT, GC_INTERRUPT, GC_OK } gcret_t;
 
-enum gcret { GC_ERR, GC_ERR_NOFLUSH, GC_OK } gcret;
-static enum gcret
-		 v_cmd __P((SCR *, VICMD *, VICMD *, VICMD *, int *, int *));
+static VIKEYS const
+	       *v_alias __P((SCR *, VICMD *, VIKEYS const *));
+static gcret_t	v_cmd __P((SCR *, VICMD *, VICMD *, VICMD *, int *, int *));
+static int	v_count __P((SCR *, ARG_CHAR_T, u_long *));
+static void	v_dtoh __P((SCR *));
+static int	v_init __P((SCR *));
+static gcret_t	v_key __P((SCR *, int, EVENT *, u_int));
+static int	v_keyword __P((SCR *));
+static int	v_motion __P((SCR *, VICMD *, VICMD *, int *));
 
 #if defined(DEBUG) && defined(COMLOG)
-static void	 v_comlog __P((SCR *, VICMD *));
+static void	v_comlog __P((SCR *, VICMD *));
 #endif
 
 /*
@@ -150,7 +150,7 @@ vi(spp)
 		 * we simply go back into the ex parser.
 		 */
 		if (EXCMD_RUNNING(gp))
-			goto excall;
+			goto ex_continue;
 
 		/* Refresh the command structure. */
 		memset(vp, 0, sizeof(VICMD));
@@ -170,11 +170,15 @@ vi(spp)
 		 */
 		switch (v_cmd(sp, DOT, vp, NULL, &comcount, &mapped)) {
 		case GC_ERR:
-			if (INTERRUPTED(sp))
-				goto intr;
 			goto err;
 		case GC_ERR_NOFLUSH:
-			goto err_noflush;
+			goto gc_err_noflush;
+		case GC_EVENT:
+			if (v_event_exec(sp, vp))
+				goto err;
+			goto gc_event;
+		case GC_INTERRUPT:
+			goto intr;
 		case GC_OK:
 			break;
 		}
@@ -244,8 +248,9 @@ vi(spp)
 		v_comlog(sp, vp);
 #endif
 		/* Call the function. */
-excall:		if ((vp->kp->func)(sp, vp))
+ex_continue:	if ((vp->kp->func)(sp, vp))
 			goto err;
+gc_event:
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
 		if (F_ISSET(gp, G_TMP_INUSE)) {
@@ -368,7 +373,7 @@ err:			if (v_event_flush(sp, CH_MAPPED))
 		 * Check and clear interrupts.  There's an obvious race, but
 		 * it's not worth fixing.
 		 */
-err_noflush:	if (INTERRUPTED(sp)) {
+gc_err_noflush:	if (INTERRUPTED(sp)) {
 intr:			if (v_event_flush(sp, CH_MAPPED))
 				msgq(sp, M_ERR,
 				    "231|Interrupted: mapped keys discarded");
@@ -387,8 +392,8 @@ ret:		rval = 1;
 }
 
 #define	KEY(key, ec_flags) {						\
-	if (v_key(sp, &ev, ec_flags))					\
-		return (1);						\
+	if ((gcret = v_key(sp, 0, &ev, ec_flags)) != GC_OK)		\
+		return (gcret);						\
 	if (ev.e_value == K_ESCAPE)					\
 		goto esc;						\
 	if (F_ISSET(&ev.e_ch, CH_MAPPED))				\
@@ -424,7 +429,7 @@ VIKEYS const tmotion = {
  *
  *	[count] key [character]
  */
-static enum gcret
+static gcret_t
 v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	SCR *sp;
 	VICMD *dp, *vp;
@@ -434,6 +439,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	enum { COMMANDMODE, ISPARTIAL, NOTPARTIAL } cpart;
 	EVENT ev;
 	VIKEYS const *kp;
+	gcret_t gcret;
 	u_int flags;
 	CHAR_T key;
 	char *s;
@@ -451,7 +457,18 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	 * be alerted.
 	 */
 	cpart = ismotion == NULL ? COMMANDMODE : ISPARTIAL;
-	KEY(key, EC_MAPCOMMAND);
+	if ((gcret =
+	    v_key(sp, ismotion == NULL, &ev, EC_MAPCOMMAND)) != GC_OK) {
+		if (gcret == GC_EVENT)
+			vp->ev = ev;
+		return (gcret);	
+	}
+	if (ev.e_value == K_ESCAPE)
+		goto esc;
+	if (F_ISSET(&ev.e_ch, CH_MAPPED))
+		*mappedp = 1;
+	key = ev.e_c;
+
 	if (ismotion == NULL)
 		cpart = NOTPARTIAL;
 
@@ -656,43 +673,6 @@ esc:	switch (cpart) {
 }
 
 /*
- * v_alias --
- *	Check for a command alias.
- */
-static VIKEYS const *
-v_alias(sp, vp, kp)
-	SCR *sp;
-	VICMD *vp;
-	VIKEYS const *kp;
-{
-	CHAR_T push;
-
-	switch (vp->key) {
-	case 'C':			/* C -> c$ */
-		push = '$';
-		vp->key = 'c';
-		break;
-	case 'D':			/* D -> d$ */
-		push = '$';
-		vp->key = 'd';
-		break;
-	case 'S':			/* S -> c_ */
-		push = '_';
-		vp->key = 'c';
-		break;
-	case 'Y':			/* Y -> y_ */
-		push = '_';
-		vp->key = 'y';
-		break;
-	default:
-		return (kp);
-	}
-	if (v_event_push(sp, NULL, &push, 1, CH_NOMAP | CH_QUOTED))
-		return (NULL);
-	return (&vikeys[vp->key]);
-}
-
-/*
  * v_motion --
  *
  * Get resulting motion mark.
@@ -890,12 +870,15 @@ v_init(sp)
 	 * If ex wrote to the screen and the ex to vi transition wasn't done
 	 * by user command, wait for user acknowledgement.  (The S_EX_WROTE
 	 * flag is cleared in ex if the ex to vi transition was explicit.)
+	 *
+	 * XXX
+	 * We're ignoring any errors or illegal events.
 	 */
 	if (F_ISSET(sp, S_EX_WROTE)) {
 		p = msg_cmsg(sp, CMSG_CONT, &len);
 		(void)write(STDOUT_FILENO, p, len);
 		do {
-			if (v_get_event(sp, &ev, 0))
+			if (v_event_get(sp, &ev, 0))
 				return (1);
 		} while (ev.e_event != E_CHARACTER);
 		F_CLR(sp, S_EX_WROTE);
@@ -1050,6 +1033,43 @@ err:		msgq(sp, M_BERR, "212|Cursor not in a word");
 }
 
 /*
+ * v_alias --
+ *	Check for a command alias.
+ */
+static VIKEYS const *
+v_alias(sp, vp, kp)
+	SCR *sp;
+	VICMD *vp;
+	VIKEYS const *kp;
+{
+	CHAR_T push;
+
+	switch (vp->key) {
+	case 'C':			/* C -> c$ */
+		push = '$';
+		vp->key = 'c';
+		break;
+	case 'D':			/* D -> d$ */
+		push = '$';
+		vp->key = 'd';
+		break;
+	case 'S':			/* S -> c_ */
+		push = '_';
+		vp->key = 'c';
+		break;
+	case 'Y':			/* Y -> y_ */
+		push = '_';
+		vp->key = 'y';
+		break;
+	default:
+		return (kp);
+	}
+	if (v_event_push(sp, NULL, &push, 1, CH_NOMAP | CH_QUOTED))
+		return (NULL);
+	return (&vikeys[vp->key]);
+}
+
+/*
  * v_count --
  *	Return the next count.
  */
@@ -1073,8 +1093,8 @@ v_count(sp, fkey, countp)
 		if (count > tc) {
 			/* Toss to the next non-digit. */
 			do {
-				if (v_key(sp, &ev,
-				    EC_MAPCOMMAND | EC_MAPNODIGIT))
+				if (v_key(sp, 0, &ev,
+				    EC_MAPCOMMAND | EC_MAPNODIGIT) != GC_OK)
 					return (1);
 			} while (isdigit(ev.e_c));
 			msgq(sp, M_ERR,
@@ -1082,7 +1102,7 @@ v_count(sp, fkey, countp)
 			return (1);
 		}
 		count = tc;
-		if (v_key(sp, &ev, EC_MAPCOMMAND | EC_MAPNODIGIT))
+		if (v_key(sp, 0, &ev, EC_MAPCOMMAND | EC_MAPNODIGIT) != GC_OK)
 			return (1);
 	} while (isdigit(ev.e_c));
 	*countp = count;
@@ -1091,25 +1111,25 @@ v_count(sp, fkey, countp)
 
 /*
  * v_key --
- *	Return the next key.
+ *	Return the next event.
  */
-static int
-v_key(sp, evp, ec_flags)
+static gcret_t
+v_key(sp, command_events, evp, ec_flags)
 	SCR *sp;
 	EVENT *evp;
 	u_int32_t ec_flags;
 {
-next:	if (v_get_event(sp, evp, ec_flags))
-		return (1);
+next:	if (v_event_get(sp, evp, ec_flags))
+		return (GC_ERR);
 
 	/* Deal with all non-character events. */
 	switch (evp->e_event) {
 	case E_CHARACTER:
-		return (0);
+		return (GC_OK);
 	case E_ERR:
 	case E_EOF:
 		F_SET(sp, S_EXIT_FORCE);
-		return (1);
+		return (GC_ERR);
 	case E_INTERRUPT:
 		/*
 		 * !!!
@@ -1119,20 +1139,26 @@ next:	if (v_get_event(sp, evp, ec_flags))
 		 * on the command line, and two interrupts were generated
 		 * in a row.  (Just figured you might want to know that.)
 		 */
-		if (INTERRUPTED(sp))
-			(void)sp->gp->scr_bell(sp);
-		return (1);
+		(void)sp->gp->scr_bell(sp);
+		return (GC_INTERRUPT);
 	case E_REPAINT:
 		if (vs_repaint(sp, evp))
-			return (1);
+			return (GC_ERR);
 		goto next;
 	case E_RESIZE:
 		v_dtoh(sp);
 		if (v_init(sp))
-			return (1);
+			return (GC_ERR);
 		goto next;
+	case E_QUIT:
+	case E_WRITE:
+	case E_WRITEQUIT:
+		if (command_events)
+			return (GC_EVENT);
+		/* FALLTHROUGH */
 	default:
-		abort();
+		v_event_err(sp, evp);
+		return (GC_ERR);
 	}
 	/* NOTREACHED */
 }
