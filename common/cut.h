@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cut.h,v 10.4 1996/03/27 18:43:53 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:43:53 $
+ *	$Id: cut.h,v 10.5 1996/04/03 14:31:58 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:31:58 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -31,7 +31,8 @@ struct _text {				/* Text: a linked list of lines. */
 	size_t	 len;			/* Line length. */
 
 	/* These fields are used by the vi text input routine. */
-	recno_t	 lno;			/* 1-N: line number. */
+	recno_t	 lno;			/* 1-N: file line. */
+	size_t	 cno;			/* 0-N: file character in line. */
 	size_t	 ai;			/* 0-N: autoindent bytes. */
 	size_t	 insert;		/* 0-N: bytes to insert (push). */
 	size_t	 offset;		/* 0-N: initial, unerasable chars. */
@@ -50,8 +51,11 @@ struct _text {				/* Text: a linked list of lines. */
 	 *	TERM_CR:	User entered <carriage-return>; no data.
 	 *	TERM_ESC:	User entered <escape>; no data.
 	 *	TERM_OK:	Data available.
+	 *	TERM_SEARCH:	Incremental search.
 	 */
-	enum { TERM_BS, TERM_CEDIT, TERM_CR, TERM_ESC, TERM_OK } term;
+	enum {
+	    TERM_BS, TERM_CEDIT, TERM_CR, TERM_ESC, TERM_OK, TERM_SEARCH
+	} term;
 };
 
 /*

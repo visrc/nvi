@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.12 1996/03/27 09:18:37 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:37 $
+ *	$Id: key.h,v 10.13 1996/04/03 14:32:06 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:32:06 $
  */
 
 /*
@@ -216,6 +216,7 @@ extern KEYLIST keylist[];
 #define	TXT_REPLACE	0x01000000	/* Replace; don't delete overwrite. */
 #define	TXT_REPLAY	0x02000000	/* Replay the last input. */
 #define	TXT_RESOLVE	0x04000000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x08000000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x10000000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x20000000	/* Option: wrapmargin. */
+#define	TXT_SEARCHINCR	0x08000000	/* Incremental search. */
+#define	TXT_SHOWMATCH	0x10000000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x20000000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x40000000	/* Option: wrapmargin. */

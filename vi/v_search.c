@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.12 1996/03/14 09:35:11 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:35:11 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.13 1996/04/03 14:33:21 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:33:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,18 +89,24 @@ v_exaddr(sp, vp, dir)
 
 	/* Get the search pattern. */
 	if (v_tcmd(sp, vp, dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH,
-	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
+	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT |
+	    (O_ISSET(sp, O_SEARCHINCR) ? TXT_SEARCHINCR : 0)))
 		return (1);
 
 	/*
-	 * If the user backspaced over the prompt, do nothing.  If the user
-	 * entered <escape> or <carriage-return>, the length is 1 and the
-	 * right thing will happen, i.e. the prompt will be used as a command
-	 * character.
+	 * If the user backspaced over the prompt, do nothing.
+	 *
+	 * If the user was doing an incremental search, do nothing.
+	 *
+	 * If the user entered <escape> or <carriage-return>, the length is
+	 * 1 and the right thing will happen, i.e. the prompt will be used
+	 * as a command character.
 	 */
 	tp = sp->tiq.cqh_first;
 	if (tp->term == TERM_BS)
 		return (1);
+	if (tp->term == TERM_SEARCH)
+		return (0);
 
 	/* Build a fake ex command structure. */
 	gp = sp->gp;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.14 1996/03/30 13:46:56 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:56 $";
+static const char sccsid[] = "$Id: search.c,v 10.15 1996/04/03 14:32:24 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:32:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -164,7 +164,11 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 	} else {
 		if (db_get(sp, fm->lno, DBG_FATAL, &l, &len))
 			return (1);
-		if (fm->cno + 1 >= len) {
+		lno = fm->lno;
+		if (LF_ISSET(SEARCH_INCR))
+			coff = fm->cno;
+		else if (fm->cno + 1 >= len) {
+			coff = 0;
 			lno = fm->lno + 1;
 			if (db_get(sp, lno, 0, &l, &len)) {
 				if (!O_ISSET(sp, O_WRAPSCAN)) {
@@ -174,11 +178,8 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 				}
 				lno = 1;
 			}
-			coff = 0;
-		} else {
-			lno = fm->lno;
+		} else
 			coff = fm->cno + 1;
-		}
 	}
 
 	btype = BUSY_ON;
@@ -186,8 +187,10 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		if (cnt-- == 0) {
 			if (INTERRUPTED(sp))
 				break;
-			search_busy(sp, btype);
-			btype = BUSY_UPDATE;
+			if (LF_ISSET(SEARCH_MSG)) {
+				search_busy(sp, btype);
+				btype = BUSY_UPDATE;
+			}
 			cnt = INTERRUPT_CHECK;
 		}
 		if (wrapped && lno > fm->lno || db_get(sp, lno, 0, &l, &len)) {
@@ -252,7 +255,8 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		break;
 	}
 
-	search_busy(sp, BUSY_OFF);
+	if (LF_ISSET(SEARCH_MSG))
+		search_busy(sp, BUSY_OFF);
 	return (rval);
 }
 
@@ -279,25 +283,32 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 	if (search_setup(sp, BACKWARD, ptrn, eptrn, flags))
 		return (1);
 
-	/* If in the first column, start search on the previous line. */
-	if (fm->cno == 0) {
-		if (fm->lno == 1 && !O_ISSET(sp, O_WRAPSCAN)) {
-			if (LF_ISSET(SEARCH_MSG))
-				search_msg(sp, S_SOF);
-			return (1);
-		}
-		lno = fm->lno - 1;
-	} else
+	if (LF_ISSET(SEARCH_INCR)) {
 		lno = fm->lno;
-	coff = fm->cno;
+		coff = fm->cno + 1;
+	} else {
+		/* If in the first column, start search on the previous line. */
+		if (fm->cno == 0) {
+			if (fm->lno == 1 && !O_ISSET(sp, O_WRAPSCAN)) {
+				if (LF_ISSET(SEARCH_MSG))
+					search_msg(sp, S_SOF);
+				return (1);
+			}
+			lno = fm->lno - 1;
+		} else
+			lno = fm->lno;
+		coff = fm->cno;
+	}
 
 	btype = BUSY_ON;
 	for (cnt = INTERRUPT_CHECK, rval = 1, wrapped = 0;; --lno, coff = 0) {
 		if (cnt-- == 0) {
 			if (INTERRUPTED(sp))
 				break;
-			search_busy(sp, btype);
-			btype = BUSY_UPDATE;
+			if (LF_ISSET(SEARCH_MSG)) {
+				search_busy(sp, btype);
+				btype = BUSY_UPDATE;
+			}
 			cnt = INTERRUPT_CHECK;
 		}
 		if (wrapped && lno < fm->lno || lno == 0) {
@@ -389,7 +400,8 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 		break;
 	}
 
-err:	search_busy(sp, BUSY_OFF);
+err:	if (LF_ISSET(SEARCH_MSG))
+		search_busy(sp, BUSY_OFF);
 	return (rval);
 }
 

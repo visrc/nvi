@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.13 1996/03/30 13:46:56 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:56 $
+ *	$Id: screen.h,v 10.14 1996/04/03 14:32:16 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:32:16 $
  */
 
 /*
@@ -106,10 +106,11 @@ struct _scr {
 					/* Ex/vi: flags to search routines. */
 #define	SEARCH_EOL	0x0001		/* Offset past EOL is okay. */
 #define	SEARCH_FILE	0x0002		/* Search the entire file. */
-#define	SEARCH_MSG	0x0004		/* Display search warning messages. */
-#define	SEARCH_PARSE	0x0008		/* Parse the search pattern. */
-#define	SEARCH_SET	0x0010		/* Set search direction. */
-#define	SEARCH_TAG	0x0020		/* Search pattern is a tag pattern. */
+#define	SEARCH_INCR	0x0004		/* Search incrementally. */
+#define	SEARCH_MSG	0x0008		/* Display search warning messages. */
+#define	SEARCH_PARSE	0x0010		/* Parse the search pattern. */
+#define	SEARCH_SET	0x0020		/* Set search direction. */
+#define	SEARCH_TAG	0x0040		/* Search pattern is a tag pattern. */
 
 					/* Ex/vi: RE information. */
 	dir_t	 searchdir;		/* Last file search direction. */
