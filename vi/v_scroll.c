@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.17 1994/04/25 16:26:09 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:26:09 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.18 1994/04/26 11:32:30 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:32:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,19 +152,33 @@ static void
 goto_adjust(vp)
 	VICMDARG *vp;
 {
-	/*
-	 * !!!
-	 * If it's not a yank to the current line or greater, and we've
-	 * changed lines, move to the first non-blank of the line.
-	 */
-	if (!F_ISSET(vp, VC_Y) || vp->m_stop.lno < vp->m_start.lno) {
-		F_CLR(vp, VM_RCM_MASK);
-		F_SET(vp, VM_RCM_SETLFNB);
-	}
-
-	/* Non-motion commands go to the end of the range. */
+	/* Guess that it's the end of the range. */
 	vp->m_final = vp->m_stop;
-	if (!ISMOTION(vp))
+
+	/*
+	 * Non-motion commands move the cursor to the end of the range, and
+	 * then to the NEXT nonblank of the line.  Historic vi always moved
+	 * to the first nonblank in the line; since the H, M, and L commands
+	 * are logical motions in this implementation, we do the next nonblank
+	 * so that it looks approximately the same to the user.  To make this
+	 * happen, the VM_RCM_SETNNB flag is set in the vcmd.c command table.
+	 *
+	 * If it's a motion, it's more complicated.  The best possible solution
+	 * is probably to display the first nonblank of the line the cursor
+	 * will eventually rest on.  This is tricky, particularly given that if
+	 * the associated command is a delete, we don't yet know what line that
+	 * will be.  So, we clear the VM_RCM_SETNNB flag, and set the first
+	 * nonblank flag (VM_RCM_SETFNB).  Note, if the lines are sufficiently
+	 * long, this can cause the cursor to warp out of the screen.  It's too
+	 * hard to fix.
+	 *
+	 * XXX
+	 * The G command is always first nonblank, so it's okay to reset it.
+	 */
+	if (ISMOTION(vp)) {
+		F_CLR(vp, VM_RCM_MASK);
+		F_SET(vp, VM_RCM_SETFNB);
+	} else
 		return;
 
 	/*
@@ -330,7 +344,8 @@ v_pagedown(sp, ep, vp)
 	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
 	 * least one line.
 	 */
-	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * sp->t_rows - 2;
+	offset =
+	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * O_VAL(sp, O_WINDOW) - 2;
 	if (offset == 0)
 		offset = 1;
 	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_F))
@@ -380,7 +395,8 @@ v_pageup(sp, ep, vp)
 	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
 	 * least one line.
 	 */
-	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * sp->t_rows - 2;
+	offset =
+	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * O_VAL(sp, O_WINDOW) - 2;
 	if (offset == 0)
 		offset = 1;
 	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_B))
