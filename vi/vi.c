@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.11 1992/05/21 16:46:33 bostic Exp $ (Berkeley) $Date: 1992/05/21 16:46:33 $";
+static char sccsid[] = "$Id: vi.c,v 5.12 1992/05/22 09:58:34 bostic Exp $ (Berkeley) $Date: 1992/05/22 09:58:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,7 +144,7 @@ err:		if (msgcnt) {
 			fm = cursor;
 
 		/* Get any associated keyword. */
-		if (flags & V_KEYW && getkeyword(vp, flags))
+		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(vp, flags))
 			goto err;
 
 		/* If a non-relative movement, set the '' mark. */
@@ -227,7 +227,8 @@ getcmd(vp, ismotion)
 	u_long hold;
 	int key;
 
-	bzero(vp, sizeof(*vp));
+	bzero(&vp->vpstartzero,
+	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
 	/* If '.' command, return the dot motion. */
 	if (ismotion && ismotion->flags & VC_ISDOT) {
@@ -373,18 +374,25 @@ getkeyword(kp, flags)
 	p = file_gline(curf, cursor.lno, &len);
 
 	/* May not be a keyword at all. */
-	if (!len || !inword(p[cursor.cno])) {
+	if (!len || flags & V_KEYW && !inword(p[cursor.cno])
+	    || flags & V_KEYNUM && !isdigit(p[cursor.cno])) {
 		bell();
 		if (ISSET(O_VERBOSE))
-			msg("Cursor not in a word.");
+			msg("Cursor not in a %s.",
+			    flags & V_KEYW ? "word" : "number");
 		return (1);
 	}
 
 	/* Find the beginning/end of the keyword. */
 	if (beg = cursor.cno) {
-		do {
-			--beg;
-		} while (inword(p[beg]) && beg > 0);
+		if (flags & V_KEYW)
+			do {
+				--beg;
+			} while (inword(p[beg]) && beg > 0);
+		else
+			do {
+				--beg;
+			} while (isdigit(p[beg]) && beg > 0);
 		++beg;
 	}
 	for (end = cursor.cno; ++end < len && inword(p[end]););
@@ -392,7 +400,7 @@ getkeyword(kp, flags)
 	
 	/*
 	 * Getting a keyword implies moving the cursor to its beginning.
-	 * Refresh now, even though not likely to be necessary.
+	 * Refresh now.
 	 */
 	if (beg != cursor.cno) {
 		cursor.cno = beg;
@@ -400,20 +408,24 @@ getkeyword(kp, flags)
 		refresh();
 	}
 
-	/* Note where the keyword starts and stops, so we can replace it. */
-	kp->kcstart = beg;
-	kp->kcstop = end;
-
-	len = end - beg + 1;
-	if (kp->klen <= len) {
-		kp->klen += len + 50;
-		if ((kp->keyword = realloc(kp->keyword, kp->klen)) == NULL) {
+	/*
+	 * XXX
+	 * 8-bit clean problem.  Numeric keywords are handled using strtol(3)
+	 * and friends.  This would have to be fixed in v_increment and here
+	 * to not depend on a trailing NULL.
+	 */
+	len = end - beg + 2;				/* XXX */
+	kp->klen = end - beg + 1;
+	if (kp->kbuflen <= len) {
+		kp->kbuflen += len + 50;
+		if ((kp->keyword =
+		    realloc(kp->keyword, kp->kbuflen)) == NULL) {
 			bell();
 			msg("Keyword too large: %s", strerror(errno));
 			return (1);
 		}
 	}
-	bcopy(p + beg, kp->keyword, len);
-	kp->keyword[len] = '\0';			/* XXX */
+	bcopy(p + beg, kp->keyword, kp->klen);
+	kp->keyword[len - 1] = '\0';			/* XXX */
 	return (0);
 }
