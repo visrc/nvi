@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.82 1994/06/28 12:07:50 bostic Exp $ (Berkeley) $Date: 1994/06/28 12:07:50 $";
+static char sccsid[] = "$Id: exf.c,v 8.83 1994/06/29 18:15:08 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:15:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -178,7 +178,7 @@ file_init(sp, frp, rcv_name, force)
 		else
 			psize = 64 * 1024;
 
-		frp->mtime = sb.st_mtime;
+		ep->mtime = sb.st_mtime;
 
 		if (!S_ISREG(sb.st_mode))
 			msgq(sp, M_ERR,
@@ -557,7 +557,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	else {
 		msg = "";
 		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
-			if (frp->mtime && sb.st_mtime > frp->mtime) {
+			if (ep->mtime && sb.st_mtime > ep->mtime) {
 				msgq(sp, M_ERR,
 			"%s: file modified more recently than this copy%s",
 				    name == NULL ? frp->name : name,
@@ -616,7 +616,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	 * we re-init the time.  That way the user can clean up the disk
 	 * and rewrite without having to force it.
 	 */
-	frp->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
+	ep->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
 
 	/* If the write failed, complain loudly. */
 	if (rval) {

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.30 1994/06/27 11:21:50 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:50 $
+ *	$Id: exf.h,v 8.31 1994/06/29 18:15:10 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:15:10 $
  */
 					/* Undo direction. */
 /*
@@ -30,6 +30,8 @@ struct _exf {
 	enum direction lundo;		/* Last undo direction. */
 
 	LIST_HEAD(_markh, _lmark) marks;/* Linked list of file MARK's. */
+
+	time_t	 mtime;			/* Last modification time. */
 
 	/*
 	 * Recovery in general, and these fields specifically,

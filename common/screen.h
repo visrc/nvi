@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.117 1994/06/29 09:16:37 bostic Exp $ (Berkeley) $Date: 1994/06/29 09:16:37 $
+ *	$Id: screen.h,v 8.118 1994/06/29 18:15:11 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:15:11 $
  */
 
 /*
@@ -47,10 +47,8 @@ struct _fref {
 	char	*name;			/* File name. */
 	char	*tname;			/* Backing temporary file name. */
 
-	int	 refcnt;		/* Reference count. */
 	recno_t	 lno;			/* 1-N: file cursor line. */
 	size_t	 cno;			/* 0-N: file cursor column. */
-	time_t	 mtime;			/* Last modification time. */
 
 #define	FR_CURSORSET	0x001		/* If lno/cno values valid. */
 #define	FR_DONTDELETE	0x002		/* Don't delete the temporary file. */
