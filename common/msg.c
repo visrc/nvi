@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.3 1994/11/10 10:54:21 bostic Exp $ (Berkeley) $Date: 1994/11/10 10:54:21 $";
+static char sccsid[] = "$Id: msg.c,v 9.4 1994/11/10 10:54:54 bostic Exp $ (Berkeley) $Date: 1994/11/10 10:54:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -462,10 +462,12 @@ msg_rpt(sp, is_message)
 	 * If nothing to report, return.
 	 *
 	 * !!!
-	 * And now, a special vi clone test.  Historically, vi reported if
-	 * the number of changed lines was > than the value, not >=, unless
-	 * it was a yank command, which used >=.  No lie.  I got complaints,
-	 * so this code conforms to historic practice.
+	 * And now, a vi clone test.  Historically, vi reported if the number
+	 * of changed lines was > than the value, not >=, unless it was a yank
+	 * command, which used >=.  No lie.  I got complaints, so we conform
+	 * to historic practice.  In addition, setting report to 0 in the 4BSD
+	 * historic vi was equivalent to setting it to 1, for an unknown reason
+	 * (this bug was apparently fixed in System V at some point).
 	 */
 	rptval = O_VAL(sp, O_REPORT);
 	if (total > rptval || sp->rptlines[L_YANKED] >= rptval) {
