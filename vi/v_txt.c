@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.76 1996/07/12 19:56:40 bostic Exp $ (Berkeley) $Date: 1996/07/12 19:56:40 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.77 1996/07/12 21:33:05 bostic Exp $ (Berkeley) $Date: 1996/07/12 21:33:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2871,7 +2871,7 @@ txt_Rresolve(sp, tiqh, tp, orig_len)
 		retain = MIN(tp->owrite, orig_len - input_len);
 		if (db_get(sp,
 		    tiqh->cqh_first->lno, DBG_FATAL | DBG_NOCACHE, &p, NULL))
-			return (1);
+			return;
 		memcpy(tp->lb + tp->cno, p + input_len, retain);
 		tp->len -= tp->owrite - retain;
 		tp->owrite = 0;
