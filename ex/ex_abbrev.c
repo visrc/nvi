@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.14 1994/08/17 14:30:31 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:31 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.15 1994/08/29 09:56:31 bostic Exp $ (Berkeley) $Date: 1994/08/29 09:56:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,11 +52,35 @@ ex_abbr(sp, ep, cmdp)
 		abort();
 	}
 
-	/* Check for illegal characters. */
-	for (p = cmdp->argv[0]->bp, len = cmdp->argv[0]->len; len--; ++p)
+	/*
+	 * Check for illegal characters.
+	 *
+	 * XXX
+	 * Another fun one.  Historically, vi permitted the user to enter any
+	 * set of characters as abbreviations.  So, all of:
+	 *
+	 *	:abbr  +++i  __+++i__
+	 *	:abbr  i+++  __i+++__
+	 *	:abbr  ++++  __++++__
+	 *
+	 * were legal ex commands.  The problem arises because the text input
+	 * code which checked for an abbreviation match checked from non-word
+	 * characters to the previous whitespace character.  This means that
+	 * the first example above can be found, but the second and third can't.
+	 * Warn the user.
+	 */
+	for (p = cmdp->argv[0]->bp, len = cmdp->argv[0]->len; len; ++p, len--)
+		if (inword(*p))
+			break;
+	if (len == 0) {
+		msgq(sp, M_ERR,
+		    "Abbreviations must contiain a least one word character");
+			return (1);
+	}
+	for (; len; ++p, len--)
 		if (!inword(*p)) {
 			msgq(sp, M_ERR,
-			    "%s may not be part of an abbreviated word",
+		    "%s may not follow word characters in an abbreviated word",
 			    KEY_NAME(sp, *p));
 			return (1);
 		}
