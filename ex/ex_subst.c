@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.4 1993/06/21 15:08:40 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:08:40 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.5 1993/06/28 15:03:13 bostic Exp $ (Berkeley) $Date: 1993/06/28 15:03:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,8 @@ ex_substitute(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	regex_t *re, lre;
-	int eval, reflags;
-	char *endp, *sub;
-	char delim[2];
+	int delim, eval, reflags;
+	char *sub, *rep, *p, *t;
 
 	/*
 	 * Historic vi only permitted '/' to begin the substitution command.
@@ -46,23 +45,41 @@ ex_substitute(sp, ep, cmdp)
 	 */
 	if (*cmdp->string == '/' || *cmdp->string == ';') {
 		/* Delimiter is the first character. */
-		delim[0] = cmdp->string[0];
-		delim[1] = '\0';
+		delim = *cmdp->string;
 
-		/* Get the substitute string. */
-		endp = cmdp->string + 1;
-		sub = strsep(&endp, delim);
+		/* Get the substitute string, toss escaped characters. */
+		for (sub = p = t = ++cmdp->string;;) {
+			if (p[0] == '\0' || p[0] == delim) {
+				if (p[0] == delim)
+					++p;
+				*t = '\0';
+				break;
+			}
+			if (p[1] == delim && p[0] == '\\')
+				++p;
+			*t++ = *p++;
+		}
 
-		/* Get the replacement string, save it off. */
-		if (endp == NULL || *endp == NULL) {
+		/* Get the replacement string, toss escaped characters. */
+		if (*p == '\0') {
 			msgq(sp, M_ERR, "No replacement string specified.");
 			return (1);
 		}
+		for (rep = t = p;;) {
+			if (p[0] == '\0' || p[0] == delim) {
+				if (p[0] == delim)
+					++p;
+				*t = '\0';
+				break;
+			}
+			if (p[1] == delim && p[0] == '\\')
+				++p;
+			*t++ = *p++;
+		}
 		if (sp->repl != NULL)
 			free(sp->repl);
-		sp->repl = strsep(&endp, delim);
-		sp->repl = strdup(sp->repl);
-		sp->repl_len = strlen(sp->repl);
+		sp->repl = strdup(rep);
+		sp->repl_len = strlen(rep);
 
 		/* If the substitute string is empty, use the last one. */
 		if (*sub == NULL) {
@@ -73,8 +90,7 @@ ex_substitute(sp, ep, cmdp)
 			}
 			if (checkmatchsize(sp, &sp->sre))
 				return (1);
-			return (substitute(sp, ep,
-			    cmdp, endp ? endp : "", &sp->sre, AGAIN));
+			return (substitute(sp, ep, cmdp, p, &sp->sre, AGAIN));
 		}
 
 		/* Set RE flags. */
@@ -101,7 +117,7 @@ ex_substitute(sp, ep, cmdp)
 
 		if (checkmatchsize(sp, &sp->sre))
 			return (1);
-		return (substitute(sp, ep, cmdp, endp ? endp : "", re, FIRST));
+		return (substitute(sp, ep, cmdp, p, re, FIRST));
 	}
 	return (substitute(sp, ep, cmdp, cmdp->string, &sp->sre, MUSTSETR));
 }
