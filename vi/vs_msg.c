@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.13 1995/09/28 14:20:26 bostic Exp $ (Berkeley) $Date: 1995/09/28 14:20:26 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.14 1995/09/29 18:28:21 bostic Exp $ (Berkeley) $Date: 1995/09/29 18:28:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -421,7 +421,6 @@ vs_ex_resolve(sp, continuep)
 	EVENT ev;
 	GS *gp;
 	VI_PRIVATE *vip;
-	int in_ex;
 
 	/* Don't continue by default. */
 	if (continuep != NULL)
@@ -438,24 +437,29 @@ vs_ex_resolve(sp, continuep)
 	if (F_ISSET(sp, S_VI) && vip->totalcount < 2)
 		return (0);
 
-	/* If we switched into ex mode, return into vi mode. */
+	/*
+	 * If we switched into ex mode, return into vi mode.  Historically,
+	 * none of the commands that switched into canonical mode gave the
+	 * user an opportunity to enter additional ex commands, so don't wait.
+	 */
 	gp = sp->gp;
 	if (F_ISSET(sp, S_EX)) {
-		in_ex = 1;
 		if (gp->scr_screen(sp, S_VI))
 			return (1);
-	}
-
-	/* Put up the return-to-continue message and wait. */
-	vs_scroll(sp, &ch, continuep == NULL ? SCROLL_WAIT : SCROLL_EXWAIT);
-	if (continuep != NULL && ch == ':') {
-		*continuep = 1;
-		return (0);
-	}
-
-	/* If we were in ex, and we're done, may need to redraw from scratch. */
-	if (F_ISSET(vip, VIP_N_REDRAW))
 		F_SET(sp, S_SCR_REDRAW);
+	} else {
+		/* Put up the return-to-continue message and wait. */
+		vs_scroll(sp,
+		    &ch, continuep == NULL ? SCROLL_WAIT : SCROLL_EXWAIT);
+		if (continuep != NULL && ch == ':') {
+			*continuep = 1;
+			return (0);
+		}
+
+		/* If ex changed the underlying screen, redraw from scratch. */
+		if (F_ISSET(vip, VIP_N_REDRAW))
+			F_SET(sp, S_SCR_REDRAW);
+	}
 
 	/* Set up the redraw of the overwritten lines. */
 	ev.e_event = E_REPAINT;
