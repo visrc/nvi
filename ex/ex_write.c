@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.13 1992/11/02 22:28:46 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:28:46 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.14 1992/11/07 10:23:55 bostic Exp $ (Berkeley) $Date: 1992/11/07 10:23:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,12 @@ noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
 		msg("%s: %s", fname, strerror(errno));
 		return (1);
 	}
-	return (ex_writefp(fname, fp, &cmdp->addr1, &cmdp->addr2, 1));
+	if (ex_writefp(fname, fp, &cmdp->addr1, &cmdp->addr2, 1))
+		return (1);
+	/* If wrote the entire file, turn off modify bit. */
+	if (cmdp->flags & E_ADDR2_ALL)
+		curf->flags &= ~F_MODIFIED;
+	return (0);
 }
 
 /*
