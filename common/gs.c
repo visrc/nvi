@@ -163,6 +163,12 @@ gs_end(gp)
 	/* Close message catalogs. */
 	msg_close(gp);
 #endif
+	if (gp->env) {
+		gp->env->remove(gp->env, NULL, 0);
+		/*
+		gp->env->close(gp->env, 0);
+		*/
+	}
 
 	/* Ring the bell if scheduled. */
 	if (F_ISSET(gp, G_BELLSCHED))

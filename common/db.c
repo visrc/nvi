@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.29 2000/07/19 19:02:26 skimo Exp $ (Berkeley) $Date: 2000/07/19 19:02:26 $";
+static const char sccsid[] = "$Id: db.c,v 10.30 2000/07/21 18:36:31 skimo Exp $ (Berkeley) $Date: 2000/07/21 18:36:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,6 +93,7 @@ db_get(sp, lno, flags, pp, lenp)
 	db_recno_t l1, l2;
 	CHAR_T *wp;
 	size_t wlen;
+	size_t nlen;
 
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
@@ -154,12 +155,22 @@ db_get(sp, lno, flags, pp, lenp)
 	ep->c_lno = OOBLNO;
 
 nocache:
+	nlen = 1024;
+retry:
+	BINC_GOTO(sp, ep->c_lp, ep->c_blen, nlen);
+
 	/* Get the line from the underlying database. */
 	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
 	memset(&data, 0, sizeof(data));
+	data.data = ep->c_lp;
+	data.ulen = nlen;
+	data.flags = DB_DBT_USERMEM;
 	switch (ep->db->get(ep->db, NULL, &key, &data, 0)) {
+	case ENOMEM:
+		nlen = data.size;
+		goto retry;
         default:
 		goto err2;
 	case DB_NOTFOUND:
