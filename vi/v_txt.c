@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.74 1996/07/09 18:52:09 bostic Exp $ (Berkeley) $Date: 1996/07/09 18:52:09 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.75 1996/07/10 08:40:59 bostic Exp $ (Berkeley) $Date: 1996/07/10 08:40:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1326,7 +1326,7 @@ ebuf_chk:	if (tp->cno >= tp->len) {
 		break;
 	}
 
-#if defined(DEBUG) && 1
+#ifdef DEBUG
 	if (tp->cno + tp->insert + tp->owrite != tp->len) {
 		msgq(sp, M_ERR,
 		    "len %u != cno: %u ai: %u insert %u overwrite %u",
@@ -2053,7 +2053,7 @@ retry:		for (len = 0,
 	}
 
 	/* Overwrite the expanded text first. */
-	for (t = cmd.argv[0]->bp; len &&  nlen; --len, --nlen)
+	for (t = cmd.argv[0]->bp; len > 0 && nlen > 0; --len, --nlen)
 		*p++ = *t++;
 
 	/* If lost text, make the remaining old text overwrite characters. */
@@ -2063,20 +2063,19 @@ retry:		for (len = 0,
 	}
 
 	/* Overwrite any overwrite characters next. */
-	for (; nlen && tp->owrite; --nlen, --tp->owrite, ++tp->cno)
+	for (; nlen > 0 && tp->owrite > 0; --nlen, --tp->owrite, ++tp->cno)
 		*p++ = *t++;
 
 	/* Shift remaining text up, and move the cursor to the end. */
 	if (nlen) {
-		/* Make sure the buffer's big enough. */
-		off = p - tp->lb;
 		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
+		off = p - tp->lb;
 		p = tp->lb + off;
 
 		tp->cno += nlen;
 		tp->len += nlen;
 
-		if (tp->insert)
+		if (tp->insert != 0)
 			(void)memmove(p + nlen, p, tp->insert);
 		while (nlen--)
 			*p++ = *t++;
@@ -2085,14 +2084,17 @@ retry:		for (len = 0,
 	/* If a single match and it's a directory, retry it. */
 	if (argc == 1 && !stat(cmd.argv[0]->bp, &sb) && S_ISDIR(sb.st_mode)) {
 isdir:		off = p - tp->lb;
-		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
 		p = tp->lb + off;
 
-		if (!tp->owrite && tp->insert)
-			(void)memmove(p + 1, p, tp->insert);
+		if (tp->owrite == 0) {
+			BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+			if (tp->insert != 0)
+				(void)memmove(p + 1, p, tp->insert);
+			++tp->len;
+		} else
+			--tp->owrite;
 
 		++tp->cno;
-		++tp->len;
 		*p++ = '/';
 
 		trydir = 1;
