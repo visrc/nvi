@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.13 1993/10/28 11:20:47 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:20:47 $";
+static char sccsid[] = "$Id: key.c,v 8.14 1993/10/31 17:17:26 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: key.c,v 8.13 1993/10/28 11:20:47 bostic Exp $ (Berk
 #include <unistd.h>
 
 #include "vi.h"
-#include "recover.h"
 
 /*
  * There are two sets of input buffers used by ex/vi.  The first is the input

@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.26 1993/10/28 11:19:39 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:19:39 $";
+static char sccsid[] = "$Id: main.c,v 8.27 1993/10/31 17:17:21 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -60,7 +60,6 @@ main(argc, argv)
 	enum { EX_SCR, VI_CURSES_SCR, VI_XAW_SCR } scr_type;
 	struct sigaction act;
 	struct stat sb;
-	EXCMDARG cmd;
 	GS *gp;
 	FREF *frp;
 	SCR *nsp, *sp;

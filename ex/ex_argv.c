@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.11 1993/10/06 17:18:20 bostic Exp $ (Berkeley) $Date: 1993/10/06 17:18:20 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.12 1993/10/31 17:17:33 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -280,7 +280,7 @@ ex_pipe_process(sp, cmd, lenp, bp, blen)
 	pid_t pid;
 	size_t len;
 	int ch, rval, output[2];
-	char *p, *sh, *sh_path, buf[1024];
+	char *p, *sh, *sh_path;
 
 	sh_path = O_STR(sp, O_SHELL);
 	if ((sh = strrchr(sh_path, '/')) == NULL)

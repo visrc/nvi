@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.9 1993/10/31 14:45:06 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:45:06 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.10 1993/10/31 17:17:34 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ ex_read(sp, ep, cmdp)
 	FILE *fp;
 	MARK rm;
 	recno_t nlines;
-	int force, rval;
+	int rval;
 	char *fname;
 
 	/* If "read !", it's a pipe from a utility. */

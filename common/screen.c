@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.22 1993/10/31 14:22:01 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:22:01 $";
+static char sccsid[] = "$Id: screen.c,v 8.23 1993/10/31 17:17:25 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -388,7 +388,6 @@ tag_copy(a, b)
 {
 	TAG *ap, *tp;
 	TAGF *atfp, *tfp;
-	int cnt;
 
 	/* Initialize queues. */
 	queue_init(&b->tagq);
