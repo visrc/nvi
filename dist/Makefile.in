@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.1 1996/02/18 15:36:46 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:36:46 $
+#	$Id: Makefile.in,v 8.2 1996/02/18 15:41:50 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:41:50 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
@@ -58,6 +58,8 @@ clean:
 	rm -f nex nvi tknvi @LIBOBJS@ \
 	    ${COBJS} ${CLOBJS} ${DBOBJS} ${REOBJS} ${TKOBJS} ${VIOBJS}
 
+hdrs: ${HDRS}
+
 distclean: clean
 	rm -f Makefile port.h
 	rm -f curses_include_path curses_library_path
@@ -65,14 +67,14 @@ distclean: clean
 
 maintainer-clean: distclean
 	rm -f ${HDRS}
-
-config: maintainer-clean
 	rm -f configure config.h.in
+
+distrib: maintainer-clean
 	autoheader
 	chmod 444 config.h.in
 	autoconf
 	chmod 555 configure
-	./configure
+	make -f Makefile.in hdrs
 	
 install:
 
