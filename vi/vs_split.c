@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.37 1994/03/25 11:39:26 bostic Exp $ (Berkeley) $Date: 1994/03/25 11:39:26 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.38 1994/04/15 11:54:05 bostic Exp $ (Berkeley) $Date: 1994/04/15 11:54:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,7 +150,7 @@ svi_split(sp, argv)
 		 */
 		if (splitup)
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				MOVE(tsp, cnt, 0)
+				MOVE(tsp, cnt, 0);
 				clrtoeol();
 			}
 	} else {
@@ -168,7 +168,7 @@ svi_split(sp, argv)
 			tsp->t_minrows = tsp->t_rows = tsp->rows - 1;
 		else
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				MOVE(tsp, cnt, 0)
+				MOVE(tsp, cnt, 0);
 				clrtoeol();
 			}
 	}
