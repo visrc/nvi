@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.41 1996/09/15 15:55:05 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:55:05 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.42 1996/09/20 19:19:38 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:19:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,23 +82,7 @@ vs_refresh(sp, forcepaint)
 				F_SET(tsp, SC_SCR_REDRAW | SC_STATUS);
 
 	/*
-	 * 2: Paint any missing status lines.
-	 *
-	 * XXX
-	 * This is fairly evil.  Status lines are written using the vi message
-	 * mechanism, since we have no idea how long they are.  Since we may be
-	 * painting screens other than the current one, we don't want to make
-	 * the user wait.  We depend heavily on there not being any other lines
-	 * currently waiting to be displayed and the message truncation code in
-	 * the msgq_status routine working.
-	 */
-	for (tsp = sp->gp->dq.cqh_first;
-	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
-		if (F_ISSET(tsp, SC_STATUS))
-			vs_resolve(tsp, 0);
-
-	/*
-	 * 3: Related or dirtied screens, or screens with messages.
+	 * 2: Related or dirtied screens, or screens with messages.
 	 *
 	 * If related screens share a view into a file, they may have been
 	 * modified as well.  Refresh any screens that aren't exiting that
@@ -122,7 +106,7 @@ vs_refresh(sp, forcepaint)
 		}
 
 	/*
-	 * 4: Refresh the current screen.
+	 * 3: Refresh the current screen.
 	 *
 	 * Always refresh the current screen, it may be a cursor movement.
 	 * Also, always do it last -- that way, SC_SCR_REDRAW can be set
@@ -131,6 +115,22 @@ vs_refresh(sp, forcepaint)
 	if (vs_paint(sp, UPDATE_CURSOR | (!forcepaint &&
 	    F_ISSET(sp, SC_SCR_VI) && KEYS_WAITING(sp) ? 0 : UPDATE_SCREEN)))
 		return (1);
+
+	/*
+	 * 4: Paint any missing status lines.
+	 *
+	 * XXX
+	 * This is fairly evil.  Status lines are written using the vi message
+	 * mechanism, since we have no idea how long they are.  Since we may be
+	 * painting screens other than the current one, we don't want to make
+	 * the user wait.  We depend heavily on there not being any other lines
+	 * currently waiting to be displayed and the message truncation code in
+	 * the msgq_status routine working.
+	 */
+	for (tsp = sp->gp->dq.cqh_first;
+	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
+		if (F_ISSET(tsp, SC_STATUS))
+			vs_resolve(tsp, 0);
 
 	/*
 	 * A side-effect of refreshing the screen is that it's now ready
