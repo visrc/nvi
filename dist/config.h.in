@@ -109,6 +109,9 @@
 /* Define if you want to compile in the Tcl interpreter. */
 #undef HAVE_TCL_INTERP
 
+/* Define is appropriate zvt is available */
+#undef HAVE_ZVT
+
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
 

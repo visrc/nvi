@@ -90,6 +90,7 @@ alloc_err:
 	return 1;
 }
 
+#if 0
 /*
  * PUBLIC: void gtk_vi_show_term __P((GtkVi*, gint));
  */
@@ -101,7 +102,6 @@ gtk_vi_show_term(vi, show)
     gtk_notebook_set_page(GTK_NOTEBOOK(vi->vi_window), show ? 1 : 0);
 }
 
-#if 0
 static int
 vi_key_press_event(zvt, event, vi)
 	GtkVi *vi;

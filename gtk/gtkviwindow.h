@@ -14,10 +14,12 @@ struct _GtkViWindow
 {
   GtkNotebook	notebook;
 
+  GtkWidget *term;
+
   GtkVi	    *vi;
   GtkWidget *table;
   GtkWidget *vi_screen;
-  gint    value_changed;
+  gint      value_changed;
   int	    resized;
 
   gint      input_func;

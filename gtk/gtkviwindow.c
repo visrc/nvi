@@ -4,6 +4,10 @@
 
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
+#ifdef HAVE_ZVT
+#include <zvt/zvtterm.h>
+#include <zvt/vt.h>
+#endif
 #include "gtkvi.h"
 #include "gtkviscreen.h"
 #include "gtkviwindow.h"
@@ -112,13 +116,12 @@ gtk_vi_window_new (GtkVi *vi)
     GtkWidget *vi_widget;
     GtkWidget *vscroll;
     GtkWidget *table;
+    GtkWidget *term;
 
     window = gtk_type_new(gtk_vi_window_get_type());
 
     window->vi = vi;
-    vi->vi_window = GTK_WIDGET(window);
-
-    vi_init_window(window);
+    //vi->vi_window = GTK_WIDGET(window);
 
     vi_widget = gtk_vi_screen_new(NULL);
     gtk_widget_show(GTK_WIDGET(vi_widget));
@@ -139,12 +142,24 @@ gtk_vi_window_new (GtkVi *vi)
     gtk_signal_connect(GTK_OBJECT(table), "map", vi_map, vi_widget/*->ipvi*/);
     window->table = table;
 
+
+    /*
     gtk_notebook_set_show_tabs(GTK_NOTEBOOK(window), FALSE);
     gtk_notebook_set_show_border(GTK_NOTEBOOK(window), FALSE);
-    gtk_notebook_append_page(GTK_NOTEBOOK(window), table, NULL);
-    /*
-    gtk_notebook_append_page(GTK_NOTEBOOK(window), vi->term, NULL);
     */
+    gtk_notebook_append_page(GTK_NOTEBOOK(window), table, NULL);
+
+    term = 0;
+
+#ifdef HAVE_ZVT
+    term = zvt_term_new();
+    zvt_term_set_blink(ZVT_TERM(term), FALSE);
+    gtk_widget_show(term);
+    gtk_notebook_append_page(GTK_NOTEBOOK(window), term, NULL);
+#endif
+    window->term = term;
+
+    vi_init_window(window);
 
     gtk_signal_connect(GTK_OBJECT(vi_widget), "resized",
 	vi_resized, window->ipviwin);

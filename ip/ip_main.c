@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.17 2000/07/07 22:29:13 skimo Exp $ (Berkeley) $Date: 2000/07/07 22:29:13 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.18 2000/07/11 12:15:36 skimo Exp $ (Berkeley) $Date: 2000/07/11 12:15:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,7 +249,7 @@ get_connection(WIN *wp, int main_ifd, int main_ofd,
 	if (recvmsg(main_ifd, &mh, 0) != 1)
 	    return 1;
 	*i_fd = *(int *)CMSG_DATA(&ch.header);
-	if (recvmsg(main_ifd, &mh, 0) != 1)
+	if (recvmsg(*i_fd, &mh, 0) != 1)
 	    return 1;
 	*o_fd = *(int *)CMSG_DATA(&ch.header);
     }

@@ -109,7 +109,7 @@ vi_new_window (IPVI *ipvi, IPVIWIN **ipviwinp)
 	*(int *)CMSG_DATA(&ch.header) = sockets[1];
 	sendmsg(ipvi->ofd, &mh, 0);
 	*(int *)CMSG_DATA(&ch.header) = sockets[1];
-	sendmsg(ipvi->ofd, &mh, 0);
+	sendmsg(sockets[0], &mh, 0);
 	close(sockets[1]);
 
 	ipviwin->ifd = sockets[0];

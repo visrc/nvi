@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.21 2000/07/05 17:58:23 skimo Exp $ (Berkeley) $Date: 2000/07/05 17:58:23 $ */
+/* $Id: acconfig.h,v 8.22 2000/07/11 12:15:34 skimo Exp $ (Berkeley) $Date: 2000/07/11 12:15:34 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -77,6 +77,9 @@
 
 /* Define if you want to compile in the Tcl interpreter. */
 #undef HAVE_TCL_INTERP
+
+/* Define is appropriate zvt is available */
+#undef HAVE_ZVT
 
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.16 2000/06/28 20:20:37 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:37 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.17 2000/07/11 12:15:36 skimo Exp $ (Berkeley) $Date: 2000/07/11 12:15:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,12 +29,12 @@ static const char sccsid[] = "$Id: ip_funcs.c,v 8.16 2000/06/28 20:20:37 skimo E
  * ip_addstr --
  *	Add len bytes from the string at the cursor, advancing the cursor.
  *
- * PUBLIC: int ip_addstr __P((SCR *, const char *, size_t));
+ * PUBLIC: int ip_addstr __P((SCR *, const CHAR_T *, size_t));
  */
 int
 ip_addstr(sp, str, len)
 	SCR *sp;
-	const char *str;
+	const CHAR_T *str;
 	size_t len;
 {
 	IP_BUF ipb;

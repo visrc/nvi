@@ -122,20 +122,15 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/clib/bsearch.c \
 	$(visrcdir)/clib/env.c \
 	$(visrcdir)/clib/gethostname.c \
-	$(visrcdir)/clib/getopt.c \
 	$(visrcdir)/clib/memchr.c \
-	$(visrcdir)/clib/memmove.c \
 	$(visrcdir)/clib/memset.c \
 	$(visrcdir)/clib/mkstemp.c \
 	$(visrcdir)/clib/mmap.c \
-	$(visrcdir)/clib/snprintf.c \
 	$(visrcdir)/clib/strdup.c \
-	$(visrcdir)/clib/strerror.c \
 	$(visrcdir)/clib/strpbrk.c \
 	$(visrcdir)/clib/strsep.c \
 	$(visrcdir)/clib/strtol.c \
 	$(visrcdir)/clib/strtoul.c \
-	$(visrcdir)/clib/vsnprintf.c \
 	$(visrcdir)/common/pthread.c \
 	perl.c \
 	perlxsi.c
@@ -144,8 +139,8 @@ REOBJS=	regcomp.lo regerror.lo regexec.lo regfree.lo
 libvi_la_DEPENDENCIES = @LTLIBOBJS@
 libvi_la_LIBADD = @LTLIBOBJS@
 
-bin_PROGRAMS = vi vi-ipc @vi_motif@ @vi_gtk@
-EXTRA_PROGRAMS = vi-motif vi-gtk
+bin_PROGRAMS = vi @vi_ipc@ @vi_motif@ @vi_gtk@
+EXTRA_PROGRAMS = vi-ipc vi-motif vi-gtk
 
 vi_SOURCES = \
 	$(visrcdir)/cl/cl_bsd.c \
