@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.11 1993/09/11 18:28:16 bostic Exp $ (Berkeley) $Date: 1993/09/11 18:28:16 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.12 1993/09/16 10:00:59 bostic Exp $ (Berkeley) $Date: 1993/09/16 10:00:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -333,23 +333,38 @@ tag_get(sp, tag, tagp, filep, searchp)
 	SCR *sp;
 	char *tag, **tagp, **filep, **searchp;
 {
-	char *p;
 	TAGF **tfp;
+	int dne;
+	char *p;
 
-	/* Find the tag, only display missing file messages once. */
-	p = NULL;
-	for (tfp = sp->tfhead; *tfp != NULL && p == NULL; ++tfp) {
+	/*
+	 * Find the tag, only display missing file messages once, and
+	 * then only if we didn't find the tag.
+	 */
+	dne = 0;
+	for (tfp = sp->tfhead, p = NULL; *tfp != NULL && p == NULL; ++tfp) {
 		errno = 0;
-		if (search(sp, (*tfp)->fname, tag, &p) &&
-		    (errno != ENOENT || !F_ISSET((*tfp), TAGF_ERROR))) {
-			msgq(sp, M_ERR,
-			    "%s: %s", (*tfp)->fname, strerror(errno));
-			F_SET((*tfp),TAGF_ERROR);
-		}
+		F_CLR(*tfp, TAGF_DNE);
+		if (search(sp, (*tfp)->fname, tag, &p))
+			if (errno == ENOENT) {
+				if (!F_ISSET(*tfp, TAGF_DNE_WARN)) {
+					dne = 1;
+					F_SET(*tfp, TAGF_DNE);
+				}
+			} else
+				msgq(sp, M_ERR,
+				    "%s: %s", (*tfp)->fname, strerror(errno));
 	}
 	
 	if (p == NULL) {
 		msgq(sp, M_ERR, "%s: tag not found.", tag);
+		if (dne)
+			for (tfp = sp->tfhead; *tfp != NULL; ++tfp)
+				if (F_ISSET(*tfp, TAGF_DNE)) {
+					msgq(sp, M_ERR, "%s: %s",
+					    (*tfp)->fname, strerror(ENOENT));
+					F_SET(*tfp, TAGF_DNE_WARN);
+				}
 		return (1);
 	}
 
