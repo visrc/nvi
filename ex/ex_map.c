@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.6 1992/04/05 17:01:03 bostic Exp $ (Berkeley) $Date: 1992/04/05 17:01:03 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.7 1992/04/16 17:57:16 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,50 +17,13 @@ static char sccsid[] = "$Id: ex_map.c,v 5.6 1992/04/05 17:01:03 bostic Exp $ (Be
 #include <string.h>
 
 #include "vi.h"
-#include "seq.h"
+#include "curses.h"
 #include "excmd.h"
+#include "seq.h"
 #include "extern.h"
 
 /*
- * map_init --
- *	Initialize the termcap key maps.
- */
-int
-map_init()
-{
-	int rval;
-
-	/*
-	 * The KU, KD, KL,and KR variables correspond to the :ku=: etc.
-	 * termcap capabilities.  The variables are defined as part of
-	 * the curses package.
-	 */
-	rval = 0;
-	if (has_KU)
-		rval |= seq_set("up", has_KU, "k", COMMAND, 0);
-	if (has_KD)
-		rval |= seq_set("down", has_KD, "j", COMMAND, 0);
-	if (has_KL)
-		rval |= seq_set("left", has_KL, "h", COMMAND, 0);
-	if (has_KR)
-		rval |= seq_set("right", has_KR, "l", COMMAND, 0);
-	if (has_HM)
-		rval |= seq_set("home", has_HM, "^", COMMAND, 0);
-	if (has_EN)
-		rval |= seq_set("end", has_EN, "$", COMMAND, 0);
-	if (has_PU)
-		rval |= seq_set("page up", has_PU, "\002", COMMAND, 0);
-	if (has_PD)
-		rval |= seq_set("page down", has_PD, "\006", COMMAND, 0);
-	if (has_KI)
-		rval |= seq_set("insert", has_KI, "i", COMMAND, 0);
-	if (ERASEKEY != '\177')
-		rval |= seq_set("delete", "\177", "x", COMMAND, 0);
-	return (rval);
-}
-
-/*
- * ex_map -- (:map[!] [key replacement])
+ * ex_map -- :map[!] [key replacement]
  *	Map a key or display mapped keys.
  */
 int
