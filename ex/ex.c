@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.134 1994/08/01 16:15:57 bostic Exp $ (Berkeley) $Date: 1994/08/01 16:15:57 $";
+static char sccsid[] = "$Id: ex.c,v 8.135 1994/08/02 08:38:10 bostic Exp $ (Berkeley) $Date: 1994/08/02 08:38:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -758,15 +758,14 @@ two:		switch (exc.addrcnt) {
 
 	/*
 	 * !!!
-	 * The ^D scroll command historically scrolled half the screen size
-	 * rows down, rounded down, or to EOF.  It was an error if the cursor
-	 * was already at EOF.  (Leading addresses were permitted, but were
-	 * then ignored.)
+	 * The ^D scroll command historically scrolled the value of the scroll
+	 * option or to EOF.  It was an error if the cursor was already at EOF.
+	 * (Leading addresses were permitted, but were then ignored.)
 	 */
 	if (cp == &cmds[C_SCROLL]) {
 		exc.addrcnt = 2;
 		exc.addr1.lno = sp->lno + 1;
-		exc.addr2.lno = sp->lno + 1 + (O_VAL(sp, O_LINES) + 1) / 2;
+		exc.addr2.lno = sp->lno + O_VAL(sp, O_SCROLL);
 		exc.addr1.cno = exc.addr2.cno = sp->cno;
 		if (file_lline(sp, ep, &lno))
 			goto err;
