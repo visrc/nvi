@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.54 1996/12/18 16:59:31 bostic Exp $ (Berkeley) $Date: 1996/12/18 16:59:31 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.55 1997/08/03 15:30:59 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:30:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -610,14 +610,14 @@ cl_rename(sp, name, on)
 	"expr \"`xwininfo -id $WINDOWID | grep id:`\" : '.* [\"(]\\(.*\\)[\")]'"
 
 		if (clp->oname == NULL &&
-		    (pfp = popen(COMMAND, "r")) != NULL &&
-		    fgets(buf, sizeof(buf), pfp) != NULL &&
-		    (p = strchr(buf, '\n')) != NULL) {
-			*p = '\0';
-			clp->oname = strdup(buf);
-		}
-		if (pfp != NULL)
+		    (pfp = popen(COMMAND, "r")) != NULL) {
+			if (fgets(buf, sizeof(buf), pfp) != NULL &&
+			    (p = strchr(buf, '\n')) != NULL) {
+				*p = '\0';
+				clp->oname = strdup(buf);
+			}
 			(void)fclose(pfp);
+		}
 
 		cl_setname(gp, name);
 
