@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.24 2000/08/27 17:15:05 skimo Exp $ (Berkeley) $Date: 2000/08/27 17:15:05 $ */
+/* $Id: acconfig.h,v 8.25 2000/09/02 12:31:43 skimo Exp $ (Berkeley) $Date: 2000/09/02 12:31:43 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -89,6 +89,9 @@
 
 /* Define when dynamically loading DB 3 */
 #undef USE_DYNAMIC_LOADING
+
+/* Define when using S-Lang */
+#undef USE_SLANG_CURSES
 
 /* Define when using wide characters */
 #undef USE_WIDECHAR
