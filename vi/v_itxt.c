@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.45 1993/05/12 09:15:31 bostic Exp $ (Berkeley) $Date: 1993/05/12 09:15:31 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.46 1993/05/13 15:03:31 bostic Exp $ (Berkeley) $Date: 1993/05/13 15:03:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -415,19 +415,22 @@ v_change(sp, ep, vp, fm, tm, rp)
 		if (cut(sp, ep, VICB(vp), fm, tm, lmode))
 			return (1);
 
-		/* Delete all but the first line. */
-		++fm->lno;
 		if (delete(sp, ep, fm, tm, lmode))
 			return (1);
-		--fm->lno;
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			GETLINE_ERR(sp, fm->lno);
-			return (1);
-		}
 
+		if (lmode && file_iline(sp, ep, fm->lno, "", 0))
+			return (1);
+
+		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+			if (file_lline(sp, ep) != 0) {
+				GETLINE_ERR(sp, fm->lno);
+				return (1);
+			}
+			len = 0;
+		}
+		if (len == 0)
+			LF_SET(TXT_APPENDEOL);
 		tm = NULL;
-		len = fm->cno;		/* Truncate the first line. */
-		LF_SET(TXT_APPENDEOL);
 	}
 	return (v_ntext(sp, ep,
 	    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
