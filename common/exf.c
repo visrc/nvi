@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.72 1993/05/16 16:22:31 bostic Exp $ (Berkeley) $Date: 1993/05/16 16:22:31 $";
+static char sccsid[] = "$Id: exf.c,v 5.73 1993/05/22 14:18:36 bostic Exp $ (Berkeley) $Date: 1993/05/22 14:18:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -174,8 +174,9 @@ file_start(sp, ep, rcv_fname)
 	EXF *ep;
 	char *rcv_fname;
 {
-	RECNOINFO *oip, oinfo;
+	RECNOINFO oinfo;
 	struct stat sb;
+	size_t psize;
 	int fd, sverrno;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
@@ -214,29 +215,39 @@ file_start(sp, ep, rcv_fname)
 			ep->nlen = strlen(ep->name);
 		}
 		oname = ep->tname;
-	} else
+		psize = 4 * 1024;
+	} else {
 		oname = ep->name;
+
+		/* Try to keep it at 10 pages or less per file. */
+		if (sb.st_size < 40 * 1024)
+			psize = 4 * 1024;
+		else if (sb.st_size < 320 * 1024)
+			psize = 32 * 1024;
+		else
+			psize = 64 * 1024;
+	}
 	
 	/* Set up recovery. */
 	memset(&oinfo, 0, sizeof(RECNOINFO));
-	oip = &oinfo;
+	oinfo.bval = '\n';			/* Always set. */
+	oinfo.bfname = NULL;			/* Default. */
+	oinfo.psize = 0;			/* Default. */
+	oinfo.flags = F_ISSET(sp->gp, G_SNAPSHOT) ? R_SNAPSHOT : 0;
 	if (rcv_fname == NULL) {
 		if (rcv_tmp(sp, ep)) {
 			msgq(sp, M_ERR,
 		    "Modifications not recoverable if the system crashes.");
-			oip = NULL;
+		} else {
+			F_SET(ep, F_RCV_ON);
+			oinfo.bfname = ep->rcv_path;
+			oinfo.psize = psize;
 		}
 	} else if ((ep->rcv_path = strdup(rcv_fname)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (NULL);
 	} else
 		F_SET(ep, F_MODIFIED);
-	if (oip != NULL) {
-		F_SET(ep, F_RCV_ON);
-		oinfo.bfname = ep->rcv_path;
-		oinfo.psize = 4 * 1024;
-		oinfo.bval = '\n';
-	}
 
 	/*
 	 * Open a db structure.
@@ -248,11 +259,11 @@ file_start(sp, ep, rcv_fname)
 	 * portable way to do this.
 	 */
 	ep->db = dbopen(oname,
-	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, oip);
+	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
 	if (ep->db == NULL) {
 		sverrno = errno;
 		ep->db = dbopen(oname,
-		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, oip);
+		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
 		if (ep->db == NULL) {
 			msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
 			return (NULL);
