@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.11 1993/09/30 11:27:44 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:27:44 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.12 1993/10/27 14:43:23 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:43:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ ex_substitute(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	regex_t *re, lre;
-	int delim, eval, reflags;
+	int delim, eval, reflags, replaced;
 	char *arg, *sub, *rep, *p, *t;
 
 	/* Skip leading white space. */
@@ -122,9 +122,19 @@ ex_substitute(sp, ep, cmdp)
 	if (O_ISSET(sp, O_IGNORECASE))
 		reflags |= REG_ICASE;
 
+	/* Replace any word search pattern. */
+	if (search_word(sp, &sub, &replaced))
+		return (1);
+
 	/* Compile the RE. */
 	re = &lre;
-	if (eval = regcomp(re, (char *)sub, reflags)) {
+	eval = regcomp(re, (char *)sub, reflags);
+
+	/* Free up any extra memory. */
+	if (replaced)
+		FREE_SPACE(sp, sub, 0);
+
+	if (eval) {
 		re_error(sp, eval, re);
 		return (1);
 	}
