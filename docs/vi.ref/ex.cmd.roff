@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.39 1996/06/28 17:12:39 bostic Exp $ (Berkeley) $Date: 1996/06/28 17:12:39 $
+.\"	$Id: ex.cmd.roff,v 8.40 1996/08/10 14:34:31 bostic Exp $ (Berkeley) $Date: 1996/08/10 14:34:31 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -587,6 +587,13 @@ Unchanged.
 .SP Options:
 None.
 .SE
+.KY cscope
+.IP "cs[cope] command [args]"
+Execute a
+.CO cscope
+command.
+For more information, see the section of the reference manual entitled
+.QB "Tags, Tag Stacks, and Cscope" .
 .KY delete
 .IP "[range] d[elete] [buffer] [count] [flags]"
 Delete the lines from the file.

@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.77 1996/07/02 19:38:38 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:38:38 $
+.\"     $Id: vi.ref,v 8.78 1996/08/10 14:34:31 bostic Exp $ (Berkeley) $Date: 1996/08/10 14:34:31 $
 .\"
 .\"
 .so ref.so
@@ -889,29 +889,37 @@ itself has eight subcommands:
 and
 .CO \&t .
 .pp
-.IP "cs[cope] a[dd] directory"
+.IP "cs[cope] a[dd] file"
 The
 .CO add
-command attaches to the
+command attaches to the specified
 .CO cscope
-database in the specified directory.
-The directory name is expanded using the standard filename expansions.
+database.
+The file name is expanded using the standard filename expansions.
+If
+.CO file
+is a directory, the file
+.QQ cscope.out
+in that directory is used as the database.
+.pp
 After
 .CO nvi
 attaches to a new database,
 all subsequent
 .CO cscope
 queries will be asked of that database.
-The result of any single query is the collection of responses from all
-of the databases to the query.
+The result of any single query is the collection of response to the query
+from all of the attached databases.
 .sp
 If the
 .QQ CSCOPE_DIRS
 environmental variable is set when
 .CO nvi
-is run, it is expected to be a <blank>-separated list of directories containing
+is run, it is expected to be a <blank>-separated list of
 .CO cscope
-databases to which the user wishes to attach.
+databases or directories containing
+.CO cscope
+databases, to which the user wishes to attach.
 .IP ":cs[cope] f[ind] c|d|e|f|g|i|s|t buffer|pattern"
 The
 .CO find
@@ -946,8 +954,9 @@ In addition, if the file
 .QQ cscope.tpath
 appears in the same directory as the
 .CO cscope
-database, it is expected to contain a colon-separated list of directory
-names where files referenced by its associated
+database,
+it is expected to contain a colon-separated list of directory names
+where files referenced by its associated
 .CO cscope
 database may be found.
 .sp
