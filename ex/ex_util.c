@@ -59,12 +59,12 @@ ex_getline(SCR *sp, FILE *fp, size_t *lenp)
 	EX_PRIVATE *exp;
 	size_t off;
 	int ch;
-	CHAR_T *p;
+	char *p;
 
 	exp = EXP(sp);
 	for (errno = 0, off = 0, p = exp->ibp;;) {
-		if (off * sizeof(CHAR_T) >= exp->ibp_len) {
-			BINC_RETW(sp, exp->ibp, exp->ibp_len, off + 1);
+		if (off >= exp->ibp_len) {
+			BINC_RET(sp, exp->ibp, exp->ibp_len, off + 1);
 			p = exp->ibp + off;
 		}
 		if ((ch = getc(fp)) == EOF && !feof(fp)) {

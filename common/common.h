@@ -95,9 +95,9 @@ typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
 #include "seq.h"		/* Required by screen.h. */
 #include "util.h"		/* Required by ex.h. */
 #include "mark.h"		/* Required by gs.h. */
+#include "conv.h"		/* Required by ex.h and screen.h */
 #include "../ex/ex.h"		/* Required by gs.h. */
 #include "gs.h"			/* Required by screen.h. */
-#include "conv.h"
 #include "log.h"		/* Required by screen.h */
 #include "screen.h"		/* Required by exf.h. */
 #include "exf.h"

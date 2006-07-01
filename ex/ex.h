@@ -170,8 +170,9 @@ typedef struct _ex_private {
 
 	u_int32_t fdef;			/* Saved E_C_* default command flags. */
 
-	CHAR_T	*ibp;			/* File line input buffer. */
+	char	*ibp;			/* File line input buffer. */
 	size_t	 ibp_len;		/* File line input buffer length. */
+	CONVWIN	 ibcw;			/* File line input conversion buffer. */
 
 	/*
 	 * Buffers for the ex output.  The screen/vi support doesn't do any

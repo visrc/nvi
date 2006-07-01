@@ -300,11 +300,14 @@ static int
 filter_ldisplay(SCR *sp, FILE *fp)
 {
 	size_t len;
+	size_t wlen;
+	CHAR_T *wp;
 
 	EX_PRIVATE *exp;
 
 	for (exp = EXP(sp); !ex_getline(sp, fp, &len) && !INTERRUPTED(sp);) {
-		if (ex_ldisplay(sp, exp->ibp, len, 0, 0))
+		FILE2INT5(sp, exp->ibcw, exp->ibp, len, wp, wlen);
+		if (ex_ldisplay(sp, wp, wlen, 0, 0))
 			break;
 	}
 	if (ferror(fp))

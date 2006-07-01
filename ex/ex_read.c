@@ -305,6 +305,8 @@ ex_readfp(SCR *sp, char *name, FILE *fp, MARK *fm, db_recno_t *nlinesp, int sile
 	u_long ccnt;			/* XXX: can't print off_t portably. */
 	int nf, rval;
 	char *p;
+	size_t wlen;
+	CHAR_T *wp;
 
 	gp = sp->gp;
 	exp = EXP(sp);
@@ -326,7 +328,8 @@ ex_readfp(SCR *sp, char *name, FILE *fp, MARK *fm, db_recno_t *nlinesp, int sile
 				p = NULL;
 			}
 		}
-		if (db_append(sp, 1, lno, exp->ibp, len))
+		FILE2INT5(sp, exp->ibcw, exp->ibp, len, wp, wlen);
+		if (db_append(sp, 1, lno, wp, wlen))
 			goto err;
 		ccnt += len;
 	}

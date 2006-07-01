@@ -26,8 +26,8 @@
 typedef	u_int		ARG_CHAR_T;
 
 #ifdef USE_WIDECHAR
-#define FILE2INT(sp,n,nlen,w,wlen)					    \
-    sp->conv.file2int(sp, n, nlen, &sp->wp->cw, &wlen, &w)
+#define FILE2INT5(sp,buf,n,nlen,w,wlen)					    \
+    sp->conv.file2int(sp, n, nlen, &buf, &wlen, &w)
 #define INT2FILE(sp,w,wlen,n,nlen) 					    \
     sp->conv.int2file(sp, w, wlen, &sp->wp->cw, &nlen, &n)
 #define CHAR2INT5(sp,buf,n,nlen,w,wlen)					    \
@@ -57,7 +57,7 @@ typedef	u_int		ARG_CHAR_T;
 #define WVS		"%*ls"
 #define WC		"%lc"
 #else
-#define FILE2INT(sp,n,nlen,w,wlen) \
+#define FILE2INT(sp,buf,n,nlen,w,wlen) \
     (w = n, wlen = nlen, 0)
 #define INT2FILE(sp,w,wlen,n,nlen) \
     (n = w, nlen = wlen, 0)
@@ -88,6 +88,8 @@ typedef	u_int		ARG_CHAR_T;
 #define WVS		"%*s"
 #define WC		"%c"
 #endif
+#define FILE2INT(sp,n,nlen,w,wlen)					    \
+    FILE2INT5(sp,sp->wp->cw,n,nlen,w,wlen)
 #define CHAR2INT(sp,n,nlen,w,wlen)					    \
     CHAR2INT5(sp,sp->wp->cw,n,nlen,w,wlen)
 
