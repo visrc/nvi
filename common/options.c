@@ -72,7 +72,7 @@ OPTLIST const optlist[] = {
 	{L("combined"),	NULL,		OPT_0BOOL,	OPT_NOSET|OPT_WC},
 /* O_COMMENT	  4.4BSD */
 	{L("comment"),	NULL,		OPT_0BOOL,	0},
-/* O_DIRECTORY	    4BSD */
+/* O_TMP_DIRECTORY	    4BSD */
 	{L("directory"),	NULL,		OPT_STR,	0},
 /* O_EDCOMPATIBLE   4BSD */
 	{L("edcompatible"),NULL,		OPT_0BOOL,	0},
@@ -252,7 +252,7 @@ static OABBREV const abbrev[] = {
 	{L("aw"),	O_AUTOWRITE},		/*     4BSD */
 	{L("bf"),	O_BEAUTIFY},		/*     4BSD */
 	{L("co"),	O_COLUMNS},		/*   4.4BSD */
-	{L("dir"),	O_DIRECTORY},		/*     4BSD */
+	{L("dir"),	O_TMP_DIRECTORY},	/*     4BSD */
 	{L("eb"),	O_ERRORBELLS},		/*     4BSD */
 	{L("ed"),	O_EDCOMPATIBLE},	/*     4BSD */
 	{L("ex"),	O_EXRC},		/* System V (undocumented) */
@@ -355,7 +355,7 @@ opts_init(SCR *sp, int *oargs)
 	 */
 	(void)SPRINTF(b2, SIZE(b2),
 	    L("directory=%s"), (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
-	OI(O_DIRECTORY, b2);
+	OI(O_TMP_DIRECTORY, b2);
 	OI(O_ESCAPETIME, L("escapetime=1"));
 	OI(O_KEYTIME, L("keytime=6"));
 	OI(O_MATCHTIME, L("matchtime=7"));
