@@ -81,4 +81,7 @@ ctags $ctagsopt -w \
 	../tcl_api/*.[ch] ../vi/*.[ch]
 chmod 444 $f
 
+echo "Building ../ex/version.h"
+echo '#define VI_VERSION "'`git-describe`'"' > ../ex/version.h
+
 touch stamp-h.in
