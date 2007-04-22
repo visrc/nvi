@@ -6,6 +6,7 @@ TBL=	tbl
 all: edittut.ps ../html/edittut.html
 
 ../html/%.html: %.ms
+	test -d ../html || mkdir ../html
 	${TBL} $< | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src="$<.*png">//' > $@
 	rm -f "$<"*png

@@ -8,12 +8,14 @@ ALL= exref.ps summary.ps ../html/exref.html ../html/ex-summary.html
 all: $(ALL)
 
 ../html/exref.html: ex.rm
+	test -d ../html || mkdir ../html
 	${TBL} $< | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src="$<.*png">//' > $@
 	rm -f "$<"*png
 	chmod 444 $@
 
 ../html/ex-summary.html: ex.summary
+	test -d ../html || mkdir ../html
 	${TBL} $< | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src="$<.*png">//' > $@
 	rm -f "$<"*png

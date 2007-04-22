@@ -17,6 +17,7 @@ vi.ref.ps: vi.texi
 	chmod 444 $@
 
 ../html/vi.ref.html: vi.texi
+	test -d ../html || mkdir ../html
 	-makeinfo --html vi.texi --output=$@ 2>/dev/null
 	chmod 444 $@
 

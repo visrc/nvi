@@ -20,6 +20,7 @@ viapwh.ps: vi.apwh.ms
 	chmod 444 $@
 
 ../html/vitut.html: vi.in vi.chars
+	test -d ../html || mkdir ../html
 	${TBL} $+ | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src=".*png">//' > $@
 	rm -f *png
