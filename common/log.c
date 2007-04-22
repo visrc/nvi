@@ -109,7 +109,7 @@ log_init(SCR *sp, EXF *ep)
 	ep->l_high = ep->l_cur = 1;
 
 	if (db_create(&ep->log, 0, 0) != 0 ||
-	    ep->log->open(ep->log, NULL, NULL, DB_RECNO, 
+	    db_open(ep->log, NULL, DB_RECNO,
 			  DB_CREATE | VI_DB_THREAD, S_IRUSR | S_IWUSR) != 0) {
 		msgq(sp, M_SYSERR, "009|Log file");
 		F_SET(ep, F_NOLOG);

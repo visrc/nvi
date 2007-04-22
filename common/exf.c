@@ -287,7 +287,7 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 
 #define _DB_OPEN_MODE	S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 
-	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL, DB_RECNO, 
+	if ((sp->db_error = db_open(ep->db, ep->rcv_path, DB_RECNO,
 	    ((rcv_name == 0) ? DB_TRUNCATE : 0) | VI_DB_THREAD | NOMMAPIFFCNTL,
 	    _DB_OPEN_MODE)) != 0) {
 		msgq_str(sp,
@@ -319,7 +319,7 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 		msgq(sp, M_DBERR, "db_create 2");
 		goto err;
 	}
-	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL, DB_RECNO, 
+	if ((sp->db_error = db_open(ep->db, ep->rcv_path, DB_RECNO,
 	    VI_DB_THREAD | NOMMAPIFFCNTL, _DB_OPEN_MODE)) != 0) {
 		msgq_str(sp,
 		    M_DBERR, ep->rcv_path, "%s");

@@ -726,7 +726,7 @@ msg_open(SCR *sp, char *file)
 		p = file;
 	if ((sp->db_error = db_create(&db, 0, 0)) != 0 ||
 	    (sp->db_error = db->set_re_source(db, p)) != 0 ||
-	    (sp->db_error = db->open(db, NULL, NULL, DB_RECNO, 0, 0)) != 0) {
+	    (sp->db_error = db_open(db, NULL, DB_RECNO, 0, 0)) != 0) {
 		if (first) {
 			first = 0;
 			return (1);
