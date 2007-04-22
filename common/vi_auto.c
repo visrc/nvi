@@ -16,6 +16,9 @@
 #include "rep.h"
 #include "txn.h"
 /*
+ * PUBLIC: #ifdef USE_DB4_LOGGING
+ */
+/*
  * PUBLIC: int __vi_marker_log __P((DB_ENV *, DB_TXN *, DB_LSN *, u_int32_t,
  * PUBLIC:      u_int32_t));
  */
@@ -800,3 +803,6 @@ __vi_init_recover(dbenv)
 		return (ret);
 	return (0);
 }
+/*
+ * PUBLIC: #endif
+ */

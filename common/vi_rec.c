@@ -17,6 +17,9 @@
 #define LOG_CURSOR_HIT	    -1000
 
 /*
+ * PUBLIC: #ifdef USE_DB4_LOGGING
+ */
+/*
  * __vi_marker_recover --
  *	Recovery function for marker.
  *
@@ -313,3 +316,6 @@ vi_db_init_recover(DB_ENV *dbenv)
 
 	return 0;
 }
+/*
+ * PUBLIC: #endif
+ */
