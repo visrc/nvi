@@ -6,7 +6,7 @@ libtoolize -c --force
 
 echo "Building aclocal.m4"
 rm -f aclocal.m4
-aclocal
+aclocal -I m4
 
 # Build autoconf structure.
 echo "Running autoheader"

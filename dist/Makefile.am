@@ -1,5 +1,7 @@
 visrcdir= @srcdir@/..
 
+ACLOCAL_AMFLAGS = -I m4
+
 lib_LTLIBRARIES = libvi.la
 libvi_la_SOURCES = \
 	$(visrcdir)/common/api.c \
