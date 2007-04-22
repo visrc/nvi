@@ -57,7 +57,7 @@ typedef	u_int		ARG_CHAR_T;
 #define WVS		"%*ls"
 #define WC		"%lc"
 #else
-#define FILE2INT(sp,buf,n,nlen,w,wlen) \
+#define FILE2INT5(sp,buf,n,nlen,w,wlen) \
     (w = n, wlen = nlen, 0)
 #define INT2FILE(sp,w,wlen,n,nlen) \
     (n = w, nlen = wlen, 0)
