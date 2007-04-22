@@ -776,7 +776,7 @@ file_end(SCR *sp, EXF *ep, int force)
 		ep->env = 0;
 		if ((sp->db_error = db_env_create(&env, 0)))
 			msgq(sp, M_DBERR, "env_create");
-		if ((sp->db_error = env->remove(env, ep->env_path, 0)))
+		if ((sp->db_error = db_env_remove(env, ep->env_path, 0)))
 			msgq(sp, M_DBERR, "env->remove");
 		if (ep->env_path != NULL && rmdir(ep->env_path))
 			msgq_str(sp, M_SYSERR, ep->env_path, "242|%s: remove");
@@ -1623,7 +1623,7 @@ db_setup(SCR *sp, EXF *ep)
 		goto err;
 	}
 #endif
-	if ((sp->db_error = env->open(env, path, 
+	if ((sp->db_error = db_env_open(env, path, 
 	    DB_PRIVATE | DB_CREATE | DB_INIT_MPOOL | VI_DB_THREAD 
 	    | VI_DB_INIT_LOG, 0)) != 0) {
 		msgq(sp, M_DBERR, "env->open");

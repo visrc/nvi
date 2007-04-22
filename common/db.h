@@ -1,5 +1,17 @@
 #include <db.h>
 
+#if DB_VERSION_MAJOR >= 3 && DB_VERSION_MINOR >= 1
+#define db_env_open(env,path,flags,mode)				\
+    (env)->open(env, path, flags, mode)
+#define db_env_remove(env,path,flags)					\
+    (env)->remove(env, path, flags)
+#else
+#define db_env_open(env,path,flags,mode)				\
+    (env)->open(env, path, NULL, flags, mode)
+#define db_env_remove(env,path,flags)					\
+    (env)->remove(env, path, NULL, flags)
+#endif
+
 #if DB_VERSION_MAJOR >= 4 && DB_VERSION_MINOR >= 1
 #define db_open(db,file,type,flags,mode)				\
     (db)->open(db, NULL, file, NULL, type, flags, mode)
