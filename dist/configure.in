@@ -1030,14 +1030,16 @@ if test "x$with_db_build" != "x"; then
 fi;
 
 vi_cv_db4="no"
-if test "x$vi_cv_dbsrc" != "x"; then
+AC_ARG_ENABLE(log4,
+	[  --enable-db4-logging    Enable experimental/broken db4 logging.],
+	[
 	AC_MSG_CHECKING(for DB 4)
 	AC_EGREP_CPP([^4],
 		[#include <db.h>
-DB_VERSION_MAJOR],
+	DB_VERSION_MAJOR],
 		[vi_cv_db4="yes"], [vi_cv_db4="no"])
 	AC_MSG_RESULT($vi_cv_db4)
-fi
+	])
 if test "$vi_cv_db4" = "yes"; then
 	CPPFLAGS="-I$vi_cv_dbsrc/include $CPPFLAGS"
 	CPPFLAGS="-I$vi_cv_dbsrc/include_auto $CPPFLAGS"
