@@ -189,7 +189,7 @@ vi_SOURCES = \
 	$(visrcdir)/cl/cl_term.c \
 	$(visrcdir)/common/nothread.c
 vi_LDADD = libvi.la @perllibs@ @CURSLIBS@
-vi_CPPFLAGS = @CURSCPPFLAGS@ @perlldflags@
+vi_CPPFLAGS = @CURSCPPFLAGS@ @perlldflags@ $(AM_CPPFLAGS)
 vi_LDFLAGS = @CURSLDFLAGS@ @perlldflags@
 
 vi_ipc_SOURCES = \
@@ -242,8 +242,8 @@ vi_motif_LDADD = @MOTIFLIBS@ @LIBOBJS@
 vi_motif_CFLAGS = @XINCS@
 
 VI=-DVI=\"$(bindir)/`echo vi-ipc | sed '$(transform)'`\"
-CFLAGS=	 -D__REGEX_PRIVATE $(OPTFLAG) @CFLAGS@ -I. -I$(visrcdir)/include \
-	    @CPPFLAGS@ $(VI)
+CFLAGS=	$(OPTFLAG)
+AM_CPPFLAGS=	 -D__REGEX_PRIVATE -I. -I$(visrcdir)/include $(VI)
 PERL=	@vi_cv_path_perl@
 PERLLIB=@vi_cv_perllib@
 SHRPENV=@shrpenv@
