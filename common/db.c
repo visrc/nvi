@@ -170,7 +170,7 @@ retry:
 	data.ulen = sp->c_blen;
 	data.flags = DB_DBT_USERMEM;
 	switch (ep->db->get(ep->db, NULL, &key, &data, 0)) {
-	case ENOMEM:
+	case DB_BUFFER_SMALL:
 		nlen = data.size;
 		goto retry;
         default:

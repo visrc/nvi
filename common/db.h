@@ -1,5 +1,9 @@
 #include <db.h>
 
+#ifndef DB_BUFFER_SMALL
+#define DB_BUFFER_SMALL		ENOMEM
+#endif
+
 #if DB_VERSION_MAJOR >= 3 && DB_VERSION_MINOR >= 1
 #define db_env_open(env,path,flags,mode)				\
     (env)->open(env, path, flags, mode)
