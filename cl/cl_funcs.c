@@ -381,7 +381,7 @@ cl_discard(SCR *discardp, SCR **acquirep)
 
 	    if (CLSP(discardp)) {
 		    delwin(CLSP(discardp));
-		    CLSP(discardp) = NULL;
+		    discardp->cl_private = NULL;
 	    }
 	}
 
@@ -395,7 +395,7 @@ cl_discard(SCR *discardp, SCR **acquirep)
 
 		if (CLSP(tsp))
 			delwin(CLSP(tsp));
-		CLSP(tsp) = subwin(stdscr, tsp->rows, tsp->cols,
+		tsp->cl_private = subwin(stdscr, tsp->rows, tsp->cols,
 					   tsp->roff, tsp->coff);
 	}
 
@@ -716,9 +716,9 @@ cl_split(SCR *origp, SCR *newp)
 	if (CLSP(origp))
 		delwin(CLSP(origp));
 
-	CLSP(origp) = subwin(stdscr, origp->rows, origp->cols,
+	origp->cl_private = subwin(stdscr, origp->rows, origp->cols,
 				     origp->roff, origp->coff);
-	CLSP(newp) = subwin(stdscr, newp->rows, newp->cols,
+	newp->cl_private = subwin(stdscr, newp->rows, newp->cols,
 				     newp->roff, newp->coff);
 
 	/* origp is the original screen, giving up space to newp. */

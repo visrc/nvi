@@ -163,7 +163,7 @@ nocache:
 	nlen = 1024;
 retry:
 	/* data.size contains length in bytes */
-	BINC_GOTO(sp, (char *)ep->c_lp, ep->c_blen, nlen);
+	BINC_GOTO(sp, CHAR_T, ep->c_lp, ep->c_blen, nlen);
 
 	/* Get the line from the underlying database. */
 	key.data = &lno;

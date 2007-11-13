@@ -133,7 +133,7 @@ retry:		FREE_SPACE(sp, bp, blen);
 	}
 	bp = NULL;
 	blen = 0;
-	GET_SPACE_GOTO(sp, bp, blen, nlen);
+	GET_SPACE_GOTOC(sp, bp, blen, nlen);
 
 	/*
 	 * Error prefix.
@@ -487,7 +487,7 @@ mod_rpt(SCR *sp)
 	}
 
 	/* Build and display the message. */
-	GET_SPACE_GOTO(sp, bp, blen, sizeof(action) * MAXNUM + 1);
+	GET_SPACE_GOTOC(sp, bp, blen, sizeof(action) * MAXNUM + 1);
 	for (p = bp, first = 1, tlen = 0,
 	    ap = action, cnt = 0; cnt < ARSIZE(action); ++ap, ++cnt)
 		if (sp->rptlines[cnt] != 0) {
@@ -548,7 +548,7 @@ msgq_status(SCR *sp, db_recno_t lno, u_int flags)
 
 	/* Get sufficient memory. */
 	len = strlen(sp->frp->name);
-	GET_SPACE_GOTO(sp, bp, blen, len * MAX_CHARACTER_COLUMNS + 128);
+	GET_SPACE_GOTOC(sp, bp, blen, len * MAX_CHARACTER_COLUMNS + 128);
 	p = bp;
 
 	/* Copy in the filename. */
@@ -898,7 +898,7 @@ retry:		if (sp == NULL)
 		if ((bp = malloc(nlen)) == NULL)
 			goto alloc_err;
 	} else
-		GET_SPACE_GOTO(sp, bp, blen, nlen);
+		GET_SPACE_GOTOC(sp, bp, blen, nlen);
 	if (0) {
 alloc_err:	return ("");
 	}

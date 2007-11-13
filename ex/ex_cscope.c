@@ -177,7 +177,7 @@ start_cscopes(SCR *sp, EXCMD *cmdp)
 	if ((cscopes = getenv("CSCOPE_DIRS")) == NULL)
 		return (0);
 	len = strlen(cscopes);
-	GET_SPACE_RET(sp, bp, blen, len);
+	GET_SPACE_RETC(sp, bp, blen, len);
 	memcpy(bp, cscopes, len + 1);
 
 	for (cscopes = t = bp; (p = strsep(&t, "\t :")) != NULL;)

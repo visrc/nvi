@@ -19,8 +19,8 @@
 /* Increase the size of a malloc'd buffer.  Two versions, one that
  * returns, one that jumps to an error label.
  */
-#define	BINC_GOTO(sp, lp, llen, nlen) {					\
-	CHECK_TYPE(char *, lp)						\
+#define	BINC_GOTO(sp, type, lp, llen, nlen) {				\
+	CHECK_TYPE(type *, lp)						\
 	void *L__bincp;							\
 	if ((nlen) > llen) {						\
 		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
@@ -32,12 +32,12 @@
 		lp = L__bincp;						\
 	}								\
 }
-#define	BINC_GOTOW(sp, lp, llen, nlen) {				\
-	CHECK_TYPE(CHAR_T *, lp)					\
-	BINC_GOTO(sp, (char *)lp, llen, (nlen) * sizeof(CHAR_T))    	\
-}
-#define	BINC_RET(sp, lp, llen, nlen) {					\
-	CHECK_TYPE(char *, lp)						\
+#define	BINC_GOTOC(sp, lp, llen, nlen)					\
+	BINC_GOTO(sp, char, lp, llen, nlen)
+#define	BINC_GOTOW(sp, lp, llen, nlen)					\
+	BINC_GOTO(sp, CHAR_T, lp, llen, (nlen) * sizeof(CHAR_T))
+#define	BINC_RET(sp, type, lp, llen, nlen) {				\
+	CHECK_TYPE(type *, lp)						\
 	void *L__bincp;							\
 	if ((nlen) > llen) {						\
 		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
@@ -49,85 +49,85 @@
 		lp = L__bincp;						\
 	}								\
 }
-#define	BINC_RETW(sp, lp, llen, nlen) {					\
-	CHECK_TYPE(CHAR_T *, lp)					\
-	BINC_RET(sp, (char *)lp, llen, (nlen) * sizeof(CHAR_T))	    	\
-}
+#define	BINC_RETC(sp, lp, llen, nlen)					\
+	BINC_RET(sp, char, lp, llen, nlen)
+#define	BINC_RETW(sp, lp, llen, nlen)					\
+	BINC_RET(sp, CHAR_T, lp, llen, (nlen) * sizeof(CHAR_T))
 
 /*
  * Get some temporary space, preferably from the global temporary buffer,
  * from a malloc'd buffer otherwise.  Two versions, one that returns, one
  * that jumps to an error label.
  */
-#define	GET_SPACE_GOTO(sp, bp, blen, nlen) {				\
+#define	GET_SPACE_GOTO(sp, type, bp, blen, nlen) {			\
+	CHECK_TYPE(type *, bp)						\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
 	if (L__wp == NULL || F_ISSET(L__wp, W_TMP_INUSE)) {		\
 		bp = NULL;						\
 		blen = 0;						\
-		BINC_GOTO(sp, bp, blen, nlen); 				\
+		BINC_GOTO(sp, type, bp, blen, nlen); 			\
 	} else {							\
-		BINC_GOTO(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
-		bp = L__wp->tmp_bp;					\
+		BINC_GOTOC(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
+		bp = (type *) L__wp->tmp_bp;				\
 		blen = L__wp->tmp_blen;					\
 		F_SET(L__wp, W_TMP_INUSE);				\
 	}								\
 }
-#define	GET_SPACE_GOTOW(sp, bp, blen, nlen) {				\
-	CHAR_T *L__bp = bp;						\
-	GET_SPACE_GOTO(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
-}
-#define	GET_SPACE_RET(sp, bp, blen, nlen) {				\
+#define	GET_SPACE_GOTOC(sp, bp, blen, nlen)				\
+	GET_SPACE_GOTO(sp, char, bp, blen, nlen)
+#define	GET_SPACE_GOTOW(sp, bp, blen, nlen)				\
+	GET_SPACE_GOTO(sp, CHAR_T, bp, blen, (nlen) * sizeof(CHAR_T))
+#define	GET_SPACE_RET(sp, type, bp, blen, nlen) {			\
+	CHECK_TYPE(type *, bp)						\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
 	if (L__wp == NULL || F_ISSET(L__wp, W_TMP_INUSE)) {		\
 		bp = NULL;						\
 		blen = 0;						\
-		BINC_RET(sp, bp, blen, nlen);				\
+		BINC_RET(sp, type, bp, blen, nlen);			\
 	} else {							\
-		BINC_RET(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
-		bp = L__wp->tmp_bp;					\
+		BINC_RETC(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
+		bp = (type *) L__wp->tmp_bp;				\
 		blen = L__wp->tmp_blen;					\
 		F_SET(L__wp, W_TMP_INUSE);				\
 	}								\
 }
-#define	GET_SPACE_RETW(sp, bp, blen, nlen) {				\
-	CHECK_TYPE(CHAR_T *, bp)					\
-	GET_SPACE_RET(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
-}
+#define	GET_SPACE_RETC(sp, bp, blen, nlen)				\
+	GET_SPACE_RET(sp, char, bp, blen, nlen)
+#define	GET_SPACE_RETW(sp, bp, blen, nlen)				\
+	GET_SPACE_RET(sp, CHAR_T, bp, blen, (nlen) * sizeof(CHAR_T))
 
 /*
  * Add space to a GET_SPACE returned buffer.  Two versions, one that
  * returns, one that jumps to an error label.
  */
-#define	ADD_SPACE_GOTO(sp, bp, blen, nlen) {				\
+#define	ADD_SPACE_GOTO(sp, type, bp, blen, nlen) {			\
+	CHECK_TYPE(type *, bp)						\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
-	if (L__wp == NULL || bp == L__wp->tmp_bp) {			\
+	if (L__wp == NULL || bp == (type *)L__wp->tmp_bp) {		\
 		F_CLR(L__wp, W_TMP_INUSE);				\
-		BINC_GOTO(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
-		bp = L__wp->tmp_bp;					\
+		BINC_GOTOC(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
+		bp = (type *) L__wp->tmp_bp;				\
 		blen = L__wp->tmp_blen;					\
 		F_SET(L__wp, W_TMP_INUSE);				\
 	} else								\
-		BINC_GOTO(sp, bp, blen, nlen);				\
+		BINC_GOTO(sp, type, bp, blen, nlen);			\
 }
-#define	ADD_SPACE_GOTOW(sp, bp, blen, nlen) {				\
-	CHECK_TYPE(CHAR_T *, bp)					\
-	ADD_SPACE_GOTO(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
-}
-#define	ADD_SPACE_RET(sp, bp, blen, nlen) {				\
+#define	ADD_SPACE_GOTOW(sp, bp, blen, nlen)				\
+	ADD_SPACE_GOTO(sp, CHAR_T, bp, blen, (nlen) * sizeof(CHAR_T))
+#define	ADD_SPACE_RET(sp, type, bp, blen, nlen) {			\
+	CHECK_TYPE(type *, bp)						\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
-	if (L__wp == NULL || bp == L__wp->tmp_bp) {			\
+	if (L__wp == NULL || bp == (type *)L__wp->tmp_bp) {		\
 		F_CLR(L__wp, W_TMP_INUSE);				\
-		BINC_RET(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
-		bp = L__wp->tmp_bp;					\
+		BINC_RETC(sp, L__wp->tmp_bp, L__wp->tmp_blen, nlen);	\
+		bp = (type *) L__wp->tmp_bp;				\
 		blen = L__wp->tmp_blen;					\
 		F_SET(L__wp, W_TMP_INUSE);				\
 	} else								\
-		BINC_RET(sp, bp, blen, nlen);				\
+		BINC_RET(sp, type, bp, blen, nlen);			\
 }
-#define	ADD_SPACE_RETW(sp, bp, blen, nlen) {				\
-	CHECK_TYPE(CHAR_T *, bp)					\
-	ADD_SPACE_RET(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
-}
+#define	ADD_SPACE_RETW(sp, bp, blen, nlen)				\
+	ADD_SPACE_RET(sp, CHAR_T, bp, blen, (nlen) * sizeof(CHAR_T))
 
 /* Free a GET_SPACE returned buffer. */
 #define	FREE_SPACE(sp, bp, blen) {					\

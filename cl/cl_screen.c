@@ -56,7 +56,7 @@ cl_screen(SCR *sp, u_int32_t flags)
 	if (F_ISSET(gp, G_SRESTART)) {
 		if (CLSP(sp)) {
 		    delwin(CLSP(sp));
-		    CLSP(sp) = NULL;
+		    sp->cl_private = NULL;
 		}
 		if (cl_quit(gp))
 			return (1);

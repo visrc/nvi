@@ -195,7 +195,7 @@ int2raw(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen,
     char **tostr = (char **)&cw->bp1;
     size_t  *blen = &cw->blen1;
 
-    BINC_RET(NULL, *tostr, *blen, len);
+    BINC_RETC(NULL, *tostr, *blen, len);
 
     *tolen = len;
     for (i = 0; i < len; ++i)
@@ -235,7 +235,7 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
 	    char *obp = (char *)cw->bp1 + offset;		    	\
 	    if (cw->blen1 < offset + MB_CUR_MAX) {		    	\
 		nlen += 256;						\
-		BINC_RET(NULL, cw->bp1, cw->blen1, nlen);		\
+		BINC_RETC(NULL, cw->bp1, cw->blen1, nlen);		\
 	    }						    		\
 	    errno = 0;						    	\
 	    if (iconv(id, &bp, &len, &obp, &outleft) == -1 && 	        \
@@ -250,7 +250,7 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
 
 
     MEMSET(&mbs, 0, 1);
-    BINC_RET(NULL, *tostr, *blen, nlen);
+    BINC_RETC(NULL, *tostr, *blen, nlen);
     dst = *tostr; buflen = *blen;
 
 #ifdef USE_ICONV
@@ -271,7 +271,7 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
 		CONVERT2(j, cw, offset);
 	    } else {
 		nlen += 256;
-		BINC_RET(NULL, *tostr, *blen, nlen);
+		BINC_RETC(NULL, *tostr, *blen, nlen);
 		dst = *tostr; buflen = *blen;
 	    }
 	}

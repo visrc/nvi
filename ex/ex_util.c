@@ -64,7 +64,7 @@ ex_getline(SCR *sp, FILE *fp, size_t *lenp)
 	exp = EXP(sp);
 	for (errno = 0, off = 0, p = exp->ibp;;) {
 		if (off >= exp->ibp_len) {
-			BINC_RET(sp, exp->ibp, exp->ibp_len, off + 1);
+			BINC_RETC(sp, exp->ibp, exp->ibp_len, off + 1);
 			p = exp->ibp + off;
 		}
 		if ((ch = getc(fp)) == EOF && !feof(fp)) {

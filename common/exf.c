@@ -1156,7 +1156,7 @@ file_backup(SCR *sp, char *name, char *bname)
 	 * by one.
 	 */
 	if (version) {
-		GET_SPACE_GOTO(sp, bp, blen, cmd.argv[0]->len * 2 + 50);
+		GET_SPACE_GOTOC(sp, bp, blen, cmd.argv[0]->len * 2 + 50);
 		INT2SYS(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
 			 p, nlen); 
 		d = strdup(p);

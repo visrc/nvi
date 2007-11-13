@@ -833,7 +833,7 @@ v_event_grow(SCR *sp, int add)
 	wp = sp->wp;
 	new_nelem = wp->i_nelem + add;
 	olen = wp->i_nelem * sizeof(wp->i_event[0]);
-	BINC_RET(sp, (char *)wp->i_event, olen, new_nelem * sizeof(wp->i_event[0]));
+	BINC_RET(sp, EVENT, wp->i_event, olen, new_nelem * sizeof(EVENT));
 	wp->i_nelem = olen / sizeof(wp->i_event[0]);
 	return (0);
 }

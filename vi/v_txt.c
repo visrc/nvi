@@ -589,7 +589,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 
 	/* Check to see if the character fits into the replay buffers. */
 	if (LF_ISSET(TXT_RECORD)) {
-		BINC_GOTO(sp, (char *)vip->rep,
+		BINC_GOTO(sp, EVENT, vip->rep,
 		    vip->rep_len, (rcol + 1) * sizeof(EVENT));
 		vip->rep[rcol++] = *evp;
 	}

@@ -201,7 +201,7 @@ log_cursor1(SCR *sp, int type)
 		return 1;
 	*/
 
-	BINC_RET(sp, sp->wp->l_lp, sp->wp->l_len, sizeof(u_char) + sizeof(MARK));
+	BINC_RETC(sp, sp->wp->l_lp, sp->wp->l_len, sizeof(u_char) + sizeof(MARK));
 	sp->wp->l_lp[0] = type;
 	memmove(sp->wp->l_lp + sizeof(u_char), &ep->l_cursor, sizeof(MARK));
 
@@ -293,7 +293,7 @@ log_line(SCR *sp, db_recno_t lno, u_int action)
 	} else
 		if (db_get(sp, lno, DBG_FATAL, &lp, &len))
 			return (1);
-	BINC_RET(sp,
+	BINC_RETC(sp,
 	    sp->wp->l_lp, sp->wp->l_len, 
 	    len * sizeof(CHAR_T) + CHAR_T_OFFSET);
 	sp->wp->l_lp[0] = action;
@@ -371,7 +371,7 @@ log_mark(SCR *sp, LMARK *lmp)
 		ep->l_win = sp->wp;
 	}
 
-	BINC_RET(sp, sp->wp->l_lp,
+	BINC_RETC(sp, sp->wp->l_lp,
 	    sp->wp->l_len, sizeof(u_char) + sizeof(LMARK));
 	sp->wp->l_lp[0] = LOG_MARK;
 	memmove(sp->wp->l_lp + sizeof(u_char), lmp, sizeof(LMARK));
@@ -409,7 +409,7 @@ vi_log_get(SCR *sp, db_recno_t *lnop, size_t *size)
 
 	nlen = 1024;
 retry:
-	BINC_RET(sp, sp->wp->l_lp, sp->wp->l_len, nlen);
+	BINC_RETC(sp, sp->wp->l_lp, sp->wp->l_len, nlen);
 
 	memset(&key, 0, sizeof(key));
 	key.data = lnop;		/* Initialize db request. */
