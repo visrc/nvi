@@ -136,13 +136,6 @@ db_get(SCR *sp, db_recno_t lno, u_int32_t flags, CHAR_T **pp, size_t *lenp)
 	}
 
 	/* Look-aside into the cache, and see if the line we want is there. */
-	/*
-	 * Line cache will not work if different screens view the same
-	 * file with different encodings.
-	 * Multiple threads accessing the same cache can be a problem as
-	 * well.
-	 * So, line cache is (temporarily) disabled.
-	 */
 	if (lno == sp->c_lno) {
 #if defined(DEBUG) && 0
 		vtrace(sp, "retrieve cached line %lu\n", (u_long)lno);
