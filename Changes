@@ -1,6 +1,8 @@
-Changes in 1.81.5
+Changes since 1.81.5
+    * various compilation fixes
+    * support for newer DBs
     * tcl support compiles again
-Changes in 1.81.4
+Changes since 1.81.4
     * add Changes document
     * the preserve command overwrote the edited file; the problem
       is really in DB; a bandaid was added
@@ -24,7 +26,7 @@ Changes in 1.81.4
     * documentation changes
 	- vi.ref converted to texinfo
 	- vsplit documented
-Changes in 1.81.3
+Changes since 1.81.3
     * support for newer ncurses
     * various other wide character related changes
     * eliminate spurious cursor movements on split screens
