@@ -773,6 +773,7 @@ vs_swap(SCR *sp, SCR **nspp, char *name)
 	_TMAP(nsp) = _HMAP(nsp) + (nsp->t_rows - 1);
 
 	/* Fill the map. */
+	nsp->wp = sp->wp;
 	if (vs_sm_fill(nsp, nsp->lno, P_FILL))
 		return (1);
 
@@ -784,7 +785,6 @@ vs_swap(SCR *sp, SCR **nspp, char *name)
 	 */
 	CIRCLEQ_REMOVE(&gp->hq, nsp, q);
 	CIRCLEQ_INSERT_AFTER(&wp->scrq, sp, nsp, q);
-	nsp->wp = sp->wp;
 
 	/*
 	 * Don't change the screen's cursor information other than to
