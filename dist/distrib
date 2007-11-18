@@ -12,12 +12,12 @@ aclocal -I m4
 echo "Running autoheader"
 autoheader 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 444 config.h.in
+echo "Running automake"
+automake -a -c --foreign $@
 rm -f configure
 echo "Running autoconf"
 autoconf 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 555 configure config.guess config.sub install-sh
-echo "Running automake"
-automake -a -c --foreign $@
 
 msg="/* Do not edit: automatically built by build/distrib. */"
 # Build automatically generated header files.
@@ -81,7 +81,8 @@ ctags $ctagsopt -w \
 	../tcl_api/*.[ch] ../vi/*.[ch]
 chmod 444 $f
 
+date=`date +%Y-%m-%d`
 echo "Building ../ex/version.h"
-echo '#define VI_VERSION "'`git-describe`'"' > ../ex/version.h
+echo '#define VI_VERSION "'`git-describe` '('$date')"' > ../ex/version.h
 
 touch stamp-h.in

@@ -1,17 +1,10 @@
 #!/bin/sh
-revision=${@:-now}
-cvsrev=`echo $revision | sed -e 's/-//;s/\./-/g'`
-option="-r $cvsrev"
-dir=$revision
-version=`echo $revision | sed -e 's/nvi-//'`
+revision=${@:-HEAD}
+gitrev=`git describe $revision`
+dir=$gitrev
+version=`echo $gitrev | sed -e 's/nvi-//'`
 date=`date +%Y-%m-%d`
-if test "$revision" = now; then 
-	dir=vi-current; 
-	option="-D now"
-	version=current;
-fi
-
-cvs export $option -d $dir vi
+(cd .. && git archive --format=tar --prefix=$dir/ $revision) | tar x $dir
 (cd $dir/dist
     sh distrib --ignore-deps
     rm export
@@ -29,8 +22,5 @@ cvs export $option -d $dir vi
     perl -pi -e "s/version 1.80/version $version/" README
     perl -pi -e "s(%H%)($date)" README
 )
-(cd $dir/ex
-    perl -pi -e "s/\\\$Revision: 8.5 $/$version/" version.h
-    perl -pi -e "s(%H%)($date)" version.h
-)
 tar czf $dir.tar.gz $dir
+tar cjf $dir.tar.bz2 $dir
