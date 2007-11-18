@@ -2,6 +2,7 @@ dnl	$Id: configure.in,v 8.192 2003/02/17 20:09:07 skimo Exp $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
+AC_CONFIG_AUX_DIR(.)
 AM_INIT_AUTOMAKE(vi, 1.81.5)
 AM_CONFIG_HEADER(config.h)
 
