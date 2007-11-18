@@ -18,7 +18,7 @@ vi.ref.ps: vi.texi
 
 ../html/vi.ref.html: vi.texi
 	test -d ../html || mkdir ../html
-	-makeinfo --html vi.texi --output=$@ 2>/dev/null
+	-makeinfo --html --no-split vi.texi --output=$@ 2>/dev/null
 	chmod 444 $@
 
 clean:
