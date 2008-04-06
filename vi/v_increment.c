@@ -28,17 +28,17 @@ static const char sccsid[] = "$Id: v_increment.c,v 10.16 2001/06/25 15:19:31 ski
 #include "../common/common.h"
 #include "vi.h"
 
-static char * const fmt[] = {
+static CHAR_T * const fmt[] = {
 #define	DEC	0
-	"%ld",
+	L("%ld"),
 #define	SDEC	1
-	"%+ld",
+	L("%+ld"),
 #define	HEXC	2
-	"0X%0*lX",
+	L("0X%0*lX"),
 #define	HEXL	3
-	"0x%0*lx",
+	L("0x%0*lx"),
 #define	OCTAL	4
-	"%#0*lo",
+	L("%#0*lo"),
 };
 
 static void inc_err __P((SCR *, enum nresult));
@@ -57,13 +57,12 @@ v_increment(SCR *sp, VICMD *vp)
 	long change, ltmp, lval;
 	size_t beg, blen, end, len, nlen, wlen;
 	int base, isempty, rval;
-	char *ntype, nbuf[100];
-	CHAR_T *bp, *p, *t;
+	CHAR_T *bp, *p, *t, *ntype, nbuf[100];
 
 	/* Validate the operator. */
-	if (vp->character == '#')
-		vp->character = '+';
-	if (vp->character != '+' && vp->character != '-') {
+	if (vp->character == L('#'))
+		vp->character = L('+');
+	if (vp->character != L('+') && vp->character != L('-')) {
 		v_emsg(sp, vp->kp->usage, VIM_USAGE);
 		return (1);
 	}
@@ -90,7 +89,7 @@ v_increment(SCR *sp, VICMD *vp)
 	 * implies moving the cursor to its beginning, if we moved, refresh
 	 * now.
 	 */
-	for (beg = vp->m_start.cno; beg < len && isspace(p[beg]); ++beg);
+	for (beg = vp->m_start.cno; beg < len && ISSPACE(p[beg]); ++beg);
 	if (beg >= len)
 		goto nonum;
 	if (beg != vp->m_start.cno) {
@@ -99,9 +98,9 @@ v_increment(SCR *sp, VICMD *vp)
 	}
 
 #undef	ishex
-#define	ishex(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
+#define	ishex(c)	(ISDIGIT(c) || STRCHR(L("abcdefABCDEF"), c))
 #undef	isoctal
-#define	isoctal(c)	(isdigit(c) && (c) != '8' && (c) != '9')
+#define	isoctal(c)	(ISDIGIT(c) && (c) != L('8') && (c) != L('9'))
 
 	/*
 	 * Look for 0[Xx], or leading + or - signs, guess at the base.
@@ -110,30 +109,30 @@ v_increment(SCR *sp, VICMD *vp)
 	 * the number.
 	 */
 	wlen = len - beg;
-	if (p[beg] == '0' && wlen > 2 &&
-	    (p[beg + 1] == 'X' || p[beg + 1] == 'x')) {
+	if (p[beg] == L('0') && wlen > 2 &&
+	    (p[beg + 1] == L('X') || p[beg + 1] == L('x'))) {
 		base = 16;
 		end = beg + 2;
 		if (!ishex(p[end]))
 			goto decimal;
-		ntype = p[beg + 1] == 'X' ? fmt[HEXC] : fmt[HEXL];
-	} else if (p[beg] == '0' && wlen > 1) {
+		ntype = p[beg + 1] == L('X') ? fmt[HEXC] : fmt[HEXL];
+	} else if (p[beg] == L('0') && wlen > 1) {
 		base = 8;
 		end = beg + 1;
 		if (!isoctal(p[end]))
 			goto decimal;
 		ntype = fmt[OCTAL];
-	} else if (wlen >= 1 && (p[beg] == '+' || p[beg] == '-')) {
+	} else if (wlen >= 1 && (p[beg] == L('+') || p[beg] == L('-'))) {
 		base = 10;
 		end = beg + 1;
 		ntype = fmt[SDEC];
-		if (!isdigit(p[end]))
+		if (!ISDIGIT(p[end]))
 			goto nonum;
 	} else {
 decimal:	base = 10;
 		end = beg;
 		ntype = fmt[DEC];
-		if (!isdigit(p[end])) {
+		if (!ISDIGIT(p[end])) {
 nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 			return (1);
 		}
@@ -145,14 +144,14 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 		case 8:
 			if (isoctal(p[end]))
 				continue;
-			if (p[end] == '8' || p[end] == '9') {
+			if (p[end] == L('8') || p[end] == L('9')) {
 				base = 10;
 				ntype = fmt[DEC];
 				continue;
 			}
 			break;
 		case 10:
-			if (isdigit(p[end]))
+			if (ISDIGIT(p[end]))
 				continue;
 			break;
 		case 16:
@@ -177,7 +176,7 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 	GET_SPACE_RETW(sp, bp, blen, len + 50);
 	if (end == len) {
 		MEMMOVEW(bp, &p[beg], wlen);
-		bp[wlen] = '\0';
+		bp[wlen] = L('\0');
 		t = bp;
 	} else
 		t = &p[beg];
@@ -189,7 +188,7 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 	if (base == 10) {
 		if ((nret = nget_slong(sp, &lval, t, NULL, 10)) != NUM_OK)
 			goto err;
-		ltmp = vp->character == '-' ? -change : change;
+		ltmp = vp->character == L('-') ? -change : change;
 		if (lval > 0 && ltmp > 0 && !NPFITS(LONG_MAX, lval, ltmp)) {
 			nret = NUM_OVER;
 			goto err;
@@ -202,11 +201,11 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 		/* If we cross 0, signed numbers lose their sign. */
 		if (lval == 0 && ntype == fmt[SDEC])
 			ntype = fmt[DEC];
-		nlen = snprintf(nbuf, sizeof(nbuf), ntype, lval);
+		nlen = SPRINTF(nbuf, SIZE(nbuf), ntype, lval);
 	} else {
 		if ((nret = nget_uslong(sp, &ulval, t, NULL, base)) != NUM_OK)
 			goto err;
-		if (vp->character == '+') {
+		if (vp->character == L('+')) {
 			if (!NPFITS(ULONG_MAX, ulval, change)) {
 				nret = NUM_OVER;
 				goto err;
@@ -224,7 +223,7 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 		if (base == 16)
 			wlen -= 2;
 
-		nlen = snprintf(nbuf, sizeof(nbuf), ntype, wlen, ulval);
+		nlen = SPRINTF(nbuf, SIZE(nbuf), ntype, wlen, ulval);
 	}
 
 	/* Build the new line. */

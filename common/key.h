@@ -51,6 +51,8 @@ typedef	u_int		ARG_CHAR_T;
     iswalpha((ch))
 #define ISALNUM(ch) \
     iswalnum((ch))
+#define ISSPACE(ch) \
+    iswspace((ch))
 #define CHAR_WIDTH(sp, ch)  wcwidth(ch)
 #define INTISWIDE(c)	(!!(c >> 8))	    /* XXX wrong name */
 #define WS		"%ls"
@@ -82,6 +84,8 @@ typedef	u_int		ARG_CHAR_T;
     isalpha((ch))
 #define ISALNUM(ch) \
     isalnum((ch))
+#define ISSPACE(ch) \
+    isspace((ch))
 #define INTISWIDE(c)	    0
 #define CHAR_WIDTH(sp, ch)  1
 #define WS		"%s"
