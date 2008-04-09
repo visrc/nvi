@@ -65,7 +65,7 @@ struct _text {				/* Text: a linked list of lines. */
  */
 #define	CBNAME(sp, cbp, nch) {						\
 	CHAR_T L__name;							\
-	L__name = isupper(nch) ? tolower(nch) : (nch);			\
+	L__name = ISUPPER(nch) ? TOLOWER(nch) : (nch);			\
 	for (cbp = sp->wp->cutq.lh_first;				\
 	    cbp != NULL; cbp = cbp->q.le_next)				\
 		if (cbp->name == L__name)				\

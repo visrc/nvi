@@ -101,15 +101,15 @@ cut(SCR *sp, CHAR_T *namep, MARK *fm, MARK *tm, int flags)
 			copy_one = 1;
 			cb_rotate(sp);
 		}
-		if ((append = isupper(name)) == 1) {
+		if ((append = isupper(name))) {
 			if (!copy_one)
 				copy_def = 1;
-			name = tolower(name);
+			name = TOLOWER(name);
 		}
 namecb:		CBNAME(sp, cbp, name);
 	} else if (LF_ISSET(CUT_NUMREQ) || LF_ISSET(CUT_NUMOPT) &&
 	    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
-		name = '1';
+		name = L('1');
 		cb_rotate(sp);
 		goto namecb;
 	} else
@@ -163,7 +163,7 @@ copyloop:
 	sp->wp->dcbp = cbp;	/* Repoint the default buffer on each pass. */
 
 	if (copy_one) {		/* Copy into numeric buffer 1. */
-		name = '1';
+		name = L('1');
 		CBNAME(sp, cbp, name);
 		copy_one = 0;
 		goto copyloop;
@@ -194,31 +194,31 @@ cb_rotate(SCR *sp)
 	del_cbp = NULL;
 	for (cbp = sp->wp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next)
 		switch(cbp->name) {
-		case '1':
-			cbp->name = '2';
+		case L('1'):
+			cbp->name = L('2');
 			break;
-		case '2':
-			cbp->name = '3';
+		case L('2'):
+			cbp->name = L('3');
 			break;
-		case '3':
-			cbp->name = '4';
+		case L('3'):
+			cbp->name = L('4');
 			break;
-		case '4':
-			cbp->name = '5';
+		case L('4'):
+			cbp->name = L('5');
 			break;
-		case '5':
-			cbp->name = '6';
+		case L('5'):
+			cbp->name = L('6');
 			break;
-		case '6':
-			cbp->name = '7';
+		case L('6'):
+			cbp->name = L('7');
 			break;
-		case '7':
-			cbp->name = '8';
+		case L('7'):
+			cbp->name = L('8');
 			break;
-		case '8':
-			cbp->name = '9';
+		case L('8'):
+			cbp->name = L('9');
 			break;
-		case '9':
+		case L('9'):
 			del_cbp = cbp;
 			break;
 		}

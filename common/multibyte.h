@@ -12,6 +12,7 @@ typedef	wchar_t		CHAR_T;
 typedef	u_int		UCHAR_T;
 #define RCHAR_BIT	24
 
+#define ISUPPER		iswupper
 #define STRLEN		wcslen
 #define STRTOL		wcstol
 #define STRTOUL		wcstoul
@@ -19,6 +20,7 @@ typedef	u_int		UCHAR_T;
 #define STRCHR		wcschr
 #define STRCMP		wcscmp
 #define STRPBRK		wcspbrk
+#define TOLOWER		towlower
 #define TOUPPER		towupper
 #define STRSET		wmemset
 
@@ -32,6 +34,7 @@ typedef	u_char		CHAR_T;
 typedef	u_char		UCHAR_T;
 #define RCHAR_BIT	CHAR_BIT
 
+#define ISUPPER		isupper
 #define STRLEN		strlen
 #define STRTOL		strtol
 #define STRTOUL		strtoul
@@ -39,6 +42,7 @@ typedef	u_char		UCHAR_T;
 #define STRCHR		strchr
 #define STRCMP		strcmp
 #define STRPBRK		strpbrk
+#define TOLOWER		tolower
 #define TOUPPER		toupper
 #define STRSET		memset
 
