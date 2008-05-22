@@ -313,6 +313,25 @@ v_searchn(SCR *sp, VICMD *vp)
 }
 
 /*
+ * is_especial --
+ *	Test if the character is special in an extended RE.
+ */
+static int
+is_especial(CHAR_T c)
+{
+	/*
+	 * !!!
+	 * Right-brace is not an ERE special according to IEEE 1003.1-2001.
+	 * Right-parenthesis is a special character (so quoting doesn't hurt),
+	 * though it has no special meaning in this context, viz. at the
+	 * beginning of the string.  So we need not quote it.  Then again,
+	 * see the BUGS section in regex/re_format.7.
+	 * The tilde is vi-specific, of course.
+	 */
+	return (STRCHR(L(".[\\()*+?{|^$~"), c) && c);
+}
+
+/*
  * v_searchw -- [count]^A
  *	Search for the word under the cursor.
  *
@@ -321,19 +340,28 @@ v_searchn(SCR *sp, VICMD *vp)
 int
 v_searchw(SCR *sp, VICMD *vp)
 {
-	size_t blen, len;
+	size_t blen;
+	/* An upper bound for the SIZE of the RE under construction. */
+	size_t len = VIP(sp)->klen + MAX(RE_WSTART_LEN, 1) + RE_WSTOP_LEN;
 	int rval;
 	CHAR_T *bp, *p;
 
-	len = VIP(sp)->klen + RE_WSTART_LEN + RE_WSTOP_LEN;
 	GET_SPACE_RETW(sp, bp, blen, len);
-	MEMCPY(bp, RE_WSTART, RE_WSTART_LEN); 
-	p = bp + RE_WSTART_LEN;
-	MEMCPY(p, VIP(sp)->keyw, VIP(sp)->klen);
-	p += VIP(sp)->klen;
-	MEMCPY(p, RE_WSTOP, RE_WSTOP_LEN); 
+	p = bp;
 
-	rval = v_search(sp, vp, bp, len, SEARCH_SET, FORWARD);
+	/* Only the first character can be non-word, see v_curword. */
+	if (inword(VIP(sp)->keyw[0]))
+		p = MEMPCPY(p, RE_WSTART, RE_WSTART_LEN);
+	else if (is_especial(VIP(sp)->keyw[0]))
+		p = MEMPCPY(p, L("\\"), 1);
+
+	p = MEMPCPY(p, VIP(sp)->keyw, VIP(sp)->klen);
+
+	if (inword(p[-1]))
+		p = MEMPCPY(p, RE_WSTOP, RE_WSTOP_LEN);
+
+	len = p - bp;
+	rval = v_search(sp, vp, bp, len, SEARCH_SET | SEARCH_EXTEND, FORWARD);
 
 	FREE_SPACEW(sp, bp, blen);
 	return (rval);
