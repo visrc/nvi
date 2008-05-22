@@ -54,6 +54,12 @@ typedef	u_char		UCHAR_T;
 	memcmp(to, from, (n) * sizeof(*(to)))
 #define	MEMMOVE(p, t, len)	memmove(p, t, (len) * sizeof(*(p)))
 #define	MEMCPY(p, t, len)	memcpy(p, t, (len) * sizeof(*(p)))
+/*
+ * Like MEMCPY but return a pointer to the end of the copied bytes.
+ * Glibc has a function mempcpy with the same purpose.
+ */
+#define MEMPCPY(p, t, len) \
+	((void *)((char *)MEMCPY(p, t, len) + (len) * sizeof(*(p))))
 #define SIZE(w)		(sizeof(w)/sizeof(*w))
 
 #endif
