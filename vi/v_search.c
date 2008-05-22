@@ -332,6 +332,13 @@ is_especial(CHAR_T c)
 }
 
 /*
+ * Rear delimiter for word search when the keyword ends in
+ * (i.e., consists of) a non-word character.  See v_searchw below.
+ */
+#define RE_NWSTOP	L("([^[:alnum:]_]|$)")
+#define RE_NWSTOP_LEN	(SIZE(RE_NWSTOP) - 1)
+
+/*
  * v_searchw -- [count]^A
  *	Search for the word under the cursor.
  *
@@ -342,7 +349,8 @@ v_searchw(SCR *sp, VICMD *vp)
 {
 	size_t blen;
 	/* An upper bound for the SIZE of the RE under construction. */
-	size_t len = VIP(sp)->klen + MAX(RE_WSTART_LEN, 1) + RE_WSTOP_LEN;
+	size_t len = VIP(sp)->klen + MAX(RE_WSTART_LEN, 1)
+	    + MAX(RE_WSTOP_LEN, RE_NWSTOP_LEN);
 	int rval;
 	CHAR_T *bp, *p;
 
@@ -359,6 +367,13 @@ v_searchw(SCR *sp, VICMD *vp)
 
 	if (inword(p[-1]))
 		p = MEMPCPY(p, RE_WSTOP, RE_WSTOP_LEN);
+	else
+		/*
+		 * The keyword is a single non-word character.
+		 * We want it to stay the same when typing ^A several times
+		 * in a row, just the way the other cases behave.
+		 */
+		p = MEMPCPY(p, RE_NWSTOP, RE_NWSTOP_LEN);
 
 	len = p - bp;
 	rval = v_search(sp, vp, bp, len, SEARCH_SET | SEARCH_EXTEND, FORWARD);
