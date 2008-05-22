@@ -1096,10 +1096,10 @@ v_curword(SCR *sp)
 	    end = beg; ++end < len && state == inword(p[end]););
 
 	vip = VIP(sp);
-	len = (end - beg);
-	BINC_RETW(sp, vip->keyw, vip->klen, len+1);
+	vip->klen = len = end - beg;
+	BINC_RETW(sp, vip->keyw, vip->keywlen, len+1);
 	MEMMOVEW(vip->keyw, p + beg, len);
-	vip->keyw[len] = '\0';				/* XXX */
+	vip->keyw[len] = L('\0');				/* XXX */
 	return (0);
 }
 
