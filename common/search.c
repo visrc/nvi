@@ -117,8 +117,8 @@ prev:			if (sp->re == NULL) {
 
 	/* Compile the RE. */
 	if (re_compile(sp, ptrn, plen, &sp->re, &sp->re_len, &sp->re_c,
-	    SEARCH_CSEARCH | LF_ISSET(SEARCH_CSCOPE | SEARCH_IC |
-	    SEARCH_LITERAL | SEARCH_MSG | SEARCH_TAG)))
+	    SEARCH_CSEARCH | LF_ISSET(SEARCH_CSCOPE | SEARCH_EXTEND |
+	    SEARCH_IC | SEARCH_LITERAL | SEARCH_MSG | SEARCH_TAG)))
 		return (1);
 
 	/* Set the search direction. */
