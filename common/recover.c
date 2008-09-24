@@ -565,7 +565,7 @@ rcv_list(SCR *sp)
 next:		(void)fclose(fp);
 	}
 	if (found == 0)
-		(void)printf("vi: no files to recover.\n");
+		(void)printf("%s: No files to recover\n", sp->gp->progname);
 	(void)closedir(dirp);
 	return (0);
 }
