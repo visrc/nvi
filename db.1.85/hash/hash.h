@@ -103,7 +103,7 @@ typedef struct htab	 {		/* Memory resident data structure */
 	BUFHEAD 	*cpage;		/* Current page */
 	int		cbucket;	/* Current bucket */
 	int		cndx;		/* Index of next item on cpage */
-	int		errno;		/* Error Number -- for DBM 
+	int		_errno;		/* Error Number -- for DBM 
 					 * compatability */
 	int		new_file;	/* Indicates if fd is backing store 
 					 * or no */
