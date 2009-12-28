@@ -1069,5 +1069,5 @@ case "$vi_cv_re_lib" in
 	;;
 esac
 
-AC_OUTPUT(Makefile port.h:port.h.in
+AC_OUTPUT(Makefile port.h:port.h.in compat.h:port.h.in
     pathnames.h:pathnames.h.in recover:recover.in)
