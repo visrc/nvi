@@ -26,7 +26,7 @@
  * on most machines to which we're porting vi, and we want to include
  * them in a very specific order, regardless.
  */
-#include "db.h"
+#include "vi_db.h"
 #include <regex.h>
 
 /*
@@ -102,6 +102,8 @@ typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
 #include "screen.h"		/* Required by exf.h. */
 #include "exf.h"
 #include "mem.h"
+#ifndef USE_BUNDLED_DB
 #include "vi_auto.h"
+#endif
 
 #include "extern.h"

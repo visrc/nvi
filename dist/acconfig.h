@@ -96,8 +96,8 @@
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
 
-/* Define when using db1 */
-#undef USE_DB1
+/* Define when using bundled db */
+#undef USE_BUNDLED_DB
 
 /* Define when using db4 logging */
 #undef USE_DB4_LOGGING

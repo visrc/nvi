@@ -16,17 +16,17 @@ static const char sccsid[] = "$Id: db1.c,v 10.1 2002/03/09 12:53:57 skimo Exp $ 
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #include <bitstring.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "common.h"
 #include "../vi/vi.h"
-
-static int scr_update __P((SCR *, db_recno_t, lnop_t, int));
 
 /*
  * db_eget --
@@ -140,35 +140,28 @@ db_get(SCR *sp, db_recno_t lno, u_int32_t flags, CHAR_T **pp, size_t *lenp)
 	}
 
 	/* Look-aside into the cache, and see if the line we want is there. */
-	/*
-	 * Line cache will not work if different screens view the same
-	 * file with different encodings.
-	 * Multiple threads accessing the same cache can be a problem as
-	 * well.
-	 * So, line cache is (temporarily) disabled.
-	 */
-	if (0 && lno == ep->c_lno) {
+	if (lno == sp->c_lno) {
 #if defined(DEBUG) && 0
 		vtrace(sp, "retrieve cached line %lu\n", (u_long)lno);
 #endif
 		if (lenp != NULL)
-			*lenp = ep->c_len;
+			*lenp = sp->c_len;
 		if (pp != NULL)
-			*pp = ep->c_lp;
+			*pp = sp->c_lp;
 		return (0);
 	}
-	ep->c_lno = OOBLNO;
+	sp->c_lno = OOBLNO;
 
 nocache:
 	nlen = 1024;
 retry:
 	/* data.size contains length in bytes */
-	BINC_GOTO(sp, CHAR_T, ep->c_lp, ep->c_blen, nlen);
+	BINC_GOTO(sp, CHAR_T, sp->c_lp, sp->c_blen, nlen);
 
 	/* Get the line from the underlying database. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	switch (ep->db->actual_db->get(ep->db->actual_db, &key, &data, 0)) {
+	switch (ep->db->get(ep->db, &key, &data, 0)) {
         case -1:
 		goto err2;
 	case 1:
@@ -185,7 +178,7 @@ err3:		if (lenp != NULL)
 			nlen = data.size;
 			goto retry;
 		} else
-			memcpy(ep->c_lp, data.data, nlen);
+			memcpy(sp->c_lp, data.data, nlen);
 	}
 
 	if (FILE2INT(sp, data.data, data.size, wp, wlen)) {
@@ -198,11 +191,11 @@ err3:		if (lenp != NULL)
 
 	/* Reset the cache. */
 	if (wp != data.data) {
-	    BINC_GOTOW(sp, ep->c_lp, ep->c_blen, wlen);
-	    MEMCPYW(ep->c_lp, wp, wlen);
+	    BINC_GOTOW(sp, sp->c_lp, sp->c_blen, wlen);
+	    MEMCPYW(sp->c_lp, wp, wlen);
 	}
-	ep->c_lno = lno;
-	ep->c_len = wlen;
+	sp->c_lno = lno;
+	sp->c_len = wlen;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "retrieve DB line %lu\n", (u_long)lno);
@@ -210,7 +203,7 @@ err3:		if (lenp != NULL)
 	if (lenp != NULL)
 		*lenp = wlen;
 	if (pp != NULL)
-		*pp = ep->c_lp;
+		*pp = sp->c_lp;
 	return (0);
 }
 
@@ -246,12 +239,12 @@ db_delete(SCR *sp, db_recno_t lno)
 		return (1);
 
 	/* Log change. */
-	log_line(sp, lno, LOG_LINE_DELETE);
+	log_line(sp, lno, LOG_LINE_DELETE_B);
 
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	sp->db_error = ep->db->actual_db->del(ep->db->actual_db, &key, 0);
+	sp->db_error = ep->db->del(ep->db, &key, 0);
 	if (sp->db_error != 0) {
 		if (sp->db_error == -1)
 			sp->db_error = errno;
@@ -262,15 +255,15 @@ db_delete(SCR *sp, db_recno_t lno)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno <= ep->c_lno)
-		ep->c_lno = OOBLNO;
-	if (ep->c_nlines != OOBLNO)
-		--ep->c_nlines;
+	update_cache(sp, LINE_DELETE, lno);
 
 	/* File now modified. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
+
+	/* Log after change. */
+	log_line(sp, lno, LOG_LINE_DELETE_F);
 
 	/* Update screen. */
 	return (scr_update(sp, lno, LINE_DELETE, 1));
@@ -287,6 +280,8 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 {
 	DBT data, key;
 	EXF *ep;
+	char *fp;
+	size_t flen;
 	int rval;
 
 #if defined(DEBUG) && 0
@@ -301,31 +296,33 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 		ex_emsg(sp, NULL, EXM_LOCKED);
 		return 1;
 	}
+
+	/* Log before change. */
+	log_line(sp, lno + 1, LOG_LINE_APPEND_B);
+
+	INT2FILE(sp, p, len, fp, flen);
 		
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	data.data = p;
-	data.size = len;
-	if (ep->db->actual_db->put(ep->db->actual_db, &key, &data, R_IAFTER)) {
+	data.data = fp;
+	data.size = flen;
+	if (ep->db->put(ep->db, &key, &data, R_IAFTER)) {
 		msgq(sp, M_DBERR, "004|unable to append to line %lu", 
 			(u_long)lno);
 		return (1);
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno < ep->c_lno)
-		ep->c_lno = OOBLNO;
-	if (ep->c_nlines != OOBLNO)
-		++ep->c_nlines;
+	update_cache(sp, LINE_INSERT, lno);
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
-	/* Log change. */
-	log_line(sp, lno + 1, LOG_LINE_APPEND);
+	/* Log after change. */
+	log_line(sp, lno + 1, LOG_LINE_APPEND_F);
 
 	/* Update marks, @ and global commands. */
 	rval = 0;
@@ -358,6 +355,8 @@ db_insert(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 {
 	DBT data, key;
 	EXF *ep;
+	char *fp;
+	size_t flen;
 	int rval;
 
 #if defined(DEBUG) && 0
@@ -373,31 +372,33 @@ db_insert(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 		ex_emsg(sp, NULL, EXM_LOCKED);
 		return 1;
 	}
+
+	/* Log before change. */
+	log_line(sp, lno, LOG_LINE_APPEND_B);
+
+	INT2FILE(sp, p, len, fp, flen);
 		
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	data.data = p;
-	data.size = len;
-	if (ep->db->actual_db->put(ep->db->actual_db, &key, &data, R_IBEFORE)) {
+	data.data = fp;
+	data.size = flen;
+	if (ep->db->put(ep->db, &key, &data, R_IBEFORE)) {
 		msgq(sp, M_SYSERR,
 		    "005|unable to insert at line %lu", (u_long)lno);
 		return (1);
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno >= ep->c_lno)
-		ep->c_lno = OOBLNO;
-	if (ep->c_nlines != OOBLNO)
-		++ep->c_nlines;
+	update_cache(sp, LINE_INSERT, lno);
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
-	/* Log change. */
-	log_line(sp, lno, LOG_LINE_INSERT);
+	/* Log after change. */
+	log_line(sp, lno, LOG_LINE_APPEND_F);
 
 	/* Update marks, @ and global commands. */
 	rval = 0;
@@ -449,7 +450,7 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	data.data = fp;
 	data.size = flen;
 	sp->db_error =
-		ep->db->actual_db->put(ep->db->actual_db, &key, &data, 0);
+		ep->db->put(ep->db, &key, &data, 0);
 	if (sp->db_error != 0) {
 		if (sp->db_error == -1)
 			sp->db_error = errno;
@@ -459,8 +460,7 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	}
 
 	/* Flush the cache, before logging or screen update. */
-	if (lno == ep->c_lno)
-		ep->c_lno = OOBLNO;
+	update_cache(sp, LINE_RESET, lno);
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
@@ -543,8 +543,7 @@ db_last(SCR *sp, db_recno_t *lnop)
 	key.data = &lno;
 	key.size = sizeof(lno);
 
-	sp->db_error = ep->db->actual_db->seq(ep->db->actual_db, &key, &data,
-									R_LAST);
+	sp->db_error = ep->db->seq(ep->db, &key, &data, R_LAST);
 	switch (sp->db_error) {
 	case 1:
 		*lnop = 0;
@@ -561,16 +560,14 @@ alloc_err:
 
 	memcpy(&lno, key.data, sizeof(lno));
 
-	if (lno != ep->c_lno) {
+	if (lno != sp->c_lno) {
 	    FILE2INT(sp, data.data, data.size, wp, wlen);
 
 	    /* Fill the cache. */
-	    if (wp != data.data) {
-		BINC_GOTOW(sp, ep->c_lp, ep->c_blen, wlen);
-		MEMCPYW(ep->c_lp, wp, wlen);
-	    }
-	    ep->c_lno = lno;
-	    ep->c_len = wlen;
+	    BINC_GOTOW(sp, sp->c_lp, sp->c_blen, wlen);
+	    MEMCPYW(sp->c_lp, wp, wlen);
+	    sp->c_lno = lno;
+	    sp->c_len = wlen;
 	}
 	ep->c_nlines = lno;
 
@@ -599,7 +596,7 @@ db_err(SCR *sp, db_recno_t lno)
  *	Update all of the screens that are backed by the file that
  *	just changed.
  */
-static int
+int
 scr_update(SCR *sp, db_recno_t lno, lnop_t op, int current)
 {
 	EXF *ep;
@@ -623,169 +620,97 @@ scr_update(SCR *sp, db_recno_t lno, lnop_t op, int current)
 }
 
 /*
- * DB1->3 compatibility layer
+ * PUBLIC: void update_cache __P((SCR *sp, lnop_t op, db_recno_t lno));
  */
+void
+update_cache(SCR *sp, lnop_t op, db_recno_t lno)
+{
+	SCR* scrp;
+	EXF *ep;
 
-#include <assert.h>
-#include <stdlib.h>
+	ep = sp->ep;
 
-#undef O_SHLOCK
-#undef O_EXLOCK
-#include <fcntl.h>
+	/* Flush the cache, update line count, before screen update. */
+	/* The flushing is probably not needed, since it was incorrect
+	 * for db_insert.  It might be better to adjust it, like
+	 * marks, @ and global
+	 */
+	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
+	    scrp = scrp->eq.cqe_next)
+		switch (op) {
+		case LINE_INSERT:
+		case LINE_DELETE:
+			if (lno <= scrp->c_lno)
+				scrp->c_lno = OOBLNO;
+			break;
+		case LINE_RESET:
+			if (lno == scrp->c_lno)
+				scrp->c_lno = OOBLNO;
+			break;
+		}
 
-static int db1_close(DB *, u_int32_t);
-static int db1_open(DB *, const char *, const char *, DBTYPE, u_int32_t, int);
-static int db1_sync(DB *, u_int32_t);
-static int db1_get(DB *, DB_TXN *, DBT *, DBT *, u_int32_t);
-static int db1_put(DB *, DB_TXN *, DBT *, DBT *, u_int32_t);
-static int db1_set_flags(DB *, u_int32_t);
-static int db1_set_pagesize(DB *, u_int32_t);
-static int db1_set_re_delim(DB *, int);
-static int db1_set_re_source(DB *, const char *);
+	if (ep->c_nlines != OOBLNO)
+		switch (op) {
+		case LINE_INSERT:
+			++ep->c_nlines;
+			break;
+		case LINE_DELETE:
+			--ep->c_nlines;
+			break;
+		}
+}
 
+/*
+ * PUBLIC: int db_msg_open __P((SCR *, char *, DB **));
+ */
+int db_msg_open(SCR *sp, char *file, DB **dbp)
+{
+	*dbp = dbopen(file, O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL);
+
+	return *dbp == NULL;
+}
+
+/*
+ * PUBLIC: int db_init __P((SCR *, EXF *, char *, char *, size_t, int *));
+ */
 int
-db_create(DB **dbp, DB_ENV *dbenv, u_int32_t flags) {
-	assert(dbenv == NULL && flags == 0);
+db_init(SCR *sp, EXF *ep, char *rcv_name, char *oname, size_t psize, int *open_err)
+{
+	RECNOINFO oinfo;
 
-	*dbp = malloc(sizeof **dbp);
-	if (*dbp == NULL)
-		return -1;
+	memset(&oinfo, 0, sizeof(RECNOINFO));
+	oinfo.bval = '\n';			/* Always set. */
+	oinfo.psize = psize;
+	oinfo.flags = R_SNAPSHOT;
+	if (rcv_name)
+		oinfo.bfname = ep->rcv_path;
 
-	(*dbp)->type = DB_UNKNOWN;
-	(*dbp)->actual_db = NULL;
-	(*dbp)->_pagesize = 0;
-	(*dbp)->_flags = 0;
-	memset(&(*dbp)->_recno_info, 0, sizeof (RECNOINFO));
+#define _DB_OPEN_MODE	S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 
-	(*dbp)->close = db1_close;
-	(*dbp)->open = db1_open;
-	(*dbp)->sync = db1_sync;
-	(*dbp)->get = db1_get;
-	(*dbp)->put = db1_put;
-	(*dbp)->set_flags = db1_set_flags;
-	(*dbp)->set_pagesize = db1_set_pagesize;
-	(*dbp)->set_re_delim = db1_set_re_delim;
-	(*dbp)->set_re_source = db1_set_re_source;
+	ep->db = dbopen(rcv_name == NULL ? oname : NULL,
+	    O_NONBLOCK | O_RDONLY, _DB_OPEN_MODE, DB_RECNO, &oinfo);
+	
+	if (!ep->db) {
+		msgq_str(sp,
+		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
+		/*
+		 * !!!
+		 * Historically, vi permitted users to edit files that couldn't
+		 * be read.  This isn't useful for single files from a command
+		 * line, but it's quite useful for "vi *.c", since you can skip
+		 * past files that you can't read.
+		 */ 
+		ep->db = NULL; /* Don't close it; it wasn't opened */
+
+		*open_err = 1;
+		return 1;
+	}
 
 	return 0;
 }
 
 char *
-db_strerror(int error) {
-	return error > 0? strerror(error) : "record not found";
-}
-
-static int
-db1_close(DB *db, u_int32_t flags) {
-	if (flags & DB_NOSYNC) {
-		/* XXX warn user? */
-	}
-	db->actual_db->close(db->actual_db);
-
-	db->type = DB_UNKNOWN;
-	db->actual_db = NULL;
-	db->_pagesize = 0;
-	db->_flags = 0;
-	memset(&db->_recno_info, 0, sizeof (RECNOINFO));
-
-	return 0;
-}
-
-static int
-db1_open(DB *db, const char *file, const char *database, DBTYPE type,
-						u_int32_t flags, int mode) {
-	int oldflags = 0;
-
-	assert(database == NULL && !(flags & ~(DB_CREATE | DB_TRUNCATE)));
-
-	db->type = type;
-
-	if (flags & DB_CREATE)
-		oldflags |= O_CREAT;
-	if (flags & DB_TRUNCATE)
-		oldflags |= O_TRUNC;
-
-	if (type == DB_RECNO) {
-		char *tmp = (char *) file;
-
-		/* The interface is reversed in DB3 */
-		file = db->_recno_info.bfname;
-		db->_recno_info.bfname = tmp;
-
-		/* ... and so, we should avoid to truncate the main file! */
-		oldflags &= ~O_TRUNC;
-
-		db->_recno_info.flags =
-			db->_flags & DB_SNAPSHOT? R_SNAPSHOT : 0;
-		db->_recno_info.psize = db->_pagesize;
-	}
-
-	db->actual_db = dbopen(file, oldflags, mode, type,
-				type == DB_RECNO? &db->_recno_info : NULL);
-
-	return db->actual_db == NULL? errno : 0;
-}
-
-static int
-db1_sync(DB *db, u_int32_t flags) {
-	assert(flags == 0);
-
-	return db->actual_db->sync(db->actual_db, db->type == DB_UNKNOWN?
-					R_RECNOSYNC : 0) == 0? 0 : errno;
-}
-
-static int
-db1_get(DB *db, DB_TXN *txnid, DBT *key, DBT *data, u_int32_t flags) {
-	int err;
-
-	assert(flags == 0 && txnid == NULL);
-
-	err = db->actual_db->get(db->actual_db, key, data, flags);
-
-	return err == -1? errno : err;
-}
-
-static int
-db1_put(DB *db, DB_TXN *txnid, DBT *key, DBT *data, u_int32_t flags) {
-	int err;
-
-	assert(flags == 0 && txnid == NULL);
-
-	err = db->actual_db->put(db->actual_db, key, data, flags);
-
-	return err == -1? errno : err;
-}
-
-static int
-db1_set_flags(DB *db, u_int32_t flags) {
-	assert((flags & ~(DB_RENUMBER | DB_SNAPSHOT)) == 0);
-
-	/* Can't prevent renumbering from happening with DB1 */
-	assert((flags | db->_flags) & DB_RENUMBER);
-
-
-	db->_flags |= flags;
-
-	return 0;
-}
-
-static int
-db1_set_pagesize(DB *db, u_int32_t pagesize) {
-	db->_pagesize = pagesize;
-
-	return 0;
-}
-
-static int
-db1_set_re_delim(DB *db, int re_delim) {
-	db->_recno_info.bval = re_delim;
-
-	return 0;
-}
-
-static int
-db1_set_re_source(DB *db, const char *re_source) {
-	db->_recno_info.bfname = (char *) re_source;
-
-	return 0;
+db_strerror(int error)
+{
+	return error > 0 ? strerror(error) : "record not found";
 }

@@ -2,8 +2,46 @@ visrcdir= @srcdir@/..
 
 ACLOCAL_AMFLAGS = -I m4
 
+if BUNDLED_DB
+    DB_C = $(visrcdir)/common/vi_db1.c
+    DB_SRCS = \
+	$(visrcdir)/db.1.85/recno/rec_delete.c \
+	$(visrcdir)/db.1.85/recno/rec_get.c \
+	$(visrcdir)/db.1.85/recno/rec_put.c \
+	$(visrcdir)/db.1.85/recno/rec_utils.c \
+	$(visrcdir)/db.1.85/recno/rec_open.c \
+	$(visrcdir)/db.1.85/recno/rec_seq.c \
+	$(visrcdir)/db.1.85/recno/rec_close.c \
+	$(visrcdir)/db.1.85/recno/rec_search.c \
+	$(visrcdir)/db.1.85/db/db.c \
+	$(visrcdir)/db.1.85/btree/bt_debug.c \
+	$(visrcdir)/db.1.85/btree/bt_get.c \
+	$(visrcdir)/db.1.85/btree/bt_open.c \
+	$(visrcdir)/db.1.85/btree/bt_delete.c \
+	$(visrcdir)/db.1.85/btree/bt_put.c \
+	$(visrcdir)/db.1.85/btree/bt_overflow.c \
+	$(visrcdir)/db.1.85/btree/bt_close.c \
+	$(visrcdir)/db.1.85/btree/bt_page.c \
+	$(visrcdir)/db.1.85/btree/bt_split.c \
+	$(visrcdir)/db.1.85/btree/bt_search.c \
+	$(visrcdir)/db.1.85/btree/bt_utils.c \
+	$(visrcdir)/db.1.85/btree/bt_seq.c \
+	$(visrcdir)/db.1.85/btree/bt_conv.c \
+	$(visrcdir)/db.1.85/mpool/mpool.c \
+	$(visrcdir)/db.1.85/hash/hash_bigkey.c \
+	$(visrcdir)/db.1.85/hash/hash_log2.c \
+	$(visrcdir)/db.1.85/hash/hash.c \
+	$(visrcdir)/db.1.85/hash/hash_func.c \
+	$(visrcdir)/db.1.85/hash/hash_page.c \
+	$(visrcdir)/db.1.85/hash/hash_buf.c \
+	$(visrcdir)/db.1.85/hash/hsearch.c
+else
+    DB_C = $(visrcdir)/common/vi_db.c
+endif
+
 lib_LTLIBRARIES = libvi.la
 libvi_la_SOURCES = \
+	$(DB_SRCS) \
 	$(visrcdir)/common/api.c \
 	$(visrcdir)/common/conv.c \
 	$(visrcdir)/common/conv.h \
@@ -12,7 +50,7 @@ libvi_la_SOURCES = \
 	$(visrcdir)/common/args.h \
 	$(visrcdir)/common/common.h \
 	$(visrcdir)/common/cut.h \
-	$(visrcdir)/common/db.h \
+	$(visrcdir)/common/vi_db.h \
 	$(visrcdir)/common/exf.h \
 	$(visrcdir)/common/gs.h \
 	$(visrcdir)/common/key.h \
@@ -85,7 +123,7 @@ libvi_la_SOURCES = \
 	$(visrcdir)/vi/vi.h \
 	$(visrcdir)/common/gs.c \
 	$(visrcdir)/common/key.c \
-	$(visrcdir)/common/db.c \
+	$(DB_C) \
 	$(visrcdir)/common/main.c \
 	$(visrcdir)/common/mark.c \
 	$(visrcdir)/common/msg.c \
@@ -148,8 +186,11 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/regex/regex.h \
 	$(visrcdir)/regex/regex2.h \
 	$(visrcdir)/regex/utils.h \
+	$(visrcdir)/common/vi_db.c \
+	$(visrcdir)/common/vi_db1.c \
 	$(visrcdir)/common/dldb.c \
 	$(visrcdir)/common/log.c \
+	$(visrcdir)/common/log1.c \
 	$(visrcdir)/common/log4.c \
 	$(visrcdir)/clib/bsearch.c \
 	$(visrcdir)/clib/env.c \
@@ -189,7 +230,7 @@ vi_SOURCES = \
 	$(visrcdir)/cl/cl_term.c \
 	$(visrcdir)/common/nothread.c
 vi_LDADD = libvi.la @perllibs@ @CURSLIBS@
-vi_CPPFLAGS = @CURSCPPFLAGS@ @perlldflags@ $(AM_CPPFLAGS)
+vi_CPPFLAGS = $(AM_CPPFLAGS) @CURSCPPFLAGS@ @perlldflags@
 vi_LDFLAGS = @CURSLDFLAGS@ @perlldflags@
 
 vi_ipc_SOURCES = \
@@ -243,7 +284,12 @@ vi_motif_CFLAGS = @XINCS@
 
 VI=-DVI=\"$(bindir)/`echo vi-ipc | sed '$(transform)'`\"
 CFLAGS=	$(OPTFLAG)
+if BUNDLED_DB
+AM_CPPFLAGS=	 -D__DBINTERFACE_PRIVATE -I$(visrcdir)/db.1.85/include \
+		 -D__REGEX_PRIVATE -I. -I$(visrcdir)/include $(VI)
+else
 AM_CPPFLAGS=	 -D__REGEX_PRIVATE -I. -I$(visrcdir)/include $(VI)
+endif
 PERL=	@vi_cv_path_perl@
 PERLLIB=@vi_cv_perllib@
 SHRPENV=@shrpenv@
