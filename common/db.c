@@ -741,6 +741,18 @@ err:
 	return 1;
 }
 
+/* Round up v to the nearest power of 2 */
+static size_t round_up(size_t v)
+{
+	ssize_t old_v = v;
+
+	while (v) {
+		old_v = v;
+		v ^= v & -v;
+	}
+	return old_v << 1;
+}
+
 /*
  * PUBLIC: int db_msg_open __P((SCR *, char *, DB **));
  */
@@ -767,7 +779,7 @@ db_init(SCR *sp, EXF *ep, char *rcv_name, char *oname, size_t psize, int *open_e
 	}
 
 	ep->db->set_re_delim(ep->db, '\n');		/* Always set. */
-	ep->db->set_pagesize(ep->db, psize);
+	ep->db->set_pagesize(ep->db, round_up(psize));
 	ep->db->set_flags(ep->db, DB_RENUMBER | DB_SNAPSHOT);
 	if (rcv_name == NULL)
 		ep->db->set_re_source(ep->db, oname);
