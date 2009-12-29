@@ -42,7 +42,6 @@ static int	file_backup __P((SCR *, char *, char *));
 static void	file_cinit __P((SCR *));
 static void	file_comment __P((SCR *));
 static int	file_spath __P((SCR *, FREF *, struct stat *, int *));
-static int   	db_setup __P((SCR *sp, EXF *ep));
 
 /*
  * file_add --
@@ -261,68 +260,9 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 		F_SET(ep, F_MODIFIED);
 	}
 
-	if (db_setup(sp, ep))
-		goto err;
-
-	/* Open a db structure. */
-	if ((sp->db_error = db_create(&ep->db, 0, 0)) != 0) {
-		msgq(sp, M_DBERR, "db_create");
-		goto err;
-	}
-
-	ep->db->set_re_delim(ep->db, '\n');		/* Always set. */
-	ep->db->set_pagesize(ep->db, psize);
-	ep->db->set_flags(ep->db, DB_RENUMBER | DB_SNAPSHOT);
-	if (rcv_name == NULL)
-		ep->db->set_re_source(ep->db, oname);
-
-/* 
- * Don't let db use mmap when using fcntl for locking
- */
-#ifdef HAVE_LOCK_FCNTL
-#define NOMMAPIFFCNTL DB_NOMMAP
-#else
-#define NOMMAPIFFCNTL 0
-#endif
-
-#define _DB_OPEN_MODE	S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-
-	if ((sp->db_error = db_open(ep->db, ep->rcv_path, DB_RECNO,
-	    ((rcv_name == 0) ? DB_TRUNCATE : 0) | VI_DB_THREAD | NOMMAPIFFCNTL,
-	    _DB_OPEN_MODE)) != 0) {
-		msgq_str(sp,
-		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
-		/*
-		 * !!!
-		 * Historically, vi permitted users to edit files that couldn't
-		 * be read.  This isn't useful for single files from a command
-		 * line, but it's quite useful for "vi *.c", since you can skip
-		 * past files that you can't read.
-		 */ 
-		ep->db = NULL; /* Don't close it; it wasn't opened */
-
-		if (LF_ISSET(FS_OPENERR)) 
-		    goto err;
-
-		open_err = 1;
-		goto oerr;
-	}
-
-	/* re_source is loaded into the database.
-	 * Close it and reopen it in the environment. 
-	 */
-	if ((sp->db_error = ep->db->close(ep->db, 0))) {
-		msgq(sp, M_DBERR, "close");
-		goto err;
-	}
-	if ((sp->db_error = db_create(&ep->db, ep->env, 0)) != 0) {
-		msgq(sp, M_DBERR, "db_create 2");
-		goto err;
-	}
-	if ((sp->db_error = db_open(ep->db, ep->rcv_path, DB_RECNO,
-	    VI_DB_THREAD | NOMMAPIFFCNTL, _DB_OPEN_MODE)) != 0) {
-		msgq_str(sp,
-		    M_DBERR, ep->rcv_path, "%s");
+	if (db_init(sp, ep, rcv_name, oname, psize, &open_err)) {
+		if (open_err && !LF_ISSET(FS_OPENERR))
+			goto oerr;
 		goto err;
 	}
 
@@ -502,7 +442,7 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 		ep->rcv_path = NULL;
 	}
 	if (ep->db != NULL) {
-		(void)ep->db->close(ep->db, DB_NOSYNC);
+		(void)db_close(ep->db);
 		ep->db = NULL;
 	}
 	free(ep);
@@ -751,7 +691,7 @@ file_end(SCR *sp, EXF *ep, int force)
 	 * Close the db structure.
 	 */
 	if (ep->db->close != NULL) {
-		if ((sp->db_error = ep->db->close(ep->db, DB_NOSYNC)) != 0 && 
+		if ((sp->db_error = db_close(ep->db)) != 0 && 
 		    !force) {
 			msgq_str(sp, M_DBERR, frp->name, "241|%s: close");
 			CIRCLEQ_INSERT_HEAD(&ep->scrq, sp, eq);
@@ -772,7 +712,7 @@ file_end(SCR *sp, EXF *ep, int force)
 	if (ep->env) {
 		DB_ENV *env;
 
-		ep->env->close(ep->env, 0);
+		db_env_close(ep->env, 0);
 		ep->env = 0;
 		if ((sp->db_error = db_env_create(&env, 0)))
 			msgq(sp, M_DBERR, "env_create");
@@ -1583,60 +1523,4 @@ file_lock(SCR *sp, char *name, int *fdp, int fd, int iswrite)
 #if !defined(HAVE_LOCK_FLOCK) && !defined(HAVE_LOCK_FCNTL)
 	return (LOCK_SUCCESS);
 #endif
-}
-
-#ifdef USE_DB4_LOGGING
-#define VI_DB_INIT_LOG	DB_INIT_LOG
-#else
-#define VI_DB_INIT_LOG	0
-#endif
-
-static int
-db_setup(SCR *sp, EXF *ep)
-{
-	char path[MAXPATHLEN];
-	int fd;
-	DB_ENV	*env;
-
-	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", O_STR(sp, O_RECDIR));
-	if ((fd = mkstemp(path)) == -1) {
-		msgq(sp, M_SYSERR, "%s", path);
-		goto err;
-	}
-	(void)close(fd);
-	(void)unlink(path);
-	if (mkdir(path, S_IRWXU)) {
-		msgq(sp, M_SYSERR, "%s", path);
-		goto err;
-	}
-	if (db_env_create(&env, 0)) {
-		msgq(sp, M_ERR, "env_create");
-		goto err;
-	}
-#ifdef USE_DB4_LOGGING
-	if ((sp->db_error = vi_db_init_recover(env))) {
-		msgq(sp, M_DBERR, "init_recover");
-		goto err;
-	}
-	if ((sp->db_error = __vi_init_recover(env))) {
-		msgq(sp, M_DBERR, "init_recover");
-		goto err;
-	}
-#endif
-	if ((sp->db_error = db_env_open(env, path, 
-	    DB_PRIVATE | DB_CREATE | DB_INIT_MPOOL | VI_DB_THREAD 
-	    | VI_DB_INIT_LOG, 0)) != 0) {
-		msgq(sp, M_DBERR, "env->open");
-		goto err;
-	}
-
-	if ((ep->env_path = strdup(path)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		(void)rmdir(path);
-		goto err;
-	}
-	ep->env = env;
-	return 0;
-err:
-	return 1;
 }

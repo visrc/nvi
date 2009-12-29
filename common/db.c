@@ -16,6 +16,7 @@ static const char sccsid[] = "$Id: db.c,v 10.48 2002/06/08 19:32:52 skimo Exp $ 
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #include <bitstring.h>
 #include <errno.h>
@@ -679,4 +680,144 @@ line_insdel(SCR *sp, lnop_t op, db_recno_t lno)
 		rval = 1;
 
 	return rval;
+}
+
+#ifdef USE_DB4_LOGGING
+#define VI_DB_INIT_LOG	DB_INIT_LOG
+#else
+#define VI_DB_INIT_LOG	0
+#endif
+
+/*
+ * PUBLIC: int db_setup __P((SCR *, EXF *));
+ */
+int
+db_setup(SCR *sp, EXF *ep)
+{
+	char path[MAXPATHLEN];
+	int fd;
+	DB_ENV	*env;
+
+	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", O_STR(sp, O_RECDIR));
+	if ((fd = mkstemp(path)) == -1) {
+		msgq(sp, M_SYSERR, "%s", path);
+		goto err;
+	}
+	(void)close(fd);
+	(void)unlink(path);
+	if (mkdir(path, S_IRWXU)) {
+		msgq(sp, M_SYSERR, "%s", path);
+		goto err;
+	}
+	if (db_env_create(&env, 0)) {
+		msgq(sp, M_ERR, "env_create");
+		goto err;
+	}
+#ifdef USE_DB4_LOGGING
+	if ((sp->db_error = vi_db_init_recover(env))) {
+		msgq(sp, M_DBERR, "init_recover");
+		goto err;
+	}
+	if ((sp->db_error = __vi_init_recover(env))) {
+		msgq(sp, M_DBERR, "init_recover");
+		goto err;
+	}
+#endif
+	if ((sp->db_error = db_env_open(env, path, 
+	    DB_PRIVATE | DB_CREATE | DB_INIT_MPOOL | VI_DB_THREAD 
+	    | VI_DB_INIT_LOG, 0)) != 0) {
+		msgq(sp, M_DBERR, "env->open");
+		goto err;
+	}
+
+	if ((ep->env_path = strdup(path)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		(void)rmdir(path);
+		goto err;
+	}
+	ep->env = env;
+	return 0;
+err:
+	return 1;
+}
+
+/*
+ * PUBLIC: int db_msg_open __P((SCR *, char *, DB **));
+ */
+int db_msg_open(SCR *sp, char *file, DB **dbp)
+{
+	return  (sp->db_error = db_create(dbp, 0, 0)) != 0 ||
+		(sp->db_error = (*dbp)->set_re_source(*dbp, file)) != 0 ||
+		(sp->db_error = db_open(*dbp, NULL, DB_RECNO, 0, 0)) != 0;
+}
+
+/*
+ * PUBLIC: int db_init __P((SCR *, EXF *, char *, char *, size_t, int *));
+ */
+int
+db_init(SCR *sp, EXF *ep, char *rcv_name, char *oname, size_t psize, int *open_err)
+{
+	if (db_setup(sp, ep))
+		return 1;
+
+	/* Open a db structure. */
+	if ((sp->db_error = db_create(&ep->db, 0, 0)) != 0) {
+		msgq(sp, M_DBERR, "db_create");
+		return 1;
+	}
+
+	ep->db->set_re_delim(ep->db, '\n');		/* Always set. */
+	ep->db->set_pagesize(ep->db, psize);
+	ep->db->set_flags(ep->db, DB_RENUMBER | DB_SNAPSHOT);
+	if (rcv_name == NULL)
+		ep->db->set_re_source(ep->db, oname);
+
+/* 
+ * Don't let db use mmap when using fcntl for locking
+ */
+#ifdef HAVE_LOCK_FCNTL
+#define NOMMAPIFFCNTL DB_NOMMAP
+#else
+#define NOMMAPIFFCNTL 0
+#endif
+
+#define _DB_OPEN_MODE	S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+
+	if ((sp->db_error = db_open(ep->db, ep->rcv_path, DB_RECNO,
+	    ((rcv_name == 0) ? DB_TRUNCATE : 0) | VI_DB_THREAD | NOMMAPIFFCNTL,
+	    _DB_OPEN_MODE)) != 0) {
+		msgq_str(sp,
+		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
+		/*
+		 * !!!
+		 * Historically, vi permitted users to edit files that couldn't
+		 * be read.  This isn't useful for single files from a command
+		 * line, but it's quite useful for "vi *.c", since you can skip
+		 * past files that you can't read.
+		 */ 
+		ep->db = NULL; /* Don't close it; it wasn't opened */
+
+		*open_err = 1;
+		return 1;
+	}
+
+	/* re_source is loaded into the database.
+	 * Close it and reopen it in the environment. 
+	 */
+	if ((sp->db_error = ep->db->close(ep->db, 0))) {
+		msgq(sp, M_DBERR, "close");
+		return 1;
+	}
+	if ((sp->db_error = db_create(&ep->db, ep->env, 0)) != 0) {
+		msgq(sp, M_DBERR, "db_create 2");
+		return 1;
+	}
+	if ((sp->db_error = db_open(ep->db, ep->rcv_path, DB_RECNO,
+	    VI_DB_THREAD | NOMMAPIFFCNTL, _DB_OPEN_MODE)) != 0) {
+		msgq_str(sp,
+		    M_DBERR, ep->rcv_path, "%s");
+		return 1;
+	}
+
+	return 0;
 }

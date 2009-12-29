@@ -16,6 +16,9 @@
     (env)->remove(env, path, NULL, flags)
 #endif
 
+#define db_env_close(env,flags)						\
+    (env)->close(env, flags)
+
 #if DB_VERSION_MAJOR >= 4 && DB_VERSION_MINOR >= 1
 #define db_open(db,file,type,flags,mode)				\
     (db)->open(db, NULL, file, NULL, type, flags, mode)
@@ -23,6 +26,10 @@
 #define db_open(db,file,type,flags,mode)				\
     (db)->open(db, file, NULL, type, flags, mode)
 #endif
+#define db_get_low(db,key,data,flags)					\
+    (db)->get(db, NULL, key, data, flags)
+#define db_close(db)							\
+    (db)->close(db, DB_NOSYNC)
 
 #ifdef USE_DYNAMIC_LOADING
 #define db_create   	nvi_db_create

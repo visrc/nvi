@@ -724,9 +724,7 @@ msg_open(SCR *sp, char *file)
 		p = buf;
 	} else
 		p = file;
-	if ((sp->db_error = db_create(&db, 0, 0)) != 0 ||
-	    (sp->db_error = db->set_re_source(db, p)) != 0 ||
-	    (sp->db_error = db_open(db, NULL, DB_RECNO, 0, 0)) != 0) {
+	if (db_msg_open(sp, p, &db)) {
 		if (first) {
 			first = 0;
 			return (1);
@@ -745,10 +743,10 @@ msg_open(SCR *sp, char *file)
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
 	msgno = 1;
-	if ((sp->db_error = db->get(db, NULL, &key, &data, 0)) != 0 ||
+	if ((sp->db_error = db_get_low(db, &key, &data, 0)) != 0 ||
 	    data.size != sizeof(VMC) - 1 ||
 	    memcmp(data.data, VMC, sizeof(VMC) - 1)) {
-		(void)db->close(db, DB_NOSYNC);
+		(void)db_close(db);
 		if (first) {
 			first = 0;
 			return (1);
@@ -760,7 +758,7 @@ msg_open(SCR *sp, char *file)
 	first = 0;
 
 	if (sp->gp->msg != NULL)
-		(void)sp->gp->msg->close(sp->gp->msg, DB_NOSYNC);
+		(void)db_close(sp->gp->msg);
 	sp->gp->msg = db;
 	return (0);
 }
@@ -775,7 +773,7 @@ void
 msg_close(GS *gp)
 {
 	if (gp->msg != NULL) {
-		(void)gp->msg->close(gp->msg, 0);
+		(void)db_close(gp->msg);
 		gp->msg = NULL;
 	}
 }
@@ -850,7 +848,7 @@ msg_cat(SCR *sp, const char *str, size_t *lenp)
 		 */
 		gp = sp == NULL ? NULL : sp->gp;
 		if (gp != NULL && gp->msg != NULL &&
-		    gp->msg->get(gp->msg, NULL, &key, &data, 0) == 0 &&
+		    db_get_low(gp->msg, &key, &data, 0) == 0 &&
 		    data.size != 0) {
 			if (lenp != NULL)
 				*lenp = data.size - 1;
