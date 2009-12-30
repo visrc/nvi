@@ -137,7 +137,7 @@ log_end(SCR *sp, EXF *ep)
 	 */
 	/*LOCK_END(sp->wp, ep);*/
 	if (ep->log != NULL) {
-		(void)(ep->log->close)(ep->log,DB_NOSYNC);
+		(void)(ep->log->close)(ep->log, DB_NOSYNC);
 		ep->log = NULL;
 	}
 	if (sp->wp->l_lp != NULL) {
