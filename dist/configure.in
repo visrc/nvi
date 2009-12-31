@@ -791,13 +791,13 @@ fi
 AC_MSG_RESULT($vi_cv_gettimeofday)
 
 dnl Check for which version of openpty to use, System V or Berkeley.
-AC_MSG_CHECKING(for System V pty calls)
 AC_CACHE_VAL(vi_cv_sys5_pty, [dnl
-AC_TRY_LINK(, [grantpt(0);],
+AC_CHECK_HEADER(sys/stropts.h,
 	[vi_cv_sys5_pty=yes], [vi_cv_sys5_pty=no])])
 if test "$vi_cv_sys5_pty" = yes; then
 	AC_DEFINE(HAVE_SYS5_PTY)
 fi
+AC_MSG_CHECKING(for System V pty calls)
 AC_MSG_RESULT($vi_cv_sys5_pty)
 
 dnl Check for the revoke system call.
