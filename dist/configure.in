@@ -22,7 +22,7 @@ AC_ARG_ENABLE(debug,
 	[vi_cv_debug=$enableval], [vi_cv_debug="no"])
 AC_MSG_RESULT($vi_cv_debug)
 if test "$vi_cv_debug" = yes; then
-	AC_DEFINE(DEBUG)
+	AC_DEFINE(DEBUG, 1, [Define if you want a debugging version.])
 	OPTFLAG=${OPTFLAG-"-g"}
 	no_op_OPTFLAG=${no_op_OPTFLAG-"-g"}
 fi
@@ -80,7 +80,7 @@ CFLAGS=${CFLAGS-""}
 AC_PROG_CC
 
 if test "$GCC" = yes; then
-	AC_DEFINE(HAVE_GCC)
+	AC_DEFINE(HAVE_GCC, 1, [Define if you have gcc.])
 fi
 
 dnl The SunOS/Solaris compiler can't optimize vi/v_txt.c; the symptom is
@@ -110,7 +110,8 @@ esac
 
 dnl Ultrix has a broken POSIX.1 VDISABLE value.
 case "$host_os" in
-ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE);;
+ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE, 1,
+			[Define if you have a Ultrix-style (broken) vdisable.]);;
 esac
 
 AC_MSG_CHECKING(whether recording of pathnames of libraries is enabled)
@@ -241,14 +242,14 @@ AC_ARG_ENABLE(widechar,
 	[  --enable-widechar       Build a wide char aware vi.],
 	[vi_cv_widechar=$enableval], [vi_cv_widechar="no"])
 if test "$vi_cv_widechar" = "yes"; then
-	AC_DEFINE(USE_WIDECHAR)
+	AC_DEFINE(USE_WIDECHAR, 1, [Define when using wide characters.])
 fi
 AC_MSG_RESULT($vi_cv_widechar)
 
 dnl Check whether we can use iconv
 AC_CHECK_HEADER(langinfo.h, [
 	AC_CHECK_HEADER(iconv.h, [
-		AC_DEFINE(USE_ICONV)
+		AC_DEFINE(USE_ICONV, 1, [Define when iconv can be used.])
 		VI_CV_REPLACE_FUNCS(iswblank)
 	])
 ])
@@ -296,7 +297,7 @@ if test "$vi_cv_gtk" = "yes"; then
 	      GTKLIBS=`$PKG_CONFIG --libs gtk+-2.0`
 
 	      AC_MSG_RESULT(ok)
-	      AC_DEFINE(HAVE_PANGO)
+	      AC_DEFINE(HAVE_PANGO, 1, [Define is appropriate pango is available.])
 	else
 	    if test "$vi_cv_widechar" = "yes"; then
 	        AC_MSG_ERROR([
@@ -316,7 +317,7 @@ if test "$vi_cv_gtk" = "yes"; then
 		[vi_cv_zvt="yes"], [vi_cv_zvt="no"])
 	if test "$vi_cv_zvt" = "yes"; then
 		GTKLIBS="-lnvizvt $LIBS"
-		AC_DEFINE(HAVE_ZVT)
+		AC_DEFINE(HAVE_ZVT, 1, [Define is appropriate zvt is available.])
 	fi
 	LIBS="$SAVELIBS"
 #	AC_PATH_PROG(vi_cv_gnome_config, gnome-config, no)
@@ -394,7 +395,7 @@ if test "$vi_cv_threads" = "yes"; then
 		AC_MSG_ERROR(No threading library found)
 	fi
 	IPCOBJS="pthread.o $IPCOBJS"
-	AC_DEFINE(HAVE_PTHREAD)
+	AC_DEFINE(HAVE_PTHREAD, 1, [Define if using pthread.])
 else
 	IPCOBJS="nothread.o $IPCOBJS"
 fi
@@ -435,7 +436,8 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	perlldflags=`cd $srcdir;$vi_cv_path_perl -MExtUtils::Embed \
         	-e 'ccdlflags'`
 	LIBOBJS="perl.o perlxsi.o perlsfio.o $LIBOBJS"
-	AC_DEFINE(HAVE_PERL_INTERP)
+	AC_DEFINE(HAVE_PERL_INTERP, 1,
+			[Define if you want to compile in the Perl interpreter.])
 	AC_CACHE_CHECK([whether we need to use perl's setenv], 
 		vi_cv_perl_setenv, [
 		AC_TRY_RUN([
@@ -451,7 +453,8 @@ exit(1);
 }
 		], [vi_cv_perl_setenv=yes], [vi_cv_perl_setenv=no])])
 	if test "$vi_cv_perl_setenv" = yes; then
-		AC_DEFINE(USE_PERL_SETENV)
+		AC_DEFINE(USE_PERL_SETENV, 1,
+				[Define when perl's setenv should be used.])
 	fi
 fi
 
@@ -473,7 +476,8 @@ if test "$vi_cv_tclinterp" = "yes"; then
 	. $vi_cv_tclconfig
 	LIBOBJS="tcl.o $LIBOBJS"
 	LIBS="$TCL_LIB_SPEC $TCL_LIBS $LIBS"
-	AC_DEFINE(HAVE_TCL_INTERP)
+	AC_DEFINE(HAVE_TCL_INTERP, 1,
+			[Define if you want to compile in the Tcl interpreter.])
 fi
 
 dnl check for curses
@@ -568,7 +572,7 @@ AC_CACHE_VAL(vi_cv_include_sys_mman, [dnl
 AC_TRY_CPP([#include <sys/mman.h>],
 	[vi_cv_include_sys_mman=yes], [vi_cv_include_sys_mman=no])])
 if test "$vi_cv_include_sys_mman" = yes; then
-	AC_DEFINE(HAVE_SYS_MMAN_H)
+	AC_DEFINE(HAVE_SYS_MMAN_H, 1, [Define if you have <sys/mman.h>])
 fi
 AC_MSG_RESULT($vi_cv_include_sys_mman)
 
@@ -577,7 +581,7 @@ AC_CACHE_VAL(vi_cv_include_sys_select, [dnl
 AC_TRY_CPP([#include <sys/select.h>],
 	[vi_cv_include_sys_select=yes], [vi_cv_include_sys_select=no])])
 if test "$vi_cv_include_sys_select" = yes; then
-	AC_DEFINE(HAVE_SYS_SELECT_H)
+	AC_DEFINE(HAVE_SYS_SELECT_H, 1, [Define if you have <sys/select.h])
 fi
 AC_MSG_RESULT($vi_cv_include_sys_select)
 
@@ -640,10 +644,12 @@ AC_CACHE_VAL(vi_cv_lock, [dnl
 	fi])
 
 if test "$vi_cv_lock" = flock; then
-	AC_DEFINE(HAVE_LOCK_FLOCK)
+	AC_DEFINE(HAVE_LOCK_FLOCK, 1,
+			[Define if you have flock(2) style locking.])
 fi
 if test "$vi_cv_lock" = fcntl; then
-	AC_DEFINE(HAVE_LOCK_FCNTL)
+	AC_DEFINE(HAVE_LOCK_FCNTL, 1,
+			[Define if you have fcntl(2) style locking.])
 fi
 AC_MSG_RESULT($vi_cv_lock)
 
@@ -655,10 +661,12 @@ AC_TRY_LINK([#include <unistd.h>], [ftruncate(0, 0);],
 AC_TRY_LINK([#include <unistd.h>], [chsize(0, 0);],
 	[vi_cv_ftruncate=chsize], [vi_cv_ftruncate=no]))])
 if test "$vi_cv_ftruncate" = ftruncate; then
-	AC_DEFINE(HAVE_FTRUNCATE_FTRUNCATE)
+	AC_DEFINE(HAVE_FTRUNCATE_FTRUNCATE, 1,
+			[Define if you have the ftruncate(2) system call.])
 fi
 if test "$vi_cv_ftruncate" = chsize; then
-	AC_DEFINE(HAVE_FTRUNCATE_CHSIZE)
+	AC_DEFINE(HAVE_FTRUNCATE_CHSIZE, 1,
+			[Define if you have the chsize(2) system call.])
 fi
 if test "$vi_cv_ftruncate" = no; then
 	AC_MSG_ERROR([No file truncation system call.])
@@ -678,7 +686,8 @@ AC_TRY_LINK([#include <$CURSHEADER>], [tigetstr(0);],
 	[vi_cv_have_curses_tigetstr=yes],
 	[vi_cv_have_curses_tigetstr=no])])
 if test "$vi_cv_have_curses_tigetstr" = yes; then
-	AC_DEFINE(HAVE_CURSES_TIGETSTR)
+	AC_DEFINE(HAVE_CURSES_TIGETSTR, 1,
+		[Define if you have the curses(3) tigetstr/tigetnum functions.])
 fi
 AC_MSG_RESULT($vi_cv_have_curses_tigetstr)
 
@@ -687,9 +696,12 @@ dnl libraries.  We also have to guess at whether the specified library is a
 dnl BSD or System V style curses.  Use the newterm function, all System V
 dnl curses implementations have it, none, as far as I know, of the BSD ones do.
 if test "$vi_cv_curses" = "bundled curses"; then
-	AC_DEFINE(HAVE_BSD_CURSES)
-	AC_DEFINE(HAVE_CURSES_WADDNSTR)
-	AC_DEFINE(HAVE_CURSES_IDLOK)
+	AC_DEFINE(HAVE_BSD_CURSES, 1,
+			[Define if you have a BSD version of curses.])
+	AC_DEFINE(HAVE_CURSES_WADDNSTR, 1,
+			[Define if you have the curses(3) waddnstr function.])
+	AC_DEFINE(HAVE_CURSES_IDLOK, 1,
+			[Define if you have the curses(3) idlok function.])
 else
 	dnl Check for the waddnstr function.
 	AC_MSG_CHECKING(for waddnstr)
@@ -698,7 +710,8 @@ else
 		[vi_cv_have_curses_waddnstr=yes],
 		[vi_cv_have_curses_waddnstr=no])])
 	if test "$vi_cv_have_curses_waddnstr" = yes; then
-		AC_DEFINE(HAVE_CURSES_WADDNSTR)
+		AC_DEFINE(HAVE_CURSES_WADDNSTR, 1,
+			[Define if you have the curses(3) waddnstr function.])
 	fi
 	AC_MSG_RESULT($vi_cv_have_curses_waddnstr)
 
@@ -709,7 +722,8 @@ else
 		[vi_cv_have_curses_beep=yes],
 		[vi_cv_have_curses_beep=no])])
 	if test "$vi_cv_have_curses_beep" = yes; then
-		AC_DEFINE(HAVE_CURSES_BEEP)
+		AC_DEFINE(HAVE_CURSES_BEEP, 1,
+			[Define if you have the curses(3) beep function.])
 	fi
 	AC_MSG_RESULT($vi_cv_have_curses_beep)
 
@@ -720,7 +734,8 @@ else
 		[vi_cv_have_curses_flash=yes],
 		[vi_cv_have_curses_flash=no])])
 	if test "$vi_cv_have_curses_flash" = yes; then
-		AC_DEFINE(HAVE_CURSES_FLASH)
+		AC_DEFINE(HAVE_CURSES_FLASH, 1,
+			[Define if you have the curses(3) flash function.])
 	fi
 	AC_MSG_RESULT($vi_cv_have_curses_flash)
 
@@ -731,7 +746,8 @@ else
 		[vi_cv_have_curses_idlok=yes],
 		[vi_cv_have_curses_idlok=no])])
 	if test "$vi_cv_have_curses_idlok" = yes; then
-		AC_DEFINE(HAVE_CURSES_IDLOK)
+		AC_DEFINE(HAVE_CURSES_IDLOK, 1,
+			[Define if you have the curses(3) idlok function.])
 	fi
 	AC_MSG_RESULT($vi_cv_have_curses_idlok)
 
@@ -742,7 +758,8 @@ else
 		[vi_cv_have_curses_keypad=yes],
 		[vi_cv_have_curses_keypad=no])])
 	if test "$vi_cv_have_curses_keypad" = yes; then
-		AC_DEFINE(HAVE_CURSES_KEYPAD)
+		AC_DEFINE(HAVE_CURSES_KEYPAD, 1,
+			[Define if you have the curses(3) keypad function.])
 	fi
 	AC_MSG_RESULT($vi_cv_have_curses_keypad)
 
@@ -753,12 +770,14 @@ else
 		[vi_cv_have_curses_newterm=yes],
 		[vi_cv_have_curses_newterm=no])])
 	if test "$vi_cv_have_curses_newterm" = yes; then
-		AC_DEFINE(HAVE_CURSES_NEWTERM)
+		AC_DEFINE(HAVE_CURSES_NEWTERM, 1,
+			[Define if you have the curses(3) newterm function.])
 	fi
 	AC_MSG_RESULT($vi_cv_have_curses_newterm)
 
 	if test "$vi_cv_have_curses_newterm" = no; then
-		AC_DEFINE(HAVE_BSD_CURSES)
+		AC_DEFINE(HAVE_BSD_CURSES, 1,
+			[Define if you have a BSD version of curses.])
 	fi
 fi
 
@@ -771,7 +790,8 @@ AC_TRY_LINK([#include <$CURSHEADER>], [setupterm(0, 0, 0);],
 	[vi_cv_have_curses_setupterm=yes],
 	[vi_cv_have_curses_setupterm=no])])
 if test "$vi_cv_have_curses_setupterm" = yes; then
-	AC_DEFINE(HAVE_CURSES_SETUPTERM)
+	AC_DEFINE(HAVE_CURSES_SETUPTERM, 1,
+			[Define if you have the curses(3) setupterm function.])
 fi
 AC_MSG_RESULT($vi_cv_have_curses_setupterm)
 LIBS="$CSAVELIBS"
@@ -786,7 +806,8 @@ AC_TRY_LINK([#include <sys/types.h>
 #include <sys/time.h>], [gettimeofday(0, 0);],
 	[vi_cv_gettimeofday=okay], [vi_cv_gettimeofday=broken])])
 if test "$vi_cv_gettimeofday" = broken; then
-	AC_DEFINE(HAVE_BROKEN_GETTIMEOFDAY)
+	AC_DEFINE(HAVE_BROKEN_GETTIMEOFDAY, 1,
+		[Define if you have a System V-style (broken) gettimeofday.])
 fi
 AC_MSG_RESULT($vi_cv_gettimeofday)
 
@@ -795,7 +816,8 @@ AC_CACHE_VAL(vi_cv_sys5_pty, [dnl
 AC_CHECK_HEADER(sys/stropts.h,
 	[vi_cv_sys5_pty=yes], [vi_cv_sys5_pty=no])])
 if test "$vi_cv_sys5_pty" = yes; then
-	AC_DEFINE(HAVE_SYS5_PTY)
+	AC_DEFINE(HAVE_SYS5_PTY, 1,
+		[Define if you have the System V style pty calls.])
 fi
 AC_MSG_CHECKING(for System V pty calls)
 AC_MSG_RESULT($vi_cv_sys5_pty)
@@ -806,7 +828,8 @@ AC_CACHE_VAL(vi_cv_revoke, [dnl
 AC_TRY_LINK(, [revoke("a");],
 	[vi_cv_revoke=yes], [vi_cv_revoke=no])])
 if test "$vi_cv_revoke" = yes; then
-	AC_DEFINE(HAVE_REVOKE)
+	AC_DEFINE(HAVE_REVOKE, 1,
+		[Define if you have the Berkeley style revoke(2) system call.])
 fi
 AC_MSG_RESULT($vi_cv_revoke)
 
@@ -818,7 +841,8 @@ AC_CACHE_VAL(vi_cv_sprintf_count, [dnl
 AC_TRY_RUN([main(){char buf[20]; exit(sprintf(buf, "XXX") != 3);}],
 	[vi_cv_sprintf_count=yes], [vi_cv_sprintf_count=no])])
 if test "$vi_cv_sprintf_count" = no; then
-	AC_DEFINE(SPRINTF_RET_CHARPNT)
+	AC_DEFINE(SPRINTF_RET_CHARPNT, 1,
+		[Define if your sprintf returns a pointer, not a length.])
 fi
 AC_MSG_RESULT($vi_cv_sprintf_count)
 
@@ -943,7 +967,8 @@ typedef int     (*funcPtr)();
 vi_cv_proto_fprintf=no, 
 [vi_cv_proto_fprintf=yes])])
 if test "$vi_cv_proto_fprintf" = yes; then
-	AC_DEFINE(NEED_FPRINTF_PROTO)
+	AC_DEFINE(NEED_FPRINTF_PROTO, 1,
+		[Define when fprintf prototype not in an obvious place.])
 fi
 
 AC_ARG_WITH(db_type,
@@ -974,7 +999,7 @@ AM_CONDITIONAL(BUNDLED_DB, test $with_db_type = bundled)
 
 case "$with_db_type" in
 bundled)
-	AC_DEFINE(USE_BUNDLED_DB)
+	AC_DEFINE(USE_BUNDLED_DB, 1, [Define when using bundled db.])
 	LIBOBJS="log1.o $LIBOBJS"
 	;;
 system)
@@ -1019,7 +1044,8 @@ system)
 		fi
 		PATH="$OLDPATH"
 
-		AC_DEFINE(USE_DYNAMIC_LOADING)
+		AC_DEFINE(USE_DYNAMIC_LOADING, 1,
+				[Define when dynamically loading DB 3.])
 		LIBOBJS="dldb.o $LIBOBJS"
 		dl_src=../common/dldb.c
 		LIBS="-ldl $LIBS"
@@ -1062,7 +1088,7 @@ system)
 		DB_CPPFLAGS="-I$vi_cv_dbsrc/include $DB_CPPFLAGS"
 		DB_CPPFLAGS="-I$vi_cv_dbsrc/include_auto $DB_CPPFLAGS"
 		DB_CPPFLAGS="-I$with_db_build $DB_CPPFLAGS"
-		AC_DEFINE(USE_DB4_LOGGING)
+		AC_DEFINE(USE_DB4_LOGGING, 1, [Define when using db4 logging.])
 		LIBOBJS="log4.o vi_auto.o vi_rec.o $LIBOBJS"
 	else
 		LIBOBJS="log.o $LIBOBJS"
