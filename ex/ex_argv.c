@@ -105,7 +105,7 @@ argv_exp1(SCR *sp, EXCMD *excp, CHAR_T *cmd, size_t cmdlen, int is_bang)
 	/* If it's empty, we're done. */
 	if (len != 0) {
 		for (p = bp, t = bp + len; p < t; ++p)
-			if (!isblank(*p))
+			if (!ISBLANK(*p))
 				break;
 		if (p == t)
 			goto ret;
@@ -186,7 +186,7 @@ argv_exp2(SCR *sp, EXCMD *excp, CHAR_T *cmd, size_t cmdlen)
 					break;
 		} else
 			for (; n > 0; --n, ++p)
-				if (!isblank(*p) &&
+				if (!ISBLANK(*p) &&
 				    !isalnum(*p) && strchr(mp, *p) != NULL)
 					break;
 	}
@@ -739,7 +739,7 @@ alloc_err:	rval = SEXP_ERR;
 		rval = SEXP_EXPANSION_ERR;
 
 	for (p = bp; len; ++p, --len)
-		if (!isblank(*p))
+		if (!ISBLANK(*p))
 			break;
 	if (len == 0)
 		rval = SEXP_EXPANSION_ERR;

@@ -750,16 +750,16 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		owrite = tp->owrite;
 		insert = tp->insert;
 		if (LF_ISSET(TXT_REPLACE) && owrite != 0) {
-			for (p = tp->lb + tp->cno; owrite > 0 && isblank(*p);
+			for (p = tp->lb + tp->cno; owrite > 0 && ISBLANK(*p);
 			    ++p, --owrite, ++tp->R_erase);
 			if (owrite == 0)
-				for (; insert > 0 && isblank(*p);
+				for (; insert > 0 && ISBLANK(*p);
 				    ++p, ++tp->R_erase, --insert);
 		} else {
 			p = tp->lb + tp->cno + owrite;
 			if (O_ISSET(sp, O_AUTOINDENT))
 				for (; insert > 0 &&
-				    isblank(*p); ++p, --insert);
+				    ISBLANK(*p); ++p, --insert);
 			owrite = 0;
 		}
 
@@ -1079,7 +1079,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		}
 
 		/* Skip over trailing space characters. */
-		while (tp->cno > max && isblank(tp->lb[tp->cno - 1])) {
+		while (tp->cno > max && ISBLANK(tp->lb[tp->cno - 1])) {
 			--tp->cno;
 			++tp->owrite;
 		}
@@ -1112,7 +1112,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 				++tp->owrite;
 				if (FL_ISSET(is_flags, IS_RUNNING))
 					tp->lb[tp->cno] = ' ';
-				if (isblank(tp->lb[tp->cno - 1]))
+				if (ISBLANK(tp->lb[tp->cno - 1]))
 					break;
 			}
 		else {
@@ -1121,7 +1121,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 				++tp->owrite;
 				if (FL_ISSET(is_flags, IS_RUNNING))
 					tp->lb[tp->cno] = ' ';
-				if (isblank(tp->lb[tp->cno - 1]))
+				if (ISBLANK(tp->lb[tp->cno - 1]))
 					break;
 			}
 			if (tp->cno > max)
@@ -1132,7 +1132,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 				if (FL_ISSET(is_flags, IS_RUNNING))
 					tp->lb[tp->cno] = ' ';
 				if (tmp != inword(tp->lb[tp->cno - 1])
-				    || isblank(tp->lb[tp->cno - 1]))
+				    || ISBLANK(tp->lb[tp->cno - 1]))
 					break;
 			}
 		}
@@ -1291,7 +1291,7 @@ insq_ch:	/*
 					goto resolve;
 				}
 			}
-			if (isblank(evp->e_c) && UNMAP_TST)
+			if (ISBLANK(evp->e_c) && UNMAP_TST)
 				txt_unmap(sp, tp, &ec_flags);
 		}
 		if (abb != AB_NOTSET)
@@ -1341,7 +1341,7 @@ insl_ch:	if (txt_insch(sp, tp, &evp->e_c, flags))
 				if (txt_margin(sp, tp, &wmt, &tmp, flags))
 					goto err;
 				if (tmp) {
-					if (isblank(evp->e_c))
+					if (ISBLANK(evp->e_c))
 						wm_skip = 1;
 					wm_set = 1;
 					goto k_cr;
@@ -1507,7 +1507,7 @@ txt_abbrev(SCR *sp, TEXT *tp, CHAR_T *pushcp, int isinfoline, int *didsubp, int 
 	off = tp->cno - 1;			/* Previous character. */
 	p = tp->lb + off;
 	len = 1;				/* One character test. */
-	if (off == tp->offset || isblank(p[-1]))
+	if (off == tp->offset || ISBLANK(p[-1]))
 		goto search;
 	if (inword(p[-1]))			/* Move backward to change. */
 		for (;;) {
@@ -1519,7 +1519,7 @@ txt_abbrev(SCR *sp, TEXT *tp, CHAR_T *pushcp, int isinfoline, int *didsubp, int 
 		for (;;) {
 			--off; --p; ++len;
 			if (off == tp->offset ||
-			    inword(p[-1]) || isblank(p[-1]))
+			    inword(p[-1]) || ISBLANK(p[-1]))
 				break;
 		}
 
@@ -1643,7 +1643,7 @@ txt_unmap(SCR *sp, TEXT *tp, u_int32_t *ec_flagsp)
 
 	/* Find the beginning of this "word". */
 	for (off = tp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
-		if (isblank(*p)) {
+		if (ISBLANK(*p)) {
 			++p;
 			break;
 		}
@@ -1710,7 +1710,7 @@ txt_ai_resolve(SCR *sp, TEXT *tp, int *changedp)
 
 	/* Figure out the last <blank> screen column. */
 	for (p = tp->lb, scno = 0, len = tp->len,
-	    spaces = tab_after_sp = 0; len-- && isblank(*p); ++p)
+	    spaces = tab_after_sp = 0; len-- && ISBLANK(*p); ++p)
 		if (*p == '\t') {
 			if (spaces)
 				tab_after_sp = 1;
@@ -1785,7 +1785,7 @@ v_txt_auto(SCR *sp, db_recno_t lno, TEXT *aitp, size_t len, TEXT *tp)
 
 	/* Count whitespace characters. */
 	for (p = t; len > 0; ++p, --len)
-		if (!isblank(*p))
+		if (!ISBLANK(*p))
 			break;
 
 	/* Set count, check for no indentation. */
@@ -2012,7 +2012,7 @@ txt_fc(SCR *sp, TEXT *tp, int *redrawp)
 	} else
 retry:		for (len = 0,
 		    off = tp->cno - 1, p = tp->lb + off;; --off, --p) {
-			if (isblank(*p)) {
+			if (ISBLANK(*p)) {
 				++p;
 				break;
 			}
@@ -2787,7 +2787,7 @@ txt_margin(SCR *sp, TEXT *tp, TEXT *wmtp, int *didbreak, u_int32_t flags)
 
 	/* Find the nearest previous blank. */
 	for (off = tp->cno - 1, p = tp->lb + off, len = 0;; --off, --p, ++len) {
-		if (isblank(*p)) {
+		if (ISBLANK(*p)) {
 			wp = p + 1;
 			break;
 		}
@@ -2839,7 +2839,7 @@ txt_margin(SCR *sp, TEXT *tp, TEXT *wmtp, int *didbreak, u_int32_t flags)
 	 * Delete any trailing whitespace from the current line.
 	 */
 	for (;; --p, --off) {
-		if (!isblank(*p))
+		if (!ISBLANK(*p))
 			break;
 		--tp->cno;
 		--tp->len;

@@ -51,7 +51,7 @@ ex_perl(SCR *sp, EXCMD *cmdp)
 	if (cmdp->argc != 0)
 		for (p = cmdp->argv[0]->bp,
 		    len = cmdp->argv[0]->len; len > 0; --len, ++p)
-			if (!isblank(*p))
+			if (!ISBLANK(*p))
 				break;
 	if (cmdp->argc == 0 || len == 0) {
 		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
